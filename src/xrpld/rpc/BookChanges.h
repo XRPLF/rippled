@@ -9,9 +9,9 @@
 
 #include <memory>
 
-namespace Json {
+namespace json {
 class Value;
-}  // namespace Json
+}  // namespace json
 
 namespace xrpl {
 
@@ -23,7 +23,7 @@ class STTx;
 namespace RPC {
 
 template <class L>
-Json::Value
+json::Value
 computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 {
     std::map<
@@ -164,7 +164,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         }
     }
 
-    Json::Value jvObj(Json::ObjectValue);
+    json::Value jvObj(json::ObjectValue);
     jvObj[jss::type] = "bookChanges";
 
     // retrieve validated information from LedgerHeader class
@@ -172,9 +172,9 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     jvObj[jss::ledger_index] = lpAccepted->header().seq;
     jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
     jvObj[jss::ledger_time] =
-        Json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
+        json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
 
-    jvObj[jss::changes] = Json::ArrayValue;
+    jvObj[jss::changes] = json::ArrayValue;
 
     auto volToStr = [](STAmount const& vol) {
         return vol.asset().visit(
@@ -188,7 +188,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
     for (auto const& entry : tally)
     {
-        Json::Value& inner = jvObj[jss::changes].append(Json::ObjectValue);
+        json::Value& inner = jvObj[jss::changes].append(json::ObjectValue);
 
         STAmount const volA = std::get<0>(entry.second);
         STAmount const volB = std::get<1>(entry.second);

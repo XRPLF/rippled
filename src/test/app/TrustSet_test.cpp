@@ -40,7 +40,7 @@ public:
         Account const alice = Account{"alice"};
         Account const becky = Account{"becky"};
 
-        env.fund(kXRP(10000), becky, alice);
+        env.fund(XRP(10000), becky, alice);
         env.close();
 
         // becky wants to hold at most 50 tokens of alice["USD"]
@@ -57,7 +57,7 @@ public:
         env.require(lines(becky, 1));
 
         // Fetch the trust-lines via RPC for verification
-        Json::Value jv;
+        json::Value jv;
         jv["account"] = becky.human();
         auto beckyLines = env.rpc("json", "account_lines", to_string(jv));
 
@@ -110,7 +110,7 @@ public:
         Account const alice = Account{"alice"};
         Account const becky = Account{"becky"};
 
-        env.fund(kXRP(10000), becky, alice);
+        env.fund(XRP(10000), becky, alice);
         env.close();
 
         // alice wants to ensure that all holders of her tokens are authorised
@@ -135,7 +135,7 @@ public:
         env.require(lines(becky, 1));
 
         // Fetch the trust-lines via RPC for verification
-        Json::Value jv;
+        json::Value jv;
         jv["account"] = becky.human();
         auto beckyLines = env.rpc("json", "account_lines", to_string(jv));
 
@@ -193,7 +193,7 @@ public:
         auto const baseReserve = env.current()->fees().reserve;
         auto const threelineReserve = env.current()->fees().accountReserve(3);
 
-        env.fund(kXRP(10000), gwA, gwB, assistor);
+        env.fund(XRP(10000), gwA, gwB, assistor);
 
         // Fund creator with ...
         env.fund(
@@ -232,7 +232,7 @@ public:
         {
             env(trust(creator, assistor["USD"](100)), Require(lines(creator, 3)));
 
-            Json::Value jv;
+            json::Value jv;
             jv["account"] = creator.human();
             auto const lines = env.rpc("json", "account_lines", to_string(jv));
             // Verify that all lines have 100 limit from creator
@@ -258,7 +258,7 @@ public:
         auto const alice = Account{"alice"};
         auto const usd = gw["USD"];
 
-        env.fund(kXRP(10000), gw, alice);
+        env.fund(XRP(10000), gw, alice);
         env.close();
 
         // Cannot pay alice without a trustline.
@@ -279,10 +279,10 @@ public:
         env.close();
     }
 
-    static Json::Value
+    static json::Value
     trustExplicitAmt(jtx::Account const& a, STAmount const& amt)
     {
-        Json::Value jv;
+        json::Value jv;
         jv[jss::Account] = a.human();
         jv[jss::LimitAmount] = amt.getJson(JsonOptions::KNone);
         jv[jss::TransactionType] = jss::TrustSet;
@@ -300,7 +300,7 @@ public:
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        env.fund(kXRP(10000), gw, alice);
+        env.fund(XRP(10000), gw, alice);
 
         // Require valid tf flags
         for (std::uint64_t badFlag = 1u; badFlag <= std::numeric_limits<std::uint32_t>::max();
@@ -345,7 +345,7 @@ public:
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        env.fund(kXRP(10000), gw, alice);
+        env.fund(XRP(10000), gw, alice);
 
         // alice wants to hold at most 100 of gw's USD tokens
         env(trust(alice, gw["USD"](100)));
@@ -372,7 +372,7 @@ public:
 
         auto const bob = Account{"bob"};
         auto const alice = Account{"alice"};
-        env.fund(kXRP(10000), bob, alice);
+        env.fund(XRP(10000), bob, alice);
 
         // alice wants to ensure that all holders of her tokens are authorised
         env(fset(alice, asfRequireAuth));
@@ -401,7 +401,7 @@ public:
 
         auto const bob = Account{"bob"};
         auto const alice = Account{"alice"};
-        env.fund(kXRP(10000), bob, alice);
+        env.fund(XRP(10000), bob, alice);
 
         // create a trust line from bob to alice. bob wants to hold at most
         // 100 of alice's USD tokens.
@@ -443,7 +443,7 @@ public:
         auto const& fromAcct = createOnHighAcct ? alice : bob;
         auto const& toAcct = createOnHighAcct ? bob : alice;
 
-        env.fund(kXRP(10000), fromAcct, toAcct);
+        env.fund(XRP(10000), fromAcct, toAcct);
 
         auto txWithoutQuality = trust(toAcct, fromAcct["USD"](100));
         txWithoutQuality["QualityIn"] = "0";
@@ -457,7 +457,7 @@ public:
         auto& tx2 = createQuality ? txWithoutQuality : txWithQuality;
 
         auto checkQuality = [&](bool const exists) {
-            Json::Value jv;
+            json::Value jv;
             jv["account"] = toAcct.human();
             auto const lines = env.rpc("json", "account_lines", to_string(jv));
             auto quality = exists ? 1000 : 0;
@@ -493,7 +493,7 @@ public:
                 auto const usd = gw["USD"];
                 auto const distUSD = dist["USD"];
 
-                env.fund(kXRP(1000), gw, dist);
+                env.fund(XRP(1000), gw, dist);
                 env.close();
 
                 env(fset(gw, asfRequireAuth));
@@ -524,7 +524,7 @@ public:
         auto const bob = Account{"bob"};
         auto const usd = gw["USD"];
 
-        env.fund(kXRP(10000), gw, alice, bob);
+        env.fund(XRP(10000), gw, alice, bob);
         env.close();
 
         // Set flag on gateway

@@ -47,7 +47,7 @@ namespace xrpl {
  * If the entry is not an account root, sets the 'Invalid' field to true.
  */
 void
-injectSLE(Json::Value& jv, SLE const& sle)
+injectSLE(json::Value& jv, SLE const& sle)
 {
     jv = sle.getJson(JsonOptions::KNone);
     if (sle.getType() == ltACCOUNT_ROOT)
@@ -84,7 +84,7 @@ injectSLE(Json::Value& jv, SLE const& sle)
 // }
 
 // TODO(tom): what is that "default"?
-Json::Value
+json::Value
 doAccountInfo(RPC::JsonContext& context)
 {
     auto& params = context.params;
@@ -159,11 +159,11 @@ doAccountInfo(RPC::JsonContext& context)
             return result;
         }
 
-        Json::Value jvAccepted(Json::ObjectValue);
+        json::Value jvAccepted(json::ObjectValue);
         injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
 
-        Json::Value acctFlags{Json::ObjectValue};
+        json::Value acctFlags{json::ObjectValue};
         for (auto const& lsf : kLS_FLAGS)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
@@ -219,7 +219,7 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
-            Json::Value jvSignerList = Json::ArrayValue;
+            json::Value jvSignerList = json::ArrayValue;
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
@@ -243,15 +243,15 @@ doAccountInfo(RPC::JsonContext& context)
         // Return queue info if that is requested
         if (queue)
         {
-            Json::Value jvQueueData = Json::ObjectValue;
+            json::Value jvQueueData = json::ObjectValue;
 
             auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
             {
-                jvQueueData[jss::txn_count] = static_cast<Json::UInt>(txs.size());
+                jvQueueData[jss::txn_count] = static_cast<json::UInt>(txs.size());
 
                 auto& jvQueueTx = jvQueueData[jss::transactions];
-                jvQueueTx = Json::ArrayValue;
+                jvQueueTx = json::ArrayValue;
 
                 std::uint32_t seqCount = 0;
                 std::uint32_t ticketCount = 0;
@@ -267,7 +267,7 @@ doAccountInfo(RPC::JsonContext& context)
                 SeqProxy prevSeqProxy = SeqProxy::sequence(0);
                 for (auto const& tx : txs)
                 {
-                    Json::Value jvTx = Json::ObjectValue;
+                    json::Value jvTx = json::ObjectValue;
 
                     if (tx.seqProxy.isSeq())
                     {

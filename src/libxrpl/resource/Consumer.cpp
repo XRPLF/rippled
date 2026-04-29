@@ -58,12 +58,12 @@ Consumer::operator=(Consumer const& other)
 }
 
 std::string
-Consumer::to_string() const
+Consumer::toString() const
 {
     if (logic_ == nullptr)
         return "(none)";
 
-    return entry_->to_string();
+    return entry_->toString();
 }
 
 bool
@@ -110,7 +110,7 @@ Consumer::disconnect(beast::Journal const& j)
     bool const d = logic_->disconnect(*entry_);
     if (d)
     {
-        JLOG(j.debug()) << "disconnecting " << entry_->to_string();
+        JLOG(j.debug()) << "disconnecting " << entry_->toString();
     }
     return d;
 }
@@ -138,7 +138,7 @@ Consumer::setPublicKey(PublicKey const& publicKey)
 std::ostream&
 operator<<(std::ostream& os, Consumer const& v)
 {
-    os << v.to_string();
+    os << v.toString();
     return os;
 }
 

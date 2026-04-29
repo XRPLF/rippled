@@ -157,7 +157,7 @@ public:
     };
 
     static std::string
-    to_string(Section const& config)
+    toString(Section const& config)
     {
         std::string s;
         for (auto iter = config.begin(); iter != config.end(); ++iter)
@@ -166,7 +166,7 @@ public:
     }
 
     static std::string
-    to_string(duration_type const& d)
+    toString(duration_type const& d)
     {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(3) << (d.count() / 1000.) << "s";
@@ -666,9 +666,9 @@ public:
                 ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
                 {
-                    ss << " " << setw(w) << to_string(doTest(test.second, config, params, journal));
+                    ss << " " << setw(w) << toString(doTest(test.second, config, params, journal));
                 }
-                ss << "   " << to_string(config);
+                ss << "   " << toString(config);
                 log << ss.str() << std::endl;
             }
         }

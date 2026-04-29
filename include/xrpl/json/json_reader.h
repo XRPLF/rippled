@@ -7,7 +7,7 @@
 
 #include <stack>
 
-namespace Json {
+namespace json {
 
 /** \brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
  * Value.
@@ -45,7 +45,7 @@ public:
     parse(char const* beginDoc, char const* endDoc, Value& root);
 
     /// \brief Parse from input stream.
-    /// \see Json::operator>>(std::istream&, Json::Value&).
+    /// \see json::operator>>(std::istream&, json::Value&).
     bool
     parse(std::istream& is, Value& root);
 
@@ -199,7 +199,7 @@ Reader::parse(Value& root, BufferSequence const& bs)
  This can be used to read a file into a particular sub-object.
  For example:
  \code
- Json::Value root;
+ json::Value root;
  cin >> root["dir"]["file"];
  cout << root;
  \endcode
@@ -214,9 +214,9 @@ Reader::parse(Value& root, BufferSequence const& bs)
  }
  \endverbatim
  \throw std::exception on parse error.
- \see Json::operator<<()
+ \see json::operator<<()
 */
 std::istream&
 operator>>(std::istream&, Value&);
 
-}  // namespace Json
+}  // namespace json

@@ -190,12 +190,12 @@ public:
     }
 
     //! Get JSON representation for debugging
-    Json::Value
+    json::Value
     getJson() const
     {
         using std::to_string;
 
-        Json::Value ret = Json::ObjectValue;
+        json::Value ret = json::ObjectValue;
         ret[jss::previous_ledger] = to_string(prevLedger());
 
         if (!isBowOut())

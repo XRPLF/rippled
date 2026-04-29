@@ -248,7 +248,7 @@ class Feature_test : public beast::unit_test::Suite
         Env env{*this};
 
         auto testInvalidParam = [&](auto const& param) {
-            Json::Value params;
+            json::Value params;
             params[jss::feature] = param;
             auto jrr = env.rpc("json", "feature", to_string(params))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -258,9 +258,9 @@ class Feature_test : public beast::unit_test::Suite
         testInvalidParam(1);
         testInvalidParam(1.1);
         testInvalidParam(true);
-        testInvalidParam(Json::Value(Json::NullValue));
-        testInvalidParam(Json::Value(Json::ObjectValue));
-        testInvalidParam(Json::Value(Json::ArrayValue));
+        testInvalidParam(json::Value(json::NullValue));
+        testInvalidParam(json::Value(json::ObjectValue));
+        testInvalidParam(json::Value(json::ArrayValue));
 
         {
             auto jrr = env.rpc("feature", "AllTheThings")[jss::result];
@@ -312,7 +312,7 @@ class Feature_test : public beast::unit_test::Suite
         }
 
         {
-            Json::Value params;
+            json::Value params;
             // invalid feature
             params[jss::feature] =
                 "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCD"
@@ -323,7 +323,7 @@ class Feature_test : public beast::unit_test::Suite
         }
 
         {
-            Json::Value params;
+            json::Value params;
             params[jss::feature] =
                 "93E516234E35E08CA689FA33A6D38E103881F8DCB53023F728C307AA89D515"
                 "A7";

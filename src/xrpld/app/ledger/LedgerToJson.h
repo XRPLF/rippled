@@ -40,18 +40,18 @@ struct LedgerFill
     std::optional<NetClock::time_point> closeTime;
 };
 
-/** Given a Ledger and options, fill a Json::Value with a
+/** Given a Ledger and options, fill a json::Value with a
     description of the ledger.
  */
 void
-addJson(Json::Value&, LedgerFill const&);
+addJson(json::Value&, LedgerFill const&);
 
-/** Return a new Json::Value representing the ledger with given options.*/
-Json::Value
+/** Return a new json::Value representing the ledger with given options.*/
+json::Value
 getJson(LedgerFill const&);
 
 /** Copy all the keys and values from one object into another. */
 void
-copyFrom(Json::Value& to, Json::Value const& from);
+copyFrom(json::Value& to, json::Value const& from);
 
 }  // namespace xrpl

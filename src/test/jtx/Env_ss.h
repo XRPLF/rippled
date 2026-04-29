@@ -27,7 +27,7 @@ private:
         }
 
         void
-        operator()(Json::Value const& params = Json::NullValue)
+        operator()(json::Value const& params = json::NullValue)
         {
             env_.signAndSubmit(jt_, params, loc_);
         }
@@ -49,7 +49,7 @@ public:
 
     template <class... FN>
     SignSubmitRunner
-    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    operator()(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         auto jtx = env_.jt(std::move(jv.value), fN...);
         return SignSubmitRunner(env_, std::move(jtx), jv.loc);

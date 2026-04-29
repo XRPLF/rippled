@@ -320,7 +320,7 @@ PropertyStream::Source::peelName(std::string* path)
 PropertyStream::Source*
 PropertyStream::Source::findOneDeep(std::string const& name)
 {
-    Source* found = findOne(name);
+    Source* found = findOne(name);  // NOLINT TODO
     if (found != nullptr)
         return found;
 

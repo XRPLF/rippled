@@ -20,7 +20,7 @@
 namespace xrpl {
 
 // This interface is deprecated.
-Json::Value
+json::Value
 doRipplePathFind(RPC::JsonContext& context)
 {
     if (context.app.config().PATH_SEARCH_MAX == 0)
@@ -29,7 +29,7 @@ doRipplePathFind(RPC::JsonContext& context)
     context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
 
     std::shared_ptr<ReadView const> lpLedger;
-    Json::Value jvResult;
+    json::Value jvResult;
 
     if (!context.app.config().standalone() && !context.params.isMember(jss::ledger) &&
         !context.params.isMember(jss::ledger_index) && !context.params.isMember(jss::ledger_hash))

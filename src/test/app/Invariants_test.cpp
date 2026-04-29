@@ -150,7 +150,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         Account const a1{"A1"};
         Account const a2{"A2"};
-        env.fund(kXRP(1000), a1, a2);
+        env.fund(XRP(1000), a1, a2);
         if (preclose)
             BEAST_EXPECT(preclose(a1, a2, env));
         env.close();
@@ -435,7 +435,7 @@ class Invariants_test : public beast::unit_test::Suite
             [&](Account const& a1, Account const& a2, Env& env) {
                 // Preclose callback to create the AMM which will be partially
                 // deleted in the Precheck callback above.
-                AMM const amm(env, a1, kXRP(100), a1["USD"](50));
+                AMM const amm(env, a1, XRP(100), a1["USD"](50));
                 ammAcctID = amm.ammAccount();
                 ammKey = amm.ammID();
                 ammIssue = amm.lptIssue();
@@ -499,7 +499,7 @@ class Invariants_test : public beast::unit_test::Suite
             [&](Account const& a1, Account const& a2, Env& env) {
                 // Preclose callback to create the AMM which will be partially
                 // deleted in the Precheck callback above.
-                AMM const amm(env, a1, kXRP(100), a1["USD"](50));
+                AMM const amm(env, a1, XRP(100), a1["USD"](50));
                 ammAcctID = amm.ammAccount();
                 ammKey = amm.ammID();
                 ammIssue = amm.lptIssue();
@@ -650,7 +650,7 @@ class Invariants_test : public beast::unit_test::Suite
         // Helper function to establish the trustlines
         auto const createTrustlines = [&](Account const& a1, Account const& a2, Env& env) {
             // Preclose callback to establish trust lines with gateway
-            env.fund(kXRP(1000), g1);
+            env.fund(XRP(1000), g1);
 
             env.trust(g1["USD"](10000), a1);
             env.trust(g1["USD"](10000), a2);
@@ -821,7 +821,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleNew = std::make_shared<SLE>(keylet::offer(a1.id(), (*sle)[sfSequence]));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
-                sleNew->setFieldAmount(sfTakerPays, kXRP(-1));
+                sleNew->setFieldAmount(sfTakerPays, XRP(-1));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -836,7 +836,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
                 sleNew->setFieldAmount(sfTakerPays, a1["USD"](10));
-                sleNew->setFieldAmount(sfTakerGets, kXRP(-1));
+                sleNew->setFieldAmount(sfTakerGets, XRP(-1));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -850,8 +850,8 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleNew = std::make_shared<SLE>(keylet::offer(a1.id(), (*sle)[sfSequence]));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
-                sleNew->setFieldAmount(sfTakerPays, kXRP(10));
-                sleNew->setFieldAmount(sfTakerGets, kXRP(11));
+                sleNew->setFieldAmount(sfTakerPays, XRP(10));
+                sleNew->setFieldAmount(sfTakerGets, XRP(11));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -872,7 +872,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(a1, (*sle)[sfSequence] + 2));
-                sleNew->setFieldAmount(sfAmount, kXRP(-1));
+                sleNew->setFieldAmount(sfAmount, XRP(-1));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -1530,7 +1530,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(kXRP(1000), a1, a2);
+            env1.fund(XRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1572,7 +1572,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(kXRP(1000), a1, a2);
+            env1.fund(XRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1597,7 +1597,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(kXRP(1000), a1, a2);
+            env1.fund(XRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1810,7 +1810,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleOffer = std::make_shared<SLE>(offerKey);
                 sleOffer->setAccountID(sfAccount, a1);
                 sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
+                sleOffer->setFieldAmount(sfTakerGets, XRP(1));
                 ac.view().insert(sleOffer);
                 return true;
             },
@@ -1824,7 +1824,7 @@ class Invariants_test : public beast::unit_test::Suite
                                 "70F3649CE134E5"});
                     Account const a1{"A1"};
                     tx.setFieldAmount(sfTakerPays, a1["USD"](10));
-                    tx.setFieldAmount(sfTakerGets, kXRP(1));
+                    tx.setFieldAmount(sfTakerGets, XRP(1));
                 }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
@@ -1837,7 +1837,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleOffer = std::make_shared<SLE>(offerKey);
                 sleOffer->setAccountID(sfAccount, a2);
                 sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
+                sleOffer->setFieldAmount(sfTakerGets, XRP(1));
                 sleOffer->setFlag(lsfHybrid);
 
                 STArray bookArr;
@@ -1856,7 +1856,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(kXRP(1000), a1, a2);
+            env1.fund(XRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1872,7 +1872,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
+                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
                     sleOffer->setFlag(lsfHybrid);
                     sleOffer->setFieldH256(sfDomainID, pd1);
 
@@ -1894,7 +1894,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(kXRP(1000), a1, a2);
+            env1.fund(XRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1911,7 +1911,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
+                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
                     sleOffer->setFlag(lsfHybrid);
                     sleOffer->setFieldH256(sfDomainID, pd1);
 
@@ -1933,7 +1933,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(kXRP(1000), a1, a2);
+            env1.fund(XRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1949,7 +1949,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
+                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
                     sleOffer->setFlag(lsfHybrid);
                     sleOffer->setFieldH256(sfDomainID, pd1);
                     ac.view().insert(sleOffer);
@@ -1965,7 +1965,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(kXRP(1000), a1, a2);
+            env1.fund(XRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1982,7 +1982,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
+                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
                     sleOffer->setFieldH256(sfDomainID, pd1);
                     ac.view().insert(sleOffer);
                     return true;
@@ -1993,7 +1993,7 @@ class Invariants_test : public beast::unit_test::Suite
                     [&pd2, &a1](STObject& tx) {
                         tx.setFieldH256(sfDomainID, pd2);
                         tx.setFieldAmount(sfTakerPays, a1["USD"](10));
-                        tx.setFieldAmount(sfTakerGets, kXRP(1));
+                        tx.setFieldAmount(sfTakerGets, XRP(1));
                     }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
         }
@@ -2003,7 +2003,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(kXRP(1000), a1, a2);
+            env1.fund(XRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -2019,7 +2019,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
+                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
                     ac.view().insert(sleOffer);
                     return true;
                 },
@@ -2030,7 +2030,7 @@ class Invariants_test : public beast::unit_test::Suite
                         Account const a1{"A1"};
                         tx.setFieldH256(sfDomainID, pd1);
                         tx.setFieldAmount(sfTakerPays, a1["USD"](10));
-                        tx.setFieldAmount(sfTakerGets, kXRP(1));
+                        tx.setFieldAmount(sfTakerGets, XRP(1));
                     }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
         }
@@ -2543,13 +2543,13 @@ class Invariants_test : public beast::unit_test::Suite
         Account const a3{"A3"};
         Account const a4{"A4"};
         auto const precloseXrp = [&](Account const& a1, Account const& a2, Env& env) -> bool {
-            env.fund(kXRP(1000), a3, a4);
+            env.fund(XRP(1000), a3, a4);
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
             env(tx);
-            env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = kXRP(10)}));
-            env(vault.deposit({.depositor = a2, .id = keylet.key, .amount = kXRP(10)}));
-            env(vault.deposit({.depositor = a3, .id = keylet.key, .amount = kXRP(10)}));
+            env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+            env(vault.deposit({.depositor = a2, .id = keylet.key, .amount = XRP(10)}));
+            env(vault.deposit({.depositor = a3, .id = keylet.key, .amount = XRP(10)}));
             return true;
         };
 
@@ -2748,7 +2748,7 @@ class Invariants_test : public beast::unit_test::Suite
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
                 env(tx);
-                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = kXRP(10)}));
+                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
                 return true;
             });
 
@@ -2884,7 +2884,7 @@ class Invariants_test : public beast::unit_test::Suite
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
                 env(tx);
-                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = kXRP(10)}));
+                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
                 return true;
             });
 
@@ -3796,11 +3796,11 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         auto const precloseMpt = [&](Account const& a1, Account const& a2, Env& env) -> bool {
-            env.fund(kXRP(1000), a3, a4);
+            env.fund(XRP(1000), a3, a4);
 
             // Create MPT asset
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[sfAccount] = a3.human();
                 jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
                 jv[sfFlags] = tfMPTCanTransfer;
@@ -3812,7 +3812,7 @@ class Invariants_test : public beast::unit_test::Suite
             Asset const asset = MPTIssue(mptID);
             // Authorize A1 A2 A4
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[sfAccount] = a1.human();
                 jv[sfTransactionType] = jss::MPTokenAuthorize;
                 jv[sfMPTokenIssuanceID] = to_string(mptID);
@@ -4014,7 +4014,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
                 [&](Account const& a1, Account const& a2, Env& env) {
                     Account const gw("gw");
-                    env.fund(kXRP(1'000), gw);
+                    env.fund(XRP(1'000), gw);
                     MPTTester const mpt(
                         {.env = env, .issuer = gw, .holders = {a1}, .pay = 100, .maxAmt = 100});
                     id = mpt.issuanceID();
@@ -4096,7 +4096,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 [&](Account const& a1, Account const& a2, Env& env) {
                     Account const gw("gw");
-                    env.fund(kXRP(1'000), gw, a3);
+                    env.fund(XRP(1'000), gw, a3);
                     MPTTester const mpt({.env = env, .issuer = gw, .holders = {a1, a2, a3}});
                     id = mpt.issuanceID();
                     return true;

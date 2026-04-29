@@ -26,7 +26,7 @@ namespace xrpl {
 //   drops: 64-bit uint (as string)
 //   signature: signature to verify
 // }
-Json::Value
+json::Value
 doChannelVerify(RPC::JsonContext& context)
 {
     auto const& params(context.params);
@@ -72,7 +72,7 @@ doChannelVerify(RPC::JsonContext& context)
     Serializer msg;
     serializePayChanAuthorization(msg, channelId, XRPAmount(drops));
 
-    Json::Value result;
+    json::Value result;
     result[jss::signature_verified] = verify(*pk, msg.slice(), makeSlice(*sig));
     return result;
 }

@@ -196,14 +196,14 @@ public:
     failParseEP(std::string s)
     {
         auto a1 = Endpoint::fromString(s);
-        BEAST_EXPECTS(isUnspecified(a1), s + " parses as " + a1.to_string());
+        BEAST_EXPECTS(isUnspecified(a1), s + " parses as " + a1.toString());
 
         auto a2 = Endpoint::fromString(s);
-        BEAST_EXPECTS(isUnspecified(a2), s + " parses as " + a2.to_string());
+        BEAST_EXPECTS(isUnspecified(a2), s + " parses as " + a2.toString());
 
         boost::replace_last(s, ":", " ");
         auto a3 = Endpoint::fromString(s);
-        BEAST_EXPECTS(isUnspecified(a3), s + " parses as " + a3.to_string());
+        BEAST_EXPECTS(isUnspecified(a3), s + " parses as " + a3.toString());
     }
 
     void

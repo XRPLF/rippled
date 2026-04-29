@@ -201,7 +201,7 @@ public:
     toSeverity(LogSeverity level);
 
     static std::string
-    to_string(LogSeverity s);
+    toString(LogSeverity s);
 
     static LogSeverity
     fromString(std::string const& s);

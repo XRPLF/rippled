@@ -367,7 +367,7 @@ template <class... KeyletParams>
 struct KeyletDesc
 {
     std::function<Keylet(KeyletParams...)> function;
-    Json::StaticString expectedLEName;
+    json::StaticString expectedLEName;
     bool includeInTests{};
 };
 

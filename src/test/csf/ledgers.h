@@ -207,7 +207,7 @@ public:
     friend Ledger::Seq
     mismatch(Ledger const& a, Ledger const& o);
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson() const;
 
     friend bool

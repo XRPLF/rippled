@@ -419,7 +419,7 @@ public:
         return clock_type::now() - creationTime_;
     }
 
-    Json::Value
+    json::Value
     json() override;
 
     bool
@@ -869,7 +869,7 @@ PeerImp::sendEndpoints(FwdIt first, FwdIt last)
     while (first != last)
     {
         auto& tme2(*tm.add_endpoints_v2());
-        tme2.set_endpoint(first->address.to_string());
+        tme2.set_endpoint(first->address.toString());
         tme2.set_hops(first->hops);
         first++;
     }

@@ -18,7 +18,7 @@ namespace xrpl::test::jtx {
 namespace ticket {
 
 /** Create one of more tickets */
-Json::Value
+json::Value
 create(Account const& account, std::uint32_t count);
 
 /** Set a ticket sequence on a JTx. */

@@ -1083,7 +1083,7 @@ void
 LedgerMaster::consensusBuilt(
     std::shared_ptr<Ledger const> const& ledger,
     uint256 const& consensusHash,
-    Json::Value consensus)
+    json::Value consensus)
 {
     // Because we just built a ledger, we are no longer building one
     setBuildingLedger(0);

@@ -126,7 +126,7 @@ class Vault_test : public beast::unit_test::Suite
             // Several 3rd party accounts which cannot receive funds
             Account const alice{"alice"};
             Account const erin{"erin"};  // not authorized by issuer
-            env.fund(kXRP(1000), alice, erin);
+            env.fund(XRP(1000), alice, erin);
             env(fset(alice, asfDepositAuth));
             env.close();
 
@@ -539,7 +539,7 @@ class Vault_test : public beast::unit_test::Suite
             Env env{*this, testableAmendments() | featureSingleAssetVault};
 
             Vault vault{env};
-            env.fund(kXRP(1000), issuer, owner, depositor, charlie, dave);
+            env.fund(XRP(1000), issuer, owner, depositor, charlie, dave);
             env.close();
             env(fset(issuer, asfAllowTrustLineClawback));
             env(fset(issuer, asfRequireAuth));
@@ -604,7 +604,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Vault vault{env};
-            env.fund(kXRP(1000), issuer, owner);
+            env.fund(XRP(1000), issuer, owner);
             env.close();
 
             env(fset(issuer, asfAllowTrustLineClawback));
@@ -1117,7 +1117,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const depositor{"depositor"};
-            env.fund(kXRP(1000), issuer, owner, depositor);
+            env.fund(XRP(1000), issuer, owner, depositor);
             env.close();
             Vault vault{env};
             Asset const asset = xrpIssue();
@@ -1224,7 +1224,7 @@ class Vault_test : public beast::unit_test::Suite
             testcase("insufficient reserve");
             // It is possible to construct a complicated mathematical
             // expression for this amount, but it is sadly not easy.
-            env(pay(owner, issuer, kXRP(775)));
+            env(pay(owner, issuer, XRP(775)));
             env.close();
             env(tx, Ter(tecINSUFFICIENT_RESERVE));
         });
@@ -1281,7 +1281,7 @@ class Vault_test : public beast::unit_test::Suite
                     *this, (testableAmendments() - featureMPTokensV1) | featureSingleAssetVault};
                 Account const issuer{"issuer"};
                 Account const owner{"owner"};
-                env.fund(kXRP(1000), issuer, owner);
+                env.fund(XRP(1000), issuer, owner);
                 env.close();
 
                 Vault const vault{env};
@@ -1297,7 +1297,7 @@ class Vault_test : public beast::unit_test::Suite
                 Env env{*this, testableAmendments() | featureSingleAssetVault};
                 Account const issuer{"issuer"};
                 Account const owner{"owner"};
-                env.fund(kXRP(1000), issuer, owner);
+                env.fund(XRP(1000), issuer, owner);
                 env.close();
                 env(fset(issuer, asfGlobalFreeze));
                 env.close();
@@ -1315,7 +1315,7 @@ class Vault_test : public beast::unit_test::Suite
                 Env env{*this, testableAmendments() | featureSingleAssetVault};
                 Account const issuer{"issuer"};
                 Account const owner{"owner"};
-                env.fund(kXRP(1000), issuer, owner);
+                env.fund(XRP(1000), issuer, owner);
                 env.close();
                 env(fclear(issuer, asfDefaultRipple));
                 env.close();
@@ -1332,7 +1332,7 @@ class Vault_test : public beast::unit_test::Suite
                 Env env{*this, testableAmendments() | featureSingleAssetVault};
                 Account const issuer{"issuer"};
                 Account const owner{"owner"};
-                env.fund(kXRP(1000), owner);
+                env.fund(XRP(1000), owner);
                 env.close();
 
                 Vault const vault{env};
@@ -1353,14 +1353,14 @@ class Vault_test : public beast::unit_test::Suite
             Account const carol("carol");
             IOU const usd = gw["USD"];
 
-            auto const [asset1, asset2] = std::pair<STAmount, STAmount>(kXRP(10000), usd(10000));
+            auto const [asset1, asset2] = std::pair<STAmount, STAmount>(XRP(10000), usd(10000));
             auto toFund = [&](STAmount const& a) -> STAmount {
                 if (a.native())
                 {
-                    auto const defXRP = kXRP(30000);
+                    auto const defXRP = XRP(30000);
                     if (a <= defXRP)
                         return defXRP;
-                    return a + kXRP(1000);
+                    return a + XRP(1000);
                 }
                 auto defIOU = STAmount{a.asset(), 30000};
                 if (a <= defIOU)
@@ -1387,7 +1387,7 @@ class Vault_test : public beast::unit_test::Suite
             AMM const ammAlice(env, alice, asset1, asset2, CreateArg{.log = false, .tfee = 0});
 
             Account const owner{"owner"};
-            env.fund(kXRP(1000000), owner);
+            env.fund(XRP(1000000), owner);
 
             Vault const vault{env};
             auto [tx, k] = vault.create({.owner = owner, .asset = ammAlice.lptIssue()});
@@ -1413,7 +1413,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const depositor{"depositor"};
-            env.fund(kXRP(1000), issuer, owner, depositor);
+            env.fund(XRP(1000), issuer, owner, depositor);
             env.close();
             Vault vault{env};
             MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
@@ -1472,7 +1472,7 @@ class Vault_test : public beast::unit_test::Suite
         Account const issuer{"issuer"};
         Account const owner{"owner"};
         Account const depositor{"depositor"};
-        env.fund(kXRP(1000), issuer, owner, depositor);
+        env.fund(XRP(1000), issuer, owner, depositor);
         env.close();
 
         Vault const vault{env};
@@ -1585,7 +1585,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const depositor{"depositor"};
-            env.fund(kXRP(args.initialXRP), issuer, owner, depositor);
+            env.fund(XRP(args.initialXRP), issuer, owner, depositor);
             env.close();
             Vault vault{env};
 
@@ -1795,7 +1795,7 @@ class Vault_test : public beast::unit_test::Suite
                 {
                     // Set destination to 3rd party without MPToken
                     Account const charlie{"charlie"};
-                    env.fund(kXRP(1000), charlie);
+                    env.fund(XRP(1000), charlie);
                     env.close();
 
                     tx = vault.withdraw(
@@ -1923,7 +1923,7 @@ class Vault_test : public beast::unit_test::Suite
                     env(tx, Ter{tecINSUFFICIENT_RESERVE});
                     env.close();
 
-                    env(pay(depositor, owner, kXRP(incReserve)));
+                    env(pay(depositor, owner, XRP(incReserve)));
                     env.close();
 
                     // Withdraw can now create asset MPToken, tx will succeed
@@ -2038,7 +2038,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     // explicitly destroy vault owners MPToken with zero balance
-                    Json::Value jv;
+                    json::Value jv;
                     jv[sfAccount] = owner.human();
                     jv[sfMPTokenIssuanceID] = to_string(issuanceId);
                     jv[sfFlags] = tfMPTUnauthorize;
@@ -2175,7 +2175,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             tx = [&]() {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = issuer.human();
                 jv[sfMPTokenIssuanceID] = to_string(asset.get<MPTIssue>().getMptID());
                 jv[jss::Holder] = toBase58(vaultAccount);
@@ -2208,7 +2208,7 @@ class Vault_test : public beast::unit_test::Suite
             Env env{*this, testableAmendments() | featureSingleAssetVault};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
-            env.fund(kXRP(1000000), owner, issuer);
+            env.fund(XRP(1000000), owner, issuer);
             env.close();
             Vault const vault{env};
 
@@ -2281,7 +2281,7 @@ class Vault_test : public beast::unit_test::Suite
             Env env{*this, testableAmendments() | featureSingleAssetVault};
             Account const alice{"alice"};
             Account const issuer{"issuer"};
-            env.fund(kXRP(1'000), alice, issuer);
+            env.fund(XRP(1'000), alice, issuer);
             env.close();
             Vault const vault{env};
 
@@ -2342,7 +2342,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             Account const charlie{"charlie"};
             Vault vault{env};
-            env.fund(kXRP(args.initialXRP), issuer, owner, charlie);
+            env.fund(XRP(args.initialXRP), issuer, owner, charlie);
             env(fset(issuer, asfAllowTrustLineClawback));
             env.close();
 
@@ -2397,7 +2397,7 @@ class Vault_test : public beast::unit_test::Suite
             {
                 // Cannot create new trustline to a vault
                 auto tx = [&, account = vaultAccount(keylet)]() {
-                    Json::Value jv;
+                    json::Value jv;
                     jv[jss::Account] = issuer.human();
                     {
                         auto& ja = jv[jss::LimitAmount] =
@@ -2451,7 +2451,7 @@ class Vault_test : public beast::unit_test::Suite
 
             // Freeze the trustline to the vault
             auto trustSet = [&, account = vaultAccount(keylet)]() {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = issuer.human();
                 {
                     auto& ja = jv[jss::LimitAmount] = asset(0).value().getJson(JsonOptions::KNone);
@@ -2644,7 +2644,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             Account const erin{"erin"};
-            env.fund(kXRP(1000), erin);
+            env.fund(XRP(1000), erin);
             env.close();
 
             // Withdraw to 3rd party without trust line
@@ -2736,7 +2736,7 @@ class Vault_test : public beast::unit_test::Suite
 
                     {
                         // Create MPToken for shares held by Charlie
-                        Json::Value tx{Json::ObjectValue};
+                        json::Value tx{json::ObjectValue};
                         tx[sfAccount] = charlie.human();
                         tx[sfMPTokenIssuanceID] =
                             to_string(shares.raw().get<MPTIssue>().getMptID());
@@ -2872,7 +2872,7 @@ class Vault_test : public beast::unit_test::Suite
                 env(tx, Ter{tecNO_LINE_INSUF_RESERVE});
                 env.close();
 
-                env(pay(charlie, owner, kXRP(incReserve)));
+                env(pay(charlie, owner, XRP(incReserve)));
                 env.close();
 
                 // Withdraw can now create trust line, will succeed
@@ -2907,7 +2907,7 @@ class Vault_test : public beast::unit_test::Suite
                 env(tx, Ter{tecINSUFFICIENT_RESERVE});
                 env.close();
 
-                env(pay(issuer, charlie, kXRP(incReserve)));
+                env(pay(issuer, charlie, XRP(incReserve)));
                 env.close();
 
                 // Deposit can now create MPToken, will succeed
@@ -3030,7 +3030,7 @@ class Vault_test : public beast::unit_test::Suite
         Account const credIssuer2{"credIssuer2"};
         std::string const credType = "credential";
         Vault const vault{env};
-        env.fund(kXRP(1000), issuer, owner, depositor, charlie, pdOwner, credIssuer1, credIssuer2);
+        env.fund(XRP(1000), issuer, owner, depositor, charlie, pdOwner, credIssuer1, credIssuer2);
         env.close();
         env(fset(issuer, asfAllowTrustLineClawback));
         env.close();
@@ -3262,7 +3262,7 @@ class Vault_test : public beast::unit_test::Suite
     }
 
     void
-    testWithDomainCheckXRP()
+    testWithDomainChecXRP()
     {
         using namespace test::jtx;
 
@@ -3274,7 +3274,7 @@ class Vault_test : public beast::unit_test::Suite
         Account const alice{"charlie"};
         std::string const credType = "credential";
         Vault const vault{env};
-        env.fund(kXRP(100000), owner, depositor, alice);
+        env.fund(XRP(100000), owner, depositor, alice);
         env.close();
 
         PrettyAsset const asset = xrpIssue();
@@ -3348,7 +3348,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("private XRP vault cannot pay shares to 3rd party");
-            Json::Value jv;
+            json::Value jv;
             jv[sfAccount] = alice.human();
             jv[sfTransactionType] = jss::MPTokenAuthorize;
             jv[sfMPTokenIssuanceID] = to_string(issuanceId);
@@ -3368,14 +3368,14 @@ class Vault_test : public beast::unit_test::Suite
         Env env{*this, testableAmendments() | featureSingleAssetVault};
         Account const owner{"owner"};
         Vault const vault{env};
-        env.fund(kXRP(1000), owner);
+        env.fund(XRP(1000), owner);
 
         auto const keylet = keylet::vault(owner.id(), env.seq(owner));
         for (int i = 0; i < 256; ++i)
         {
             AccountID const accountId = xrpl::pseudoAccountAddress(*env.current(), keylet.key);
 
-            env(pay(env.master.id(), accountId, kXRP(1000)),
+            env(pay(env.master.id(), accountId, XRP(1000)),
                 Seq(kAUTOFILL),
                 Fee(kAUTOFILL),
                 Sig(kAUTOFILL));
@@ -3413,7 +3413,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             Account const depositor{"depositor"};
             Vault vault{env};
-            env.fund(kXRP(1000), issuer, owner, depositor);
+            env.fund(XRP(1000), issuer, owner, depositor);
             env(fset(issuer, asfAllowTrustLineClawback));
             env.close();
 
@@ -4245,7 +4245,7 @@ class Vault_test : public beast::unit_test::Suite
         Account const owner{"owner"};
         Account const issuer{"issuer"};
         Vault const vault{env};
-        env.fund(kXRP(1000), issuer, owner);
+        env.fund(XRP(1000), issuer, owner);
         env.close();
 
         PrettyAsset const asset = issuer["IOU"];
@@ -4276,8 +4276,8 @@ class Vault_test : public beast::unit_test::Suite
         }();
 
         auto const check = [&, keylet = keylet, sle = sleVault, this](
-                               Json::Value const& vault,
-                               Json::Value const& issuance = Json::NullValue) {
+                               json::Value const& vault,
+                               json::Value const& issuance = json::NullValue) {
             BEAST_EXPECT(vault.isObject());
 
             constexpr auto kCHECK_STRING =
@@ -4286,14 +4286,14 @@ class Vault_test : public beast::unit_test::Suite
                     node[field.fieldName] == v;
             };
             constexpr auto kCHECK_OBJECT =
-                [](auto& node, SField const& field, Json::Value v) -> bool {
+                [](auto& node, SField const& field, json::Value v) -> bool {
                 return node.isMember(field.fieldName) && node[field.fieldName].isObject() &&
                     node[field.fieldName] == v;
             };
             constexpr auto kCHECK_INT = [](auto& node, SField const& field, int v) -> bool {
                 return node.isMember(field.fieldName) &&
-                    ((node[field.fieldName].isInt() && node[field.fieldName] == Json::Int(v)) ||
-                     (node[field.fieldName].isUInt() && node[field.fieldName] == Json::UInt(v)));
+                    ((node[field.fieldName].isInt() && node[field.fieldName] == json::Int(v)) ||
+                     (node[field.fieldName].isUInt() && node[field.fieldName] == json::UInt(v)));
             };
 
             BEAST_EXPECT(vault["LedgerEntryType"].asString() == "Vault");
@@ -4328,7 +4328,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC ledger_entry selected by key");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault] = strHex(keylet.key);
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
@@ -4340,7 +4340,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC ledger_entry selected by owner and seq");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault][jss::owner] = owner.human();
             jvParams[jss::vault][jss::seq] = sequence;
@@ -4353,7 +4353,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC ledger_entry cannot find vault by key");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault] = to_string(uint256(42));
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
@@ -4362,7 +4362,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC ledger_entry cannot find vault by owner and seq");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault][jss::owner] = issuer.human();
             jvParams[jss::vault][jss::seq] = 1'000'000;
@@ -4372,7 +4372,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC ledger_entry malformed key");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault] = 42;
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
@@ -4381,7 +4381,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC ledger_entry malformed owner");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault][jss::owner] = 42;
             jvParams[jss::vault][jss::seq] = sequence;
@@ -4391,7 +4391,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC ledger_entry malformed seq");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault][jss::owner] = issuer.human();
             jvParams[jss::vault][jss::seq] = "foo";
@@ -4401,7 +4401,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC ledger_entry negative seq");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault][jss::owner] = issuer.human();
             jvParams[jss::vault][jss::seq] = -1;
@@ -4411,7 +4411,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC ledger_entry oversized seq");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault][jss::owner] = issuer.human();
             jvParams[jss::vault][jss::seq] = 1e20;
@@ -4421,7 +4421,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC ledger_entry bool seq");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault][jss::owner] = issuer.human();
             jvParams[jss::vault][jss::seq] = true;
@@ -4432,7 +4432,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("RPC account_objects");
 
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = owner.human();
             jvParams[jss::type] = jss::vault;
             auto jv = env.rpc("json", "account_objects", to_string(jvParams))[jss::result];
@@ -4444,18 +4444,18 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("RPC ledger_data");
 
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::binary] = false;
             jvParams[jss::type] = jss::vault;
-            Json::Value jv = env.rpc("json", "ledger_data", to_string(jvParams));
+            json::Value jv = env.rpc("json", "ledger_data", to_string(jvParams));
             BEAST_EXPECT(jv[jss::result][jss::state].size() == 1);
             check(jv[jss::result][jss::state][0u]);
         }
 
         {
             testcase("RPC vault_info command line");
-            Json::Value jv = env.rpc("vault_info", strHex(keylet.key), "validated");
+            json::Value jv = env.rpc("vault_info", strHex(keylet.key), "validated");
 
             BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
             BEAST_EXPECT(jv[jss::result].isMember(jss::vault));
@@ -4464,7 +4464,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault_id] = strHex(keylet.key);
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
@@ -4476,7 +4476,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info invalid vault_id");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault_id] = "foobar";
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
@@ -4485,7 +4485,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json invalid index");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault_id] = 0;
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
@@ -4494,7 +4494,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json by owner and sequence");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::owner] = owner.human();
             jvParams[jss::seq] = sequence;
@@ -4507,7 +4507,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json malformed sequence");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::owner] = owner.human();
             jvParams[jss::seq] = "foobar";
@@ -4517,7 +4517,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json invalid sequence");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::owner] = owner.human();
             jvParams[jss::seq] = 0;
@@ -4527,7 +4527,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json negative sequence");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::owner] = owner.human();
             jvParams[jss::seq] = -1;
@@ -4537,7 +4537,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json oversized sequence");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::owner] = owner.human();
             jvParams[jss::seq] = 1e20;
@@ -4547,7 +4547,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json bool sequence");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::owner] = owner.human();
             jvParams[jss::seq] = true;
@@ -4557,7 +4557,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json malformed owner");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::owner] = "foobar";
             jvParams[jss::seq] = sequence;
@@ -4567,7 +4567,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json invalid combination only owner");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::owner] = owner.human();
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
@@ -4576,7 +4576,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json invalid combination only seq");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::seq] = sequence;
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
@@ -4585,7 +4585,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json invalid combination seq vault_id");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault_id] = strHex(keylet.key);
             jvParams[jss::seq] = sequence;
@@ -4595,7 +4595,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json invalid combination owner vault_id");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault_id] = strHex(keylet.key);
             jvParams[jss::owner] = owner.human();
@@ -4607,7 +4607,7 @@ class Vault_test : public beast::unit_test::Suite
             testcase(
                 "RPC vault_info json invalid combination owner seq "
                 "vault_id");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault_id] = strHex(keylet.key);
             jvParams[jss::seq] = sequence;
@@ -4618,7 +4618,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info json no input");
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
             BEAST_EXPECT(jv[jss::result][jss::error].asString() == "malformedRequest");
@@ -4626,25 +4626,25 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("RPC vault_info command line invalid index");
-            Json::Value jv = env.rpc("vault_info", "foobar", "validated");
+            json::Value jv = env.rpc("vault_info", "foobar", "validated");
             BEAST_EXPECT(jv[jss::error].asString() == "invalidParams");
         }
 
         {
             testcase("RPC vault_info command line invalid index");
-            Json::Value jv = env.rpc("vault_info", "0", "validated");
+            json::Value jv = env.rpc("vault_info", "0", "validated");
             BEAST_EXPECT(jv[jss::result][jss::error].asString() == "malformedRequest");
         }
 
         {
             testcase("RPC vault_info command line invalid index");
-            Json::Value jv = env.rpc("vault_info", strHex(uint256(42)), "validated");
+            json::Value jv = env.rpc("vault_info", strHex(uint256(42)), "validated");
             BEAST_EXPECT(jv[jss::result][jss::error].asString() == "entryNotFound");
         }
 
         {
             testcase("RPC vault_info command line invalid ledger");
-            Json::Value jv = env.rpc("vault_info", strHex(keylet.key), "0");
+            json::Value jv = env.rpc("vault_info", strHex(keylet.key), "0");
             BEAST_EXPECT(jv[jss::result][jss::error].asString() == "lgrNotFound");
         }
     }
@@ -4875,7 +4875,7 @@ class Vault_test : public beast::unit_test::Suite
         Account const depositor{"bob"};
         Account const issuer{"issuer"};
 
-        env.fund(kXRP(10000), issuer, owner, depositor);
+        env.fund(XRP(10000), issuer, owner, depositor);
         env.close();
 
         // Test XRP
@@ -5374,7 +5374,7 @@ class Vault_test : public beast::unit_test::Suite
         Account const depositor{"bob"};
         Account const issuer{"issuer"};
 
-        env.fund(kXRP(10000), issuer, owner, depositor);
+        env.fund(XRP(10000), issuer, owner, depositor);
         env.close();
 
         // Test XRP
@@ -5484,7 +5484,7 @@ class Vault_test : public beast::unit_test::Suite
         Account const issuer{"issuer"};
 
         Vault const vault{env};
-        env.fund(kXRP(1'000'000), issuer, owner);
+        env.fund(XRP(1'000'000), issuer, owner);
         env.close();
 
         auto const maxInt64 = std::to_string(std::numeric_limits<std::int64_t>::max());
@@ -5735,7 +5735,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             Account const bob{"bob"};
 
-            env.fund(kXRP(10000), issuer, owner, depositor, bob);
+            env.fund(XRP(10000), issuer, owner, depositor, bob);
             env.close();
 
             MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
@@ -5797,7 +5797,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             Account const bob{"bob"};
 
-            env.fund(kXRP(10000), issuer, owner, depositor, bob);
+            env.fund(XRP(10000), issuer, owner, depositor, bob);
             env.close();
 
             MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
@@ -5829,7 +5829,7 @@ class Vault_test : public beast::unit_test::Suite
             // Authorize bob for share MPT so he can receive escrowed shares
             auto const shareMPTID = vaultSle->at(sfShareMPTID);
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = bob.human();
                 jv[sfMPTokenIssuanceID] = to_string(shareMPTID);
                 jv[jss::TransactionType] = jss::MPTokenAuthorize;
@@ -5874,7 +5874,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             Account const bob{"bob"};
 
-            env.fund(kXRP(10000), issuer, owner, depositor, bob);
+            env.fund(XRP(10000), issuer, owner, depositor, bob);
             env.close();
 
             MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
@@ -5906,7 +5906,7 @@ class Vault_test : public beast::unit_test::Suite
             // Authorize bob for share MPT so he can receive escrowed shares
             auto const shareMPTID = vaultSle->at(sfShareMPTID);
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = bob.human();
                 jv[sfMPTokenIssuanceID] = to_string(shareMPTID);
                 jv[jss::TransactionType] = jss::MPTokenAuthorize;
@@ -5968,7 +5968,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const charlie{"charlie"};
             Vault const vault{env};
 
-            env.fund(kXRP(1000), issuer, owner, depositor, charlie);
+            env.fund(XRP(1000), issuer, owner, depositor, charlie);
             env(fset(issuer, asfAllowTrustLineClawback));
             env.close();
 
@@ -6060,7 +6060,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const depositor{"depositor"};
             Account const bob{"bob"};
 
-            env.fund(kXRP(100000), issuer, owner, depositor, bob);
+            env.fund(XRP(100000), issuer, owner, depositor, bob);
             env.close();
 
             Vault const vault{env};
@@ -6153,7 +6153,7 @@ public:
         testWithMPT();
         testWithIOU();
         testWithDomainCheck();
-        testWithDomainCheckXRP();
+        testWithDomainChecXRP();
         testNonTransferableShares();
         testFailedPseudoAccount();
         testScaleIOU();

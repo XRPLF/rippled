@@ -96,8 +96,8 @@ public:
             error
             result
     */
-    Json::Value
-    invoke(std::string const& cmd, Json::Value const& params) override
+    json::Value
+    invoke(std::string const& cmd, json::Value const& params) override
     {
         using namespace boost::beast::http;
         using namespace boost::asio;
@@ -114,7 +114,7 @@ public:
             req.insert("Host", ostr.str());
         }
         {
-            Json::Value jr;
+            json::Value jr;
             jr[jss::method] = cmd;
             if (rpc_version_ == 2)
             {
@@ -124,7 +124,7 @@ public:
             }
             if (params)
             {
-                Json::Value& ja = jr[jss::params] = Json::ArrayValue;
+                json::Value& ja = jr[jss::params] = json::ArrayValue;
                 ja.append(params);
             }
             req.body() = to_string(jr);
@@ -135,8 +135,8 @@ public:
         response<dynamic_body> res;
         read(stream_, bin_, res);
 
-        Json::Reader jr;
-        Json::Value jv;
+        json::Reader jr;
+        json::Value jv;
         jr.parse(bufferString(res.body().data()), jv);
         if (jv["result"].isMember("error"))
             jv["error"] = jv["result"]["error"];

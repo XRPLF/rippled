@@ -11,10 +11,10 @@
 namespace xrpl::test::jtx::check {
 
 // Cash a check requiring that a specific amount be delivered.
-Json::Value
+json::Value
 cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
     jv[sfAmount.jsonName] = amount.getJson(JsonOptions::KNone);
     jv[sfCheckID.jsonName] = to_string(checkId);
@@ -23,10 +23,10 @@ cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount)
 }
 
 // Cash a check requiring that at least a minimum amount be delivered.
-Json::Value
+json::Value
 cash(jtx::Account const& dest, uint256 const& checkId, DeliverMin const& atLeast)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
     jv[sfDeliverMin.jsonName] = atLeast.value.getJson(JsonOptions::KNone);
     jv[sfCheckID.jsonName] = to_string(checkId);
@@ -35,10 +35,10 @@ cash(jtx::Account const& dest, uint256 const& checkId, DeliverMin const& atLeast
 }
 
 // Cancel a check.
-Json::Value
+json::Value
 cancel(jtx::Account const& dest, uint256 const& checkId)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
     jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCancel;

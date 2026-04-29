@@ -38,7 +38,7 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
         Account const ali{"ali", KeyType::Secp256k1};
-        env.fund(kXRP(10000), alice, bob, gw);
+        env.fund(XRP(10000), alice, bob, gw);
         env.memoize(ali);
         // This close() ensures that all the accounts get created and their
         // default ripple flag gets set before the trust lines are created.
@@ -71,7 +71,7 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // path_find
-        Json::Value pfReq;
+        json::Value pfReq;
         pfReq[jss::subcommand] = "create";
         pfReq[jss::source_account] = alice.human();
         pfReq[jss::destination_account] = bob.human();
@@ -95,14 +95,14 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
         env(regkey(alice, ali));
         env.close();
 
-        Json::Value setTx;
+        json::Value setTx;
         setTx[jss::Account] = bob.human();
         setTx[jss::TransactionType] = jss::AccountSet;
         setTx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
         setTx[jss::Sequence] = env.seq(bob);
         setTx[jss::SigningPubKey] = "";
 
-        Json::Value signFor;
+        json::Value signFor;
         signFor[jss::tx_json] = setTx;
         signFor[jss::account] = alice.human();
         signFor[jss::secret] = ali.name();
@@ -110,7 +110,7 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
         BEAST_EXPECT(jr[jss::status] == "success");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
-        Json::Value msReq;
+        json::Value msReq;
         msReq[jss::tx_json] = jr[jss::tx_json];
         jr = env.rpc("json", "submit_multisigned", to_string(msReq))[jss::result];
         BEAST_EXPECT(jr.isMember(jss::engine_result) && jr[jss::engine_result] == "tesSUCCESS");

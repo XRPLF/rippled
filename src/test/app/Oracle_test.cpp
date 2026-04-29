@@ -92,7 +92,7 @@ private:
         {
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee}, false);
 
             // Invalid flag
@@ -150,7 +150,7 @@ private:
         {
             Env env{*this};
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
 
             Oracle oracle(
                 env,
@@ -177,7 +177,7 @@ private:
         {
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee}, false);
 
             // Asset class or provider not included on create
@@ -216,7 +216,7 @@ private:
         {
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee}, false);
 
             // Fields too long
@@ -244,8 +244,8 @@ private:
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             Account const some("some");
-            env.fund(kXRP(1'000), owner);
-            env.fund(kXRP(1'000), some);
+            env.fund(XRP(1'000), owner);
+            env.fund(XRP(1'000), some);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
             oracle.set(
@@ -266,7 +266,7 @@ private:
                            env.current()->header().closeTime.time_since_epoch() - 10'000s)
                     .count();
             };
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
             env.close(seconds(400));
@@ -307,7 +307,7 @@ private:
             // delete token pair that doesn't exist
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
             oracle.set(
@@ -327,7 +327,7 @@ private:
             // same BaseAsset and QuoteAsset
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle const oracle(
                 env,
                 {.owner = owner,
@@ -340,7 +340,7 @@ private:
             // Scale is greater than maxPriceScale
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle const oracle(
                 env,
                 {.owner = owner,
@@ -353,7 +353,7 @@ private:
             // Updating token pair to add and delete
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             oracle.set(
                 UpdateArg{
@@ -378,7 +378,7 @@ private:
         {
             // Bad fee
             Env env(*this);
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = -1, .err = Ter(temBAD_FEE)});
             Oracle const oracle1(
                 env, {.owner = owner, .fee = static_cast<int>(env.current()->fees().base.drops())});
@@ -395,7 +395,7 @@ private:
 
         auto test = [&](Env& env, DataSeries const& series, std::uint16_t adj) {
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             auto const count = ownerCount(env, owner);
             Oracle const oracle(env, {.owner = owner, .series = series, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
@@ -438,8 +438,8 @@ private:
             Env env(*this, features);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             Account const some("some");
-            env.fund(kXRP(1'000), owner);
-            env.fund(kXRP(1'000), some);
+            env.fund(XRP(1'000), owner);
+            env.fund(XRP(1'000), some);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
             oracle.set(
@@ -457,7 +457,7 @@ private:
         Env env(*this);
         auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
         Account const owner("owner");
-        env.fund(kXRP(1'000), owner);
+        env.fund(XRP(1'000), owner);
         Oracle oracle(env, {.owner = owner, .fee = baseFee});
         BEAST_EXPECT(oracle.exists());
 
@@ -473,7 +473,7 @@ private:
 
         // Invalid owner
         Account const invalid("invalid");
-        env.fund(kXRP(1'000), invalid);
+        env.fund(XRP(1'000), invalid);
         oracle.remove({.owner = invalid, .fee = baseFee, .err = Ter(tecNO_ENTRY)});
 
         // Invalid flags
@@ -492,7 +492,7 @@ private:
 
         auto test = [&](Env& env, DataSeries const& series, std::uint16_t adj) {
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .series = series, .fee = baseFee});
             auto const count = ownerCount(env, owner);
             BEAST_EXPECT(oracle.exists());
@@ -530,8 +530,8 @@ private:
 
             auto const alice = Account("alice");
             auto const acctDelFee{drops(env.current()->fees().increment)};
-            env.fund(kXRP(1'000), owner);
-            env.fund(kXRP(1'000), alice);
+            env.fund(XRP(1'000), owner);
+            env.fund(XRP(1'000), alice);
             Oracle const oracle(
                 env, {.owner = owner, .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
             Oracle const oracle1(
@@ -554,11 +554,11 @@ private:
 
             // can still get the oracles via the ledger index or hash
             auto verifyLedgerData = [&](auto const& field, auto const& value) {
-                Json::Value jvParams;
+                json::Value jvParams;
                 jvParams[field] = value;
                 jvParams[jss::binary] = false;
                 jvParams[jss::type] = jss::oracle;
-                Json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
+                json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
                 BEAST_EXPECT(jrr[jss::result][jss::state].size() == 2);
             };
             verifyLedgerData(jss::ledger_index, index);
@@ -576,7 +576,7 @@ private:
         {
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             auto count = ownerCount(env, owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
@@ -654,7 +654,7 @@ private:
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
             auto test = [&](Env& env, DataSeries const& series) {
-                env.fund(kXRP(1'000), owner);
+                env.fund(XRP(1'000), owner);
                 Oracle oracle(env, {.owner = owner, .series = series, .fee = baseFee});
                 BEAST_EXPECT(oracle.exists());
                 auto sle = env.le(keylet::oracle(owner, oracle.documentID()));
@@ -708,7 +708,7 @@ private:
         Account const becky{"becky", KeyType::Ed25519};
         Account const zelda{"zelda", KeyType::Secp256k1};
         Account const bob{"bob", KeyType::Secp256k1};
-        env.fund(kXRP(10'000), alice, becky, zelda, ed, bob);
+        env.fund(XRP(10'000), alice, becky, zelda, ed, bob);
 
         // alice uses a regular key with the master disabled.
         Account const alie{"alie", KeyType::Secp256k1};
@@ -788,7 +788,7 @@ private:
         Env env(*this, features);
         auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
-        env.fund(kXRP(1'000), owner);
+        env.fund(XRP(1'000), owner);
         {
             Oracle const oracle(env, {.owner = owner, .fee = baseFee, .err = Ter(temDISABLED)});
         }

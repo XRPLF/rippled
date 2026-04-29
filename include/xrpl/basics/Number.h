@@ -440,7 +440,7 @@ public:
     normalizeToRange(T minMantissa, T maxMantissa) const;
 
 private:
-    static thread_local RoundingMode mode_;
+    static thread_local RoundingMode mode;
     // The available ranges for mantissa
 
     constexpr static MantissaRange kSMALL_RANGE{MantissaRange::Small};

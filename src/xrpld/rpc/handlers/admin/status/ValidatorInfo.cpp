@@ -11,7 +11,7 @@
 #include <xrpl/protocol/tokens.h>
 
 namespace xrpl {
-Json::Value
+json::Value
 doValidatorInfo(RPC::JsonContext& context)
 {
     // return error if not configured as validator
@@ -19,7 +19,7 @@ doValidatorInfo(RPC::JsonContext& context)
     if (!validationPK)
         return RPC::notValidatorError();
 
-    Json::Value ret;
+    json::Value ret;
 
     // assume validationPK is ephemeral key, get master key
     auto const mk = context.app.getValidatorManifests().getMasterKey(*validationPK);

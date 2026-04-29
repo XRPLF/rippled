@@ -88,7 +88,7 @@ public:
     pushBack(jtx::Account const& acc);
     TestPath&
     pushBack(STPathElement const& pe);
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     json() const;
 
 private:
@@ -142,7 +142,7 @@ TestPath::addHelper(First&& first, Rest&&... rest)
         addHelper(std::forward<Rest>(rest)...);
 }
 
-inline Json::Value
+inline json::Value
 TestPath::json() const
 {
     return path.getJson(JsonOptions::KNone);
@@ -166,10 +166,10 @@ public:
     {
         addHelper(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     json() const
     {
-        Json::Value v;
+        json::Value v;
         v["Paths"] = paths.getJson(JsonOptions::KNone);
         return v;
     }

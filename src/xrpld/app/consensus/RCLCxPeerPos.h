@@ -74,7 +74,7 @@ public:
     }
 
     //! JSON representation of proposal
-    Json::Value
+    json::Value
     getJson() const;
 
     std::string

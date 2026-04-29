@@ -45,7 +45,7 @@ Status::codeString() const
 }
 
 void
-Status::fillJson(Json::Value& value)
+Status::fillJson(json::Value& value)
 {
     if (!*this)
         return;
@@ -78,7 +78,7 @@ Status::message() const
 }
 
 std::string
-Status::to_string() const
+Status::toString() const
 {
     if (*this)
         return codeString() + ":" + message();

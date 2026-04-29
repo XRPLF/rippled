@@ -91,7 +91,7 @@ public:
     /** Return diagnostics on the status of all peers.
         @deprecated This is superseded by PropertyStream
     */
-    virtual Json::Value
+    virtual json::Value
     json() = 0;
 
     /** Returns a sequence representing the current list of peers.
@@ -200,7 +200,7 @@ public:
     /** Returns tx reduce-relay metrics
         @return json value of tx reduce-relay metrics
      */
-    [[nodiscard]] virtual Json::Value
+    [[nodiscard]] virtual json::Value
     txMetrics() const = 0;
 };
 

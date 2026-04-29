@@ -67,7 +67,7 @@ class AMMCalc_test : public beast::unit_test::Suite
                 *delimited = (match[3] != "");
             if (match[1] == "XRP")
             {
-                return kXRP(std::stoll(match[2]));
+                return XRP(std::stoll(match[2]));
                 // drops
             }
             if (match[1] == "XRPA")
@@ -185,7 +185,7 @@ class AMMCalc_test : public beast::unit_test::Suite
     }
 
     static std::string
-    to_string(STAmount const& a)
+    toString(STAmount const& a)
     {
         return (boost::format("%s/%s") % a.getText() % ::xrpl::to_string(a.get<Issue>().currency))
             .str();
@@ -261,7 +261,7 @@ class AMMCalc_test : public beast::unit_test::Suite
             sin = sout;
             resultOut = sout;
         }
-        std::cout << "in: " << to_string(resultIn) << " out: " << to_string(resultOut) << std::endl;
+        std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
     }
 
     static void
@@ -324,7 +324,7 @@ class AMMCalc_test : public beast::unit_test::Suite
             resultIn = sin;
         }
         resultOut = mulratio(resultOut, QUALITY_ONE, transferRate(resultOut), true);
-        std::cout << "in: " << to_string(resultIn) << " out: " << to_string(resultOut) << std::endl;
+        std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
     }
 
     void
@@ -428,10 +428,10 @@ class AMMCalc_test : public beast::unit_test::Suite
                                 beast::Journal(beast::Journal::getNullSink()));
                             ammOffer)
                         {
-                            std::cout << "amm offer: " << to_string(ammOffer->in) << " "
-                                      << to_string(ammOffer->out)
-                                      << "\nnew pool: " << to_string(pool->first.in + ammOffer->in)
-                                      << " " << to_string(pool->first.out - ammOffer->out)
+                            std::cout << "amm offer: " << toString(ammOffer->in) << " "
+                                      << toString(ammOffer->out)
+                                      << "\nnew pool: " << toString(pool->first.in + ammOffer->in)
+                                      << " " << toString(pool->first.out - ammOffer->out)
                                       << std::endl;
                         }
                         else

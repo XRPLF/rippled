@@ -35,12 +35,12 @@
 namespace xrpl {
 
 void
-addLine(Json::Value& jsonLines, RPCTrustLine const& line)
+addLine(json::Value& jsonLines, RPCTrustLine const& line)
 {
     STAmount const& saBalance(line.getBalance());
     STAmount const& saLimit(line.getLimit());
     STAmount const& saLimitPeer(line.getLimitPeer());
-    Json::Value& jPeer(jsonLines.append(Json::ObjectValue));
+    json::Value& jPeer(jsonLines.append(json::ObjectValue));
 
     jPeer[jss::account] = to_string(line.getAccountIDPeer());
     // Amount reported is positive if current account holds other
@@ -81,7 +81,7 @@ addLine(Json::Value& jsonLines, RPCTrustLine const& line)
 //   ignore_default: bool           // do not return lines in default state (on
 //   this account's side)
 // }
-Json::Value
+json::Value
 doAccountLines(RPC::JsonContext& context)
 {
     auto const& params(context.params);
@@ -129,7 +129,7 @@ doAccountLines(RPC::JsonContext& context)
     bool const ignoreDefault =
         params.isMember(jss::ignore_default) && params[jss::ignore_default].asBool();
 
-    Json::Value& jsonLines(result[jss::lines] = Json::ArrayValue);
+    json::Value& jsonLines(result[jss::lines] = json::ArrayValue);
     struct VisitData
     {
         std::vector<RPCTrustLine> items;

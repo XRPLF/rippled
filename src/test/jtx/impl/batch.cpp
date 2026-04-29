@@ -38,13 +38,13 @@ calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t con
 }
 
 // Batch.
-Json::Value
+json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::Batch;
     jv[jss::Account] = account.human();
-    jv[jss::RawTransactions] = Json::Value{Json::ArrayValue};
+    jv[jss::RawTransactions] = json::Value{json::ArrayValue};
     jv[jss::Sequence] = seq;
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);
@@ -55,10 +55,10 @@ void
 Inner::operator()(Env& env, JTx& jt) const
 {
     auto const index = jt.jv[jss::RawTransactions].size();
-    Json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
+    json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
 
     // Initialize the batch transaction
-    batchTransaction = Json::Value{};
+    batchTransaction = json::Value{};
     batchTransaction[jss::RawTransaction] = txn_;
 }
 

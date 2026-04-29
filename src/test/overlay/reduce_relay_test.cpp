@@ -120,7 +120,7 @@ public:
     {
         return nodePublicKey;
     }
-    Json::Value
+    json::Value
     json() override
     {
         return {};
@@ -200,7 +200,7 @@ public:
     using period = std::milli;
     using duration = std::chrono::duration<std::uint32_t, period>;
     using time_point = std::chrono::time_point<ManualClock>;
-    inline static bool const is_steady = false;
+    inline static bool const is_steady = false;  // NOLINT(readability-identifier-naming)
 
     static void
     advance(duration d) noexcept

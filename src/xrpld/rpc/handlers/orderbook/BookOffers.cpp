@@ -27,8 +27,8 @@
 
 namespace xrpl {
 
-std::optional<Json::Value>
-validateTakerJSON(Json::Value const& taker, Json::StaticString const& name)
+std::optional<json::Value>
+validateTakerJSON(json::Value const& taker, json::StaticString const& name)
 {
     if (!taker.isMember(jss::currency) && !taker.isMember(jss::mpt_issuance_id))
     {
@@ -51,11 +51,11 @@ validateTakerJSON(Json::Value const& taker, Json::StaticString const& name)
     return std::nullopt;
 }
 
-std::optional<Json::Value>
+std::optional<json::Value>
 parseTakerAssetJSON(
     Asset& asset,
-    Json::Value const& taker,
-    Json::StaticString const& name,
+    json::Value const& taker,
+    json::StaticString const& name,
     beast::Journal j)
 {
     auto const assetError = [&]() {
@@ -92,11 +92,11 @@ parseTakerAssetJSON(
     return std::nullopt;
 }
 
-std::optional<Json::Value>
+std::optional<json::Value>
 parseTakerIssuerJSON(
     Asset& asset,
-    Json::Value const& taker,
-    Json::StaticString const& name,
+    json::Value const& taker,
+    json::StaticString const& name,
     beast::Journal j)
 {
     auto const issuerError = [&]() {
@@ -161,7 +161,7 @@ parseTakerIssuerJSON(
     return std::nullopt;
 }
 
-Json::Value
+json::Value
 doBookOffers(RPC::JsonContext& context)
 {
     // VFALCO TODO Here is a terrible place for this kind of business
@@ -182,8 +182,8 @@ doBookOffers(RPC::JsonContext& context)
     if (!context.params.isMember(jss::taker_gets))
         return RPC::missingFieldError(jss::taker_gets);
 
-    Json::Value const& takerPays = context.params[jss::taker_pays];
-    Json::Value const& takerGets = context.params[jss::taker_gets];
+    json::Value const& takerPays = context.params[jss::taker_pays];
+    json::Value const& takerGets = context.params[jss::taker_gets];
 
     if (!takerPays.isObjectOrNull())
         return RPC::objectFieldError(jss::taker_pays);
@@ -247,9 +247,9 @@ doBookOffers(RPC::JsonContext& context)
 
     bool const bProof(context.params.isMember(jss::proof));
 
-    Json::Value const jvMarker(
+    json::Value const jvMarker(
         context.params.isMember(jss::marker) ? context.params[jss::marker]
-                                             : Json::Value(Json::NullValue));
+                                             : json::Value(json::NullValue));
 
     context.netOps.getBookPage(
         lpLedger,

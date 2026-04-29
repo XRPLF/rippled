@@ -10,14 +10,14 @@
 
 namespace xrpl::test::jtx {
 
-Json::Value
+json::Value
 offer(
     Account const& account,
     STAmount const& takerPays,
     STAmount const& takerGets,
     std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TakerPays] = takerPays.getJson(JsonOptions::KNone);
     jv[jss::TakerGets] = takerGets.getJson(JsonOptions::KNone);
@@ -27,10 +27,10 @@ offer(
     return jv;
 }
 
-Json::Value
+json::Value
 offerCancel(Account const& account, std::uint32_t offerSeq)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::OfferSequence] = offerSeq;
     jv[jss::TransactionType] = jss::OfferCancel;

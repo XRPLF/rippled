@@ -35,7 +35,7 @@
 namespace xrpl {
 
 Expected<Asset, ErrorCodeI>
-getAsset(Json::Value const& v, beast::Journal j)
+getAsset(json::Value const& v, beast::Journal j)
 {
     try
     {
@@ -59,11 +59,11 @@ toIso8601(NetClock::time_point tp)
             system_clock::time_point{tp.time_since_epoch() + kEPOCH_OFFSET}));
 }
 
-Json::Value
+json::Value
 doAMMInfo(RPC::JsonContext& context)
 {
     auto const& params(context.params);
-    Json::Value result;
+    json::Value result;
 
     std::shared_ptr<ReadView const> ledger;
     result = RPC::lookupLedger(ledger, context);
@@ -84,7 +84,7 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<Asset> asset2;
         std::optional<uint256> ammID;
 
-        constexpr auto kINVALID = [](Json::Value const& params) -> bool {
+        constexpr auto kINVALID = [](json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
                 (params.isMember(jss::asset) == params.isMember(jss::amm_account));
         };
@@ -187,18 +187,18 @@ doAMMInfo(RPC::JsonContext& context)
     auto const lptAMMBalance =
         accountID ? ammLPHolds(*ledger, *amm, *accountID, context.j) : (*amm)[sfLPTokenBalance];
 
-    Json::Value ammResult;
+    json::Value ammResult;
     asset1Balance.setJson(ammResult[jss::amount]);
     asset2Balance.setJson(ammResult[jss::amount2]);
     lptAMMBalance.setJson(ammResult[jss::lp_token]);
     ammResult[jss::trading_fee] = (*amm)[sfTradingFee];
     ammResult[jss::account] = to_string(ammAccountID);
-    Json::Value voteSlots(Json::ArrayValue);
+    json::Value voteSlots(json::ArrayValue);
     if (amm->isFieldPresent(sfVoteSlots))
     {
         for (auto const& voteEntry : amm->getFieldArray(sfVoteSlots))
         {
-            Json::Value vote;
+            json::Value vote;
             vote[jss::account] = to_string(voteEntry.getAccountID(sfAccount));
             vote[jss::trading_fee] = voteEntry[sfTradingFee];
             vote[jss::vote_weight] = voteEntry[sfVoteWeight];
@@ -215,7 +215,7 @@ doAMMInfo(RPC::JsonContext& context)
         auto const& auctionSlot = safeDowncast<STObject const&>(amm->peekAtField(sfAuctionSlot));
         if (auctionSlot.isFieldPresent(sfAccount))
         {
-            Json::Value auction;
+            json::Value auction;
             auto const timeSlot = ammAuctionTimeSlot(
                 ledger->header().parentCloseTime.time_since_epoch().count(), auctionSlot);
             auction[jss::time_interval] = timeSlot ? *timeSlot : kAUCTION_SLOT_TIME_INTERVALS;
@@ -226,10 +226,10 @@ doAMMInfo(RPC::JsonContext& context)
                 toIso8601(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
-                Json::Value auth;
+                json::Value auth;
                 for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
                 {
-                    Json::Value jv;
+                    json::Value jv;
                     jv[jss::account] = to_string(acct.getAccountID(sfAccount));
                     auth.append(jv);
                 }

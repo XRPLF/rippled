@@ -112,11 +112,11 @@ struct Directory_test : public beast::unit_test::Suite
         testcase("Directory Ordering (with 'SortedDirectories' amendment)");
 
         Env env(*this);
-        env.fund(kXRP(10000000), alice, gw);
+        env.fund(XRP(10000000), alice, gw);
 
         std::uint32_t const firstOfferSeq{env.seq(alice)};
         for (std::size_t i = 1; i <= 400; ++i)
-            env(offer(alice, usd(i), kXRP(i)));
+            env(offer(alice, usd(i), XRP(i)));
         env.close();
 
         // Check Alice's directory: it should contain one
@@ -161,7 +161,7 @@ struct Directory_test : public beast::unit_test::Suite
         {
             count++;
             BEAST_EXPECT(offer->getFieldAmount(sfTakerPays) == usd(count));
-            BEAST_EXPECT(offer->getFieldAmount(sfTakerGets) == kXRP(count));
+            BEAST_EXPECT(offer->getFieldAmount(sfTakerGets) == XRP(count));
         }
     }
 
@@ -178,7 +178,7 @@ struct Directory_test : public beast::unit_test::Suite
 
         Env env(*this);
 
-        env.fund(kXRP(1000000), alice, charlie, gw);
+        env.fund(XRP(1000000), alice, charlie, gw);
         env.close();
 
         // alice should have an empty directory.
@@ -241,7 +241,7 @@ struct Directory_test : public beast::unit_test::Suite
                 env.close();
                 env(pay(gw, charlie, c(50)));
                 env.close();
-                env(offer(alice, c(50), kXRP(50)));
+                env(offer(alice, c(50), XRP(50)));
                 env.close();
             }
 
@@ -254,7 +254,7 @@ struct Directory_test : public beast::unit_test::Suite
 
             for (auto const& c : cl)
             {
-                env(offer(charlie, kXRP(50), c(50)));
+                env(offer(charlie, XRP(50), c(50)));
                 env.close();
             }
             BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
@@ -285,7 +285,7 @@ struct Directory_test : public beast::unit_test::Suite
         auto const alice = Account{"alice"};
         auto const usd = gw["USD"];
 
-        env.fund(kXRP(10000), alice, gw);
+        env.fund(XRP(10000), alice, gw);
         env.close();
         env.trust(usd(1000), alice);
         env(pay(gw, alice, usd(1000)));
@@ -296,7 +296,7 @@ struct Directory_test : public beast::unit_test::Suite
         for (int i = 0; i < 3; ++i)
         {
             for (int j = 0; j < kDIR_NODE_MAX_ENTRIES; ++j)
-                env(offer(alice, kXRP(1), usd(1)));
+                env(offer(alice, XRP(1), usd(1)));
         }
         env.close();
 
@@ -343,7 +343,7 @@ struct Directory_test : public beast::unit_test::Suite
         auto const alice = Account{"alice"};
         auto const usd = gw["USD"];
 
-        env.fund(kXRP(10000), alice);
+        env.fund(XRP(10000), alice);
         env.close();
 
         constexpr uint256 kBASE("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
@@ -428,7 +428,7 @@ struct Directory_test : public beast::unit_test::Suite
         auto const usd = gw["USD"];
 
         auto ledgerData = [this](Env& env) {
-            Json::Value params;
+            json::Value params;
             params[jss::type] = jss::directory;
             params[jss::ledger_index] = "validated";
             auto const result = env.rpc("json", "ledger_data", to_string(params))[jss::result];
@@ -438,7 +438,7 @@ struct Directory_test : public beast::unit_test::Suite
 
         // fixPreviousTxnID is disabled.
         Env env(*this, testableAmendments() - fixPreviousTxnID);
-        env.fund(kXRP(10000), alice, gw);
+        env.fund(XRP(10000), alice, gw);
         env.close();
         env.trust(usd(1000), alice);
         env(pay(gw, alice, usd(1000)));
@@ -464,7 +464,7 @@ struct Directory_test : public beast::unit_test::Suite
 
         // Make sure the `PreviousTxnID` and `PreviousTxnLgrSeq` fields now
         // exist
-        env(offer(alice, kXRP(1), usd(1)));
+        env(offer(alice, XRP(1), usd(1)));
         auto const txID = to_string(env.tx()->getTransactionID());
         auto const ledgerSeq = env.current()->header().seq;
         env.close();
@@ -512,7 +512,7 @@ struct Directory_test : public beast::unit_test::Suite
             using namespace test::jtx;
 
             Env env(*this, features);
-            env.fund(kXRP(20000), alice);
+            env.fund(XRP(20000), alice);
             env.close();
 
             auto const [lastPage, full] = setup(env);

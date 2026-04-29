@@ -19,11 +19,11 @@ public:
         Env env(*this);
         auto wsc = makeWSClient(env.app().config());
         {
-            Json::Value jv;
-            jv["streams"] = Json::ArrayValue;
+            json::Value jv;
+            jv["streams"] = json::ArrayValue;
             jv["streams"].append("ledger");
         }
-        env.fund(kXRP(10000), "alice");
+        env.fund(XRP(10000), "alice");
         env.close();
         auto jv = wsc->getMsg(std::chrono::seconds(1));
         pass();

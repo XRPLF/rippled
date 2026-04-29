@@ -132,14 +132,14 @@ AMM::AMM(
 {
 }
 
-Json::Value
+json::Value
 AMM::createJv(
     AccountID const& account,
     STAmount const& asset1,
     STAmount const& asset2,
     std::uint16_t const& tfee)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = to_string(account);
     jv[jss::Amount] = asset1.getJson(JsonOptions::KNone);
     jv[jss::Amount2] = asset2.getJson(JsonOptions::KNone);
@@ -156,7 +156,7 @@ AMM::create(
     std::optional<jtx::Seq> const& seq,
     std::optional<Ter> const& ter)
 {
-    Json::Value jv = createJv(creatorAccount_, asset1_, asset2_, tfee);
+    json::Value jv = createJv(creatorAccount_, asset1_, asset2_, tfee);
     if (flags)
         jv[jss::Flags] = *flags;
     if (fee_ != 0)
@@ -179,7 +179,7 @@ AMM::create(
     return {};
 }
 
-Json::Value
+json::Value
 AMM::ammRpcInfo(
     std::optional<AccountID> const& account,
     std::optional<std::string> const& ledgerIndex,
@@ -189,7 +189,7 @@ AMM::ammRpcInfo(
     bool ignoreParams,
     unsigned apiVersion) const
 {
-    Json::Value jv;
+    json::Value jv;
     if (account)
         jv[jss::account] = to_string(*account);
     if (ledgerIndex)
@@ -217,7 +217,7 @@ AMM::ammRpcInfo(
              : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
     if (jr.isObject() && jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
         return jr[jss::result];
-    return Json::NullValue;
+    return json::NullValue;
 }
 
 std::tuple<STAmount, STAmount, STAmount>
@@ -350,7 +350,7 @@ AMM::expectAmmInfo(
     STAmount const& asset1,
     STAmount const& asset2,
     IOUAmount const& balance,
-    Json::Value const& jvRes) const
+    json::Value const& jvRes) const
 {
     if (!jvRes.isMember(jss::amm))
         return false;
@@ -374,7 +374,7 @@ AMM::expectAmmInfo(
 }
 
 void
-AMM::setTokens(Json::Value& jv, std::optional<std::pair<Asset, Asset>> const& assets)
+AMM::setTokens(json::Value& jv, std::optional<std::pair<Asset, Asset>> const& assets)
 {
     if (assets)
     {
@@ -388,10 +388,10 @@ AMM::setTokens(Json::Value& jv, std::optional<std::pair<Asset, Asset>> const& as
     }
 }
 
-Json::Value
+json::Value
 AMM::depositJv(DepositArg const& arg)
 {
-    Json::Value jv;
+    json::Value jv;
     if (!arg.account || !arg.assets)
         Throw<std::runtime_error>("AMM::depositJv: account or assets not set");
 
@@ -504,7 +504,7 @@ AMM::deposit(
 {
     auto const acct = account ? account : creatorAccount_;
     auto const lpTokens = getLPTokensBalance(acct);
-    Json::Value jv = depositJv(
+    json::Value jv = depositJv(
         {.account = acct,
          .tokens = tokens ? tokens->tokens(lptIssue_) : tokens,
          .asset1In = asset1In,
@@ -535,10 +535,10 @@ AMM::deposit(DepositArg const& arg)
         arg.err);
 }
 
-Json::Value
+json::Value
 AMM::withdrawJv(WithdrawArg const& arg)
 {
-    Json::Value jv;
+    json::Value jv;
     if (!arg.account || !arg.assets)
         Throw<std::runtime_error>("AMM::withdrawJv: account or assets not set");
     jv[jss::Account] = arg.account->human();
@@ -641,7 +641,7 @@ AMM::withdraw(
 {
     auto const acct = account ? account : creatorAccount_;
     auto const lpTokens = getLPTokensBalance(acct);
-    Json::Value jv = withdrawJv({
+    json::Value jv = withdrawJv({
         .account = acct,
         .tokens = tokens ? tokens->tokens(lptIssue_) : tokens,
         .asset1Out = asset1Out,
@@ -671,10 +671,10 @@ AMM::withdraw(WithdrawArg const& arg)
         arg.err);
 }
 
-Json::Value
+json::Value
 AMM::voteJv(VoteArg const& arg)
 {
-    Json::Value jv;
+    json::Value jv;
     if (!arg.account || !arg.assets)
         Throw<std::runtime_error>("AMM::withdrawJv: account or assets not set");
     jv[jss::Account] = arg.account->human();
@@ -698,7 +698,7 @@ AMM::vote(
     std::optional<std::pair<Asset, Asset>> const& assets,
     std::optional<Ter> const& ter)
 {
-    Json::Value jv = voteJv({
+    json::Value jv = voteJv({
         .account = account ? account : creatorAccount_,
         .tfee = feeVal,
         .flags = flags,
@@ -715,7 +715,7 @@ AMM::vote(VoteArg const& arg)
     vote(arg.account, arg.tfee, arg.flags, arg.seq, arg.assets, arg.err);
 }
 
-Json::Value
+json::Value
 AMM::bid(BidArg const& arg)
 {
     if (auto const amm = env_.current()->read(keylet::amm(asset1_.asset(), asset2_.asset())))
@@ -733,7 +733,7 @@ AMM::bid(BidArg const& arg)
     bidMin_ = std::nullopt;
     bidMax_ = std::nullopt;
 
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = arg.account ? arg.account->human() : creatorAccount_.human();
     setTokens(jv, arg.assets);
     auto getBid = [&](auto const& bid) {
@@ -762,11 +762,11 @@ AMM::bid(BidArg const& arg)
     }
     if (!arg.authAccounts.empty())
     {
-        Json::Value accounts(Json::ArrayValue);
+        json::Value accounts(json::ArrayValue);
         for (auto const& account : arg.authAccounts)
         {
-            Json::Value acct;
-            Json::Value authAcct;
+            json::Value acct;
+            json::Value authAcct;
             acct[jss::Account] = account.human();
             authAcct[jss::AuthAccount] = acct;
             accounts.append(authAcct);
@@ -799,7 +799,7 @@ AMM::clawback(ClawbackArg const& arg)
 
 void
 AMM::submit(
-    Json::Value const& jv,
+    json::Value const& jv,
     std::optional<jtx::Seq> const& seq,
     std::optional<Ter> const& ter)
 {
@@ -874,10 +874,10 @@ AMM::expectAuctionSlot(auto&& cb) const
     return false;
 }
 
-Json::Value
+json::Value
 AMM::deleteJv(AccountID const& account, Asset const& asset1, Asset const& asset2)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = to_string(account);
     jv[jss::Asset] = STIssue(sfAsset, asset1).getJson(JsonOptions::KNone);
     jv[jss::Asset2] = STIssue(sfAsset, asset2).getJson(JsonOptions::KNone);
@@ -890,7 +890,7 @@ AMM::deleteJv(AccountID const& account, Asset const& asset1, Asset const& asset2
 void
 AMM::ammDelete(AccountID const& account, std::optional<Ter> const& ter)
 {
-    Json::Value jv = deleteJv(account, asset1_.asset(), asset2_.asset());
+    json::Value jv = deleteJv(account, asset1_.asset(), asset2_.asset());
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
     submit(jv, std::nullopt, ter);
@@ -898,7 +898,7 @@ AMM::ammDelete(AccountID const& account, std::optional<Ter> const& ter)
 
 namespace amm {
 
-Json::Value
+json::Value
 ammClawback(
     Account const& issuer,
     Account const& holder,
@@ -906,7 +906,7 @@ ammClawback(
     Asset const& asset2,
     std::optional<STAmount> const& amount)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::AMMClawback;
     jv[jss::Account] = issuer.human();
     jv[jss::Holder] = holder.human();

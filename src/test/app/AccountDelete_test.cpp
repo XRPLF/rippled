@@ -63,7 +63,7 @@ private:
         // We can't use env.meta() here, because meta() doesn't include
         // delivered_amount.
         env.close();
-        Json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+        json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         // Expect there to be a DeliveredAmount field.
         if (!BEAST_EXPECT(meta.isMember(sfDeliveredAmount.jsonName)))
@@ -71,13 +71,13 @@ private:
 
         // DeliveredAmount and delivered_amount should both be present and
         // equal amount.
-        Json::Value const jsonExpect{amount.getJson(JsonOptions::KNone)};
+        json::Value const jsonExpect{amount.getJson(JsonOptions::KNone)};
         BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == jsonExpect);
         BEAST_EXPECT(meta[jss::delivered_amount] == jsonExpect);
     }
 
     // Helper function to create a payment channel.
-    static Json::Value
+    static json::Value
     payChanCreate(
         jtx::Account const& account,
         jtx::Account const& to,
@@ -86,7 +86,7 @@ private:
         NetClock::time_point const& cancelAfter,
         PublicKey const& pk)
     {
-        Json::Value jv;
+        json::Value jv;
         jv[jss::TransactionType] = jss::PaymentChannelCreate;
         jv[jss::Account] = account.human();
         jv[jss::Destination] = to.human();
@@ -111,7 +111,7 @@ public:
         Account const carol("carol");
         Account const gw("gw");
 
-        env.fund(kXRP(10000), alice, becky, carol, gw);
+        env.fund(XRP(10000), alice, becky, carol, gw);
         env.close();
 
         // Alice can't delete her account and then give herself the XRP.
@@ -142,7 +142,7 @@ public:
         // a signer list, and a DID.  Even with all that she's still deletable.
         env(deposit::auth(carol, becky));
         std::uint32_t const carolOfferSeq{env.seq(carol)};
-        env(offer(carol, gw["USD"](51), kXRP(51)));
+        env(offer(carol, gw["USD"](51), XRP(51)));
         std::uint32_t const carolTicketSeq{env.seq(carol) + 1};
         env(ticket::create(carol, 1));
         env(signers(carol, 1, {{alice, 1}, {becky, 1}}));
@@ -254,13 +254,13 @@ public:
         Account const alice("alice");
         Account const gw("gw");
 
-        env.fund(kXRP(10000), alice, gw);
+        env.fund(XRP(10000), alice, gw);
         env.close();
 
         // Alice creates enough offers to require two owner directories.
         for (int i{0}; i < 45; ++i)
         {
-            env(offer(alice, gw["USD"](1), kXRP(1)));
+            env(offer(alice, gw["USD"](1), XRP(1)));
             env.close();
         }
         env.require(offers(alice, 45));
@@ -299,7 +299,7 @@ public:
         Account const becky("becky");
         Account const gw("gw");
 
-        env.fund(kXRP(100000), alice, becky, gw);
+        env.fund(XRP(100000), alice, becky, gw);
         env.close();
 
         // Give alice and becky a bunch of offers that we have to search
@@ -307,8 +307,8 @@ public:
         // entry in their directory.
         for (int i{0}; i < 200; ++i)
         {
-            env(offer(alice, gw["USD"](1), kXRP(1)));
-            env(offer(becky, gw["USD"](1), kXRP(1)));
+            env(offer(alice, gw["USD"](1), XRP(1)));
+            env(offer(becky, gw["USD"](1), XRP(1)));
             env.close();
         }
         env.require(offers(alice, 200));
@@ -323,7 +323,7 @@ public:
         // canceled it will prevent alice's and becky's accounts from being
         // deleted.
         uint256 const checkId = keylet::check(alice, env.seq(alice)).key;
-        env(check::create(alice, becky, kXRP(1)));
+        env(check::create(alice, becky, XRP(1)));
         env.close();
 
         auto const acctDelFee{drops(env.current()->fees().increment)};
@@ -339,7 +339,7 @@ public:
 
         using namespace std::chrono_literals;
         std::uint32_t const escrowSeq{env.seq(alice)};
-        env(escrow::create(alice, becky, kXRP(333)),
+        env(escrow::create(alice, becky, XRP(333)),
             escrow::kFINISH_TIME(env.now() + 3s),
             escrow::kCANCEL_TIME(env.now() + 4s));
         env.close();
@@ -359,7 +359,7 @@ public:
             Account const gw1("gw1");
             Account const carol("carol");
             auto const usd = gw1["USD"];
-            env.fund(kXRP(100000), carol, gw1);
+            env.fund(XRP(100000), carol, gw1);
             env(fset(gw1, asfAllowTrustLineLocking));
             env.close();
             env.trust(usd(10000), carol);
@@ -387,7 +387,7 @@ public:
 
         Keylet const alicePayChanKey{keylet::payChan(alice, becky, env.seq(alice))};
 
-        env(payChanCreate(alice, becky, kXRP(57), 4s, env.now() + 2s, alice.pk()));
+        env(payChanCreate(alice, becky, XRP(57), 4s, env.now() + 2s, alice.pk()));
         env.close();
 
         // With the PayChannel in place becky and alice should not be
@@ -403,7 +403,7 @@ public:
         // Lambda to close a PayChannel.
         auto payChanClose =
             [](jtx::Account const& account, Keylet const& payChanKeylet, PublicKey const& pk) {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::TransactionType] = jss::PaymentChannelClaim;
                 jv[jss::Flags] = tfClose;
                 jv[jss::Account] = account.human();
@@ -418,7 +418,7 @@ public:
         // prevent alice from deleting her account.
         Keylet const gwPayChanKey{keylet::payChan(gw, alice, env.seq(gw))};
 
-        env(payChanCreate(gw, alice, kXRP(68), 4s, env.now() + 2s, alice.pk()));
+        env(payChanCreate(gw, alice, XRP(68), 4s, env.now() + 2s, alice.pk()));
         env.close();
 
         // alice can't delete her account because of the PayChannel.
@@ -450,7 +450,7 @@ public:
         Account const gw("gw");
 
         // Fund alice well so she can afford the reserve on the offers.
-        env.fund(kXRP(10000000), alice, gw);
+        env.fund(XRP(10000000), alice, gw);
         env.close();
 
         // To increase the number of Books affected, change the currency of
@@ -463,7 +463,7 @@ public:
         constexpr int kOFFER_COUNT{1001};
         for (int i{0}; i < kOFFER_COUNT; ++i)
         {
-            env(offer(alice, gw[currency](1), kXRP(1)));
+            env(offer(alice, gw[currency](1), XRP(1)));
             env.close();
 
             // Increment to next currency.
@@ -554,16 +554,16 @@ public:
         Account const gw{"gw"};
         auto const bux{gw["BUX"]};
 
-        env.fund(kXRP(10000), alice, gw);
+        env.fund(XRP(10000), alice, gw);
         env.close();
 
         // alice creates an offer that, if crossed, will implicitly create
         // a trust line.
-        env(offer(alice, bux(30), kXRP(30)));
+        env(offer(alice, bux(30), XRP(30)));
         env.close();
 
         // gw crosses alice's offer.  alice should end up with BUX(30).
-        env(offer(gw, kXRP(30), bux(30)));
+        env(offer(gw, XRP(30), bux(30)));
         env.close();
         env.require(Balance(alice, bux(30)));
 
@@ -605,7 +605,7 @@ public:
 
         // Burn a chunk of alice's funds so she only has 1 XRP remaining in
         // her account.
-        env(noop(alice), Fee(env.balance(alice) - kXRP(1)));
+        env(noop(alice), Fee(env.balance(alice) - XRP(1)));
         env.close();
 
         auto const acctDelFee{drops(env.current()->fees().increment)};
@@ -626,8 +626,8 @@ public:
 
         // alice again attempts to delete her account.  This time she specifies
         // her current balance in XRP.  Again the transaction fails.
-        BEAST_EXPECT(env.balance(alice) == kXRP(1));
-        env(acctdelete(alice, env.master), Fee(kXRP(1)), Ter(telINSUF_FEE_P));
+        BEAST_EXPECT(env.balance(alice) == XRP(1));
+        env(acctdelete(alice, env.master), Fee(XRP(1)), Ter(telINSUF_FEE_P));
         env.close();
         {
             std::shared_ptr<ReadView const> const closed{env.closed()};
@@ -647,7 +647,7 @@ public:
         Account const bob{"bob"};
 
         Env env{*this};
-        env.fund(kXRP(100000), alice, bob);
+        env.fund(XRP(100000), alice, bob);
         env.close();
 
         // bob grabs as many tickets as he is allowed to have.
@@ -698,7 +698,7 @@ public:
         Account const daria{"daria"};
 
         Env env{*this};
-        env.fund(kXRP(100000), alice, becky, carol);
+        env.fund(XRP(100000), alice, becky, carol);
         env.close();
 
         // alice sets the lsfDepositAuth flag on her account.  This should
@@ -756,7 +756,7 @@ public:
             char const credType[] = "abcd";
 
             Env env{*this};
-            env.fund(kXRP(100000), alice, becky, carol, daria);
+            env.fund(XRP(100000), alice, becky, carol, daria);
             env.close();
 
             // carol issue credentials for becky
@@ -871,7 +871,7 @@ public:
                 Account const eaton{"eaton"};
                 Account const fred{"fred"};
 
-                env.fund(kXRP(5000), eaton, fred);
+                env.fund(XRP(5000), eaton, fred);
 
                 // carol issue credentials for eaton
                 env(credentials::create(eaton, carol, credType));
@@ -910,7 +910,7 @@ public:
             {
                 Account const john{"john"};
 
-                env.fund(kXRP(10000), john);
+                env.fund(XRP(10000), john);
                 env.close();
 
                 auto jv = credentials::create(john, carol, credType);
@@ -954,7 +954,7 @@ public:
             Account const carol{"carol"};
 
             Env env{*this, testableAmendments() - featureCredentials};
-            env.fund(kXRP(100000), alice, becky, carol);
+            env.fund(XRP(100000), alice, becky, carol);
             env.close();
 
             // alice sets the lsfDepositAuth flag on her account.  This should
@@ -999,7 +999,7 @@ public:
             char const credType[] = "abcd";
 
             Env env{*this};
-            env.fund(kXRP(100000), alice, becky, carol);
+            env.fund(XRP(100000), alice, becky, carol);
             env.close();
 
             // carol issue credentials for becky
@@ -1041,7 +1041,7 @@ public:
             char const credType[] = "abcd";
 
             Env env{*this};
-            env.fund(kXRP(100000), alice, becky, carol);
+            env.fund(XRP(100000), alice, becky, carol);
             env.close();
 
             // carol issue credentials for becky

@@ -68,18 +68,18 @@ public:
     void
     updateComplete();
 
-    std::pair<bool, Json::Value>
-    doCreate(std::shared_ptr<AssetCache> const&, Json::Value const&);
+    std::pair<bool, json::Value>
+    doCreate(std::shared_ptr<AssetCache> const&, json::Value const&);
 
-    Json::Value
+    json::Value
     doClose() override;
-    Json::Value
-    doStatus(Json::Value const&) override;
+    json::Value
+    doStatus(json::Value const&) override;
     void
     doAborting() const;
 
     // update jvStatus
-    Json::Value
+    json::Value
     doUpdate(
         std::shared_ptr<AssetCache> const&,
         bool fast,
@@ -109,11 +109,11 @@ private:
     findPaths(
         std::shared_ptr<AssetCache> const&,
         int const,
-        Json::Value&,
+        json::Value&,
         std::function<bool(void)> const&);
 
     int
-    parseJson(Json::Value const&);
+    parseJson(json::Value const&);
 
     Application& app_;
     beast::Journal journal_;
@@ -126,8 +126,8 @@ private:
     std::function<void(void)> fCompletion_;
     Resource::Consumer& consumer_;  // Charge according to source currencies
 
-    Json::Value jvId_;
-    Json::Value jvStatus_;  // Last result
+    json::Value jvId_;
+    json::Value jvStatus_;  // Last result
 
     // Client request parameters
     std::optional<AccountID> raSrcAccount_;

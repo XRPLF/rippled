@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
 #include <xrpl/protocol_autogen/LedgerEntryBuilderBase.h>
-#include <xrpl/json/json_value.h>
 
-#include <stdexcept>
 #include <optional>
+#include <stdexcept>
 
 namespace xrpl::ledger_entries {
 
@@ -33,8 +33,7 @@ public:
      * @brief Construct a Credential ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Credential(std::shared_ptr<SLE const> sle)
-        : LedgerEntryBase(std::move(sle))
+    explicit Credential(std::shared_ptr<SLE const> sle) : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
         if (sle_->getType() != entryType)
@@ -188,7 +187,7 @@ public:
  * @brief Builder for Credential ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class CredentialBuilder : public LedgerEntryBuilderBase<CredentialBuilder>
@@ -203,7 +202,13 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    CredentialBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,std::decay_t<typename SF_VL::type::value_type> const& credentialType,std::decay_t<typename SF_UINT64::type::value_type> const& issuerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    CredentialBuilder(
+        std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,
+        std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,
+        std::decay_t<typename SF_VL::type::value_type> const& credentialType,
+        std::decay_t<typename SF_UINT64::type::value_type> const& issuerNode,
+        std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
+        std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<CredentialBuilder>(ltCREDENTIAL)
     {
         setSubject(subject);

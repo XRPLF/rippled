@@ -52,6 +52,7 @@ public:
     // This is used to cancel I/O during program exit.
     std::shared_ptr<Source> fetchSource;
 
+private:
     // Configuration settings
     Config config_;
 
@@ -61,6 +62,7 @@ public:
     // A list of slots that should always be connected
     std::map<beast::IP::Endpoint, Fixed> fixed_;
 
+public:
     // Live livecache from mtENDPOINTS messages
     Livecache<> livecache;
 
@@ -86,7 +88,7 @@ public:
     ConnectHandouts::Squelches squelches;
 
     //--------------------------------------------------------------------------
-
+public:
     Logic(clock_type& clock, Store& store, Checker& checker, beast::Journal journal)
         : journal(journal)
         , clock(clock)
@@ -167,7 +169,7 @@ public:
             if (remoteAddress.port() == 0)
             {
                 Throw<std::runtime_error>(
-                    "Port not specified for address:" + remoteAddress.to_string());
+                    "Port not specified for address:" + remoteAddress.toString());
             }
 
             auto result(fixed_.emplace(

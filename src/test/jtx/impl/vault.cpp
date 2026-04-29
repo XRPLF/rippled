@@ -16,11 +16,11 @@
 
 namespace xrpl::test::jtx {
 
-std::tuple<Json::Value, Keylet>
+std::tuple<json::Value, Keylet>
 Vault::create(CreateArgs const& args) const
 {
     auto keylet = keylet::vault(args.owner.id(), env.seq(args.owner));
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::VaultCreate;
     jv[jss::Account] = args.owner.human();
     jv[jss::Asset] = toJson(args.asset);
@@ -29,30 +29,30 @@ Vault::create(CreateArgs const& args) const
     return {jv, keylet};
 }
 
-Json::Value
+json::Value
 Vault::set(SetArgs const& args)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::VaultSet;
     jv[jss::Account] = args.owner.human();
     jv[sfVaultID] = to_string(args.id);
     return jv;
 }
 
-Json::Value
+json::Value
 Vault::del(DeleteArgs const& args)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::VaultDelete;
     jv[jss::Account] = args.owner.human();
     jv[sfVaultID] = to_string(args.id);
     return jv;
 }
 
-Json::Value
+json::Value
 Vault::deposit(DepositArgs const& args)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::VaultDeposit;
     jv[jss::Account] = args.depositor.human();
     jv[sfVaultID] = to_string(args.id);
@@ -60,10 +60,10 @@ Vault::deposit(DepositArgs const& args)
     return jv;
 }
 
-Json::Value
+json::Value
 Vault::withdraw(WithdrawArgs const& args)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::VaultWithdraw;
     jv[jss::Account] = args.depositor.human();
     jv[sfVaultID] = to_string(args.id);
@@ -71,10 +71,10 @@ Vault::withdraw(WithdrawArgs const& args)
     return jv;
 }
 
-Json::Value
+json::Value
 Vault::clawback(ClawbackArgs const& args)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::VaultClawback;
     jv[jss::Account] = args.issuer.human();
     jv[sfVaultID] = to_string(args.id);

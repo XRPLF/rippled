@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
 #include <xrpl/protocol_autogen/LedgerEntryBuilderBase.h>
-#include <xrpl/json/json_value.h>
 
-#include <stdexcept>
 #include <optional>
+#include <stdexcept>
 
 namespace xrpl::ledger_entries {
 
@@ -33,8 +33,7 @@ public:
      * @brief Construct a LedgerHashes ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit LedgerHashes(std::shared_ptr<SLE const> sle)
-        : LedgerEntryBase(std::move(sle))
+    explicit LedgerHashes(std::shared_ptr<SLE const> sle) : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
         if (sle_->getType() != entryType)
@@ -109,7 +108,7 @@ public:
  * @brief Builder for LedgerHashes ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class LedgerHashesBuilder : public LedgerEntryBuilderBase<LedgerHashesBuilder>

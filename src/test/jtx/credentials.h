@@ -47,33 +47,33 @@ public:
     void
     operator()(jtx::Env&, jtx::JTx& jtx) const
     {
-        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = Json::ArrayValue);
+        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = json::ArrayValue);
         for (auto const& hash : credentials_)
             arr.append(hash);
     }
 };
 
-Json::Value
+json::Value
 create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
-Json::Value
+json::Value
 accept(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
-Json::Value
+json::Value
 deleteCred(
     jtx::Account const& acc,
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType);
 
-Json::Value
+json::Value
 ledgerEntry(
     jtx::Env& env,
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType);
 
-Json::Value
+json::Value
 ledgerEntry(jtx::Env& env, std::string const& credIdx);
 
 }  // namespace xrpl::test::jtx::credentials

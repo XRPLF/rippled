@@ -48,7 +48,7 @@ namespace xrpl {
 
 // gateway_balances [<ledger>] <account> [<hotwallet> [<hotwallet [...
 
-Json::Value
+json::Value
 doGatewayBalances(RPC::JsonContext& context)
 {
     auto& params = context.params;
@@ -87,7 +87,7 @@ doGatewayBalances(RPC::JsonContext& context)
 
     if (params.isMember(jss::hotwallet))
     {
-        auto addHotWallet = [&hotWallets](Json::Value const& j) {
+        auto addHotWallet = [&hotWallets](json::Value const& j) {
             if (j.isString())
             {
                 if (auto id = parseBase58<AccountID>(j.asString()); id)
@@ -100,7 +100,7 @@ doGatewayBalances(RPC::JsonContext& context)
             return false;
         };
 
-        Json::Value const& hw = params[jss::hotwallet];
+        json::Value const& hw = params[jss::hotwallet];
         bool valid = true;
 
         // null is treated as a valid 0-sized array of hotwallet
@@ -237,7 +237,7 @@ doGatewayBalances(RPC::JsonContext& context)
 
     if (!sums.empty())
     {
-        Json::Value j;
+        json::Value j;
         for (auto const& [k, v] : sums)
         {
             j[to_string(k)] = v.getText();
@@ -247,16 +247,16 @@ doGatewayBalances(RPC::JsonContext& context)
 
     auto populateResult = [&result](
                               std::map<AccountID, std::vector<STAmount>> const& array,
-                              Json::StaticString const& name) {
+                              json::StaticString const& name) {
         if (!array.empty())
         {
-            Json::Value j;
+            json::Value j;
             for (auto const& [accId, accBalances] : array)
             {
-                Json::Value balanceArray;
+                json::Value balanceArray;
                 for (auto const& balance : accBalances)
                 {
-                    Json::Value entry;
+                    json::Value entry;
                     entry[jss::currency] = to_string(balance.get<Issue>().currency);
                     entry[jss::value] = balance.getText();
                     balanceArray.append(std::move(entry));
@@ -274,7 +274,7 @@ doGatewayBalances(RPC::JsonContext& context)
     // Add total escrow to the result
     if (!locked.empty())
     {
-        Json::Value j;
+        json::Value j;
         for (auto const& [k, v] : locked)
         {
             j[to_string(k)] = v.getText();

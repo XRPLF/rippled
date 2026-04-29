@@ -30,17 +30,17 @@ public:
         auto const gw = Account("gateway");
         auto const usd = gw["USD"];
 
-        env.fund(kXRP(100000000), gw, "alice", "bob", "carol", "dan");
+        env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan");
         env.trust(usd(1), "bob");
         env(pay(gw, "bob", usd(1)));
         env.trust(usd(1), "dan");
         env(pay(gw, "dan", usd(1)));
-        nOffers(env, 2000, "bob", kXRP(1), usd(1));
-        nOffers(env, 1, "dan", kXRP(1), usd(1));
+        nOffers(env, 2000, "bob", XRP(1), usd(1));
+        nOffers(env, 1, "dan", XRP(1), usd(1));
 
         // Alice offers to buy 1000 XRP for 1000 USD. She takes Bob's first
         // offer, removes 999 more as unfunded, then hits the step limit.
-        env(offer("alice", usd(1000), kXRP(1000)));
+        env(offer("alice", usd(1000), XRP(1000)));
         env.require(Balance("alice", usd(1)));
         env.require(Owners("alice", 2));
         env.require(Balance("bob", usd(0)));
@@ -50,7 +50,7 @@ public:
 
         // Carol offers to buy 1000 XRP for 1000 USD. She removes Bob's next
         // 1000 offers as unfunded and hits the step limit.
-        env(offer("carol", usd(1000), kXRP(1000)));
+        env(offer("carol", usd(1000), XRP(1000)));
         env.require(Balance("carol", usd(kNONE)));
         env.require(Owners("carol", 1));
         env.require(Balance("bob", usd(0)));
@@ -73,16 +73,16 @@ public:
         // The payment engine allows 1000 offers to cross.
         int const maxConsumed = 1000;
 
-        env.fund(kXRP(100000000), gw, "alice", "bob", "carol");
+        env.fund(XRP(100000000), gw, "alice", "bob", "carol");
         int const bobOfferCount = maxConsumed + 150;
         env.trust(usd(bobOfferCount), "bob");
         env(pay(gw, "bob", usd(bobOfferCount)));
         env.close();
-        nOffers(env, bobOfferCount, "bob", kXRP(1), usd(1));
+        nOffers(env, bobOfferCount, "bob", XRP(1), usd(1));
 
         // Alice offers to buy Bob's offers. However she hits the offer
         // crossing limit, so she can't buy them all at once.
-        env(offer("alice", usd(bobOfferCount), kXRP(bobOfferCount)));
+        env(offer("alice", usd(bobOfferCount), XRP(bobOfferCount)));
         env.close();
         env.require(Balance("alice", usd(maxConsumed)));
         env.require(Balance("bob", usd(150)));
@@ -90,7 +90,7 @@ public:
 
         // Carol offers to buy 1000 XRP for 1000 USD. She takes Bob's
         // remaining 150 offers without hitting a limit.
-        env(offer("carol", usd(1000), kXRP(1000)));
+        env(offer("carol", usd(1000), XRP(1000)));
         env.close();
         env.require(Balance("carol", usd(150)));
         env.require(Balance("bob", usd(0)));
@@ -108,7 +108,7 @@ public:
         auto const gw = Account("gateway");
         auto const usd = gw["USD"];
 
-        env.fund(kXRP(100000000), gw, "alice", "bob", "carol", "dan", "evita");
+        env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan", "evita");
 
         // The payment engine allows 1000 offers to cross.
         int const maxConsumed = 1000;
@@ -123,14 +123,14 @@ public:
 
         // The payment engine has a limit of 1000 funded or unfunded offers.
         int const carolsOfferCount{700};
-        nOffers(env, 400, "alice", kXRP(1), usd(1));
-        nOffers(env, carolsOfferCount, "carol", kXRP(1), usd(1));
-        nOffers(env, evitaOfferCount, "evita", kXRP(1), usd(1));
+        nOffers(env, 400, "alice", XRP(1), usd(1));
+        nOffers(env, carolsOfferCount, "carol", XRP(1), usd(1));
+        nOffers(env, evitaOfferCount, "evita", XRP(1), usd(1));
 
         // Bob offers to buy 1000 XRP for 1000 USD. He takes all 400 USD from
         // Alice's offers, 1 USD from Carol's and then removes 599 of Carol's
         // offers as unfunded, before hitting the step limit.
-        env(offer("bob", usd(1000), kXRP(1000)));
+        env(offer("bob", usd(1000), XRP(1000)));
         env.require(Balance("bob", usd(401)));
         env.require(Balance("alice", usd(600)));
         env.require(Owners("alice", 1));
@@ -142,7 +142,7 @@ public:
         // Dan offers to buy maxConsumed + 50 XRP USD. He removes all of
         // Carol's remaining offers as unfunded, then takes
         // (maxConsumed - 100) USD from Evita's, hitting the crossing limit.
-        env(offer("dan", usd(maxConsumed + 50), kXRP(maxConsumed + 50)));
+        env(offer("dan", usd(maxConsumed + 50), XRP(maxConsumed + 50)));
         env.require(Balance("dan", usd(maxConsumed - 100)));
         env.require(Owners("dan", 2));
         env.require(Balance("alice", usd(600)));
@@ -190,7 +190,7 @@ public:
         {
             Env env(*this, features);
 
-            env.fund(kXRP(100000000), gw, alice, bob, carol);
+            env.fund(XRP(100000000), gw, alice, bob, carol);
 
             env.trust(usd(4000), alice);
             env(pay(gw, alice, usd(4000)));
@@ -199,10 +199,10 @@ public:
 
             // Notice the strand with the 800 unfunded offers has the initial
             // best quality
-            nOffers(env, 2000, alice, eur(2), kXRP(1));
-            nOffers(env, 100, alice, kXRP(1), usd(4));
-            nOffers(env, 801, carol, kXRP(1), usd(3));  // only one offer is funded
-            nOffers(env, 1000, alice, kXRP(1), usd(3));
+            nOffers(env, 2000, alice, eur(2), XRP(1));
+            nOffers(env, 100, alice, XRP(1), usd(4));
+            nOffers(env, 801, carol, XRP(1), usd(3));  // only one offer is funded
+            nOffers(env, 1000, alice, XRP(1), usd(3));
 
             nOffers(env, 1, alice, eur(500), usd(500));
 
@@ -267,7 +267,7 @@ public:
         {
             Env env(*this, features);
 
-            env.fund(kXRP(100000000), gw, alice, bob, carol);
+            env.fund(XRP(100000000), gw, alice, bob, carol);
 
             env.trust(usd(4000), alice);
             env(pay(gw, alice, usd(4000)));
@@ -277,10 +277,10 @@ public:
             // Notice the strand with the 800 unfunded offers does not have the
             // initial best quality
             nOffers(env, 1, alice, eur(1), usd(10));
-            nOffers(env, 2000, alice, eur(2), kXRP(1));
-            nOffers(env, 100, alice, kXRP(1), usd(4));
-            nOffers(env, 801, carol, kXRP(1), usd(3));  // only one offer is funded
-            nOffers(env, 1000, alice, kXRP(1), usd(3));
+            nOffers(env, 2000, alice, eur(2), XRP(1));
+            nOffers(env, 100, alice, XRP(1), usd(4));
+            nOffers(env, 801, carol, XRP(1), usd(3));  // only one offer is funded
+            nOffers(env, 1000, alice, XRP(1), usd(3));
 
             nOffers(env, 1, alice, eur(499), usd(499));
 
@@ -352,7 +352,7 @@ public:
 
         Env env(*this, features);
 
-        env.fund(kXRP(100000000), gw, alice, bob);
+        env.fund(XRP(100000000), gw, alice, bob);
 
         env.trust(usd(8000), alice);
         env.trust(usd(8000), bob);
@@ -376,14 +376,14 @@ public:
         // offers consumes 998 offers, the second set will consume 998, which is
         // not over the limit and the payment stops. So 2*998, or 1996 is the
         // expected value.
-        nOffers(env, 998, alice, kXRP(1.00), usd(1));
-        nOffers(env, 998, alice, kXRP(0.99), usd(1));
-        nOffers(env, 998, alice, kXRP(0.98), usd(1));
-        nOffers(env, 998, alice, kXRP(0.97), usd(1));
-        nOffers(env, 998, alice, kXRP(0.96), usd(1));
-        nOffers(env, 998, alice, kXRP(0.95), usd(1));
+        nOffers(env, 998, alice, XRP(1.00), usd(1));
+        nOffers(env, 998, alice, XRP(0.99), usd(1));
+        nOffers(env, 998, alice, XRP(0.98), usd(1));
+        nOffers(env, 998, alice, XRP(0.97), usd(1));
+        nOffers(env, 998, alice, XRP(0.96), usd(1));
+        nOffers(env, 998, alice, XRP(0.95), usd(1));
 
-        env(offer(bob, usd(8000), kXRP(8000)), Ter(tesSUCCESS));
+        env(offer(bob, usd(8000), XRP(8000)), Ter(tesSUCCESS));
         env.close();
 
         env.require(Balance(bob, usd(1996)));

@@ -6,7 +6,7 @@
 
 namespace xrpl::test::jtx::oracle {
 
-using AnyValue = std::variant<std::string, double, Json::Int, Json::UInt>;
+using AnyValue = std::variant<std::string, double, json::Int, json::UInt>;
 using OraclesData = std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
 
 // Special string value, which is converted to unquoted string in the string
@@ -22,10 +22,10 @@ bool
 validDocumentID(AnyValue const& v);
 
 void
-toJson(Json::Value& jv, AnyValue const& v);
+toJson(json::Value& jv, AnyValue const& v);
 
 void
-toJsonHex(Json::Value& jv, AnyValue const& v);
+toJsonHex(json::Value& jv, AnyValue const& v);
 
 // base asset, quote asset, price, scale
 using DataSeries = std::vector<
@@ -102,7 +102,7 @@ private:
 private:
     void
     submit(
-        Json::Value const& jv,
+        json::Value const& jv,
         std::optional<jtx::Msig> const& msig,
         std::optional<jtx::Seq> const& seq,
         std::optional<Ter> const& err);
@@ -118,7 +118,7 @@ public:
     void
     set(UpdateArg const& arg);
 
-    static Json::Value
+    static json::Value
     aggregatePrice(
         Env& env,
         std::optional<AnyValue> const& baseAsset,
@@ -148,14 +148,14 @@ public:
     [[nodiscard]] bool
     expectLastUpdateTime(std::uint32_t lastUpdateTime) const;
 
-    static Json::Value
+    static json::Value
     ledgerEntry(
         Env& env,
         std::optional<std::variant<AccountID, std::string>> const& account,
         std::optional<AnyValue> const& documentID,
         std::optional<std::string> const& index = std::nullopt);
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     ledgerEntry(std::optional<std::string> const& index = std::nullopt) const
     {
         return Oracle::ledgerEntry(env_, owner_, documentID_, index);

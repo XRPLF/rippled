@@ -71,10 +71,10 @@ Path::Path(STPath const& p)
     jv_ = p.getJson(JsonOptions::KNone);
 }
 
-Json::Value&
+json::Value&
 Path::create()
 {
-    return jv_.append(Json::ObjectValue);
+    return jv_.append(json::ObjectValue);
 }
 
 void

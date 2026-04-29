@@ -43,9 +43,9 @@ template <class T>
 Status
 ledgerFromHash(
     T& ledger,
-    Json::Value hash,
+    json::Value hash,
     Context const& context,
-    Json::StaticString const fieldName)
+    json::StaticString const fieldName)
 {
     uint256 ledgerHash;
     if (!ledgerHash.parseHex(hash.asString()))
@@ -57,9 +57,9 @@ template <class T>
 Status
 ledgerFromIndex(
     T& ledger,
-    Json::Value indexValue,
+    json::Value indexValue,
     Context const& context,
-    Json::StaticString const fieldName)
+    json::StaticString const fieldName)
 {
     auto const index = indexValue.asString();
 
@@ -342,7 +342,7 @@ getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
 // In the absence of the "ledger_hash" or "ledger_index" parameters, the code
 // assumes that "ledger_index" has the value "current".
 //
-// Returns a Json::objectValue.  If there was an error, it will be in that
+// Returns a json::objectValue.  If there was an error, it will be in that
 // return value.  Otherwise, the object contains the field "validated" and
 // optionally the fields "ledger_hash", "ledger_index" and
 // "ledger_current_index", if they are defined.
@@ -350,7 +350,7 @@ Status
 lookupLedger(
     std::shared_ptr<ReadView const>& ledger,
     JsonContext const& context,
-    Json::Value& result)
+    json::Value& result)
 {
     if (auto status = ledgerFromRequest(ledger, context))
         return status;
@@ -371,17 +371,17 @@ lookupLedger(
     return Status::kOK;
 }
 
-Json::Value
+json::Value
 lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext const& context)
 {
-    Json::Value result;
+    json::Value result;
     if (auto status = lookupLedger(ledger, context, result))
         status.inject(result);
 
     return result;
 }
 
-Expected<std::shared_ptr<Ledger const>, Json::Value>
+Expected<std::shared_ptr<Ledger const>, json::Value>
 getOrAcquireLedger(RPC::JsonContext const& context)
 {
     auto const hasHash = context.params.isMember(jss::ledger_hash);
@@ -401,13 +401,13 @@ getOrAcquireLedger(RPC::JsonContext const& context)
 
     if (hasHash)
     {
-        auto const& jsonHash = context.params.get(jss::ledger_hash, Json::NullValue);
+        auto const& jsonHash = context.params.get(jss::ledger_hash, json::NullValue);
         if (!jsonHash.isString() || !ledgerHash.parseHex(jsonHash.asString()))
             return Unexpected(RPC::expectedFieldError(jss::ledger_hash, "hex string"));
     }
     else
     {
-        auto const& jsonIndex = context.params.get(jss::ledger_index, Json::NullValue);
+        auto const& jsonIndex = context.params.get(jss::ledger_index, json::NullValue);
         if (!jsonIndex.isInt() && !jsonIndex.isUInt())
             return Unexpected(RPC::expectedFieldError(jss::ledger_index, "number"));
 
@@ -449,7 +449,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
                 if (auto il = context.app.getInboundLedgers().acquire(
                         *refHash, refIndex, InboundLedger::Reason::GENERIC))
                 {
-                    Json::Value jvResult = RPC::makeError(
+                    json::Value jvResult = RPC::makeError(
                         RpcLgrNotFound, "acquiring ledger containing requested index");
                     jvResult[jss::acquiring] = getJson(LedgerFill(*il, &context));
                     return Unexpected(jvResult);
@@ -458,14 +458,14 @@ getOrAcquireLedger(RPC::JsonContext const& context)
                 if (auto il = context.app.getInboundLedgers().find(*refHash))
                 // NOLINTEND(bugprone-unchecked-optional-access)
                 {
-                    Json::Value jvResult = RPC::makeError(
+                    json::Value jvResult = RPC::makeError(
                         RpcLgrNotFound, "acquiring ledger containing requested index");
                     jvResult[jss::acquiring] = il->getJson(0);
                     return Unexpected(jvResult);
                 }
 
                 // Likely the app is shutting down
-                return Unexpected(Json::Value());
+                return Unexpected(json::Value());
             }
 
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);

@@ -16,7 +16,7 @@
 namespace xrpl {
 
 static std::optional<uint256>
-parseVault(Json::Value const& params, Json::Value& jvResult)
+parseVault(json::Value const& params, json::Value& jvResult)
 {
     auto const hasVaultId = params.isMember(jss::vault_id);
     auto const hasOwner = params.isMember(jss::owner);
@@ -42,7 +42,7 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
         }
         if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
-            params[jss::seq].asDouble() > double(Json::Value::kMAX_U_INT))
+            params[jss::seq].asDouble() > double(json::Value::kMAX_U_INT))
         {
             RPC::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
@@ -60,7 +60,7 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
     return uNodeIndex;
 }
 
-Json::Value
+json::Value
 doVaultInfo(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
@@ -86,7 +86,7 @@ doVaultInfo(RPC::JsonContext& context)
         return jvResult;
     }
 
-    Json::Value& vault = jvResult[jss::vault];
+    json::Value& vault = jvResult[jss::vault];
     vault = sleVault->getJson(JsonOptions::KNone);
     auto& share = vault[jss::shares];
     share = sleIssuance->getJson(JsonOptions::KNone);

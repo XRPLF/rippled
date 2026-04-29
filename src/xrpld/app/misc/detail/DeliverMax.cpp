@@ -6,7 +6,7 @@
 namespace xrpl::RPC {
 
 void
-insertDeliverMax(Json::Value& txJson, TxType txnType, unsigned int apiVersion)
+insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion)
 {
     if (txJson.isMember(jss::Amount))
     {

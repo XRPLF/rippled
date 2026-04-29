@@ -27,7 +27,7 @@ public:
 
     /** Converts this charge into a human readable string. */
     [[nodiscard]] std::string
-    to_string() const;
+    toString() const;
 
     bool
     operator==(Charge const&) const;

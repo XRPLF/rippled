@@ -54,8 +54,8 @@ class LedgerLoad_test : public beast::unit_test::Suite
         std::string const dbPath;
         // NOLINTBEGIN(readability-redundant-member-init)
         std::string ledgerFile = {};
-        Json::Value ledger = {};
-        Json::Value hashes = {};
+        json::Value ledger = {};
+        json::Value hashes = {};
         uint256 trapTxHash = {};
         // NOLINTEND(readability-redundant-member-init)
     };
@@ -74,7 +74,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
         for (auto i = 0; i < 20; ++i)
         {
             Account const acct{"A" + std::to_string(i)};
-            env.fund(kXRP(10000), acct);
+            env.fund(XRP(10000), acct);
             env.close();
             if (i > 0 && BEAST_EXPECT(prev.has_value()))
             {
@@ -82,7 +82,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
                 env(pay(
                     acct, *prev, acct["USD"](5)));  // NOLINT(bugprone-unchecked-optional-access)
             }
-            env(offer(acct, kXRP(100), acct["USD"](1)));
+            env(offer(acct, XRP(100), acct["USD"](1)));
             env.close();
             prev.emplace(acct);
         }
@@ -96,7 +96,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
                 if (it[sfLedgerEntryType.fieldName] == jss::LedgerHashes)
                     return it[sfHashes.fieldName];
             }
-            return Json::Value{};
+            return json::Value{};
         }();
 
         BEAST_EXPECT(retval.hashes.size() == 41);

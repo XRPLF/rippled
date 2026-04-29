@@ -17,7 +17,7 @@ namespace xrpl {
 //   feature : <feature>
 //   vetoed : true/false
 // }
-Json::Value
+json::Value
 doFeature(RPC::JsonContext& context)
 {
     if (context.params.isMember(jss::feature))
@@ -47,7 +47,7 @@ doFeature(RPC::JsonContext& context)
             features[to_string(h)][jss::majority] = t.time_since_epoch().count();
         }
 
-        Json::Value jvReply = Json::ObjectValue;
+        json::Value jvReply = json::ObjectValue;
         jvReply[jss::features] = features;
         return jvReply;
     }
@@ -74,7 +74,7 @@ doFeature(RPC::JsonContext& context)
         }
     }
 
-    Json::Value jvReply = table.getJson(feature, isAdmin);
+    json::Value jvReply = table.getJson(feature, isAdmin);
     if (!jvReply)
         return rpcError(RpcBadFeature);
 

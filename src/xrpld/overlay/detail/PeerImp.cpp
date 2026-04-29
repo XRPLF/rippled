@@ -442,13 +442,13 @@ PeerImp::getVersion() const
     return headers_["Server"];
 }
 
-Json::Value
+json::Value
 PeerImp::json()
 {
-    Json::Value ret(Json::ObjectValue);
+    json::Value ret(json::ObjectValue);
 
     ret[jss::public_key] = toBase58(TokenType::NodePublic, publicKey_);
-    ret[jss::address] = remoteAddress_.to_string();
+    ret[jss::address] = remoteAddress_.toString();
 
     if (inbound_)
         ret[jss::inbound] = true;
@@ -459,7 +459,7 @@ PeerImp::json()
 
         if (auto const n = name(); !n.empty())
         {
-            // Could move here if Json::Value supported moving from a string
+            // Could move here if json::Value supported moving from a string
             ret[jss::name] = n;
         }
     }
@@ -480,11 +480,11 @@ PeerImp::json()
     {
         std::lock_guard const sl(recentLock_);
         if (latency_)
-            ret[jss::latency] = static_cast<Json::UInt>(latency_->count());
+            ret[jss::latency] = static_cast<json::UInt>(latency_->count());
     }
 
     ret[jss::uptime] =
-        static_cast<Json::UInt>(std::chrono::duration_cast<std::chrono::seconds>(uptime()).count());
+        static_cast<json::UInt>(std::chrono::duration_cast<std::chrono::seconds>(uptime()).count());
 
     std::uint32_t minSeq = 0, maxSeq = 0;
     ledgerRange(minSeq, maxSeq);
@@ -547,7 +547,7 @@ PeerImp::json()
         }
     }
 
-    ret[jss::metrics] = Json::Value(Json::ObjectValue);
+    ret[jss::metrics] = json::Value(json::ObjectValue);
     ret[jss::metrics][jss::total_bytes_recv] = std::to_string(metrics_.recv.totalBytes());
     ret[jss::metrics][jss::total_bytes_sent] = std::to_string(metrics_.sent.totalBytes());
     ret[jss::metrics][jss::avg_bps_recv] = std::to_string(metrics_.recv.averageBytes());
@@ -2054,8 +2054,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         checkTracking(m->ledgerseq(), app_.getLedgerMaster().getValidLedgerIndex());
     }
 
-    app_.getOPs().pubPeerStatus([m, this]() -> Json::Value {
-        Json::Value j = Json::ObjectValue;
+    app_.getOPs().pubPeerStatus([m, this]() -> json::Value {
+        json::Value j = json::ObjectValue;
 
         if (m->has_newstatus())
         {
@@ -2115,13 +2115,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 
         if (m->has_networktime())
         {
-            j[jss::date] = Json::UInt(m->networktime());
+            j[jss::date] = json::UInt(m->networktime());
         }
 
         if (m->has_firstseq() && m->has_lastseq())
         {
-            j[jss::ledger_index_min] = Json::UInt(m->firstseq());
-            j[jss::ledger_index_max] = Json::UInt(m->lastseq());
+            j[jss::ledger_index_min] = json::UInt(m->firstseq());
+            j[jss::ledger_index_max] = json::UInt(m->lastseq());
         }
 
         return j;
@@ -2228,7 +2228,7 @@ PeerImp::onValidatorListMessage(
         manifest,
         version,
         blobs,
-        remoteAddress_.to_string(),
+        remoteAddress_.toString(),
         hash,
         app_.getOverlay(),
         app_.getHashRouter(),

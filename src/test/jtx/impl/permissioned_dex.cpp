@@ -23,7 +23,7 @@ setupDomain(
     std::string const& credType)
 {
     using namespace jtx;
-    env.fund(kXRP(100000), domainOwner);
+    env.fund(XRP(100000), domainOwner);
     env.close();
 
     pdomain::Credentials const credentials{{domainOwner, credType}};
@@ -52,7 +52,7 @@ PermissionedDEX::PermissionedDEX(Env& env)
     , credType("permdex-abcde")
 {
     // Fund accounts
-    env.fund(kXRP(100000), alice, bob, carol, gw);
+    env.fund(XRP(100000), alice, bob, carol, gw);
     env.close();
 
     domainID = setupDomain(env, {alice, bob, carol, gw}, domainOwner, credType);

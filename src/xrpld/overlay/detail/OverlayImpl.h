@@ -170,7 +170,7 @@ public:
     std::size_t
     size() const override;
 
-    Json::Value
+    json::Value
     json() override;
 
     PeerSequence
@@ -397,7 +397,7 @@ public:
     void
     deletePeer(Peer::id_t id);
 
-    Json::Value
+    json::Value
     txMetrics() const override
     {
         return txMetrics_.json();
@@ -472,28 +472,28 @@ private:
         Reported through the /crawl API
         Controlled through the config section [crawl] overlay=[0|1]
     */
-    Json::Value
+    json::Value
     getOverlayInfo() const;
 
     /** Returns information about the local server.
         Reported through the /crawl API
         Controlled through the config section [crawl] server=[0|1]
     */
-    Json::Value
+    json::Value
     getServerInfo();
 
     /** Returns information about the local server's performance counters.
         Reported through the /crawl API
         Controlled through the config section [crawl] counts=[0|1]
     */
-    Json::Value
+    json::Value
     getServerCounts();
 
     /** Returns information about the local server's UNL.
         Reported through the /crawl API
         Controlled through the config section [crawl] unl=[0|1]
     */
-    Json::Value
+    json::Value
     getUnlInfo();
 
     //--------------------------------------------------------------------------

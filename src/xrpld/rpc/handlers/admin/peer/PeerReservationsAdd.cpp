@@ -14,7 +14,7 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doPeerReservationsAdd(RPC::JsonContext& context)
 {
     auto const& params = context.params;
@@ -59,7 +59,7 @@ doPeerReservationsAdd(RPC::JsonContext& context)
     auto const previous = context.app.getPeerReservations().insertOrAssign(
         PeerReservation{.nodeId = nodeId, .description = desc});
 
-    Json::Value result{Json::ObjectValue};
+    json::Value result{json::ObjectValue};
     if (previous)
     {
         result[jss::previous] = previous->toJson();

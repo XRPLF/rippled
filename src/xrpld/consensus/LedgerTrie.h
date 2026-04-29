@@ -219,10 +219,10 @@ struct Node
         return o << s.span << "(T:" << s.tipSupport << ",B:" << s.branchSupport << ")";
     }
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson() const
     {
-        Json::Value res;
+        json::Value res;
         std::stringstream sps;
         sps << span;
         res["span"] = sps.str();
@@ -232,7 +232,7 @@ struct Node
         res["branchSupport"] = branchSupport;
         if (!children.empty())
         {
-            Json::Value& cs = (res["children"] = Json::ArrayValue);
+            json::Value& cs = (res["children"] = json::ArrayValue);
             for (auto const& child : children)
             {
                 cs.append(child->getJson());
@@ -774,12 +774,12 @@ public:
 
     /** Dump JSON representation of trie state
      */
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson() const
     {
-        Json::Value res;
+        json::Value res;
         res["trie"] = root_->getJson();
-        res["seq_support"] = Json::ObjectValue;
+        res["seq_support"] = json::ObjectValue;
         for (auto const& [seq, sup] : seqSupport_)
             res["seq_support"][to_string(seq)] = sup;
         return res;

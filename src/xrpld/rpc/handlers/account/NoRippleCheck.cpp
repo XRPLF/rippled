@@ -27,12 +27,12 @@ namespace xrpl {
 static void
 fillTransaction(
     RPC::JsonContext& context,
-    Json::Value& txArray,
+    json::Value& txArray,
     AccountID const& accountID,
     std::uint32_t& sequence,
     ReadView const& ledger)
 {
-    txArray["Sequence"] = Json::UInt(sequence++);
+    txArray["Sequence"] = json::UInt(sequence++);
     txArray["Account"] = toBase58(accountID);
     auto& fees = ledger.fees();
     // Convert the reference transaction cost in fee units to drops
@@ -48,7 +48,7 @@ fillTransaction(
 //   role: gateway|user             // account role to assume
 //   transactions: true             // optional, recommend transactions
 // }
-Json::Value
+json::Value
 doNoRippleCheck(RPC::JsonContext& context)
 {
     auto const& params(context.params);
@@ -97,9 +97,9 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    Json::Value dummy;  // NOLINT(misc-const-correctness)
-    Json::Value& jvTransactions =
-        transactions ? (result[jss::transactions] = Json::ArrayValue) : dummy;
+    json::Value dummy;  // NOLINT(misc-const-correctness)
+    json::Value& jvTransactions =
+        transactions ? (result[jss::transactions] = json::ArrayValue) : dummy;
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
@@ -114,7 +114,7 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     std::uint32_t seq = sle->getFieldU32(sfSequence);
 
-    Json::Value& problems = (result["problems"] = Json::ArrayValue);
+    json::Value& problems = (result["problems"] = json::ArrayValue);
 
     bool const bDefaultRipple = (sle->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
 
@@ -130,7 +130,7 @@ doNoRippleCheck(RPC::JsonContext& context)
         problems.append("You should immediately set your default ripple flag");
         if (transactions)
         {
-            Json::Value& tx = jvTransactions.append(Json::ObjectValue);
+            json::Value& tx = jvTransactions.append(json::ObjectValue);
             tx["TransactionType"] = jss::AccountSet;
             tx["SetFlag"] = 8;
             fillTransaction(context, tx, accountID, seq, *ledger);
@@ -173,7 +173,7 @@ doNoRippleCheck(RPC::JsonContext& context)
                         ownedItem->getFieldAmount(bLow ? sfLowLimit : sfHighLimit));
                     limitAmount.get<Issue>().account = peer;
 
-                    Json::Value& tx = jvTransactions.append(Json::ObjectValue);
+                    json::Value& tx = jvTransactions.append(json::ObjectValue);
                     tx["TransactionType"] = jss::TrustSet;
                     tx["LimitAmount"] = limitAmount.getJson(JsonOptions::KNone);
                     tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;

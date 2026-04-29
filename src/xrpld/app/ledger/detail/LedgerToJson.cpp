@@ -54,11 +54,11 @@ isBinary(LedgerFill const& fill)
 }
 
 void
-fillJson(Json::Value& json, bool closed, LedgerHeader const& info, bool bFull, unsigned apiVersion)
+fillJson(json::Value& json, bool closed, LedgerHeader const& info, bool bFull, unsigned apiVersion)
 {
     json[jss::parent_hash] = to_string(info.parentHash);
     json[jss::ledger_index] =
-        (apiVersion > 1) ? Json::Value(info.seq) : Json::Value(std::to_string(info.seq));
+        (apiVersion > 1) ? json::Value(info.seq) : json::Value(std::to_string(info.seq));
 
     if (closed)
     {
@@ -92,7 +92,7 @@ fillJson(Json::Value& json, bool closed, LedgerHeader const& info, bool bFull, u
 }
 
 void
-fillJsonBinary(Json::Value& json, bool closed, LedgerHeader const& info)
+fillJsonBinary(json::Value& json, bool closed, LedgerHeader const& info)
 {
     if (!closed)
     {
@@ -108,7 +108,7 @@ fillJsonBinary(Json::Value& json, bool closed, LedgerHeader const& info)
     }
 }
 
-Json::Value
+json::Value
 fillJsonTx(
     LedgerFill const& fill,
     bool bBinary,
@@ -119,7 +119,7 @@ fillJsonTx(
     if (!bExpanded)
         return to_string(txn->getTransactionID());
 
-    Json::Value txJson{Json::ObjectValue};
+    json::Value txJson{json::ObjectValue};
     auto const txnType = txn->getTxnType();
     if (bBinary)
     {
@@ -216,9 +216,9 @@ fillJsonTx(
 }
 
 void
-fillJsonTx(Json::Value& json, LedgerFill const& fill)
+fillJsonTx(json::Value& json, LedgerFill const& fill)
 {
-    auto& txns = json[jss::transactions] = Json::ArrayValue;
+    auto& txns = json[jss::transactions] = json::ArrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
@@ -244,10 +244,10 @@ fillJsonTx(Json::Value& json, LedgerFill const& fill)
 }
 
 void
-fillJsonState(Json::Value& json, LedgerFill const& fill)
+fillJsonState(json::Value& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
-    auto& array = json[jss::accountState] = Json::ArrayValue;
+    auto& array = json[jss::accountState] = json::ArrayValue;
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
@@ -255,7 +255,7 @@ fillJsonState(Json::Value& json, LedgerFill const& fill)
     {
         if (binary)
         {
-            auto& obj = array.append(Json::ObjectValue);
+            auto& obj = array.append(json::ObjectValue);
             obj[jss::hash] = to_string(sle->key());
             obj[jss::tx_blob] = serializeHex(*sle);
         }
@@ -271,15 +271,15 @@ fillJsonState(Json::Value& json, LedgerFill const& fill)
 }
 
 void
-fillJsonQueue(Json::Value& json, LedgerFill const& fill)
+fillJsonQueue(json::Value& json, LedgerFill const& fill)
 {
-    auto& queueData = json[jss::queue_data] = Json::ArrayValue;
+    auto& queueData = json[jss::queue_data] = json::ArrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
     for (auto const& tx : fill.txQueue)
     {
-        auto& txJson = queueData.append(Json::ObjectValue);
+        auto& txJson = queueData.append(json::ObjectValue);
         txJson[jss::fee_level] = to_string(tx.feeLevel);
         if (tx.lastValid)
             txJson[jss::LastLedgerSequence] = *tx.lastValid;
@@ -308,7 +308,7 @@ fillJsonQueue(Json::Value& json, LedgerFill const& fill)
 }
 
 void
-fillJson(Json::Value& json, LedgerFill const& fill)
+fillJson(json::Value& json, LedgerFill const& fill)
 {
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?
@@ -338,25 +338,25 @@ fillJson(Json::Value& json, LedgerFill const& fill)
 }  // namespace
 
 void
-addJson(Json::Value& json, LedgerFill const& fill)
+addJson(json::Value& json, LedgerFill const& fill)
 {
-    auto& object = json[jss::ledger] = Json::ObjectValue;
+    auto& object = json[jss::ledger] = json::ObjectValue;
     fillJson(object, fill);
 
     if (((fill.options & LedgerFill::DumpQueue) != 0) && !fill.txQueue.empty())
         fillJsonQueue(json, fill);
 }
 
-Json::Value
+json::Value
 getJson(LedgerFill const& fill)
 {
-    Json::Value json;
+    json::Value json;
     fillJson(json, fill);
     return json;
 }
 
 void
-copyFrom(Json::Value& to, Json::Value const& from)
+copyFrom(json::Value& to, json::Value const& from)
 {
     if (!to)
     {  // Short circuit this very common case.

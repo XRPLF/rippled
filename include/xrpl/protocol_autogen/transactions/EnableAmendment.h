@@ -74,7 +74,7 @@ public:
  * @brief Builder for EnableAmendment transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class EnableAmendmentBuilder : public TransactionBuilderBase<EnableAmendmentBuilder>

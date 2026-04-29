@@ -114,10 +114,10 @@ STLedgerEntry::getText() const
     return str(boost::format("{ %s, %s }") % to_string(key_) % STObject::getText());
 }
 
-Json::Value
+json::Value
 STLedgerEntry::getJson(JsonOptions options) const
 {
-    Json::Value ret(STObject::getJson(options));
+    json::Value ret(STObject::getJson(options));
 
     ret[jss::index] = to_string(key_);
 

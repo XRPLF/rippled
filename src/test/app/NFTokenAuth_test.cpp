@@ -63,7 +63,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2);
+        env.fund(XRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -116,7 +116,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2);
+        env.fund(XRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -162,7 +162,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2);
+        env.fund(XRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -220,7 +220,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2);
+        env.fund(XRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -295,7 +295,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2);
+        env.fund(XRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -338,7 +338,7 @@ public:
         Account const broker{"broker"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2, broker);
+        env.fund(XRP(10000), g1, a1, a2, broker);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -404,7 +404,7 @@ public:
         Account const broker{"broker"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2, broker);
+        env.fund(XRP(10000), g1, a1, a2, broker);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -464,7 +464,7 @@ public:
         Account const broker{"broker"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2, broker);
+        env.fund(XRP(10000), g1, a1, a2, broker);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -538,7 +538,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, minter, a1, a2);
+        env.fund(XRP(10000), g1, minter, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 

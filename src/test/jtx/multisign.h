@@ -25,11 +25,11 @@ struct Signer
     }
 };
 
-Json::Value
+json::Value
 signers(Account const& account, std::uint32_t quorum, std::vector<Signer> const& v);
 
 /** Remove a signer list. */
-Json::Value
+json::Value
 signers(Account const& account, NoneT);
 
 //------------------------------------------------------------------------------

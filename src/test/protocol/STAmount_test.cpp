@@ -602,10 +602,10 @@ public:
         }
 
         {
-            BEAST_EXPECT(amountFromJson(sfNumber, Json::Value(42)) == XRPAmount(42));
-            BEAST_EXPECT(amountFromJson(sfNumber, Json::Value(-42)) == XRPAmount(-42));
+            BEAST_EXPECT(amountFromJson(sfNumber, json::Value(42)) == XRPAmount(42));
+            BEAST_EXPECT(amountFromJson(sfNumber, json::Value(-42)) == XRPAmount(-42));
 
-            BEAST_EXPECT(amountFromJson(sfNumber, Json::UInt(42)) == XRPAmount(42));
+            BEAST_EXPECT(amountFromJson(sfNumber, json::UInt(42)) == XRPAmount(42));
 
             BEAST_EXPECT(amountFromJson(sfNumber, "-123") == XRPAmount(-123));
 
@@ -701,7 +701,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, Json::Value());
+                auto _ = amountFromJson(sfNumber, json::Value());
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)

@@ -73,7 +73,7 @@ TxMeta::setAffectedNode(uint256 const& node, SField const& type, std::uint16_t n
         }
     }
 
-    nodes_.push_back(STObject(type));
+    nodes_.pushBack(STObject(type));
     STObject& obj = nodes_.back();
 
     XRPL_ASSERT(obj.getFName() == type, "xrpl::TxMeta::setAffectedNode : field type match");
@@ -154,7 +154,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
         if (n.getFieldH256(sfLedgerIndex) == index)
             return n;
     }
-    nodes_.push_back(STObject(type));
+    nodes_.pushBack(STObject(type));
     STObject& obj = nodes_.back();
 
     XRPL_ASSERT(

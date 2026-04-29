@@ -33,10 +33,10 @@
 namespace xrpl {
 
 void
-appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
+appendOfferJson(std::shared_ptr<SLE const> const& offer, json::Value& offers)
 {
     STAmount const dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
-    Json::Value& obj(offers.append(Json::ObjectValue));
+    json::Value& obj(offers.append(json::ObjectValue));
     offer->getFieldAmount(sfTakerPays).setJson(obj[jss::taker_pays]);
     offer->getFieldAmount(sfTakerGets).setJson(obj[jss::taker_gets]);
     obj[jss::seq] = offer->getFieldU32(sfSequence);
@@ -53,7 +53,7 @@ appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
 //   limit: integer                 // optional
 //   marker: opaque                 // optional, resume previous query
 // }
-Json::Value
+json::Value
 doAccountOffers(RPC::JsonContext& context)
 {
     auto const& params(context.params);
@@ -86,7 +86,7 @@ doAccountOffers(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_OFFERS, context))
         return *err;
 
-    Json::Value& jsonOffers(result[jss::offers] = Json::ArrayValue);
+    json::Value& jsonOffers(result[jss::offers] = json::ArrayValue);
     std::vector<std::shared_ptr<SLE const>> offers;
     uint256 startAfter = beast::kZERO;
     std::uint64_t startHint = 0;

@@ -108,11 +108,11 @@ public:
         testcase("category-to-string");
 
         // known category returns known string value
-        BEAST_EXPECT(TrafficCount::to_string(TrafficCount::Category::Total) == "total");
+        BEAST_EXPECT(TrafficCount::toString(TrafficCount::Category::Total) == "total");
 
         // return "unknown" for unknown categories
         BEAST_EXPECT(
-            TrafficCount::to_string(static_cast<TrafficCount::Category>(1000)) == "unknown");
+            TrafficCount::toString(static_cast<TrafficCount::Category>(1000)) == "unknown");
     }
 
     void

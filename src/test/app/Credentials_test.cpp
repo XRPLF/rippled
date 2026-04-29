@@ -55,7 +55,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
             auto const credKey = credentials::keylet(subject, issuer, credType);
 
-            env.fund(kXRP(5000), subject, issuer, other);
+            env.fund(XRP(5000), subject, issuer, other);
             env.close();
 
             // Test Create credentials
@@ -186,7 +186,7 @@ struct Credentials_test : public beast::unit_test::Suite
         Env env{*this, features};
 
         // fund subject and issuer
-        env.fund(kXRP(5000), issuer, subject, other);
+        env.fund(XRP(5000), issuer, subject, other);
         env.close();
 
         {
@@ -220,7 +220,7 @@ struct Credentials_test : public beast::unit_test::Suite
             }
 
             // resurrection
-            env.fund(kXRP(5000), issuer);
+            env.fund(XRP(5000), issuer);
             env.close();
         }
 
@@ -257,7 +257,7 @@ struct Credentials_test : public beast::unit_test::Suite
             }
 
             // resurrection
-            env.fund(kXRP(5000), issuer);
+            env.fund(XRP(5000), issuer);
             env.close();
         }
 
@@ -292,7 +292,7 @@ struct Credentials_test : public beast::unit_test::Suite
             }
 
             // resurrection
-            env.fund(kXRP(5000), subject);
+            env.fund(XRP(5000), subject);
             env.close();
         }
 
@@ -329,7 +329,7 @@ struct Credentials_test : public beast::unit_test::Suite
             }
 
             // resurrection
-            env.fund(kXRP(5000), subject);
+            env.fund(XRP(5000), subject);
             env.close();
         }
 
@@ -423,7 +423,7 @@ struct Credentials_test : public beast::unit_test::Suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(kXRP(5000), subject, issuer);
+            env.fund(XRP(5000), subject, issuer);
             env.close();
 
             {
@@ -567,7 +567,7 @@ struct Credentials_test : public beast::unit_test::Suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(kXRP(5000), issuer);
+            env.fund(XRP(5000), issuer);
             env.close();
 
             {
@@ -607,7 +607,7 @@ struct Credentials_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
 
-            env.fund(kXRP(5000), subject, issuer);
+            env.fund(XRP(5000), subject, issuer);
 
             {
                 testcase("CredentialsAccept fail, Credential doesn't exist.");
@@ -664,7 +664,7 @@ struct Credentials_test : public beast::unit_test::Suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(kXRP(5000), subject, issuer);
+            env.fund(XRP(5000), subject, issuer);
             env.close();
 
             {
@@ -727,7 +727,7 @@ struct Credentials_test : public beast::unit_test::Suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(kXRP(5000), issuer, subject, other);
+            env.fund(XRP(5000), issuer, subject, other);
             env.close();
 
             {
@@ -772,7 +772,7 @@ struct Credentials_test : public beast::unit_test::Suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(kXRP(5000), subject, issuer, other);
+            env.fund(XRP(5000), subject, issuer, other);
             env.close();
 
             {
@@ -900,7 +900,7 @@ struct Credentials_test : public beast::unit_test::Suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(kXRP(5000), subject, issuer);
+            env.fund(XRP(5000), subject, issuer);
             env.close();
 
             {
@@ -925,7 +925,7 @@ struct Credentials_test : public beast::unit_test::Suite
             using namespace jtx;
             Env env{*this};
 
-            env.fund(kXRP(5000), subject, issuer);
+            env.fund(XRP(5000), subject, issuer);
             env.close();
 
             env(credentials::create(subject, issuer, credType));
@@ -938,7 +938,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
             std::string txHash0, txHash1;
             {
-                Json::Value params;
+                json::Value params;
                 params[jss::account] = subject.human();
                 auto const jv = env.rpc("json", "account_tx", to_string(params))[jss::result];
 
@@ -952,7 +952,7 @@ struct Credentials_test : public beast::unit_test::Suite
             }
 
             {
-                Json::Value params;
+                json::Value params;
                 params[jss::account] = issuer.human();
                 auto const jv = env.rpc("json", "account_tx", to_string(params))[jss::result];
 
@@ -969,7 +969,7 @@ struct Credentials_test : public beast::unit_test::Suite
             testcase("account_objects");
             std::string objectIdx;
             {
-                Json::Value params;
+                json::Value params;
                 params[jss::account] = subject.human();
                 auto jv = env.rpc("json", "account_objects", to_string(params))[jss::result];
 
@@ -981,7 +981,7 @@ struct Credentials_test : public beast::unit_test::Suite
             }
 
             {
-                Json::Value params;
+                json::Value params;
                 params[jss::account] = issuer.human();
                 auto jv = env.rpc("json", "account_objects", to_string(params))[jss::result];
 
@@ -1010,7 +1010,7 @@ struct Credentials_test : public beast::unit_test::Suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(kXRP(5000), subject, issuer);
+            env.fund(XRP(5000), subject, issuer);
             env.close();
 
             {

@@ -82,7 +82,7 @@ public:
     ~RPCSubImp() override = default;
 
     void
-    send(Json::Value const& jvObj, bool broadcast) override
+    send(json::Value const& jvObj, bool broadcast) override
     {
         std::lock_guard const sl(lock_);
 
@@ -123,7 +123,7 @@ private:
     void
     sendThread()
     {
-        Json::Value jvEvent;
+        json::Value jvEvent;
         bool bSend = false;
 
         do
@@ -195,7 +195,7 @@ private:
 
     bool sending_{false};  // Sending thread is active.
 
-    std::deque<std::pair<int, Json::Value>> deque_;
+    std::deque<std::pair<int, json::Value>> deque_;
 
     beast::Journal const j_;
     Logs& logs_;

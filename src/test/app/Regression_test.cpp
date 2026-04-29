@@ -37,6 +37,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
 
@@ -63,10 +64,10 @@ struct Regression_test : public beast::unit_test::Suite
         Env env(*this);
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
-        env.fund(kXRP(10000), "alice", gw);
-        env(offer("alice", usd(10), kXRP(10)), Require(Owners("alice", 1)));
-        env(offer("alice", usd(20), kXRP(10)),
-            json(R"raw(
+        env.fund(XRP(10000), "alice", gw);
+        env(offer("alice", usd(10), XRP(10)), Require(Owners("alice", 1)));
+        env(offer("alice", usd(20), XRP(10)),
+            Json(R"raw(
                 { "OfferSequence" : 4 }
             )raw"),
             Require(Owners("alice", 1)));
@@ -93,7 +94,7 @@ struct Regression_test : public beast::unit_test::Suite
         BEAST_EXPECT(closed->header().drops == expectedDrops);
 
         auto const aliceXRP = 400;
-        auto const aliceAmount = kXRP(aliceXRP);
+        auto const aliceAmount = XRP(aliceXRP);
 
         auto next = std::make_shared<Ledger>(*closed, env.app().getTimeKeeper().closeTime());
         {
@@ -135,7 +136,7 @@ struct Regression_test : public beast::unit_test::Suite
             BEAST_EXPECT(sle);
             auto balance = sle->getFieldAmount(sfBalance);
 
-            BEAST_EXPECT(balance == kXRP(0));
+            BEAST_EXPECT(balance == XRP(0));
         }
         expectedDrops -= aliceXRP * kDROPS_PER_XRP;
         BEAST_EXPECT(next->header().drops == expectedDrops);
@@ -152,7 +153,7 @@ struct Regression_test : public beast::unit_test::Suite
         auto test256r1key = [&env](Account const& acct) {
             auto const baseFee = env.current()->fees().base;
             std::uint32_t const acctSeq = env.seq(acct);
-            Json::Value const jsonNoop =
+            json::Value const jsonNoop =
                 env.json(noop(acct), Fee(baseFee), Seq(acctSeq), Sig(acct));
             JTx jt = env.jt(jsonNoop);
             jt.fillSig = false;
@@ -180,7 +181,7 @@ struct Regression_test : public beast::unit_test::Suite
         Account const alice{"alice", KeyType::Secp256k1};
         Account const becky{"becky", KeyType::Ed25519};
 
-        env.fund(kXRP(10000), alice, becky);
+        env.fund(XRP(10000), alice, becky);
 
         test256r1key(alice);
         test256r1key(becky);
@@ -199,9 +200,9 @@ struct Regression_test : public beast::unit_test::Suite
         EnvSs envs(env);
 
         auto const alice = Account("alice");
-        env.fund(kXRP(100000), alice);
+        env.fund(XRP(100000), alice);
 
-        auto params = Json::Value(Json::ObjectValue);
+        auto params = json::Value(json::ObjectValue);
         // Max fee = 50k drops
         params[jss::fee_mult_max] = 5000;
         std::vector<int> const expectedFees({10, 10, 8889, 13889, 20000});
@@ -259,8 +260,8 @@ struct Regression_test : public beast::unit_test::Suite
         std::string const request =
             R"json({"command":"path_find","id":19,"subcommand":"create","source_account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","destination_account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","destination_amount":"1000000","source_currencies":[{"currency":"0000000000000000000000000000000000000000"},{"currency":"0000000000000000000000005553440000000000"},{"currency":"0000000000000000000000004254430000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004254430000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004254430000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004555520000000000"},{"currency":"0000000000000000000000004554480000000000"},{"currency":"0000000000000000000000004A50590000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"000000000000000000000000434E590000000000"},{"currency":"0000000000000000000000004742490000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004341440000000000"}]})json";
 
-        Json::Value jvRequest;
-        Json::Reader jrReader;
+        json::Value jvRequest;
+        json::Reader jrReader;
 
         std::vector<boost::asio::const_buffer> buffers;
         buffers.emplace_back(buffer(request, 1024));
@@ -279,14 +280,14 @@ struct Regression_test : public beast::unit_test::Suite
 
         Account const alice("alice");
         Account const bob("bob");
-        env.fund(kXRP(10'000), alice, bob);
+        env.fund(XRP(10'000), alice, bob);
         env.close();
 
         {
             auto const aliceIndex = keylet::account(alice).key;
             if (BEAST_EXPECT(aliceIndex.isNonZero()))
             {
-                env(check::cash(alice, aliceIndex, check::DeliverMin(kXRP(100))), Ter(tecNO_ENTRY));
+                env(check::cash(alice, aliceIndex, check::DeliverMin(XRP(100))), Ter(tecNO_ENTRY));
             }
         }
 
@@ -317,7 +318,7 @@ struct Regression_test : public beast::unit_test::Suite
                 cache.del(*digest, false);  // NOLINT(bugprone-unchecked-optional-access)
                 auto const beforeCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
-                env(check::cash(alice, bobIndex, check::DeliverMin(kXRP(100))), Ter(tecNO_ENTRY));
+                env(check::cash(alice, bobIndex, check::DeliverMin(XRP(100))), Ter(tecNO_ENTRY));
 
                 auto const afterCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 

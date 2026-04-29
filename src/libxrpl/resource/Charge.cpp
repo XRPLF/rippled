@@ -25,7 +25,7 @@ Charge::cost() const
 }
 
 std::string
-Charge::to_string() const
+Charge::toString() const
 {
     std::stringstream ss;
     ss << label_ << " ($" << cost_ << ")";
@@ -35,7 +35,7 @@ Charge::to_string() const
 std::ostream&
 operator<<(std::ostream& os, Charge const& v)
 {
-    os << v.to_string();
+    os << v.toString();
     return os;
 }
 

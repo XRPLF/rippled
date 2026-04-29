@@ -56,7 +56,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
     }
 
     static bool
-    goodLedger(jtx::Env& env, Json::Value const& json, std::string ledgerID, bool checkDB = false)
+    goodLedger(jtx::Env& env, json::Value const& json, std::string ledgerID, bool checkDB = false)
     {
         auto good = json.isMember(jss::result) && !RPC::containsError(json[jss::result]) &&
             json[jss::result][jss::ledger][jss::ledger_index] == ledgerID;
@@ -95,14 +95,14 @@ class SHAMapStore_test : public beast::unit_test::Suite
     }
 
     static bool
-    bad(Json::Value const& json, ErrorCodeI error = RpcLgrNotFound)
+    bad(json::Value const& json, ErrorCodeI error = RpcLgrNotFound)
     {
         return json.isMember(jss::result) && RPC::containsError(json[jss::result]) &&
             json[jss::result][jss::error_code] == error;
     }
 
     std::string
-    getHash(Json::Value const& json)
+    getHash(json::Value const& json)
     {
         BEAST_EXPECT(
             json.isMember(jss::result) && json[jss::result].isMember(jss::ledger) &&
@@ -167,13 +167,13 @@ public:
         Env env(*this, envconfig(onlineDelete));
 
         auto& store = env.app().getSHAMapStore();
-        env.fund(kXRP(10000), noripple("alice"));
+        env.fund(XRP(10000), noripple("alice"));
 
         ledgerCheck(env, 1, 2);
         transactionCheck(env, 0);
         accountTransactionCheck(env, 0);
 
-        std::map<std::uint32_t, Json::Value const> ledgers;
+        std::map<std::uint32_t, json::Value const> ledgers;
 
         auto ledgerTmp = env.rpc("ledger", "0");
         BEAST_EXPECT(bad(ledgerTmp));
@@ -198,7 +198,7 @@ public:
 
         for (auto i = firstSeq + 1; i < kDELETE_INTERVAL + firstSeq; ++i)
         {
-            env.fund(kXRP(10000), noripple("test" + std::to_string(i)));
+            env.fund(XRP(10000), noripple("test" + std::to_string(i)));
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");

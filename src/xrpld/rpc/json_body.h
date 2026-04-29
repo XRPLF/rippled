@@ -13,7 +13,7 @@ struct JsonBody
 {
     explicit JsonBody() = default;
 
-    using value_type = Json::Value;
+    using value_type = json::Value;
 
     class Reader
     {

@@ -240,7 +240,7 @@ ServerHandler::onHandoff(
         is->getConsumer() = requestInboundEndpoint(
             resourceManager_,
             beastRemoteAddress,
-            requestRole(Role::GUEST, session.port(), Json::Value(), beastRemoteAddress, is->user()),
+            requestRole(Role::GUEST, session.port(), json::Value(), beastRemoteAddress, is->user()),
             is->user(),
             is->forwardedFor());
         ws->appDefined = std::move(is);
@@ -261,7 +261,7 @@ ServerHandler::onHandoff(
     return {};
 }
 
-static inline Json::Output
+static inline json::Output
 makeOutput(Session& session)
 {
     return [&](boost::beast::string_view const& b) { session.write(b.data(), b.size()); };
@@ -335,17 +335,17 @@ ServerHandler::onWSMessage(
     std::shared_ptr<WSSession> session,
     std::vector<boost::asio::const_buffer> const& buffers)
 {
-    Json::Value jv;
+    json::Value jv;
     auto const size = boost::asio::buffer_size(buffers);
-    if (size > RPC::Tuning::kMAX_REQUEST_SIZE || !Json::Reader{}.parse(jv, buffers) ||
+    if (size > RPC::Tuning::kMAX_REQUEST_SIZE || !json::Reader{}.parse(jv, buffers) ||
         !jv.isObject())
     {
-        Json::Value jvResult(Json::ObjectValue);
+        json::Value jvResult(json::ObjectValue);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
         jvResult[jss::value] = buffersToString(buffers);
         boost::beast::multi_buffer sb;
-        Json::stream(jvResult, [&sb](auto const p, auto const n) {
+        json::stream(jvResult, [&sb](auto const p, auto const n) {
             sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(p, n)));
         });
         JLOG(journal_.trace()) << "Websocket sending '" << jvResult << "'";
@@ -394,7 +394,7 @@ ServerHandler::onStopped(Server&)
 
 template <class T>
 void
-logDuration(Json::Value const& request, T const& duration, beast::Journal& journal)
+logDuration(json::Value const& request, T const& duration, beast::Journal& journal)
 {
     using namespace std::chrono_literals;
     auto const level = [&]() {
@@ -410,11 +410,11 @@ logDuration(Json::Value const& request, T const& duration, beast::Journal& journ
                 << " microseconds. request = " << request;
 }
 
-Json::Value
+json::Value
 ServerHandler::processSession(
     std::shared_ptr<WSSession> const& session,
     std::shared_ptr<JobQueue::Coro> const& coro,
-    Json::Value const& jv)
+    json::Value const& jv)
 {
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))
@@ -426,7 +426,7 @@ ServerHandler::processSession(
     }
 
     // Requests without "command" are invalid.
-    Json::Value jr(Json::ObjectValue);
+    json::Value jr(json::ObjectValue);
     Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
     try
     {
@@ -498,7 +498,7 @@ ServerHandler::processSession(
         // LCOV_EXCL_START
         jr[jss::result] = RPC::makeError(RpcInternal);
         JLOG(journal_.error()) << "Exception while processing WS: " << ex.what() << "\n"
-                               << "Input JSON: " << Json::Compact{Json::Value{jv}};
+                               << "Input JSON: " << json::Compact{json::Value{jv}};
         // LCOV_EXCL_STOP
     }
 
@@ -582,21 +582,21 @@ ServerHandler::processSession(
     }
 }
 
-static Json::Value
-makeJsonError(Json::Int code, Json::Value&& message)
+static json::Value
+makeJsonError(json::Int code, json::Value&& message)
 {
-    Json::Value sub{Json::ObjectValue};
+    json::Value sub{json::ObjectValue};
     sub["code"] = code;
     sub["message"] = std::move(message);
-    Json::Value r{Json::ObjectValue};
+    json::Value r{json::ObjectValue};
     r["error"] = sub;
     return r;
 }
 
-Json::Int constexpr kMETHOD_NOT_FOUND = -32601;
-Json::Int constexpr kSERVER_OVERLOADED = -32604;
-Json::Int constexpr kFORBIDDEN = -32605;
-Json::Int constexpr kWRONG_VERSION = -32606;
+json::Int constexpr kMETHOD_NOT_FOUND = -32601;
+json::Int constexpr kSERVER_OVERLOADED = -32604;
+json::Int constexpr kFORBIDDEN = -32605;
+json::Int constexpr kWRONG_VERSION = -32606;
 
 void
 ServerHandler::processRequest(
@@ -610,9 +610,9 @@ ServerHandler::processRequest(
 {
     auto rpcJ = app_.getJournal("RPC");
 
-    Json::Value jsonOrig;
+    json::Value jsonOrig;
     {
-        Json::Reader reader;
+        json::Reader reader;
         if ((request.size() > RPC::Tuning::kMAX_REQUEST_SIZE) || !reader.parse(request, jsonOrig) ||
             !jsonOrig || !jsonOrig.isObject())
         {
@@ -638,15 +638,15 @@ ServerHandler::processRequest(
         size = jsonOrig[jss::params].size();
     }
 
-    Json::Value reply(batch ? Json::ArrayValue : Json::ObjectValue);
+    json::Value reply(batch ? json::ArrayValue : json::ObjectValue);
     auto const start(std::chrono::high_resolution_clock::now());
     for (unsigned i = 0; i < size; ++i)
     {
-        Json::Value const& jsonRPC = batch ? jsonOrig[jss::params][i] : jsonOrig;
+        json::Value const& jsonRPC = batch ? jsonOrig[jss::params][i] : jsonOrig;
 
         if (!jsonRPC.isObject())
         {
-            Json::Value r(Json::ObjectValue);
+            json::Value r(json::ObjectValue);
             r[jss::request] = jsonRPC;
             r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "Method not found");
             reply.append(r);
@@ -658,7 +658,7 @@ ServerHandler::processRequest(
             jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][0u].isObject())
         {
             apiVersion = RPC::getAPIVersionNumber(
-                jsonRPC[jss::params][Json::UInt(0)], app_.config().BETA_RPC_API);
+                jsonRPC[jss::params][json::UInt(0)], app_.config().BETA_RPC_API);
         }
 
         if (apiVersion == RPC::kAPI_VERSION_IF_UNSPECIFIED && batch)
@@ -674,7 +674,7 @@ ServerHandler::processRequest(
                 httpReply(400, jss::invalid_API_version.cStr(), output, rpcJ);
                 return;
             }
-            Json::Value r(Json::ObjectValue);
+            json::Value r(json::ObjectValue);
             r[jss::request] = jsonRPC;
             r[jss::error] = makeJsonError(kWRONG_VERSION, jss::invalid_API_version.cStr());
             reply.append(r);
@@ -691,14 +691,14 @@ ServerHandler::processRequest(
         }
 
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
-            jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][Json::UInt(0)].isObjectOrNull())
+            jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][json::UInt(0)].isObjectOrNull())
         {
             role = requestRole(
-                required, port, jsonRPC[jss::params][Json::UInt(0)], remoteIPAddress, user);
+                required, port, jsonRPC[jss::params][json::UInt(0)], remoteIPAddress, user);
         }
         else
         {
-            role = requestRole(required, port, Json::ObjectValue, remoteIPAddress, user);
+            role = requestRole(required, port, json::ObjectValue, remoteIPAddress, user);
         }
 
         Resource::Consumer usage;
@@ -717,7 +717,7 @@ ServerHandler::processRequest(
                     httpReply(503, "Server is overloaded", output, rpcJ);
                     return;
                 }
-                Json::Value r = jsonRPC;
+                json::Value r = jsonRPC;
                 r[jss::error] = makeJsonError(kSERVER_OVERLOADED, "Server is overloaded");
                 reply.append(r);
                 continue;
@@ -732,7 +732,7 @@ ServerHandler::processRequest(
                 httpReply(403, "Forbidden", output, rpcJ);
                 return;
             }
-            Json::Value r = jsonRPC;
+            json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kFORBIDDEN, "Forbidden");
             reply.append(r);
             continue;
@@ -746,13 +746,13 @@ ServerHandler::processRequest(
                 httpReply(400, "Null method", output, rpcJ);
                 return;
             }
-            Json::Value r = jsonRPC;
+            json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "Null method");
             reply.append(r);
             continue;
         }
 
-        Json::Value const& method = jsonRPC[jss::method];
+        json::Value const& method = jsonRPC[jss::method];
         if (!method.isString())
         {
             usage.charge(Resource::kFEE_MALFORMED_RPC);
@@ -761,7 +761,7 @@ ServerHandler::processRequest(
                 httpReply(400, "method is not string", output, rpcJ);
                 return;
             }
-            Json::Value r = jsonRPC;
+            json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "method is not string");
             reply.append(r);
             continue;
@@ -776,7 +776,7 @@ ServerHandler::processRequest(
                 httpReply(400, "method is empty", output, rpcJ);
                 return;
             }
-            Json::Value r = jsonRPC;
+            json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "method is empty");
             reply.append(r);
             continue;
@@ -788,13 +788,13 @@ ServerHandler::processRequest(
         //
         // Otherwise, that field must be an array of length 1 (why?)
         // and we take that first entry and validate that it's an object.
-        Json::Value params;
+        json::Value params;
         if (!batch)
         {
             params = jsonRPC[jss::params];
             if (!params)
             {
-                params = Json::Value(Json::ObjectValue);
+                params = json::Value(json::ObjectValue);
             }
             else if (!params.isArray() || params.size() != 1)
             {
@@ -830,7 +830,7 @@ ServerHandler::processRequest(
                     return;
                 }
 
-                Json::Value r = jsonRPC;
+                json::Value r = jsonRPC;
                 r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "ripplerpc is not a string");
                 reply.append(r);
                 continue;
@@ -869,7 +869,7 @@ ServerHandler::processRequest(
              .apiVersion = apiVersion},
             params,
             {.user = user, .forwardedFor = forwardedFor}};
-        Json::Value result;
+        json::Value result;
 
         auto start = std::chrono::system_clock::now();
 
@@ -883,7 +883,7 @@ ServerHandler::processRequest(
             result = RPC::makeError(RpcInternal);
             JLOG(journal_.error())
                 << "Internal error : " << ex.what()
-                << " when processing request: " << Json::Compact{Json::Value{params}};
+                << " when processing request: " << json::Compact{json::Value{params}};
             // LCOV_EXCL_STOP
         }
 
@@ -895,7 +895,7 @@ ServerHandler::processRequest(
         if (usage.warn())
             result[jss::warning] = jss::load;
 
-        Json::Value r(Json::ObjectValue);
+        json::Value r(json::ObjectValue);
         if (ripplerpc >= "2.0")
         {
             if (result.isMember(jss::error))

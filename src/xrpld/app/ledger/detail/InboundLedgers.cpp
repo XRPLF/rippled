@@ -297,10 +297,10 @@ public:
         fetchRate_.add(1, clock_.now());
     }
 
-    Json::Value
+    json::Value
     getInfo() override
     {
-        Json::Value ret(Json::ObjectValue);
+        json::Value ret(json::ObjectValue);
 
         std::vector<std::pair<uint256, std::shared_ptr<InboundLedger>>> acqs;
 

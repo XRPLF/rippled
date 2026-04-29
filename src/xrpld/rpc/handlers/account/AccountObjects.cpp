@@ -43,7 +43,7 @@ getAccountObjects(
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
-    Json::Value& jvResult)
+    json::Value& jvResult)
 {
     // check if dirIndex is valid
     if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))
@@ -73,7 +73,7 @@ getAccountObjects(
             iterateNFTPages = false;
     }
 
-    auto& jvObjects = (jvResult[jss::account_objects] = Json::ArrayValue);
+    auto& jvObjects = (jvResult[jss::account_objects] = json::ArrayValue);
 
     // this is a mutable version of limit, used to seamlessly switch
     // to iterating directory entries when nftokenpages are exhausted
@@ -145,7 +145,7 @@ getAccountObjects(
         // directory entries. If there's no nftoken page, we will
         // give empty array for account_objects.
         if (mlimit >= limit)
-            jvResult[jss::account_objects] = Json::ArrayValue;
+            jvResult[jss::account_objects] = json::ArrayValue;
 
         // non-zero dirIndex validity was checked in the beginning of this
         // function; by this point, it should be zero. This function returns
@@ -226,7 +226,7 @@ getAccountObjects(
     }
 }
 
-Json::Value
+json::Value
 doAccountObjects(RPC::JsonContext& context)
 {
     auto const& params = context.params;
@@ -259,7 +259,7 @@ doAccountObjects(RPC::JsonContext& context)
     {
         struct
         {
-            Json::StaticString name;
+            json::StaticString name;
             LedgerEntryType type;
         } static constexpr kDELETION_BLOCKERS[] = {
             {.name = jss::check, .type = ltCHECK},

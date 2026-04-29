@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/protocol/STTx.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
-#include <xrpl/json/json_value.h>
 
-#include <stdexcept>
 #include <optional>
+#include <stdexcept>
 
 namespace xrpl::transactions {
 
@@ -35,8 +35,7 @@ public:
      * @brief Construct a XChainModifyBridge transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit XChainModifyBridge(std::shared_ptr<STTx const> tx)
-        : TransactionBase(std::move(tx))
+    explicit XChainModifyBridge(std::shared_ptr<STTx const> tx) : TransactionBase(std::move(tx))
     {
         // Verify transaction type
         if (tx_->getTxnType() != txType)
@@ -115,7 +114,7 @@ public:
  * @brief Builder for XChainModifyBridge transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class XChainModifyBridgeBuilder : public TransactionBuilderBase<XChainModifyBridgeBuilder>
@@ -128,11 +127,16 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    XChainModifyBridgeBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
-)
-        : TransactionBuilderBase<XChainModifyBridgeBuilder>(ttXCHAIN_MODIFY_BRIDGE, account, sequence, fee)
+    XChainModifyBridgeBuilder(
+        SF_ACCOUNT::type::value_type account,
+        std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,
+        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
+        : TransactionBuilderBase<XChainModifyBridgeBuilder>(
+              ttXCHAIN_MODIFY_BRIDGE,
+              account,
+              sequence,
+              fee)
     {
         setXChainBridge(xChainBridge);
     }

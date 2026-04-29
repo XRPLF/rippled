@@ -36,7 +36,7 @@ struct is_error_code_enum<xrpl::cryptoconditions::Error>
 {
     explicit is_error_code_enum() = default;
 
-    static bool const value = true;
+    static bool const value = true;  // NOLINT(readability-identifier-naming)
 };
 
 }  // namespace std

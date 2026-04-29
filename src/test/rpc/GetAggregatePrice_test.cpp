@@ -85,7 +85,7 @@ public:
             for (auto const& v : invalidDocument)
             {
                 ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, v}}});
-                Json::Value jv;
+                json::Value jv;
                 toJson(jv, v);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
@@ -101,7 +101,7 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
 
             // oracles have wrong asset pair
-            env.fund(kXRP(1'000), owner);
+            env.fund(XRP(1'000), owner);
             Oracle const oracle(
                 env,
                 {.owner = owner,
@@ -139,7 +139,7 @@ public:
             for (int i = 0; i < 201; ++i)
             {
                 Account const owner(std::to_string(i));
-                env.fund(kXRP(1'000), owner);
+                env.fund(XRP(1'000), owner);
                 Oracle const oracle(env, {.owner = owner, .documentID = i, .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
             }
@@ -161,7 +161,7 @@ public:
                 auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
                 Account const owner{std::to_string(i)};
-                env.fund(kXRP(1'000), owner);
+                env.fund(XRP(1'000), owner);
                 Oracle const oracle(
                     env,
                     {.owner = owner,

@@ -21,7 +21,7 @@ class GetCounts_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env(*this);
 
-        Json::Value result;
+        json::Value result;
         {
             using namespace std::chrono_literals;
             // Add a little delay so the App's "uptime" will have a value.
@@ -40,7 +40,7 @@ class GetCounts_test : public beast::unit_test::Suite
         env.close();
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(kXRP(10000), alice, bob);
+        env.fund(XRP(10000), alice, bob);
         env.trust(alice["USD"](1000), bob);
         for (auto i = 0; i < 20; ++i)
         {

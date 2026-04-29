@@ -336,7 +336,7 @@ public:
 
         @returns a `Json objectvalue`
     */
-    Json::Value
+    json::Value
     doRPC(Application& app) const;
 
 private:

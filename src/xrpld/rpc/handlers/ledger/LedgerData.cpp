@@ -35,7 +35,7 @@ namespace xrpl {
 //     ledger_index: chosen ledger's index
 //     state:        array of state nodes
 //     marker:       resume point, if any
-Json::Value
+json::Value
 doLedgerData(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
@@ -49,7 +49,7 @@ doLedgerData(RPC::JsonContext& context)
     ReadView::key_type key = ReadView::key_type();
     if (isMarker)
     {
-        Json::Value const& jMarker = params[jss::marker];
+        json::Value const& jMarker = params[jss::marker];
         if (!(jMarker.isString() && key.parseHex(jMarker.asString())))
             return RPC::expectedFieldError(jss::marker, "valid");
     }
@@ -59,7 +59,7 @@ doLedgerData(RPC::JsonContext& context)
     int limit = -1;
     if (params.isMember(jss::limit))
     {
-        Json::Value const& jLimit = params[jss::limit];
+        json::Value const& jLimit = params[jss::limit];
         if (!jLimit.isIntegral())
             return RPC::expectedFieldError(jss::limit, "integer");
 
@@ -87,10 +87,10 @@ doLedgerData(RPC::JsonContext& context)
         rpcStatus.inject(jvResult);
         return jvResult;
     }
-    Json::Value& nodes = jvResult[jss::state];
-    if (nodes.type() == Json::NullValue)
+    json::Value& nodes = jvResult[jss::state];
+    if (nodes.type() == json::NullValue)
     {
-        nodes = Json::Value(Json::ArrayValue);
+        nodes = json::Value(json::ArrayValue);
     }
 
     auto e = lpLedger->sles.end();
@@ -109,13 +109,13 @@ doLedgerData(RPC::JsonContext& context)
         {
             if (isBinary)
             {
-                Json::Value& entry = nodes.append(Json::ObjectValue);
+                json::Value& entry = nodes.append(json::ObjectValue);
                 entry[jss::data] = serializeHex(*sle);
                 entry[jss::index] = to_string(sle->key());
             }
             else
             {
-                Json::Value& entry = nodes.append(sle->getJson(JsonOptions::KNone));
+                json::Value& entry = nodes.append(sle->getJson(JsonOptions::KNone));
                 entry[jss::index] = to_string(sle->key());
             }
         }

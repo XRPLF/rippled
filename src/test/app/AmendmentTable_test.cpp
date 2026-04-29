@@ -275,7 +275,7 @@ public:
         // Verify that unsupportedID is not in table.
         uint256 const unsupportedID = amendmentId(unsupported_[0]);
         {
-            Json::Value const unsupp =
+            json::Value const unsupp =
                 table->getJson(unsupportedID, true)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp.size() == 0);
         }
@@ -283,7 +283,7 @@ public:
         // After vetoing unsupportedID verify that it is in table.
         table->veto(unsupportedID);
         {
-            Json::Value const unsupp =
+            json::Value const unsupp =
                 table->getJson(unsupportedID, true)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp[jss::vetoed].asBool());
         }
@@ -608,14 +608,14 @@ public:
 
         uint256 const unsupportedID = amendmentId(unsupported_[0]);
         {
-            Json::Value const unsupp =
+            json::Value const unsupp =
                 table->getJson(unsupportedID, false)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp.size() == 0);
         }
 
         table->veto(unsupportedID);
         {
-            Json::Value const unsupp =
+            json::Value const unsupp =
                 table->getJson(unsupportedID, false)[to_string(unsupportedID)];
             BEAST_EXPECT(!unsupp[jss::vetoed].asBool());
         }

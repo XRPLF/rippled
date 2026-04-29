@@ -73,7 +73,7 @@ namespace xrpl::detail {
  * @return Name of the table.
  */
 static std::string
-to_string(TableType type)
+toString(TableType type)
 {
     static_assert(kTABLE_TYPE_COUNT == 3, "Need to modify switch statement if enum is modified");
 
@@ -152,7 +152,7 @@ makeLedgerDBs(
 std::optional<LedgerIndex>
 getMinLedgerSeq(soci::session& session, TableType type)
 {
-    std::string const query = "SELECT MIN(LedgerSeq) FROM " + to_string(type) + ";";
+    std::string const query = "SELECT MIN(LedgerSeq) FROM " + toString(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -162,7 +162,7 @@ getMinLedgerSeq(soci::session& session, TableType type)
 std::optional<LedgerIndex>
 getMaxLedgerSeq(soci::session& session, TableType type)
 {
-    std::string const query = "SELECT MAX(LedgerSeq) FROM " + to_string(type) + ";";
+    std::string const query = "SELECT MAX(LedgerSeq) FROM " + toString(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -172,13 +172,13 @@ getMaxLedgerSeq(soci::session& session, TableType type)
 void
 deleteByLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq)
 {
-    session << "DELETE FROM " << to_string(type) << " WHERE LedgerSeq == " << ledgerSeq << ";";
+    session << "DELETE FROM " << toString(type) << " WHERE LedgerSeq == " << ledgerSeq << ";";
 }
 
 void
 deleteBeforeLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq)
 {
-    session << "DELETE FROM " << to_string(type) << " WHERE LedgerSeq < " << ledgerSeq << ";";
+    session << "DELETE FROM " << toString(type) << " WHERE LedgerSeq < " << ledgerSeq << ";";
 }
 
 std::size_t
@@ -187,7 +187,7 @@ getRows(soci::session& session, TableType type)
     std::size_t rows = 0;
     session << "SELECT COUNT(*) AS rows "
                "FROM "
-            << to_string(type) << ";",
+            << toString(type) << ";",
         soci::into(rows);
 
     return rows;
@@ -201,7 +201,7 @@ getRowsMinMax(soci::session& session, TableType type)
                "MIN(LedgerSeq) AS first, "
                "MAX(LedgerSeq) AS last "
                "FROM "
-            << to_string(type) << ";",
+            << toString(type) << ";",
         soci::into(res.numberOfRows), soci::into(res.minLedgerSequence),
         soci::into(res.maxLedgerSequence);
 

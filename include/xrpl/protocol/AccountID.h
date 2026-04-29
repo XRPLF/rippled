@@ -105,10 +105,10 @@ initAccountIdCache(std::size_t count);
 }  // namespace xrpl
 
 //------------------------------------------------------------------------------
-namespace Json {
+namespace json {
 template <>
 inline xrpl::AccountID
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
 
@@ -117,7 +117,7 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
         return *r;
     Throw<JsonTypeMismatchError>(field.getJsonName(), "AccountID");
 }
-}  // namespace Json
+}  // namespace json
 
 //------------------------------------------------------------------------------
 

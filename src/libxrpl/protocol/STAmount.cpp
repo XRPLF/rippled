@@ -640,9 +640,9 @@ canSubtract(STAmount const& a, STAmount const& b)
 }
 
 void
-STAmount::setJson(Json::Value& elem) const
+STAmount::setJson(json::Value& elem) const
 {
-    elem = Json::ObjectValue;
+    elem = json::ObjectValue;
 
     if (!native())
     {
@@ -767,10 +767,10 @@ STAmount::getText() const
     return ret;
 }
 
-Json::Value
+json::Value
 STAmount::getJson(JsonOptions) const
 {
-    Json::Value elem;
+    json::Value elem;
     setJson(elem);
     return elem;
 }
@@ -1024,13 +1024,13 @@ amountFromString(Asset const& asset, std::string const& amount)
 }
 
 STAmount
-amountFromJson(SField const& name, Json::Value const& v)
+amountFromJson(SField const& name, json::Value const& v)
 {
     Asset asset;
 
-    Json::Value value;
-    Json::Value currencyOrMPTID;
-    Json::Value issuer;
+    json::Value value;
+    json::Value currencyOrMPTID;
+    json::Value issuer;
     bool isMPT = false;
 
     if (v.isNull())
@@ -1056,9 +1056,9 @@ amountFromJson(SField const& name, Json::Value const& v)
     }
     else if (v.isArray())
     {
-        value = v.get(Json::UInt(0), 0);
-        currencyOrMPTID = v.get(Json::UInt(1), Json::NullValue);
-        issuer = v.get(Json::UInt(2), Json::NullValue);
+        value = v.get(json::UInt(0), 0);
+        currencyOrMPTID = v.get(json::UInt(1), json::NullValue);
+        issuer = v.get(json::UInt(2), json::NullValue);
     }
     else if (v.isString())
     {
@@ -1148,7 +1148,7 @@ amountFromJson(SField const& name, Json::Value const& v)
 }
 
 bool
-amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource)
+amountFromJsonNoThrow(STAmount& result, json::Value const& jvSource)
 {
     try
     {

@@ -162,7 +162,7 @@ constexpr ErrorInfo kUNKNOWN_ERROR;
 //------------------------------------------------------------------------------
 
 void
-injectError(ErrorCodeI code, Json::Value& json)
+injectError(ErrorCodeI code, json::Value& json)
 {
     ErrorInfo const& info(getErrorInfo(code));
     json[jss::error] = info.token;
@@ -171,7 +171,7 @@ injectError(ErrorCodeI code, Json::Value& json)
 }
 
 void
-injectError(ErrorCodeI code, std::string const& message, Json::Value& json)
+injectError(ErrorCodeI code, std::string const& message, json::Value& json)
 {
     ErrorInfo const& info(getErrorInfo(code));
     json[jss::error] = info.token;
@@ -187,24 +187,24 @@ getErrorInfo(ErrorCodeI code)
     return detail::kSORTED_ERROR_INFOS[code - 1];
 }
 
-Json::Value
+json::Value
 makeError(ErrorCodeI code)
 {
-    Json::Value json;
+    json::Value json;
     injectError(code, json);
     return json;
 }
 
-Json::Value
+json::Value
 makeError(ErrorCodeI code, std::string const& message)
 {
-    Json::Value json;
+    json::Value json;
     injectError(code, message, json);
     return json;
 }
 
 bool
-containsError(Json::Value const& json)
+containsError(json::Value const& json)
 {
     return json.isObject() && json.isMember(jss::error);
 }
@@ -218,7 +218,7 @@ errorCodeHttpStatus(ErrorCodeI code)
 }  // namespace RPC
 
 std::string
-rpcErrorString(Json::Value const& jv)
+rpcErrorString(json::Value const& jv)
 {
     XRPL_ASSERT(RPC::contains_error(jv), "xrpl::RPC::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();

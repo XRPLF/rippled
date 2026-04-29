@@ -177,19 +177,19 @@ public:
         return Consumer(*this, *entry);
     }
 
-    Json::Value
+    json::Value
     getJson()
     {
         return getJson(WarningThreshold);
     }
 
-    /** Returns a Json::objectValue. */
-    Json::Value
+    /** Returns a json::objectValue. */
+    json::Value
     getJson(int threshold)
     {
         clock_type::time_point const now(clock_.now());
 
-        Json::Value ret(Json::ObjectValue);
+        json::Value ret(json::ObjectValue);
         std::lock_guard const _(lock_);
 
         for (auto& inboundEntry : inbound_)
@@ -197,7 +197,7 @@ public:
             int const localBalance = inboundEntry.local_balance.value(now);
             if ((localBalance + inboundEntry.remote_balance) >= threshold)
             {
-                Json::Value& entry = (ret[inboundEntry.to_string()] = Json::ObjectValue);
+                json::Value& entry = (ret[inboundEntry.toString()] = json::ObjectValue);
                 entry[jss::local] = localBalance;
                 entry[jss::remote] = inboundEntry.remote_balance;
                 entry[jss::type] = "inbound";
@@ -208,7 +208,7 @@ public:
             int const localBalance = outboundEntry.local_balance.value(now);
             if ((localBalance + outboundEntry.remote_balance) >= threshold)
             {
-                Json::Value& entry = (ret[outboundEntry.to_string()] = Json::ObjectValue);
+                json::Value& entry = (ret[outboundEntry.toString()] = json::ObjectValue);
                 entry[jss::local] = localBalance;
                 entry[jss::remote] = outboundEntry.remote_balance;
                 entry[jss::type] = "outbound";
@@ -219,7 +219,7 @@ public:
             int const localBalance = adminEntry.local_balance.value(now);
             if ((localBalance + adminEntry.remote_balance) >= threshold)
             {
-                Json::Value& entry = (ret[adminEntry.to_string()] = Json::ObjectValue);
+                json::Value& entry = (ret[adminEntry.toString()] = json::ObjectValue);
                 entry[jss::local] = localBalance;
                 entry[jss::remote] = adminEntry.remote_balance;
                 entry[jss::type] = "admin";
@@ -520,7 +520,7 @@ public:
             beast::PropertyStream::Map item(items);
             if (entry.refcount != 0)
                 item["count"] = entry.refcount;
-            item["name"] = entry.to_string();
+            item["name"] = entry.toString();
             item["balance"] = entry.balance(now);
             if (entry.remote_balance != 0)
                 item["remote_balance"] = entry.remote_balance;

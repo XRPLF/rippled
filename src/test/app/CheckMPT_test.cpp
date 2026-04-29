@@ -77,7 +77,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         env.close();
-        Json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+        json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         // Expect there to be a DeliveredAmount field.
         if (!BEAST_EXPECT(meta.isMember(sfDeliveredAmount.jsonName)))
@@ -103,7 +103,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        STAmount const startBalance{kXRP(1'000).value()};
+        STAmount const startBalance{XRP(1'000).value()};
         env.fund(startBalance, gw, alice, bob);
 
         MPT const usd = MPTTester({.env = env, .issuer = gw});
@@ -118,7 +118,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             std::size_t const fromCkCount{checksOnAccount(env, from).size()};
             std::size_t const toCkCount{checksOnAccount(env, to).size()};
 
-            env(check::create(from, to, kXRP(2000)));
+            env(check::create(from, to, XRP(2000)));
             env.close();
 
             env(check::create(from, to, usd(50)));
@@ -198,7 +198,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        STAmount const startBalance{kXRP(1'000).value()};
+        STAmount const startBalance{XRP(1'000).value()};
         env.fund(startBalance, gw, alice, bob);
 
         MPT const usd = MPTTester({.env = env, .issuer = gw});
@@ -215,7 +215,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             std::size_t const fromCkCount{checksOnAccount(env, from).size()};
             std::size_t const toCkCount{checksOnAccount(env, to).size()};
 
-            env(check::create(from, to, kXRP(2000)), Ter(expected));
+            env(check::create(from, to, XRP(2000)), Ter(expected));
             env.close();
 
             env(check::create(from, to, usd(50)), Ter(expected));
@@ -279,7 +279,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        STAmount const startBalance{kXRP(1'000).value()};
+        STAmount const startBalance{XRP(1'000).value()};
         env.fund(startBalance, gw1, gwF, alice, bob);
 
         auto usdm = MPTTester({.env = env, .issuer = gw1, .flags = kMPT_DEX_FLAGS | tfMPTCanLock});
@@ -294,7 +294,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         env.close();
 
         // Check to self.
-        env(check::create(alice, alice, kXRP(10)), Ter(temREDUNDANT));
+        env(check::create(alice, alice, XRP(10)), Ter(temREDUNDANT));
         env.close();
 
         // Bad amount.
@@ -438,7 +438,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Simple MPT check cashed with Amount (with failures).
             Env env{*this, features};
 
-            env.fund(kXRP(1'000), gw, alice, bob);
+            env.fund(XRP(1'000), gw, alice, bob);
 
             MPT const usd =
                 MPTTester({.env = env, .issuer = gw, .holders = {alice}, .maxAmt = 105});
@@ -575,7 +575,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Simple MPT check cashed with DeliverMin (with failures).
             Env env{*this, features};
 
-            env.fund(kXRP(1'000), gw, alice, bob);
+            env.fund(XRP(1'000), gw, alice, bob);
 
             MPT const usd =
                 MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 20});
@@ -657,7 +657,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Examine the effects of the asfRequireAuth flag.
             Env env(*this, features);
 
-            env.fund(kXRP(1000), gw, alice, bob);
+            env.fund(XRP(1000), gw, alice, bob);
             auto usdm = MPTTester(
                 {.env = env,
                  .issuer = gw,
@@ -706,7 +706,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
 
-            env.fund(kXRP(1'000), gw, alice, bob);
+            env.fund(XRP(1'000), gw, alice, bob);
 
             MPT const usd =
                 MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 20});
@@ -773,7 +773,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
         Env env{*this, features};
 
-        env.fund(kXRP(1'000), gw, alice, bob);
+        env.fund(XRP(1'000), gw, alice, bob);
 
         // Set gw's transfer rate and see the consequences when cashing a check.
         MPT const usd = MPTTester(
@@ -849,7 +849,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
         Env env(*this, features);
 
-        env.fund(kXRP(1000), gw, alice, bob, zoe);
+        env.fund(XRP(1000), gw, alice, bob, zoe);
 
         auto usdm = MPTTester(
             {.env = env,
@@ -877,12 +877,12 @@ class CheckMPT_test : public beast::unit_test::Suite
         env.close();
 
         uint256 const chkIdX{getCheckIndex(alice, env.seq(alice))};
-        env(check::create(alice, bob, kXRP(10)));
+        env(check::create(alice, bob, XRP(10)));
         env.close();
 
         using namespace std::chrono_literals;
         uint256 const chkIdExp{getCheckIndex(alice, env.seq(alice))};
-        env(check::create(alice, bob, kXRP(10)), Expiration(env.now() + 1s));
+        env(check::create(alice, bob, XRP(10)), Expiration(env.now() + 1s));
         env.close();
 
         uint256 const chkIdFroz1{getCheckIndex(alice, env.seq(alice))};
@@ -920,14 +920,14 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Missing both Amount and DeliverMin.
             {
-                Json::Value tx{check::cash(bob, chkId, amount)};
+                json::Value tx{check::cash(bob, chkId, amount)};
                 tx.removeMember(sfAmount.jsonName);
                 env(tx, Ter(temMALFORMED));
                 env.close();
             }
             // Both Amount and DeliverMin present.
             {
-                Json::Value tx{check::cash(bob, chkId, amount)};
+                json::Value tx{check::cash(bob, chkId, amount)};
                 tx[sfDeliverMin.jsonName] = amount.getJson(JsonOptions::KNone);
                 env(tx, Ter(temMALFORMED));
                 env.close();
@@ -979,17 +979,17 @@ class CheckMPT_test : public beast::unit_test::Suite
             env.close();
         };
 
-        failingCases(chkIdX, kXRP(10));
+        failingCases(chkIdX, XRP(10));
         failingCases(chkIdU, usd(20));
 
         // Verify that those two checks really were cashable.
         env(check::cash(bob, chkIdU, usd(20)));
         env.close();
-        env(check::cash(bob, chkIdX, check::DeliverMin(kXRP(10))));
-        verifyDeliveredAmount(env, kXRP(10));
+        env(check::cash(bob, chkIdX, check::DeliverMin(XRP(10))));
+        verifyDeliveredAmount(env, XRP(10));
 
         // Try to cash an expired check.
-        env(check::cash(bob, chkIdExp, kXRP(10)), Ter(tecEXPIRED));
+        env(check::cash(bob, chkIdExp, XRP(10)), Ter(tecEXPIRED));
         env.close();
 
         // Cancel the expired check.  Anyone can cancel an expired check.
@@ -1115,7 +1115,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
 
-            env.fund(kXRP(1'000), gw, alice, bob, zoe);
+            env.fund(XRP(1'000), gw, alice, bob, zoe);
 
             MPT const usd = MPTTester({.env = env, .issuer = gw});
 
@@ -1126,7 +1126,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             env.close();
 
             uint256 const chkId2{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, kXRP(10)));
+            env(check::create(alice, bob, XRP(10)));
             env.close();
 
             uint256 const chkId3{getCheckIndex(alice, env.seq(alice))};
@@ -1136,7 +1136,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Three checks that expire in 10 minutes.
             using namespace std::chrono_literals;
             uint256 const chkIdNotExp1{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, kXRP(10)), Expiration(env.now() + 600s));
+            env(check::create(alice, bob, XRP(10)), Expiration(env.now() + 600s));
             env.close();
 
             uint256 const chkIdNotExp2{getCheckIndex(alice, env.seq(alice))};
@@ -1144,7 +1144,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             env.close();
 
             uint256 const chkIdNotExp3{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, kXRP(10)), Expiration(env.now() + 600s));
+            env(check::create(alice, bob, XRP(10)), Expiration(env.now() + 600s));
             env.close();
 
             // Three checks that expire in one second.
@@ -1153,7 +1153,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             env.close();
 
             uint256 const chkIdExp2{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, kXRP(10)), Expiration(env.now() + 1s));
+            env(check::create(alice, bob, XRP(10)), Expiration(env.now() + 1s));
             env.close();
 
             uint256 const chkIdExp3{getCheckIndex(alice, env.seq(alice))};
@@ -1166,7 +1166,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             env.close();
 
             uint256 const chkIdMSig{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, kXRP(10)));
+            env(check::create(alice, bob, XRP(10)));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 11);
             BEAST_EXPECT(ownerCount(env, alice) == 11);
@@ -1269,7 +1269,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         Account const bob{"bob"};
 
         Env env{*this, features};
-        env.fund(kXRP(1'000), gw, alice, bob);
+        env.fund(XRP(1'000), gw, alice, bob);
         env.close();
 
         MPT const usd =
@@ -1303,10 +1303,10 @@ class CheckMPT_test : public beast::unit_test::Suite
         // alice creates four checks; two XRP, two MPT.  Bob will cash
         // one of each and cancel one of each.
         uint256 const chkIdXrp1{getCheckIndex(alice, aliceTicketSeq)};
-        env(check::create(alice, bob, kXRP(200)), ticket::Use(aliceTicketSeq++));
+        env(check::create(alice, bob, XRP(200)), ticket::Use(aliceTicketSeq++));
 
         uint256 const chkIdXrp2{getCheckIndex(alice, aliceTicketSeq)};
-        env(check::create(alice, bob, kXRP(300)), ticket::Use(aliceTicketSeq++));
+        env(check::create(alice, bob, XRP(300)), ticket::Use(aliceTicketSeq++));
 
         uint256 const chkIdUsd1{getCheckIndex(alice, aliceTicketSeq)};
         env(check::create(alice, bob, usd(200)), ticket::Use(aliceTicketSeq++));
@@ -1338,7 +1338,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.seq(bob) == bobSeq);
 
         // Bob cashes alice's two remaining checks.
-        env(check::cash(bob, chkIdXrp2, kXRP(300)), ticket::Use(bobTicketSeq++));
+        env(check::cash(bob, chkIdXrp2, XRP(300)), ticket::Use(bobTicketSeq++));
         env(check::cash(bob, chkIdUsd1, usd(200)), ticket::Use(bobTicketSeq++));
         env.close();
 
@@ -1348,11 +1348,11 @@ class CheckMPT_test : public beast::unit_test::Suite
         BEAST_EXPECT(checksOnAccount(env, alice).empty());
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         env.require(Balance(alice, usd(700)));
-        env.require(Balance(alice, kXRP(700) - 6 * baseFee));
+        env.require(Balance(alice, XRP(700) - 6 * baseFee));
         env.require(Owners(bob, 7));
         BEAST_EXPECT(env.seq(bob) == bobSeq);
         env.require(Balance(bob, usd(200)));
-        env.require(Balance(bob, kXRP(1'300) - 6 * baseFee));
+        env.require(Balance(bob, XRP(1'300) - 6 * baseFee));
     }
 
     void
@@ -1498,7 +1498,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         AccountOwns gw1{*this, env, "gw1", true};
 
         // Fund with noripple so the accounts do not have any flags set.
-        env.fund(kXRP(5000), noripple(alice, bob));
+        env.fund(XRP(5000), noripple(alice, bob));
         env.close();
 
         // Automatic MPT creation should fail if the check destination
@@ -1507,7 +1507,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Fund gw1 with noripple (even though that's atypical for a
             // gateway) so it does not have any flags set.  We'll set flags
             // on gw1 later.
-            env.fund(kXRP(5'000), noripple(gw1));
+            env.fund(XRP(5'000), noripple(gw1));
             env.close();
 
             MPT const cK8 = gw1["CK8"];
@@ -1518,7 +1518,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Note the reserve in unit tests is 200 XRP, not 20.  So here
             // we're just barely giving yui enough XRP to meet the
             // account reserve.
-            env.fund(kXRP(200), yui);
+            env.fund(XRP(200), yui);
             env.close();
 
             uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
@@ -1531,7 +1531,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Give yui enough XRP to meet the trust line's reserve.  Cashing
             // the check succeeds and creates the trust line.
-            env(pay(env.master, yui, kXRP(51)));
+            env(pay(env.master, yui, XRP(51)));
             env.close();
             env(check::cash(yui, chkId, cK8(99)));
             verifyDeliveredAmount(env, cK8(99));
@@ -1561,10 +1561,10 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Use offers to automatically create MPT
             MPT const oF1 = gw1["OF1"];
-            env(offer(gw1, kXRP(98), oF1(98)));
+            env(offer(gw1, XRP(98), oF1(98)));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF1.issuanceID, alice)) == nullptr);
-            env(offer(alice, oF1(98), kXRP(98)));
+            env(offer(alice, oF1(98), XRP(98)));
             ++alice.owners;
             env.close();
 
@@ -1605,10 +1605,10 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Transfer of assets using offers does not require rippling.
             // So bob's offer is successfully crossed which creates MPT.
             MPT const oF1 = gw1["OF1"];
-            env(offer(alice, kXRP(97), oF1(97)));
+            env(offer(alice, XRP(97), oF1(97)));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF1, bob)) == nullptr);
-            env(offer(bob, oF1(97), kXRP(97)));
+            env(offer(bob, oF1(97), XRP(97)));
             ++bob.owners;
             env.close();
 
@@ -1652,10 +1652,10 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Use offers to automatically create the trust line.
             MPT const oF2 = gw1["OF2"];
-            env(offer(gw1, kXRP(96), oF2(96)));
+            env(offer(gw1, XRP(96), oF2(96)));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF2, alice)) == nullptr);
-            env(offer(alice, oF2(96), kXRP(96)));
+            env(offer(alice, oF2(96), XRP(96)));
             ++alice.owners;
             env.close();
 
@@ -1693,11 +1693,11 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Use offers to automatically create MPT.
             MPT const oF2 = gw1["OF2"];
-            env(offer(alice, kXRP(95), oF2(95)));
+            env(offer(alice, XRP(95), oF2(95)));
             env.close();
             // alice already has OF2 MPT
             BEAST_EXPECT(env.le(keylet::mptoken(oF2, alice)) != nullptr);
-            env(offer(bob, oF2(95), kXRP(95)));
+            env(offer(bob, oF2(95), XRP(95)));
             ++bob.owners;
             env.close();
 
@@ -1738,10 +1738,10 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Use offers to automatically create MPT.
             MPT const oF3 = gw1["OF3"];
-            env(offer(gw1, kXRP(94), oF3(94)));
+            env(offer(gw1, XRP(94), oF3(94)));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF3, alice)) == nullptr);
-            env(offer(alice, oF3(94), kXRP(94)));
+            env(offer(alice, oF3(94), XRP(94)));
             ++alice.owners;
             env.close();
 
@@ -1780,10 +1780,10 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Use offers to automatically create MPT.
             MPT const oF3 = gw1["OF3"];
-            env(offer(alice, kXRP(93), oF3(93)));
+            env(offer(alice, XRP(93), oF3(93)));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF3, alice)) != nullptr);
-            env(offer(bob, oF3(93), kXRP(93)));
+            env(offer(bob, oF3(93), XRP(93)));
             ++bob.owners;
             env.close();
 
@@ -1818,10 +1818,10 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Use offers to automatically create MPT.
             MPT const oF4 = gw1["OF4"];
-            env(offer(gw1, kXRP(92), oF4(92)));
+            env(offer(gw1, XRP(92), oF4(92)));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF4, alice)) == nullptr);
-            env(offer(alice, oF4(92), kXRP(92)));
+            env(offer(alice, oF4(92), XRP(92)));
             ++alice.owners;
             env.close();
 
@@ -1859,10 +1859,10 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Use offers to automatically create MPT.
             MPT const oF4 = gw1["OF4"];
             gw1.set(oF4, tfMPTLock);
-            env(offer(gw1, kXRP(92), oF4(92)), Ter(tecFROZEN));
+            env(offer(gw1, XRP(92), oF4(92)), Ter(tecFROZEN));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF4, alice)) == nullptr);
-            env(offer(alice, oF4(92), kXRP(92)), Ter(tecFROZEN));
+            env(offer(alice, oF4(92), XRP(92)), Ter(tecFROZEN));
             env.close();
 
             // No one's owner count should have changed.
@@ -1904,10 +1904,10 @@ class CheckMPT_test : public beast::unit_test::Suite
             MPT const oF4 = gw1["OF4"];
             gw1.authorize(oF4, alice);
             gw1.pay(gw1, alice, oF4(91));
-            env(offer(alice, kXRP(91), oF4(91)));
+            env(offer(alice, XRP(91), oF4(91)));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF4, alice)) != nullptr);
-            env(offer(bob, oF4(91), kXRP(91)));
+            env(offer(bob, oF4(91), XRP(91)));
             ++bob.owners;
             env.close();
 
@@ -1950,10 +1950,10 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Use offers to automatically create MPT.
             MPT const oF4 = gw1["OF4"];
             gw1.set(oF4, tfMPTLock);
-            env(offer(alice, kXRP(91), oF4(91)), Ter(tecFROZEN));
+            env(offer(alice, XRP(91), oF4(91)), Ter(tecFROZEN));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF4, alice)) == nullptr);
-            env(offer(bob, oF4(91), kXRP(91)), Ter(tecFROZEN));
+            env(offer(bob, oF4(91), XRP(91)), Ter(tecFROZEN));
             env.close();
 
             // No one's owner count should have changed.
@@ -1992,7 +1992,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         // a new gateway and use that.
         AccountOwns gw2{*this, env, "gw2", true};
         {
-            env.fund(kXRP(5'000), gw2);
+            env.fund(XRP(5'000), gw2);
             env.close();
 
             // Set lsfRequireAuth on gw2.  That should not stop any automatic
@@ -2002,10 +2002,10 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Use offers to automatically create MPT.
             MPT const oF5 = gw2["OF5"];
-            env(offer(gw2, kXRP(92), oF5(92)));
+            env(offer(gw2, XRP(92), oF5(92)));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF5, alice)) == nullptr);
-            env(offer(alice, oF5(92), kXRP(92)));
+            env(offer(alice, oF5(92), XRP(92)));
             ++alice.owners;
             env.close();
 
@@ -2039,16 +2039,16 @@ class CheckMPT_test : public beast::unit_test::Suite
         // Set RequireAuth flag.
         AccountOwns gw3{*this, env, "gw3", true, true};
         {
-            env.fund(kXRP(5'000), gw3);
+            env.fund(XRP(5'000), gw3);
             env.close();
             // Use offers to automatically create the trust line.
             MPT const oF5 = gw3["OF5"];
             std::uint32_t const gw3OfferSeq = {env.seq(gw3)};
-            env(offer(gw3, kXRP(92), oF5(92)));
+            env(offer(gw3, XRP(92), oF5(92)));
             ++gw3.owners;
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF5, alice)) == nullptr);
-            env(offer(alice, oF5(92), kXRP(92)), Ter(tecNO_AUTH));
+            env(offer(alice, oF5(92), XRP(92)), Ter(tecNO_AUTH));
             env.close();
 
             // gw3 should still own the offer, but no one else's owner
@@ -2100,9 +2100,9 @@ class CheckMPT_test : public beast::unit_test::Suite
             MPT const oF5 = gw2["OF5"];
             gw2.authorize(oF5, alice);
             gw2.pay(gw2, alice, oF5(91));
-            env(offer(alice, kXRP(91), oF5(91)));
+            env(offer(alice, XRP(91), oF5(91)));
             env.close();
-            env(offer(bob, oF5(91), kXRP(91)));
+            env(offer(bob, oF5(91), XRP(91)));
             ++bob.owners;
             env.close();
 
@@ -2137,9 +2137,9 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Use offers to automatically create the trust line.
             MPT const oF5 = gw3["OF5"];
-            env(offer(alice, kXRP(91), oF5(91)), Ter(tecUNFUNDED_OFFER));
+            env(offer(alice, XRP(91), oF5(91)), Ter(tecUNFUNDED_OFFER));
             env.close();
-            env(offer(bob, oF5(91), kXRP(91)), Ter(tecNO_AUTH));
+            env(offer(bob, oF5(91), XRP(91)), Ter(tecNO_AUTH));
             BEAST_EXPECT(env.le(keylet::mptoken(oF5, bob)) == nullptr);
             env.close();
 

@@ -15,7 +15,7 @@
 namespace xrpl {
 
 static std::optional<Seed>
-validationSeed(Json::Value const& params)
+validationSeed(json::Value const& params)
 {
     if (!params.isMember(jss::secret))
         return randomSeed();
@@ -29,10 +29,10 @@ validationSeed(Json::Value const& params)
 //
 // This command requires Role::ADMIN access because it makes
 // no sense to ask an untrusted server for this.
-Json::Value
+json::Value
 doValidationCreate(RPC::JsonContext& context)
 {
-    Json::Value obj(Json::ObjectValue);
+    json::Value obj(json::ObjectValue);
 
     auto seed = validationSeed(context.params);
 

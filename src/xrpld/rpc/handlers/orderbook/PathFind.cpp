@@ -12,7 +12,7 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doPathFind(RPC::JsonContext& context)
 {
     if (context.app.config().PATH_SEARCH_MAX == 0)

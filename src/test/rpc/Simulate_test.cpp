@@ -46,8 +46,8 @@ class Simulate_test : public beast::unit_test::Suite
 {
     void
     checkBasicReturnValidity(
-        Json::Value const& result,
-        Json::Value const& tx,
+        json::Value const& result,
+        json::Value const& tx,
         int const expectedSequence,
         std::string const& expectedFee)
     {
@@ -57,7 +57,7 @@ class Simulate_test : public beast::unit_test::Suite
         BEAST_EXPECT(result.isMember(jss::engine_result_message));
         BEAST_EXPECT(result.isMember(jss::tx_json) || result.isMember(jss::tx_blob));
 
-        Json::Value txJson;
+        json::Value txJson;
         if (result.isMember(jss::tx_json))
         {
             txJson = result[jss::tx_json];
@@ -78,8 +78,8 @@ class Simulate_test : public beast::unit_test::Suite
 
     void
     checkBasicReturnValidity(
-        Json::Value const& result,
-        Json::Value const& tx,
+        json::Value const& result,
+        json::Value const& tx,
         int const expectedSequence,
         XRPAmount const& expectedFee)
     {
@@ -90,13 +90,13 @@ class Simulate_test : public beast::unit_test::Suite
     void
     testTx(
         jtx::Env& env,
-        Json::Value const& tx,
-        std::function<void(Json::Value const&, Json::Value const&)> const& validate,
+        json::Value const& tx,
+        std::function<void(json::Value const&, json::Value const&)> const& validate,
         bool testSerialized = true)
     {
         env.close();
 
-        Json::Value params;
+        json::Value params;
         params[jss::tx_json] = tx;
         validate(env.rpc("json", "simulate", to_string(params)), tx);
 
@@ -115,7 +115,7 @@ class Simulate_test : public beast::unit_test::Suite
             auto const txBlob = strHex(parsed.object->getSerializer().peekData());
             if (BEAST_EXPECT(parsed.object.has_value()))
             {
-                Json::Value params;
+                json::Value params;
                 params[jss::tx_blob] = txBlob;
                 validate(env.rpc("json", "simulate", to_string(params)), tx);
                 params[jss::binary] = true;
@@ -131,18 +131,18 @@ class Simulate_test : public beast::unit_test::Suite
     void
     testTxJsonMetadataField(
         jtx::Env& env,
-        Json::Value const& tx,
+        json::Value const& tx,
         std::function<void(
-            Json::Value const&,
-            Json::Value const&,
-            Json::Value const&,
-            Json::Value const&)> const& validate,
-        Json::Value const& expectedMetadataKey,
-        Json::Value const& expectedMetadataValue)
+            json::Value const&,
+            json::Value const&,
+            json::Value const&,
+            json::Value const&)> const& validate,
+        json::Value const& expectedMetadataKey,
+        json::Value const& expectedMetadataValue)
     {
         env.close();
 
-        Json::Value params;
+        json::Value params;
         params[jss::tx_json] = tx;
         validate(
             env.rpc("json", "simulate", to_string(params)),
@@ -155,8 +155,8 @@ class Simulate_test : public beast::unit_test::Suite
         BEAST_EXPECTS(env.current()->txCount() == 0, std::to_string(env.current()->txCount()));
     }
 
-    static Json::Value
-    getJsonMetadata(Json::Value txResult)
+    static json::Value
+    getJsonMetadata(json::Value txResult)
     {
         if (txResult.isMember(jss::meta_blob))
         {
@@ -179,7 +179,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         {
             // No params
-            Json::Value const params = Json::ObjectValue;
+            json::Value const params = json::ObjectValue;
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
@@ -187,8 +187,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Providing both `tx_json` and `tx_blob`
-            Json::Value params = Json::ObjectValue;
-            params[jss::tx_json] = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
+            params[jss::tx_json] = json::ObjectValue;
             params[jss::tx_blob] = "1200";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -198,7 +198,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // `binary` isn't a boolean
-            Json::Value params = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
             params[jss::tx_blob] = "1200";
             params[jss::binary] = "100";
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -206,7 +206,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Invalid `tx_blob`
-            Json::Value params = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
             params[jss::tx_blob] = "12";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -214,8 +214,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Empty `tx_json`
-            Json::Value params = Json::ObjectValue;
-            params[jss::tx_json] = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
+            params[jss::tx_json] = json::ObjectValue;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
@@ -223,8 +223,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // No tx.Account
-            Json::Value params = Json::ObjectValue;
-            Json::Value txJson = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::Payment;
             params[jss::tx_json] = txJson;
 
@@ -233,7 +233,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Empty `tx_blob`
-            Json::Value params = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
             params[jss::tx_blob] = "";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -241,7 +241,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Non-string `tx_blob`
-            Json::Value params;
+            json::Value params;
             params[jss::tx_blob] = 1.1;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -249,7 +249,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Non-object `tx_json`
-            Json::Value params = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
             params[jss::tx_json] = "";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -258,9 +258,9 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // `seed` field included
-            Json::Value params = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
             params[jss::seed] = "random_data";
-            Json::Value txJson = Json::ObjectValue;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
@@ -269,9 +269,9 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // `secret` field included
-            Json::Value params = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
             params[jss::secret] = "random_data";
-            Json::Value txJson = Json::ObjectValue;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
@@ -280,9 +280,9 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // `seed_hex` field included
-            Json::Value params = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
             params[jss::seed_hex] = "random_data";
-            Json::Value txJson = Json::ObjectValue;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
@@ -291,9 +291,9 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // `passphrase` field included
-            Json::Value params = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
             params[jss::passphrase] = "random_data";
-            Json::Value txJson = Json::ObjectValue;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
@@ -302,8 +302,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Invalid transaction
-            Json::Value params = Json::ObjectValue;
-            Json::Value txJson = Json::ObjectValue;
+            json::Value params = json::ObjectValue;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::Payment;
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
@@ -315,8 +315,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Bad account
-            Json::Value params;
-            Json::Value txJson = Json::ObjectValue;
+            json::Value params;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = "badAccount";
             params[jss::tx_json] = txJson;
@@ -329,8 +329,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Account doesn't exist for Sequence autofill
-            Json::Value params;
-            Json::Value txJson = Json::ObjectValue;
+            json::Value params;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = alice.human();
             params[jss::tx_json] = txJson;
@@ -340,8 +340,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Invalid Signers field
-            Json::Value params;
-            Json::Value txJson = Json::ObjectValue;
+            json::Value params;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             txJson[sfSigners] = "1";
@@ -352,11 +352,11 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Invalid Signers field
-            Json::Value params;
-            Json::Value txJson = Json::ObjectValue;
+            json::Value params;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
-            txJson[sfSigners] = Json::ArrayValue;
+            txJson[sfSigners] = json::ArrayValue;
             txJson[sfSigners].append("1");
             params[jss::tx_json] = txJson;
 
@@ -365,8 +365,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Invalid transaction
-            Json::Value params;
-            Json::Value txJson = Json::ObjectValue;
+            json::Value params;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             txJson["foo"] = "bar";
@@ -378,7 +378,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // non-`"binary"` second param for CLI
-            Json::Value txJson = Json::ObjectValue;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = alice.human();
             auto const resp = env.rpc("simulate", to_string(txJson), "1");
@@ -386,8 +386,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Signed transaction
-            Json::Value params;
-            Json::Value txJson = Json::ObjectValue;
+            json::Value params;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             txJson[jss::TxnSignature] = "1200ABCD";
@@ -399,17 +399,17 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Signed multisig transaction
-            Json::Value params;
-            Json::Value txJson = Json::ObjectValue;
+            json::Value params;
+            json::Value txJson = json::ObjectValue;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
-            txJson[sfSigners] = Json::ArrayValue;
+            txJson[sfSigners] = json::ArrayValue;
             {
-                Json::Value signer;
+                json::Value signer;
                 signer[jss::Account] = alice.human();
                 signer[jss::SigningPubKey] = alice.human();
                 signer[jss::TxnSignature] = "1200ABCD";
-                Json::Value signerOuter;
+                json::Value signerOuter;
                 signerOuter[sfSigner] = signer;
                 txJson[sfSigners].append(signerOuter);
             }
@@ -434,7 +434,7 @@ class Simulate_test : public beast::unit_test::Suite
         }));
 
         Account const alice{"alice"};
-        env.fund(kXRP(1000000), alice);
+        env.fund(XRP(1000000), alice);
         env.close();
 
         // fill queue
@@ -443,7 +443,7 @@ class Simulate_test : public beast::unit_test::Suite
             env(noop(alice));
 
         {
-            Json::Value params;
+            json::Value params;
             params[jss::tx_json] = noop(alice);
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -467,18 +467,18 @@ class Simulate_test : public beast::unit_test::Suite
 
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(kXRP(1000000), alice, bob);
+        env.fund(XRP(1000000), alice, bob);
         env.close();
 
         auto const batchFee = batch::calcBatchFee(env, 0, 2);
         auto const seq = env.seq(alice);
         auto jt = env.jtnofill(
             batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
-            batch::Inner(pay(alice, bob, kXRP(10)), seq + 1),
-            batch::Inner(pay(alice, bob, kXRP(10)), seq + 1));
+            batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
+            batch::Inner(pay(alice, bob, XRP(10)), seq + 1));
 
         jt.jv.removeMember(jss::TxnSignature);
-        Json::Value params;
+        json::Value params;
         params[jss::tx_json] = jt.jv;
         auto const resp = env.rpc("json", "simulate", to_string(params));
         BEAST_EXPECT(resp[jss::result][jss::error] == "notImpl");
@@ -498,7 +498,7 @@ class Simulate_test : public beast::unit_test::Suite
         static auto const kNEW_DOMAIN = "123ABC";
 
         {
-            auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
+            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, 1, env.current()->fees().base);
 
@@ -510,7 +510,7 @@ class Simulate_test : public beast::unit_test::Suite
 
                 if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                 {
-                    Json::Value const metadata = getJsonMetadata(result);
+                    json::Value const metadata = getJsonMetadata(result);
 
                     if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
                     {
@@ -529,7 +529,7 @@ class Simulate_test : public beast::unit_test::Suite
                 }
             };
 
-            Json::Value tx;
+            json::Value tx;
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
@@ -558,8 +558,8 @@ class Simulate_test : public beast::unit_test::Suite
         Account const alice("alice");
 
         {
-            std::function<void(Json::Value const&, Json::Value const&)> const& testSimulation =
-                [&](Json::Value const& resp, Json::Value const& tx) {
+            std::function<void(json::Value const&, json::Value const&)> const& testSimulation =
+                [&](json::Value const& resp, json::Value const& tx) {
                     auto result = resp[jss::result];
                     checkBasicReturnValidity(result, tx, 1, env.current()->fees().base);
 
@@ -570,7 +570,7 @@ class Simulate_test : public beast::unit_test::Suite
                     BEAST_EXPECT(!result.isMember(jss::meta) && !result.isMember(jss::meta_blob));
                 };
 
-            Json::Value tx;
+            json::Value tx;
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::Payment;
@@ -600,8 +600,8 @@ class Simulate_test : public beast::unit_test::Suite
         Account const alice("alice");
 
         {
-            std::function<void(Json::Value const&, Json::Value const&)> const& testSimulation =
-                [&](Json::Value const& resp, Json::Value const& tx) {
+            std::function<void(json::Value const&, json::Value const&)> const& testSimulation =
+                [&](json::Value const& resp, json::Value const& tx) {
                     auto result = resp[jss::result];
                     checkBasicReturnValidity(result, tx, 1, env.current()->fees().base);
 
@@ -615,7 +615,7 @@ class Simulate_test : public beast::unit_test::Suite
 
                     if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                     {
-                        Json::Value const metadata = getJsonMetadata(result);
+                        json::Value const metadata = getJsonMetadata(result);
 
                         if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
                         {
@@ -639,7 +639,7 @@ class Simulate_test : public beast::unit_test::Suite
                     }
                 };
 
-            Json::Value tx;
+            json::Value tx;
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::Payment;
@@ -670,7 +670,7 @@ class Simulate_test : public beast::unit_test::Suite
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
-        env.fund(kXRP(10000), alice);
+        env.fund(XRP(10000), alice);
         env.close();
 
         // set up valid multisign
@@ -678,7 +678,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
+            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
                     result,
@@ -695,7 +695,7 @@ class Simulate_test : public beast::unit_test::Suite
 
                 if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                 {
-                    Json::Value const metadata = getJsonMetadata(result);
+                    json::Value const metadata = getJsonMetadata(result);
 
                     if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
                     {
@@ -714,7 +714,7 @@ class Simulate_test : public beast::unit_test::Suite
                 }
             };
 
-            Json::Value tx;
+            json::Value tx;
 
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
@@ -723,11 +723,11 @@ class Simulate_test : public beast::unit_test::Suite
             // test with autofill
             testTx(env, tx, validateOutput, false);
 
-            tx[sfSigners] = Json::ArrayValue;
+            tx[sfSigners] = json::ArrayValue;
             {
-                Json::Value signer;
+                json::Value signer;
                 signer[jss::Account] = becky.human();
-                Json::Value signerOuter;
+                json::Value signerOuter;
                 signerOuter[sfSigner] = signer;
                 tx[sfSigners].append(signerOuter);
             }
@@ -762,8 +762,8 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         {
-            std::function<void(Json::Value const&, Json::Value const&)> const& testSimulation =
-                [&](Json::Value const& resp, Json::Value const& tx) {
+            std::function<void(json::Value const&, json::Value const&)> const& testSimulation =
+                [&](json::Value const& resp, json::Value const& tx) {
                     auto result = resp[jss::result];
                     checkBasicReturnValidity(
                         result, tx, env.seq(env.master), env.current()->fees().base);
@@ -775,7 +775,7 @@ class Simulate_test : public beast::unit_test::Suite
                     BEAST_EXPECT(!result.isMember(jss::meta) && !result.isMember(jss::meta_blob));
                 };
 
-            Json::Value tx;
+            json::Value tx;
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
@@ -808,7 +808,7 @@ class Simulate_test : public beast::unit_test::Suite
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
-        env.fund(kXRP(10000), alice);
+        env.fund(XRP(10000), alice);
         env.close();
 
         // set up valid multisign
@@ -816,8 +816,8 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         {
-            std::function<void(Json::Value const&, Json::Value const&)> const& testSimulation =
-                [&](Json::Value const& resp, Json::Value const& tx) {
+            std::function<void(json::Value const&, json::Value const&)> const& testSimulation =
+                [&](json::Value const& resp, json::Value const& tx) {
                     auto result = resp[jss::result];
                     checkBasicReturnValidity(
                         result, tx, env.seq(env.master), env.current()->fees().base * 2);
@@ -830,18 +830,18 @@ class Simulate_test : public beast::unit_test::Suite
                     BEAST_EXPECT(!result.isMember(jss::meta) && !result.isMember(jss::meta_blob));
                 };
 
-            Json::Value tx;
+            json::Value tx;
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
             tx[sfDomain] = kNEW_DOMAIN;
             // master key is disabled, so this is invalid
             tx[jss::SigningPubKey] = strHex(env.master.pk().slice());
-            tx[sfSigners] = Json::ArrayValue;
+            tx[sfSigners] = json::ArrayValue;
             {
-                Json::Value signer;
+                json::Value signer;
                 signer[jss::Account] = becky.human();
-                Json::Value signerOuter;
+                json::Value signerOuter;
                 signerOuter[sfSigner] = signer;
                 tx[sfSigners].append(signerOuter);
             }
@@ -872,14 +872,14 @@ class Simulate_test : public beast::unit_test::Suite
         Account const becky("becky");
         Account const carol("carol");
         Account const dylan("dylan");
-        env.fund(kXRP(10000), alice);
+        env.fund(XRP(10000), alice);
         env.close();
 
         // set up valid multisign
         env(signers(alice, 1, {{becky, 1}, {carol, 1}}));
 
         {
-            auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
+            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
                     result, tx, env.seq(alice), env.current()->fees().base * 2);
@@ -895,17 +895,17 @@ class Simulate_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!result.isMember(jss::meta) && !result.isMember(jss::meta_blob));
             };
 
-            Json::Value tx;
+            json::Value tx;
 
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
             tx[sfDomain] = kNEW_DOMAIN;
-            tx[sfSigners] = Json::ArrayValue;
+            tx[sfSigners] = json::ArrayValue;
             {
-                Json::Value signer;
+                json::Value signer;
                 signer[jss::Account] = becky.human();
                 signer[jss::SigningPubKey] = strHex(dylan.pk().slice());
-                Json::Value signerOuter;
+                json::Value signerOuter;
                 signerOuter[sfSigner] = signer;
                 tx[sfSigners].append(signerOuter);
             }
@@ -938,7 +938,7 @@ class Simulate_test : public beast::unit_test::Suite
         Account const subject{"subject"};
         Account const issuer{"issuer"};
 
-        env.fund(kXRP(10000), subject, issuer);
+        env.fund(XRP(10000), subject, issuer);
         env.close();
 
         auto const credType = "123ABC";
@@ -950,7 +950,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
+            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, env.seq(subject), env.current()->fees().base);
 
@@ -960,7 +960,7 @@ class Simulate_test : public beast::unit_test::Suite
 
                 if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                 {
-                    Json::Value const metadata = getJsonMetadata(result);
+                    json::Value const metadata = getJsonMetadata(result);
 
                     if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
                     {
@@ -996,7 +996,7 @@ class Simulate_test : public beast::unit_test::Suite
                 }
             };
 
-            Json::Value tx = credentials::accept(subject, issuer, credType);
+            json::Value tx = credentials::accept(subject, issuer, credType);
 
             // test with autofill
             testTx(env, tx, validateOutput);
@@ -1038,7 +1038,7 @@ class Simulate_test : public beast::unit_test::Suite
         static auto const kNEW_DOMAIN = "123ABC";
 
         {
-            auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
+            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, 1, env.current()->fees().base);
 
@@ -1050,7 +1050,7 @@ class Simulate_test : public beast::unit_test::Suite
 
                 if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                 {
-                    Json::Value const metadata = getJsonMetadata(result);
+                    json::Value const metadata = getJsonMetadata(result);
 
                     if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
                     {
@@ -1069,7 +1069,7 @@ class Simulate_test : public beast::unit_test::Suite
                 }
             };
 
-            Json::Value tx;
+            json::Value tx;
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
@@ -1104,17 +1104,17 @@ class Simulate_test : public beast::unit_test::Suite
         Account const alice("alice");
         Account const bob("bob");
 
-        env.fund(kXRP(10000), alice, bob);
+        env.fund(XRP(10000), alice, bob);
         env.close();
         // deliver_amount is unavailable in the metadata before 2014-02-01
         // so proceed to 2014-02-01
         env.close(NetClock::time_point{446000000s});
 
         {
-            auto validateOutput = [&](Json::Value const& resp,
-                                      Json::Value const& tx,
-                                      Json::Value const& expectedMetadataKey,
-                                      Json::Value const& expectedMetadataValue) {
+            auto validateOutput = [&](json::Value const& resp,
+                                      json::Value const& tx,
+                                      json::Value const& expectedMetadataKey,
+                                      json::Value const& expectedMetadataValue) {
                 auto result = resp[jss::result];
 
                 BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
@@ -1125,7 +1125,7 @@ class Simulate_test : public beast::unit_test::Suite
 
                 if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                 {
-                    Json::Value const metadata = getJsonMetadata(result);
+                    json::Value const metadata = getJsonMetadata(result);
 
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
                     BEAST_EXPECT(metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
@@ -1135,7 +1135,7 @@ class Simulate_test : public beast::unit_test::Suite
             };
 
             {
-                Json::Value tx;
+                json::Value tx;
                 tx[jss::Account] = alice.human();
                 tx[jss::TransactionType] = jss::Payment;
                 tx[sfDestination] = bob.human();
@@ -1146,22 +1146,22 @@ class Simulate_test : public beast::unit_test::Suite
             }
 
             {
-                Json::Value tx;
+                json::Value tx;
                 tx[jss::Account] = alice.human();
                 tx[jss::TransactionType] = jss::NFTokenMint;
                 tx[sfNFTokenTaxon] = 1;
 
-                Json::Value const nftokenId = to_string(token::getNextID(env, alice, 1));
+                json::Value const nftokenId = to_string(token::getNextID(env, alice, 1));
                 // test nft synthetic
                 testTxJsonMetadataField(env, tx, validateOutput, jss::nftoken_id, nftokenId);
             }
 
             {
-                Json::Value tx;
+                json::Value tx;
                 tx[jss::Account] = alice.human();
                 tx[jss::TransactionType] = jss::MPTokenIssuanceCreate;
 
-                Json::Value const mptIssuanceId = to_string(makeMptID(env.seq(alice), alice));
+                json::Value const mptIssuanceId = to_string(makeMptID(env.seq(alice), alice));
                 // test mpt issuance id
                 testTxJsonMetadataField(
                     env, tx, validateOutput, jss::mpt_issuance_id, mptIssuanceId);

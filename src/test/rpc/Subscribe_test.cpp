@@ -66,11 +66,11 @@ public:
         using namespace jtx;
         Env env{*this, singleThreadIo(envconfig())};
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to server stream
-            stream[jss::streams] = Json::ArrayValue;
+            stream[jss::streams] = json::ArrayValue;
             stream[jss::streams].append("server");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -132,11 +132,11 @@ public:
         using namespace jtx;
         Env env{*this, singleThreadIo(envconfig())};
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to ledger stream
-            stream[jss::streams] = Json::ArrayValue;
+            stream[jss::streams] = json::ArrayValue;
             stream[jss::streams].append("ledger");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -191,11 +191,11 @@ public:
         Env env(*this, singleThreadIo(envconfig()));
         auto baseFee = env.current()->fees().base.drops();
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to transactions stream
-            stream[jss::streams] = Json::ArrayValue;
+            stream[jss::streams] = json::ArrayValue;
             stream[jss::streams].append("transactions");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -208,7 +208,7 @@ public:
         }
 
         {
-            env.fund(kXRP(10000), "alice");
+            env.fund(XRP(10000), "alice");
             BEAST_EXPECT(env.syncClose());
 
             // Check stream update for payment transaction
@@ -232,7 +232,7 @@ public:
                          [jss::Account] == Account("alice").human();
             }));
 
-            env.fund(kXRP(10000), "bob");
+            env.fund(XRP(10000), "bob");
             BEAST_EXPECT(env.syncClose());
 
             // Check stream update for payment transaction
@@ -271,8 +271,8 @@ public:
 
         {
             // RPC subscribe to accounts stream
-            stream = Json::ObjectValue;
-            stream[jss::accounts] = Json::ArrayValue;
+            stream = json::ObjectValue;
+            stream[jss::accounts] = json::ArrayValue;
             stream[jss::accounts].append(Account("alice").human());
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -286,7 +286,7 @@ public:
 
         {
             // Transaction that does not affect stream
-            env.fund(kXRP(10000), "carol");
+            env.fund(XRP(10000), "carol");
             BEAST_EXPECT(env.syncClose());
             BEAST_EXPECT(!wsc->getMsg(10ms));
 
@@ -330,12 +330,12 @@ public:
             return cfg;
         }));
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream{Json::ObjectValue};
+        json::Value stream{json::ObjectValue};
 
         {
             // RPC subscribe to transactions stream
             stream[jss::api_version] = 2;
-            stream[jss::streams] = Json::ArrayValue;
+            stream[jss::streams] = json::ArrayValue;
             stream[jss::streams].append("transactions");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -348,7 +348,7 @@ public:
         }
 
         {
-            env.fund(kXRP(10000), "alice");
+            env.fund(XRP(10000), "alice");
             BEAST_EXPECT(env.syncClose());
 
             // Check stream update for payment transaction
@@ -401,11 +401,11 @@ public:
         using namespace jtx;
         Env env(*this, singleThreadIo(envconfig()));
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to manifests stream
-            stream[jss::streams] = Json::ArrayValue;
+            stream[jss::streams] = json::ArrayValue;
             stream[jss::streams].append("manifests");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -447,11 +447,11 @@ public:
                 KeyType::Secp256k1, generateSecretKey(KeyType::Secp256k1, *parsedseed)));
 
         auto wsc = makeWSClient(env.app().config());
-        Json::Value stream;
+        json::Value stream;
 
         {
             // RPC subscribe to validations stream
-            stream[jss::streams] = Json::ArrayValue;
+            stream[jss::streams] = json::ArrayValue;
             stream[jss::streams].append("validations");
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
@@ -465,7 +465,7 @@ public:
 
         {
             // Lambda to check ledger validations from the stream.
-            auto validValidationFields = [&env, &valPublicKey](Json::Value const& jv) {
+            auto validValidationFields = [&env, &valPublicKey](json::Value const& jv) {
                 if (jv[jss::type] != "validationReceived")
                     return false;
 
@@ -546,11 +546,11 @@ public:
         testcase("Subscribe by url");
         Env env{*this, singleThreadIo(envconfig())};
 
-        Json::Value jv;
+        json::Value jv;
         jv[jss::url] = "http://localhost/events";
         jv[jss::url_username] = "admin";
         jv[jss::url_password] = "password";
-        jv[jss::streams] = Json::ArrayValue;
+        jv[jss::streams] = json::ArrayValue;
         jv[jss::streams][0u] = "validations";
         auto jr = env.rpc("json", "subscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
@@ -585,7 +585,7 @@ public:
         }
 
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::url] = "not-a-url";
             jv[jss::username] = "admin";
             jv[jss::password] = "password";
@@ -600,7 +600,7 @@ public:
         }
 
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::url] = "ftp://scheme.not.supported.tld";
             auto jr = env.rpc("json", method, to_string(jv))[jss::result];
             if (subscribe)
@@ -612,27 +612,27 @@ public:
 
         {
             Env envNonadmin{*this, singleThreadIo(noAdmin(envconfig()))};
-            Json::Value jv;
+            json::Value jv;
             jv[jss::url] = "no-url";
             auto jr = envNonadmin.rpc("json", method, to_string(jv))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "noPermission");
             BEAST_EXPECT(jr[jss::error_message] == "You don't have permission for this command.");
         }
 
-        std::initializer_list<Json::Value> const nonArrays{
-            Json::NullValue,
-            Json::IntValue,
-            Json::UintValue,
-            Json::RealValue,
+        std::initializer_list<json::Value> const nonArrays{
+            json::NullValue,
+            json::IntValue,
+            json::UintValue,
+            json::RealValue,
             "",
-            Json::BooleanValue,
-            Json::ObjectValue};
+            json::BooleanValue,
+            json::ObjectValue};
 
         for (auto const& f : {jss::accounts_proposed, jss::accounts})
         {
             for (auto const& nonArray : nonArrays)
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[f] = nonArray;
                 auto jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
@@ -640,8 +640,8 @@ public:
             }
 
             {
-                Json::Value jv;
-                jv[f] = Json::ArrayValue;
+                json::Value jv;
+                jv[f] = json::ArrayValue;
                 auto jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECT(jr[jss::error] == "actMalformed");
                 BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
@@ -650,7 +650,7 @@ public:
 
         for (auto const& nonArray : nonArrays)
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::books] = nonArray;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
@@ -658,8 +658,8 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::ArrayValue;
+            json::Value jv;
+            jv[jss::books] = json::ArrayValue;
             jv[jss::books][0u] = 1;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
@@ -667,22 +667,22 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::ArrayValue;
-            jv[jss::books][0u] = Json::ObjectValue;
-            jv[jss::books][0u][jss::taker_gets] = Json::ObjectValue;
-            jv[jss::books][0u][jss::taker_pays] = Json::ObjectValue;
+            json::Value jv;
+            jv[jss::books] = json::ArrayValue;
+            jv[jss::books][0u] = json::ObjectValue;
+            jv[jss::books][0u][jss::taker_gets] = json::ObjectValue;
+            jv[jss::books][0u][jss::taker_pays] = json::ObjectValue;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcCurMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Source currency is malformed.");
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::ArrayValue;
-            jv[jss::books][0u] = Json::ObjectValue;
-            jv[jss::books][0u][jss::taker_gets] = Json::ObjectValue;
-            jv[jss::books][0u][jss::taker_pays] = Json::ObjectValue;
+            json::Value jv;
+            jv[jss::books] = json::ArrayValue;
+            jv[jss::books][0u] = json::ObjectValue;
+            jv[jss::books][0u][jss::taker_gets] = json::ObjectValue;
+            jv[jss::books][0u][jss::taker_pays] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "ZZZZ";
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcCurMalformed");
@@ -690,11 +690,11 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::ArrayValue;
-            jv[jss::books][0u] = Json::ObjectValue;
-            jv[jss::books][0u][jss::taker_gets] = Json::ObjectValue;
-            jv[jss::books][0u][jss::taker_pays] = Json::ObjectValue;
+            json::Value jv;
+            jv[jss::books] = json::ArrayValue;
+            jv[jss::books][0u] = json::ObjectValue;
+            jv[jss::books][0u][jss::taker_gets] = json::ObjectValue;
+            jv[jss::books][0u][jss::taker_pays] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_pays][jss::issuer] = 1;
             auto jr = wsc->invoke(method, jv)[jss::result];
@@ -703,11 +703,11 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::ArrayValue;
-            jv[jss::books][0u] = Json::ObjectValue;
-            jv[jss::books][0u][jss::taker_gets] = Json::ObjectValue;
-            jv[jss::books][0u][jss::taker_pays] = Json::ObjectValue;
+            json::Value jv;
+            jv[jss::books] = json::ArrayValue;
+            jv[jss::books][0u] = json::ObjectValue;
+            jv[jss::books][0u][jss::taker_gets] = json::ObjectValue;
+            jv[jss::books][0u][jss::taker_pays] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_pays][jss::issuer] = Account{"gateway"}.human() + "DEAD";
             auto jr = wsc->invoke(method, jv)[jss::result];
@@ -716,12 +716,12 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::ArrayValue;
-            jv[jss::books][0u] = Json::ObjectValue;
+            json::Value jv;
+            jv[jss::books] = json::ArrayValue;
+            jv[jss::books][0u] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays] =
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
-            jv[jss::books][0u][jss::taker_gets] = Json::ObjectValue;
+            jv[jss::books][0u][jss::taker_gets] = json::ObjectValue;
             auto jr = wsc->invoke(method, jv)[jss::result];
             // NOTE: this error is slightly incongruous with the
             // equivalent source currency error
@@ -731,9 +731,9 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::ArrayValue;
-            jv[jss::books][0u] = Json::ObjectValue;
+            json::Value jv;
+            jv[jss::books] = json::ArrayValue;
+            jv[jss::books][0u] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays] =
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "ZZZZ";
@@ -746,9 +746,9 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::ArrayValue;
-            jv[jss::books][0u] = Json::ObjectValue;
+            json::Value jv;
+            jv[jss::books] = json::ArrayValue;
+            jv[jss::books][0u] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays] =
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
@@ -759,9 +759,9 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::ArrayValue;
-            jv[jss::books][0u] = Json::ObjectValue;
+            json::Value jv;
+            jv[jss::books] = json::ArrayValue;
+            jv[jss::books][0u] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays] =
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
@@ -772,9 +772,9 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::books] = Json::ArrayValue;
-            jv[jss::books][0u] = Json::ObjectValue;
+            json::Value jv;
+            jv[jss::books] = json::ArrayValue;
+            jv[jss::books][0u] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays] =
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
             jv[jss::books][0u][jss::taker_gets] =
@@ -786,7 +786,7 @@ public:
 
         for (auto const& nonArray : nonArrays)
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::streams] = nonArray;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
@@ -794,8 +794,8 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::streams] = Json::ArrayValue;
+            json::Value jv;
+            jv[jss::streams] = json::ArrayValue;
             jv[jss::streams][0u] = 1;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "malformedStream");
@@ -803,8 +803,8 @@ public:
         }
 
         {
-            Json::Value jv;
-            jv[jss::streams] = Json::ArrayValue;
+            json::Value jv;
+            jv[jss::streams] = json::ArrayValue;
             jv[jss::streams][0u] = "not_a_stream";
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "malformedStream");
@@ -830,7 +830,7 @@ public:
         /*
          * return true if the subscribe or unsubscribe result is a success
          */
-        auto goodSubRPC = [](Json::Value const& subReply) -> bool {
+        auto goodSubRPC = [](json::Value const& subReply) -> bool {
             return subReply.isMember(jss::result) && subReply[jss::result].isMember(jss::status) &&
                 subReply[jss::result][jss::status] == jss::success;
         };
@@ -890,7 +890,7 @@ public:
             {
                 auto& from = (i % 2 == 0) ? a : b;
                 auto& to = (i % 2 == 0) ? b : a;
-                env(pay(from, to, jtx::kXRP(numXRP)),
+                env(pay(from, to, jtx::XRP(numXRP)),
                     jtx::Seq(jtx::kAUTOFILL),
                     jtx::Fee(jtx::kAUTOFILL),
                     jtx::Sig(jtx::kAUTOFILL));
@@ -991,8 +991,8 @@ public:
              */
             Env env(*this, singleThreadIo(envconfig()));
             auto wscTxHistory = makeWSClient(env.app().config());
-            Json::Value request;
-            request[jss::account_history_tx_stream] = Json::ObjectValue;
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ObjectValue;
             request[jss::account_history_tx_stream][jss::account] = alice.human();
             auto jv = wscTxHistory->invoke("subscribe", request);
             if (!BEAST_EXPECT(goodSubRPC(jv)))
@@ -1034,8 +1034,8 @@ public:
              */
             Env env(*this, singleThreadIo(envconfig()));
             auto wscTxHistory = makeWSClient(env.app().config());
-            Json::Value request;
-            request[jss::account_history_tx_stream] = Json::ObjectValue;
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ObjectValue;
             request[jss::account_history_tx_stream][jss::account] =
                 "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             auto jv = wscTxHistory->invoke("subscribe", request);
@@ -1114,12 +1114,12 @@ public:
             auto wscTxHistory = makeWSClient(env.app().config());
 
             std::array<Account, 2> const accounts = {alice, bob};
-            env.fund(kXRP(222222), accounts);
+            env.fund(XRP(222222), accounts);
             BEAST_EXPECT(env.syncClose());
 
             // subscribe account
-            Json::Value stream = Json::ObjectValue;
-            stream[jss::accounts] = Json::ArrayValue;
+            json::Value stream = json::ObjectValue;
+            stream[jss::accounts] = json::ArrayValue;
             stream[jss::accounts].append(alice.human());
             auto jv = wscAccount->invoke("subscribe", stream);
 
@@ -1130,8 +1130,8 @@ public:
                 return;
 
             // subscribe account tx history
-            Json::Value request;
-            request[jss::account_history_tx_stream] = Json::ObjectValue;
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ObjectValue;
             request[jss::account_history_tx_stream][jss::account] = alice.human();
             jv = wscTxHistory->invoke("subscribe", request);
 
@@ -1182,7 +1182,7 @@ public:
             auto const usdA = alice["USD"];
 
             std::array<Account, 2> const accounts = {alice, carol};
-            env.fund(kXRP(333333), accounts);
+            env.fund(XRP(333333), accounts);
             env.trust(usdA(20000), carol);
             BEAST_EXPECT(env.syncClose());
 
@@ -1194,8 +1194,8 @@ public:
             };
 
             // subscribe
-            Json::Value request;
-            request[jss::account_history_tx_stream] = Json::ObjectValue;
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ObjectValue;
             request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto ws = makeWSClient(env.app().config());
             auto jv = ws->invoke("subscribe", request);
@@ -1219,7 +1219,7 @@ public:
              */
             Env env(*this, singleThreadIo(envconfig()));
             std::array<Account, 2> const accounts = {alice, carol};
-            env.fund(kXRP(444444), accounts);
+            env.fund(XRP(444444), accounts);
             BEAST_EXPECT(env.syncClose());
 
             // many payments, and close lots of ledgers
@@ -1228,8 +1228,8 @@ public:
             };
 
             // subscribe
-            Json::Value request;
-            request[jss::account_history_tx_stream] = Json::ObjectValue;
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ObjectValue;
             request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto wscLong = makeWSClient(env.app().config());
             auto jv = wscLong->invoke("subscribe", request);
@@ -1282,17 +1282,17 @@ public:
 
         auto wsc = makeWSClient(env.app().config());
 
-        Json::Value streams;
-        streams[jss::streams] = Json::ArrayValue;
+        json::Value streams;
+        streams[jss::streams] = json::ArrayValue;
         streams[jss::streams][0u] = "book_changes";
 
         auto jv = wsc->invoke("subscribe", streams);
         if (!BEAST_EXPECT(jv[jss::status] == "success"))
             return;
-        env(offer(alice, kXRP(10), usd(10)), Domain(domainID), Txflags(tfHybrid));
+        env(offer(alice, XRP(10), usd(10)), Domain(domainID), Txflags(tfHybrid));
         BEAST_EXPECT(env.syncClose());
 
-        env(pay(bob, carol, usd(5)), Path(~usd), Sendmax(kXRP(5)), Domain(domainID));
+        env(pay(bob, carol, usd(5)), Path(~usd), Sendmax(XRP(5)), Domain(domainID));
         BEAST_EXPECT(env.syncClose());
 
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -1334,12 +1334,12 @@ public:
         Account const broker{"broker"};
 
         Env env{*this, singleThreadIo(envconfig()), features};
-        env.fund(kXRP(10000), alice, bob, broker);
+        env.fund(XRP(10000), alice, bob, broker);
         BEAST_EXPECT(env.syncClose());
 
         auto wsc = test::makeWSClient(env.app().config());
-        Json::Value stream;
-        stream[jss::streams] = Json::ArrayValue;
+        json::Value stream;
+        stream[jss::streams] = json::ArrayValue;
         stream[jss::streams].append("transactions");
         auto jv = wsc->invoke("subscribe", stream);
 
@@ -1363,7 +1363,7 @@ public:
                     jv[jss::meta][jss::nftoken_ids].begin(),
                     jv[jss::meta][jss::nftoken_ids].end(),
                     std::back_inserter(metaIDs),
-                    [this](Json::Value id) {
+                    [this](json::Value id) {
                         uint256 nftID;
                         BEAST_EXPECT(nftID.parseHex(id.asString()));
                         return nftID;
@@ -1499,7 +1499,7 @@ public:
         if (features[featureNFTokenMintOffer])
         {
             uint256 const aliceMintWithOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::mint(alice), token::Amount(kXRP(0)));
+            env(token::mint(alice), token::Amount(XRP(0)));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceMintWithOfferIndex1);
         }

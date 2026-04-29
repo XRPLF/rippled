@@ -20,7 +20,7 @@ namespace xrpl {
 //   port: <number>
 // }
 // XXX Might allow domain for manual connections.
-Json::Value
+json::Value
 doConnect(RPC::JsonContext& context)
 {
     if (context.app.config().standalone())
@@ -32,7 +32,7 @@ doConnect(RPC::JsonContext& context)
         return RPC::missingFieldError(jss::ip);
 
     if (context.params.isMember(jss::port) &&
-        !context.params[jss::port].isConvertibleTo(Json::IntValue))
+        !context.params[jss::port].isConvertibleTo(json::IntValue))
     {
         return rpcError(RpcInvalidParams);
     }

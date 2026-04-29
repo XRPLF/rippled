@@ -7,11 +7,11 @@
 #include <xrpl/protocol/ErrorCodes.h>
 
 namespace xrpl {
-Json::Value
+json::Value
 doFee(RPC::JsonContext& context)
 {
     auto result = context.app.getTxQ().doRPC(context.app);
-    if (result.type() == Json::ObjectValue)
+    if (result.type() == json::ObjectValue)
         return result;
 
     // LCOV_EXCL_START

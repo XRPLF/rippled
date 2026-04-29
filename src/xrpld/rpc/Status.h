@@ -12,7 +12,7 @@ namespace xrpl::RPC {
     interface and a way to attach additional information to existing status
     returns.
 
-    A Status can also be used to fill a Json::Value with a JSON-RPC 2.0
+    A Status can also be used to fill a json::Value with a JSON-RPC 2.0
     error response:  see http://www.jsonrpc.org/specification#error_object
  */
 struct Status : public std::exception
@@ -86,7 +86,7 @@ public:
     /** Apply the Status to a JsonObject
      */
     void
-    inject(Json::Value& object) const
+    inject(json::Value& object) const
     {
         if (auto ec = toErrorCode())
         {
@@ -118,13 +118,13 @@ public:
     }
 
     [[nodiscard]] std::string
-    to_string() const;
+    toString() const;
 
-    /** Fill a Json::Value with an RPC 2.0 response.
+    /** Fill a json::Value with an RPC 2.0 response.
         If the Status is OK, fillJson has no effect.
         Not currently used. */
     void
-    fillJson(Json::Value&);
+    fillJson(json::Value&);
 
 private:
     Type type_ = Type::None;

@@ -146,10 +146,10 @@ getStats(Prices::right_const_iterator const& begin, Prices::right_const_iterator
  * time_threshold : defines a range of prices to include based on the timestamp
  *   range - {most recent, most recent - time_threshold} [optional]
  */
-Json::Value
+json::Value
 doGetAggregatePrice(RPC::JsonContext& context)
 {
-    Json::Value result;
+    json::Value result;
     auto const& params(context.params);
 
     constexpr std::uint16_t kMAX_ORACLES = 200;
@@ -170,7 +170,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
 
     // Lambda to validate uint type
     // support positive int, uint, and a number represented as a string
-    auto validUInt = [](Json::Value const& params, Json::StaticString const& field) {
+    auto validUInt = [](json::Value const& params, json::StaticString const& field) {
         auto const& jv = params[field];
         std::uint32_t v = 0;
         return jv.isUInt() || (jv.isInt() && jv.asInt() >= 0) ||
@@ -180,7 +180,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     // Lambda to get `trim` and `time_threshold` fields. If the field
     // is not included in the input then a default value is returned.
     auto getField = [&params, &validUInt](
-                        Json::StaticString const& field,
+                        json::StaticString const& field,
                         unsigned int def = 0) -> std::variant<std::uint32_t, ErrorCodeI> {
         if (params.isMember(field))
         {
@@ -193,8 +193,8 @@ doGetAggregatePrice(RPC::JsonContext& context)
 
     // Lambda to get `base_asset` and `quote_asset`. The values have
     // to conform to the Currency type.
-    auto getCurrency = [&params](SField const& sField, Json::StaticString const& field)
-        -> std::variant<Json::Value, ErrorCodeI> {
+    auto getCurrency = [&params](SField const& sField, json::StaticString const& field)
+        -> std::variant<json::Value, ErrorCodeI> {
         try
         {
             if (params[field].asString().empty())
@@ -275,9 +275,9 @@ doGetAggregatePrice(RPC::JsonContext& context)
                     series,
                     [&](STObject const& o) -> bool {
                         return o.getFieldCurrency(sfBaseAsset).getText() ==
-                            std::get<Json::Value>(baseAsset) &&
+                            std::get<json::Value>(baseAsset) &&
                             o.getFieldCurrency(sfQuoteAsset).getText() ==
-                            std::get<Json::Value>(quoteAsset) &&
+                            std::get<json::Value>(quoteAsset) &&
                             o.isFieldPresent(sfAssetPrice);
                     });
                 iter != series.end())

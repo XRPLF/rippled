@@ -448,7 +448,7 @@ Livecache<Allocator>::onWrite(beast::PropertyStream::Map& map)
         auto const& e(iter->second);
         beast::PropertyStream::Map item(set);
         item["hops"] = e.endpoint.hops;
-        item["address"] = e.endpoint.address.to_string();
+        item["address"] = e.endpoint.address.toString();
         std::stringstream ss;
         ss << (iter.when() - expired).count();
         item["expires"] = ss.str();

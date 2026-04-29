@@ -29,7 +29,7 @@ namespace xrpl {
 //   channel_id: 256-bit channel id
 //   drops: 64-bit uint (as string)
 // }
-Json::Value
+json::Value
 doChannelAuthorize(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
@@ -50,7 +50,7 @@ doChannelAuthorize(RPC::JsonContext& context)
     if (!params.isMember(jss::key_type) && !params.isMember(jss::secret))
         return RPC::missingFieldError(jss::secret);
 
-    Json::Value result;
+    json::Value result;
     std::optional<std::pair<PublicKey, SecretKey>> const keyPair =
         RPC::keypairForSignature(params, result, context.apiVersion);
 

@@ -96,8 +96,8 @@ struct MPTCreate
 struct MPTInit
 {
     Holders holders = {};  // NOLINT(readability-redundant-member-init)
-    PrettyAmount const xrp = kXRP(10'000);
-    PrettyAmount const xrpHolders = kXRP(10'000);
+    PrettyAmount const xrp = XRP(10'000);
+    PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
     bool close = true;
     // create MPTIssuanceID if seated and follow rules for MPTCreate args
@@ -180,19 +180,19 @@ public:
     void
     create(MPTCreate const& arg = MPTCreate{});
 
-    static Json::Value
+    static json::Value
     createJV(MPTCreate const& arg = MPTCreate{});
 
     void
     destroy(MPTDestroy const& arg = MPTDestroy{});
 
-    static Json::Value
+    static json::Value
     destroyJV(MPTDestroy const& arg = MPTDestroy{});
 
     void
     authorize(MPTAuthorize const& arg = MPTAuthorize{});
 
-    static Json::Value
+    static json::Value
     authorizeJV(MPTAuthorize const& arg = MPTAuthorize{});
 
     void
@@ -201,7 +201,7 @@ public:
     void
     set(MPTSet const& set = {});
 
-    static Json::Value
+    static json::Value
     setJV(MPTSet const& set = {});
 
     [[nodiscard]] bool
@@ -288,7 +288,7 @@ private:
 
     template <typename A>
     TER
-    submit(A const& arg, Json::Value const& jv)
+    submit(A const& arg, json::Value const& jv)
     {
         env_(jv, Txflags(arg.flags.value_or(0)), Ter(arg.err.value_or(tesSUCCESS)));
         auto const err = env_.ter();

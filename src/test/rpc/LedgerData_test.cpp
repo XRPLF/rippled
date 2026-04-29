@@ -33,7 +33,7 @@ class LedgerData_test : public beast::unit_test::Suite
 public:
     // test helper
     static bool
-    checkMarker(Json::Value const& val)
+    checkMarker(json::Value const& val)
     {
         return val.isMember(jss::marker) && val[jss::marker].isString() &&
             !val[jss::marker].asString().empty();
@@ -46,7 +46,7 @@ public:
         Env env{*this, asAdmin ? envconfig() : envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
-        env.fund(kXRP(100000), gw);
+        env.fund(XRP(100000), gw);
 
         int const maxLimit = 256;  // would be 2048 for binary requests, no
                                    // need to test that here
@@ -54,7 +54,7 @@ public:
         for (auto i = 0; i < maxLimit + 10; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
-            env.fund(kXRP(1000), bob);
+            env.fund(XRP(1000), bob);
         }
         // Note that calls to env.close() fail without admin permission.
         if (asAdmin)
@@ -62,7 +62,7 @@ public:
 
         // with no limit specified, we get the max_limit if the total number of
         // accounts is greater than max, which it is here
-        Json::Value jvParams;
+        json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = false;
         {
@@ -91,19 +91,19 @@ public:
         Env env{*this, envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
-        env.fund(kXRP(100000), gw);
+        env.fund(XRP(100000), gw);
 
         int const numAccounts = 10;
 
         for (auto i = 0; i < numAccounts; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
-            env.fund(kXRP(1000), bob);
+            env.fund(XRP(1000), bob);
         }
 
         // with no limit specified, we should get all of our fund entries
         // plus three more related to the gateway setup
-        Json::Value jvParams;
+        json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = true;
         auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
@@ -123,12 +123,12 @@ public:
         auto const usd = gw["USD"];
         Account const bob{"bob"};
 
-        env.fund(kXRP(10000), gw, bob);
+        env.fund(XRP(10000), gw, bob);
         env.trust(usd(1000), bob);
 
         {
             // bad limit
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::limit] = "0";  // NOT an integer
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -138,7 +138,7 @@ public:
 
         {
             // invalid marker
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::marker] = "NOT_A_MARKER";
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -148,7 +148,7 @@ public:
 
         {
             // invalid marker - not a string
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::marker] = 1;
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -158,7 +158,7 @@ public:
 
         {
             // ask for a bad ledger index
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = 10u;
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
@@ -174,19 +174,19 @@ public:
         Env env{*this, envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
-        env.fund(kXRP(100000), gw);
+        env.fund(XRP(100000), gw);
 
         int const numAccounts = 20;
 
         for (auto i = 0; i < numAccounts; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
-            env.fund(kXRP(1000), bob);
+            env.fund(XRP(1000), bob);
         }
 
         // with no limit specified, we should get all of our fund entries
         // plus three more related to the gateway setup
-        Json::Value jvParams;
+        json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = false;
         auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
@@ -211,13 +211,13 @@ public:
     {
         using namespace test::jtx;
         Env env{*this};
-        env.fund(kXRP(100000), "alice");
+        env.fund(XRP(100000), "alice");
         env.close();
 
         // Ledger header should be present in the first query
         {
             // Closed ledger with non binary form
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = "closed";
             auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
@@ -228,7 +228,7 @@ public:
         }
         {
             // Closed ledger with binary form
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = "closed";
             jvParams[jss::binary] = true;
             auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
@@ -246,7 +246,7 @@ public:
         }
         {
             // Current ledger with binary form
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::binary] = true;
             auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
@@ -270,10 +270,10 @@ public:
 
             Account const gw{"gateway"};
             auto const usd = gw["USD"];
-            env.fund(kXRP(100000), gw);
+            env.fund(XRP(100000), gw);
 
-            auto makeRequest = [&env](Json::StaticString const& type) {
-                Json::Value jvParams;
+            auto makeRequest = [&env](json::StaticString const& type) {
+                json::Value jvParams;
                 jvParams[jss::ledger_index] = "current";
                 jvParams[jss::type] = type;
                 return env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
@@ -301,9 +301,9 @@ public:
             for (auto i = 0; i < numAccounts; i++)
             {
                 Account const bob{std::string("bob") + std::to_string(i)};
-                env.fund(kXRP(1000), bob);
+                env.fund(XRP(1000), bob);
             }
-            env(offer(Account{"bob0"}, usd(100), kXRP(100)));
+            env(offer(Account{"bob0"}, usd(100), XRP(100)));
             env.trust(Account{"bob2"}["USD"](100), Account{"bob3"});
 
             auto majorities = getMajorityAmendments(*env.closed());
@@ -319,22 +319,22 @@ public:
             env(ticket::create(env.master, 1));
 
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::TransactionType] = jss::EscrowCreate;
                 jv[jss::Account] = Account{"bob5"}.human();
                 jv[jss::Destination] = Account{"bob6"}.human();
-                jv[jss::Amount] = kXRP(50).value().getJson(JsonOptions::KNone);
+                jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::KNone);
                 jv[sfFinishAfter.fieldName] =
                     NetClock::time_point{env.now() + 10s}.time_since_epoch().count();
                 env(jv);
             }
 
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::TransactionType] = jss::PaymentChannelCreate;
                 jv[jss::Account] = Account{"bob6"}.human();
                 jv[jss::Destination] = Account{"bob7"}.human();
-                jv[jss::Amount] = kXRP(100).value().getJson(JsonOptions::KNone);
+                jv[jss::Amount] = XRP(100).value().getJson(JsonOptions::KNone);
                 jv[jss::SettleDelay] = NetClock::duration{10s}.count();
                 jv[sfPublicKey.fieldName] = strHex(Account{"bob6"}.pk().slice());
                 jv[sfCancelAfter.fieldName] =
@@ -342,7 +342,7 @@ public:
                 env(jv);
             }
 
-            env(check::create("bob6", "bob7", kXRP(100)));
+            env(check::create("bob6", "bob7", XRP(100)));
 
             // bob9 DepositPreauths bob4 and bob8.
             env(deposit::auth(Account{"bob9"}, Account{"bob4"}));
@@ -443,7 +443,7 @@ public:
             }
 
             {  // jvParams[jss::type] = "misspelling";
-                Json::Value jvParams;
+                json::Value jvParams;
                 jvParams[jss::ledger_index] = "current";
                 jvParams[jss::type] = "misspelling";
                 auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];

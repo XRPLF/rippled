@@ -18,7 +18,7 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doAccountCurrencies(RPC::JsonContext& context)
 {
     auto& params = context.params;
@@ -72,11 +72,11 @@ doAccountCurrencies(RPC::JsonContext& context)
     send.erase(badCurrency());
     receive.erase(badCurrency());
 
-    Json::Value& sendCurrencies = (result[jss::send_currencies] = Json::ArrayValue);
+    json::Value& sendCurrencies = (result[jss::send_currencies] = json::ArrayValue);
     for (auto const& c : send)
         sendCurrencies.append(to_string(c));
 
-    Json::Value& recvCurrencies = (result[jss::receive_currencies] = Json::ArrayValue);
+    json::Value& recvCurrencies = (result[jss::receive_currencies] = json::ArrayValue);
     for (auto const& c : receive)
         recvCurrencies.append(to_string(c));
 

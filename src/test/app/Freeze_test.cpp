@@ -49,7 +49,7 @@ class Freeze_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(1000), g1, alice, bob);
+        env.fund(XRP(1000), g1, alice, bob);
         env.close();
 
         env.trust(g1["USD"](100), bob);
@@ -60,7 +60,7 @@ class Freeze_test : public beast::unit_test::Suite
         env(pay(g1, alice, g1["USD"](100)));
         env.close();
 
-        env(offer(alice, kXRP(500), g1["USD"](100)));
+        env(offer(alice, XRP(500), g1["USD"](100)));
         env.close();
 
         {
@@ -109,7 +109,7 @@ class Freeze_test : public beast::unit_test::Suite
         {
             // Account with line frozen by issuer
             //    test: can buy more assets on that line
-            env(offer(bob, g1["USD"](5), kXRP(25)));
+            env(offer(bob, g1["USD"](5), XRP(25)));
             auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
             if (!BEAST_EXPECT(checkArraySize(affected, 5u)))
                 return;
@@ -124,7 +124,7 @@ class Freeze_test : public beast::unit_test::Suite
 
         {
             //    test: can not sell assets from that line
-            env(offer(bob, kXRP(1), g1["USD"](5)), Ter(tecUNFUNDED_OFFER));
+            env(offer(bob, XRP(1), g1["USD"](5)), Ter(tecUNFUNDED_OFFER));
 
             //    test: can receive Payment on that line
             env(pay(alice, bob, g1["USD"](1)));
@@ -137,7 +137,7 @@ class Freeze_test : public beast::unit_test::Suite
             // check G1 account lines
             //    test: shows freeze
             auto lines = getAccountLines(env, g1);
-            Json::Value bobLine;
+            json::Value bobLine;
             for (auto const& it : lines[jss::lines])
             {
                 if (it[jss::account] == bob.human())
@@ -155,7 +155,7 @@ class Freeze_test : public beast::unit_test::Suite
         {
             //    test: shows freeze peer
             auto lines = getAccountLines(env, bob);
-            Json::Value g1Line;
+            json::Value g1Line;
             for (auto const& it : lines[jss::lines])
             {
                 if (it[jss::account] == g1.human())
@@ -197,7 +197,7 @@ class Freeze_test : public beast::unit_test::Suite
         Account const g1{"G1"};
         Account const a1{"A1"};
 
-        env.fund(kXRP(10000), g1, a1);
+        env.fund(XRP(10000), g1, a1);
         env.close();
 
         env.trust(g1["USD"](1000), a1);
@@ -288,7 +288,7 @@ class Freeze_test : public beast::unit_test::Suite
         Account const g1{"G1"};
         Account const a1{"A1"};
 
-        env.fund(kXRP(10000), g1, a1);
+        env.fund(XRP(10000), g1, a1);
         env.close();
 
         // test: can create frozen trustline
@@ -337,7 +337,7 @@ class Freeze_test : public beast::unit_test::Suite
         Account const g1{"G1"};
         Account const a1{"A1"};
 
-        env.fund(kXRP(10000), g1, a1);
+        env.fund(XRP(10000), g1, a1);
         env.close();
 
         env.trust(g1["USD"](1000), a1);
@@ -379,9 +379,9 @@ class Freeze_test : public beast::unit_test::Suite
         Account const a3{"A3"};
         Account const a4{"A4"};
 
-        env.fund(kXRP(12000), g1);
-        env.fund(kXRP(1000), a1);
-        env.fund(kXRP(20000), a2, a3, a4);
+        env.fund(XRP(12000), g1);
+        env.fund(XRP(1000), a1);
+        env.fund(XRP(20000), a2, a3, a4);
         env.close();
 
         env.trust(g1["USD"](1200), a1);
@@ -396,10 +396,10 @@ class Freeze_test : public beast::unit_test::Suite
         env(pay(g1, a4, g1["BTC"](100)));
         env.close();
 
-        env(offer(g1, kXRP(10000), g1["USD"](100)), Txflags(tfPassive));
-        env(offer(g1, g1["USD"](100), kXRP(10000)), Txflags(tfPassive));
-        env(offer(a1, kXRP(10000), g1["USD"](100)), Txflags(tfPassive));
-        env(offer(a2, g1["USD"](100), kXRP(10000)), Txflags(tfPassive));
+        env(offer(g1, XRP(10000), g1["USD"](100)), Txflags(tfPassive));
+        env(offer(g1, g1["USD"](100), XRP(10000)), Txflags(tfPassive));
+        env(offer(a1, XRP(10000), g1["USD"](100)), Txflags(tfPassive));
+        env(offer(a2, g1["USD"](100), XRP(10000)), Txflags(tfPassive));
         env.close();
 
         {
@@ -448,10 +448,10 @@ class Freeze_test : public beast::unit_test::Suite
         {
             // Offers/Payments
             //    test: assets can be bought on the market
-            env(offer(a3, g1["BTC"](1), kXRP(1)));
+            env(offer(a3, g1["BTC"](1), XRP(1)));
 
             //    test: assets can be sold on the market
-            env(offer(a4, kXRP(1), g1["BTC"](1)));
+            env(offer(a4, XRP(1), g1["BTC"](1)));
 
             //    test: direct issues can be sent
             env(pay(g1, a2, g1["USD"](1)));
@@ -476,10 +476,10 @@ class Freeze_test : public beast::unit_test::Suite
             env.require(Nflags(g1, asfNoFreeze));
 
             //    test: assets can't be bought on the market
-            env(offer(a3, g1["BTC"](1), kXRP(1)), Ter(tecFROZEN));
+            env(offer(a3, g1["BTC"](1), XRP(1)), Ter(tecFROZEN));
 
             //    test: assets can't be sold on the market
-            env(offer(a4, kXRP(1), g1["BTC"](1)), Ter(tecFROZEN));
+            env(offer(a4, XRP(1), g1["BTC"](1)), Ter(tecFROZEN));
         }
 
         {
@@ -528,10 +528,10 @@ class Freeze_test : public beast::unit_test::Suite
         Account const frozenAcc{"A2"};
         Account const deepFrozenAcc{"A3"};
 
-        env.fund(kXRP(12000), g1);
-        env.fund(kXRP(1000), a1);
-        env.fund(kXRP(1000), frozenAcc);
-        env.fund(kXRP(1000), deepFrozenAcc);
+        env.fund(XRP(12000), g1);
+        env.fund(XRP(1000), a1);
+        env.fund(XRP(1000), frozenAcc);
+        env.fund(XRP(1000), deepFrozenAcc);
         env.close();
 
         env.trust(g1["USD"](1000), a1);
@@ -639,8 +639,8 @@ class Freeze_test : public beast::unit_test::Suite
         Account const a3{"A3"};
         Account const a4{"A4"};
 
-        env.fund(kXRP(1000), g1, a3, a4);
-        env.fund(kXRP(2000), a2);
+        env.fund(XRP(1000), g1, a3, a4);
+        env.fund(XRP(2000), a2);
         env.close();
 
         env.trust(g1["USD"](1000), a2);
@@ -652,12 +652,12 @@ class Freeze_test : public beast::unit_test::Suite
         env(pay(g1, a4, g1["USD"](2000)));
         env.close();
 
-        env(offer(a3, kXRP(1000), g1["USD"](1000)), Txflags(tfPassive));
+        env(offer(a3, XRP(1000), g1["USD"](1000)), Txflags(tfPassive));
         env.close();
 
         // removal after successful payment
         //    test: make a payment with partially consuming offer
-        env(pay(a2, g1, g1["USD"](1)), Paths(g1["USD"]), Sendmax(kXRP(1)));
+        env(pay(a2, g1, g1["USD"](1)), Paths(g1["USD"]), Sendmax(XRP(1)));
         env.close();
 
         //    test: offer was only partially consumed
@@ -668,7 +668,7 @@ class Freeze_test : public beast::unit_test::Suite
             offers[0u][jss::taker_gets] == g1["USD"](999).value().getJson(JsonOptions::KNone));
 
         //    test: someone else creates an offer providing liquidity
-        env(offer(a4, kXRP(999), g1["USD"](999)));
+        env(offer(a4, XRP(999), g1["USD"](999)));
         env.close();
 
         //    test: owner of partially consumed offers line is frozen
@@ -688,7 +688,7 @@ class Freeze_test : public beast::unit_test::Suite
             return;
 
         //    test: Can make a payment via the new offer
-        env(pay(a2, g1, g1["USD"](1)), Paths(g1["USD"]), Sendmax(kXRP(1)));
+        env(pay(a2, g1, g1["USD"](1)), Paths(g1["USD"]), Sendmax(XRP(1)));
         env.close();
 
         //    test: Partially consumed offer was removed by tes* payment
@@ -709,7 +709,7 @@ class Freeze_test : public beast::unit_test::Suite
         env.close();
 
         //    test: can no longer create a crossing offer
-        env(offer(a2, g1["USD"](999), kXRP(999)));
+        env(offer(a2, g1["USD"](999), XRP(999)));
         affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
         if (!BEAST_EXPECT(checkArraySize(affected, 8u)))
             return;
@@ -737,7 +737,7 @@ class Freeze_test : public beast::unit_test::Suite
         Account const a3{"A3"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2, a3);
+        env.fund(XRP(10000), g1, a1, a2, a3);
         env.close();
 
         auto const limit = usd(10000);
@@ -750,21 +750,21 @@ class Freeze_test : public beast::unit_test::Suite
 
         // Making large passive sell offer
         // Wants to sell 50 USD for 100 XRP
-        env(offer(a2, kXRP(100), usd(50)), Txflags(tfPassive));
+        env(offer(a2, XRP(100), usd(50)), Txflags(tfPassive));
         env.close();
         // Making large passive buy offer
         // Wants to buy 100 USD for 100 XRP
-        env(offer(a3, usd(100), kXRP(100)), Txflags(tfPassive));
+        env(offer(a3, usd(100), XRP(100)), Txflags(tfPassive));
         env.close();
         env.require(offers(a2, 1), offers(a3, 1));
 
         // Checking A1 can buy from A2 by crossing it's offer
-        env(offer(a1, usd(1), kXRP(2)), Txflags(tfFillOrKill));
+        env(offer(a1, usd(1), XRP(2)), Txflags(tfFillOrKill));
         env.close();
         env.require(Balance(a1, usd(1001)), Balance(a2, usd(999)));
 
         // Checking A1 can sell to A3 by crossing it's offer
-        env(offer(a1, kXRP(1), usd(1)), Txflags(tfFillOrKill));
+        env(offer(a1, XRP(1), usd(1)), Txflags(tfFillOrKill));
         env.close();
         env.require(Balance(a1, usd(1000)), Balance(a3, usd(1)));
 
@@ -775,7 +775,7 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: can still make passive buy offer
-            env(offer(a1, usd(1), kXRP(0.5)), Txflags(tfPassive));
+            env(offer(a1, usd(1), XRP(0.5)), Txflags(tfPassive));
             env.close();
             env.require(Balance(a1, usd(1000)), offers(a1, 1));
             // Cleanup
@@ -784,17 +784,17 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: can still buy from A2
-            env(offer(a1, usd(1), kXRP(2)), Txflags(tfFillOrKill));
+            env(offer(a1, usd(1), XRP(2)), Txflags(tfFillOrKill));
             env.close();
             env.require(Balance(a1, usd(1001)), Balance(a2, usd(998)), offers(a1, 0));
 
             // test: cannot create passive sell offer
-            env(offer(a1, kXRP(2), usd(1)), Txflags(tfPassive), Ter(tecUNFUNDED_OFFER));
+            env(offer(a1, XRP(2), usd(1)), Txflags(tfPassive), Ter(tecUNFUNDED_OFFER));
             env.close();
             env.require(Balance(a1, usd(1001)), offers(a1, 0));
 
             // test: cannot sell to A3
-            env(offer(a1, kXRP(1), usd(1)), Txflags(tfFillOrKill), Ter(tecUNFUNDED_OFFER));
+            env(offer(a1, XRP(1), usd(1)), Txflags(tfFillOrKill), Ter(tecUNFUNDED_OFFER));
             env.close();
             env.require(Balance(a1, usd(1001)), offers(a1, 0));
 
@@ -810,19 +810,19 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: cannot create passive buy offer
-            env(offer(a1, usd(1), kXRP(0.5)), Txflags(tfPassive), Ter(tecFROZEN));
+            env(offer(a1, usd(1), XRP(0.5)), Txflags(tfPassive), Ter(tecFROZEN));
             env.close();
 
             // test: cannot buy from A2
-            env(offer(a1, usd(1), kXRP(2)), Txflags(tfFillOrKill), Ter(tecFROZEN));
+            env(offer(a1, usd(1), XRP(2)), Txflags(tfFillOrKill), Ter(tecFROZEN));
             env.close();
 
             // test: cannot create passive sell offer
-            env(offer(a1, kXRP(2), usd(1)), Txflags(tfPassive), Ter(tecUNFUNDED_OFFER));
+            env(offer(a1, XRP(2), usd(1)), Txflags(tfPassive), Ter(tecUNFUNDED_OFFER));
             env.close();
 
             // test: cannot sell to A3
-            env(offer(a1, kXRP(1), usd(1)), Txflags(tfFillOrKill), Ter(tecUNFUNDED_OFFER));
+            env(offer(a1, XRP(1), usd(1)), Txflags(tfFillOrKill), Ter(tecUNFUNDED_OFFER));
             env.close();
 
             env(trust(g1, a1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
@@ -834,8 +834,8 @@ class Freeze_test : public beast::unit_test::Suite
         // the issuer
         {
             env.require(Balance(a1, usd(1001)));
-            env(offer(a1, kXRP(1.9), usd(1)));
-            env(offer(a1, usd(1), kXRP(1.1)));
+            env(offer(a1, XRP(1.9), usd(1)));
+            env(offer(a1, usd(1), XRP(1.1)));
             env.close();
             env.require(Balance(a1, usd(1001)), offers(a1, 2));
 
@@ -844,13 +844,13 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: A2 wants to sell to A1, must succeed
             env.require(Balance(a1, usd(1001)), Balance(a2, usd(998)));
-            env(offer(a2, kXRP(1.1), usd(1)), Txflags(tfFillOrKill));
+            env(offer(a2, XRP(1.1), usd(1)), Txflags(tfFillOrKill));
             env.close();
             env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 1));
 
             // test: A3 wants to buy from A1, must fail
             env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 1));
-            env(offer(a3, usd(1), kXRP(1.9)), Txflags(tfFillOrKill), Ter(tecKILLED));
+            env(offer(a3, usd(1), XRP(1.9)), Txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
             env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 0));
 
@@ -863,8 +863,8 @@ class Freeze_test : public beast::unit_test::Suite
         if (features[featureDeepFreeze])
         {
             env.require(Balance(a1, usd(1002)));
-            env(offer(a1, kXRP(1.9), usd(1)));
-            env(offer(a1, usd(1), kXRP(1.1)));
+            env(offer(a1, XRP(1.9), usd(1)));
+            env(offer(a1, usd(1), XRP(1.1)));
             env.close();
             env.require(Balance(a1, usd(1002)), offers(a1, 2));
 
@@ -873,13 +873,13 @@ class Freeze_test : public beast::unit_test::Suite
 
             // test: A2 wants to sell to A1, must fail
             env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)));
-            env(offer(a2, kXRP(1.1), usd(1)), Txflags(tfFillOrKill), Ter(tecKILLED));
+            env(offer(a2, XRP(1.1), usd(1)), Txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
             env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 1));
 
             // test: A3 wants to buy from A1, must fail
             env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 1));
-            env(offer(a3, usd(1), kXRP(1.9)), Txflags(tfFillOrKill), Ter(tecKILLED));
+            env(offer(a3, usd(1), XRP(1.9)), Txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
             env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 0));
 
@@ -894,7 +894,7 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: A1 can make passive buy offer
-            env(offer(a1, usd(1), kXRP(0.5)), Txflags(tfPassive));
+            env(offer(a1, usd(1), XRP(0.5)), Txflags(tfPassive));
             env.close();
             env.require(Balance(a1, usd(1002)), offers(a1, 1));
             //  Cleanup
@@ -903,12 +903,12 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: A1 wants to buy, must fail
-            env(offer(a1, usd(1), kXRP(2)), Txflags(tfFillOrKill), Ter(tecKILLED));
+            env(offer(a1, usd(1), XRP(2)), Txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
             env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 0));
 
             // test: A1 can create passive sell offer
-            env(offer(a1, kXRP(2), usd(1)), Txflags(tfPassive));
+            env(offer(a1, XRP(2), usd(1)), Txflags(tfPassive));
             env.close();
             env.require(Balance(a1, usd(1002)), offers(a1, 1));
             // Cleanup
@@ -917,7 +917,7 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: A1 can sell to A3
-            env(offer(a1, kXRP(1), usd(1)), Txflags(tfFillOrKill));
+            env(offer(a1, XRP(1), usd(1)), Txflags(tfFillOrKill));
             env.close();
             env.require(Balance(a1, usd(1001)), offers(a1, 0));
 
@@ -933,19 +933,19 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: A1 cannot create passive buy offer
-            env(offer(a1, usd(1), kXRP(0.5)), Txflags(tfPassive), Ter(tecFROZEN));
+            env(offer(a1, usd(1), XRP(0.5)), Txflags(tfPassive), Ter(tecFROZEN));
             env.close();
 
             // test: A1 cannot buy, must fail
-            env(offer(a1, usd(1), kXRP(2)), Txflags(tfFillOrKill), Ter(tecFROZEN));
+            env(offer(a1, usd(1), XRP(2)), Txflags(tfFillOrKill), Ter(tecFROZEN));
             env.close();
 
             // test: A1 cannot create passive sell offer
-            env(offer(a1, kXRP(2), usd(1)), Txflags(tfPassive), Ter(tecUNFUNDED_OFFER));
+            env(offer(a1, XRP(2), usd(1)), Txflags(tfPassive), Ter(tecUNFUNDED_OFFER));
             env.close();
 
             // test: A1 cannot sell to A3
-            env(offer(a1, kXRP(1), usd(1)), Txflags(tfFillOrKill), Ter(tecUNFUNDED_OFFER));
+            env(offer(a1, XRP(1), usd(1)), Txflags(tfFillOrKill), Ter(tecUNFUNDED_OFFER));
             env.close();
 
             env(trust(a1, limit, tfClearFreeze | tfClearDeepFreeze));
@@ -965,7 +965,7 @@ class Freeze_test : public beast::unit_test::Suite
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2);
+        env.fund(XRP(10000), g1, a1, a2);
         env.close();
 
         auto const limit = usd(10000);
@@ -976,7 +976,7 @@ class Freeze_test : public beast::unit_test::Suite
         env(pay(g1, a2, usd(1000)));
         env.close();
 
-        env(offer(a2, kXRP(100), usd(100)), Txflags(tfPassive));
+        env(offer(a2, XRP(100), usd(100)), Txflags(tfPassive));
         env.close();
 
         // Testing payments A1 <-> G1 using offer from A2 frozen by issuer.
@@ -987,7 +987,7 @@ class Freeze_test : public beast::unit_test::Suite
             // test: A1 cannot send USD using XRP through A2 offer
             env(pay(a1, g1, usd(10)),
                 Path(~usd),
-                Sendmax(kXRP(11)),
+                Sendmax(XRP(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_PARTIAL));
             env.close();
@@ -995,7 +995,7 @@ class Freeze_test : public beast::unit_test::Suite
             // test: G1 cannot send USD using XRP through A2 offer
             env(pay(g1, a1, usd(10)),
                 Path(~usd),
-                Sendmax(kXRP(11)),
+                Sendmax(XRP(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_PARTIAL));
             env.close();
@@ -1013,7 +1013,7 @@ class Freeze_test : public beast::unit_test::Suite
             // test: A1 cannot send USD using XRP through A2 offer
             env(pay(a1, g1, usd(10)),
                 Path(~usd),
-                Sendmax(kXRP(11)),
+                Sendmax(XRP(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_PARTIAL));
             env.close();
@@ -1021,7 +1021,7 @@ class Freeze_test : public beast::unit_test::Suite
             // test: G1 cannot send USD using XRP through A2 offer
             env(pay(g1, a1, usd(10)),
                 Path(~usd),
-                Sendmax(kXRP(11)),
+                Sendmax(XRP(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_PARTIAL));
             env.close();
@@ -1037,11 +1037,11 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: A1 can send USD using XRP through A2 offer
-            env(pay(a1, g1, usd(10)), Path(~usd), Sendmax(kXRP(11)), Txflags(tfNoRippleDirect));
+            env(pay(a1, g1, usd(10)), Path(~usd), Sendmax(XRP(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             // test: G1 can send USD using XRP through A2 offer
-            env(pay(g1, a1, usd(10)), Path(~usd), Sendmax(kXRP(11)), Txflags(tfNoRippleDirect));
+            env(pay(g1, a1, usd(10)), Path(~usd), Sendmax(XRP(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             env(trust(a2, limit, tfClearFreeze));
@@ -1058,7 +1058,7 @@ class Freeze_test : public beast::unit_test::Suite
             // test: A1 cannot send USD using XRP through A2 offer
             env(pay(a1, g1, usd(10)),
                 Path(~usd),
-                Sendmax(kXRP(11)),
+                Sendmax(XRP(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_PARTIAL));
             env.close();
@@ -1066,7 +1066,7 @@ class Freeze_test : public beast::unit_test::Suite
             // test: G1 cannot send USD using XRP through A2 offer
             env(pay(g1, a1, usd(10)),
                 Path(~usd),
-                Sendmax(kXRP(11)),
+                Sendmax(XRP(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_PARTIAL));
             env.close();
@@ -1080,7 +1080,7 @@ class Freeze_test : public beast::unit_test::Suite
         env.require(offers(a1, 0));
         env.close();
 
-        env(offer(a2, usd(100), kXRP(100)), Txflags(tfPassive));
+        env(offer(a2, usd(100), XRP(100)), Txflags(tfPassive));
         env.close();
 
         // Testing payments A1 <-> G1 using offer from A2 frozen by issuer.
@@ -1089,11 +1089,11 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: A1 can send XRP using USD through A2 offer
-            env(pay(a1, g1, kXRP(10)), Path(~kXRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
+            env(pay(a1, g1, XRP(10)), Path(~XRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             // test: G1 can send XRP using USD through A2 offer
-            env(pay(g1, a1, kXRP(10)), Path(~kXRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
+            env(pay(g1, a1, XRP(10)), Path(~XRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             env(trust(g1, a2["USD"](0), tfClearFreeze));
@@ -1108,16 +1108,16 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: A1 cannot send XRP using USD through A2 offer
-            env(pay(a1, g1, kXRP(10)),
-                Path(~kXRP),
+            env(pay(a1, g1, XRP(10)),
+                Path(~XRP),
                 Sendmax(usd(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_PARTIAL));
             env.close();
 
             // test: G1 cannot send XRP using USD through A2 offer
-            env(pay(g1, a1, kXRP(10)),
-                Path(~kXRP),
+            env(pay(g1, a1, XRP(10)),
+                Path(~XRP),
                 Sendmax(usd(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_PARTIAL));
@@ -1134,11 +1134,11 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: A1 can send XRP using USD through A2 offer
-            env(pay(a1, g1, kXRP(10)), Path(~kXRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
+            env(pay(a1, g1, XRP(10)), Path(~XRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             // test: G1 can send XRP using USD through A2 offer
-            env(pay(g1, a1, kXRP(10)), Path(~kXRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
+            env(pay(g1, a1, XRP(10)), Path(~XRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             env(trust(a2, limit, tfClearFreeze));
@@ -1153,16 +1153,16 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: A1 cannot send XRP using USD through A2 offer
-            env(pay(a1, g1, kXRP(10)),
-                Path(~kXRP),
+            env(pay(a1, g1, XRP(10)),
+                Path(~XRP),
                 Sendmax(usd(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_PARTIAL));
             env.close();
 
             // test: G1 cannot send XRP using USD through A2 offer
-            env(pay(g1, a1, kXRP(10)),
-                Path(~kXRP),
+            env(pay(g1, a1, XRP(10)),
+                Path(~XRP),
                 Sendmax(usd(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_PARTIAL));
@@ -1191,7 +1191,7 @@ class Freeze_test : public beast::unit_test::Suite
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2);
+        env.fund(XRP(10000), g1, a1, a2);
         env.close();
 
         auto const limit = usd(10000);
@@ -1313,7 +1313,7 @@ class Freeze_test : public beast::unit_test::Suite
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2);
+        env.fund(XRP(10000), g1, a1, a2);
         env.close();
 
         auto const limit = usd(10000);
@@ -1607,7 +1607,7 @@ class Freeze_test : public beast::unit_test::Suite
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2);
+        env.fund(XRP(10000), g1, a1, a2);
         env.close();
 
         env.trust(g1["USD"](10000), a1, a2);
@@ -1617,7 +1617,7 @@ class Freeze_test : public beast::unit_test::Suite
         env(pay(g1, a2, usd(1000)));
         env.close();
 
-        AMM const ammG1(env, g1, kXRP(1'000), usd(1'000));
+        AMM const ammG1(env, g1, XRP(1'000), usd(1'000));
         env.close();
 
         // Testing basic payment using AMM when freezing one of the trust lines.
@@ -1626,23 +1626,23 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: can still use XRP to make payment
-            env(pay(a1, a2, usd(10)), Path(~usd), Sendmax(kXRP(11)), Txflags(tfNoRippleDirect));
+            env(pay(a1, a2, usd(10)), Path(~usd), Sendmax(XRP(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             // test: cannot use USD to make payment
-            env(pay(a1, a2, kXRP(10)),
-                Path(~kXRP),
+            env(pay(a1, a2, XRP(10)),
+                Path(~XRP),
                 Sendmax(usd(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_DRY));
             env.close();
 
             // test: can still receive USD payments.
-            env(pay(a2, a1, usd(10)), Path(~usd), Sendmax(kXRP(11)), Txflags(tfNoRippleDirect));
+            env(pay(a2, a1, usd(10)), Path(~usd), Sendmax(XRP(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             // test: can still receive XRP payments.
-            env(pay(a2, a1, kXRP(10)), Path(~kXRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
+            env(pay(a2, a1, XRP(10)), Path(~XRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             env(trust(g1, a1["USD"](0), tfClearFreeze));
@@ -1657,12 +1657,12 @@ class Freeze_test : public beast::unit_test::Suite
             env.close();
 
             // test: can still use XRP to make payment
-            env(pay(a1, a2, usd(10)), Path(~usd), Sendmax(kXRP(11)), Txflags(tfNoRippleDirect));
+            env(pay(a1, a2, usd(10)), Path(~usd), Sendmax(XRP(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             // test: cannot use USD to make payment
-            env(pay(a1, a2, kXRP(10)),
-                Path(~kXRP),
+            env(pay(a1, a2, XRP(10)),
+                Path(~XRP),
                 Sendmax(usd(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_DRY));
@@ -1671,13 +1671,13 @@ class Freeze_test : public beast::unit_test::Suite
             // test: cannot receive USD payments.
             env(pay(a2, a1, usd(10)),
                 Path(~usd),
-                Sendmax(kXRP(11)),
+                Sendmax(XRP(11)),
                 Txflags(tfNoRippleDirect),
                 Ter(tecPATH_DRY));
             env.close();
 
             // test: can still receive XRP payments.
-            env(pay(a2, a1, kXRP(10)), Path(~kXRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
+            env(pay(a2, a1, XRP(10)), Path(~XRP), Sendmax(usd(11)), Txflags(tfNoRippleDirect));
             env.close();
 
             env(trust(g1, a1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
@@ -1697,7 +1697,7 @@ class Freeze_test : public beast::unit_test::Suite
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(kXRP(10000), g1, a1, a2);
+        env.fund(XRP(10000), g1, a1, a2);
         env.close();
 
         auto const limit = usd(10000);
@@ -1854,7 +1854,7 @@ class Freeze_test : public beast::unit_test::Suite
         if (features[featureDeepFreeze] && features[fixEnforceNFTokenTrustlineV2])
         {
             Account const broker{"broker"};
-            env.fund(kXRP(10000), broker);
+            env.fund(XRP(10000), broker);
             env.close();
             env(trust(g1, broker["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
             env.close();
@@ -1880,7 +1880,7 @@ class Freeze_test : public beast::unit_test::Suite
         if (features[featureDeepFreeze] && features[fixEnforceNFTokenTrustlineV2])
         {
             Account const minter{"minter"};
-            env.fund(kXRP(10000), minter);
+            env.fund(XRP(10000), minter);
             env.close();
             env(trust(g1, minter["USD"](1000)));
             env.close();

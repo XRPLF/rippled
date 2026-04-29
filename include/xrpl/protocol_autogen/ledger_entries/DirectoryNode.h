@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
 #include <xrpl/protocol_autogen/LedgerEntryBuilderBase.h>
-#include <xrpl/json/json_value.h>
 
-#include <stdexcept>
 #include <optional>
+#include <stdexcept>
 
 namespace xrpl::ledger_entries {
 
@@ -33,8 +33,7 @@ public:
      * @brief Construct a DirectoryNode ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit DirectoryNode(std::shared_ptr<SLE const> sle)
-        : LedgerEntryBase(std::move(sle))
+    explicit DirectoryNode(std::shared_ptr<SLE const> sle) : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
         if (sle_->getType() != entryType)
@@ -408,7 +407,7 @@ public:
  * @brief Builder for DirectoryNode ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class DirectoryNodeBuilder : public LedgerEntryBuilderBase<DirectoryNodeBuilder>
@@ -419,7 +418,9 @@ public:
      * @param indexes The sfIndexes field value.
      * @param rootIndex The sfRootIndex field value.
      */
-    DirectoryNodeBuilder(std::decay_t<typename SF_VECTOR256::type::value_type> const& indexes,std::decay_t<typename SF_UINT256::type::value_type> const& rootIndex)
+    DirectoryNodeBuilder(
+        std::decay_t<typename SF_VECTOR256::type::value_type> const& indexes,
+        std::decay_t<typename SF_UINT256::type::value_type> const& rootIndex)
         : LedgerEntryBuilderBase<DirectoryNodeBuilder>(ltDIR_NODE)
     {
         setIndexes(indexes);

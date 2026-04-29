@@ -315,7 +315,7 @@ RCLConsensus::Adaptor::getPrevLedger(
         if (mode != ConsensusMode::WrongLedger)
             app_.getOPs().consensusViewChange();
 
-        JLOG(j_.debug()) << Json::Compact(app_.getValidations().getJsonTrie());
+        JLOG(j_.debug()) << json::Compact(app_.getValidations().getJsonTrie());
     }
 
     return netLgr;
@@ -420,7 +420,7 @@ RCLConsensus::Adaptor::onForceAccept(
     NetClock::duration const& closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson)
+    json::Value&& consensusJson)
 {
     doAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(consensusJson));
 }
@@ -432,7 +432,7 @@ RCLConsensus::Adaptor::onAccept(
     NetClock::duration const& closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson,
+    json::Value&& consensusJson,
     bool const validating)
 {
     app_.getJobQueue().addJob(
@@ -458,7 +458,7 @@ RCLConsensus::Adaptor::doAccept(
     NetClock::duration closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson)
+    json::Value&& consensusJson)
 {
     prevProposers_ = result.proposers;
     prevRoundTime_ = result.roundTime.read();
@@ -902,10 +902,10 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
     mode_ = after;
 }
 
-Json::Value
+json::Value
 RCLConsensus::getJson(bool full) const
 {
-    Json::Value ret;
+    json::Value ret;
     {
         std::lock_guard const _{mutex_};
         ret = consensus_.getJson(full);

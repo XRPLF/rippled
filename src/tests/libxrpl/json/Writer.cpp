@@ -9,7 +9,7 @@
 #include <string>
 
 using namespace xrpl;
-using namespace Json;
+using namespace json;
 
 class WriterFixture : public ::testing::Test
 {
@@ -164,7 +164,7 @@ TEST_F(WriterFixture, complex_object)
 
 TEST_F(WriterFixture, json_value)
 {
-    Json::Value value(Json::ObjectValue);
+    json::Value value(json::ObjectValue);
     value["foo"] = 23;
     writer_->startRoot(Writer::Object);
     writer_->set("hello", value);

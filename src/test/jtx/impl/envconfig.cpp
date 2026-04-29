@@ -21,8 +21,8 @@ setupConfigForUnitTests(Config& cfg)
     // Default fees to old values, so tests don't have to worry about changes in
     // Config.h
     cfg.FEES.reference_fee = UNIT_TEST_REFERENCE_FEE;
-    cfg.FEES.account_reserve = kXRP(200).value().xrp().drops();
-    cfg.FEES.owner_reserve = kXRP(50).value().xrp().drops();
+    cfg.FEES.account_reserve = XRP(200).value().xrp().drops();
+    cfg.FEES.owner_reserve = XRP(50).value().xrp().drops();
 
     // The Beta API (currently v2) is always available to tests
     cfg.BETA_RPC_API = true;

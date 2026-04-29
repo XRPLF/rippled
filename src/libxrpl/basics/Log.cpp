@@ -159,7 +159,7 @@ Logs::partitionSeverities() const
     std::lock_guard const lock(mutex_);
     list.reserve(sinks_.size());
     for (auto const& [name, sink] : sinks_)
-        list.emplace_back(name, to_string(fromSeverity(sink->threshold())));
+        list.emplace_back(name, toString(fromSeverity(sink->threshold())));
     return list;
 }
 
@@ -255,7 +255,7 @@ Logs::toSeverity(LogSeverity level)
 }
 
 std::string
-Logs::to_string(LogSeverity s)
+Logs::toString(LogSeverity s)
 {
     switch (s)
     {

@@ -33,7 +33,7 @@ public:
 
     /** Returns a string representing the endpoint. */
     [[nodiscard]] std::string
-    to_string() const;
+    toString() const;
 
     /** Returns the port number on the endpoint. */
     [[nodiscard]] Port
@@ -167,7 +167,7 @@ isPublic(Endpoint const& endpoint)
 inline std::string
 to_string(Endpoint const& endpoint)
 {
-    return endpoint.to_string();
+    return endpoint.toString();
 }
 
 /** Output stream conversion. */

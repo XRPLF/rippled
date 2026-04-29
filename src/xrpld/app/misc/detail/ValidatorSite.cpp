@@ -385,9 +385,9 @@ ValidatorSite::parseJsonResponse(
     std::size_t siteIdx,
     std::lock_guard<std::mutex> const& sitesLock)
 {
-    Json::Value const body = [&res, siteIdx, this]() {
-        Json::Reader r;
-        Json::Value body;
+    json::Value const body = [&res, siteIdx, this]() {
+        json::Reader r;
+        json::Value body;
         if (!r.parse(res.data(), body))
         {
             JLOG(j_.warn()) << "Unable to parse JSON response from  "
@@ -664,19 +664,19 @@ ValidatorSite::onTextFetch(
     cv_.notify_all();
 }
 
-Json::Value
+json::Value
 ValidatorSite::getJson() const
 {
     using namespace std::chrono;
-    using Int = Json::Value::Int;
+    using Int = json::Value::Int;
 
-    Json::Value jrr(Json::ObjectValue);
-    Json::Value& jSites = (jrr[jss::validator_sites] = Json::ArrayValue);
+    json::Value jrr(json::ObjectValue);
+    json::Value& jSites = (jrr[jss::validator_sites] = json::ArrayValue);
     {
         std::lock_guard const lock{sites_mutex_};
         for (Site const& site : sites_)
         {
-            Json::Value& v = jSites.append(Json::ObjectValue);
+            json::Value& v = jSites.append(json::ObjectValue);
             std::stringstream uri;
             uri << site.loadedResource->uri;
             if (site.loadedResource != site.startingResource)

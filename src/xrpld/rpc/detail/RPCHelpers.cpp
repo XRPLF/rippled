@@ -104,7 +104,7 @@ isRelatedToAccount(
 }
 
 hash_set<AccountID>
-parseAccountIds(Json::Value const& jvArray)
+parseAccountIds(json::Value const& jvArray)
 {
     hash_set<AccountID> result;
     for (auto const& jv : jvArray)
@@ -119,7 +119,7 @@ parseAccountIds(Json::Value const& jvArray)
     return result;
 }
 
-std::optional<Json::Value>
+std::optional<json::Value>
 readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext const& context)
 {
     limit = range.rDefault;
@@ -141,7 +141,7 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext
 }
 
 std::optional<Seed>
-parseXrplLibSeed(Json::Value const& value)
+parseXrplLibSeed(json::Value const& value)
 {
     // XrplLib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While xrpld never encode seeds that way, we
@@ -159,7 +159,7 @@ parseXrplLibSeed(Json::Value const& value)
 }
 
 std::optional<Seed>
-getSeedFromRPC(Json::Value const& params, Json::Value& error)
+getSeedFromRPC(json::Value const& params, json::Value& error)
 {
     using string_to_seed_t = std::function<std::optional<Seed>(std::string const&)>;
     using seed_match_t = std::pair<char const*, string_to_seed_t>;
@@ -214,7 +214,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 }
 
 std::optional<std::pair<PublicKey, SecretKey>>
-keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int apiVersion)
+keypairForSignature(json::Value const& params, json::Value& error, unsigned int apiVersion)
 {
     bool const hasKeyType = params.isMember(jss::key_type);
 
@@ -346,7 +346,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
 }
 
 std::pair<RPC::Status, LedgerEntryType>
-chooseLedgerEntryType(Json::Value const& params)
+chooseLedgerEntryType(json::Value const& params)
 {
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::kOK, ltANY};
     if (params.isMember(jss::type))
@@ -414,8 +414,8 @@ isAccountObjectsValidType(LedgerEntryType const& type)
 ErrorCodeI
 parseSubUnsubJson(
     Asset& asset,
-    Json::Value const& params,
-    Json::StaticString const& name,
+    json::Value const& params,
+    json::StaticString const& name,
     beast::Journal j)
 {
     auto const& jv = params[name];

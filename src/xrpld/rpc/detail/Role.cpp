@@ -24,7 +24,7 @@
 namespace xrpl {
 
 bool
-passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
+passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
 {
     XRPL_ASSERT(
         !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()),
@@ -77,7 +77,7 @@ ipAllowed(
 }
 
 bool
-isAdmin(Port const& port, Json::Value const& params, beast::IP::Address const& remoteIp)
+isAdmin(Port const& port, json::Value const& params, beast::IP::Address const& remoteIp)
 {
     return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
         passwordUnrequiredOrSentCorrect(port, params);
@@ -87,7 +87,7 @@ Role
 requestRole(
     Role const& required,
     Port const& port,
-    Json::Value const& params,
+    json::Value const& params,
     beast::IP::Endpoint const& remoteIp,
     std::string_view user)
 {
@@ -120,7 +120,7 @@ bool
 isUnlimited(
     Role const& required,
     Port const& port,
-    Json::Value const& params,
+    json::Value const& params,
     beast::IP::Endpoint const& remoteIp,
     std::string const& user)
 {

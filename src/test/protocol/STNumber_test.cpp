@@ -69,10 +69,10 @@ struct STNumber_test : public beast::unit_test::Suite
         }
 
         {
-            BEAST_EXPECT(numberFromJson(sfNumber, Json::Value(42)) == STNumber(sfNumber, 42));
-            BEAST_EXPECT(numberFromJson(sfNumber, Json::Value(-42)) == STNumber(sfNumber, -42));
+            BEAST_EXPECT(numberFromJson(sfNumber, json::Value(42)) == STNumber(sfNumber, 42));
+            BEAST_EXPECT(numberFromJson(sfNumber, json::Value(-42)) == STNumber(sfNumber, -42));
 
-            BEAST_EXPECT(numberFromJson(sfNumber, Json::UInt(42)) == STNumber(sfNumber, 42));
+            BEAST_EXPECT(numberFromJson(sfNumber, json::UInt(42)) == STNumber(sfNumber, 42));
 
             BEAST_EXPECT(numberFromJson(sfNumber, "-123") == STNumber(sfNumber, -123));
 
@@ -193,7 +193,7 @@ struct STNumber_test : public beast::unit_test::Suite
 
             try
             {
-                auto _ = numberFromJson(sfNumber, Json::Value());
+                auto _ = numberFromJson(sfNumber, json::Value());
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)

@@ -73,9 +73,9 @@ struct JsonOptions
 
 template <typename T>
     requires requires(T const& t) {
-        { t.getJson(JsonOptions::KNone) } -> std::convertible_to<Json::Value>;
+        { t.getJson(JsonOptions::KNone) } -> std::convertible_to<json::Value>;
     }
-Json::Value
+json::Value
 toJson(T const& t)
 {
     return t.getJson(JsonOptions::KNone);
@@ -146,7 +146,7 @@ public:
     [[nodiscard]] virtual std::string
     getText() const;
 
-    [[nodiscard]] virtual Json::Value getJson(JsonOptions = JsonOptions::KNone) const;
+    [[nodiscard]] virtual json::Value getJson(JsonOptions = JsonOptions::KNone) const;
 
     virtual void
     add(Serializer& s) const;

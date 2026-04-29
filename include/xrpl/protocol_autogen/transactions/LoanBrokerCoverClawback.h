@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/protocol/STTx.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
-#include <xrpl/json/json_value.h>
 
-#include <stdexcept>
 #include <optional>
+#include <stdexcept>
 
 namespace xrpl::transactions {
 
@@ -105,7 +105,7 @@ public:
  * @brief Builder for LoanBrokerCoverClawback transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class LoanBrokerCoverClawbackBuilder : public TransactionBuilderBase<LoanBrokerCoverClawbackBuilder>
@@ -117,11 +117,15 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    LoanBrokerCoverClawbackBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
-)
-        : TransactionBuilderBase<LoanBrokerCoverClawbackBuilder>(ttLOAN_BROKER_COVER_CLAWBACK, account, sequence, fee)
+    LoanBrokerCoverClawbackBuilder(
+        SF_ACCOUNT::type::value_type account,
+        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
+        : TransactionBuilderBase<LoanBrokerCoverClawbackBuilder>(
+              ttLOAN_BROKER_COVER_CLAWBACK,
+              account,
+              sequence,
+              fee)
     {
     }
 

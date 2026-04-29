@@ -179,7 +179,7 @@ public:
     zeroed() const;
 
     void
-    setJson(Json::Value&) const;
+    setJson(json::Value&) const;
 
     [[nodiscard]] STAmount const&
     value() const noexcept;
@@ -241,7 +241,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions = JsonOptions::KNone) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::KNone) const override;
 
     void
     add(Serializer& s) const override;
@@ -399,10 +399,10 @@ STAmount
 amountFromString(Asset const& asset, std::string const& amount);
 
 STAmount
-amountFromJson(SField const& name, Json::Value const& v);
+amountFromJson(SField const& name, json::Value const& v);
 
 bool
-amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource);
+amountFromJsonNoThrow(STAmount& result, json::Value const& jvSource);
 
 // IOUAmount and XRPAmount define toSTAmount, defining this
 // trivial conversion here makes writing generic code easier
@@ -752,16 +752,16 @@ scale(Number const& number, Asset const& asset)
 }  // namespace xrpl
 
 //------------------------------------------------------------------------------
-namespace Json {
+namespace json {
 template <>
 inline xrpl::STAmount
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
-    Json::StaticString const& key = field.getJsonName();
+    json::StaticString const& key = field.getJsonName();
     if (!v.isMember(key))
         Throw<JsonMissingKeyError>(key);
-    Json::Value const& inner = v[key];
+    json::Value const& inner = v[key];
     return amountFromJson(field, inner);
 }
-}  // namespace Json
+}  // namespace json

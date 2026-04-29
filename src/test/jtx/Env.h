@@ -303,24 +303,24 @@ public:
         the correct JSON as per the arguments.
     */
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(unsigned apiVersion,
         std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(unsigned apiVersion, std::string const& cmd, Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(std::string const& cmd, Args&&... args);
 
     /** Returns the current ledger.
@@ -570,7 +570,7 @@ public:
         This will apply funclets and autofill.
     */
     template <class JsonValue, class... FN>
-    Json::Value
+    json::Value
     json(JsonValue&& jv, FN const&... fN)
     {
         auto tj = jt(std::forward<JsonValue>(jv), fN...);
@@ -592,7 +592,7 @@ public:
     /** Gets the TER result and `didApply` flag from a RPC Json result object.
      */
     static ParsedResult
-    parseResult(Json::Value const& jr);
+    parseResult(json::Value const& jr);
 
     /** Submit an existing JTx.
         This calls postconditions.
@@ -606,7 +606,7 @@ public:
     void
     signAndSubmit(
         JTx const& jt,
-        Json::Value params = Json::NullValue,
+        json::Value params = json::NullValue,
         std::source_location const& loc = std::source_location::current());
 
     /** Check expected postconditions
@@ -616,14 +616,14 @@ public:
     postconditions(
         JTx const& jt,
         ParsedResult const& parsed,
-        Json::Value const& jr = Json::Value(),
+        json::Value const& jr = json::Value(),
         std::source_location const& loc = std::source_location::current());
 
     /** Apply funclets and submit. */
     /** @{ */
     template <class... FN>
     Env&
-    apply(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    apply(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
@@ -639,7 +639,7 @@ public:
 
     template <class... FN>
     Env&
-    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    operator()(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         return apply(std::move(jv), fN...);
     }
@@ -798,7 +798,7 @@ protected:
     bool parseFailureExpected_ = false;
     unsigned retries_ = 5;
 
-    Json::Value
+    json::Value
     doRpc(
         unsigned apiVersion,
         std::vector<std::string> const& args,
@@ -842,7 +842,7 @@ protected:
 };
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(
     unsigned apiVersion,
     std::unordered_map<std::string, std::string> const& headers,
@@ -853,7 +853,7 @@ Env::rpc(
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 {
     return rpc(
@@ -864,7 +864,7 @@ Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
@@ -877,7 +877,7 @@ Env::rpc(
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(std::string const& cmd, Args&&... args)
 {
     return rpc(std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);

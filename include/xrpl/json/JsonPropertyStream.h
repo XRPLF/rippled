@@ -5,16 +5,16 @@
 
 namespace xrpl {
 
-/** A PropertyStream::Sink which produces a Json::Value of type objectValue. */
+/** A PropertyStream::Sink which produces a json::Value of type objectValue. */
 class JsonPropertyStream : public beast::PropertyStream
 {
 public:
-    Json::Value topValue;  // TODO: rename: clashes with top() method
-    std::vector<Json::Value*> stack;
+    json::Value topValue;  // TODO: rename: clashes with top() method
+    std::vector<json::Value*> stack;
 
 public:
     JsonPropertyStream();
-    [[nodiscard]] Json::Value const&
+    [[nodiscard]] json::Value const&
     top() const;
 
 protected:

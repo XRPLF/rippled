@@ -52,7 +52,7 @@ STUInt8::getText() const
 }
 
 template <>
-Json::Value
+json::Value
 STUInt8::getJson(JsonOptions) const
 {
     if (getFName() == sfTransactionResult)
@@ -109,7 +109,7 @@ STUInt16::getText() const
 }
 
 template <>
-Json::Value
+json::Value
 STUInt16::getJson(JsonOptions) const
 {
     if (getFName() == sfLedgerEntryType)
@@ -160,7 +160,7 @@ STUInt32::getText() const
 }
 
 template <>
-Json::Value
+json::Value
 STUInt32::getJson(JsonOptions) const
 {
     if (getFName() == sfPermissionValue)
@@ -196,7 +196,7 @@ STUInt64::getText() const
 }
 
 template <>
-Json::Value
+json::Value
 STUInt64::getJson(JsonOptions) const
 {
     auto convertToString = [](uint64_t const value, int const base) {
@@ -239,7 +239,7 @@ STInt32::getText() const
 }
 
 template <>
-Json::Value
+json::Value
 STInt32::getJson(JsonOptions) const
 {
     return value_;

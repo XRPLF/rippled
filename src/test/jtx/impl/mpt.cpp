@@ -144,12 +144,12 @@ operator MPT() const
     return MPT("", *id_);
 }
 
-Json::Value
+json::Value
 MPTTester::createJV(MPTCreate const& arg)
 {
     if (!arg.issuer)
         Throw<std::runtime_error>("MPTTester::createJV: issuer is not set");
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount] = arg.issuer->human();
     if (arg.assetScale)
         jv[sfAssetScale] = *arg.assetScale;
@@ -174,7 +174,7 @@ MPTTester::create(MPTCreate const& arg)
     if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
     id_ = makeMptID(env_.seq(issuer_), issuer_);
-    Json::Value const jv = createJV(
+    json::Value const jv = createJV(
         {.issuer = issuer_,
          .maxAmt = arg.maxAmt,
          .assetScale = arg.assetScale,
@@ -233,10 +233,10 @@ MPTTester::create(MPTCreate const& arg)
     }
 }
 
-Json::Value
+json::Value
 MPTTester::destroyJV(MPTDestroy const& arg)
 {
-    Json::Value jv;
+    json::Value jv;
     if (!arg.issuer || !arg.id)
         Throw<std::runtime_error>("MPTTester::destroyJV: issuer/id is not set");
     jv[sfAccount] = arg.issuer->human();
@@ -251,7 +251,7 @@ MPTTester::destroy(MPTDestroy const& arg)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    Json::Value const jv =
+    json::Value const jv =
         destroyJV({.issuer = arg.issuer ? arg.issuer : issuer_, .id = arg.id ? arg.id : id_});
     submit(arg, jv);
 }
@@ -265,10 +265,10 @@ MPTTester::holder(std::string const& holder) const
     return it->second;
 }
 
-Json::Value
+json::Value
 MPTTester::authorizeJV(MPTAuthorize const& arg)
 {
-    Json::Value jv;
+    json::Value jv;
     if (!arg.account || !arg.id)
         Throw<std::runtime_error>("MPTTester::authorizeJV: account/id is not set");
     jv[sfAccount] = arg.account->human();
@@ -285,7 +285,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    Json::Value const jv = authorizeJV({
+    json::Value const jv = authorizeJV({
         .account = arg.account ? arg.account : issuer_,
         .holder = arg.holder,
         .id = arg.id ? arg.id : id_,
@@ -351,10 +351,10 @@ MPTTester::authorizeHolders(Holders const& holders)
     }
 }
 
-Json::Value
+json::Value
 MPTTester::setJV(MPTSet const& arg)
 {
-    Json::Value jv;
+    json::Value jv;
     if (!arg.account || !arg.id)
         Throw<std::runtime_error>("MPTTester::setJV: account and/or id is not set");
     jv[sfAccount] = arg.account->human();
@@ -395,7 +395,7 @@ MPTTester::set(MPTSet const& arg)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    Json::Value const jv = setJV(
+    json::Value const jv = setJV(
         {.account = arg.account ? arg.account : issuer_,
          .holder = arg.holder,
          .id = arg.id ? arg.id : id_,

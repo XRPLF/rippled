@@ -445,11 +445,11 @@ public:
         return code_ != tesSUCCESS;
     }
 
-    // Conversion to Json::Value allows assignment to Json::Objects
+    // Conversion to json::Value allows assignment to json::Objects
     // without casting.
-    operator Json::Value() const
+    operator json::Value() const
     {
-        return Json::Value{code_};
+        return json::Value{code_};
     }
 
     // Streaming operator.

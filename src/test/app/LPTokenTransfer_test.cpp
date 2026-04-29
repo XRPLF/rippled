@@ -94,7 +94,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         auto const lpIssue = ammAlice.lptIssue();
 
         // carols creates an offer to sell lptoken
-        env(offer(carol_, kXRP(10), STAmount{lpIssue, 10}), Txflags(tfPassive));
+        env(offer(carol_, XRP(10), STAmount{lpIssue, 10}), Txflags(tfPassive));
         env.close();
         BEAST_EXPECT(expectOffers(env, carol_, 1));
 
@@ -116,7 +116,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // offer since carol_'s USD is frozen
             env(pay(alice_, bob_, STAmount{lpIssue, 10}),
                 Txflags(tfPartialPayment),
-                Sendmax(kXRP(10)),
+                Sendmax(XRP(10)),
                 Ter(tecPATH_DRY));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol_, 1));
@@ -128,7 +128,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // alice_ successfully consumes carol_'s offer
             env(pay(alice_, bob_, STAmount{lpIssue, 10}),
                 Txflags(tfPartialPayment),
-                Sendmax(kXRP(10)));
+                Sendmax(XRP(10)));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol_, 0));
         }
@@ -138,7 +138,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // even when carol_'s USD is frozen
             env(pay(alice_, bob_, STAmount{lpIssue, 10}),
                 Txflags(tfPartialPayment),
-                Sendmax(kXRP(10)));
+                Sendmax(XRP(10)));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol_, 0));
         }
@@ -151,7 +151,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         // even when carol_'s USD is frozen
         {
             // carol_ creates an offer to buy lptoken
-            env(offer(carol_, STAmount{lpIssue, 10}, kXRP(10)), Txflags(tfPassive));
+            env(offer(carol_, STAmount{lpIssue, 10}, XRP(10)), Txflags(tfPassive));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol_, 1));
 
@@ -160,7 +160,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // alice_ successfully consumes carol_'s offer
-            env(pay(alice_, bob_, kXRP(10)),
+            env(pay(alice_, bob_, XRP(10)),
                 Txflags(tfPartialPayment),
                 Sendmax(STAmount{lpIssue, 10}));
             env.close();
@@ -195,7 +195,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // sell lptoken when one of the assets is frozen
 
             // carol_ can't create an offer to sell lptoken
-            env(offer(carol_, kXRP(10), STAmount{lpIssue, 10}),
+            env(offer(carol_, XRP(10), STAmount{lpIssue, 10}),
                 Txflags(tfPassive),
                 Ter(tecUNFUNDED_OFFER));
             env.close();
@@ -206,14 +206,14 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // carol_ can create an offer to sell lptoken after USD is unfrozen
-            env(offer(carol_, kXRP(10), STAmount{lpIssue, 10}), Txflags(tfPassive));
+            env(offer(carol_, XRP(10), STAmount{lpIssue, 10}), Txflags(tfPassive));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol_, 1));
         }
         else
         {
             // without fixFrozenLPTokenTransfer, carol_ can create an offer
-            env(offer(carol_, kXRP(10), STAmount{lpIssue, 10}), Txflags(tfPassive));
+            env(offer(carol_, XRP(10), STAmount{lpIssue, 10}), Txflags(tfPassive));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol_, 1));
         }
@@ -223,7 +223,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // carol_ can create offer to buy lptoken even if USD is frozen
-        env(offer(carol_, STAmount{lpIssue, 10}, kXRP(5)), Txflags(tfPassive));
+        env(offer(carol_, STAmount{lpIssue, 10}, XRP(5)), Txflags(tfPassive));
         env.close();
         BEAST_EXPECT(expectOffers(env, carol_, 2));
     }
@@ -238,11 +238,11 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // Offer crossing with two AMM LPTokens.
         fund(env, gw_, {alice_, carol_}, {USD(10'000)}, Fund::All);
-        AMM ammAlice1(env, alice_, kXRP(10'000), USD(10'000));
+        AMM ammAlice1(env, alice_, XRP(10'000), USD(10'000));
         ammAlice1.deposit(carol_, 10'000'000);
 
         fund(env, gw_, {alice_, carol_}, {EUR(10'000)}, Fund::TokenOnly);
-        AMM ammAlice2(env, alice_, kXRP(10'000), EUR(10'000));
+        AMM ammAlice2(env, alice_, XRP(10'000), EUR(10'000));
         ammAlice2.deposit(carol_, 10'000'000);
         auto const token1 = ammAlice1.lptIssue();
         auto const token2 = ammAlice2.lptIssue();

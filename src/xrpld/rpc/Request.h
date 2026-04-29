@@ -16,7 +16,7 @@ struct Request
     explicit Request(
         beast::Journal journal,
         std::string const& method,
-        Json::Value& params,
+        json::Value& params,
         Application& app)
         : journal(journal), method(method), params(params), fee(Resource::feeReferenceRPC), app(app)
     {
@@ -29,13 +29,13 @@ struct Request
     std::string method;
 
     // [in] The Ripple-specific "params" object
-    Json::Value params;
+    json::Value params;
 
     // [in, out] The resource cost for the command
     Resource::Charge fee;
 
     // [out] The JSON-RPC response
-    Json::Value result;
+    json::Value result;
 
     // [in] The Application instance
     Application& app;

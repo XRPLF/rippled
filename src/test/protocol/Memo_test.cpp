@@ -27,7 +27,7 @@ public:
         Account const alice{"alice"};
 
         Env env(*this);
-        env.fund(kXRP(10000), alice);
+        env.fund(XRP(10000), alice);
         env.close();
 
         // Lambda that returns a valid JTx with a memo that we can hack up.

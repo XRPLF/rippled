@@ -244,16 +244,16 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         std::string const& password,
         bool subobject = false)
     {
-        Json::Value jrr;
+        json::Value jrr;
 
-        Json::Value jp = Json::ObjectValue;
+        json::Value jp = json::ObjectValue;
         if (!user.empty())
         {
             jp["admin_user"] = user;
             if (subobject)
             {
                 // special case of bad password..passed as object
-                Json::Value jpi = Json::ObjectValue;
+                json::Value jpi = json::ObjectValue;
                 jpi["admin_password"] = password;
                 jp["admin_password"] = jpi;
             }
@@ -290,7 +290,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         using namespace jtx;
         Env env{*this, makeConfig(proto, admin, credentials)};
 
-        Json::Value jrr;
+        json::Value jrr;
         auto const protoWs = boost::starts_with(proto, "w");
 
         // the set of checks we do are different depending
@@ -513,7 +513,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
                     return cfg;
                 })};
 
-        Json::Value jr;
+        json::Value jr;
         jr[jss::method] = "server_info";
         boost::beast::http::response<boost::beast::http::string_body> resp;
         boost::system::error_code ec;
@@ -574,7 +574,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         io_context& ios = getIoContext();
         ip::tcp::resolver r{ios};
 
-        Json::Value jr;
+        json::Value jr;
         jr[jss::method] = "server_info";
 
         auto it = r.async_resolve(ip, std::to_string(port), yield[ec]);
@@ -689,22 +689,22 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         ws.handshake(ip + ":" + std::to_string(port), "/");
 
         // helper lambda, used below
-        auto sendAndParse = [&](std::string const& req) -> Json::Value {
+        auto sendAndParse = [&](std::string const& req) -> json::Value {
             ws.async_write_some(true, buffer(req), yield[ec]);
             if (!BEAST_EXPECT(!ec))
-                return Json::ObjectValue;
+                return json::ObjectValue;
 
             boost::beast::multi_buffer sb;
             ws.async_read(sb, yield[ec]);
             if (!BEAST_EXPECT(!ec))
-                return Json::ObjectValue;
+                return json::ObjectValue;
 
-            Json::Value resp;
-            Json::Reader jr;
+            json::Value resp;
+            json::Reader jr;
             if (!BEAST_EXPECT(jr.parse(
                     boost::lexical_cast<std::string>(boost::beast::make_printable(sb.data())),
                     resp)))
-                return Json::ObjectValue;
+                return json::ObjectValue;
             sb.consume(sb.size());
             return resp;
         };
@@ -716,7 +716,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         }
 
         {  // send incorrect json (method and command fields differ)
-            Json::Value jv;
+            json::Value jv;
             jv[jss::command] = "foo";
             jv[jss::method] = "bar";
             auto resp = sendAndParse(to_string(jv));
@@ -725,7 +725,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         }
 
         {  // send a ping (not an error)
-            Json::Value jv;
+            json::Value jv;
             jv[jss::command] = "ping";
             auto resp = sendAndParse(to_string(jv));
             BEAST_EXPECT(resp.isMember(jss::status) && resp[jss::status] == "success");
@@ -1012,7 +1012,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            Json::Value jv;
+            json::Value jv;
             jv["invalid"] = 1;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
@@ -1021,7 +1021,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            Json::Value jv(Json::ArrayValue);
+            json::Value jv(json::ArrayValue);
             jv.append("invalid");
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
@@ -1030,8 +1030,8 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            Json::Value jv(Json::ArrayValue);
-            Json::Value j;
+            json::Value jv(json::ArrayValue);
+            json::Value j;
             j["invalid"] = 1;
             jv.append(j);
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
@@ -1041,7 +1041,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            Json::Value jv;
+            json::Value jv;
             jv[jss::method] = "batch";
             jv[jss::params] = 2;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
@@ -1051,19 +1051,19 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            Json::Value jv;
+            json::Value jv;
             jv[jss::method] = "batch";
-            jv[jss::params] = Json::ObjectValue;
+            jv[jss::params] = json::ObjectValue;
             jv[jss::params]["invalid"] = 3;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
             BEAST_EXPECT(resp.body() == "Malformed batch request\r\n");
         }
 
-        Json::Value jv;
+        json::Value jv;
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            jv[jss::method] = Json::NullValue;
+            jv[jss::method] = json::NullValue;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
             BEAST_EXPECT(resp.body() == "Null method\r\n");
@@ -1096,7 +1096,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            jv[jss::params] = Json::ArrayValue;
+            jv[jss::params] = json::ArrayValue;
             jv[jss::params][0u] = "not an object";
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);

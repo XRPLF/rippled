@@ -55,7 +55,7 @@ struct Peer
             return proposal_;
         }
 
-        Json::Value
+        json::Value
         getJson() const
         {
             return proposal_.getJson();
@@ -511,7 +511,7 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value const& consensusJson)
+        json::Value const& consensusJson)
     {
         onAccept(
             result, prevLedger, closeResolution, rawCloseTimes, mode, consensusJson, validating());
@@ -524,7 +524,7 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value const& consensusJson,
+        json::Value const& consensusJson,
         bool const validating)
     {
         schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
@@ -596,7 +596,7 @@ struct Peer
 
         if (netLgr != ledgerID)
         {
-            JLOG(j.trace()) << Json::Compact(validations.getJsonTrie());
+            JLOG(j.trace()) << json::Compact(validations.getJsonTrie());
             issue(WrongPrevLedger{.wrong = ledgerID, .right = netLgr});
         }
 

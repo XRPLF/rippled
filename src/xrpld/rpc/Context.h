@@ -40,7 +40,7 @@ struct JsonContext : public Context
         std::string_view forwardedFor;
     };
 
-    Json::Value params;
+    json::Value params;
 
     Headers headers{};
 };

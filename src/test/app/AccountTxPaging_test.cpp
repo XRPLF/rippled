@@ -15,7 +15,7 @@ namespace xrpl {
 class AccountTxPaging_test : public beast::unit_test::Suite
 {
     static bool
-    checkTransaction(Json::Value const& tx, int sequence, int ledger)
+    checkTransaction(json::Value const& tx, int sequence, int ledger)
     {
         return (
             tx[jss::tx][jss::Sequence].asInt() == sequence &&
@@ -30,9 +30,9 @@ class AccountTxPaging_test : public beast::unit_test::Suite
         int ledgerMax,
         int limit,
         bool forward,
-        Json::Value const& marker = Json::NullValue)
+        json::Value const& marker = json::NullValue)
     {
-        Json::Value jvc;
+        json::Value jvc;
         jvc[jss::account] = account.human();
         jvc[jss::ledger_index_min] = ledgerMin;
         jvc[jss::ledger_index_max] = ledgerMax;
@@ -55,7 +55,7 @@ class AccountTxPaging_test : public beast::unit_test::Suite
         Account const a2{"A2"};
         Account const a3{"A3"};
 
-        env.fund(kXRP(10000), a1, a2, a3);
+        env.fund(XRP(10000), a1, a2, a3);
         env.close();
 
         env.trust(a3["USD"](1000), a1);
@@ -67,9 +67,9 @@ class AccountTxPaging_test : public beast::unit_test::Suite
         {
             env(pay(a2, a1, a2["USD"](2)));
             env(pay(a3, a1, a3["USD"](2)));
-            env(offer(a1, kXRP(11), a1["USD"](1)));
-            env(offer(a2, kXRP(10), a2["USD"](1)));
-            env(offer(a3, kXRP(9), a3["USD"](1)));
+            env(offer(a1, XRP(11), a1["USD"](1)));
+            env(offer(a2, XRP(10), a2["USD"](1)));
+            env(offer(a3, XRP(9), a3["USD"](1)));
             env.close();
         }
 

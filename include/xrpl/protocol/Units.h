@@ -291,14 +291,14 @@ public:
     // known valid type tags can be converted to JSON. At the time
     // of implementation, that includes all known tags, but more may
     // be added in the future.
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     jsonClipped() const
         requires Usable<ValueUnit>
     {
         if constexpr (std::is_integral_v<value_type>)
         {
             using jsontype =
-                std::conditional_t<std::is_signed_v<value_type>, Json::Int, Json::UInt>;
+                std::conditional_t<std::is_signed_v<value_type>, json::Int, json::UInt>;
 
             constexpr auto kMIN = std::numeric_limits<jsontype>::min();
             constexpr auto kMAX = std::numeric_limits<jsontype>::max();

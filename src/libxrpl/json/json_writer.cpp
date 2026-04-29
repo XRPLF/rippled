@@ -13,7 +13,7 @@
 #include <string>
 #include <utility>
 
-namespace Json {
+namespace json {
 
 static bool
 isControlCharacter(char ch)
@@ -59,7 +59,7 @@ valueToString(Int value)
     if (isNegative)
         *--current = '-';
 
-    XRPL_ASSERT(current >= buffer, "Json::valueToString(Int) : buffer check");
+    XRPL_ASSERT(current >= buffer, "json::valueToString(Int) : buffer check");
     return current;
 }
 
@@ -69,7 +69,7 @@ valueToString(UInt value)
     char buffer[32];
     char* current = buffer + sizeof(buffer);  // NOLINT(misc-const-correctness)
     uintToString(value, current);
-    XRPL_ASSERT(current >= buffer, "Json::valueToString(UInt) : buffer check");
+    XRPL_ASSERT(current >= buffer, "json::valueToString(UInt) : buffer check");
     return current;
 }
 
@@ -381,7 +381,7 @@ StyledWriter::writeArrayValue(Value const& value)
         {
             XRPL_ASSERT(
                 childValues_.size() == size,
-                "Json::StyledWriter::writeArrayValue : child size match");
+                "json::StyledWriter::writeArrayValue : child size match");
             document_ += "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -478,7 +478,7 @@ StyledWriter::unindent()
 {
     XRPL_ASSERT(
         int(indentString_.size()) >= indentSize_,
-        "Json::StyledWriter::unindent : maximum indent size");
+        "json::StyledWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentSize_);
 }
 
@@ -616,7 +616,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
         {
             XRPL_ASSERT(
                 childValues_.size() == size,
-                "Json::StyledStreamWriter::writeArrayValue : child size match");
+                "json::StyledStreamWriter::writeArrayValue : child size match");
             *document_ << "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -714,16 +714,16 @@ StyledStreamWriter::unindent()
 {
     XRPL_ASSERT(
         indentString_.size() >= indentation_.size(),
-        "Json::StyledStreamWriter::unindent : maximum indent size");
+        "json::StyledStreamWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentation_.size());
 }
 
 std::ostream&
 operator<<(std::ostream& sout, Value const& root)
 {
-    Json::StyledStreamWriter writer;
+    json::StyledStreamWriter writer;
     writer.write(sout, root);
     return sout;
 }
 
-}  // namespace Json
+}  // namespace json

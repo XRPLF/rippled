@@ -787,7 +787,7 @@ public:
         }
     }
 
-    Json::Value
+    json::Value
     getJsonTrie() const
     {
         std::lock_guard const lock{mutex_};

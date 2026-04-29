@@ -51,14 +51,14 @@ estimateEntropy(std::string const& input)
 // {
 //  passphrase: <string>
 // }
-Json::Value
+json::Value
 doWalletPropose(RPC::JsonContext& context)
 {
     return walletPropose(context.params);
 }
 
-Json::Value
-walletPropose(Json::Value const& params)
+json::Value
+walletPropose(json::Value const& params)
 {
     std::optional<KeyType> keyType;
     std::optional<Seed> seed;
@@ -108,7 +108,7 @@ walletPropose(Json::Value const& params)
         if (params.isMember(jss::passphrase) || params.isMember(jss::seed) ||
             params.isMember(jss::seed_hex))
         {
-            Json::Value err;
+            json::Value err;
 
             seed = RPC::getSeedFromRPC(params, err);
 
@@ -126,7 +126,7 @@ walletPropose(Json::Value const& params)
 
     auto const publicKey = generateKeyPair(*keyType, *seed).first;
 
-    Json::Value obj(Json::ObjectValue);
+    json::Value obj(json::ObjectValue);
 
     auto const seed1751 = seedAs1751(*seed);
     auto const seedHex = strHex(*seed);

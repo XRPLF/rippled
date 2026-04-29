@@ -15,7 +15,7 @@ namespace xrpl {
 // {
 //   start: <index>
 // }
-Json::Value
+json::Value
 doTxHistory(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
@@ -33,13 +33,13 @@ doTxHistory(RPC::JsonContext& context)
 
     auto trans = context.app.getRelationalDatabase().getTxHistory(startIndex);
 
-    Json::Value obj;
-    Json::Value& txs = obj[jss::txs];
+    json::Value obj;
+    json::Value& txs = obj[jss::txs];
     obj[jss::index] = startIndex;
 
     for (auto const& t : trans)
     {
-        Json::Value txJson = t->getJson(JsonOptions::KNone);
+        json::Value txJson = t->getJson(JsonOptions::KNone);
         RPC::insertDeliverMax(txJson, t->getSTransaction()->getTxnType(), context.apiVersion);
         txs.append(txJson);
     }

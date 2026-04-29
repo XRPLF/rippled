@@ -36,10 +36,10 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
     static std::uint32_t
     nftCount(test::jtx::Env& env, test::jtx::Account const& acct)
     {
-        Json::Value params;
+        json::Value params;
         params[jss::account] = acct.human();
         params[jss::type] = "state";
-        Json::Value nfts = env.rpc("json", "account_nfts", to_string(params));
+        json::Value nfts = env.rpc("json", "account_nfts", to_string(params));
         return nfts[jss::result][jss::account_nfts].size();
     };
 
@@ -99,14 +99,14 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         // Verify that the owner does indeed have exactly three pages
         // of NFTs with 32 entries in each page.
         {
-            Json::Value params;
+            json::Value params;
             params[jss::account] = owner.human();
             auto resp = env.rpc("json", "account_objects", to_string(params));
 
-            Json::Value const& acctObjs = resp[jss::result][jss::account_objects];
+            json::Value const& acctObjs = resp[jss::result][jss::account_objects];
 
             int pageCount = 0;
-            for (Json::UInt i = 0; i < acctObjs.size(); ++i)
+            for (json::UInt i = 0; i < acctObjs.size(); ++i)
             {
                 if (BEAST_EXPECT(
                         acctObjs[i].isMember(sfNFTokens.jsonName) &&
@@ -136,14 +136,14 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
             // Verify that the LedgerStateFix transaction is disabled
             // without the fixNFTokenPageLinks amendment.
             Env env{*this, testableAmendments() - fixNFTokenPageLinks};
-            env.fund(kXRP(1000), alice);
+            env.fund(XRP(1000), alice);
 
             auto const linkFixFee = drops(env.current()->fees().increment);
             env(ledgerStateFix::nftPageLinks(alice, alice), Fee(linkFixFee), Ter(temDISABLED));
         }
 
         Env env{*this, testableAmendments()};
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
         std::uint32_t const ticketSeq = env.seq(alice);
         env(ticket::create(alice, 1));
 
@@ -151,7 +151,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
 
         {
             // Fail preflight1.  Can't combine AccountTxnID and ticket.
-            Json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
+            json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
             tx[sfAccountTxnID.jsonName] =
                 "00000000000000000000000000000000"
                 "00000000000000000000000000000000";
@@ -169,13 +169,13 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
 
         {
             // ledgerStateFix::nftPageLinks requires an Owner field.
-            Json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
+            json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
             tx.removeMember(sfOwner.jsonName);
             env(tx, Fee(linkFixFee), Ter(temINVALID));
         }
         {
             // Invalid LedgerFixType codes.
-            Json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
+            json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
             tx[sfLedgerFixType.jsonName] = 0;
             env(tx, Fee(linkFixFee), Ter(tefINVALID_LEDGER_FIX_TYPE));
 
@@ -199,7 +199,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         Account const alice("alice");
 
         Env env{*this, testableAmendments()};
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
 
         // These cases all return the same TER code, but they exercise
         // different cases where there is nothing to fix in an owner's
@@ -246,7 +246,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         Account const daria("daria");
 
         Env env{*this, testableAmendments() - fixNFTokenPageLinks};
-        env.fund(kXRP(1000), alice, bob, carol, daria);
+        env.fund(XRP(1000), alice, bob, carol, daria);
 
         //**********************************************************************
         // Step 1A: Create damaged NFToken directories:
@@ -361,7 +361,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         for (int i = 0; i < 32; ++i)
         {
             uint256 const offerIndex = keylet::nftoffer(carol, env.seq(carol)).key;
-            env(token::createOffer(carol, carolNFTs.back(), kXRP(0)), Txflags(tfSellNFToken));
+            env(token::createOffer(carol, carolNFTs.back(), XRP(0)), Txflags(tfSellNFToken));
             env.close();
 
             env(token::acceptSellOffer(daria, offerIndex));

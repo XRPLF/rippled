@@ -23,7 +23,7 @@ public:
     std::string description = {};  // NOLINT(readability-redundant-member-init)
 
     [[nodiscard]] auto
-    toJson() const -> Json::Value;
+    toJson() const -> json::Value;
 
     template <typename Hasher>
     friend void

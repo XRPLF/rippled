@@ -3,7 +3,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_reader.h>  // Json::Reader
+#include <xrpl/json/json_reader.h>  // json::Reader
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>    // RPC::containsError
 #include <xrpl/protocol/STParsedJSON.h>  // STParsedJSONObject
@@ -164,8 +164,8 @@ public:
 
         for (auto const& test : kTEST_ARRAY)
         {
-            Json::Value req;
-            Json::Reader().parse(test.txt, req);
+            json::Value req;
+            json::Reader().parse(test.txt, req);
             if (RPC::containsError(req))
             {
                 Throw<std::runtime_error>(

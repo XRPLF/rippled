@@ -217,7 +217,7 @@ partsFromString(std::string const& number)
 }
 
 STNumber
-numberFromJson(SField const& field, Json::Value const& value)
+numberFromJson(SField const& field, json::Value const& value)
 {
     NumberParts parts;
 

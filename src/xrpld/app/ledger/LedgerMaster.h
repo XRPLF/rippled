@@ -189,7 +189,7 @@ public:
     consensusBuilt(
         std::shared_ptr<Ledger const> const& ledger,
         uint256 const& consensusHash,
-        Json::Value consensus);
+        json::Value consensus);
 
     void
     setBuildingLedger(LedgerIndex index);

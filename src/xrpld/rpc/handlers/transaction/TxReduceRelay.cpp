@@ -6,7 +6,7 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doTxReduceRelay(RPC::JsonContext& context)
 {
     return context.app.getOverlay().txMetrics();

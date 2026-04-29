@@ -190,7 +190,7 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
 }  // namespace
 
 Status
-doCommand(RPC::JsonContext& context, Json::Value& result)
+doCommand(RPC::JsonContext& context, json::Value& result)
 {
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))

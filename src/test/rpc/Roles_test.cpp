@@ -50,7 +50,7 @@ class Roles_test : public beast::unit_test::Suite
             BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
 
             std::unordered_map<std::string, std::string> headers;
-            Json::Value rpcRes;
+            json::Value rpcRes;
 
             // IPv4 tests.
             headers["X-Forwarded-For"] = "12.34.56.78";
@@ -241,7 +241,7 @@ class Roles_test : public beast::unit_test::Suite
 
             std::unordered_map<std::string, std::string> headers;
             headers["X-Forwarded-For"] = "12.34.56.78";
-            Json::Value rpcRes = env.rpc(headers, "ping")["result"];
+            json::Value rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
             BEAST_EXPECT(rpcRes["ip"] == "12.34.56.78");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
@@ -257,7 +257,7 @@ class Roles_test : public beast::unit_test::Suite
             Env env(*this);
 
             std::unordered_map<std::string, std::string> headers;
-            Json::Value rpcRes;
+            json::Value rpcRes;
 
             // No "for=" in Forwarded.
             headers["Forwarded"] = "for 88.77.66.55";

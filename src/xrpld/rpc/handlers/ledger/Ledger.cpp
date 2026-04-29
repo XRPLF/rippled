@@ -93,7 +93,7 @@ LedgerHandler::check()
 }
 
 void
-LedgerHandler::writeResult(Json::Value& value)
+LedgerHandler::writeResult(json::Value& value)
 {
     if (ledger_)
     {
@@ -104,19 +104,19 @@ LedgerHandler::writeResult(Json::Value& value)
     {
         auto& master = context_.app.getLedgerMaster();
         {
-            auto& closed = value[jss::closed] = Json::ObjectValue;
+            auto& closed = value[jss::closed] = json::ObjectValue;
             addJson(closed, {*master.getClosedLedger(), &context_, 0});
         }
         {
-            auto& open = value[jss::open] = Json::ObjectValue;
+            auto& open = value[jss::open] = json::ObjectValue;
             addJson(open, {*master.getCurrentLedger(), &context_, 0});
         }
     }
 
-    Json::Value warnings{Json::ArrayValue};
+    json::Value warnings{json::ArrayValue};
     if (context_.params.isMember(jss::type))
     {
-        Json::Value& w = warnings.append(Json::ObjectValue);
+        json::Value& w = warnings.append(json::ObjectValue);
         w[jss::id] = WarnRpcFieldsDeprecated;
         w[jss::message] =
             "Some fields from your request are deprecated. Please check the "

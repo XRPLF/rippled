@@ -254,13 +254,13 @@ Database::fetchNodeObject(
 }
 
 void
-Database::getCountsJson(Json::Value& obj)
+Database::getCountsJson(json::Value& obj)
 {
     XRPL_ASSERT(obj.isObject(), "xrpl::NodeStore::Database::getCountsJson : valid input type");
 
     {
         std::unique_lock<std::mutex> const lock(readLock_);
-        obj["read_queue"] = static_cast<Json::UInt>(read_.size());
+        obj["read_queue"] = static_cast<json::UInt>(read_.size());
     }
 
     obj["read_threads_total"] = readThreads_.load();

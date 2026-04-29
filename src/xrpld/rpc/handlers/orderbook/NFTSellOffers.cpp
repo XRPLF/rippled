@@ -9,7 +9,7 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doNFTSellOffers(RPC::JsonContext& context)
 {
     if (!context.params.isMember(jss::nft_id))

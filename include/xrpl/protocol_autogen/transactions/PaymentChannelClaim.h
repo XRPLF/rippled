@@ -193,7 +193,7 @@ public:
  * @brief Builder for PaymentChannelClaim transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class PaymentChannelClaimBuilder : public TransactionBuilderBase<PaymentChannelClaimBuilder>

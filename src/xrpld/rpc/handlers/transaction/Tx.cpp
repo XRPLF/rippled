@@ -176,13 +176,13 @@ doTxHelp(RPC::Context& context, TxArgs args)
     return {result, RpcSuccess};
 }
 
-Json::Value
+json::Value
 populateJsonResponse(
     std::pair<TxResult, RPC::Status> const& res,
     TxArgs const& args,
     RPC::JsonContext const& context)
 {
-    Json::Value response;
+    json::Value response;
     RPC::Status const& error = res.second;
     TxResult const& result = res.first;
     // handle errors
@@ -190,7 +190,7 @@ populateJsonResponse(
     {
         if (error.toErrorCode() == RpcTxnNotFound && result.searchedAll != TxSearched::Unknown)
         {
-            response = Json::Value(Json::ObjectValue);
+            response = json::Value(json::ObjectValue);
             response[jss::searched_all] = (result.searchedAll == TxSearched::All);
             error.inject(response);
         }
@@ -265,7 +265,7 @@ populateJsonResponse(
     return response;
 }
 
-Json::Value
+json::Value
 doTxJson(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())

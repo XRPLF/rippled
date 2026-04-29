@@ -11,14 +11,14 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doUnlList(RPC::JsonContext& context)
 {
-    Json::Value obj(Json::ObjectValue);
+    json::Value obj(json::ObjectValue);
 
     context.app.getValidators().forEachListed(
         [&unl = obj[jss::unl]](PublicKey const& publicKey, bool trusted) {
-            Json::Value node(Json::ObjectValue);
+            json::Value node(json::ObjectValue);
 
             node[jss::pubkey_validator] = toBase58(TokenType::NodePublic, publicKey);
             node[jss::trusted] = trusted;

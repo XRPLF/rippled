@@ -34,6 +34,7 @@ class STXChainBridge;
 class STVector256;
 class STCurrency;
 
+// NOLINTBEGIN(readability-identifier-naming)
 #pragma push_macro("XMACRO")
 #undef XMACRO
 
@@ -97,6 +98,7 @@ static std::map<std::string, int> const kS_TYPE_MAP = {XMACRO(TO_MAP)};
 #pragma pop_macro("XMACRO")
 #pragma pop_macro("TO_ENUM")
 #pragma pop_macro("TO_MAP")
+// NOLINTEND(readability-identifier-naming)
 
 // constexpr
 inline int
@@ -151,7 +153,7 @@ public:
     int const fieldMeta;
     int const fieldNum;
     IsSigning const signingField;
-    Json::StaticString const jsonName;
+    json::StaticString const jsonName;
 
     SField(SField const&) = delete;
     SField&
@@ -201,13 +203,13 @@ public:
         return fieldCodeMem > 0;
     }
 
-    [[nodiscard]] Json::StaticString const&
+    [[nodiscard]] json::StaticString const&
     getJsonName() const
     {
         return jsonName;
     }
 
-    operator Json::StaticString const&() const
+    operator json::StaticString const&() const
     {
         return jsonName;
     }

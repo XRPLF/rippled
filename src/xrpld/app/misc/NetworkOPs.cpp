@@ -221,7 +221,7 @@ class NetworkOPsImp final : public NetworkOPs
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         std::chrono::steady_clock::time_point const processStart_ = start_;
         std::uint64_t initialSyncUs_{0};
-        static std::array<Json::StaticString const, 5> const kSTATES;
+        static std::array<json::StaticString const, 5> const kSTATES;
 
     public:
         explicit StateAccounting()
@@ -244,7 +244,7 @@ class NetworkOPsImp final : public NetworkOPs
          * @obj Json object to which to add state accounting data.
          */
         void
-        json(Json::Value& obj) const;
+        json(json::Value& obj) const;
 
         struct CounterData
         {
@@ -424,7 +424,7 @@ public:
     // Owner functions.
     //
 
-    Json::Value
+    json::Value
     getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID const& account) override;
 
     //
@@ -438,8 +438,8 @@ public:
         AccountID const& uTakerID,
         bool const bProof,
         unsigned int iLimit,
-        Json::Value const& jvMarker,
-        Json::Value& jvResult) override;
+        json::Value const& jvMarker,
+        json::Value& jvResult) override;
 
     // Ledger proposal/close functions.
     bool
@@ -508,13 +508,13 @@ public:
     void
     consensusViewChange() override;
 
-    Json::Value
+    json::Value
     getConsensusInfo() override;
-    Json::Value
+    json::Value
     getServerInfo(bool human, bool admin, bool counters) override;
     void
     clearLedgerFetch() override;
-    Json::Value
+    json::Value
     getLedgerFetchInfo() override;
     std::uint32_t
     acceptLedger(std::optional<std::chrono::milliseconds> consensusDelay) override;
@@ -569,7 +569,7 @@ public:
         override;
 
     bool
-    subLedger(InfoSub::ref ispListener, Json::Value& jvResult) override;
+    subLedger(InfoSub::ref ispListener, json::Value& jvResult) override;
     bool
     unsubLedger(std::uint64_t uListener) override;
 
@@ -579,7 +579,7 @@ public:
     unsubBookChanges(std::uint64_t uListener) override;
 
     bool
-    subServer(InfoSub::ref ispListener, Json::Value& jvResult, bool admin) override;
+    subServer(InfoSub::ref ispListener, json::Value& jvResult, bool admin) override;
     bool
     unsubServer(std::uint64_t uListener) override;
 
@@ -615,7 +615,7 @@ public:
     bool
     unsubPeerStatus(std::uint64_t uListener) override;
     void
-    pubPeerStatus(std::function<Json::Value(void)> const&) override;
+    pubPeerStatus(std::function<json::Value(void)> const&) override;
 
     bool
     subConsensus(InfoSub::ref ispListener) override;
@@ -667,7 +667,7 @@ public:
     }
 
     void
-    stateAccounting(Json::Value& obj) override;
+    stateAccounting(json::Value& obj) override;
 
 private:
     void
@@ -896,12 +896,12 @@ static std::array<char const*, 5> const kSTATE_NAMES{
 
 std::array<char const*, 5> const NetworkOPsImp::kSTATES = kSTATE_NAMES;
 
-std::array<Json::StaticString const, 5> const NetworkOPsImp::StateAccounting::kSTATES = {
-    {Json::StaticString(kSTATE_NAMES[0]),
-     Json::StaticString(kSTATE_NAMES[1]),
-     Json::StaticString(kSTATE_NAMES[2]),
-     Json::StaticString(kSTATE_NAMES[3]),
-     Json::StaticString(kSTATE_NAMES[4])}};
+std::array<json::StaticString const, 5> const NetworkOPsImp::StateAccounting::kSTATES = {
+    {json::StaticString(kSTATE_NAMES[0]),
+     json::StaticString(kSTATE_NAMES[1]),
+     json::StaticString(kSTATE_NAMES[2]),
+     json::StaticString(kSTATE_NAMES[3]),
+     json::StaticString(kSTATE_NAMES[4])}};
 
 static auto const kGENESIS_ACCOUNT_ID =
     calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
@@ -1728,10 +1728,10 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 // Owner functions
 //
 
-Json::Value
+json::Value
 NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID const& account)
 {
-    Json::Value jvObjects(Json::ObjectValue);
+    json::Value jvObjects(json::ObjectValue);
     auto root = keylet::ownerDir(account);
     auto sleNode = lpLedger->read(keylet::page(root));
     if (sleNode)
@@ -1749,7 +1749,7 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
                 {
                     case ltOFFER:
                         if (!jvObjects.isMember(jss::offers))
-                            jvObjects[jss::offers] = Json::Value(Json::ArrayValue);
+                            jvObjects[jss::offers] = json::Value(json::ArrayValue);
 
                         jvObjects[jss::offers].append(sleCur->getJson(JsonOptions::KNone));
                         break;
@@ -1757,7 +1757,7 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
                     case ltRIPPLE_STATE:
                         if (!jvObjects.isMember(jss::ripple_lines))
                         {
-                            jvObjects[jss::ripple_lines] = Json::Value(Json::ArrayValue);
+                            jvObjects[jss::ripple_lines] = json::Value(json::ArrayValue);
                         }
 
                         jvObjects[jss::ripple_lines].append(sleCur->getJson(JsonOptions::KNone));
@@ -1872,7 +1872,7 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint
     // Determine preferred last closed ledger
 
     auto& validations = registry_.get().getValidations();
-    JLOG(journal_.debug()) << "ValidationTrie " << Json::Compact(validations.getJsonTrie());
+    JLOG(journal_.debug()) << "ValidationTrie " << json::Compact(validations.getJsonTrie());
 
     // Will rely on peer LCL if no trusted validations exist
     hash_map<uint256, std::uint32_t> peerCounts;
@@ -2193,13 +2193,13 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
 
     if (!streamMaps_[SManifests].empty())
     {
-        Json::Value jvObj(Json::ObjectValue);
+        json::Value jvObj(json::ObjectValue);
 
         jvObj[jss::type] = "manifestReceived";
         jvObj[jss::master_key] = toBase58(TokenType::NodePublic, mo.masterKey);
         if (mo.signingKey)
             jvObj[jss::signing_key] = toBase58(TokenType::NodePublic, *mo.signingKey);
-        jvObj[jss::seq] = Json::UInt(mo.sequence);
+        jvObj[jss::seq] = json::UInt(mo.sequence);
         if (auto sig = mo.getSignature())
             jvObj[jss::signature] = strHex(*sig);
         jvObj[jss::master_signature] = strHex(mo.getMasterSignature());
@@ -2271,7 +2271,7 @@ NetworkOPsImp::pubServer()
 
     if (!streamMaps_[SServer].empty())
     {
-        Json::Value jvObj(Json::ObjectValue);
+        json::Value jvObj(json::ObjectValue);
 
         ServerFeeSummary f{
             registry_.get().getOpenLedger().current()->fees().base,
@@ -2331,7 +2331,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
     auto& streamMap = streamMaps_[SConsensusPhase];
     if (!streamMap.empty())
     {
-        Json::Value jvObj(Json::ObjectValue);
+        json::Value jvObj(json::ObjectValue);
         jvObj[jss::type] = "consensusPhase";
         jvObj[jss::consensus] = to_string(phase);
 
@@ -2358,7 +2358,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 
     if (!streamMaps_[SValidations].empty())
     {
-        Json::Value jvObj(Json::ObjectValue);
+        json::Value jvObj(json::ObjectValue);
 
         auto const signerPublic = val->getSignerPublic();
 
@@ -2393,7 +2393,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 
         if (val->isFieldPresent(sfAmendments))
         {
-            jvObj[jss::amendments] = Json::Value(Json::ArrayValue);
+            jvObj[jss::amendments] = json::Value(json::ArrayValue);
             for (auto const& amendment : val->getFieldV256(sfAmendments))
                 jvObj[jss::amendments].append(to_string(amendment));
         }
@@ -2431,7 +2431,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         MultiApiJson multiObj{jvObj};
         multiObj.visit(
             RPC::kAPI_VERSION<1>,  //
-            [](Json::Value& jvTx) {
+            [](json::Value& jvTx) {
                 // Type conversion for older API versions to string
                 if (jvTx.isMember(jss::ledger_index))
                 {
@@ -2445,7 +2445,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             {
                 multiObj.visit(
                     p->getApiVersion(),  //
-                    [&](Json::Value const& jv) { p->send(jv, true); });
+                    [&](json::Value const& jv) { p->send(jv, true); });
                 ++i;
             }
             else
@@ -2457,13 +2457,13 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 }
 
 void
-NetworkOPsImp::pubPeerStatus(std::function<Json::Value(void)> const& func)
+NetworkOPsImp::pubPeerStatus(std::function<json::Value(void)> const& func)
 {
     std::lock_guard const sl(subLock_);
 
     if (!streamMaps_[SPeerStatus].empty())
     {
-        Json::Value jvObj(func());
+        json::Value jvObj(func());
 
         jvObj[jss::type] = "peerStatusChange";
 
@@ -2571,23 +2571,23 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
     return registry_.get().getApp().config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
 }
 
-Json::Value
+json::Value
 NetworkOPsImp::getConsensusInfo()
 {
     return consensus_.getJson(true);
 }
 
-Json::Value
+json::Value
 NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 {
-    Json::Value info = Json::ObjectValue;
+    json::Value info = json::ObjectValue;
 
     // System-level warnings
     {
-        Json::Value warnings{Json::ArrayValue};
+        json::Value warnings{json::ArrayValue};
         if (isAmendmentBlocked())
         {
-            Json::Value& w = warnings.append(Json::ObjectValue);
+            json::Value& w = warnings.append(json::ObjectValue);
             w[jss::id] = WarnRpcAmendmentBlocked;
             w[jss::message] =
                 "This server is amendment blocked, and must be updated to be "
@@ -2595,7 +2595,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         }
         if (isUNLBlocked())
         {
-            Json::Value& w = warnings.append(Json::ObjectValue);
+            json::Value& w = warnings.append(json::ObjectValue);
             w[jss::id] = WarnRpcExpiredValidatorList;
             w[jss::message] =
                 "This server has an expired validator list. validators.txt "
@@ -2604,7 +2604,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         }
         if (admin && isAmendmentWarned())
         {
-            Json::Value& w = warnings.append(Json::ObjectValue);
+            json::Value& w = warnings.append(json::ObjectValue);
             w[jss::id] = WarnRpcUnsupportedMajority;
             w[jss::message] =
                 "One or more unsupported amendments have reached majority. "
@@ -2613,7 +2613,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             if (auto const expected =
                     registry_.get().getAmendmentTable().firstUnsupportedExpected())
             {
-                auto& d = w[jss::details] = Json::ObjectValue;
+                auto& d = w[jss::details] = json::ObjectValue;
                 d[jss::expected_date] = expected->time_since_epoch().count();
                 d[jss::expected_date_UTC] = to_string(*expected);
             }
@@ -2642,7 +2642,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         info[jss::network_ledger] = "waiting";
 
     info[jss::validation_quorum] =
-        static_cast<Json::UInt>(registry_.get().getValidators().quorum());
+        static_cast<json::UInt>(registry_.get().getValidators().quorum());
 
     if (admin)
     {
@@ -2675,7 +2675,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             if (when)
             {
                 info[jss::validator_list_expires] =
-                    safeCast<Json::UInt>(when->time_since_epoch().count());
+                    safeCast<json::UInt>(when->time_since_epoch().count());
             }
             else
             {
@@ -2684,9 +2684,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         }
         else
         {
-            auto& x = (info[jss::validator_list] = Json::ObjectValue);
+            auto& x = (info[jss::validator_list] = json::ObjectValue);
 
-            x[jss::count] = static_cast<Json::UInt>(registry_.get().getValidators().count());
+            x[jss::count] = static_cast<json::UInt>(registry_.get().getValidators().count());
 
             if (when)
             {
@@ -2718,7 +2718,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
         if (!xrpl::git::getCommitHash().empty() || !xrpl::git::getBuildBranch().empty())
         {
-            auto& x = (info[jss::git] = Json::ObjectValue);
+            auto& x = (info[jss::git] = json::ObjectValue);
             if (!xrpl::git::getCommitHash().empty())
                 x[jss::hash] = xrpl::git::getCommitHash();
             if (!xrpl::git::getBuildBranch().empty())
@@ -2726,7 +2726,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         }
     }
     info[jss::io_latency_ms] =
-        static_cast<Json::UInt>(registry_.get().getApp().getIOLatency().count());
+        static_cast<json::UInt>(registry_.get().getApp().getIOLatency().count());
 
     if (admin)
     {
@@ -2745,7 +2745,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     {
         info[jss::counters] = registry_.get().getPerfLog().countersJson();
 
-        Json::Value nodestore(Json::ObjectValue);
+        json::Value nodestore(json::ObjectValue);
         registry_.get().getNodeStore().getCountsJson(nodestore);
         info[jss::counters][jss::nodestore] = nodestore;
         info[jss::current_activities] = registry_.get().getPerfLog().currentJson();
@@ -2762,12 +2762,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     auto const fp = ledgerMaster_.getFetchPackCacheSize();
 
     if (fp != 0)
-        info[jss::fetch_pack] = Json::UInt(fp);
+        info[jss::fetch_pack] = json::UInt(fp);
 
-    info[jss::peers] = Json::UInt(registry_.get().getOverlay().size());
+    info[jss::peers] = json::UInt(registry_.get().getOverlay().size());
 
-    Json::Value lastClose = Json::ObjectValue;
-    lastClose[jss::proposers] = Json::UInt(consensus_.prevProposers());
+    json::Value lastClose = json::ObjectValue;
+    lastClose[jss::proposers] = json::UInt(consensus_.prevProposers());
 
     if (human)
     {
@@ -2776,7 +2776,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     }
     else
     {
-        lastClose[jss::converge_time] = Json::Int(consensus_.prevRoundTime().count());
+        lastClose[jss::converge_time] = json::Int(consensus_.prevRoundTime().count());
     }
 
     info[jss::last_close] = lastClose;
@@ -2787,7 +2787,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         info[jss::load] = job_queue_.getJson();
 
     if (auto const netid = registry_.get().getOverlay().networkID())
-        info[jss::network_id] = static_cast<Json::UInt>(*netid);
+        info[jss::network_id] = static_cast<json::UInt>(*netid);
 
     auto const escalationMetrics =
         registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current());
@@ -2812,7 +2812,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         info[jss::load_factor] = trunc32(loadFactor);
         info[jss::load_factor_server] = loadFactorServer;
 
-        /* Json::Value doesn't support uint64, so clamp to max
+        /* json::Value doesn't support uint64, so clamp to max
             uint32 value. This is mostly theoretical, since there
             probably isn't enough extant XRP to drive the factor
             that high.
@@ -2870,8 +2870,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (lpClosed)
     {
         XRPAmount const baseFee = lpClosed->fees().base;
-        Json::Value l(Json::ObjectValue);
-        l[jss::seq] = Json::UInt(lpClosed->header().seq);
+        json::Value l(json::ObjectValue);
+        l[jss::seq] = json::UInt(lpClosed->header().seq);
         l[jss::hash] = to_string(lpClosed->header().hash);
 
         if (!human)
@@ -2880,7 +2880,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
             l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
             l[jss::close_time] =
-                Json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
+                json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
         }
         else
         {
@@ -2896,7 +2896,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             if (ledgerMaster_.haveValidated())
             {
                 auto const age = ledgerMaster_.getValidatedLedgerAge();
-                l[jss::age] = Json::UInt(age < kHIGH_AGE_THRESHOLD ? age.count() : 0);
+                l[jss::age] = json::UInt(age < kHIGH_AGE_THRESHOLD ? age.count() : 0);
             }
             else
             {
@@ -2906,7 +2906,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 {
                     using namespace std::chrono_literals;
                     auto age = closeTime - lCloseTime;
-                    l[jss::age] = Json::UInt(age < kHIGH_AGE_THRESHOLD ? age.count() : 0);
+                    l[jss::age] = json::UInt(age < kHIGH_AGE_THRESHOLD ? age.count() : 0);
                 }
             }
         }
@@ -2944,7 +2944,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
     static_assert(std::ranges::is_sorted(kPROTOCOLS));
     {
-        Json::Value ports{Json::ArrayValue};
+        json::Value ports{json::ArrayValue};
         for (auto const& port : registry_.get().getServerHandler().setup().ports)
         {
             // Don't publish admin ports for non-admin users
@@ -2962,9 +2962,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 std::back_inserter(proto));
             if (!proto.empty())
             {
-                auto& jv = ports.append(Json::Value(Json::ObjectValue));
+                auto& jv = ports.append(json::Value(json::ObjectValue));
                 jv[jss::port] = std::to_string(port.port);
-                jv[jss::protocol] = Json::Value{Json::ArrayValue};
+                jv[jss::protocol] = json::Value{json::ArrayValue};
                 for (auto const& p : proto)
                     jv[jss::protocol].append(p);
             }
@@ -2976,9 +2976,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             auto const optPort = grpcSection.get("port");
             if (optPort && grpcSection.get("ip"))
             {
-                auto& jv = ports.append(Json::Value(Json::ObjectValue));
+                auto& jv = ports.append(json::Value(json::ObjectValue));
                 jv[jss::port] = *optPort;
-                jv[jss::protocol] = Json::Value{Json::ArrayValue};
+                jv[jss::protocol] = json::Value{json::ArrayValue};
                 jv[jss::protocol].append("grpc");
             }
         }
@@ -2994,7 +2994,7 @@ NetworkOPsImp::clearLedgerFetch()
     registry_.get().getInboundLedgers().clearFailures();
 }
 
-Json::Value
+json::Value
 NetworkOPsImp::getLedgerFetchInfo()
 {
     return registry_.get().getInboundLedgers().getInfo();
@@ -3027,7 +3027,7 @@ NetworkOPsImp::pubProposedTransaction(
             {
                 jvObj.visit(
                     p->getApiVersion(),  //
-                    [&](Json::Value const& jv) { p->send(jv, true); });
+                    [&](json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3067,13 +3067,13 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 
         if (!streamMaps_[SLedger].empty())
         {
-            Json::Value jvObj(Json::ObjectValue);
+            json::Value jvObj(json::ObjectValue);
 
             jvObj[jss::type] = "ledgerClosed";
             jvObj[jss::ledger_index] = lpAccepted->header().seq;
             jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
             jvObj[jss::ledger_time] =
-                Json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
+                json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
 
             jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
 
@@ -3083,7 +3083,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
             jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
 
-            jvObj[jss::txn_count] = Json::UInt(alpAccepted->size());
+            jvObj[jss::txn_count] = json::UInt(alpAccepted->size());
 
             if (mode_ >= OperatingMode::SYNCING)
             {
@@ -3109,7 +3109,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 
         if (!streamMaps_[SBookChanges].empty())
         {
-            Json::Value const jvObj = xrpl::RPC::computeBookChanges(lpAccepted);
+            json::Value const jvObj = xrpl::RPC::computeBookChanges(lpAccepted);
 
             auto it = streamMaps_[SBookChanges].begin();
             while (it != streamMaps_[SBookChanges].end())
@@ -3198,7 +3198,7 @@ NetworkOPsImp::transJson(
     std::shared_ptr<ReadView const> const& ledger,
     std::optional<std::reference_wrapper<TxMeta const>> meta)
 {
-    Json::Value jvObj(Json::ObjectValue);
+    json::Value jvObj(json::ObjectValue);
     std::string sToken;
     std::string sHuman;
 
@@ -3277,7 +3277,7 @@ NetworkOPsImp::transJson(
     MultiApiJson multiObj{jvObj};
     forAllApiVersions(
         multiObj.visit(),  //
-        [&]<unsigned Version>(Json::Value& jvTx, std::integral_constant<unsigned, Version>) {
+        [&]<unsigned Version>(json::Value& jvTx, std::integral_constant<unsigned, Version>) {
             RPC::insertDeliverMax(jvTx[jss::transaction], transaction->getTxnType(), Version);
 
             if constexpr (Version > 1)
@@ -3319,7 +3319,7 @@ NetworkOPsImp::pubValidatedTransaction(
             {
                 jvObj.visit(
                     p->getApiVersion(),  //
-                    [&](Json::Value const& jv) { p->send(jv, true); });
+                    [&](json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3338,7 +3338,7 @@ NetworkOPsImp::pubValidatedTransaction(
             {
                 jvObj.visit(
                     p->getApiVersion(),  //
-                    [&](Json::Value const& jv) { p->send(jv, true); });
+                    [&](json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3463,14 +3463,14 @@ NetworkOPsImp::pubAccountTransaction(
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
-                [&](Json::Value const& jv) { isrListener->send(jv, true); });
+                [&](json::Value const& jv) { isrListener->send(jv, true); });
         }
 
         if (last)
             jvObj.set(jss::account_history_boundary, true);
 
         XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::none,
+            jvObj.isMember(jss::account_history_tx_stream) == MultiApijson::none,
             "xrpl::NetworkOPsImp::pubAccountTransaction : "
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
@@ -3483,7 +3483,7 @@ NetworkOPsImp::pubAccountTransaction(
 
             jvObj.visit(
                 info.sink->getApiVersion(),  //
-                [&](Json::Value const& jv) { info.sink->send(jv, true); });
+                [&](json::Value const& jv) { info.sink->send(jv, true); });
         }
     }
 }
@@ -3545,11 +3545,11 @@ NetworkOPsImp::pubProposedAccountTransaction(
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
-                [&](Json::Value const& jv) { isrListener->send(jv, true); });
+                [&](json::Value const& jv) { isrListener->send(jv, true); });
         }
 
         XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::none,
+            jvObj.isMember(jss::account_history_tx_stream) == MultiApijson::none,
             "xrpl::NetworkOPs::pubProposedAccountTransaction : "
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
@@ -3560,7 +3560,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
             jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
             jvObj.visit(
                 info.sink->getApiVersion(),  //
-                [&](Json::Value const& jv) { info.sink->send(jv, true); });
+                [&](json::Value const& jv) { info.sink->send(jv, true); });
         }
     }
 }
@@ -3695,7 +3695,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             return false;
         };
 
-        auto send = [&](Json::Value const& jvObj, bool unsubscribe) -> bool {
+        auto send = [&](json::Value const& jvObj, bool unsubscribe) -> bool {
             if (auto sptr = subInfo.sinkWptr.lock())
             {
                 sptr->send(jvObj, true);
@@ -3712,7 +3712,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             {
                 jvObj.visit(
                     sptr->getApiVersion(),  //
-                    [&](Json::Value const& jv) { sptr->send(jv, true); });
+                    [&](json::Value const& jv) { sptr->send(jv, true); });
 
                 if (unsubscribe)
                     unsubAccountHistory(sptr, accountId, false);
@@ -4048,14 +4048,14 @@ NetworkOPsImp::acceptLedger(std::optional<std::chrono::milliseconds> consensusDe
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
+NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
 {
     if (auto lpClosed = ledgerMaster_.getValidatedLedger())
     {
         jvResult[jss::ledger_index] = lpClosed->header().seq;
         jvResult[jss::ledger_hash] = to_string(lpClosed->header().hash);
         jvResult[jss::ledger_time] =
-            Json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
+            json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
         if (!lpClosed->rules().enabled(featureXRPFees))
             jvResult[jss::fee_ref] = kFEE_UNITS_DEPRECATED;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
@@ -4115,7 +4115,7 @@ NetworkOPsImp::unsubManifests(std::uint64_t uSeq)
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subServer(InfoSub::ref isrListener, Json::Value& jvResult, bool admin)
+NetworkOPsImp::subServer(InfoSub::ref isrListener, json::Value& jvResult, bool admin)
 {
     uint256 uRandom;
 
@@ -4187,7 +4187,7 @@ NetworkOPsImp::subValidations(InfoSub::ref isrListener)
 }
 
 void
-NetworkOPsImp::stateAccounting(Json::Value& obj)
+NetworkOPsImp::stateAccounting(json::Value& obj)
 {
     accounting_.json(obj);
 }
@@ -4287,10 +4287,10 @@ NetworkOPsImp::getBookPage(
     AccountID const& uTakerID,
     bool const bProof,
     unsigned int iLimit,
-    Json::Value const& jvMarker,
-    Json::Value& jvResult)
+    json::Value const& jvMarker,
+    json::Value& jvResult)
 {  // CAUTION: This is the old get book page logic
-    Json::Value& jvOffers = (jvResult[jss::offers] = Json::Value(Json::ArrayValue));
+    json::Value& jvOffers = (jvResult[jss::offers] = json::Value(json::ArrayValue));
 
     std::unordered_map<AccountID, STAmount> umBalance;
     uint256 const uBookBase = getBookBase(book);
@@ -4411,7 +4411,7 @@ NetworkOPsImp::getBookPage(
                     }
                 }
 
-                Json::Value jvOffer = sleOffer->getJson(JsonOptions::KNone);
+                json::Value jvOffer = sleOffer->getJson(JsonOptions::KNone);
 
                 STAmount saTakerGetsFunded;
                 STAmount saOwnerFundsLimit = saOwnerFunds;
@@ -4453,7 +4453,7 @@ NetworkOPsImp::getBookPage(
                 umBalance[uOfferOwnerID] = saOwnerFunds - saOwnerPays;
 
                 // Include all offers funded and unfunded
-                Json::Value& jvOf = jvOffers.append(jvOffer);
+                json::Value& jvOf = jvOffers.append(jvOffer);
                 jvOf[jss::quality] = saDirRate.getText();
 
                 if (firstOwnerOffer)
@@ -4475,8 +4475,8 @@ NetworkOPsImp::getBookPage(
         }
     }
 
-    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
-    //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
+    //  jvResult[jss::marker]  = json::Value(json::arrayValue);
+    //  jvResult[jss::nodes]   = json::Value(json::arrayValue);
 }
 
 #else
@@ -4491,10 +4491,10 @@ NetworkOPsImp::getBookPage(
     AccountID const& uTakerID,
     bool const bProof,
     unsigned int iLimit,
-    Json::Value const& jvMarker,
-    Json::Value& jvResult)
+    json::Value const& jvMarker,
+    json::Value& jvResult)
 {
-    auto& jvOffers = (jvResult[jss::offers] = Json::Value(Json::arrayValue));
+    auto& jvOffers = (jvResult[jss::offers] = json::Value(json::arrayValue));
 
     std::map<AccountID, STAmount> umBalance;
 
@@ -4554,7 +4554,7 @@ NetworkOPsImp::getBookPage(
                 }
             }
 
-            Json::Value jvOffer = sleOffer->getJson(JsonOptions::KNone);
+            json::Value jvOffer = sleOffer->getJson(JsonOptions::KNone);
 
             STAmount saTakerGetsFunded;
             STAmount saOwnerFundsLimit = saOwnerFunds;
@@ -4599,14 +4599,14 @@ NetworkOPsImp::getBookPage(
             if (!saOwnerFunds.isZero() || uOfferOwnerID == uTakerID)
             {
                 // Only provide funded offers and offers of the taker.
-                Json::Value& jvOf = jvOffers.append(jvOffer);
+                json::Value& jvOf = jvOffers.append(jvOffer);
                 jvOf[jss::quality] = saDirRate.getText();
             }
         }
     }
 
-    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
-    //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
+    //  jvResult[jss::marker]  = json::Value(json::arrayValue);
+    //  jvResult[jss::nodes]   = json::Value(json::arrayValue);
 }
 
 #endif
@@ -4662,19 +4662,19 @@ NetworkOPsImp::StateAccounting::mode(OperatingMode om)
 }
 
 void
-NetworkOPsImp::StateAccounting::json(Json::Value& obj) const
+NetworkOPsImp::StateAccounting::json(json::Value& obj) const
 {
     auto [counters, mode, start, initialSync] = getCounterData();
     auto const current = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now() - start);
     counters[static_cast<std::size_t>(mode)].dur += current;
 
-    obj[jss::state_accounting] = Json::ObjectValue;
+    obj[jss::state_accounting] = json::ObjectValue;
     for (std::size_t i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {
-        obj[jss::state_accounting][kSTATES[i]] = Json::ObjectValue;
+        obj[jss::state_accounting][kSTATES[i]] = json::ObjectValue;
         auto& state = obj[jss::state_accounting][kSTATES[i]];
         state[jss::transitions] = std::to_string(counters[i].transitions);
         state[jss::duration_us] = std::to_string(counters[i].dur.count());

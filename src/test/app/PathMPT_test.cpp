@@ -42,20 +42,20 @@
 namespace xrpl::test {
 namespace detail {
 
-static Json::Value
+static json::Value
 rpf(jtx::Account const& src,
     jtx::Account const& dst,
     xrpl::test::jtx::MPT const& usd,
     std::vector<MPTID> const& numSrc)
 {
-    Json::Value jv = Json::ObjectValue;
+    json::Value jv = json::ObjectValue;
     jv[jss::command] = "ripple_path_find";
     jv[jss::source_account] = toBase58(src);
 
     if (!numSrc.empty())
     {
-        auto& sc = (jv[jss::source_currencies] = Json::ArrayValue);
-        Json::Value j = Json::ObjectValue;
+        auto& sc = (jv[jss::source_currencies] = json::ArrayValue);
+        json::Value j = json::ObjectValue;
         for (auto const& id : numSrc)
         {
             j[jss::mpt_issuance_id] = to_string(id);
@@ -66,7 +66,7 @@ rpf(jtx::Account const& src,
     auto const d = toBase58(dst);
     jv[jss::destination_account] = d;
 
-    Json::Value& j = (jv[jss::destination_amount] = Json::ObjectValue);
+    json::Value& j = (jv[jss::destination_amount] = json::ObjectValue);
     j[jss::mpt_issuance_id] = to_string(usd.mpt());
     j[jss::value] = "1";
 
@@ -106,7 +106,7 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        env.fund(kXRP(10'000), "alice", "bob", gw);
+        env.fund(XRP(10'000), "alice", "bob", gw);
 
         MPT const usd =
             MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 100});
@@ -128,7 +128,7 @@ public:
              .apiVersion = RPC::kAPI_VERSION_IF_UNSPECIFIED},
             {},
             {}};
-        Json::Value result;
+        json::Value result;
         Gate g;
         // Test RPC::Tuning::max_src_cur source currencies.
         std::vector<MPTID> numSrc;
@@ -191,7 +191,7 @@ public:
 
         Env env = pathTestEnv();
 
-        env.fund(kXRP(10'000), "alice", "bob");
+        env.fund(XRP(10'000), "alice", "bob");
 
         auto usdm = MPTTester({.env = env, .issuer = "bob"});
 
@@ -205,7 +205,7 @@ public:
         testcase("direct path no intermediary");
         using namespace jtx;
         Env env = pathTestEnv();
-        env.fund(kXRP(10'000), "alice", "bob");
+        env.fund(XRP(10'000), "alice", "bob");
 
         MPT const usd = MPTTester({.env = env, .issuer = "alice", .holders = {"bob"}});
 
@@ -223,7 +223,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        env.fund(kXRP(10'000), "alice", "bob", gw);
+        env.fund(XRP(10'000), "alice", "bob", gw);
         MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
         env(pay(gw, "alice", usd(70)));
         env(pay("alice", "bob", usd(24)));
@@ -238,7 +238,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        env.fund(kXRP(10'000), "alice", "bob", gw);
+        env.fund(XRP(10'000), "alice", "bob", gw);
         MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
         env(pay(gw, "alice", usd(70)));
         env(pay(gw, "bob", usd(50)));
@@ -269,7 +269,7 @@ public:
         {
             Env env = pathTestEnv();
             auto const gw = Account("gateway");
-            env.fund(kXRP(10'000), "alice", "bob", "carol", gw);
+            env.fund(XRP(10'000), "alice", "bob", "carol", gw);
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"bob", "carol"}});
             MPT const aud(makeMptID(0, gw));
             env(pay(gw, "carol", usd(100)));
@@ -277,11 +277,11 @@ public:
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {"alice", "bob", "carol", "gateway"});
-                env(offer("carol", kXRP(100), usd(100)), Domain(*domainID));
+                env(offer("carol", XRP(100), usd(100)), Domain(*domainID));
             }
             else
             {
-                env(offer("carol", kXRP(100), usd(100)));
+                env(offer("carol", XRP(100), usd(100)));
             }
             env.close();
 
@@ -293,7 +293,7 @@ public:
                 "alice",
                 "bob",
                 aud(-1),
-                std::optional<STAmount>(kXRP(100'000'000)),
+                std::optional<STAmount>(XRP(100'000'000)),
                 std::nullopt,
                 std::nullopt,
                 domainID);
@@ -303,7 +303,7 @@ public:
                 "alice",
                 "bob",
                 usd(-1),
-                std::optional<STAmount>(kXRP(100'000'000)),
+                std::optional<STAmount>(XRP(100'000'000)),
                 std::nullopt,
                 std::nullopt,
                 domainID);
@@ -314,7 +314,7 @@ public:
                     pathElem.isOffer() && pathElem.getIssuerID() == gw.id() &&
                     pathElem.getMPTID() == usd.issuanceID);
             }
-            BEAST_EXPECT(sa == kXRP(100));
+            BEAST_EXPECT(sa == XRP(100));
             BEAST_EXPECT(equal(da, usd(100)));
 
             // if domain is used, finding path in the open offerbook will return
@@ -326,7 +326,7 @@ public:
                     "alice",
                     "bob",
                     Account("bob")["USD"](-1),
-                    std::optional<STAmount>(kXRP(1000000)),
+                    std::optional<STAmount>(XRP(1000000)),
                     std::nullopt,
                     std::nullopt);  // not specifying a domain
                 BEAST_EXPECT(st.empty());
@@ -344,7 +344,7 @@ public:
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
         auto const gw2 = Account("gateway2");
-        env.fund(kXRP(10'000), "alice", "bob", gw, gw2);
+        env.fund(XRP(10'000), "alice", "bob", gw, gw2);
         MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
         MPT const gw2Usd = MPTTester(
             {.env = env, .issuer = gw2, .holders = {"alice", "bob"}, .transferFee = 1'000});
@@ -380,7 +380,7 @@ public:
         {
             // XRP -> MPT receive max
             Env env = pathTestEnv();
-            env.fund(kXRP(10'000), alice, bob, charlie, gw);
+            env.fund(XRP(10'000), alice, bob, charlie, gw);
             env.close();
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
             env(pay(gw, charlie, usd(10)));
@@ -389,16 +389,16 @@ public:
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
-                env(offer(charlie, kXRP(10), usd(10)), Domain(*domainID));
+                env(offer(charlie, XRP(10), usd(10)), Domain(*domainID));
             }
             else
             {
-                env(offer(charlie, kXRP(10), usd(10)));
+                env(offer(charlie, XRP(10), usd(10)));
             }
             env.close();
             auto [st, sa, da] = findPaths(
-                env, alice, bob, usd(-1), kXRP(100).value(), std::nullopt, std::nullopt, domainID);
-            BEAST_EXPECT(sa == kXRP(10));
+                env, alice, bob, usd(-1), XRP(100).value(), std::nullopt, std::nullopt, domainID);
+            BEAST_EXPECT(sa == XRP(10));
             BEAST_EXPECT(equal(da, usd(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
             {
@@ -411,7 +411,7 @@ public:
         {
             // MPT -> XRP receive max
             Env env = pathTestEnv();
-            env.fund(kXRP(10'000), alice, bob, charlie, gw);
+            env.fund(XRP(10'000), alice, bob, charlie, gw);
             env.close();
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
             env(pay(gw, alice, usd(10)));
@@ -420,17 +420,17 @@ public:
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
-                env(offer(charlie, usd(10), kXRP(10)), Domain(*domainID));
+                env(offer(charlie, usd(10), XRP(10)), Domain(*domainID));
             }
             else
             {
-                env(offer(charlie, usd(10), kXRP(10)));
+                env(offer(charlie, usd(10), XRP(10)));
             }
             env.close();
             auto [st, sa, da] = findPaths(
                 env, alice, bob, drops(-1), usd(100).value(), std::nullopt, std::nullopt, domainID);
             BEAST_EXPECT(sa == usd(10));
-            BEAST_EXPECT(equal(da, kXRP(10)));
+            BEAST_EXPECT(equal(da, XRP(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
             {
                 auto const& pathElem = st[0][0];

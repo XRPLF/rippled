@@ -299,7 +299,7 @@ private:
     static Suite**
     pThisSuite()
     {
-        static Suite* kP_TS = nullptr;
+        static Suite* kP_TS = nullptr;  // NOLINT TODO
         return &kP_TS;
     }
 

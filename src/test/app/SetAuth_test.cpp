@@ -25,11 +25,11 @@ struct SetAuth_test : public beast::unit_test::Suite
     // Set just the tfSetfAuth flag on a trust line
     // If the trust line does not exist, then it should
     // be created under the new rules.
-    static Json::Value
+    static json::Value
     auth(jtx::Account const& account, jtx::Account const& dest, std::string const& currency)
     {
         using namespace jtx;
-        Json::Value jv;
+        json::Value jv;
         jv[jss::Account] = account.human();
         jv[jss::LimitAmount] =
             STAmount(Issue{toCurrency(currency), dest}).getJson(JsonOptions::KNone);
@@ -47,7 +47,7 @@ struct SetAuth_test : public beast::unit_test::Suite
 
         Env env(*this);
 
-        env.fund(kXRP(100000), "alice", "bob", gw);
+        env.fund(XRP(100000), "alice", "bob", gw);
         env(fset(gw, asfRequireAuth));
         env.close();
         env(auth(gw, "alice", "USD"));

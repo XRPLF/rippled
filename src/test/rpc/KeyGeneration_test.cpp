@@ -88,10 +88,10 @@ public:
     void
     testRandomWallet(std::optional<std::string> const& keyType)
     {
-        Json::Value params;
+        json::Value params;
         if (keyType)
             params[jss::key_type] = *keyType;
-        Json::Value result = walletPropose(params);
+        json::Value result = walletPropose(params);
 
         BEAST_EXPECT(!containsError(result));
         BEAST_EXPECT(result.isMember(jss::account_id));
@@ -114,10 +114,10 @@ public:
         BEAST_EXPECT(result[jss::master_seed].asString() != seed);
     }
 
-    Json::Value
-    testSecretWallet(Json::Value const& params, KeyStrings const& s)
+    json::Value
+    testSecretWallet(json::Value const& params, KeyStrings const& s)
     {
-        Json::Value result = walletPropose(params);
+        json::Value result = walletPropose(params);
 
         BEAST_EXPECT(!containsError(result));
         expectEquals(result[jss::account_id], s.account_id);
@@ -136,7 +136,7 @@ public:
     {
         testcase("seed");
 
-        Json::Value params;
+        json::Value params;
         if (keyType)
             params[jss::key_type] = *keyType;
         params[jss::seed] = strings.master_seed;
@@ -150,7 +150,7 @@ public:
     {
         testcase("seed_hex");
 
-        Json::Value params;
+        json::Value params;
         if (keyType)
             params[jss::key_type] = *keyType;
         params[jss::seed_hex] = strings.master_seed_hex;
@@ -165,7 +165,7 @@ public:
         std::optional<std::string> const& keyType,
         KeyStrings const& strings)
     {
-        Json::Value params;
+        json::Value params;
         if (keyType)
             params[jss::key_type] = *keyType;
         params[jss::passphrase] = value;
@@ -202,7 +202,7 @@ public:
         testSeedHex(keyType, strings);
         testLegacyPassphrase(keyType, strings);
 
-        Json::Value params;
+        json::Value params;
         if (keyType)
             params[jss::key_type] = *keyType;
         params[jss::seed] = strings.master_seed;
@@ -219,7 +219,7 @@ public:
 
         // Passing non-strings where strings are required
         {
-            Json::Value params;
+            json::Value params;
             params[jss::key_type] = "secp256k1";
             params[jss::passphrase] = 20160506;
             auto result = walletPropose(params);
@@ -228,18 +228,18 @@ public:
         }
 
         {
-            Json::Value params;
+            json::Value params;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed] = Json::ObjectValue;
+            params[jss::seed] = json::ObjectValue;
             auto result = walletPropose(params);
             BEAST_EXPECT(containsError(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'seed', not string.");
         }
 
         {
-            Json::Value params;
+            json::Value params;
             params[jss::key_type] = "ed25519";
-            params[jss::seed_hex] = Json::ArrayValue;
+            params[jss::seed_hex] = json::ArrayValue;
             auto result = walletPropose(params);
             BEAST_EXPECT(containsError(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'seed_hex', not string.");
@@ -247,7 +247,7 @@ public:
 
         // Specifying multiple items at once
         {
-            Json::Value params;
+            json::Value params;
             params[jss::key_type] = "secp256k1";
             params[jss::passphrase] = common::gMasterKey;
             params[jss::seed_hex] = common::gMasterSeedHex;
@@ -262,7 +262,7 @@ public:
 
         // Specifying bad key types:
         {
-            Json::Value params;
+            json::Value params;
             params[jss::key_type] = "prime256v1";
             params[jss::passphrase] = common::gMasterKey;
             auto result = walletPropose(params);
@@ -271,8 +271,8 @@ public:
         }
 
         {
-            Json::Value params;
-            params[jss::key_type] = Json::ObjectValue;
+            json::Value params;
+            params[jss::key_type] = json::ObjectValue;
             params[jss::seed_hex] = common::gMasterSeedHex;
             auto result = walletPropose(params);
             BEAST_EXPECT(containsError(result));
@@ -280,8 +280,8 @@ public:
         }
 
         {
-            Json::Value params;
-            params[jss::key_type] = Json::ArrayValue;
+            json::Value params;
+            params[jss::key_type] = json::ArrayValue;
             params[jss::seed] = common::gMasterSeed;
             auto result = walletPropose(params);
             BEAST_EXPECT(containsError(result));
@@ -300,8 +300,8 @@ public:
         if (!keyType)
         {
             {
-                Json::Value params;
-                Json::Value error;
+                json::Value params;
+                json::Value error;
                 params[jss::secret] = strings.master_seed;
 
                 auto ret = keypairForSignature(params, error);
@@ -314,8 +314,8 @@ public:
             }
 
             {
-                Json::Value params;
-                Json::Value error;
+                json::Value params;
+                json::Value error;
                 params[jss::secret] = strings.master_seed_hex;
 
                 auto ret = keypairForSignature(params, error);
@@ -328,8 +328,8 @@ public:
             }
 
             {
-                Json::Value params;
-                Json::Value error;
+                json::Value params;
+                json::Value error;
                 params[jss::secret] = strings.master_key;
 
                 auto ret = keypairForSignature(params, error);
@@ -345,8 +345,8 @@ public:
         }
 
         {
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
 
             params[jss::key_type] = *keyType;
             params[jss::seed] = strings.master_seed;
@@ -361,8 +361,8 @@ public:
         }
 
         {
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
 
             params[jss::key_type] = *keyType;
             params[jss::seed_hex] = strings.master_seed_hex;
@@ -377,8 +377,8 @@ public:
         }
 
         {
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
 
             params[jss::key_type] = *keyType;
             params[jss::passphrase] = strings.master_key;
@@ -398,8 +398,8 @@ public:
     {
         // Specify invalid "secret"
         {
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::secret] = 314159265;
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(containsError(error));
@@ -408,9 +408,9 @@ public:
         }
 
         {
-            Json::Value params;
-            Json::Value error;
-            params[jss::secret] = Json::ArrayValue;
+            json::Value params;
+            json::Value error;
+            params[jss::secret] = json::ArrayValue;
             params[jss::secret].append("array:0");
 
             auto ret = keypairForSignature(params, error);
@@ -420,9 +420,9 @@ public:
         }
 
         {
-            Json::Value params;
-            Json::Value error;
-            params[jss::secret] = Json::ObjectValue;
+            json::Value params;
+            json::Value error;
+            params[jss::secret] = json::ObjectValue;
             params[jss::secret]["string"] = "string";
             params[jss::secret]["number"] = 702;
 
@@ -434,8 +434,8 @@ public:
 
         // Specify "secret" and "key_type"
         {
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "ed25519";
             params[jss::secret] = common::gMasterSeed;
 
@@ -449,8 +449,8 @@ public:
 
         // Specify unknown or bad "key_type"
         {
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "prime256v1";
             params[jss::passphrase] = common::gMasterKey;
 
@@ -461,9 +461,9 @@ public:
         }
 
         {
-            Json::Value params;
-            Json::Value error;
-            params[jss::key_type] = Json::ObjectValue;
+            json::Value params;
+            json::Value error;
+            params[jss::key_type] = json::ObjectValue;
             params[jss::seed_hex] = common::gMasterSeedHex;
 
             auto ret = keypairForSignature(params, error);
@@ -473,9 +473,9 @@ public:
         }
 
         {
-            Json::Value params;
-            Json::Value error;
-            params[jss::key_type] = Json::ArrayValue;
+            json::Value params;
+            json::Value error;
+            params[jss::key_type] = json::ArrayValue;
             params[jss::seed] = common::gMasterSeed;
 
             auto ret = keypairForSignature(params, error);
@@ -486,8 +486,8 @@ public:
 
         // Specify non-string passphrase
         {  // not a passphrase: number
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::passphrase] = 1234567890;
 
@@ -498,10 +498,10 @@ public:
         }
 
         {  // not a passphrase: object
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::passphrase] = Json::ObjectValue;
+            params[jss::passphrase] = json::ObjectValue;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(containsError(error));
@@ -510,10 +510,10 @@ public:
         }
 
         {  // not a passphrase: array
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::passphrase] = Json::ArrayValue;
+            params[jss::passphrase] = json::ArrayValue;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(containsError(error));
@@ -522,8 +522,8 @@ public:
         }
 
         {  // not a passphrase: empty string
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::passphrase] = "";
 
@@ -535,8 +535,8 @@ public:
 
         // Specify non-string or invalid seed
         {  // not a seed: number
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::seed] = 443556;
 
@@ -547,10 +547,10 @@ public:
         }
 
         {  // not a string: object
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed] = Json::ObjectValue;
+            params[jss::seed] = json::ObjectValue;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(containsError(error));
@@ -559,10 +559,10 @@ public:
         }
 
         {  // not a string: array
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed] = Json::ArrayValue;
+            params[jss::seed] = json::ArrayValue;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(containsError(error));
@@ -571,8 +571,8 @@ public:
         }
 
         {  // not a seed: empty
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::seed] = "";
 
@@ -583,8 +583,8 @@ public:
         }
 
         {  // not a seed: invalid characters
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::seed] = "s M V s h z D F p t Z E m h s";
 
@@ -595,8 +595,8 @@ public:
         }
 
         {  // not a seed: random string
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::seed] = "pnnjkbnobnml43679nbvjdsklnbjs";
 
@@ -608,8 +608,8 @@ public:
 
         // Specify non-string or invalid seed_hex
         {  // not a string: number
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::seed_hex] = 443556;
 
@@ -620,10 +620,10 @@ public:
         }
 
         {  // not a string: object
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed_hex] = Json::ObjectValue;
+            params[jss::seed_hex] = json::ObjectValue;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(containsError(error));
@@ -632,10 +632,10 @@ public:
         }
 
         {  // not a string: array
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed_hex] = Json::ArrayValue;
+            params[jss::seed_hex] = json::ArrayValue;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(containsError(error));
@@ -644,8 +644,8 @@ public:
         }
 
         {  // empty
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::seed_hex] = "";
 
@@ -656,8 +656,8 @@ public:
         }
 
         {  // short
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::seed_hex] = "A670A19B";
 
@@ -668,8 +668,8 @@ public:
         }
 
         {  // not hex
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::seed_hex] = common::gPassphrase;
 
@@ -680,8 +680,8 @@ public:
         }
 
         {  // overlong
-            Json::Value params;
-            Json::Value error;
+            json::Value params;
+            json::Value error;
             params[jss::key_type] = "secp256k1";
             params[jss::seed_hex] = "BE6A670A19B209E112146D0A7ED2AAD72567D0FC913";
 
@@ -699,8 +699,8 @@ public:
 
         auto test = [this](char const* seed, char const* addr) {
             {
-                Json::Value params;
-                Json::Value error;
+                json::Value params;
+                json::Value error;
 
                 params[jss::passphrase] = seed;
 
@@ -715,8 +715,8 @@ public:
             }
 
             {
-                Json::Value params;
-                Json::Value error;
+                json::Value params;
+                json::Value error;
 
                 params[jss::key_type] = "secp256k1";
                 params[jss::passphrase] = seed;
@@ -729,8 +729,8 @@ public:
             }
 
             {
-                Json::Value params;
-                Json::Value error;
+                json::Value params;
+                json::Value error;
 
                 params[jss::key_type] = "ed25519";
                 params[jss::seed] = seed;
@@ -746,8 +746,8 @@ public:
             }
 
             {
-                Json::Value params;
-                Json::Value error;
+                json::Value params;
+                json::Value error;
 
                 params[jss::key_type] = "secp256k1";
                 params[jss::seed] = seed;

@@ -182,15 +182,15 @@ JobQueue::isOverloaded()
     return std::ranges::any_of(jobData_, [](auto& entry) { return entry.second.load().isOver(); });
 }
 
-Json::Value
+json::Value
 JobQueue::getJson(int c)
 {
     using namespace std::chrono_literals;
-    Json::Value ret(Json::ObjectValue);
+    json::Value ret(json::ObjectValue);
 
     ret["threads"] = workers_.getNumberOfThreads();
 
-    Json::Value priorities = Json::ArrayValue;
+    json::Value priorities = json::ArrayValue;
 
     std::lock_guard const lock(mutex_);
 
@@ -210,7 +210,7 @@ JobQueue::getJson(int c)
 
         if ((stats.count != 0) || (waiting != 0) || (stats.latencyPeak != 0ms) || (running != 0))
         {
-            Json::Value& pri = priorities.append(Json::ObjectValue);
+            json::Value& pri = priorities.append(json::ObjectValue);
 
             pri["job_type"] = data.name();
 

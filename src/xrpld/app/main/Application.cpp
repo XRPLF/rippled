@@ -1474,8 +1474,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     for (auto const& cmd : config_->section(SECTION_RPC_STARTUP).lines())
     {
-        Json::Reader jrReader;
-        Json::Value jvCommand;
+        json::Reader jrReader;
+        json::Value jvCommand;
 
         if (!jrReader.parse(cmd, jvCommand))
         {
@@ -1503,7 +1503,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              .apiVersion = RPC::kAPI_MAXIMUM_SUPPORTED_VERSION},
             jvCommand};
 
-        Json::Value jvResult;
+        json::Value jvResult;
         RPC::doCommand(context, jvResult);
 
         if (!config_->quiet())
@@ -1749,7 +1749,7 @@ ApplicationImp::getLastFullLedger()
         if (auto stream = j.error())
         {
             stream << "Failed on ledger";
-            Json::Value p;
+            json::Value p;
             addJson(p, {*ledger, nullptr, LedgerFill::Full});
             stream << p;
         }
@@ -1776,8 +1776,8 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             return nullptr;
         }
 
-        Json::Reader reader;
-        Json::Value jLedger;
+        json::Reader reader;
+        json::Value jLedger;
 
         if (!reader.parse(ledgerFile, jLedger))
         {
@@ -1785,7 +1785,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             return nullptr;
         }
 
-        std::reference_wrapper<Json::Value> ledger(jLedger);
+        std::reference_wrapper<json::Value> ledger(jLedger);
 
         // accept a wrapped ledger
         if (ledger.get().isMember("result"))
@@ -1842,9 +1842,9 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             seq, closeTime, Rules{config_->features}, config_->FEES.toFees(), nodeFamily_);
         loadLedger->setTotalDrops(totalDrops);
 
-        for (Json::UInt index = 0; index < ledger.get().size(); ++index)
+        for (json::UInt index = 0; index < ledger.get().size(); ++index)
         {
-            Json::Value& entry = ledger.get()[index];
+            json::Value& entry = ledger.get()[index];
 
             if (!entry.isObjectOrNull())
             {
@@ -2041,7 +2041,7 @@ ApplicationImp::loadOldLedger(
         if (!loadLedger->isSensible())
         {
             // LCOV_EXCL_START
-            Json::Value j = getJson({*loadLedger, {}});
+            json::Value j = getJson({*loadLedger, {}});
             j[jss::accountTreeHash] = to_string(loadLedger->header().accountHash);
             j[jss::transTreeHash] = to_string(loadLedger->header().txHash);
             JLOG(journal_.fatal()) << "Ledger is not sensible: " << j;

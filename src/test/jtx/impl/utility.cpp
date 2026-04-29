@@ -27,7 +27,7 @@
 namespace xrpl::test::jtx {
 
 STObject
-parse(Json::Value const& jv)
+parse(json::Value const& jv)
 {
     STParsedJSONObject p("tx_json", jv);
     if (!p.object)
@@ -36,7 +36,7 @@ parse(Json::Value const& jv)
 }
 
 void
-sign(Json::Value& jv, Account const& account, Json::Value& sigObject)
+sign(json::Value& jv, Account const& account, json::Value& sigObject)
 {
     sigObject[jss::SigningPubKey] = strHex(account.pk().slice());
     Serializer ss;
@@ -47,13 +47,13 @@ sign(Json::Value& jv, Account const& account, Json::Value& sigObject)
 }
 
 void
-sign(Json::Value& jv, Account const& account)
+sign(json::Value& jv, Account const& account)
 {
     sign(jv, account, jv);
 }
 
 void
-fillFee(Json::Value& jv, ReadView const& view)
+fillFee(json::Value& jv, ReadView const& view)
 {
     if (jv.isMember(jss::Fee))
         return;
@@ -61,7 +61,7 @@ fillFee(Json::Value& jv, ReadView const& view)
 }
 
 void
-fillSeq(Json::Value& jv, ReadView const& view)
+fillSeq(json::Value& jv, ReadView const& view)
 {
     if (jv.isMember(jss::Sequence))
         return;
@@ -74,10 +74,10 @@ fillSeq(Json::Value& jv, ReadView const& view)
     jv[jss::Sequence] = ar->getFieldU32(sfSequence);
 }
 
-Json::Value
+json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion)
 {
-    Json::Value jv = Json::Value(Json::ObjectValue);
+    json::Value jv = json::Value(json::ObjectValue);
     auto const paramsObj = rpcCmdToJson(args, jv, apiVersion, j);
 
     // Re-use jv to return our formatted result.
@@ -89,7 +89,7 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())
     {
-        auto& paramsArray = jv[jss::params] = Json::ArrayValue;
+        auto& paramsArray = jv[jss::params] = json::ArrayValue;
         paramsArray.append(paramsObj);
     }
     if (paramsObj.isMember(jss::jsonrpc))

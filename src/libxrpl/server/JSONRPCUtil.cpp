@@ -31,7 +31,7 @@ getHTTPHeaderTimestamp()
 }
 
 void
-httpReply(int nStatus, std::string const& content, Json::Output const& output, beast::Journal j)
+httpReply(int nStatus, std::string const& content, json::Output const& output, beast::Journal j)
 {
     JLOG(j.trace()) << "HTTP Reply " << nStatus << " " << content;
 

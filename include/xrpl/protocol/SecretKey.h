@@ -58,7 +58,7 @@ public:
         to avoid accidental exposure of secret key material.
     */
     [[nodiscard]] std::string
-    to_string() const;
+    toString() const;
 
     [[nodiscard]] const_iterator
     begin() const noexcept

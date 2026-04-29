@@ -68,12 +68,14 @@ public:
 
     // STL-compatible alias required by std::back_insert_iterator
     void
+    // NOLINTNEXTLINE(readability-identifier-naming)
     push_back(STObject const& object)
     {
         pushBack(object);
     }
 
     void
+    // NOLINTNEXTLINE(readability-identifier-naming)
     push_back(STObject&& object)
     {
         pushBack(std::move(object));
@@ -112,7 +114,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson(JsonOptions index) const override;
 
     void

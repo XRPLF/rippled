@@ -31,7 +31,7 @@ class ReducedOffer_test : public beast::unit_test::Suite
     static auto
     ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offerSeq)
     {
-        Json::Value jvParams;
+        json::Value jvParams;
         jvParams[jss::offer][jss::account] = acct.human();
         jvParams[jss::offer][jss::seq] = offerSeq;
         return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
@@ -40,7 +40,7 @@ class ReducedOffer_test : public beast::unit_test::Suite
     static bool
     offerInLedger(jtx::Env& env, jtx::Account const& acct, std::uint32_t offerSeq)
     {
-        Json::Value ledgerOffer = ledgerEntryOffer(env, acct, offerSeq);
+        json::Value ledgerOffer = ledgerEntryOffer(env, acct, offerSeq);
         return !(
             ledgerOffer.isMember(jss::error) &&
             ledgerOffer[jss::error].asString() == "entryNotFound");
@@ -74,7 +74,7 @@ public:
             Env env{*this, testableAmendments()};
 
             // Make sure none of the offers we generate are under funded.
-            env.fund(kXRP(10'000'000), gw, alice, bob);
+            env.fund(XRP(10'000'000), gw, alice, bob);
             env.close();
 
             env(trust(alice, usd(10'000'000)));
@@ -118,7 +118,7 @@ public:
                 // bob's offer should be in the ledger, but reduced in size.
                 unsigned int badRate = 1;
                 {
-                    Json::Value bobOffer = ledgerEntryOffer(env, bob, bobOfferSeq);
+                    json::Value bobOffer = ledgerEntryOffer(env, bob, bobOfferSeq);
 
                     STAmount const reducedTakerGets =
                         amountFromJson(sfTakerGets, bobOffer[jss::node][sfTakerGets.jsonName]);
@@ -167,7 +167,7 @@ public:
             };
 
             // bob's offer (the new offer) is the same every time:
-            Amounts const bobOffer{STAmount(kXRP(1)), STAmount(usd, 1, 0)};
+            Amounts const bobOffer{STAmount(XRP(1)), STAmount(usd, 1, 0)};
 
             // alice's offer has a slightly smaller TakerPays with each
             // iteration.  This should mean that the size of the offer bob
@@ -207,7 +207,7 @@ public:
         {
             // Make sure none of the offers we generate are under funded.
             Env env{*this, testableAmendments()};
-            env.fund(kXRP(10'000'000), gw, alice, bob);
+            env.fund(XRP(10'000'000), gw, alice, bob);
             env.close();
 
             env(trust(alice, usd(10'000'000)));
@@ -250,7 +250,7 @@ public:
                 // size.
                 unsigned int badRate = 1;
                 {
-                    Json::Value aliceOffer = ledgerEntryOffer(env, alice, aliceOfferSeq);
+                    json::Value aliceOffer = ledgerEntryOffer(env, alice, aliceOfferSeq);
 
                     STAmount const reducedTakerGets =
                         amountFromJson(sfTakerGets, aliceOffer[jss::node][sfTakerGets.jsonName]);
@@ -299,7 +299,7 @@ public:
             };
 
             // alice's offer (the old offer) is the same every time:
-            Amounts const aliceOffer{STAmount(kXRP(1)), STAmount(usd, 1, 0)};
+            Amounts const aliceOffer{STAmount(XRP(1)), STAmount(usd, 1, 0)};
 
             // bob's offer has a slightly smaller TakerPays with each iteration.
             // This should mean that the size of the offer alice leaves in the
@@ -341,7 +341,7 @@ public:
         {
             Env env{*this, testableAmendments()};
 
-            env.fund(kXRP(10000), alice, bob, gw);
+            env.fund(XRP(10000), alice, bob, gw);
             env.close();
             env.trust(usd(1000), alice, bob);
 
@@ -429,7 +429,7 @@ public:
         {
             Env env{*this, testableAmendments()};
 
-            env.fund(kXRP(10000), alice, bob, gw);
+            env.fund(XRP(10000), alice, bob, gw);
             env.close();
             env.trust(usd(1000), alice, bob);
             env.trust(eur(1000), alice, bob);
@@ -509,7 +509,7 @@ public:
     }
 
     static Amounts
-    jsonOfferToAmounts(Json::Value const& json)
+    jsonOfferToAmounts(json::Value const& json)
     {
         STAmount const in = amountFromJson(sfTakerPays, json[sfTakerPays.jsonName]);
         STAmount const out = amountFromJson(sfTakerGets, json[sfTakerGets.jsonName]);
@@ -539,7 +539,7 @@ public:
         {
             // Make sure none of the offers we generate are under funded.
             Env env{*this, features};
-            env.fund(kXRP(10'000'000), gw, alice, bob, carol);
+            env.fund(XRP(10'000'000), gw, alice, bob, carol);
             env.close();
 
             env(trust(alice, usd(10'000'000)));
@@ -594,7 +594,7 @@ public:
                 // size.
                 unsigned int badRate = 1;
                 {
-                    Json::Value aliceOffer = ledgerEntryOffer(env, alice, aliceOfferSeq);
+                    json::Value aliceOffer = ledgerEntryOffer(env, alice, aliceOfferSeq);
 
                     Amounts const aliceReducedOffer = jsonOfferToAmounts(aliceOffer[jss::node]);
 

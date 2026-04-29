@@ -26,11 +26,11 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doSubscribe(RPC::JsonContext& context)
 {
     InfoSub::pointer ispSub;
-    Json::Value jvResult(Json::ObjectValue);
+    json::Value jvResult(json::ObjectValue);
 
     if (!context.infoSub && !context.params.isMember(jss::url))
     {
@@ -288,10 +288,10 @@ doSubscribe(RPC::JsonContext& context)
                     context.app.getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
                 {
-                    Json::Value const jvMarker = Json::Value(Json::NullValue);
-                    Json::Value jvOffers(Json::ObjectValue);
+                    json::Value const jvMarker = json::Value(json::NullValue);
+                    json::Value jvOffers(json::ObjectValue);
 
-                    auto add = [&](Json::StaticString field) {
+                    auto add = [&](json::StaticString field) {
                         context.netOps.getBookPage(
                             lpLedger,
                             field == jss::asks ? reversed(book) : book,
@@ -303,7 +303,7 @@ doSubscribe(RPC::JsonContext& context)
 
                         if (jvResult.isMember(field))
                         {
-                            Json::Value& results(jvResult[field]);
+                            json::Value& results(jvResult[field]);
                             for (auto const& e : jvOffers[jss::offers])
                                 results.append(e);
                         }

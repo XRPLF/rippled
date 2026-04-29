@@ -30,7 +30,7 @@ struct Transaction_ordering_test : public beast::unit_test::Suite
 
         Env env(*this);
         auto const alice = Account("alice");
-        env.fund(kXRP(1000), noripple(alice));
+        env.fund(XRP(1000), noripple(alice));
 
         auto const aliceSequence = env.seq(alice);
 
@@ -69,7 +69,7 @@ struct Transaction_ordering_test : public beast::unit_test::Suite
         }));
 
         auto const alice = Account("alice");
-        env.fund(kXRP(1000), noripple(alice));
+        env.fund(XRP(1000), noripple(alice));
 
         auto const aliceSequence = env.seq(alice);
 
@@ -107,7 +107,7 @@ struct Transaction_ordering_test : public beast::unit_test::Suite
         }));
 
         auto const alice = Account("alice");
-        env.fund(kXRP(1000), noripple(alice));
+        env.fund(XRP(1000), noripple(alice));
 
         auto const aliceSequence = env.seq(alice);
         static constexpr auto kSIZE = 5;

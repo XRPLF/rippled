@@ -12,7 +12,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace Json {
+namespace json {
 // Implementation of class Reader
 // ////////////////////////////////
 
@@ -924,14 +924,14 @@ Reader::getFormattedErrorMessages() const
 std::istream&
 operator>>(std::istream& sin, Value& root)
 {
-    Json::Reader reader;
+    json::Reader reader;
     bool const ok = reader.parse(sin, root);
 
-    // XRPL_ASSERT(ok, "Json::operator>>() : parse succeeded");
+    // XRPL_ASSERT(ok, "json::operator>>() : parse succeeded");
     if (!ok)
         xrpl::Throw<std::runtime_error>(reader.getFormattedErrorMessages());
 
     return sin;
 }
 
-}  // namespace Json
+}  // namespace json

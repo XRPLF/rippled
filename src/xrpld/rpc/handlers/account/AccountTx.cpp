@@ -46,10 +46,10 @@ using AccountTxResult = RelationalDatabase::AccountTxResult;
 using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 
 // parses args into a ledger specifier, or returns a Json object on error
-std::variant<std::optional<LedgerSpecifier>, Json::Value>
-parseLedgerArgs(RPC::Context& context, Json::Value const& params)
+std::variant<std::optional<LedgerSpecifier>, json::Value>
+parseLedgerArgs(RPC::Context& context, json::Value const& params)
 {
-    Json::Value response;
+    json::Value response;
     // if ledger_index_min or max is specified, then ledger_hash or ledger_index
     // should not be specified. Error out if it is
     if (context.apiVersion > 1u)
@@ -272,13 +272,13 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     return {result, RpcSuccess};
 }
 
-Json::Value
+json::Value
 populateJsonResponse(
     std::pair<AccountTxResult, RPC::Status> const& res,
     AccountTxArgs const& args,
     RPC::JsonContext const& context)
 {
-    Json::Value response;
+    json::Value response;
     RPC::Status const& error = res.second;
     if (error.toErrorCode() != RpcSuccess)
     {
@@ -293,7 +293,7 @@ populateJsonResponse(
         response[jss::ledger_index_min] = result.ledgerRange.min;
         response[jss::ledger_index_max] = result.ledgerRange.max;
 
-        Json::Value& jvTxns = (response[jss::transactions] = Json::ArrayValue);
+        json::Value& jvTxns = (response[jss::transactions] = json::ArrayValue);
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
@@ -303,7 +303,7 @@ populateJsonResponse(
             {
                 if (txn)
                 {
-                    Json::Value& jvObj = jvTxns.append(Json::ObjectValue);
+                    json::Value& jvObj = jvTxns.append(json::ObjectValue);
                     jvObj[jss::validated] = true;
 
                     auto const jsonTx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
@@ -351,7 +351,7 @@ populateJsonResponse(
 
             for (auto const& binaryData : std::get<TxnsDataBinary>(result.transactions))
             {
-                Json::Value& jvObj = jvTxns.append(Json::ObjectValue);
+                json::Value& jvObj = jvTxns.append(json::ObjectValue);
 
                 jvObj[jss::tx_blob] = strHex(std::get<0>(binaryData));
                 auto const jsonMeta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
@@ -363,7 +363,7 @@ populateJsonResponse(
 
         if (result.marker)
         {
-            response[jss::marker] = Json::ObjectValue;
+            response[jss::marker] = json::ObjectValue;
             response[jss::marker][jss::ledger] = result.marker->ledgerSeq;
             response[jss::marker][jss::seq] = result.marker->txnSeq;
         }
@@ -383,7 +383,7 @@ populateJsonResponse(
 //   marker: object {ledger: ledger_index, seq: txn_sequence} // optional,
 //   resume previous query
 // }
-Json::Value
+json::Value
 doAccountTx(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
@@ -391,7 +391,7 @@ doAccountTx(RPC::JsonContext& context)
 
     auto& params = context.params;
     AccountTxArgs args;
-    Json::Value response;
+    json::Value response;
 
     // The document[https://xrpl.org/account_tx.html#account_tx] states that
     // binary and forward params are both boolean values, however, assigning any
@@ -425,7 +425,7 @@ doAccountTx(RPC::JsonContext& context)
     args.account = *account;
 
     auto parseRes = parseLedgerArgs(context, params);
-    if (auto jv = std::get_if<Json::Value>(&parseRes))
+    if (auto jv = std::get_if<json::Value>(&parseRes))
     {
         return *jv;
     }
@@ -436,8 +436,8 @@ doAccountTx(RPC::JsonContext& context)
     {
         auto& token = params[jss::marker];
         if (!token.isMember(jss::ledger) || !token.isMember(jss::seq) ||
-            !token[jss::ledger].isConvertibleTo(Json::ValueType::UintValue) ||
-            !token[jss::seq].isConvertibleTo(Json::ValueType::UintValue))
+            !token[jss::ledger].isConvertibleTo(json::ValueType::UintValue) ||
+            !token[jss::seq].isConvertibleTo(json::ValueType::UintValue))
         {
             RPC::Status const status{
                 RpcInvalidParams,

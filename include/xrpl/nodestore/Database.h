@@ -166,7 +166,7 @@ public:
     }
 
     void
-    getCountsJson(Json::Value& obj);
+    getCountsJson(json::Value& obj);
 
     /** Returns the number of file descriptors the database expects to need */
     int

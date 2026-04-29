@@ -3,7 +3,7 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
-namespace Json {
+namespace json {
 
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
@@ -164,4 +164,4 @@ ValueIterator::operator=(SelfType const& other)
     return *this;
 }
 
-}  // namespace Json
+}  // namespace json

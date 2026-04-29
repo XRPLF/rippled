@@ -26,7 +26,7 @@ struct Entry : public beast::List<Entry>::Node
     }
 
     [[nodiscard]] std::string
-    to_string() const
+    toString() const
     {
         return getFingerprint(key->address, publicKey);
     }
@@ -82,7 +82,7 @@ struct Entry : public beast::List<Entry>::Node
 inline std::ostream&
 operator<<(std::ostream& os, Entry const& v)
 {
-    os << v.to_string();
+    os << v.toString();
     return os;
 }
 

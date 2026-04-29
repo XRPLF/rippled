@@ -8,9 +8,9 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/server/NetworkOPs.h>
 
-namespace Json {
+namespace json {
 class Object;
-}  // namespace Json
+}  // namespace json
 
 namespace xrpl::RPC {
 
@@ -28,7 +28,7 @@ struct Handler
     using Method = std::function<Status(JsonContext&, JsonValue&)>;
 
     char const* name;
-    Method<Json::Value> valueMethod;
+    Method<json::Value> valueMethod;
     Role role;
     RPC::Condition condition;
 
@@ -39,12 +39,12 @@ struct Handler
 Handler const*
 getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
-/** Return a Json::objectValue with a single entry. */
+/** Return a json::objectValue with a single entry. */
 template <class Value>
-Json::Value
-makeObjectValue(Value const& value, Json::StaticString const& field = jss::message)
+json::Value
+makeObjectValue(Value const& value, json::StaticString const& field = jss::message)
 {
-    Json::Value result(Json::ObjectValue);
+    json::Value result(json::ObjectValue);
     result[field] = value;
     return result;
 }

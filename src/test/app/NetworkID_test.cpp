@@ -52,13 +52,13 @@ public:
 
         auto const alice = Account{"alice"};
 
-        auto const runTx = [&](test::jtx::Env& env, Json::Value const& jv, TER expectedOutcome) {
+        auto const runTx = [&](test::jtx::Env& env, json::Value const& jv, TER expectedOutcome) {
             env.memoize(env.master);
             env.memoize(alice);
 
             // fund alice
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = env.master.human();
                 jv[jss::Destination] = alice.human();
                 jv[jss::TransactionType] = "Payment";
@@ -76,7 +76,7 @@ public:
             BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 0);
 
             // try to submit a txn without network id, this should work
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = jss::AccountSet;
             runTx(env, jv, tesSUCCESS);
@@ -99,7 +99,7 @@ public:
             BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 1024);
 
             // try to submit a txn without network id, this should work
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = jss::AccountSet;
             runTx(env, jv, tesSUCCESS);
@@ -118,9 +118,9 @@ public:
             test::jtx::Env env{*this, makeNetworkConfig(1025)};
             BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 1025);
             {
-                env.fund(kXRP(200), alice);
+                env.fund(XRP(200), alice);
                 // try to submit a txn without network id, this should not work
-                Json::Value jvn;
+                json::Value jvn;
                 jvn[jss::Account] = alice.human();
                 jvn[jss::TransactionType] = jss::AccountSet;
                 jvn[jss::Fee] = to_string(env.current()->fees().base);
@@ -135,7 +135,7 @@ public:
                 env.close();
             }
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = jss::AccountSet;
 

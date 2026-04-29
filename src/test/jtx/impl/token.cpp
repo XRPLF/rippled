@@ -19,10 +19,10 @@
 
 namespace xrpl::test::jtx::token {
 
-Json::Value
+json::Value
 mint(jtx::Account const& account, std::uint32_t nfTokenTaxon)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfNFTokenTaxon.jsonName] = nfTokenTaxon;
     jv[sfTransactionType.jsonName] = jss::NFTokenMint;
@@ -82,20 +82,20 @@ getID(
         flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
 }
 
-Json::Value
+json::Value
 burn(jtx::Account const& account, uint256 const& nftokenID)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfNFTokenID.jsonName] = to_string(nftokenID);
     jv[jss::TransactionType] = jss::NFTokenBurn;
     return jv;
 }
 
-Json::Value
+json::Value
 createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount const& amount)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfNFTokenID.jsonName] = to_string(nftokenID);
     jv[sfAmount.jsonName] = amount.getJson(JsonOptions::KNone);
@@ -122,14 +122,14 @@ Destination::operator()(Env& env, JTx& jt) const
 }
 
 template <typename T>
-static Json::Value
+static json::Value
 cancelOfferImpl(jtx::Account const& account, T const& nftokenOffers)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     if (!empty(nftokenOffers))
     {
-        jv[sfNFTokenOffers.jsonName] = Json::ArrayValue;
+        jv[sfNFTokenOffers.jsonName] = json::ArrayValue;
         for (uint256 const& nftokenOffer : nftokenOffers)
             jv[sfNFTokenOffers.jsonName].append(to_string(nftokenOffer));
     }
@@ -137,13 +137,13 @@ cancelOfferImpl(jtx::Account const& account, T const& nftokenOffers)
     return jv;
 }
 
-Json::Value
+json::Value
 cancelOffer(jtx::Account const& account, std::initializer_list<uint256> const& nftokenOffers)
 {
     return cancelOfferImpl(account, nftokenOffers);
 }
 
-Json::Value
+json::Value
 cancelOffer(jtx::Account const& account, std::vector<uint256> const& nftokenOffers)
 {
     return cancelOfferImpl(account, nftokenOffers);
@@ -155,33 +155,33 @@ RootIndex::operator()(Env& env, JTx& jt) const
     jt.jv[sfRootIndex.jsonName] = rootIndex_;
 }
 
-Json::Value
+json::Value
 acceptBuyOffer(jtx::Account const& account, uint256 const& offerIndex)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfNFTokenBuyOffer.jsonName] = to_string(offerIndex);
     jv[jss::TransactionType] = jss::NFTokenAcceptOffer;
     return jv;
 }
 
-Json::Value
+json::Value
 acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfNFTokenSellOffer.jsonName] = to_string(offerIndex);
     jv[jss::TransactionType] = jss::NFTokenAcceptOffer;
     return jv;
 }
 
-Json::Value
+json::Value
 brokerOffers(
     jtx::Account const& account,
     uint256 const& buyOfferIndex,
     uint256 const& sellOfferIndex)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfNFTokenBuyOffer.jsonName] = to_string(buyOfferIndex);
     jv[sfNFTokenSellOffer.jsonName] = to_string(sellOfferIndex);
@@ -195,24 +195,24 @@ BrokerFee::operator()(Env& env, JTx& jt) const
     jt.jv[sfNFTokenBrokerFee.jsonName] = brokerFee_.getJson(JsonOptions::KNone);
 }
 
-Json::Value
+json::Value
 setMinter(jtx::Account const& account, jtx::Account const& minter)
 {
-    Json::Value jt = fset(account, asfAuthorizedNFTokenMinter);
+    json::Value jt = fset(account, asfAuthorizedNFTokenMinter);
     jt[sfNFTokenMinter.fieldName] = minter.human();
     return jt;
 }
 
-Json::Value
+json::Value
 clearMinter(jtx::Account const& account)
 {
     return fclear(account, asfAuthorizedNFTokenMinter);
 }
 
-Json::Value
+json::Value
 modify(jtx::Account const& account, uint256 const& nftokenID)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfNFTokenID.jsonName] = to_string(nftokenID);
     jv[jss::TransactionType] = jss::NFTokenModify;

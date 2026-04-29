@@ -77,79 +77,79 @@ makeName(std::string const& object, std::string const& field)
     return object + "." + field;
 }
 
-static inline Json::Value
+static inline json::Value
 notAnObject(std::string const& object, std::string const& field)
 {
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' is not a JSON object.");
 }
 
-static inline Json::Value
+static inline json::Value
 notAnObject(std::string const& object)
 {
     return notAnObject(object, "");
 }
 
-static inline Json::Value
+static inline json::Value
 notAnArray(std::string const& object)
 {
     return RPC::makeError(RpcInvalidParams, "Field '" + object + "' is not a JSON array.");
 }
 
-static inline Json::Value
+static inline json::Value
 unknownField(std::string const& object, std::string const& field)
 {
     return RPC::makeError(RpcInvalidParams, "Field '" + makeName(object, field) + "' is unknown.");
 }
 
-static inline Json::Value
+static inline json::Value
 outOfRange(std::string const& object, std::string const& field)
 {
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' is out of range.");
 }
 
-static inline Json::Value
+static inline json::Value
 badType(std::string const& object, std::string const& field)
 {
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' has bad type.");
 }
 
-static inline Json::Value
+static inline json::Value
 invalidData(std::string const& object, std::string const& field)
 {
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' has invalid data.");
 }
 
-static inline Json::Value
+static inline json::Value
 invalidData(std::string const& object)
 {
     return invalidData(object, "");
 }
 
-static inline Json::Value
+static inline json::Value
 arrayExpected(std::string const& object, std::string const& field)
 {
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a JSON array.");
 }
 
-static inline Json::Value
+static inline json::Value
 stringExpected(std::string const& object, std::string const& field)
 {
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a string.");
 }
 
-static inline Json::Value
+static inline json::Value
 tooDeep(std::string const& object)
 {
     return RPC::makeError(RpcInvalidParams, "Field '" + object + "' exceeds nesting depth limit.");
 }
 
-static inline Json::Value
+static inline json::Value
 singletonExpected(std::string const& object, unsigned int index)
 {
     return RPC::makeError(
@@ -158,7 +158,7 @@ singletonExpected(std::string const& object, unsigned int index)
             "]' must be an object with a single key/object value.");
 }
 
-static inline Json::Value
+static inline json::Value
 templateMismatch(SField const& sField)
 {
     return RPC::makeError(
@@ -166,8 +166,8 @@ templateMismatch(SField const& sField)
         "Object '" + sField.getName() + "' contents did not meet requirements for that type.");
 }
 
-static inline Json::Value
-nonObjectInArray(std::string const& item, Json::UInt index)
+static inline json::Value
+nonObjectInArray(std::string const& item, json::UInt index)
 {
     return RPC::makeError(
         RpcInvalidParams,
@@ -183,8 +183,8 @@ parseUnsigned(
     std::string const& jsonName,
     std::string const& fieldName,
     SField const* name,
-    Json::Value const& value,
-    Json::Value& error)
+    json::Value const& value,
+    json::Value& error)
 {
     std::optional<detail::STVar> ret;
 
@@ -229,8 +229,8 @@ parseUint16(
     std::string const& jsonName,
     std::string const& fieldName,
     SField const* name,
-    Json::Value const& value,
-    Json::Value& error)
+    json::Value const& value,
+    json::Value& error)
 {
     std::optional<detail::STVar> ret;
 
@@ -290,8 +290,8 @@ parseUint32(
     std::string const& jsonName,
     std::string const& fieldName,
     SField const* name,
-    Json::Value const& value,
-    Json::Value& error)
+    json::Value const& value,
+    json::Value& error)
 {
     std::optional<detail::STVar> ret;
 
@@ -344,8 +344,8 @@ parseLeaf(
     std::string const& jsonName,
     std::string const& fieldName,
     SField const* name,
-    Json::Value const& value,
-    Json::Value& error)
+    json::Value const& value,
+    json::Value& error)
 {
     std::optional<detail::STVar> ret;
 
@@ -690,7 +690,7 @@ parseLeaf(
             try
             {
                 STVector256 tail(field);
-                for (Json::UInt i = 0; value.isValidIndex(i); ++i)
+                for (json::UInt i = 0; value.isValidIndex(i); ++i)
                 {
                     uint256 s;
                     if (!s.parseHex(value[i].asString()))
@@ -718,7 +718,7 @@ parseLeaf(
             {
                 STPathSet tail(field);
 
-                for (Json::UInt i = 0; value.isValidIndex(i); ++i)
+                for (json::UInt i = 0; value.isValidIndex(i); ++i)
                 {
                     STPath p;
 
@@ -730,7 +730,7 @@ parseLeaf(
                         return ret;
                     }
 
-                    for (Json::UInt j = 0; value[i].isValidIndex(j); ++j)
+                    for (json::UInt j = 0; value[i].isValidIndex(j); ++j)
                     {
                         std::stringstream ss;
                         ss << fieldName << "[" << i << "][" << j << "]";
@@ -739,7 +739,7 @@ parseLeaf(
                         // each element in this path has some combination of
                         // account, asset, or issuer
 
-                        Json::Value pathEl = value[i][j];
+                        json::Value pathEl = value[i][j];
 
                         if (!pathEl.isObject())
                         {
@@ -755,9 +755,9 @@ parseLeaf(
 
                         bool const isMPT = pathEl.isMember(jss::mpt_issuance_id);
                         auto const assetName = isMPT ? jss::mpt_issuance_id : jss::currency;
-                        Json::Value const& account = pathEl[jss::account];
-                        Json::Value const& asset = pathEl[assetName];
-                        Json::Value const& issuer = pathEl[jss::issuer];
+                        json::Value const& account = pathEl[jss::account];
+                        json::Value const& asset = pathEl[assetName];
+                        json::Value const& issuer = pathEl[jss::issuer];
                         bool hasAsset = false;
                         AccountID uAccount, uIssuer;
                         PathAsset uAsset;
@@ -952,18 +952,18 @@ static int const kMAX_DEPTH = 64;
 static std::optional<detail::STVar>
 parseArray(
     std::string const& jsonName,
-    Json::Value const& json,
+    json::Value const& json,
     SField const& inName,
     int depth,
-    Json::Value& error);
+    json::Value& error);
 
 static std::optional<STObject>
 parseObject(
     std::string const& jsonName,
-    Json::Value const& json,
+    json::Value const& json,
     SField const& inName,
     int depth,
-    Json::Value& error)
+    json::Value& error)
 {
     if (!json.isObjectOrNull())
     {
@@ -983,7 +983,7 @@ parseObject(
 
         for (auto const& fieldName : json.getMemberNames())
         {
-            Json::Value const& value = json[fieldName];
+            json::Value const& value = json[fieldName];
 
             auto const& field = SField::getField(fieldName);
 
@@ -1074,10 +1074,10 @@ parseObject(
 static std::optional<detail::STVar>
 parseArray(
     std::string const& jsonName,
-    Json::Value const& json,
+    json::Value const& json,
     SField const& inName,
     int depth,
-    Json::Value& error)
+    json::Value& error)
 {
     if (!json.isArrayOrNull())
     {
@@ -1095,7 +1095,7 @@ parseArray(
     {
         STArray tail(inName);
 
-        for (Json::UInt i = 0; json.isValidIndex(i); ++i)
+        for (json::UInt i = 0; json.isValidIndex(i); ++i)
         {
             bool const isObjectOrNull(json[i].isObjectOrNull());
             bool const singleKey(isObjectOrNull ? json[i].size() == 1 : true);
@@ -1120,7 +1120,7 @@ parseArray(
                 return std::nullopt;
             }
 
-            Json::Value const objectFields(json[i][memberName]);
+            json::Value const objectFields(json[i][memberName]);
 
             std::stringstream ss;
             ss << jsonName << "." << "[" << i << "]." << memberName;
@@ -1140,7 +1140,7 @@ parseArray(
                 return std::nullopt;
             }
 
-            tail.push_back(std::move(*ret));
+            tail.pushBack(std::move(*ret));
         }
 
         return detail::makeStvar<STArray>(std::move(tail));
@@ -1156,7 +1156,7 @@ parseArray(
 
 //------------------------------------------------------------------------------
 
-STParsedJSONObject::STParsedJSONObject(std::string const& name, Json::Value const& json)
+STParsedJSONObject::STParsedJSONObject(std::string const& name, json::Value const& json)
 {
     using namespace STParsedJSONDetail;
     object = parseObject(name, json, kSF_GENERIC, 0, error);

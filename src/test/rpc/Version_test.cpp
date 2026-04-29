@@ -23,7 +23,7 @@ class Version_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto isCorrectReply = [](Json::Value const& re) -> bool {
+        auto isCorrectReply = [](json::Value const& re) -> bool {
             if (re.isMember(jss::error))
                 return false;
             return re.isMember(jss::version);
@@ -48,7 +48,7 @@ class Version_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto badVersion = [](Json::Value const& re) -> bool {
+        auto badVersion = [](json::Value const& re) -> bool {
             if (re.isMember("error_what"))
             {
                 if (re["error_what"].isString())
@@ -91,12 +91,12 @@ class Version_test : public beast::unit_test::Suite
             ? RPC::kAPI_INVALID_VERSION
             : RPC::kAPI_VERSION_IF_UNSPECIFIED;
 
-        Json::Value const jArray = Json::Value(Json::ArrayValue);
-        Json::Value const jNull = Json::Value(Json::NullValue);
+        json::Value const jArray = json::Value(json::ArrayValue);
+        json::Value const jNull = json::Value(json::NullValue);
         BEAST_EXPECT(RPC::getAPIVersionNumber(jArray, false) == versionIfUnspecified);
         BEAST_EXPECT(RPC::getAPIVersionNumber(jNull, false) == versionIfUnspecified);
 
-        Json::Value jObject = Json::Value(Json::ObjectValue);
+        json::Value jObject = json::Value(json::ObjectValue);
         BEAST_EXPECT(RPC::getAPIVersionNumber(jObject, false) == versionIfUnspecified);
         jObject[jss::api_version] = RPC::kAPI_VERSION_IF_UNSPECIFIED.value;
         BEAST_EXPECT(RPC::getAPIVersionNumber(jObject, false) == versionIfUnspecified);

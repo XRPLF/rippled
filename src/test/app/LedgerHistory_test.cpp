@@ -151,7 +151,7 @@ public:
 
             Account const alice{"A1"};
             Account const bob{"A2"};
-            env.fund(kXRP(1000), alice, bob);
+            env.fund(XRP(1000), alice, bob);
             env.close();
 
             auto const ledgerBase = env.app().getLedgerMaster().getClosedLedger();

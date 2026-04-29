@@ -88,7 +88,7 @@ BEAST_DEFINE_TESTSUITE(codeString, rpc, RPC);
 class fillJson_test : public beast::unit_test::Suite
 {
 private:
-    Json::Value value_;
+    json::Value value_;
 
     template <typename Type>
     void

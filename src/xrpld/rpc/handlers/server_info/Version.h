@@ -19,11 +19,12 @@ public:
     }
 
     void
-    writeResult(Json::Value& obj) const
+    writeResult(json::Value& obj) const
     {
         setVersion(obj, apiVersion_, betaEnabled_);
     }
 
+    // NOLINTBEGIN(readability-identifier-naming)
     static constexpr char const* name = "version";
 
     static constexpr unsigned minApiVer = RPC::kAPI_MINIMUM_SUPPORTED_VERSION;
@@ -33,6 +34,7 @@ public:
     static constexpr Role role = Role::USER;
 
     static constexpr Condition condition = NoCondition;
+    // NOLINTEND(readability-identifier-naming)
 
 private:
     unsigned int apiVersion_;

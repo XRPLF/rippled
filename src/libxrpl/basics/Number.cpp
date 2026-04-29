@@ -27,19 +27,19 @@ using int128_t = __int128_t;
 
 namespace xrpl {
 
-thread_local Number::RoundingMode Number::mode_ = Number::ToNearest;
+thread_local Number::RoundingMode Number::mode = Number::ToNearest;
 thread_local std::reference_wrapper<MantissaRange const> Number::kRANGE = kLARGE_RANGE;
 
 Number::RoundingMode
 Number::getround()
 {
-    return mode_;
+    return mode;
 }
 
 Number::RoundingMode
 Number::setround(RoundingMode mode)
 {
-    return std::exchange(mode_, mode);
+    return std::exchange(mode, mode);
 }
 
 MantissaRange::MantissaScale

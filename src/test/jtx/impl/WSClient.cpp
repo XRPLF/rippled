@@ -50,9 +50,9 @@ class WSClientImpl : public WSClient
 
     struct Msg
     {
-        Json::Value jv;
+        json::Value jv;
 
-        explicit Msg(Json::Value&& jv) : jv(std::move(jv))
+        explicit Msg(json::Value&& jv) : jv(std::move(jv))
         {
         }
     };
@@ -187,14 +187,14 @@ public:
         cleanup();
     }
 
-    Json::Value
-    invoke(std::string const& cmd, Json::Value const& params) override
+    json::Value
+    invoke(std::string const& cmd, json::Value const& params) override
     {
         using boost::asio::buffer;
         using namespace std::chrono_literals;
 
         {
-            Json::Value jp;
+            json::Value jp;
             if (params)
                 jp = params;
             if (rpc_version_ == 2)
@@ -220,14 +220,14 @@ public:
         }
 
         auto jv =
-            findMsg(5s, [&](Json::Value const& jval) { return jval[jss::type] == jss::response; });
+            findMsg(5s, [&](json::Value const& jval) { return jval[jss::type] == jss::response; });
         if (jv)
         {
             // Normalize JSON output
             jv->removeMember(jss::type);
             if ((*jv).isMember(jss::status) && (*jv)[jss::status] == jss::error)
             {
-                Json::Value ret;
+                json::Value ret;
                 ret[jss::result] = *jv;
                 if ((*jv).isMember(jss::error))
                     ret[jss::error] = (*jv)[jss::error];
@@ -241,7 +241,7 @@ public:
         return {};
     }
 
-    std::optional<Json::Value>
+    std::optional<json::Value>
     getMsg(std::chrono::milliseconds const& timeout) override
     {
         std::shared_ptr<Msg> m;
@@ -255,8 +255,8 @@ public:
         return std::move(m->jv);
     }
 
-    std::optional<Json::Value>
-    findMsg(std::chrono::milliseconds const& timeout, std::function<bool(Json::Value const&)> pred)
+    std::optional<json::Value>
+    findMsg(std::chrono::milliseconds const& timeout, std::function<bool(json::Value const&)> pred)
         override
     {
         std::shared_ptr<Msg> m;
@@ -298,8 +298,8 @@ private:
             return;
         }
 
-        Json::Value jv;
-        Json::Reader jr;
+        json::Value jv;
+        json::Reader jr;
         jr.parse(bufferString(rb_.data()), jv);
         rb_.consume(rb_.size());
         auto m = std::make_shared<Msg>(std::move(jv));

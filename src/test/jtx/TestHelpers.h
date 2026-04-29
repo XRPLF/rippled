@@ -145,11 +145,11 @@ public:
     }
 };
 
-struct StAmountField : public JTxField<SF_AMOUNT, STAmount, Json::Value>
+struct StAmountField : public JTxField<SF_AMOUNT, STAmount, json::Value>
 {
     using SF = SF_AMOUNT;
     using SV = STAmount;
-    using OV = Json::Value;
+    using OV = json::Value;
     using base = JTxField<SF, SV, OV>;
 
 protected:
@@ -294,37 +294,37 @@ makeVector(Input const& input)
 }
 
 // Functions used in debugging
-Json::Value
+json::Value
 getAccountOffers(Env& env, AccountID const& acct, bool current = false);
 
-inline Json::Value
+inline json::Value
 getAccountOffers(Env& env, Account const& acct, bool current = false)
 {
     return getAccountOffers(env, acct.id(), current);
 }
 
-Json::Value
+json::Value
 getAccountLines(Env& env, AccountID const& acctId);
 
-inline Json::Value
+inline json::Value
 getAccountLines(Env& env, Account const& acct)
 {
     return getAccountLines(env, acct.id());
 }
 
 template <typename... IOU>
-Json::Value
+json::Value
 getAccountLines(Env& env, AccountID const& acctId, IOU... ious)
 {
     auto jrr = getAccountLines(env, acctId);
-    Json::Value res;
+    json::Value res;
     for (auto const& line : jrr[jss::lines])
     {
         for (auto const& iou : {ious...})
         {
             if (line[jss::currency].asString() == to_string(iou.currency))
             {
-                Json::Value v;
+                json::Value v;
                 v[jss::currency] = line[jss::currency];
                 v[jss::balance] = line[jss::balance];
                 v[jss::limit] = line[jss::limit];
@@ -339,7 +339,7 @@ getAccountLines(Env& env, AccountID const& acctId, IOU... ious)
 }
 
 [[nodiscard]] bool
-checkArraySize(Json::Value const& val, unsigned int size);
+checkArraySize(json::Value const& val, unsigned int size);
 
 // Helper function that returns the owner count on an account.
 std::uint32_t
@@ -423,7 +423,7 @@ same(STPathSet const& st1, Args const&... args)
     return true;
 }
 
-Json::Value
+json::Value
 rpf(jtx::Account const& src,
     jtx::Account const& dst,
     STAmount const& dstAmount,
@@ -463,7 +463,7 @@ public:
     }
 };
 
-Json::Value
+json::Value
 findPathsRequest(
     jtx::Env& env,
     jtx::Account const& src,
@@ -531,22 +531,22 @@ expectOffers(
     std::uint16_t size,
     std::vector<Amounts> const& toMatch = {});
 
-Json::Value
+json::Value
 ledgerEntryRoot(Env& env, Account const& acct);
 
-Json::Value
+json::Value
 ledgerEntryState(Env& env, Account const& acctA, Account const& acctB, std::string const& currency);
 
-Json::Value
+json::Value
 ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offerSeq);
 
-Json::Value
+json::Value
 ledgerEntryMPT(jtx::Env& env, jtx::Account const& acct, MPTID const& mptID);
 
-Json::Value
+json::Value
 getBookOffers(jtx::Env& env, Asset const& takerPays, Asset const& takerGets);
 
-Json::Value
+json::Value
 accountBalance(Env& env, Account const& acct);
 
 [[nodiscard]] bool
@@ -556,7 +556,7 @@ expectLedgerEntryRoot(Env& env, Account const& acct, STAmount const& expectedVal
 /******************************************************************************/
 namespace paychan {
 
-Json::Value
+json::Value
 create(
     AccountID const& account,
     AccountID const& to,
@@ -566,7 +566,7 @@ create(
     std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
     std::optional<std::uint32_t> const& dstTag = std::nullopt);
 
-inline Json::Value
+inline json::Value
 create(
     Account const& account,
     Account const& to,
@@ -579,14 +579,14 @@ create(
     return create(account.id(), to.id(), amount, settleDelay, pk, cancelAfter, dstTag);
 }
 
-Json::Value
+json::Value
 fund(
     AccountID const& account,
     uint256 const& channel,
     STAmount const& amount,
     std::optional<NetClock::time_point> const& expiration = std::nullopt);
 
-Json::Value
+json::Value
 claim(
     AccountID const& account,
     uint256 const& channel,
@@ -709,10 +709,10 @@ namespace check {
 /** Create a check. */
 template <typename A>
     requires std::is_same_v<A, AccountID>
-Json::Value
+json::Value
 create(A const& account, A const& dest, STAmount const& sendMax)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = to_string(account);
     jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::KNone);
     jv[sfDestination.jsonName] = to_string(dest);
@@ -720,7 +720,7 @@ create(A const& account, A const& dest, STAmount const& sendMax)
     return jv;
 }
 
-inline Json::Value
+inline json::Value
 create(jtx::Account const& account, jtx::Account const& dest, STAmount const& sendMax)
 {
     return create(account.id(), dest.id(), sendMax);
@@ -831,21 +831,21 @@ checkMetrics(
 
 namespace loanBroker {
 
-Json::Value
+json::Value
 set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
 
 // Use "del" because "delete" is a reserved word in C++.
-Json::Value
+json::Value
 del(AccountID const& account, uint256 const& brokerID, std::uint32_t flags = 0);
 
-Json::Value
+json::Value
 coverDeposit(
     AccountID const& account,
     uint256 const& brokerID,
     STAmount const& amount,
     std::uint32_t flags = 0);
 
-Json::Value
+json::Value
 coverWithdraw(
     AccountID const& account,
     uint256 const& brokerID,
@@ -853,7 +853,7 @@ coverWithdraw(
     std::uint32_t flags = 0);
 
 // Must specify at least one of loanBrokerID or amount.
-Json::Value
+json::Value
 coverClawback(AccountID const& account, std::uint32_t flags = 0);
 
 auto const kLOAN_BROKER_ID = JTxFieldWrapper<Uint256Field>(sfLoanBrokerID);
@@ -877,7 +877,7 @@ auto const kDESTINATION = JTxFieldWrapper<AccountIdField>(sfDestination);
 /******************************************************************************/
 namespace loan {
 
-Json::Value
+json::Value
 set(AccountID const& account,
     uint256 const& loanBrokerID,
     Number principalRequested,
@@ -914,13 +914,13 @@ auto const kPAYMENT_INTERVAL = simpleField<SF_UINT32>(sfPaymentInterval);
 
 auto const kGRACE_PERIOD = simpleField<SF_UINT32>(sfGracePeriod);
 
-Json::Value
+json::Value
 manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
 
-Json::Value
+json::Value
 del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
 
-Json::Value
+json::Value
 pay(AccountID const& account,
     uint256 const& loanID,
     STAmount const& amount,

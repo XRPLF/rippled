@@ -28,14 +28,14 @@
 namespace xrpl::test::jtx {
 
 // use this for creating a bridge for a transaction
-Json::Value
+json::Value
 bridge(
     Account const& lockingChainDoor,
     Issue const& lockingChainIssue,
     Account const& issuingChainDoor,
     Issue const& issuingChainIssue)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::LockingChainDoor] = lockingChainDoor.human();
     jv[jss::LockingChainIssue] = toJson(lockingChainIssue);
     jv[jss::IssuingChainDoor] = issuingChainDoor.human();
@@ -44,14 +44,14 @@ bridge(
 }
 
 // use this for creating a bridge for a rpc query
-Json::Value
+json::Value
 bridgeRpc(
     Account const& lockingChainDoor,
     Issue const& lockingChainIssue,
     Account const& issuingChainDoor,
     Issue const& issuingChainIssue)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::LockingChainDoor] = lockingChainDoor.human();
     jv[jss::LockingChainIssue] = toJson(lockingChainIssue);
     jv[jss::IssuingChainDoor] = issuingChainDoor.human();
@@ -59,14 +59,14 @@ bridgeRpc(
     return jv;
 }
 
-Json::Value
+json::Value
 bridgeCreate(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     STAmount const& reward,
     std::optional<STAmount> const& minAccountCreate)
 {
-    Json::Value jv;
+    json::Value jv;
 
     jv[jss::Account] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
@@ -78,14 +78,14 @@ bridgeCreate(
     return jv;
 }
 
-Json::Value
+json::Value
 bridgeModify(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     std::optional<STAmount> const& reward,
     std::optional<STAmount> const& minAccountCreate)
 {
-    Json::Value jv;
+    json::Value jv;
 
     jv[jss::Account] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
@@ -98,14 +98,14 @@ bridgeModify(
     return jv;
 }
 
-Json::Value
+json::Value
 xchainCreateClaimId(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     STAmount const& reward,
     Account const& otherChainSource)
 {
-    Json::Value jv;
+    json::Value jv;
 
     jv[jss::Account] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
@@ -116,15 +116,15 @@ xchainCreateClaimId(
     return jv;
 }
 
-Json::Value
+json::Value
 xchainCommit(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     std::uint32_t claimID,
     AnyAmount const& amt,
     std::optional<Account> const& dst)
 {
-    Json::Value jv;
+    json::Value jv;
 
     jv[jss::Account] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
@@ -137,15 +137,15 @@ xchainCommit(
     return jv;
 }
 
-Json::Value
+json::Value
 xchainClaim(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     std::uint32_t claimID,
     AnyAmount const& amt,
     Account const& dst)
 {
-    Json::Value jv;
+    json::Value jv;
 
     jv[sfAccount.getJsonName()] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
@@ -157,15 +157,15 @@ xchainClaim(
     return jv;
 }
 
-Json::Value
+json::Value
 sidechainXchainAccountCreate(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     Account const& dst,
     AnyAmount const& amt,
     AnyAmount const& reward)
 {
-    Json::Value jv;
+    json::Value jv;
 
     jv[sfAccount.getJsonName()] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
@@ -177,10 +177,10 @@ sidechainXchainAccountCreate(
     return jv;
 }
 
-Json::Value
+json::Value
 claimAttestation(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     jtx::Account const& rewardAccount,
@@ -204,7 +204,7 @@ claimAttestation(
         claimID,
         dst);
 
-    Json::Value result;
+    json::Value result;
 
     result[sfAccount.getJsonName()] = submittingAccount.human();
     result[sfXChainBridge.getJsonName()] = jvBridge;
@@ -226,10 +226,10 @@ claimAttestation(
     return result;
 }
 
-Json::Value
+json::Value
 createAccountAttestation(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     jtx::AnyAmount const& rewardAmount,
@@ -255,7 +255,7 @@ createAccountAttestation(
         createCount,
         dst);
 
-    Json::Value result;
+    json::Value result;
 
     result[sfAccount.getJsonName()] = submittingAccount.human();
     result[sfXChainBridge.getJsonName()] = jvBridge;
@@ -281,7 +281,7 @@ createAccountAttestation(
 JValueVec
 claimAttestations(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     std::vector<jtx::Account> const& rewardAccounts,
@@ -315,7 +315,7 @@ claimAttestations(
 JValueVec
 createAccountAttestations(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     jtx::AnyAmount const& rewardAmount,
@@ -424,7 +424,7 @@ XChainBridgeObjects::XChainBridgeObjects()
         }
         return r;
     }())
-    , reward(kXRP(1))
+    , reward(XRP(1))
     , split_reward_quorum(divide(reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), reward.get<Issue>()))
     , split_reward_everyone(
           divide(reward, STAmount(kUT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.get<Issue>()))
@@ -437,7 +437,7 @@ XChainBridgeObjects::XChainBridgeObjects()
               tiny_reward_split,
               STAmount(kUT_XCHAIN_DEFAULT_QUORUM),
               tiny_reward.get<Issue>()))
-    , one_xrp(kXRP(1))
+    , one_xrp(XRP(1))
     , xrp_dust(divide(one_xrp, STAmount(10000), one_xrp.get<Issue>()))
 {
 }
@@ -445,15 +445,15 @@ XChainBridgeObjects::XChainBridgeObjects()
 void
 XChainBridgeObjects::createMcBridgeObjects(Env& mcEnv)
 {
-    STAmount const xrpFunds{kXRP(10000)};
+    STAmount const xrpFunds{XRP(10000)};
     mcEnv.fund(xrpFunds, mcDoor, mcAlice, mcBob, mcCarol, mcGw);
 
     // Signer's list must match the attestation signers
     mcEnv(jtx::signers(mcDoor, signers.size(), signers));
 
     // create XRP bridges in both direction
-    auto const reward = kXRP(1);
-    STAmount const minCreate = kXRP(20);
+    auto const reward = XRP(1);
+    STAmount const minCreate = XRP(20);
 
     mcEnv(bridgeCreate(mcDoor, jvb, reward, minCreate));
     mcEnv.close();
@@ -462,15 +462,15 @@ XChainBridgeObjects::createMcBridgeObjects(Env& mcEnv)
 void
 XChainBridgeObjects::createScBridgeObjects(Env& scEnv)
 {
-    STAmount const xrpFunds{kXRP(10000)};
+    STAmount const xrpFunds{XRP(10000)};
     scEnv.fund(xrpFunds, scDoor, scAlice, scBob, scCarol, scGw, scAttester, scReward);
 
     // Signer's list must match the attestation signers
     scEnv(jtx::signers(Account::kMASTER, signers.size(), signers));
 
     // create XRP bridges in both direction
-    auto const reward = kXRP(1);
-    STAmount const minCreate = kXRP(20);
+    auto const reward = XRP(1);
+    STAmount const minCreate = XRP(20);
 
     scEnv(bridgeCreate(Account::kMASTER, jvb, reward, minCreate));
     scEnv.close();

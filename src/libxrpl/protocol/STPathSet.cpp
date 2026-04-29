@@ -164,14 +164,14 @@ STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID cons
     return false;
 }
 
-Json::Value
+json::Value
 STPath::getJson(JsonOptions) const
 {
-    Json::Value ret(Json::ArrayValue);
+    json::Value ret(json::ArrayValue);
 
     for (auto const& it : path_)
     {
-        Json::Value elem(Json::ObjectValue);
+        json::Value elem(json::ObjectValue);
         auto const iType = it.getNodeType();
 
         elem[jss::type] = iType;
@@ -198,10 +198,10 @@ STPath::getJson(JsonOptions) const
     return ret;
 }
 
-Json::Value
+json::Value
 STPathSet::getJson(JsonOptions options) const
 {
-    Json::Value ret(Json::ArrayValue);
+    json::Value ret(json::ArrayValue);
     for (auto const& it : value_)
         ret.append(it.getJson(options));
 

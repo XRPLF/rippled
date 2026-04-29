@@ -1813,7 +1813,7 @@ TxQ::getTxs() const
     return result;
 }
 
-Json::Value
+json::Value
 TxQ::doRPC(Application& app) const
 {
     auto const view = app.getOpenLedger().current();
@@ -1825,9 +1825,9 @@ TxQ::doRPC(Application& app) const
 
     auto const metrics = getMetrics(*view);
 
-    Json::Value ret(Json::ObjectValue);
+    json::Value ret(json::ObjectValue);
 
-    auto& levels = ret[jss::levels] = Json::ObjectValue;
+    auto& levels = ret[jss::levels] = json::ObjectValue;
 
     ret[jss::ledger_current_index] = view->header().seq;
     ret[jss::expected_ledger_size] = std::to_string(metrics.txPerLedger);
@@ -1850,7 +1850,7 @@ TxQ::doRPC(Application& app) const
             return XRPAmount{1};
         return baseFee;
     }();
-    auto& drops = ret[jss::drops] = Json::Value();
+    auto& drops = ret[jss::drops] = json::Value();
 
     drops[jss::base_fee] = to_string(baseFee);
     drops[jss::median_fee] = to_string(toDrops(metrics.medFeeLevel, baseFee));

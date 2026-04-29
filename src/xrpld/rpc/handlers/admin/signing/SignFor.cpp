@@ -15,7 +15,7 @@ namespace xrpl {
 //   account: <signing account>
 //   secret: <secret of signing account>
 // }
-Json::Value
+json::Value
 doSignFor(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())

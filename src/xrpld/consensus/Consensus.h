@@ -180,7 +180,7 @@ checkConsensus(
     auto closeAgree() const;
     auto closeTime() const;
     auto parentCloseTime() const;
-    Json::Value getJson() const;
+    json::Value getJson() const;
   };
 
   // Wraps a peer's ConsensusProposal
@@ -421,7 +421,7 @@ public:
         @param full True if verbose response desired.
         @return     The Json state.
     */
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson(bool full) const;
 
 private:
@@ -926,13 +926,13 @@ Consensus<Adaptor>::simulate(
 }
 
 template <class Adaptor>
-Json::Value
+json::Value
 Consensus<Adaptor>::getJson(bool full) const
 {
     using std::to_string;
-    using Int = Json::Value::Int;
+    using Int = json::Value::Int;
 
-    Json::Value ret(Json::ObjectValue);
+    json::Value ret(json::ObjectValue);
 
     ret["proposing"] = (mode_.get() == ConsensusMode::Proposing);
     ret["proposers"] = static_cast<int>(currPeerPositions_.size());
@@ -968,7 +968,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!currPeerPositions_.empty())
         {
-            Json::Value ppj(Json::ObjectValue);
+            json::Value ppj(json::ObjectValue);
 
             for (auto const& [nodeId, peerPos] : currPeerPositions_)
             {
@@ -979,7 +979,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!acquired_.empty())
         {
-            Json::Value acq(Json::ArrayValue);
+            json::Value acq(json::ArrayValue);
             for (auto const& at : acquired_)
             {
                 acq.append(to_string(at.first));
@@ -989,7 +989,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (result_ && !result_->disputes.empty())
         {
-            Json::Value dsj(Json::ObjectValue);
+            json::Value dsj(json::ObjectValue);
             for (auto const& [txId, dispute] : result_->disputes)
             {
                 dsj[to_string(txId)] = dispute.getJson();
@@ -999,7 +999,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!rawCloseTimes_.peers.empty())
         {
-            Json::Value ctj(Json::ObjectValue);
+            json::Value ctj(json::ObjectValue);
             for (auto const& ct : rawCloseTimes_.peers)
             {
                 ctj[std::to_string(ct.first.time_since_epoch().count())] = ct.second;
@@ -1009,7 +1009,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!deadNodes_.empty())
         {
-            Json::Value dnj(Json::ArrayValue);
+            json::Value dnj(json::ArrayValue);
             for (auto const& dn : deadNodes_)
             {
                 dnj.append(to_string(dn));
@@ -1091,10 +1091,10 @@ Consensus<Adaptor>::checkLedger(std::unique_ptr<std::stringstream> const& clog)
         std::stringstream ss;
         ss << "View of consensus changed during " << to_string(phase_)
            << " mode=" << to_string(mode_.get()) << ", " << prevLedgerID_ << " to " << netLgr
-           << ", " << Json::Compact{previousLedger_.getJson()} << ". ";
+           << ", " << json::Compact{previousLedger_.getJson()} << ". ";
         JLOG(j_.warn()) << ss.str();
         CLOG(clog) << ss.str();
-        CLOG(clog) << "State on consensus change " << Json::Compact{getJson(true)} << ". ";
+        CLOG(clog) << "State on consensus change " << json::Compact{getJson(true)} << ". ";
         handleWrongLedger(netLgr, clog);
     }
     else if (previousLedger_.id() != prevLedgerID_)
@@ -1709,12 +1709,12 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
 
             ss << "Consensus time has expired in round " << establishCounter_
                << "; continue until round " << kMINIMUM_COUNTER << ". "
-               << Json::Compact{getJson(false)};
+               << json::Compact{getJson(false)};
             JLOG(j_.error()) << ss.str();
             CLOG(clog) << ss.str() << ". ";
             return false;
         }
-        ss << "Consensus expired. " << Json::Compact{getJson(true)};
+        ss << "Consensus expired. " << json::Compact{getJson(true)};
         JLOG(j_.error()) << ss.str();
         CLOG(clog) << ss.str() << ". ";
         leaveConsensus(clog);
@@ -1724,8 +1724,8 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     if (result_->state == ConsensusState::MovedOn)
     {
         JLOG(j_.error()) << "Unable to reach consensus";
-        JLOG(j_.error()) << Json::Compact{getJson(true)};
-        CLOG(clog) << "Unable to reach consensus " << Json::Compact{getJson(true)} << ". ";
+        JLOG(j_.error()) << json::Compact{getJson(true)};
+        CLOG(clog) << "Unable to reach consensus " << json::Compact{getJson(true)} << ". ";
     }
 
     CLOG(clog) << "Consensus has been reached. ";

@@ -77,7 +77,7 @@ public:
         if (ec)
         {
             journal_.warn() << "forwarded for (" << forwardedFor << ") from proxy "
-                            << address.to_string()
+                            << address.toString()
                             << " doesn't convert to IP endpoint: " << ec.message();
             return newInboundEndpoint(address);
         }
@@ -110,13 +110,13 @@ public:
 
     //--------------------------------------------------------------------------
 
-    Json::Value
+    json::Value
     getJson() override
     {
         return logic_.getJson();
     }
 
-    Json::Value
+    json::Value
     getJson(int threshold) override
     {
         return logic_.getJson(threshold);

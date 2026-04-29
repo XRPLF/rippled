@@ -196,10 +196,10 @@ acctMatchesPubKey(
     return RpcBadSecret;
 }
 
-static Json::Value
+static json::Value
 checkPayment(
-    Json::Value const& params,
-    Json::Value& txJson,
+    json::Value const& params,
+    json::Value& txJson,
     AccountID const& srcAddressID,
     Role const role,
     Application& app,
@@ -207,7 +207,7 @@ checkPayment(
 {
     // Only path find for Payments.
     if (txJson[jss::TransactionType].asString() != jss::Payment)
-        return Json::Value();
+        return json::Value();
 
     // DeliverMax is an alias to Amount and we use Amount internally
     if (txJson.isMember(jss::DeliverMax))
@@ -328,22 +328,22 @@ checkPayment(
                 txJson[jss::Paths] = result.getJson(JsonOptions::KNone);
         }
     }
-    return Json::Value();
+    return json::Value();
 }
 
 //------------------------------------------------------------------------------
 
 // Validate (but don't modify) the contents of the tx_json.
 //
-// Returns a pair<Json::Value, AccountID>.  The Json::Value will contain error
+// Returns a pair<json::Value, AccountID>.  The json::Value will contain error
 // information if there was an error. On success, the account ID is returned
-// and the Json::Value will be empty.
+// and the json::Value will be empty.
 //
 // This code does not check the "Sequence" field, since the expectations
 // for that field are particularly context sensitive.
-static std::pair<Json::Value, AccountID>
+static std::pair<json::Value, AccountID>
 checkTxJsonFields(
-    Json::Value const& txJson,
+    json::Value const& txJson,
     Role const role,
     bool const verify,
     std::chrono::seconds validatedLedgerAge,
@@ -351,7 +351,7 @@ checkTxJsonFields(
     LoadFeeTrack const& feeTrack,
     unsigned apiVersion)
 {
-    std::pair<Json::Value, AccountID> ret;
+    std::pair<json::Value, AccountID> ret;
 
     if (!txJson.isObject())
     {
@@ -407,11 +407,11 @@ checkTxJsonFields(
 
 //------------------------------------------------------------------------------
 
-// A move-only struct that makes it easy to return either a Json::Value or a
+// A move-only struct that makes it easy to return either a json::Value or a
 // std::shared_ptr<STTx const> from transactionPreProcessImpl ().
 struct TransactionPreProcessResult
 {
-    Json::Value const first;
+    json::Value const first;
     std::shared_ptr<STTx> const second;
 
     TransactionPreProcessResult() = delete;
@@ -423,7 +423,7 @@ struct TransactionPreProcessResult
     TransactionPreProcessResult&
     operator=(TransactionPreProcessResult&&) = delete;
 
-    TransactionPreProcessResult(Json::Value&& json) : first(std::move(json)), second()
+    TransactionPreProcessResult(json::Value&& json) : first(std::move(json)), second()
     {
     }
 
@@ -435,7 +435,7 @@ struct TransactionPreProcessResult
 
 static TransactionPreProcessResult
 transactionPreProcessImpl(
-    Json::Value& params,
+    json::Value& params,
     Role role,
     SigningForParams& signingArgs,
     std::chrono::seconds validatedLedgerAge,
@@ -443,7 +443,7 @@ transactionPreProcessImpl(
 {
     auto j = app.getJournal("RPCHandler");
 
-    Json::Value jvResult;
+    json::Value jvResult;
     std::optional<std::pair<PublicKey, SecretKey>> keyPair = keypairForSignature(params, jvResult);
     if (!keyPair || containsError(jvResult))
         return jvResult;
@@ -477,7 +477,7 @@ transactionPreProcessImpl(
     if (!params.isMember(jss::tx_json))
         return RPC::missingFieldError(jss::tx_json);
 
-    Json::Value& txJson(params[jss::tx_json]);
+    json::Value& txJson(params[jss::tx_json]);
 
     // Check tx_json fields, but don't add any.
     auto [txJsonResult, srcAddressID] = checkTxJsonFields(
@@ -535,7 +535,7 @@ transactionPreProcessImpl(
     }
 
     {
-        Json::Value err = checkFee(
+        json::Value err = checkFee(
             params,
             role,
             verify && signingArgs.editFields(),
@@ -549,7 +549,7 @@ transactionPreProcessImpl(
     }
 
     {
-        Json::Value err = checkPayment(
+        json::Value err = checkPayment(
             params, txJson, srcAddressID, role, app, verify && signingArgs.editFields());
 
         if (RPC::containsError(err))
@@ -626,7 +626,7 @@ transactionPreProcessImpl(
     STParsedJSONObject parsed(std::string(jss::tx_json), txJson);
     if (!parsed.object.has_value())
     {
-        Json::Value err;
+        json::Value err;
         err[jss::error] = parsed.error[jss::error];
         err[jss::error_code] = parsed.error[jss::error_code];
         err[jss::error_message] = parsed.error[jss::error_message];
@@ -685,13 +685,13 @@ transactionPreProcessImpl(
     return TransactionPreProcessResult{std::move(stTx)};
 }
 
-static std::pair<Json::Value, Transaction::pointer>
+static std::pair<json::Value, Transaction::pointer>
 transactionConstructImpl(
     std::shared_ptr<STTx const> const& stTx,
     Rules const& rules,
     Application& app)
 {
-    std::pair<Json::Value, Transaction::pointer> ret;
+    std::pair<json::Value, Transaction::pointer> ret;
 
     // Turn the passed in STTx into a Transaction.
     Transaction::pointer tpTrans;
@@ -757,10 +757,10 @@ transactionConstructImpl(
     return ret;
 }
 
-static Json::Value
+static json::Value
 transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 {
-    Json::Value jvResult;
+    json::Value jvResult;
     try
     {
         if (apiVersion > 1)
@@ -802,7 +802,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 //------------------------------------------------------------------------------
 
 [[nodiscard]] static XRPAmount
-getTxFee(Application const& app, Config const& config, Json::Value tx)
+getTxFee(Application const& app, Config const& config, json::Value tx)
 {
     auto const& ledger = app.getOpenLedger().current();
     // autofilling only needed in this function so that the `STParsedJSONObject`
@@ -874,14 +874,14 @@ getTxFee(Application const& app, Config const& config, Json::Value tx)
     }
 }
 
-Json::Value
+json::Value
 getCurrentNetworkFee(
     Role const role,
     Config const& config,
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
     Application const& app,
-    Json::Value const& tx,
+    json::Value const& tx,
     int mult,
     int div)
 {
@@ -912,9 +912,9 @@ getCurrentNetworkFee(
     return fee.jsonClipped();
 }
 
-Json::Value
+json::Value
 checkFee(
-    Json::Value& request,
+    json::Value& request,
     Role const role,
     bool doAutoFill,
     Config const& config,
@@ -922,9 +922,9 @@ checkFee(
     TxQ const& txQ,
     Application const& app)
 {
-    Json::Value& tx(request[jss::tx_json]);
+    json::Value& tx(request[jss::tx_json]);
     if (tx.isMember(jss::Fee))
-        return Json::Value();
+        return json::Value();
 
     if (!doAutoFill)
         return RPC::missingFieldError("tx_json.Fee");
@@ -972,15 +972,15 @@ checkFee(
     if (feeOrError.isMember(jss::error))
         return feeOrError;
     tx[jss::Fee] = std::move(feeOrError);
-    return Json::Value();
+    return json::Value();
 }
 
 //------------------------------------------------------------------------------
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSign(
-    Json::Value jvRequest,
+    json::Value jvRequest,
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
@@ -1002,7 +1002,7 @@ transactionSign(
 
     std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> const txn =
+    std::pair<json::Value, Transaction::pointer> const txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
@@ -1011,10 +1011,10 @@ transactionSign(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSubmit(
-    Json::Value jvRequest,
+    json::Value jvRequest,
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
@@ -1037,7 +1037,7 @@ transactionSubmit(
         return preprocResult.first;
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<json::Value, Transaction::pointer> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
@@ -1060,13 +1060,13 @@ transactionSubmit(
 namespace detail {
 // There are a some field checks shared by transactionSignFor
 // and transactionSubmitMultiSigned.  Gather them together here.
-static Json::Value
-checkMultiSignFields(Json::Value const& jvRequest)
+static json::Value
+checkMultiSignFields(json::Value const& jvRequest)
 {
     if (!jvRequest.isMember(jss::tx_json))
         return RPC::missingFieldError(jss::tx_json);
 
-    Json::Value const& txJson(jvRequest[jss::tx_json]);
+    json::Value const& txJson(jvRequest[jss::tx_json]);
 
     if (!txJson.isObject())
         return RPC::invalidFieldMessage(jss::tx_json);
@@ -1090,13 +1090,13 @@ checkMultiSignFields(Json::Value const& jvRequest)
             RpcInvalidParams, "When multi-signing 'tx_json.SigningPubKey' must be empty.");
     }
 
-    return Json::Value();
+    return json::Value();
 }
 
 // Sort and validate an stSigners array.
 //
-// Returns a null Json::Value if there are no errors.
-static Json::Value
+// Returns a null json::Value if there are no errors.
+static json::Value
 sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 {
     if (signers.empty())
@@ -1134,10 +1134,10 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 
 }  // namespace detail
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSignFor(
-    Json::Value jvRequest,
+    json::Value jvRequest,
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
@@ -1165,7 +1165,7 @@ transactionSignFor(
         return RPC::missingFieldError(jss::tx_json);
 
     {
-        Json::Value& txJson(jvRequest[jss::tx_json]);
+        json::Value& txJson(jvRequest[jss::tx_json]);
 
         if (!txJson.isObject())
             return RPC::objectFieldError(jss::tx_json);
@@ -1180,7 +1180,7 @@ transactionSignFor(
     // be passed in by the caller.
     using namespace detail;
     {
-        Json::Value err = checkMultiSignFields(jvRequest);
+        json::Value err = checkMultiSignFields(jvRequest);
         if (RPC::containsError(err))
             return err;
     }
@@ -1237,7 +1237,7 @@ transactionSignFor(
     }
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> const txn =
+    std::pair<json::Value, Transaction::pointer> const txn =
         transactionConstructImpl(sttx, ledger->rules(), app);
 
     if (!txn.second)
@@ -1246,10 +1246,10 @@ transactionSignFor(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSubmitMultiSigned(
-    Json::Value jvRequest,
+    json::Value jvRequest,
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
@@ -1265,12 +1265,12 @@ transactionSubmitMultiSigned(
     // be passed in by the caller.
     using namespace detail;
     {
-        Json::Value err = checkMultiSignFields(jvRequest);
+        json::Value err = checkMultiSignFields(jvRequest);
         if (RPC::containsError(err))
             return err;
     }
 
-    Json::Value& txJson(jvRequest["tx_json"]);
+    json::Value& txJson(jvRequest["tx_json"]);
 
     auto [txJsonResult, srcAddressID] = checkTxJsonFields(
         txJson,
@@ -1296,7 +1296,7 @@ transactionSubmitMultiSigned(
     }
 
     {
-        Json::Value err =
+        json::Value err =
             checkFee(jvRequest, role, false, app.config(), app.getFeeTrack(), app.getTxQ(), app);
 
         if (RPC::containsError(err))
@@ -1314,7 +1314,7 @@ transactionSubmitMultiSigned(
         STParsedJSONObject parsedTxJson("tx_json", txJson);
         if (!parsedTxJson.object)
         {
-            Json::Value jvResult;
+            json::Value jvResult;
             jvResult["error"] = parsedTxJson.error["error"];
             jvResult["error_code"] = parsedTxJson.error["error_code"];
             jvResult["error_message"] = parsedTxJson.error["error_message"];
@@ -1403,7 +1403,7 @@ transactionSubmitMultiSigned(
         return err;
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<json::Value, Transaction::pointer> txn =
         transactionConstructImpl(stTx, ledger->rules(), app);
 
     if (!txn.second)

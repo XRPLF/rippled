@@ -26,7 +26,7 @@ public:
         p->FEES.reference_fee = 10;
         Env env{*this, std::move(p), FeatureBitset{}};
         Account const alice{"alice"};
-        env.fund(kXRP(10000), alice);
+        env.fund(XRP(10000), alice);
 
         auto lcResult = env.rpc("ledger_closed")[jss::result];
         BEAST_EXPECT(
@@ -41,7 +41,7 @@ public:
 
         auto const arAlice = env.le(alice);
         BEAST_EXPECT(arAlice->getAccountID(sfAccount) == alice.id());
-        BEAST_EXPECT((*arAlice)[sfBalance] == kXRP(10000));
+        BEAST_EXPECT((*arAlice)[sfBalance] == XRP(10000));
 
         lcResult = env.rpc("ledger_closed")[jss::result];
         BEAST_EXPECT(

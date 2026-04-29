@@ -171,7 +171,7 @@ public:
 
     /** Return JSON representation of configured validator sites
      */
-    Json::Value
+    json::Value
     getJson() const;
 
 private:

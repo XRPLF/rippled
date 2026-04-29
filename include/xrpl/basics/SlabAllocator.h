@@ -36,32 +36,32 @@ class SlabAllocator
     struct SlabBlock
     {
         // A mutex to protect the freelist for this block:
-        std::mutex m_;
+        std::mutex m;
 
         // A linked list of appropriately sized free buffers:
-        std::uint8_t* l_ = nullptr;
+        std::uint8_t* l = nullptr;
 
         // The next memory block
         SlabBlock* next;
 
         // The underlying memory block:
-        std::uint8_t const* const p_ = nullptr;
+        std::uint8_t const* const p = nullptr;
 
         // The extent of the underlying memory block:
-        std::size_t const size_;
+        std::size_t const size;
 
         SlabBlock(SlabBlock* next, std::uint8_t* data, std::size_t size, std::size_t item)
-            : next(next), p_(data), size_(size)
+            : next(next), p(data), size(size)
         {
             // We don't need to grab the mutex here, since we're the only
             // ones with access at this moment.
 
-            while (data + item <= p_ + size_)
+            while (data + item <= p + size)
             {
                 // Use memcpy to avoid unaligned UB
                 // (will optimize to equivalent code)
-                std::memcpy(data, static_cast<void const*>(&l_), sizeof(std::uint8_t*));
-                l_ = data;
+                std::memcpy(data, static_cast<void const*>(&l), sizeof(std::uint8_t*));
+                l = data;
                 data += item;
             }
         }
@@ -81,9 +81,9 @@ class SlabAllocator
 
         /** Determines whether the given pointer belongs to this allocator */
         bool
-        own(std::uint8_t const* p) const noexcept
+        own(std::uint8_t const* pIn) const noexcept
         {
-            return (p >= p_) && (p < p_ + size_);
+            return (pIn >= p) && (pIn < p + size);
         }
 
         std::uint8_t*
@@ -92,15 +92,15 @@ class SlabAllocator
             std::uint8_t* ret = nullptr;  // NOLINT(misc-const-correctness)
 
             {
-                std::lock_guard const lock(m_);
+                std::lock_guard const lock(m);
 
-                ret = l_;
+                ret = l;
 
                 if (ret != nullptr)
                 {
                     // Use memcpy to avoid unaligned UB
                     // (will optimize to equivalent code)
-                    std::memcpy(static_cast<void*>(&l_), ret, sizeof(std::uint8_t*));
+                    std::memcpy(static_cast<void*>(&l), ret, sizeof(std::uint8_t*));
                 }
             }
 
@@ -121,12 +121,12 @@ class SlabAllocator
         {
             XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
-            std::lock_guard const lock(m_);
+            std::lock_guard const lock(m);
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)
-            std::memcpy(ptr, static_cast<void const*>(&l_), sizeof(std::uint8_t*));
-            l_ = ptr;
+            std::memcpy(ptr, static_cast<void const*>(&l), sizeof(std::uint8_t*));
+            l = ptr;
         }
     };
 

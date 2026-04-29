@@ -331,7 +331,7 @@ public:
         @return An empty vector indicates malformed Json.
      */
     static std::vector<ValidatorBlobInfo>
-    parseBlobs(std::uint32_t version, Json::Value const& body);
+    parseBlobs(std::uint32_t version, json::Value const& body);
 
     static std::vector<ValidatorBlobInfo>
     parseBlobs(protocol::TMValidatorList const& body);
@@ -611,7 +611,7 @@ public:
     /** Returns the current valid list for the given publisher key,
         if available, as a Json object.
     */
-    std::optional<Json::Value>
+    std::optional<json::Value>
     getAvailable(std::string_view pubKey, std::optional<std::uint32_t> forceVersion = {});
 
     /** Return the number of configured validator list sites. */
@@ -635,7 +635,7 @@ public:
         @par Thread Safety
         May be called concurrently
     */
-    Json::Value
+    json::Value
     getJson() const;
 
     using QuorumKeys = std::pair<std::size_t const, hash_set<PublicKey>>;
@@ -809,7 +809,7 @@ private:
     /** Build a Json representation of the collection, suitable for
         writing to a cache file, or serving to a /vl/ query
     */
-    static Json::Value
+    static json::Value
     buildFileData(
         std::string const& pubKey,
         PublisherListCollection const& pubCollection,
@@ -818,7 +818,7 @@ private:
     /** Build a Json representation of the collection, suitable for
     writing to a cache file, or serving to a /vl/ query
     */
-    static Json::Value
+    static json::Value
     buildFileData(
         std::string const& pubKey,
         PublisherListCollection const& pubCollection,
@@ -849,7 +849,7 @@ private:
     std::pair<ListDisposition, std::optional<PublicKey>>
     verify(
         lock_guard const&,
-        Json::Value& list,
+        json::Value& list,
         Manifest manifest,
         std::string const& blob,
         std::string const& signature);

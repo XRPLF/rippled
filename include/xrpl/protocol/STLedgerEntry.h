@@ -37,7 +37,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson(JsonOptions options = JsonOptions::KNone) const override;
 
     /** Returns the 'key' (or 'index') of this item.

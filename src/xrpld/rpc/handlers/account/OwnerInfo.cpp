@@ -16,7 +16,7 @@ namespace xrpl {
 // {
 //   'ident' : <indent>,
 // }
-Json::Value
+json::Value
 doOwnerInfo(RPC::JsonContext& context)
 {
     if (!context.params.isMember(jss::account) && !context.params.isMember(jss::ident))
@@ -27,7 +27,7 @@ doOwnerInfo(RPC::JsonContext& context)
     std::string const strIdent = context.params.isMember(jss::account)
         ? context.params[jss::account].asString()
         : context.params[jss::ident].asString();
-    Json::Value ret;
+    json::Value ret;
 
     // Get info on account.
     auto const& closedLedger = context.ledgerMaster.getClosedLedger();

@@ -86,7 +86,7 @@ public:
     }
 
     //! JSON representation of this ledger.
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson() const
     {
         return xrpl::getJson({*ledger, {}});

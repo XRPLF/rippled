@@ -20,11 +20,11 @@ namespace xrpl {
 //
 // XXX In this case, not specify either ledger does not mean ledger current. It
 // means any ledger.
-Json::Value
+json::Value
 doTransactionEntry(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
-    Json::Value jvResult = RPC::lookupLedger(lpLedger, context);
+    json::Value jvResult = RPC::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
@@ -33,7 +33,7 @@ doTransactionEntry(RPC::JsonContext& context)
     {
         jvResult[jss::error] = "fieldNotFoundTransaction";
     }
-    else if (jvResult.get(jss::ledger_hash, Json::NullValue).isNull())
+    else if (jvResult.get(jss::ledger_hash, json::NullValue).isNull())
     {
         // We don't work on ledger current.
 

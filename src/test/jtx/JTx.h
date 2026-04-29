@@ -21,7 +21,7 @@ class Env;
 */
 struct JTx
 {
-    Json::Value jv;
+    json::Value jv;
     requires_t require;
     std::optional<TER> ter = TER{tesSUCCESS};
     std::optional<std::pair<ErrorCodeI, std::string>> rpcCode = std::nullopt;
@@ -45,16 +45,16 @@ struct JTx
     JTx&
     operator=(JTx&&) = default;
 
-    JTx(Json::Value&& jv) : jv(std::move(jv))
+    JTx(json::Value&& jv) : jv(std::move(jv))
     {
     }
 
-    JTx(Json::Value const& jv) : jv(jv)
+    JTx(json::Value const& jv) : jv(jv)
     {
     }
 
     template <class Key>
-    Json::Value&
+    json::Value&
     operator[](Key const& key)
     {
         return jv[key];

@@ -24,7 +24,7 @@ constexpr bool kIS_INTEGRAL_CONSTANT<std::integral_constant<I, A> const&> = true
 template <typename T>
 concept some_integral_constant = detail::kIS_INTEGRAL_CONSTANT<T&>;
 
-// This class is designed to wrap a collection of _almost_ identical Json::Value
+// This class is designed to wrap a collection of _almost_ identical json::Value
 // objects, indexed by version (i.e. there is some mapping of version to object
 // index). It is used e.g. when we need to publish JSON data to users supporting
 // different API versions. We allow manipulation and inspection of all objects
@@ -48,11 +48,11 @@ struct MultiApiJson
     }
 
     constexpr static std::size_t kSIZE = MaxVer + 1 - MinVer;
-    std::array<Json::Value, kSIZE> val = {};
+    std::array<json::Value, kSIZE> val = {};
 
-    explicit MultiApiJson(Json::Value const& init = {})
+    explicit MultiApiJson(json::Value const& init = {})
     {
-        if (init == Json::Value{})
+        if (init == json::Value{})
             return;  // All elements are already default-initialized
         for (auto& v : val)
             v = init;
@@ -60,7 +60,7 @@ struct MultiApiJson
 
     void
     set(char const* key, auto const& v)
-        requires std::constructible_from<Json::Value, decltype(v)>
+        requires std::constructible_from<json::Value, decltype(v)>
     {
         for (auto& a : this->val)
             a[key] = v;
@@ -126,7 +126,7 @@ struct MultiApiJson
         {
             XRPL_ASSERT(
                 valid(version) && index(version) >= 0 && index(version) < kSIZE,
-                "xrpl::detail::MultiApiJson::operator<Args...>() : valid "
+                "xrpl::detail::MultiApijson::operator<Args...>() : valid "
                 "version");
             return std::invoke(fn, json.val[index(version)], version, std::forward<Args>(args)...);
         }
@@ -141,7 +141,7 @@ struct MultiApiJson
         {
             XRPL_ASSERT(
                 valid(version) && index(version) >= 0 && index(version) < size,
-                "xrpl::detail::MultiApiJson::operator() : valid version");
+                "xrpl::detail::MultiApijson::operator() : valid version");
             return std::invoke(fn, json.val[index(version)]);
         }
     } kVISITOR = {};

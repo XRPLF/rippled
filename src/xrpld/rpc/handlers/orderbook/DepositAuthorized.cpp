@@ -31,10 +31,10 @@ namespace xrpl {
 //   credentials : [<credentialID>,...]
 // }
 
-Json::Value
+json::Value
 doDepositAuthorized(RPC::JsonContext& context)
 {
-    Json::Value const& params = context.params;
+    json::Value const& params = context.params;
 
     // Validate source_account.
     if (!params.isMember(jss::source_account))
@@ -66,7 +66,7 @@ doDepositAuthorized(RPC::JsonContext& context)
 
     // Validate ledger.
     std::shared_ptr<ReadView const> ledger;
-    Json::Value result = RPC::lookupLedger(ledger, context);
+    json::Value result = RPC::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;

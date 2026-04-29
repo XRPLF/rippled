@@ -47,7 +47,7 @@ Endpoint::fromString(std::string const& s)
 }
 
 std::string
-Endpoint::to_string() const
+Endpoint::toString() const
 {
     std::string s;
     s.reserve(

@@ -30,6 +30,7 @@ struct ThrowPolicy : public boost::outcome_v2::policy::base
 {
     template <class Impl>
     static constexpr void
+    // NOLINTNEXTLINE(readability-identifier-naming)
     wide_value_check(Impl&& self)
     {
         if (!base::_has_value(std::forward<Impl>(self)))
@@ -38,6 +39,7 @@ struct ThrowPolicy : public boost::outcome_v2::policy::base
 
     template <class Impl>
     static constexpr void
+    // NOLINTNEXTLINE(readability-identifier-naming)
     wide_error_check(Impl&& self)
     {
         if (!base::_has_error(std::forward<Impl>(self)))
@@ -46,6 +48,7 @@ struct ThrowPolicy : public boost::outcome_v2::policy::base
 
     template <class Impl>
     static constexpr void
+    // NOLINTNEXTLINE(readability-identifier-naming)
     wide_exception_check(Impl&& self)
     {
         if (!base::_has_exception(std::forward<Impl>(self)))

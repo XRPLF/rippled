@@ -38,7 +38,7 @@ fund(
     std::vector<STAmount> const& amts,
     Fund how)
 {
-    return fund(env, gw, accounts, kXRP(30000), amts, how);
+    return fund(env, gw, accounts, XRP(30000), amts, how);
 }
 
 [[maybe_unused]] std::vector<STAmount>
@@ -146,15 +146,14 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
             features - featureSingleAssetVault - featureLendingProtocol,
             arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
 
-        auto const [asset1, asset2] =
-            arg.pool ? *arg.pool : std::make_pair(kXRP(10000), USD(10000));
+        auto const [asset1, asset2] = arg.pool ? *arg.pool : std::make_pair(XRP(10000), USD(10000));
         auto toFund = [&](STAmount const& a) -> STAmount {
             if (a.native())
             {
-                auto const defXRP = kXRP(30000);
+                auto const defXRP = XRP(30000);
                 if (a <= defXRP)
                     return defXRP;
-                return a + kXRP(1000);
+                return a + XRP(1000);
             }
             auto defAmt = STAmount{a.asset(), 30000};
             if (a <= defAmt)

@@ -132,7 +132,7 @@ public:
  * @brief Builder for NFTokenPage ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class NFTokenPageBuilder : public LedgerEntryBuilderBase<NFTokenPageBuilder>

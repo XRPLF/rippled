@@ -182,7 +182,7 @@ public:
  * @brief Builder for AMMWithdraw transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class AMMWithdrawBuilder : public TransactionBuilderBase<AMMWithdrawBuilder>

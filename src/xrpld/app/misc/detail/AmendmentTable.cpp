@@ -427,7 +427,7 @@ private:
     // Injects amendment json into v.  Must be called with mutex_ locked.
     void
     injectJson(
-        Json::Value& v,
+        json::Value& v,
         uint256 const& amendment,
         AmendmentState const& state,
         bool isAdmin,
@@ -467,9 +467,9 @@ public:
     std::optional<NetClock::time_point>
     firstUnsupportedExpected() const override;
 
-    Json::Value
+    json::Value
     getJson(bool isAdmin) const override;
-    Json::Value
+    json::Value
     getJson(uint256 const&, bool isAdmin) const override;
 
     bool
@@ -943,7 +943,7 @@ AmendmentTableImpl::trustChanged(hash_set<PublicKey> const& allTrusted)
 
 void
 AmendmentTableImpl::injectJson(
-    Json::Value& v,
+    json::Value& v,
     uint256 const& id,
     AmendmentState const& fs,
     bool isAdmin,
@@ -980,32 +980,32 @@ AmendmentTableImpl::injectJson(
     }
 }
 
-Json::Value
+json::Value
 AmendmentTableImpl::getJson(bool isAdmin) const
 {
-    Json::Value ret(Json::ObjectValue);
+    json::Value ret(json::ObjectValue);
     {
         std::lock_guard const lock(mutex_);
         for (auto const& e : amendmentMap_)
         {
             injectJson(
-                ret[to_string(e.first)] = Json::ObjectValue, e.first, e.second, isAdmin, lock);
+                ret[to_string(e.first)] = json::ObjectValue, e.first, e.second, isAdmin, lock);
         }
     }
     return ret;
 }
 
-Json::Value
+json::Value
 AmendmentTableImpl::getJson(uint256 const& amendmentID, bool isAdmin) const
 {
-    Json::Value ret = Json::ObjectValue;
+    json::Value ret = json::ObjectValue;
 
     {
         std::lock_guard const lock(mutex_);
         AmendmentState const* a = get(amendmentID, lock);
         if (a != nullptr)
         {
-            Json::Value& jAmendment = (ret[to_string(amendmentID)] = Json::ObjectValue);
+            json::Value& jAmendment = (ret[to_string(amendmentID)] = json::ObjectValue);
             injectJson(jAmendment, amendmentID, *a, isAdmin, lock);
         }
     }

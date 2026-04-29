@@ -21,7 +21,7 @@ class AccountOffers_test : public beast::unit_test::Suite
 public:
     // test helper
     static bool
-    checkMarker(Json::Value const& val)
+    checkMarker(json::Value const& val)
     {
         return val.isMember(jss::marker) && val[jss::marker].isString() &&
             !val[jss::marker].asString().empty();
@@ -39,7 +39,7 @@ public:
         Account const bob("bob");
         auto const usdBob = bob["USD"];
 
-        env.fund(kXRP(10000), gw, bob);
+        env.fund(XRP(10000), gw, bob);
         env.trust(usdGw(1000), bob);
 
         // this is to provide some USD from gw in the
@@ -49,7 +49,7 @@ public:
         unsigned const offerCount = 12u;
         for (auto i = 0u; i < offerCount; i++)
         {
-            Json::Value jvo = offer(bob, kXRP(100 + i), usdGw(1));
+            json::Value jvo = offer(bob, XRP(100 + i), usdGw(1));
             jvo[sfExpiration.fieldName] = 10000000u;
             env(jvo);
         }
@@ -61,7 +61,7 @@ public:
         // now make a low-limit query, should get "corrected"
         // to a min of 10 results with a marker set since there
         // are more than 10 total
-        Json::Value jvParams;
+        json::Value jvParams;
         jvParams[jss::account] = bob.human();
         jvParams[jss::limit] = 1u;
         auto const jrrL = env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
@@ -83,7 +83,7 @@ public:
         Account const bob("bob");
         auto const usdBob = bob["USD"];
 
-        env.fund(kXRP(10000), gw, bob);
+        env.fund(XRP(10000), gw, bob);
         env.trust(usdGw(1000), bob);
 
         // this is to provide some USD from gw in the
@@ -91,9 +91,9 @@ public:
         // make offers that give those USDs
         env(pay(gw, bob, usdGw(10)));
 
-        env(offer(bob, kXRP(100), usdBob(1)));
-        env(offer(bob, kXRP(200), usdGw(2)));
-        env(offer(bob, kXRP(30), usdGw(6)));
+        env(offer(bob, XRP(100), usdBob(1)));
+        env(offer(bob, XRP(200), usdGw(2)));
+        env(offer(bob, XRP(30), usdGw(6)));
 
         // make the RPC call
         auto const jroOuter = env.rpc("account_offers", bob.human())[jss::result][jss::offers];
@@ -124,7 +124,7 @@ public:
 
         {
             // now make a limit (= 1) query for the same data
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::limit] = 1u;
             auto const jrrL1 =
@@ -167,7 +167,7 @@ public:
         }
 
         {
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::limit] = 0u;
             auto const jrr =
@@ -188,7 +188,7 @@ public:
         Account const bob("bob");
         auto const usdBob = bob["USD"];
 
-        env.fund(kXRP(10000), gw, bob);
+        env.fund(XRP(10000), gw, bob);
         env.trust(usdGw(1000), bob);
 
         {
@@ -202,7 +202,7 @@ public:
         {
             // test account non-string
             auto testInvalidAccountParam = [&](auto const& param) {
-                Json::Value params;
+                json::Value params;
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_offers", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -212,14 +212,14 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::NullValue));
-            testInvalidAccountParam(Json::Value(Json::ObjectValue));
-            testInvalidAccountParam(Json::Value(Json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::NullValue));
+            testInvalidAccountParam(json::Value(json::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ArrayValue));
         }
 
         {
             // empty string account
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = "";
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
@@ -238,7 +238,7 @@ public:
 
         {
             // bad limit
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::limit] = "0";  // NOT an integer
             auto const jrr =
@@ -250,7 +250,7 @@ public:
 
         {
             // invalid marker
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::marker] = "NOT_A_MARKER";
             auto const jrr =
@@ -263,7 +263,7 @@ public:
 
         {
             // invalid marker - not a string
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::marker] = 1;
             auto const jrr =
@@ -275,7 +275,7 @@ public:
 
         {
             // ask for a bad ledger index
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::ledger_index] = 10u;
             auto const jrr =

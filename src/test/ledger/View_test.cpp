@@ -769,18 +769,18 @@ class View_test : public beast::unit_test::Suite
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
 
-        env.fund(kXRP(10000), alice, bob, carol, gw);
+        env.fund(XRP(10000), alice, bob, carol, gw);
         env.close();
         env.trust(usd(100), alice, bob, carol);
         {
             // Global freezing.
             env(pay(gw, alice, usd(50)));
-            env(offer(alice, kXRP(5), usd(5)));
+            env(offer(alice, XRP(5), usd(5)));
 
             // Now freeze gw.
             env(fset(gw, asfGlobalFreeze));
             env.close();
-            env(offer(alice, kXRP(4), usd(5)), Ter(tecFROZEN));
+            env(offer(alice, XRP(4), usd(5)), Ter(tecFROZEN));
             env.close();
 
             // Alice's USD balance should be zero if frozen.
@@ -791,7 +791,7 @@ class View_test : public beast::unit_test::Suite
             // Thaw gw and try again.
             env(fclear(gw, asfGlobalFreeze));
             env.close();
-            env(offer("alice", kXRP(4), usd(5)));
+            env(offer("alice", XRP(4), usd(5)));
         }
         {
             // Local freezing.
@@ -837,16 +837,16 @@ class View_test : public beast::unit_test::Suite
             // 1 trust line times its reserve: 1 * -50
             //                                 -------
             // carol's available balance:         9750
-            BEAST_EXPECT(carolsXRP == kXRP(9750));
+            BEAST_EXPECT(carolsXRP == XRP(9750));
 
             // carol should be able to spend *more* than her XRP balance on
             // a fee by eating into her reserve.
-            env(noop(carol), Fee(carolsXRP + kXRP(10)));
+            env(noop(carol), Fee(carolsXRP + XRP(10)));
             env.close();
 
             // carol's XRP balance should now show as zero.
             BEAST_EXPECT(
-                kXRP(0) ==
+                XRP(0) ==
                 accountHolds(*env.closed(), carol, xrpCurrency(), gw, FhZeroIfFrozen, env.journal));
         }
         {
@@ -887,7 +887,7 @@ class View_test : public beast::unit_test::Suite
 
         auto const gw1 = Account("gw1");
 
-        env.fund(kXRP(10000), gw1);
+        env.fund(XRP(10000), gw1);
         env.close();
 
         auto rdView = env.closed();
@@ -917,11 +917,11 @@ class View_test : public beast::unit_test::Suite
         // The first Env.
         Env eA(*this, envconfig(), nullptr, beast::severities::KDisabled);
 
-        eA.fund(kXRP(10000), alice);
+        eA.fund(XRP(10000), alice);
         eA.close();
         auto const rdViewA3 = eA.closed();
 
-        eA.fund(kXRP(10000), bob);
+        eA.fund(XRP(10000), bob);
         eA.close();
         auto const rdViewA4 = eA.closed();
 
@@ -931,11 +931,11 @@ class View_test : public beast::unit_test::Suite
 
         // Make ledgers that are incompatible with the first ledgers.  Note
         // that bob is funded before alice.
-        eB.fund(kXRP(10000), bob);
+        eB.fund(XRP(10000), bob);
         eB.close();
         auto const rdViewB3 = eB.closed();
 
-        eB.fund(kXRP(10000), alice);
+        eB.fund(XRP(10000), alice);
         eB.close();
         auto const rdViewB4 = eB.closed();
 
@@ -998,7 +998,7 @@ class View_test : public beast::unit_test::Suite
         {
             Env env(*this);
             BEAST_EXPECT(env.app().getOpenLedger().empty());
-            env.fund(kXRP(10000), Account("test"));
+            env.fund(XRP(10000), Account("test"));
             BEAST_EXPECT(!env.app().getOpenLedger().empty());
         }
     }

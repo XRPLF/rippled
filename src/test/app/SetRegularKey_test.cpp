@@ -35,7 +35,7 @@ public:
         Env env{*this, testableAmendments()};
         Account const alice("alice");
         Account const bob("bob");
-        env.fund(kXRP(10000), alice, bob);
+        env.fund(XRP(10000), alice, bob);
 
         env(regkey(alice, bob));
         env(noop(alice), Sig(bob));
@@ -67,7 +67,7 @@ public:
         testcase("Set regular key to master key");
         Env env{*this, testableAmendments()};
         Account const alice("alice");
-        env.fund(kXRP(10000), alice);
+        env.fund(XRP(10000), alice);
 
         env(regkey(alice, alice), Ter(temBAD_REGKEY));
     }
@@ -81,7 +81,7 @@ public:
         Env env(*this);
         Account const alice("alice");
         Account const bob("bob");
-        env.fund(kXRP(10000), alice, bob);
+        env.fund(XRP(10000), alice, bob);
 
         auto ar = env.le(alice);
         BEAST_EXPECT(
@@ -113,7 +113,7 @@ public:
         Env env(*this);
         Account const alice("alice");
         Account const bob("bob");
-        env.fund(kXRP(10000), alice, bob);
+        env.fund(XRP(10000), alice, bob);
 
         auto jv = regkey(alice, bob);
         jv[sfFlags.fieldName] = tfUniversalMask;
@@ -128,7 +128,7 @@ public:
         testcase("Ticket regular key");
         Env env{*this};
         Account const alice{"alice", KeyType::Ed25519};
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
         env.close();
 
         // alice makes herself some tickets.

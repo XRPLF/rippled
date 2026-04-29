@@ -59,7 +59,7 @@ PathRequest::PathRequest(
     , owner_(owner)
     , wpSubscriber_(subscriber)
     , consumer_(subscriber->getConsumer())
-    , jvStatus_(Json::ObjectValue)
+    , jvStatus_(json::ObjectValue)
     , lastIndex_(0)
     , inProgress_(false)
     , iLevel_(0)
@@ -82,7 +82,7 @@ PathRequest::PathRequest(
     , owner_(owner)
     , fCompletion_(completion)
     , consumer_(consumer)
-    , jvStatus_(Json::ObjectValue)
+    , jvStatus_(json::ObjectValue)
     , lastIndex_(0)
     , inProgress_(false)
     , iLevel_(0)
@@ -198,11 +198,11 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 
     auto const sleDest = lrLedger->read(keylet::account(*raDstAccount_));
 
-    Json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = Json::ArrayValue);
+    json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = json::ArrayValue);
 
     if (!sleDest)
     {
-        jvDestCur.append(Json::Value(systemCurrencyCode()));
+        jvDestCur.append(json::Value(systemCurrencyCode()));
         if (!saDstAmount_.native())
         {
             // Only XRP can be send to a non-existent account.
@@ -243,8 +243,8 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     If there's an error, we need to be sure to return it to the caller
     in all cases.
 */
-std::pair<bool, Json::Value>
-PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, Json::Value const& value)
+std::pair<bool, json::Value>
+PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value const& value)
 {
     bool valid = false;
 
@@ -272,7 +272,7 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, Json::Value cons
 }
 
 int
-PathRequest::parseJson(Json::Value const& jvParams)
+PathRequest::parseJson(json::Value const& jvParams)
 {
     if (!jvParams.isMember(jss::source_account))
     {
@@ -342,7 +342,7 @@ PathRequest::parseJson(Json::Value const& jvParams)
 
     if (jvParams.isMember(jss::source_currencies))
     {
-        Json::Value const& jvSrcCurrencies = jvParams[jss::source_currencies];
+        json::Value const& jvSrcCurrencies = jvParams[jss::source_currencies];
         if (!jvSrcCurrencies.isArray() || jvSrcCurrencies.size() == 0 ||
             jvSrcCurrencies.size() > RPC::Tuning::kMAX_SRC_CUR)
         {
@@ -474,7 +474,7 @@ PathRequest::parseJson(Json::Value const& jvParams)
     return PFR_PJ_NOCHANGE;
 }
 
-Json::Value
+json::Value
 PathRequest::doClose()
 {
     JLOG(journal_.debug()) << iIdentifier_ << " closed";
@@ -483,8 +483,8 @@ PathRequest::doClose()
     return jvStatus_;
 }
 
-Json::Value
-PathRequest::doStatus(Json::Value const&)
+json::Value
+PathRequest::doStatus(json::Value const&)
 {
     std::lock_guard const sl(lock_);
     jvStatus_[jss::status] = jss::success;
@@ -536,7 +536,7 @@ bool
 PathRequest::findPaths(
     std::shared_ptr<AssetCache> const& cache,
     int const level,
-    Json::Value& jvArray,
+    json::Value& jvArray,
     std::function<bool(void)> const& continueCallback)
 {
     auto sourceAssets = sciSourceAssets_;
@@ -673,7 +673,7 @@ PathRequest::findPaths(
 
         if (rc.result() == tesSUCCESS)
         {
-            Json::Value jvEntry(Json::ObjectValue);
+            json::Value jvEntry(json::ObjectValue);
             if (rc.actualAmountIn.holds<Issue>())
                 rc.actualAmountIn.get<Issue>().account = sourceAccount;
             jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::KNone);
@@ -685,7 +685,7 @@ PathRequest::findPaths(
             if (hasCompletion())
             {
                 // Old ripple_path_find API requires this
-                jvEntry[jss::paths_canonical] = Json::ArrayValue;
+                jvEntry[jss::paths_canonical] = json::ArrayValue;
             }
 
             jvArray.append(jvEntry);
@@ -706,7 +706,7 @@ PathRequest::findPaths(
     return true;
 }
 
-Json::Value
+json::Value
 PathRequest::doUpdate(
     std::shared_ptr<AssetCache> const& cache,
     bool fast,
@@ -722,12 +722,12 @@ PathRequest::doUpdate(
             return jvStatus_;
     }
 
-    Json::Value newStatus = Json::ObjectValue;
+    json::Value newStatus = json::ObjectValue;
 
     if (hasCompletion())
     {
         // Old ripple_path_find API gives destination_currencies
-        auto& destAssets = (newStatus[jss::destination_currencies] = Json::ArrayValue);
+        auto& destAssets = (newStatus[jss::destination_currencies] = json::ArrayValue);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto const assets = accountDestAssets(*raDstAccount_, cache, true);
         for (auto const& asset : assets)
@@ -783,7 +783,7 @@ PathRequest::doUpdate(
 
     JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_;
 
-    Json::Value jvArray = Json::ArrayValue;
+    json::Value jvArray = json::ArrayValue;
     if (findPaths(cache, iLevel_, jvArray, continueCallback))
     {
         bLastSuccess_ = jvArray.size() != 0;

@@ -248,7 +248,7 @@ public:
             beast::IP::Endpoint const address(beast::IP::Endpoint::fromString("192.0.2.1"));
             Consumer c(logic.newInboundEndpoint(address));
             Charge const fee(1000);
-            JLOG(j.info()) << "Charging " << c.to_string() << " " << fee << " per second";
+            JLOG(j.info()) << "Charging " << c.toString() << " " << fee << " per second";
             c.charge(fee);
             for (int i = 0; i < 128; ++i)
             {
@@ -262,7 +262,7 @@ public:
             beast::IP::Endpoint const address(beast::IP::Endpoint::fromString("192.0.2.2"));
             Consumer c(logic.newInboundEndpoint(address));
             Charge const fee(1000);
-            JLOG(j.info()) << "Charging " << c.to_string() << " " << fee << " per second";
+            JLOG(j.info()) << "Charging " << c.toString() << " " << fee << " per second";
             for (int i = 0; i < 128; ++i)
             {
                 c.charge(fee);

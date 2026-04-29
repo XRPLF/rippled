@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
 #include <xrpl/protocol_autogen/LedgerEntryBuilderBase.h>
-#include <xrpl/json/json_value.h>
 
-#include <stdexcept>
 #include <optional>
+#include <stdexcept>
 
 namespace xrpl::ledger_entries {
 
@@ -33,8 +33,7 @@ public:
      * @brief Construct a FeeSettings ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit FeeSettings(std::shared_ptr<SLE const> sle)
-        : LedgerEntryBase(std::move(sle))
+    explicit FeeSettings(std::shared_ptr<SLE const> sle) : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
         if (sle_->getType() != entryType)
@@ -266,7 +265,7 @@ public:
  * @brief Builder for FeeSettings ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class FeeSettingsBuilder : public LedgerEntryBuilderBase<FeeSettingsBuilder>
@@ -275,8 +274,7 @@ public:
     /**
      * @brief Construct a new FeeSettingsBuilder with required fields.
      */
-    FeeSettingsBuilder()
-        : LedgerEntryBuilderBase<FeeSettingsBuilder>(ltFEE_SETTINGS)
+    FeeSettingsBuilder() : LedgerEntryBuilderBase<FeeSettingsBuilder>(ltFEE_SETTINGS)
     {
     }
 

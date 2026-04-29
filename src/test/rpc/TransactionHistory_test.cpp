@@ -36,7 +36,7 @@ class TransactionHistory_test : public beast::unit_test::Suite
 
         {
             // test at 1 greater than the allowed non-admin limit
-            Json::Value params{Json::ObjectValue};
+            json::Value params{json::ObjectValue};
             params[jss::start] = 10001;  // limited to <= 10000 for non admin
             auto const result = env.client().invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "noPermission");
@@ -51,7 +51,7 @@ class TransactionHistory_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this, envconfig(noAdmin)};
 
-        Json::Value params{Json::ObjectValue};
+        json::Value params{json::ObjectValue};
         params[jss::api_version] = 2;
         auto const result = env.client().invoke("tx_history", params)[jss::result];
         BEAST_EXPECT(result[jss::error] == "unknownCmd");
@@ -73,7 +73,7 @@ class TransactionHistory_test : public beast::unit_test::Suite
         {
             accounts.emplace_back("A" + std::to_string(i));
             auto const& acct = accounts.back();
-            env.fund(kXRP(10000), acct);
+            env.fund(XRP(10000), acct);
             env.close();
             if (i > 0)
             {
@@ -81,12 +81,12 @@ class TransactionHistory_test : public beast::unit_test::Suite
                 env.trust(acct["USD"](1000), prev);
                 env(pay(acct, prev, acct["USD"](5)));
             }
-            env(offer(acct, kXRP(100), acct["USD"](1)));
+            env(offer(acct, XRP(100), acct["USD"](1)));
             env.close();
 
             // verify the latest transaction in env (offer)
             // is available in tx_history.
-            Json::Value params{Json::ObjectValue};
+            json::Value params{json::ObjectValue};
             params[jss::start] = 0;
             auto result = env.client().invoke("tx_history", params)[jss::result];
             if (!BEAST_EXPECT(result[jss::txs].isArray() && result[jss::txs].size() > 0))
@@ -113,7 +113,7 @@ class TransactionHistory_test : public beast::unit_test::Suite
         std::unordered_map<std::string, unsigned> typeCounts;
         while (start < 120)
         {
-            Json::Value params{Json::ObjectValue};
+            json::Value params{json::ObjectValue};
             params[jss::start] = start;
             auto result = env.client().invoke("tx_history", params)[jss::result];
             if (!BEAST_EXPECT(result[jss::txs].isArray() && result[jss::txs].size() > 0))
@@ -133,7 +133,7 @@ class TransactionHistory_test : public beast::unit_test::Suite
 
         // also, try a request with max non-admin start value
         {
-            Json::Value params{Json::ObjectValue};
+            json::Value params{json::ObjectValue};
             params[jss::start] = 10000;  // limited to <= 10000 for non admin
             auto const result = env.client().invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::status] == "success");

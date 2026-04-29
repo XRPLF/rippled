@@ -11,28 +11,28 @@
 /** Escrow operations. */
 namespace xrpl::test::jtx::escrow {
 
-Json::Value
+json::Value
 create(AccountID const& account, AccountID const& to, STAmount const& amount);
 
-inline Json::Value
+inline json::Value
 create(Account const& account, Account const& to, STAmount const& amount)
 {
     return create(account.id(), to.id(), amount);
 }
 
-Json::Value
+json::Value
 finish(AccountID const& account, AccountID const& from, std::uint32_t seq);
 
-inline Json::Value
+inline json::Value
 finish(Account const& account, Account const& from, std::uint32_t seq)
 {
     return finish(account.id(), from.id(), seq);
 }
 
-Json::Value
+json::Value
 cancel(AccountID const& account, Account const& from, std::uint32_t seq);
 
-inline Json::Value
+inline json::Value
 cancel(Account const& account, Account const& from, std::uint32_t seq)
 {
     return cancel(account.id(), from, seq);

@@ -150,7 +150,7 @@ public:
         return !viewLowest_ ? lowLimit_ : highLimit_;
     }
 
-    Json::Value
+    json::Value
     getJson(int);
 
 protected:

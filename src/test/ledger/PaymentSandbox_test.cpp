@@ -69,7 +69,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         Account const snd("snd");
         Account const rcv("rcv");
 
-        env.fund(kXRP(10000), snd, rcv, gw1, gw2);
+        env.fund(XRP(10000), snd, rcv, gw1, gw2);
 
         auto const usdGw1 = gw1["USD"];
         auto const usdGw2 = gw2["USD"];
@@ -88,7 +88,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         PathSet const paths(TestPath(gw1, usdGw2, gw2), TestPath(gw2, usdGw1, gw1));
 
         env(pay(snd, rcv, kANY(usdGw1(4))),
-            json(paths.json()),
+            Json(paths.json()),
             Txflags(tfNoRippleDirect | tfPartialPayment));
 
         env.require(Balance("rcv", usdGw1(0)));
@@ -106,7 +106,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         Account const gw2("gw2");
         Account const alice("alice");
 
-        env.fund(kXRP(10000), alice, gw1, gw2);
+        env.fund(XRP(10000), alice, gw1, gw2);
 
         auto j = env.app().getJournal("View");
 
@@ -342,11 +342,11 @@ class PaymentSandbox_test : public beast::unit_test::Suite
             // zero (there was a bug that caused her funds to become negative).
 
             {
-                auto r = accountSend(sb, xrpAccount(), alice, kXRP(100), env.journal);
+                auto r = accountSend(sb, xrpAccount(), alice, XRP(100), env.journal);
                 BEAST_EXPECT(isTesSuccess(r));
             }
             {
-                auto r = accountSend(sb, alice, xrpAccount(), kXRP(100), env.journal);
+                auto r = accountSend(sb, alice, xrpAccount(), XRP(100), env.journal);
                 BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(accountFundsXRP(sb, alice, env.journal) == beast::kZERO);

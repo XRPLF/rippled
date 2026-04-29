@@ -5877,7 +5877,7 @@ public:
 
             // Note that, over the long term, kNONE of these tests should
             // throw.  But, for the moment, some of them do.  So handle it.
-            Json::Value got;
+            json::Value got;
             try
             {
                 got = jtx::cmdToJSONRPC(args, env.journal, apiVersion);
@@ -5897,12 +5897,12 @@ public:
                 continue;
             }
 
-            Json::Value exp;
-            Json::Reader{}.parse(updateAPIVersionString(expVersioned, apiVersion), exp);
+            json::Value exp;
+            json::Reader{}.parse(updateAPIVersionString(expVersioned, apiVersion), exp);
 
             // Lambda to remove the "params[0u]:error_code" field if present.
             // Error codes are not expected to be stable between releases.
-            auto rmErrorCode = [](Json::Value& json) {
+            auto rmErrorCode = [](json::Value& json) {
                 if (json.isMember(jss::params) && json[jss::params].isArray() &&
                     json[jss::params].size() > 0 && json[jss::params][0u].isObject())
                 {

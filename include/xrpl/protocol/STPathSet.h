@@ -139,7 +139,7 @@ public:
     [[nodiscard]] bool
     hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const;
+    [[nodiscard]] json::Value getJson(JsonOptions) const;
 
     [[nodiscard]] std::vector<STPathElement>::const_iterator
     begin() const;
@@ -182,7 +182,7 @@ public:
     void
     add(Serializer& s) const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     [[nodiscard]] SerializedTypeID
     getSType() const override;

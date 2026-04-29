@@ -30,7 +30,7 @@ class Clawback_test : public beast::unit_test::Suite
 {
     template <class T>
     static std::string
-    to_string(T const& t)
+    toString(T const& t)
     {
         return boost::lexical_cast<std::string>(t);
     }
@@ -75,7 +75,7 @@ class Clawback_test : public beast::unit_test::Suite
             Env env(*this, features);
             Account const alice{"alice"};
 
-            env.fund(kXRP(1000), alice);
+            env.fund(XRP(1000), alice);
             env.close();
 
             // set asfAllowTrustLineClawback
@@ -100,7 +100,7 @@ class Clawback_test : public beast::unit_test::Suite
             Env env(*this, features);
             Account const alice{"alice"};
 
-            env.fund(kXRP(1000), alice);
+            env.fund(XRP(1000), alice);
             env.close();
 
             env.require(Nflags(alice, asfNoFreeze));
@@ -127,7 +127,7 @@ class Clawback_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
 
-            env.fund(kXRP(1000), alice, bob);
+            env.fund(XRP(1000), alice, bob);
             env.close();
 
             auto const usd = alice["USD"];
@@ -169,7 +169,7 @@ class Clawback_test : public beast::unit_test::Suite
 
             Account const alice{"alice"};
 
-            env.fund(kXRP(1000), alice);
+            env.fund(XRP(1000), alice);
             env.close();
 
             env.require(Nflags(alice, asfAllowTrustLineClawback));
@@ -207,7 +207,7 @@ class Clawback_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
 
-            env.fund(kXRP(1000), alice, bob);
+            env.fund(XRP(1000), alice, bob);
             env.close();
 
             env.require(Nflags(alice, asfAllowTrustLineClawback));
@@ -252,7 +252,7 @@ class Clawback_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
 
-            env.fund(kXRP(1000), alice, bob);
+            env.fund(XRP(1000), alice, bob);
             env.close();
 
             // alice sets asfAllowTrustLineClawback
@@ -283,7 +283,7 @@ class Clawback_test : public beast::unit_test::Suite
             env.close();
 
             // fails because amount is in XRP
-            env(claw(alice, kXRP(10)), Ter(temBAD_AMOUNT));
+            env(claw(alice, XRP(10)), Ter(temBAD_AMOUNT));
             env.close();
 
             // fails when `issuer` field in `amount` is not token holder
@@ -335,7 +335,7 @@ class Clawback_test : public beast::unit_test::Suite
             Account const bob{"bob"};
 
             // bob's account is not funded and does not exist
-            env.fund(kXRP(1000), alice);
+            env.fund(XRP(1000), alice);
             env.close();
 
             // alice sets asfAllowTrustLineClawback
@@ -357,7 +357,7 @@ class Clawback_test : public beast::unit_test::Suite
             Account const bob{"bob"};
             Account const cindy{"cindy"};
 
-            env.fund(kXRP(1000), alice, bob, cindy);
+            env.fund(XRP(1000), alice, bob, cindy);
             env.close();
 
             auto const usd = alice["USD"];
@@ -399,7 +399,7 @@ class Clawback_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
 
-            env.fund(kXRP(1000), alice, bob);
+            env.fund(XRP(1000), alice, bob);
             env.close();
 
             auto const usd = alice["USD"];
@@ -469,7 +469,7 @@ class Clawback_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(1000), alice, bob);
+        env.fund(XRP(1000), alice, bob);
         env.close();
 
         auto const usd = alice["USD"];
@@ -521,7 +521,7 @@ class Clawback_test : public beast::unit_test::Suite
             Account const bob{"bob"};
             Account const cindy{"cindy"};
 
-            env.fund(kXRP(1000), alice, bob, cindy);
+            env.fund(XRP(1000), alice, bob, cindy);
             env.close();
 
             // alice sets asfAllowTrustLineClawback
@@ -579,7 +579,7 @@ class Clawback_test : public beast::unit_test::Suite
             Account const bob{"bob"};
             Account const cindy{"cindy"};
 
-            env.fund(kXRP(1000), alice, bob, cindy);
+            env.fund(XRP(1000), alice, bob, cindy);
             env.close();
 
             auto const usd = alice["USD"];
@@ -648,7 +648,7 @@ class Clawback_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(1000), alice, bob);
+        env.fund(XRP(1000), alice, bob);
         env.close();
 
         // alice sets asfAllowTrustLineClawback
@@ -735,7 +735,7 @@ class Clawback_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(1000), alice, bob);
+        env.fund(XRP(1000), alice, bob);
         env.close();
 
         auto const usd = alice["USD"];
@@ -785,7 +785,7 @@ class Clawback_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(1000), alice, bob);
+        env.fund(XRP(1000), alice, bob);
         env.close();
 
         auto const usd = alice["USD"];
@@ -831,7 +831,7 @@ class Clawback_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(1000), alice, bob);
+        env.fund(XRP(1000), alice, bob);
         env.close();
 
         auto const usd = alice["USD"];
@@ -883,7 +883,7 @@ class Clawback_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(1000), alice, bob);
+        env.fund(XRP(1000), alice, bob);
         env.close();
 
         auto const usd = alice["USD"];

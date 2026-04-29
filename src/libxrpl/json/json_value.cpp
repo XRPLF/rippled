@@ -15,7 +15,7 @@
 #include <string>
 #include <utility>
 
-namespace Json {
+namespace json {
 
 Value const Value::kNULL;
 
@@ -64,7 +64,7 @@ public:
 static ValueAllocator*&
 valueAllocator()
 {
-    static ValueAllocator* kVALUE_ALLOCATOR = new DefaultValueAllocator;
+    static ValueAllocator* kVALUE_ALLOCATOR = new DefaultValueAllocator;  // NOLINT TODO
     return kVALUE_ALLOCATOR;
 }
 
@@ -195,7 +195,7 @@ Value::Value(ValueType type) : type_(type)
 
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::Value(ValueType) : invalid type");
+            UNREACHABLE("json::Value::Value(ValueType) : invalid type");
             // LCOV_EXCL_STOP
     }
 }
@@ -274,7 +274,7 @@ Value::Value(Value const& other) : type_(other.type_)
 
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::Value(Value const&) : invalid type");
+            UNREACHABLE("json::Value::Value(Value const&) : invalid type");
             // LCOV_EXCL_STOP
     }
 }
@@ -304,7 +304,7 @@ Value::~Value()
 
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::~Value : invalid type");
+            UNREACHABLE("json::Value::~Value : invalid type");
             // LCOV_EXCL_STOP
     }
 }
@@ -413,7 +413,7 @@ operator<(Value const& x, Value const& y)
 
             // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::operator<(Value, Value) : invalid type");
+            UNREACHABLE("json::operator<(Value, Value) : invalid type");
             // LCOV_EXCL_STOP
     }
 
@@ -460,7 +460,7 @@ operator==(Value const& x, Value const& y)
 
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::operator==(Value, Value) : invalid type");
+            UNREACHABLE("json::operator==(Value, Value) : invalid type");
             // LCOV_EXCL_STOP
     }
 
@@ -470,7 +470,7 @@ operator==(Value const& x, Value const& y)
 char const*
 Value::asCString() const
 {
-    XRPL_ASSERT(type_ == stringValue, "Json::Value::asCString : valid type");
+    XRPL_ASSERT(type_ == stringValue, "json::Value::asCString : valid type");
     return value_.string;
 }
 
@@ -503,7 +503,7 @@ Value::asString() const
 
             // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::asString : invalid type");
+            UNREACHABLE("json::Value::asString : invalid type");
             // LCOV_EXCL_STOP
     }
 
@@ -546,7 +546,7 @@ Value::asInt() const
 
             // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::asInt : invalid type");
+            UNREACHABLE("json::Value::asInt : invalid type");
             // LCOV_EXCL_STOP
     }
 
@@ -605,7 +605,7 @@ Value::asAbsUInt() const
 
             // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::asAbsInt : invalid type");
+            UNREACHABLE("json::Value::asAbsInt : invalid type");
             // LCOV_EXCL_STOP
     }
 
@@ -648,7 +648,7 @@ Value::asUInt() const
 
             // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::asUInt : invalid type");
+            UNREACHABLE("json::Value::asUInt : invalid type");
             // LCOV_EXCL_STOP
     }
 
@@ -682,7 +682,7 @@ Value::asDouble() const
 
             // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::asDouble : invalid type");
+            UNREACHABLE("json::Value::asDouble : invalid type");
             // LCOV_EXCL_STOP
     }
 
@@ -716,7 +716,7 @@ Value::asBool() const
 
             // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::asBool : invalid type");
+            UNREACHABLE("json::Value::asBool : invalid type");
             // LCOV_EXCL_STOP
     }
 
@@ -766,7 +766,7 @@ Value::isConvertibleTo(ValueType other) const
 
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::isConvertible : invalid type");
+            UNREACHABLE("json::Value::isConvertible : invalid type");
             // LCOV_EXCL_STOP
     }
 
@@ -802,7 +802,7 @@ Value::size() const
 
             // LCOV_EXCL_START
         default:
-            UNREACHABLE("Json::Value::size : invalid type");
+            UNREACHABLE("json::Value::size : invalid type");
             // LCOV_EXCL_STOP
     }
 
@@ -829,7 +829,7 @@ Value::clear()
 {
     XRPL_ASSERT(
         type_ == nullValue || type_ == arrayValue || type_ == objectValue,
-        "Json::Value::clear : valid type");
+        "json::Value::clear : valid type");
 
     switch (type_)
     {
@@ -847,7 +847,7 @@ Value&
 Value::operator[](UInt index)
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == arrayValue, "Json::Value::operator[](UInt) : valid type");
+        type_ == nullValue || type_ == arrayValue, "json::Value::operator[](UInt) : valid type");
 
     if (type_ == NullValue)
         *this = Value(ArrayValue);
@@ -868,7 +868,7 @@ Value::operator[](UInt index) const
 {
     XRPL_ASSERT(
         type_ == nullValue || type_ == arrayValue,
-        "Json::Value::operator[](UInt) const : valid type");
+        "json::Value::operator[](UInt) const : valid type");
 
     if (type_ == NullValue)
         return kNULL;
@@ -892,7 +892,7 @@ Value&
 Value::resolveReference(char const* key, bool isStatic)
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == objectValue, "Json::Value::resolveReference : valid type");
+        type_ == nullValue || type_ == objectValue, "json::Value::resolveReference : valid type");
 
     if (type_ == NullValue)
         *this = Value(ObjectValue);
@@ -927,7 +927,7 @@ Value::operator[](char const* key) const
 {
     XRPL_ASSERT(
         type_ == nullValue || type_ == objectValue,
-        "Json::Value::operator[](const char*) const : valid type");
+        "json::Value::operator[](const char*) const : valid type");
 
     if (type_ == NullValue)
         return kNULL;
@@ -994,7 +994,7 @@ Value
 Value::removeMember(char const* key)
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == objectValue, "Json::Value::removeMember : valid type");
+        type_ == nullValue || type_ == objectValue, "json::Value::removeMember : valid type");
 
     if (type_ == NullValue)
         return kNULL;
@@ -1042,7 +1042,7 @@ Value::Members
 Value::getMemberNames() const
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == objectValue, "Json::Value::getMemberNames : valid type");
+        type_ == nullValue || type_ == objectValue, "json::Value::getMemberNames : valid type");
 
     if (type_ == NullValue)
         return Value::Members();
@@ -1207,4 +1207,4 @@ Value::end()
     return iterator();
 }
 
-}  // namespace Json
+}  // namespace json

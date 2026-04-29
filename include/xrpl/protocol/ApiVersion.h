@@ -57,11 +57,11 @@ static_assert(kAPI_BETA_VERSION >= kAPI_MAXIMUM_SUPPORTED_VERSION);
 static_assert(kAPI_MAXIMUM_VALID_VERSION >= kAPI_MAXIMUM_SUPPORTED_VERSION);
 
 inline void
-setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
+setVersion(json::Value& parent, unsigned int apiVersion, bool betaEnabled)
 {
     XRPL_ASSERT(apiVersion != apiInvalidVersion, "xrpl::RPC::setVersion : input is valid");
 
-    auto& retObj = parent[jss::version] = Json::ObjectValue;
+    auto& retObj = parent[jss::version] = json::ObjectValue;
 
     if (apiVersion == kAPI_VERSION_IF_UNSPECIFIED)
     {
@@ -96,10 +96,10 @@ setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
  * @return the api version number
  */
 inline unsigned int
-getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
+getAPIVersionNumber(json::Value const& jv, bool betaEnabled)
 {
-    static Json::Value const kMIN_VERSION(RPC::kAPI_MINIMUM_SUPPORTED_VERSION);
-    Json::Value const maxVersion(
+    static json::Value const kMIN_VERSION(RPC::kAPI_MINIMUM_SUPPORTED_VERSION);
+    json::Value const maxVersion(
         betaEnabled ? RPC::kAPI_BETA_VERSION : RPC::kAPI_MAXIMUM_SUPPORTED_VERSION);
 
     if (jv.isObject())

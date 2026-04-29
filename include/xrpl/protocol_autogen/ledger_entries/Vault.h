@@ -293,7 +293,7 @@ public:
  * @brief Builder for Vault ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses json::Value internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class VaultBuilder : public LedgerEntryBuilderBase<VaultBuilder>

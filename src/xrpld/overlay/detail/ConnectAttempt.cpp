@@ -559,8 +559,8 @@ ConnectAttempt::processResponse()
                 static_cast<char const*>(buffer.data()), boost::asio::buffer_size(buffer));
         }
 
-        Json::Value json;
-        Json::Reader reader;
+        json::Value json;
+        json::Reader reader;
         auto const isValidJson = reader.parse(responseBody, json);
 
         // Check if this is a redirect response (contains peer-ips field)
@@ -576,7 +576,7 @@ ConnectAttempt::processResponse()
             return;
         }
 
-        Json::Value const& peerIps = json["peer-ips"];
+        json::Value const& peerIps = json["peer-ips"];
         if (!peerIps.isArray())
         {
             fail("processResponse: invalid peer-ips format");

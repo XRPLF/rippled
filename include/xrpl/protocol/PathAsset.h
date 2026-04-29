@@ -72,7 +72,7 @@ PathAsset::holds() const
 }
 
 template <ValidPathAsset T>
-T const&
+[[nodiscard]] [[nodiscard]] T const&
 PathAsset::get() const
 {
     if (!holds<T>())

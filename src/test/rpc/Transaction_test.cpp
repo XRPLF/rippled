@@ -68,7 +68,7 @@ class Transaction_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         auto const alice = Account("alice");
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
         env.close();
 
         std::vector<std::shared_ptr<STTx const>> txns;
@@ -309,7 +309,7 @@ class Transaction_test : public beast::unit_test::Suite
         uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
 
         auto const alice = Account("alice");
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
         env.close();
 
         std::vector<std::shared_ptr<STTx const>> txns;
@@ -615,8 +615,8 @@ class Transaction_test : public beast::unit_test::Suite
             auto const bob = Account("bob");
 
             auto const startLegSeq = env.current()->header().seq;
-            env.fund(kXRP(10000), alice, bob);
-            env(pay(alice, bob, kXRP(10)));
+            env.fund(XRP(10000), alice, bob);
+            env(pay(alice, bob, XRP(10)));
             env.close();
 
             auto const ctid = RPC::encodeCTID(startLegSeq, 0, netID);
@@ -627,7 +627,7 @@ class Transaction_test : public beast::unit_test::Suite
                 continue;
             }
 
-            Json::Value jsonTx;
+            json::Value jsonTx;
             jsonTx[jss::binary] = false;
             jsonTx[jss::ctid] = *ctid;  // NOLINT(bugprone-unchecked-optional-access)
             jsonTx[jss::id] = 1;
@@ -645,8 +645,8 @@ class Transaction_test : public beast::unit_test::Suite
             Account const bob = Account("bob");
 
             std::uint32_t const startLegSeq = env.current()->header().seq;
-            env.fund(kXRP(10000), alice, bob);
-            env(pay(alice, bob, kXRP(10)));
+            env.fund(XRP(10000), alice, bob);
+            env(pay(alice, bob, XRP(10)));
             env.close();
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -665,11 +665,11 @@ class Transaction_test : public beast::unit_test::Suite
                 }
                 BEAST_EXPECT(ctid != mixedCase);
 
-                Json::Value jsonTx;
+                json::Value jsonTx;
                 jsonTx[jss::binary] = false;
                 jsonTx[jss::ctid] = mixedCase;
                 jsonTx[jss::id] = 1;
-                Json::Value const jrr = env.rpc("json", "tx", to_string(jsonTx))[jss::result];
+                json::Value const jrr = env.rpc("json", "tx", to_string(jsonTx))[jss::result];
                 BEAST_EXPECT(jrr[jss::ctid] == ctid);
                 BEAST_EXPECT(jrr[jss::hash]);
             }
@@ -686,8 +686,8 @@ class Transaction_test : public beast::unit_test::Suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
 
-            env.fund(kXRP(10000), alice, bob);
-            env(pay(alice, bob, kXRP(10)));
+            env.fund(XRP(10000), alice, bob);
+            env(pay(alice, bob, XRP(10)));
             env.close();
 
             auto const ledgerSeq = env.current()->header().seq;
@@ -695,7 +695,7 @@ class Transaction_test : public beast::unit_test::Suite
             env(noop(alice), Ter(tesSUCCESS));
             env.close();
 
-            Json::Value params;
+            json::Value params;
             params[jss::id] = 1;
             auto const hash = env.tx()->getJson(JsonOptions::KNone)[jss::hash];
             params[jss::transaction] = hash;
@@ -720,13 +720,13 @@ class Transaction_test : public beast::unit_test::Suite
             auto const bob = Account("bob");
 
             auto const startLegSeq = env.current()->header().seq;
-            env.fund(kXRP(10000), alice, bob);
-            env(pay(alice, bob, kXRP(10)));
+            env.fund(XRP(10000), alice, bob);
+            env(pay(alice, bob, XRP(10)));
             env.close();
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const ctid = *RPC::encodeCTID(startLegSeq, 0, netID + 1);
-            Json::Value jsonTx;
+            json::Value jsonTx;
             jsonTx[jss::binary] = false;
             jsonTx[jss::ctid] = ctid;
             jsonTx[jss::id] = 1;
@@ -757,21 +757,21 @@ class Transaction_test : public beast::unit_test::Suite
         Account const gw{"gw"};
         auto const usd{gw["USD"]};
 
-        env.fund(kXRP(1000000), alice, gw);
+        env.fund(XRP(1000000), alice, gw);
         env.close();
 
         // AccountSet
         env(noop(alice));
 
         // Payment
-        env(pay(alice, gw, kXRP(100)));
+        env(pay(alice, gw, XRP(100)));
 
         std::shared_ptr<STTx const> const txn = env.tx();
         env.close();
         std::shared_ptr<STObject const> const meta =
             env.closed()->txRead(env.tx()->getTransactionID()).second;
 
-        Json::Value expected = txn->getJson(JsonOptions::KNone);
+        json::Value expected = txn->getJson(JsonOptions::KNone);
         expected[jss::DeliverMax] = expected[jss::Amount];
         if (apiVersion > 1)
         {
@@ -779,8 +779,8 @@ class Transaction_test : public beast::unit_test::Suite
             expected.removeMember(jss::Amount);
         }
 
-        Json::Value const result = {[&env, txn, apiVersion]() {
-            Json::Value params{Json::ObjectValue};
+        json::Value const result = {[&env, txn, apiVersion]() {
+            json::Value params{json::ObjectValue};
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = false;
             params[jss::api_version] = apiVersion;
@@ -834,7 +834,7 @@ class Transaction_test : public beast::unit_test::Suite
         Account const gw{"gw"};
         auto const usd{gw["USD"]};
 
-        env.fund(kXRP(1000000), alice, gw);
+        env.fund(XRP(1000000), alice, gw);
         std::shared_ptr<STTx const> const txn = env.tx();
         BEAST_EXPECT(
             to_string(txn->getTransactionID()) ==
@@ -846,8 +846,8 @@ class Transaction_test : public beast::unit_test::Suite
         std::string const expectedTxBlob = serializeHex(*txn);
         std::string const expectedMetaBlob = serializeHex(*meta);
 
-        Json::Value const result = [&env, txn, apiVersion]() {
-            Json::Value params{Json::ObjectValue};
+        json::Value const result = [&env, txn, apiVersion]() {
+            json::Value params{json::ObjectValue};
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = true;
             params[jss::api_version] = apiVersion;

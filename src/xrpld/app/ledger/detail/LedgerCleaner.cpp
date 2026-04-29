@@ -139,7 +139,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    clean(Json::Value const& params) override
+    clean(json::Value const& params) override
     {
         LedgerIndex minRange = 0;
         LedgerIndex maxRange = 0;

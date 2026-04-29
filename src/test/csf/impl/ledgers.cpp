@@ -17,10 +17,10 @@ namespace xrpl::test::csf {
 
 Ledger::Instance const Ledger::kGENESIS;
 
-Json::Value
+json::Value
 Ledger::getJson() const
 {
-    Json::Value res(Json::ObjectValue);
+    json::Value res(json::ObjectValue);
     res["id"] = static_cast<ID::value_type>(id());
     res["seq"] = static_cast<Seq::value_type>(seq());
     return res;

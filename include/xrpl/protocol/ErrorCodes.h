@@ -183,8 +183,8 @@ struct ErrorInfo
     }
 
     ErrorCodeI code;
-    Json::StaticString token;
-    Json::StaticString message;
+    json::StaticString token;
+    json::StaticString message;
     int http_status;
 };
 
@@ -195,23 +195,23 @@ getErrorInfo(ErrorCodeI code);
 /** Add or update the json update to reflect the error code. */
 /** @{ */
 void
-injectError(ErrorCodeI code, Json::Value& json);
+injectError(ErrorCodeI code, json::Value& json);
 
 void
-injectError(ErrorCodeI code, std::string const& message, Json::Value& json);
+injectError(ErrorCodeI code, std::string const& message, json::Value& json);
 /** @} */
 
 /** Returns a new json object that reflects the error code. */
 /** @{ */
-Json::Value
+json::Value
 makeError(ErrorCodeI code);
-Json::Value
+json::Value
 makeError(ErrorCodeI code, std::string const& message);
 /** @} */
 
 /** Returns a new json object that indicates invalid parameters. */
 /** @{ */
-inline Json::Value
+inline json::Value
 makeParamError(std::string const& message)
 {
     return makeError(RpcInvalidParams, message);
@@ -223,14 +223,14 @@ missingFieldMessage(std::string const& name)
     return "Missing field '" + name + "'.";
 }
 
-inline Json::Value
+inline json::Value
 missingFieldError(std::string const& name)
 {
     return makeParamError(missingFieldMessage(name));
 }
 
-inline Json::Value
-missingFieldError(Json::StaticString name)
+inline json::Value
+missingFieldError(json::StaticString name)
 {
     return missingFieldError(std::string(name));
 }
@@ -241,14 +241,14 @@ objectFieldMessage(std::string const& name)
     return "Invalid field '" + name + "', not object.";
 }
 
-inline Json::Value
+inline json::Value
 objectFieldError(std::string const& name)
 {
     return makeParamError(objectFieldMessage(name));
 }
 
-inline Json::Value
-objectFieldError(Json::StaticString name)
+inline json::Value
+objectFieldError(json::StaticString name)
 {
     return objectFieldError(std::string(name));
 }
@@ -260,19 +260,19 @@ invalidFieldMessage(std::string const& name)
 }
 
 inline std::string
-invalidFieldMessage(Json::StaticString name)
+invalidFieldMessage(json::StaticString name)
 {
     return invalidFieldMessage(std::string(name));
 }
 
-inline Json::Value
+inline json::Value
 invalidFieldError(std::string const& name)
 {
     return makeParamError(invalidFieldMessage(name));
 }
 
-inline Json::Value
-invalidFieldError(Json::StaticString name)
+inline json::Value
+invalidFieldError(json::StaticString name)
 {
     return invalidFieldError(std::string(name));
 }
@@ -284,24 +284,24 @@ expectedFieldMessage(std::string const& name, std::string const& type)
 }
 
 inline std::string
-expectedFieldMessage(Json::StaticString name, std::string const& type)
+expectedFieldMessage(json::StaticString name, std::string const& type)
 {
     return expectedFieldMessage(std::string(name), type);
 }
 
-inline Json::Value
+inline json::Value
 expectedFieldError(std::string const& name, std::string const& type)
 {
     return makeParamError(expectedFieldMessage(name, type));
 }
 
-inline Json::Value
-expectedFieldError(Json::StaticString name, std::string const& type)
+inline json::Value
+expectedFieldError(json::StaticString name, std::string const& type)
 {
     return expectedFieldError(std::string(name), type);
 }
 
-inline Json::Value
+inline json::Value
 notValidatorError()
 {
     return makeParamError("not a validator");
@@ -311,7 +311,7 @@ notValidatorError()
 
 /** Returns `true` if the json contains an rpc error specification. */
 bool
-containsError(Json::Value const& json);
+containsError(json::Value const& json);
 
 /** Returns http status that corresponds to the error code. */
 int
@@ -321,6 +321,6 @@ errorCodeHttpStatus(ErrorCodeI code);
 
 /** Returns a single string with the contents of an RPC error. */
 std::string
-rpcErrorString(Json::Value const& jv);
+rpcErrorString(json::Value const& jv);
 
 }  // namespace xrpl

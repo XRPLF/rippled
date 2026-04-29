@@ -42,8 +42,8 @@
 
 namespace xrpl {
 
-static Expected<std::uint32_t, Json::Value>
-getAutofillSequence(Json::Value const& txJson, RPC::JsonContext& context)
+static Expected<std::uint32_t, json::Value>
+getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
 {
     // autofill Sequence
     bool const hasTicketSeq = txJson.isMember(sfTicketSequence.jsonName);
@@ -75,8 +75,8 @@ getAutofillSequence(Json::Value const& txJson, RPC::JsonContext& context)
     return hasTicketSeq ? 0 : context.app.getTxQ().nextQueuableSeq(sle).value();
 }
 
-static std::optional<Json::Value>
-autofillSignature(Json::Value& sigObject)
+static std::optional<json::Value>
+autofillSignature(json::Value& sigObject)
 {
     if (!sigObject.isMember(jss::SigningPubKey))
     {
@@ -128,8 +128,8 @@ autofillSignature(Json::Value& sigObject)
     return std::nullopt;
 }
 
-static std::optional<Json::Value>
-autofillTx(Json::Value& txJson, RPC::JsonContext& context)
+static std::optional<json::Value>
+autofillTx(json::Value& txJson, RPC::JsonContext& context)
 {
     if (!txJson.isMember(jss::Fee))
     {
@@ -169,10 +169,10 @@ autofillTx(Json::Value& txJson, RPC::JsonContext& context)
     return std::nullopt;
 }
 
-static Json::Value
-getTxJsonFromParams(Json::Value const& params)
+static json::Value
+getTxJsonFromParams(json::Value const& params)
 {
-    Json::Value txJson;
+    json::Value txJson;
 
     if (params.isMember(jss::tx_blob))
     {
@@ -228,10 +228,10 @@ getTxJsonFromParams(Json::Value const& params)
     return txJson;
 }
 
-static Json::Value
+static json::Value
 simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 {
-    Json::Value jvResult;
+    json::Value jvResult;
     // Process the transaction
     OpenView view = *context.app.getOpenLedger().current();
     auto const result = context.app.getTxQ().apply(
@@ -303,12 +303,12 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 //   tx_blob: <string> XOR tx_json: <object>,
 //   binary: <bool>
 // }
-Json::Value
+json::Value
 doSimulate(RPC::JsonContext& context)
 {
     context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
-    Json::Value txJson;  // the tx as a JSON
+    json::Value txJson;  // the tx as a JSON
 
     // check validity of `binary` param
     if (context.params.isMember(jss::binary) && !context.params[jss::binary].isBool())
@@ -344,7 +344,7 @@ doSimulate(RPC::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        Json::Value jvResult = Json::ObjectValue;
+        json::Value jvResult = json::ObjectValue;
         jvResult[jss::error] = "invalidTransaction";
         jvResult[jss::error_exception] = e.what();
         return jvResult;
@@ -365,7 +365,7 @@ doSimulate(RPC::JsonContext& context)
     // LCOV_EXCL_START this is just in case, so xrpld doesn't crash
     catch (std::exception const& e)
     {
-        Json::Value jvResult = Json::ObjectValue;
+        json::Value jvResult = json::ObjectValue;
         jvResult[jss::error] = "internalSimulate";
         jvResult[jss::error_exception] = e.what();
         return jvResult;

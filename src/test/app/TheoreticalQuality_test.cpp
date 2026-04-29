@@ -56,7 +56,7 @@ struct RippleCalcTestParams
 
     STPathSet paths;
 
-    explicit RippleCalcTestParams(Json::Value const& jv)
+    explicit RippleCalcTestParams(json::Value const& jv)
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         : srcAccount{*parseBase58<AccountID>(jv[jss::Account].asString())}
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -139,7 +139,7 @@ class RandomAccountParams
     };
 
     void
-    maybeInsertQuality(Json::Value& jv, QualityDirection qDir)
+    maybeInsertQuality(json::Value& jv, QualityDirection qDir)
     {
         if (!shouldSet())
             return;
@@ -160,7 +160,7 @@ class RandomAccountParams
     {
         using namespace jtx;
         IOU const iou{peer, currency};
-        Json::Value jv = trust(acc, iou(trustAmount_));
+        json::Value jv = trust(acc, iou(trustAmount_));
         maybeInsertQuality(jv, QualityDirection::In);
         maybeInsertQuality(jv, QualityDirection::Out);
         env(jv);
@@ -376,7 +376,7 @@ public:
             std::array<Account, kNUM_ACCOUNTS> accounts{{alice, bob, carol, dan}};
             static_assert(kNUM_ACCOUNTS == 4, "Path is only correct for four accounts");
             Path const accountsPath(accounts[1], accounts[2]);
-            env.fund(kXRP(10000), alice, bob, carol, dan);
+            env.fund(XRP(10000), alice, bob, carol, dan);
             env.close();
 
             // iterate through all pairs of accounts, randomly set the transfer
@@ -452,7 +452,7 @@ public:
             // alice -> bob -> (USD/bob)|(EUR/carol) -> carol -> dan
             Path const bookPath(~eurc);
 
-            env.fund(kXRP(10000), alice, bob, carol, dan, oscar);
+            env.fund(XRP(10000), alice, bob, carol, dan, oscar);
             env.close();
 
             for (auto const& acc : accounts)

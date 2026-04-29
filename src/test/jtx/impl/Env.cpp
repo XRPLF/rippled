@@ -202,7 +202,7 @@ Env::balance(Account const& account) const
 {
     auto const sle = le(account);
     if (!sle)
-        return kXRP(0);
+        return XRP(0);
     return {sle->getFieldAmount(sfBalance), ""};
 }
 
@@ -343,9 +343,9 @@ Env::trust(STAmount const& amount, Account const& account)
 }
 
 Env::ParsedResult
-Env::parseResult(Json::Value const& jr)
+Env::parseResult(json::Value const& jr)
 {
-    auto error = [](ParsedResult& parsed, Json::Value const& object) {
+    auto error = [](ParsedResult& parsed, json::Value const& object) {
         // Use an error code that is not used anywhere in the transaction
         // engine to distinguish this case.
         parsed.ter = telENV_RPC_FAILED;
@@ -406,18 +406,18 @@ Env::submit(JTx const& jt, std::source_location const& loc)
         // otherwise missing the stx field.
         parsedResult.ter = ter_ = temMALFORMED;
 
-        return Json::Value();
+        return json::Value();
     }();
     postconditions(jt, parsedResult, jr, loc);
 }
 
 void
-Env::signAndSubmit(JTx const& jt, Json::Value params, std::source_location const& loc)
+Env::signAndSubmit(JTx const& jt, json::Value params, std::source_location const& loc)
 {
     auto const account = lookup(jt.jv[jss::Account].asString());
     auto const& passphrase = account.name();
 
-    Json::Value jr;
+    json::Value jr;
     if (params.isNull())
     {
         // Use the command line interface
@@ -453,7 +453,7 @@ void
 Env::postconditions(
     JTx const& jt,
     ParsedResult const& parsed,
-    Json::Value const& jr,
+    json::Value const& jr,
     std::source_location const& loc)
 {
     auto const locStr = std::string("(") + loc.file_name() + ":" + to_string(loc.line()) + ")";
@@ -659,7 +659,7 @@ Env::ust(JTx const& jt)
     }
 }
 
-Json::Value
+json::Value
 Env::doRpc(
     unsigned apiVersion,
     std::vector<std::string> const& args,

@@ -91,9 +91,9 @@ class PerfLogImp : public PerfLog
         mutable std::mutex methodsMutex;
 
         Counters(std::set<char const*> const& labels, JobTypes const& jobTypes);
-        Json::Value
+        json::Value
         countersJson() const;
-        Json::Value
+        json::Value
         currentJson() const;
     };
 
@@ -152,13 +152,13 @@ public:
     void
     jobFinish(JobType const type, microseconds dur, int instance) override;
 
-    Json::Value
+    json::Value
     countersJson() const override
     {
         return counters_.countersJson();
     }
 
-    Json::Value
+    json::Value
     currentJson() const override
     {
         return counters_.currentJson();

@@ -92,10 +92,10 @@ public:
     uint256
     getTransactionID() const;
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options) const override;
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options, bool binary) const;
 
     void

@@ -70,7 +70,7 @@ public:
     [[nodiscard]] std::string
     getEscMeta() const;
 
-    [[nodiscard]] Json::Value const&
+    [[nodiscard]] json::Value const&
     getJson() const
     {
         return json_;
@@ -81,7 +81,7 @@ private:
     TxMeta meta_;
     boost::container::flat_set<AccountID> affected_;
     Blob rawMeta_;
-    Json::Value json_;
+    json::Value json_;
 };
 
 }  // namespace xrpl

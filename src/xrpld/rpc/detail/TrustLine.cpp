@@ -27,10 +27,10 @@ TrustLineBase::TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID co
         balance_.negate();
 }
 
-Json::Value
+json::Value
 TrustLineBase::getJson(int)
 {
-    Json::Value ret(Json::ObjectValue);
+    json::Value ret(json::ObjectValue);
     ret["low_id"] = to_string(lowLimit_.getIssuer());
     ret["high_id"] = to_string(highLimit_.getIssuer());
     return ret;

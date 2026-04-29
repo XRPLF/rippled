@@ -103,7 +103,7 @@ public:
     // variable. After all the txns are checked, all the `numExpected` variables
     // should be zero.
     bool
-    checkTxn(Json::Value const& t, Json::Value const& metaData)
+    checkTxn(json::Value const& t, json::Value const& metaData)
     {
         if (t[jss::TransactionType].asString() != jss::Payment)
             return true;
@@ -208,7 +208,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
             auto cfg = envconfig();
             cfg->FEES.reference_fee = 10;
             Env env(*this, std::move(cfg));
-            env.fund(kXRP(10000), alice, bob, carol, gw);
+            env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(usd(1000), alice, bob, carol);
             if (afterSwitchTime)
             {
@@ -226,7 +226,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
                 // normal payments
                 env(pay(gw, alice, usd(50)));
                 checkDeliveredAmount.adjCountersSuccess();
-                env(pay(gw, alice, kXRP(50)));
+                env(pay(gw, alice, XRP(50)));
                 checkDeliveredAmount.adjCountersSuccess();
 
                 // partial payment
@@ -243,11 +243,11 @@ class DeliveredAmount_test : public beast::unit_test::Suite
             auto wsc = makeWSClient(env.app().config());
 
             {
-                Json::Value stream;
+                json::Value stream;
                 // RPC subscribe to ledger stream
-                stream[jss::streams] = Json::ArrayValue;
+                stream[jss::streams] = json::ArrayValue;
                 stream[jss::streams].append("ledger");
-                stream[jss::accounts] = Json::ArrayValue;
+                stream[jss::accounts] = json::ArrayValue;
                 stream[jss::accounts].append(toBase58(alice.id()));
                 stream[jss::accounts].append(toBase58(bob.id()));
                 stream[jss::accounts].append(toBase58(carol.id()));
@@ -299,7 +299,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
             auto cfg = envconfig();
             cfg->FEES.reference_fee = 10;
             Env env(*this, std::move(cfg));
-            env.fund(kXRP(10000), alice, bob, carol, gw);
+            env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(usd(1000), alice, bob, carol);
             if (afterSwitchTime)
             {
@@ -314,7 +314,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
             // normal payments
             env(pay(gw, alice, usd(50)));
             checkDeliveredAmount.adjCountersSuccess();
-            env(pay(gw, alice, kXRP(50)));
+            env(pay(gw, alice, XRP(50)));
             checkDeliveredAmount.adjCountersSuccess();
 
             // partial payment
@@ -328,7 +328,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
             env.require(Balance(carol, usd(0)));
 
             env.close();
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = 4u;
             jvParams[jss::transactions] = true;
             jvParams[jss::expand] = true;
@@ -369,7 +369,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
 
         // Get the hash for the most recent transaction.
         std::string txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
-        Json::Value meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+        json::Value meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         if (features[fixMPTDeliveredAmount])
         {
@@ -381,7 +381,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
         else
         {
             BEAST_EXPECT(!meta.isMember(sfDeliveredAmount.jsonName));
-            BEAST_EXPECT(meta[jss::delivered_amount] = Json::Value("unavailable"));
+            BEAST_EXPECT(meta[jss::delivered_amount] = json::Value("unavailable"));
         }
 
         env(pay(bob, carol, mpt(1000)), Sendmax(mpt(1200)), Txflags(tfPartialPayment));
@@ -400,7 +400,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
         else
         {
             BEAST_EXPECT(!meta.isMember(sfDeliveredAmount.jsonName));
-            BEAST_EXPECT(meta[jss::delivered_amount] = Json::Value("unavailable"));
+            BEAST_EXPECT(meta[jss::delivered_amount] = json::Value("unavailable"));
         }
     }
 

@@ -179,7 +179,7 @@ public:
         using namespace jtx;
         testAMM([&](AMM& ammAlice, Env&) {
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
-                kXRP(10000),
+                XRP(10000),
                 USD(10000),
                 IOUAmount{10000000, 0},
                 std::nullopt,
@@ -189,17 +189,17 @@ public:
 
         {
             Env env{*this};
-            env.fund(kXRP(1'000), gw_);
-            MPTTester mpt(env, gw_, {.fund = false});
-            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
-            MPTTester mpt1(env, gw_, {.fund = false});
-            mpt1.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
-            auto const MPT = mpt["MPT"];
-            auto const mpT1 = mpt1["MPT"];
+            env.fund(XRP(1'000), gw_);
+            MPTTester mptTester(env, gw_, {.fund = false});
+            mptTester.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
+            MPTTester mptTester1(env, gw_, {.fund = false});
+            mptTester1.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
+            auto const mpt = mptTester["MPT"];
+            auto const mpt1 = mptTester1["MPT"];
             std::vector<std::tuple<PrettyAmount, PrettyAmount, IOUAmount>> pools = {
-                {kXRP(100), MPT(100), IOUAmount{100'000}},
-                {USD(100), MPT(100), IOUAmount{100}},
-                {MPT(100), mpT1(100), IOUAmount{100}}};
+                {XRP(100), mpt(100), IOUAmount{100'000}},
+                {USD(100), mpt(100), IOUAmount{100}},
+                {mpt(100), mpt1(100), IOUAmount{100}}};
             for (auto& pool : pools)
             {
                 AMM const amm(env, gw_, std::get<0>(pool), std::get<1>(pool));
@@ -223,7 +223,7 @@ public:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 BEAST_EXPECT(
-                    ammAlice.expectAmmRpcInfo(kXRP(10000), USD(10000), IOUAmount{10000000, 0}));
+                    ammAlice.expectAmmRpcInfo(XRP(10000), USD(10000), IOUAmount{10000000, 0}));
                 std::unordered_map<std::string, std::uint16_t> votes;
                 votes.insert({alice_.human(), 0});
                 for (int i = 0; i < 7; ++i)
@@ -244,12 +244,12 @@ public:
                 BEAST_EXPECT(ammAlice.expectTradingFee(175));
                 Account ed("ed");
                 Account bill("bill");
-                env.fund(kXRP(1000), bob_, ed, bill);
+                env.fund(XRP(1000), bob_, ed, bill);
                 env(ammAlice.bid({.bidMin = 100, .authAccounts = {carol_, bob_, ed, bill}}));
                 if (!features[fixAMMv1_3])
                 {
                     BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
-                        kXRP(80000),
+                        XRP(80000),
                         USD(80000),
                         IOUAmount{79994400},
                         std::nullopt,

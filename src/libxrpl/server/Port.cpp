@@ -122,7 +122,7 @@ populate(
                 // the number of network bits to make a subnet of 1,
                 // depending on type.
                 v4 = addr->isV4();
-                std::string addressString = addr->to_string();
+                std::string addressString = addr->toString();
                 if (v4)
                 {
                     addressString += "/32";

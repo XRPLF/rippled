@@ -173,7 +173,7 @@ public:
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
     //! JSON representation of dispute, used for debugging
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson() const;
 
 private:
@@ -303,24 +303,24 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
         JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on " << tx_.id()
                         << " : weight " << weight << ", percent " << percentTime
                         << ", round(s) with this vote: " << currentVoteCounter_;
-        JLOG(j_.debug()) << Json::Compact{getJson()};
+        JLOG(j_.debug()) << json::Compact{getJson()};
         return false;
     }
 
     currentVoteCounter_ = 0;
     ourVote_ = newPosition;
     JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on " << tx_.id();
-    JLOG(j_.debug()) << Json::Compact{getJson()};
+    JLOG(j_.debug()) << json::Compact{getJson()};
     return true;
 }
 
 template <class Tx, class NodeId>
-Json::Value
+json::Value
 DisputedTx<Tx, NodeId>::getJson() const
 {
     using std::to_string;
 
-    Json::Value ret(Json::ObjectValue);
+    json::Value ret(json::ObjectValue);
 
     ret["yays"] = yays_;
     ret["nays"] = nays_;
@@ -328,7 +328,7 @@ DisputedTx<Tx, NodeId>::getJson() const
 
     if (!votes_.empty())
     {
-        Json::Value votes(Json::ObjectValue);
+        json::Value votes(json::ObjectValue);
         for (auto const& [nodeId, vote] : votes_)
             votes[to_string(nodeId)] = vote;
         ret["votes"] = std::move(votes);

@@ -93,7 +93,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         {
             auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
-                env.fund(kXRP(10'000), alice, bob, gw);
+                env.fund(XRP(10'000), alice, bob, gw);
                 MPT const usd =
                     MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 1'000});
                 auto const bobUSD = issue1(
@@ -164,7 +164,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         {
             auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
-                env.fund(kXRP(10'000), alice, bob, carol, gw);
+                env.fund(XRP(10'000), alice, bob, carol, gw);
                 auto usd = issue1({.env = env, .token = "USD", .issuer = gw, .limit = 1'000});
                 using tUSD = std::decay_t<decltype(usd)>;
                 auto eur = issue2({.env = env, .token = "EUR", .issuer = gw, .limit = 1'000});
@@ -244,7 +244,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                     STPath({ipe(usd)}),
                     tesSUCCESS,
                     XRPS{alice},
-                    B{kXRP, usd, std::nullopt},
+                    B{XRP, usd, std::nullopt},
                     makeEndpointStep(gw, bob, usd));
 
                 // Path with XRP dst currency.
@@ -256,7 +256,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                         STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()}}),
                     tesSUCCESS,
                     makeEndpointStep(alice, gw, usd),
-                    B{usd, kXRP, std::nullopt},
+                    B{usd, XRP, std::nullopt},
                     XRPS{bob});
 
                 // Path with XRP cross currency bridged payment
@@ -267,8 +267,8 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                     STPath({cpe(xrpCurrency())}),
                     tesSUCCESS,
                     makeEndpointStep(alice, gw, usd),
-                    B{usd, kXRP, std::nullopt},
-                    B{kXRP, eur, std::nullopt},
+                    B{usd, XRP, std::nullopt},
+                    B{XRP, eur, std::nullopt},
                     makeEndpointStep(gw, bob, eur));
 
                 // Create an offer with the same in/out issue
@@ -288,7 +288,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
             auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
 
-                env.fund(kXRP(10'000), alice, bob, carol, gw);
+                env.fund(XRP(10'000), alice, bob, carol, gw);
 
                 auto const usd = issue1(
                     {.env = env,
@@ -306,14 +306,14 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 env(pay(gw, bob, usd(100)));
                 env(pay(gw, bob, eur(100)));
 
-                env(offer(bob, kXRP(100), usd(100)));
+                env(offer(bob, XRP(100), usd(100)));
                 env(offer(bob, usd(100), eur(100)), Txflags(tfPassive));
                 env(offer(bob, eur(100), usd(100)), Txflags(tfPassive));
 
                 // payment path: XRP -> XRP/USD -> USD/EUR -> EUR/USD
                 env(pay(alice, carol, usd(100)),
                     Path(~usd, ~eur, ~usd),
-                    Sendmax(kXRP(200)),
+                    Sendmax(XRP(200)),
                     Txflags(tfNoRippleDirect),
                     Ter(temBAD_PATH_LOOP));
             };
@@ -323,7 +323,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         {
             // check global freeze
             Env env(*this, features);
-            env.fund(kXRP(10000), alice, bob, gw);
+            env.fund(XRP(10000), alice, bob, gw);
             auto usdm = MPTTester(
                 {.env = env,
                  .issuer = gw,
@@ -357,7 +357,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
             // An account may require authorization to receive MPTs from an
             // issuer
             Env env(*this, features);
-            env.fund(kXRP(10'000), alice, bob, gw);
+            env.fund(XRP(10'000), alice, bob, gw);
             auto usdm = MPTTester(
                 {.env = env,
                  .issuer = gw,
@@ -393,7 +393,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         {
             // last step xrp from offer
             Env env(*this, features);
-            env.fund(kXRP(10'000), alice, bob, gw);
+            env.fund(XRP(10'000), alice, bob, gw);
             MPT const usd =
                 MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 1'000});
             env(pay(gw, alice, usd(100)));
@@ -406,7 +406,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 *env.current(),
                 alice,
                 bob,
-                kXRP,
+                XRP,
                 std::nullopt,
                 usd,
                 path,
@@ -435,18 +435,18 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         {
             Env env(*this, features);
 
-            env.fund(kXRP(10000), alice, bob, carol, gw);
+            env.fund(XRP(10000), alice, bob, carol, gw);
             MPT const usd = MPTTester(
                 {.env = env, .issuer = gw, .holders = {alice, bob, carol}, .maxAmt = 10'000});
 
             env(pay(gw, bob, usd(100)));
 
-            env(offer(bob, kXRP(100), usd(100)), Txflags(tfPassive));
-            env(offer(bob, usd(100), kXRP(100)), Txflags(tfPassive));
+            env(offer(bob, XRP(100), usd(100)), Txflags(tfPassive));
+            env(offer(bob, usd(100), XRP(100)), Txflags(tfPassive));
 
             // payment path: XRP -> XRP/USD -> USD/XRP
-            env(pay(alice, carol, kXRP(100)),
-                Path(~usd, ~kXRP),
+            env(pay(alice, carol, XRP(100)),
+                Path(~usd, ~XRP),
                 Txflags(tfNoRippleDirect),
                 Ter(temBAD_SEND_XRP_PATHS));
         }
@@ -454,19 +454,19 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         {
             Env env(*this, features);
 
-            env.fund(kXRP(10000), alice, bob, carol, gw);
+            env.fund(XRP(10000), alice, bob, carol, gw);
             MPT const usd = MPTTester(
                 {.env = env, .issuer = gw, .holders = {alice, bob, carol}, .maxAmt = 10'000});
 
             env(pay(gw, bob, usd(100)));
 
-            env(offer(bob, kXRP(100), usd(100)), Txflags(tfPassive));
-            env(offer(bob, usd(100), kXRP(100)), Txflags(tfPassive));
+            env(offer(bob, XRP(100), usd(100)), Txflags(tfPassive));
+            env(offer(bob, usd(100), XRP(100)), Txflags(tfPassive));
 
             // payment path: XRP -> XRP/USD -> USD/XRP
-            env(pay(alice, carol, kXRP(100)),
-                Path(~usd, ~kXRP),
-                Sendmax(kXRP(200)),
+            env(pay(alice, carol, XRP(100)),
+                Path(~usd, ~XRP),
+                Sendmax(XRP(200)),
                 Txflags(tfNoRippleDirect),
                 Ter(temBAD_SEND_XRP_MAX));
         }
@@ -488,20 +488,20 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         {
             Env env(*this, features);
 
-            env.fund(kXRP(10'000), alice, bob, carol, gw);
+            env.fund(XRP(10'000), alice, bob, carol, gw);
             MPT const usd = MPTTester(
                 {.env = env, .issuer = gw, .holders = {alice, bob, carol}, .maxAmt = 10'000});
 
             env(pay(gw, bob, usd(100)));
             env(pay(gw, alice, usd(100)));
 
-            env(offer(bob, kXRP(100), usd(100)), Txflags(tfPassive));
-            env(offer(bob, usd(100), kXRP(100)), Txflags(tfPassive));
+            env(offer(bob, XRP(100), usd(100)), Txflags(tfPassive));
+            env(offer(bob, usd(100), XRP(100)), Txflags(tfPassive));
 
             // payment path: USD -> USD/XRP -> XRP/USD
             env(pay(alice, carol, usd(100)),
                 Sendmax(usd(100)),
-                Path(~kXRP, ~usd),
+                Path(~XRP, ~usd),
                 Txflags(tfNoRippleDirect),
                 Ter(temBAD_PATH_LOOP));
         }
@@ -509,7 +509,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
             auto testMultiToken = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
                 Env env(*this, features);
 
-                env.fund(kXRP(10'000), alice, bob, carol, gw);
+                env.fund(XRP(10'000), alice, bob, carol, gw);
                 auto const usd = issue1(
                     {.env = env,
                      .token = "USD",
@@ -533,13 +533,13 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 env(pay(gw, bob, eur(100)));
                 env(pay(gw, bob, cny(100)));
 
-                env(offer(bob, kXRP(100), usd(100)), Txflags(tfPassive));
+                env(offer(bob, XRP(100), usd(100)), Txflags(tfPassive));
                 env(offer(bob, usd(100), eur(100)), Txflags(tfPassive));
                 env(offer(bob, eur(100), cny(100)), Txflags(tfPassive));
 
                 // payment path: XRP->XRP/USD->USD/EUR->USD/CNY
                 env(pay(alice, carol, cny(100)),
-                    Sendmax(kXRP(100)),
+                    Sendmax(XRP(100)),
                     Path(~usd, ~eur, ~usd, ~cny),
                     Txflags(tfNoRippleDirect),
                     Ter(temBAD_PATH_LOOP));
@@ -559,7 +559,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         auto const gw = Account("gw");
 
         Env env(*this, features);
-        env.fund(kXRP(10'000), alice, bob, gw);
+        env.fund(XRP(10'000), alice, bob, gw);
         MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}});
 
         STAmount const sendMax{usd, 100, 1};

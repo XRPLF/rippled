@@ -48,7 +48,7 @@ public:
             auto transactionId = jtx.stx->getTransactionID();
             env.app().getHashRouter().setFlags(transactionId, HashRouterFlags::HELD);
 
-            env(jtx, json(jss::Sequence, 1), Ter(terNO_ACCOUNT));
+            env(jtx, Json(jss::Sequence, 1), Ter(terNO_ACCOUNT));
 
             env.app().getHashRouter().setFlags(transactionId, HashRouterFlags::BAD);
 

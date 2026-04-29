@@ -29,7 +29,7 @@ struct DID_test : public beast::unit_test::Suite
         // to set or delete DIDs.
         Env env{*this, features - featureDID};
         Account const alice{"alice"};
-        env.fund(kXRP(5000), alice);
+        env.fund(XRP(5000), alice);
         env.close();
 
         BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -102,7 +102,7 @@ struct DID_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const alice{"alice"};
-        env.fund(kXRP(5000), alice);
+        env.fund(XRP(5000), alice);
         env.close();
 
         //----------------------------------------------------------------------
@@ -161,7 +161,7 @@ struct DID_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const alice{"alice"};
-        env.fund(kXRP(5000), alice);
+        env.fund(XRP(5000), alice);
         env.close();
 
         //----------------------------------------------------------------------
@@ -198,7 +198,7 @@ struct DID_test : public beast::unit_test::Suite
         Account const edna{"edna"};
         Account const francis{"francis"};
         Account const george{"george"};
-        env.fund(kXRP(5000), alice, bob, charlie, dave, edna, francis, george);
+        env.fund(XRP(5000), alice, bob, charlie, dave, edna, francis, george);
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, bob) == 0);
@@ -243,7 +243,7 @@ struct DID_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const alice{"alice"};
-        env.fund(kXRP(5000), alice);
+        env.fund(XRP(5000), alice);
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         auto const ar = env.le(alice);

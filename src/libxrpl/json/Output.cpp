@@ -5,46 +5,46 @@
 
 #include <string>
 
-namespace Json {
+namespace json {
 
 namespace {
 
 void
-outputJson(Json::Value const& value, Writer& writer)
+outputJson(json::Value const& value, Writer& writer)
 {
     switch (value.type())
     {
-        case Json::NullValue: {
+        case json::NullValue: {
             writer.output(nullptr);
             break;
         }
 
-        case Json::IntValue: {
+        case json::IntValue: {
             writer.output(value.asInt());
             break;
         }
 
-        case Json::UintValue: {
+        case json::UintValue: {
             writer.output(value.asUInt());
             break;
         }
 
-        case Json::RealValue: {
+        case json::RealValue: {
             writer.output(value.asDouble());
             break;
         }
 
-        case Json::StringValue: {
+        case json::StringValue: {
             writer.output(value.asString());
             break;
         }
 
-        case Json::BooleanValue: {
+        case json::BooleanValue: {
             writer.output(value.asBool());
             break;
         }
 
-        case Json::ArrayValue: {
+        case json::ArrayValue: {
             writer.startRoot(Writer::Array);
             for (auto const& i : value)
             {
@@ -55,7 +55,7 @@ outputJson(Json::Value const& value, Writer& writer)
             break;
         }
 
-        case Json::ObjectValue: {
+        case json::ObjectValue: {
             writer.startRoot(Writer::Object);
             auto members = value.getMemberNames();
             for (auto const& tag : members)
@@ -72,14 +72,14 @@ outputJson(Json::Value const& value, Writer& writer)
 }  // namespace
 
 void
-outputJson(Json::Value const& value, Output const& out)
+outputJson(json::Value const& value, Output const& out)
 {
     Writer writer(out);
     outputJson(value, writer);
 }
 
 std::string
-jsonAsString(Json::Value const& value)
+jsonAsString(json::Value const& value)
 {
     std::string s;
     Writer writer(stringOutput(s));
@@ -87,4 +87,4 @@ jsonAsString(Json::Value const& value)
     return s;
 }
 
-}  // namespace Json
+}  // namespace json

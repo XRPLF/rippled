@@ -316,7 +316,7 @@ LedgerHistory::handleMismatch(
     LedgerHash const& valid,
     std::optional<uint256> const& builtConsensusHash,
     std::optional<uint256> const& validatedConsensusHash,
-    Json::Value const& consensus)
+    json::Value const& consensus)
 {
     XRPL_ASSERT(built != valid, "xrpl::LedgerHistory::handleMismatch : unequal hashes");
     ++mismatch_counter_;
@@ -424,7 +424,7 @@ void
 LedgerHistory::builtLedger(
     std::shared_ptr<Ledger const> const& ledger,
     uint256 const& consensusHash,
-    Json::Value consensus)
+    json::Value consensus)
 {
     LedgerIndex const index = ledger->header().seq;
     LedgerHash const hash = ledger->header().hash;

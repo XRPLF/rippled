@@ -260,10 +260,10 @@ getFingerprint(
 
 //------------------------------------------------------------------------------
 
-namespace Json {
+namespace json {
 template <>
 inline xrpl::PublicKey
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
     std::string const b58 = getOrThrow<std::string>(v, field);
@@ -279,4 +279,4 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
     }
     Throw<JsonTypeMismatchError>(field.getJsonName(), "PublicKey");
 }
-}  // namespace Json
+}  // namespace json

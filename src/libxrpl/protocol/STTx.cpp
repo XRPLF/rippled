@@ -312,16 +312,16 @@ STTx::checkBatchSign(Rules const& rules) const
     return Unexpected("Internal batch signature check failure.");
 }
 
-Json::Value
+json::Value
 STTx::getJson(JsonOptions options) const
 {
-    Json::Value ret = STObject::getJson(JsonOptions::KNone);
+    json::Value ret = STObject::getJson(JsonOptions::KNone);
     if (!(options & JsonOptions::KDisableApiPriorV2))
         ret[jss::hash] = to_string(getTransactionID());
     return ret;
 }
 
-Json::Value
+json::Value
 STTx::getJson(JsonOptions options, bool binary) const
 {
     bool const v1 = !(options & JsonOptions::KDisableApiPriorV2);
@@ -333,16 +333,16 @@ STTx::getJson(JsonOptions options, bool binary) const
 
         if (v1)
         {
-            Json::Value ret(Json::ObjectValue);
+            json::Value ret(json::ObjectValue);
             ret[jss::tx] = dataBin;
             ret[jss::hash] = to_string(getTransactionID());
             return ret;
         }
 
-        return Json::Value{dataBin};
+        return json::Value{dataBin};
     }
 
-    Json::Value ret = STObject::getJson(JsonOptions::KNone);
+    json::Value ret = STObject::getJson(JsonOptions::KNone);
     if (v1)
         ret[jss::hash] = to_string(getTransactionID());
 

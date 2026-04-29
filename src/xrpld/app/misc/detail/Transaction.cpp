@@ -146,11 +146,11 @@ Transaction::load(
 }
 
 // options 1 to include the date of the transaction
-Json::Value
+json::Value
 Transaction::getJson(JsonOptions options, bool binary) const
 {
     // Note, we explicitly suppress `include_date` option here
-    Json::Value ret(transaction_->getJson(options & ~JsonOptions::KIncludeDate, binary));
+    json::Value ret(transaction_->getJson(options & ~JsonOptions::KIncludeDate, binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
     if (ret.isObject() && (ledgerIndex_ != 0u))

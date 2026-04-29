@@ -10,74 +10,74 @@
 
 namespace xrpl::test::jtx {
 
-using JValueVec = std::vector<Json::Value>;
+using JValueVec = std::vector<json::Value>;
 
 constexpr std::size_t kUT_XCHAIN_DEFAULT_NUM_SIGNERS = 5;
 constexpr std::size_t kUT_XCHAIN_DEFAULT_QUORUM = 4;
 
-Json::Value
+json::Value
 bridge(
     Account const& lockingChainDoor,
     Issue const& lockingChainIssue,
     Account const& issuingChainDoor,
     Issue const& issuingChainIssue);
 
-Json::Value
+json::Value
 bridgeCreate(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     STAmount const& reward,
     std::optional<STAmount> const& minAccountCreate = std::nullopt);
 
-Json::Value
+json::Value
 bridgeModify(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     std::optional<STAmount> const& reward,
     std::optional<STAmount> const& minAccountCreate = std::nullopt);
 
-Json::Value
+json::Value
 xchainCreateClaimId(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     STAmount const& reward,
     Account const& otherChainSource);
 
-Json::Value
+json::Value
 xchainCommit(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     std::uint32_t claimID,
     AnyAmount const& amt,
     std::optional<Account> const& dst = std::nullopt);
 
-Json::Value
+json::Value
 xchainClaim(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     std::uint32_t claimID,
     AnyAmount const& amt,
     Account const& dst);
 
-Json::Value
+json::Value
 sidechainXchainAccountCreate(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     Account const& dst,
     AnyAmount const& amt,
     AnyAmount const& xChainFee);
 
-Json::Value
+json::Value
 sidechainXchainAccountClaim(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     Account const& dst,
     AnyAmount const& amt);
 
-Json::Value
+json::Value
 claimAttestation(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     jtx::Account const& rewardAccount,
@@ -86,10 +86,10 @@ claimAttestation(
     std::optional<jtx::Account> const& dst,
     jtx::Signer const& signer);
 
-Json::Value
+json::Value
 createAccountAttestation(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     jtx::AnyAmount const& rewardAmount,
@@ -102,7 +102,7 @@ createAccountAttestation(
 JValueVec
 claimAttestations(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     std::vector<jtx::Account> const& rewardAccounts,
@@ -116,7 +116,7 @@ claimAttestations(
 JValueVec
 createAccountAttestations(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     jtx::AnyAmount const& rewardAmount,
@@ -159,9 +159,9 @@ struct XChainBridgeObjects
     IOU const mcUSD;
     IOU const scUSD;
 
-    Json::Value const jvXRPBridgeRPC;
-    Json::Value jvb;   // standard xrp bridge def for tx
-    Json::Value jvub;  // standard xrp bridge def for tx, unfunded accounts
+    json::Value const jvXRPBridgeRPC;
+    json::Value jvb;   // standard xrp bridge def for tx
+    json::Value jvub;  // standard xrp bridge def for tx, unfunded accounts
 
     FeatureBitset const features;
     std::vector<Signer> const signers;
@@ -217,15 +217,15 @@ struct XChainBridgeObjects
             fromIdx);
     }
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     createBridge(
         Account const& acc,
-        Json::Value const& bridge = Json::NullValue,
-        STAmount const& reward = kXRP(1),
+        json::Value const& bridge = json::NullValue,
+        STAmount const& reward = XRP(1),
         std::optional<STAmount> const& minAccountCreate = std::nullopt) const
     {
         return bridgeCreate(
-            acc, bridge == Json::NullValue ? jvb : bridge, reward, minAccountCreate);
+            acc, bridge == json::NullValue ? jvb : bridge, reward, minAccountCreate);
     }
 };
 

@@ -14,7 +14,7 @@ namespace xrpl {
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value
+json::Value
 doSign(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())

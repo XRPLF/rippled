@@ -9,10 +9,10 @@
 namespace xrpl::test::jtx::ledgerStateFix {
 
 // Fix NFTokenPage links on owner's account.  acct pays fee.
-Json::Value
+json::Value
 nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = acct.human();
     jv[sfLedgerFixType.jsonName] = LedgerStateFix::NfTokenPageLink;
     jv[sfOwner.jsonName] = owner.human();

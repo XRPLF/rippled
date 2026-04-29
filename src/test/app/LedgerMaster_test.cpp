@@ -45,7 +45,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
         test::jtx::Env env{*this, makeNetworkConfig(11111)};
 
         auto const alice = Account("alice");
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
         env.close();
 
         // build ledgers

@@ -27,10 +27,10 @@
 
 namespace xrpl::test::jtx {
 
-Json::Value
+json::Value
 signers(Account const& account, std::uint32_t quorum, std::vector<Signer> const& v)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::SignerListSet;
     jv[sfSignerQuorum.getJsonName()] = quorum;
@@ -47,10 +47,10 @@ signers(Account const& account, std::uint32_t quorum, std::vector<Signer> const&
     return jv;
 }
 
-Json::Value
+json::Value
 signers(Account const& account, NoneT)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::SignerListSet;
     jv[sfSignerQuorum.getJsonName()] = 0;
@@ -74,7 +74,7 @@ Msig::operator()(Env& env, JTx& jt) const
         }
         else if (sigObject.isNull())
         {
-            sigObject = Json::Value(Json::ObjectValue);
+            sigObject = json::Value(json::ObjectValue);
         }
         std::optional<STObject> st;
         try

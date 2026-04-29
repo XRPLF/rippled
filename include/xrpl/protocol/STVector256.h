@@ -27,7 +27,7 @@ public:
     void
     add(Serializer& s) const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;

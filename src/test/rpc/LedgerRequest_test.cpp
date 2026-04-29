@@ -154,19 +154,19 @@ public:
                                                           // assume no amendments
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
-        env.fund(kXRP(100000), gw);
+        env.fund(XRP(100000), gw);
         env.close();
 
         env.memoize("bob");
-        env.fund(kXRP(1000), "bob");
+        env.fund(XRP(1000), "bob");
         env.close();
 
         env.memoize("alice");
-        env.fund(kXRP(1000), "alice");
+        env.fund(XRP(1000), "alice");
         env.close();
 
         env.memoize("carol");
-        env.fund(kXRP(1000), "carol");
+        env.fund(XRP(1000), "carol");
         env.close();
 
         auto result = env.rpc("ledger_request", "1")[jss::result];
@@ -249,11 +249,11 @@ public:
         Env env{*this};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
-        env.fund(kXRP(100000), gw);
+        env.fund(XRP(100000), gw);
         env.close();
 
         {
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_hash] =
                 "AB868A6CFEEC779C2FF845C0AF00A642259986AF40C01976A7F842B6918936"
                 "C7";
@@ -269,7 +269,7 @@ public:
         }
 
         {
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = "index";
             auto const result =
                 env.rpc("json", "ledger_request", jvParams.toStyledString())[jss::result];
@@ -307,14 +307,14 @@ public:
                 })};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
-        env.fund(kXRP(100000), gw);
+        env.fund(XRP(100000), gw);
 
         int const maxLimit = 256;
 
         for (auto i = 0; i < maxLimit + 10; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
-            env.fund(kXRP(1000), bob);
+            env.fund(XRP(1000), bob);
             env.close();
         }
 
@@ -335,14 +335,14 @@ public:
         Env env{*this, envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
-        env.fund(kXRP(100000), gw);
+        env.fund(XRP(100000), gw);
 
         env.setRetries(0);
         auto const result = env.rpc("ledger_request", "1")[jss::result];
         // The current HTTP/S ServerHandler returns an HTTP 403 error code here
         // rather than a noPermission JSON error.  The JSONRPCClient just eats
         // that error and returns an null result.
-        BEAST_EXPECT(result.type() == Json::NullValue);
+        BEAST_EXPECT(result.type() == json::NullValue);
     }
 
     void

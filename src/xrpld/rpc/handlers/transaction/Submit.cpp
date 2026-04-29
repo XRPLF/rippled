@@ -35,7 +35,7 @@ getFailHard(RPC::JsonContext const& context)
 //   tx_blob: <string> XOR tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value
+json::Value
 doSubmit(RPC::JsonContext& context)
 {
     context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
@@ -65,7 +65,7 @@ doSubmit(RPC::JsonContext& context)
         return ret;
     }
 
-    Json::Value jvResult;
+    json::Value jvResult;
 
     auto ret = strUnHex(context.params[jss::tx_blob].asString());
 
@@ -156,12 +156,12 @@ doSubmit(RPC::JsonContext& context)
             if (auto currentLedgerState = transaction->getCurrentLedgerState())
             {
                 jvResult[jss::account_sequence_next] =
-                    safeCast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
+                    safeCast<json::Value::UInt>(currentLedgerState->accountSeqNext);
                 jvResult[jss::account_sequence_available] =
-                    safeCast<Json::Value::UInt>(currentLedgerState->accountSeqAvail);
+                    safeCast<json::Value::UInt>(currentLedgerState->accountSeqAvail);
                 jvResult[jss::open_ledger_cost] = to_string(currentLedgerState->minFeeRequired);
                 jvResult[jss::validated_ledger_index] =
-                    safeCast<Json::Value::UInt>(currentLedgerState->validatedLedger);
+                    safeCast<json::Value::UInt>(currentLedgerState->validatedLedger);
             }
         }
 

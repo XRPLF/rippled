@@ -79,7 +79,7 @@ struct LedgerReplay_test : public beast::unit_test::Suite
         auto const bob = Account("bob");
 
         Env env(*this);
-        env.fund(kXRP(100000), alice, bob);
+        env.fund(XRP(100000), alice, bob);
         env.close();
 
         LedgerMaster& ledgerMaster = env.app().getLedgerMaster();
@@ -170,7 +170,7 @@ public:
     {
     }
 
-    Json::Value
+    json::Value
     getInfo() override
     {
         return {};
@@ -269,7 +269,7 @@ public:
     {
         return nodePublicKey_;
     }
-    Json::Value
+    json::Value
     json() override
     {
         return {};
@@ -524,7 +524,7 @@ struct LedgerServer
         for (int i = 0; i < newAccounts; ++i)
         {
             accounts.emplace_back("alice_" + std::to_string(fundedAccounts + i));
-            env.fund(jtx::kXRP(param.initAmount), accounts.back());
+            env.fund(jtx::XRP(param.initAmount), accounts.back());
         }
         env.close();
     }
@@ -560,7 +560,7 @@ struct LedgerServer
             env(pay(accounts[fromIdx],
                     accounts[toIdx],
                     jtx::drops(ledgerMaster.getClosedLedger()->fees().base) +
-                        jtx::kXRP(param.txAmount)),
+                        jtx::XRP(param.txAmount)),
                 jtx::Seq(jtx::kAUTOFILL),
                 jtx::Fee(jtx::kAUTOFILL),
                 jtx::Sig(jtx::kAUTOFILL));

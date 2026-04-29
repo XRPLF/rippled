@@ -190,7 +190,7 @@ Bootcache::onWrite(beast::PropertyStream::Map& map)
     for (auto iter = map_.right.begin(); iter != map_.right.end(); ++iter)
     {
         beast::PropertyStream::Map entry(entries);
-        entry["endpoint"] = iter->get_left().to_string();
+        entry["endpoint"] = iter->get_left().toString();
         entry["valence"] = std::int32_t(iter->get_right().valence());
     }
 }

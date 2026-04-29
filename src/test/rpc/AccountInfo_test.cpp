@@ -49,7 +49,7 @@ public:
         {
             // account_info with an account that's not in the ledger.
             Account const bogie{"bogie"};
-            Json::Value params;
+            json::Value params;
             params[jss::account] = bogie.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActNotFound);
@@ -65,7 +65,7 @@ public:
             // Cannot pass a non-string into the `account` param
 
             auto testInvalidAccountParam = [&](auto const& param) {
-                Json::Value params;
+                json::Value params;
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -75,15 +75,15 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::NullValue));
-            testInvalidAccountParam(Json::Value(Json::ObjectValue));
-            testInvalidAccountParam(Json::Value(Json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::NullValue));
+            testInvalidAccountParam(json::Value(json::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ArrayValue));
         }
         {
             // Cannot pass a non-string into the `ident` param
 
             auto testInvalidIdentParam = [&](auto const& param) {
-                Json::Value params;
+                json::Value params;
                 params[jss::ident] = param;
                 auto jrr = env.rpc("json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -93,9 +93,9 @@ public:
             testInvalidIdentParam(1);
             testInvalidIdentParam(1.1);
             testInvalidIdentParam(true);
-            testInvalidIdentParam(Json::Value(Json::NullValue));
-            testInvalidIdentParam(Json::Value(Json::ObjectValue));
-            testInvalidIdentParam(Json::Value(Json::ArrayValue));
+            testInvalidIdentParam(json::Value(json::NullValue));
+            testInvalidIdentParam(json::Value(json::ObjectValue));
+            testInvalidIdentParam(json::Value(json::ArrayValue));
         }
     }
 
@@ -107,12 +107,12 @@ public:
         using namespace jtx;
         Env env(*this);
         Account const alice{"alice"};
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
 
-        Json::Value withoutSigners;
+        json::Value withoutSigners;
         withoutSigners[jss::account] = alice.human();
 
-        Json::Value withSigners;
+        json::Value withSigners;
         withSigners[jss::account] = alice.human();
         withSigners[jss::signer_lists] = true;
 
@@ -139,7 +139,7 @@ public:
         // Give alice a SignerList.
         Account const bogie{"bogie"};
 
-        Json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
+        json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
         env(smallSigners);
         {
             // account_info without the "signer_lists" argument.
@@ -176,7 +176,7 @@ public:
         Account const shade{"shade"};
         Account const spook{"spook"};
 
-        Json::Value const bigSigners = signers(
+        json::Value const bigSigners = signers(
             alice,
             4,
             {
@@ -223,13 +223,13 @@ public:
         using namespace jtx;
         Env env{*this};
         Account const alice{"alice"};
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
 
-        Json::Value withoutSigners;
+        json::Value withoutSigners;
         withoutSigners[jss::api_version] = 2;
         withoutSigners[jss::account] = alice.human();
 
-        Json::Value withSigners;
+        json::Value withSigners;
         withSigners[jss::api_version] = 2;
         withSigners[jss::account] = alice.human();
         withSigners[jss::signer_lists] = true;
@@ -258,7 +258,7 @@ public:
         // Give alice a SignerList.
         Account const bogie{"bogie"};
 
-        Json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
+        json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
         env(smallSigners);
         {
             // account_info without the "signer_lists" argument.
@@ -299,7 +299,7 @@ public:
         Account const shade{"shade"};
         Account const spook{"spook"};
 
-        Json::Value const bigSigners = signers(
+        json::Value const bigSigners = signers(
             alice,
             4,
             {
@@ -345,7 +345,7 @@ public:
         using namespace jtx;
         Env env(*this);
         Account const alice{"alice"};
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
 
         auto const withoutSigners = std::string("{ ") +
             "\"jsonrpc\": \"2.0\", "
@@ -416,7 +416,7 @@ public:
         // Give alice a SignerList.
         Account const bogie{"bogie"};
 
-        Json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
+        json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
         env(smallSigners);
         {
             // account_info without the "signer_lists" argument.
@@ -459,7 +459,7 @@ public:
         Account const shade{"shade"};
         Account const spook{"spook"};
 
-        Json::Value const bigSigners = signers(
+        json::Value const bigSigners = signers(
             alice,
             4,
             {
@@ -510,10 +510,10 @@ public:
         Env env(*this, features);
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(kXRP(1000), alice, bob);
+        env.fund(XRP(1000), alice, bob);
 
         auto getAccountFlag = [&env](std::string_view fName, Account const& account) {
-            Json::Value params;
+            json::Value params;
             params[jss::account] = account.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
             auto const name = std::string(fName);

@@ -286,8 +286,8 @@ private:
         }
 
         ConfigT(ConfigT const& other)
-            : ValueHash(other.hash_function())
-            , KeyValueEqual(other.key_eq())
+            : ValueHash(other.hashFunction())
+            , KeyValueEqual(other.keyEq())
             , beast::detail::EmptyBaseOptimization<ElementAllocator>(
                   ElementAllocatorTraits::select_on_container_copy_construction(other.alloc()))
             , clock(other.clock)
@@ -295,16 +295,16 @@ private:
         }
 
         ConfigT(ConfigT const& other, Allocator const& alloc)
-            : ValueHash(other.hash_function())
-            , KeyValueEqual(other.key_eq())
+            : ValueHash(other.hashFunction())
+            , KeyValueEqual(other.keyEq())
             , beast::detail::EmptyBaseOptimization<ElementAllocator>(alloc)
             , clock(other.clock)
         {
         }
 
         ConfigT(ConfigT&& other)
-            : ValueHash(std::move(other.hash_function()))
-            , KeyValueEqual(std::move(other.key_eq()))
+            : ValueHash(std::move(other.hashFunction()))
+            , KeyValueEqual(std::move(other.keyEq()))
             , beast::detail::EmptyBaseOptimization<ElementAllocator>(std::move(other.alloc()))
             , clock(other.clock)
         {
@@ -313,8 +313,8 @@ private:
         ConfigT(
             ConfigT&& other,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
             Allocator const& alloc)
-            : ValueHash(std::move(other.hash_function()))
-            , KeyValueEqual(std::move(other.key_eq()))
+            : ValueHash(std::move(other.hashFunction()))
+            , KeyValueEqual(std::move(other.keyEq()))
             , beast::detail::EmptyBaseOptimization<ElementAllocator>(alloc)
             , clock(other.clock)
         {
@@ -323,8 +323,8 @@ private:
         ConfigT&
         operator=(ConfigT const& other)
         {
-            hash_function() = other.hash_function();
-            key_eq() = other.key_eq();
+            hashFunction() = other.hashFunction();
+            keyEq() = other.keyEq();
             alloc() = other.alloc();
             clock = other.clock;
             return *this;
@@ -333,8 +333,8 @@ private:
         ConfigT&
         operator=(ConfigT&& other)
         {
-            hash_function() = std::move(other.hash_function());
-            key_eq() = std::move(other.key_eq());
+            hashFunction() = std::move(other.hashFunction());
+            keyEq() = std::move(other.keyEq());
             alloc() = std::move(other.alloc());
             clock = other.clock;
             return *this;
@@ -353,13 +353,13 @@ private:
         }
 
         Hash&
-        hash_function()
+        hashFunction()
         {
             return ValueHash::hashFunction();
         }
 
         [[nodiscard]] Hash const&
-        hash_function() const
+        hashFunction() const
         {
             return ValueHash::hashFunction();
         }
@@ -377,13 +377,13 @@ private:
         }
 
         KeyEqual&
-        key_eq()
+        keyEq()
         {
             return keyValueEqual().keyEq();
         }
 
         [[nodiscard]] KeyEqual const&
-        key_eq() const
+        keyEq() const
         {
             return keyValueEqual().keyEq();
         }
@@ -1120,7 +1120,7 @@ public:
     count(K const& k) const
     {
         return m_cont_.count(
-            k, std::cref(m_config_.hash_function()), std::cref(m_config_.keyValueEqual()));
+            k, std::cref(m_config_.hashFunction()), std::cref(m_config_.keyValueEqual()));
     }
 
     // VFALCO TODO Respect is_transparent (c++14)
@@ -1129,7 +1129,7 @@ public:
     find(K const& k)
     {
         return iterator(m_cont_.find(
-            k, std::cref(m_config_.hash_function()), std::cref(m_config_.keyValueEqual())));
+            k, std::cref(m_config_.hashFunction()), std::cref(m_config_.keyValueEqual())));
     }
 
     // VFALCO TODO Respect is_transparent (c++14)
@@ -1138,7 +1138,7 @@ public:
     find(K const& k) const
     {
         return const_iterator(m_cont_.find(
-            k, std::cref(m_config_.hash_function()), std::cref(m_config_.keyValueEqual())));
+            k, std::cref(m_config_.hashFunction()), std::cref(m_config_.keyValueEqual())));
     }
 
     // VFALCO TODO Respect is_transparent (c++14)
@@ -1147,7 +1147,7 @@ public:
     equalRange(K const& k)
     {
         auto const r(m_cont_.equal_range(
-            k, std::cref(m_config_.hash_function()), std::cref(m_config_.keyValueEqual())));
+            k, std::cref(m_config_.hashFunction()), std::cref(m_config_.keyValueEqual())));
         return std::make_pair(iterator(r.first), iterator(r.second));
     }
 
@@ -1157,7 +1157,7 @@ public:
     equalRange(K const& k) const
     {
         auto const r(m_cont_.equal_range(
-            k, std::cref(m_config_.hash_function()), std::cref(m_config_.keyValueEqual())));
+            k, std::cref(m_config_.hashFunction()), std::cref(m_config_.keyValueEqual())));
         return std::make_pair(const_iterator(r.first), const_iterator(r.second));
     }
 
@@ -1228,7 +1228,7 @@ public:
             bucket_count() != 0,
             "beast::detail::AgedUnorderedContainer::bucket : nonzero bucket "
             "count");
-        return m_cont_.bucket(k, std::cref(m_config_.hash_function()));
+        return m_cont_.bucket(k, std::cref(m_config_.hashFunction()));
     }
 
     //--------------------------------------------------------------------------
@@ -1277,13 +1277,13 @@ public:
     hasher const&
     hashFunction() const
     {
-        return m_config_.hash_function();
+        return m_config_.hashFunction();
     }
 
     key_equal const&
     keyEq() const
     {
-        return m_config_.key_eq();
+        return m_config_.keyEq();
     }
 
     //--------------------------------------------------------------------------
@@ -2092,8 +2092,8 @@ template <class K, bool MaybeMulti, bool MaybeMap, class>
 std::conditional_t<IsMap, T, void*>&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::at(K const& k)
 {
-    auto const iter(m_cont_.find(
-        k, std::cref(m_config_.hash_function()), std::cref(m_config_.keyValueEqual())));
+    auto const iter(
+        m_cont_.find(k, std::cref(m_config_.hashFunction()), std::cref(m_config_.keyValueEqual())));
     if (iter == m_cont_.end())
         throw std::out_of_range("key not found");
     return iter->value.second;
@@ -2113,8 +2113,8 @@ typename std::conditional<IsMap, T, void*>::type const&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::at(
     K const& k) const
 {
-    auto const iter(m_cont_.find(
-        k, std::cref(m_config_.hash_function()), std::cref(m_config_.keyValueEqual())));
+    auto const iter(
+        m_cont_.find(k, std::cref(m_config_.hashFunction()), std::cref(m_config_.keyValueEqual())));
     if (iter == m_cont_.end())
         throw std::out_of_range("key not found");
     return iter->value.second;
@@ -2137,7 +2137,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
     maybeRehash(1);
     typename cont_type::insert_commit_data d;
     auto const result(m_cont_.insert_check(
-        key, std::cref(m_config_.hash_function()), std::cref(m_config_.keyValueEqual()), d));
+        key, std::cref(m_config_.hashFunction()), std::cref(m_config_.keyValueEqual()), d));
     if (result.second)
     {
         Element* const p(newElement(
@@ -2166,7 +2166,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
     maybeRehash(1);
     typename cont_type::insert_commit_data d;
     auto const result(m_cont_.insert_check(
-        key, std::cref(m_config_.hash_function()), std::cref(m_config_.keyValueEqual()), d));
+        key, std::cref(m_config_.hashFunction()), std::cref(m_config_.keyValueEqual()), d));
     if (result.second)
     {
         Element* const p(newElement(
@@ -2220,7 +2220,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
     typename cont_type::insert_commit_data d;
     auto const result(m_cont_.insert_check(
         extract(value),
-        std::cref(m_config_.hash_function()),
+        std::cref(m_config_.hashFunction()),
         std::cref(m_config_.keyValueEqual()),
         d));
     if (result.second)
@@ -2274,7 +2274,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
     typename cont_type::insert_commit_data d;
     auto const result(m_cont_.insert_check(
         extract(value),
-        std::cref(m_config_.hash_function()),
+        std::cref(m_config_.hashFunction()),
         std::cref(m_config_.keyValueEqual()),
         d));
     if (result.second)
@@ -2361,7 +2361,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
     typename cont_type::insert_commit_data d;
     auto const result(m_cont.insert_check(
         extract(p->value),
-        std::cref(m_config.hash_function()),
+        std::cref(m_config.hashFunction()),
         std::cref(m_config.keyValueEqual()),
         d));
     if (result.second)
@@ -2420,7 +2420,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
     typename cont_type::insert_commit_data d;
     auto const result(m_cont_.insert_check(
         extract(p->value),
-        std::cref(m_config_.hash_function()),
+        std::cref(m_config_.hashFunction()),
         std::cref(m_config_.keyValueEqual()),
         d));
     if (result.second)
@@ -2486,8 +2486,8 @@ auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::erase(K const& k)
     -> size_type
 {
-    auto iter(m_cont_.find(
-        k, std::cref(m_config_.hash_function()), std::cref(m_config_.keyValueEqual())));
+    auto iter(
+        m_cont_.find(k, std::cref(m_config_.hashFunction()), std::cref(m_config_.keyValueEqual())));
     if (iter == m_cont_.end())
         return 0;
     size_type n(0);
@@ -2655,7 +2655,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
     typename cont_type::insert_commit_data d;
     auto const result(m_cont_.insert_check(
         extract(value),
-        std::cref(m_config_.hash_function()),
+        std::cref(m_config_.hashFunction()),
         std::cref(m_config_.keyValueEqual()),
         d));
     if (result.second)

@@ -28,7 +28,7 @@ class OwnerInfo_test : public beast::unit_test::Suite
         Env env{*this};
 
         auto const alice = Account{"alice"};
-        env.fund(kXRP(10000), alice);
+        env.fund(XRP(10000), alice);
         env.close();
 
         {  // missing account field
@@ -38,7 +38,7 @@ class OwnerInfo_test : public beast::unit_test::Suite
         }
 
         {  // ask for empty account
-            Json::Value params;
+            json::Value params;
             params[jss::account] = "";
             auto const result = env.rpc("json", "owner_info", to_string(params))[jss::result];
             if (BEAST_EXPECT(result.isMember(jss::accepted) && result.isMember(jss::current)))
@@ -53,11 +53,11 @@ class OwnerInfo_test : public beast::unit_test::Suite
         {  // ask for nonexistent account
            // this seems like it should be an error, but current impl
            // (deprecated) does not return an error, just empty fields.
-            Json::Value params;
+            json::Value params;
             params[jss::account] = Account{"bob"}.human();
             auto const result = env.rpc("json", "owner_info", to_string(params))[jss::result];
-            BEAST_EXPECT(result[jss::accepted] == Json::ObjectValue);
-            BEAST_EXPECT(result[jss::current] == Json::ObjectValue);
+            BEAST_EXPECT(result[jss::accepted] == json::ObjectValue);
+            BEAST_EXPECT(result[jss::current] == json::ObjectValue);
             BEAST_EXPECT(result[jss::status] == "success");
         }
     }
@@ -72,20 +72,20 @@ class OwnerInfo_test : public beast::unit_test::Suite
 
         auto const alice = Account{"alice"};
         auto const gw = Account{"gateway"};
-        env.fund(kXRP(10000), alice, gw);
+        env.fund(XRP(10000), alice, gw);
         env.close();
         auto const usd = gw["USD"];
         auto const cny = gw["CNY"];
         env(trust(alice, usd(1000)));
         env(trust(alice, cny(1000)));
-        env(offer(alice, usd(1), kXRP(1000)));
+        env(offer(alice, usd(1), XRP(1000)));
         env.close();
 
         env(pay(gw, alice, usd(50)));
         env(pay(gw, alice, cny(50)));
-        env(offer(alice, cny(2), kXRP(1000)));
+        env(offer(alice, cny(2), XRP(1000)));
 
-        Json::Value params;
+        json::Value params;
         params[jss::account] = alice.human();
         auto const result = env.rpc("json", "owner_info", to_string(params))[jss::result];
         if (!BEAST_EXPECT(result.isMember(jss::accepted) && result.isMember(jss::current)))
@@ -127,7 +127,7 @@ class OwnerInfo_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(offers[0u][jss::Account] == alice.human());
         BEAST_EXPECT(
-            offers[0u][sfTakerGets.fieldName] == kXRP(1000).value().getJson(JsonOptions::KNone));
+            offers[0u][sfTakerGets.fieldName] == XRP(1000).value().getJson(JsonOptions::KNone));
         BEAST_EXPECT(
             offers[0u][sfTakerPays.fieldName] == usd(1).value().getJson(JsonOptions::KNone));
 
@@ -168,7 +168,7 @@ class OwnerInfo_test : public beast::unit_test::Suite
         BEAST_EXPECT(offers[1u] == result[jss::accepted][jss::offers][0u]);
         BEAST_EXPECT(offers[0u][jss::Account] == alice.human());
         BEAST_EXPECT(
-            offers[0u][sfTakerGets.fieldName] == kXRP(1000).value().getJson(JsonOptions::KNone));
+            offers[0u][sfTakerGets.fieldName] == XRP(1000).value().getJson(JsonOptions::KNone));
         BEAST_EXPECT(
             offers[0u][sfTakerPays.fieldName] == cny(2).value().getJson(JsonOptions::KNone));
     }

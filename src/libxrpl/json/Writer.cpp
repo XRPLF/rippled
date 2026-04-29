@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-namespace Json {
+namespace json {
 
 namespace {
 
@@ -253,7 +253,7 @@ Writer::output(std::string const& s)
 }
 
 void
-Writer::output(Json::Value const& value)
+Writer::output(json::Value const& value)
 {
     impl_->markStarted();
     outputJson(value, impl_->getOutput());
@@ -341,4 +341,4 @@ Writer::finish()
         impl_->finish();
 }
 
-}  // namespace Json
+}  // namespace json

@@ -88,7 +88,7 @@ public:
             // test the properties of the LEDGER_ENTRY_FLAGS section
             {
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
-                Json::Value const& leFlags = result[jss::result][jss::LEDGER_ENTRY_FLAGS];
+                json::Value const& leFlags = result[jss::result][jss::LEDGER_ENTRY_FLAGS];
 
                 // sanity test the mapped value of a few arbitrarily chosen flags
                 BEAST_EXPECT(leFlags["AccountRoot"]["lsfDisallowXRP"] == 0x00080000);
@@ -109,7 +109,7 @@ public:
             // validate the correctness of few chosen transaction flags
             {
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_FLAGS));
-                Json::Value const& txFlags = result[jss::result][jss::TRANSACTION_FLAGS];
+                json::Value const& txFlags = result[jss::result][jss::TRANSACTION_FLAGS];
 
                 BEAST_EXPECT(txFlags["universal"]["tfFullyCanonicalSig"] == 0x80000000);
                 BEAST_EXPECT(txFlags["universal"]["tfInnerBatchTxn"] == 0x40000000);
@@ -127,7 +127,7 @@ public:
             // validate the correctness of the AccountSpecificFlags section
             {
                 BEAST_EXPECT(result[jss::result].isMember(jss::ACCOUNT_SET_FLAGS));
-                Json::Value const& asFlags = result[jss::result][jss::ACCOUNT_SET_FLAGS];
+                json::Value const& asFlags = result[jss::result][jss::ACCOUNT_SET_FLAGS];
 
                 BEAST_EXPECT(asFlags["asfDisallowXRP"] == 3);
                 BEAST_EXPECT(asFlags["asfGlobalFreeze"] == 7);
@@ -138,12 +138,12 @@ public:
             // test the response fields of the TRANSACTION_FORMATS section
             {
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_FORMATS));
-                Json::Value const& txnFormats = result[jss::result][jss::TRANSACTION_FORMATS];
+                json::Value const& txnFormats = result[jss::result][jss::TRANSACTION_FORMATS];
 
                 // first validate the contents of "common"
                 {
                     BEAST_EXPECT(txnFormats.isMember("common"));
-                    Json::Value const& section = txnFormats["common"];
+                    json::Value const& section = txnFormats["common"];
 
                     BEAST_EXPECT(section[0u][jss::name] == "TransactionType");
                     BEAST_EXPECT(section[0u][jss::optionality] == SoeRequired);
@@ -201,7 +201,7 @@ public:
                 // format of the OracleSet transaction
                 {
                     BEAST_EXPECT(txnFormats.isMember("OracleSet"));
-                    Json::Value const& section = txnFormats["OracleSet"];
+                    json::Value const& section = txnFormats["OracleSet"];
 
                     BEAST_EXPECT(section[0u][jss::name] == "OracleDocumentID");
                     BEAST_EXPECT(section[0u][jss::optionality] == SoeRequired);
@@ -225,7 +225,7 @@ public:
                 // validate the format of the PermissionedDomainDelete transaction
                 {
                     BEAST_EXPECT(txnFormats.isMember("PermissionedDomainDelete"));
-                    Json::Value const& section = txnFormats["PermissionedDomainDelete"];
+                    json::Value const& section = txnFormats["PermissionedDomainDelete"];
 
                     BEAST_EXPECT(section[0u][jss::name] == "DomainID");
                     BEAST_EXPECT(section[0u][jss::optionality] == SoeRequired);
@@ -234,7 +234,7 @@ public:
                 // validate the format of the Clawback transaction
                 {
                     BEAST_EXPECT(txnFormats.isMember("Clawback"));
-                    Json::Value const& section = txnFormats["Clawback"];
+                    json::Value const& section = txnFormats["Clawback"];
 
                     BEAST_EXPECT(section[0u][jss::name] == "Amount");
                     BEAST_EXPECT(section[0u][jss::optionality] == SoeRequired);
@@ -246,7 +246,7 @@ public:
                 // validate the format of the SetFee transaction
                 {
                     BEAST_EXPECT(txnFormats.isMember("SetFee"));
-                    Json::Value const& section = txnFormats["SetFee"];
+                    json::Value const& section = txnFormats["SetFee"];
 
                     BEAST_EXPECT(section[0u][jss::name] == "LedgerSequence");
                     BEAST_EXPECT(section[0u][jss::optionality] == SoeOptional);
@@ -284,7 +284,7 @@ public:
 
                 // check "common" first
                 {
-                    Json::Value const& observedCommonLedgerEntry =
+                    json::Value const& observedCommonLedgerEntry =
                         result[jss::result][jss::LEDGER_ENTRY_FORMATS]["common"];
 
                     BEAST_EXPECT(observedCommonLedgerEntry[0u][jss::name] == "LedgerIndex");
@@ -299,7 +299,7 @@ public:
 
                 // test the contents of an arbitrary ledger-entry (DID)
                 {
-                    Json::Value const& observedDIDLedgerEntry =
+                    json::Value const& observedDIDLedgerEntry =
                         result[jss::result][jss::LEDGER_ENTRY_FORMATS]["DID"];
 
                     BEAST_EXPECT(observedDIDLedgerEntry[0u][jss::name] == "Account");
@@ -326,7 +326,7 @@ public:
 
                 // test the contents of an arbitrary ledger-entry (NegativeUNL)
                 {
-                    Json::Value const& observedNunlLedgerEntry =
+                    json::Value const& observedNunlLedgerEntry =
                         result[jss::result][jss::LEDGER_ENTRY_FORMATS]["NegativeUNL"];
 
                     BEAST_EXPECT(observedNunlLedgerEntry[0u][jss::name] == "DisabledValidators");
@@ -349,7 +349,7 @@ public:
             // Exhaustive test: verify all transaction flags from getAllTxFlags() appear in the
             // output
             {
-                Json::Value const& txFlags = result[jss::result][jss::TRANSACTION_FLAGS];
+                json::Value const& txFlags = result[jss::result][jss::TRANSACTION_FLAGS];
 
                 for (auto const& [txName, flagMap] : getAllTxFlags())
                 {
@@ -371,7 +371,7 @@ public:
             // Exhaustive test: verify all ledger entry flags from getAllLedgerFlags() appear in the
             // output
             {
-                Json::Value const& leFlags = result[jss::result][jss::LEDGER_ENTRY_FLAGS];
+                json::Value const& leFlags = result[jss::result][jss::LEDGER_ENTRY_FLAGS];
 
                 for (auto const& [ledgerType, flagMap] : getAllLedgerFlags())
                 {
@@ -393,7 +393,7 @@ public:
             // Exhaustive test: verify all AccountSet flags from getAsfFlagMap() appear in the
             // output
             {
-                Json::Value const& asFlags = result[jss::result][jss::ACCOUNT_SET_FLAGS];
+                json::Value const& asFlags = result[jss::result][jss::ACCOUNT_SET_FLAGS];
 
                 for (auto const& [flagName, flagValue] : getAsfFlagMap())
                 {

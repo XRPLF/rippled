@@ -12,7 +12,7 @@ namespace xrpl {
 //   SigningAccounts <array>,
 //   tx_json: <object>,
 // }
-Json::Value
+json::Value
 doSubmitMultiSigned(RPC::JsonContext& context)
 {
     context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;

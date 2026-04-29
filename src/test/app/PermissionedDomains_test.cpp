@@ -34,7 +34,7 @@ namespace xrpl::test {
 using namespace jtx;
 
 static std::string
-exceptionExpected(Env& env, Json::Value const& jv)
+exceptionExpected(Env& env, json::Value const& jv)
 {
     try
     {
@@ -65,7 +65,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         testcase("Enabled");
         Account const alice("alice");
         Env env(*this, features);
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
         pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials));
         BEAST_EXPECT(env.ownerCount(alice) == 1);
@@ -87,7 +87,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         testcase("Credentials disabled");
         Account const alice("alice");
         Env env(*this, amendments);
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
         pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), Ter(temDISABLED));
     }
@@ -99,7 +99,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         testcase("Disabled");
         Account const alice("alice");
         Env env(*this, withoutFeature_);
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
         pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), Ter(temDISABLED));
         env(pdomain::deleteTx(alice, uint256(75)), Ter(temDISABLED));
@@ -291,7 +291,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             human2Acc.emplace(c.human(), c);
 
         for (int i = 0; i < accNum; ++i)
-            env.fund(kXRP(1000), alice[i]);
+            env.fund(XRP(1000), alice[i]);
 
         // Create new from existing account with a single credential.
         pdomain::Credentials const credentials1{{alice[2], "credential1"}};
@@ -435,7 +435,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         Env env(*this, features);
         Account const alice("alice");
 
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
         auto const setFee(drops(env.current()->fees().increment));
 
         pdomain::Credentials const credentials{{alice, "first credential"}};
@@ -448,7 +448,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
 
         // Delete a domain that doesn't belong to the account.
         Account const bob("bob");
-        env.fund(kXRP(1000), bob);
+        env.fund(XRP(1000), bob);
         env(pdomain::deleteTx(bob, domain), Ter(tecNO_PERMISSION));
 
         // Delete a non-existent domain.

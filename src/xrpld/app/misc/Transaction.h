@@ -290,7 +290,7 @@ public:
         currentLedgerState_.emplace(validatedLedger, fee, accountSeq, availableSeq);
     }
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options, bool binary = false) const;
 
     // Information used to locate a transaction.

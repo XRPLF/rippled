@@ -41,7 +41,7 @@ BookListeners::publish(MultiApiJson const& jvObj, hash_set<std::uint64_t>& haveP
             {
                 jvObj.visit(
                     p->getApiVersion(),  //
-                    [&](Json::Value const& jv) { p->send(jv, true); });
+                    [&](json::Value const& jv) { p->send(jv, true); });
             }
             ++it;
         }

@@ -107,7 +107,7 @@ protected:
 
             Account const alice{"alice"};
             Account const bob{"bob"};
-            env.fund(kXRP(10000), alice, bob);
+            env.fund(XRP(10000), alice, bob);
 
             auto const keylet = keylet::loanbroker(alice, env.seq(alice));
 
@@ -132,7 +132,7 @@ protected:
             // 3. LoanManage
             env(manage(alice, loanKeylet.key, tfLoanImpair), Ter(temDISABLED));
             // 4. LoanPay
-            env(pay(alice, loanKeylet.key, kXRP(500)), Ter(temDISABLED));
+            env(pay(alice, loanKeylet.key, XRP(500)), Ter(temDISABLED));
         };
         failAll(all_ - featureMPTokensV1);
         failAll(all_ - featureSingleAssetVault - featureLendingProtocol);
@@ -2903,7 +2903,7 @@ protected:
                                   std::function<void(Env&, BrokerInfo const&)> iouTest,
                                   CaseArgs args = {}) {
             Env env(*this, all_);
-            env.fund(kXRP(args.initialXRP), issuer, lender, borrower);
+            env.fund(XRP(args.initialXRP), issuer, lender, borrower);
             env.close();
             if (args.requireAuth)
             {
@@ -3069,7 +3069,7 @@ protected:
                 BEAST_EXPECT(sleMPT1 == nullptr);
 
                 // Burn some XRP
-                env(noop(borrower), Fee(kXRP((acctReserve * 2) + (incReserve * 2))));
+                env(noop(borrower), Fee(XRP((acctReserve * 2) + (incReserve * 2))));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create MPToken
@@ -3081,7 +3081,7 @@ protected:
                 env.close();
 
                 // Can create loan now, will implicitly create MPToken
-                env(pay(issuer, borrower, kXRP(incReserve)));
+                env(pay(issuer, borrower, XRP(incReserve)));
                 env.close();
                 env(set(borrower, broker.brokerID, principalRequest),
                     kCOUNTERPARTY(lender),
@@ -3115,7 +3115,7 @@ protected:
                 BEAST_EXPECT(sleLine1 == nullptr);
 
                 // Burn some XRP
-                env(noop(borrower), Fee(kXRP((acctReserve * 2) + (incReserve * 2))));
+                env(noop(borrower), Fee(XRP((acctReserve * 2) + (incReserve * 2))));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create trust line
@@ -3127,7 +3127,7 @@ protected:
                 env.close();
 
                 // Can create loan now, will implicitly create trust line
-                env(pay(issuer, borrower, kXRP(incReserve)));
+                env(pay(issuer, borrower, XRP(incReserve)));
                 env.close();
                 env(set(borrower, broker.brokerID, principalRequest),
                     kCOUNTERPARTY(lender),
@@ -3162,7 +3162,7 @@ protected:
                 BEAST_EXPECT(sleMPT2 == nullptr);
 
                 // Burn some XRP
-                env(noop(lender), Fee(kXRP(incReserve)));
+                env(noop(lender), Fee(XRP(incReserve)));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create MPToken
@@ -3175,7 +3175,7 @@ protected:
                 env.close();
 
                 // Can create loan now, will implicitly create MPToken
-                env(pay(issuer, lender, kXRP(incReserve)));
+                env(pay(issuer, lender, XRP(incReserve)));
                 env.close();
                 env(set(borrower, broker.brokerID, principalRequest),
                     kLOAN_ORIGINATION_FEE(broker.asset(1).value()),
@@ -3213,7 +3213,7 @@ protected:
                 BEAST_EXPECT(sleLine2 == nullptr);
 
                 // Burn some XRP
-                env(noop(lender), Fee(kXRP(incReserve)));
+                env(noop(lender), Fee(XRP(incReserve)));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create trust line
@@ -3226,7 +3226,7 @@ protected:
                 env.close();
 
                 // Can create loan now, will implicitly create trust line
-                env(pay(issuer, lender, kXRP(incReserve)));
+                env(pay(issuer, lender, XRP(incReserve)));
                 env.close();
                 env(set(borrower, broker.brokerID, principalRequest),
                     kLOAN_ORIGINATION_FEE(broker.asset(1).value()),
@@ -3332,7 +3332,7 @@ protected:
         jtx::Account const alice{"alice"};
         jtx::Account const bella{"bella"};
         auto const msigSetup = [&](Env& env, Account const& account) {
-            Json::Value const tx1 = signers(account, 2, {{alice, 1}, {bella, 1}});
+            json::Value const tx1 = signers(account, 2, {{alice, 1}, {bella, 1}});
             env(tx1);
             env.close();
         };
@@ -3462,7 +3462,7 @@ protected:
 
         // Fund the accounts and trust lines with the same amount so that
         // tests can use the same values regardless of the asset.
-        env.fund(kXRP(100'000'000), issuer, noripple(lender, borrower, evan));
+        env.fund(XRP(100'000'000), issuer, noripple(lender, borrower, evan));
         env.close();
 
         // Create assets
@@ -3551,7 +3551,7 @@ protected:
 
         // Fund the accounts and trust lines with the same amount so that
         // tests can use the same values regardless of the asset.
-        env.fund(kXRP(100'000'000), issuer, noripple(lender));
+        env.fund(XRP(100'000'000), issuer, noripple(lender));
         env.close();
 
         // Use an XRP asset for simplicity
@@ -3573,7 +3573,7 @@ protected:
 
         // Adding an empty counterparty signature object also fails, but
         // at the RPC level.
-        createJson = env.json(createJson, json(sfCounterpartySignature, Json::ObjectValue));
+        createJson = env.json(createJson, Json(sfCounterpartySignature, json::ObjectValue));
         env(createJson, Ter(telENV_RPC_FAILED));
 
         if (auto const jt = env.jt(createJson); BEAST_EXPECT(jt.stx))
@@ -3591,14 +3591,14 @@ protected:
         }
 
         // Copy the transaction signature into the counterparty signature.
-        Json::Value counterpartyJson{Json::ObjectValue};
+        json::Value counterpartyJson{json::ObjectValue};
         counterpartyJson[sfTxnSignature] = createJson[sfTxnSignature];
         counterpartyJson[sfSigningPubKey] = createJson[sfSigningPubKey];
         if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
             counterpartyJson[sfSigners] = createJson[sfSigners];
 
         // The duplicated signature works
-        createJson = env.json(createJson, json(sfCounterpartySignature, counterpartyJson));
+        createJson = env.json(createJson, Json(sfCounterpartySignature, counterpartyJson));
         env(createJson);
 
         env.close();
@@ -3623,7 +3623,7 @@ protected:
             }
         }
         auto const loanID = [&]() {
-            Json::Value params(Json::ObjectValue);
+            json::Value params(json::ObjectValue);
             params[jss::account] = lender.human();
             params[jss::type] = "Loan";
             auto const res = env.rpc("json", "account_objects", to_string(params));
@@ -3686,7 +3686,7 @@ protected:
         Account const borrower{"borrower"};
 
         BrokerParameters const brokerParams;
-        env.fund(kXRP(brokerParams.vaultDeposit * 100), lender, borrower);
+        env.fund(XRP(brokerParams.vaultDeposit * 100), lender, borrower);
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
@@ -3700,9 +3700,9 @@ protected:
 
         auto forgedLoanSet = set(borrower, broker.brokerID, principalRequest, 0);
 
-        Json::Value randomData{Json::ObjectValue};
-        randomData[jss::SigningPubKey] = Json::StaticString{"2600"};
-        Json::Value sigObject{Json::ObjectValue};
+        json::Value randomData{json::ObjectValue};
+        randomData[jss::SigningPubKey] = json::StaticString{"2600"};
+        json::Value sigObject{json::ObjectValue};
         sigObject[jss::SigningPubKey] = strHex(lender.pk().slice());
         Serializer ss;
         ss.add32(HashPrefix::TxSign);
@@ -3710,7 +3710,7 @@ protected:
         auto const sig = xrpl::sign(borrower.pk(), borrower.sk(), ss.slice());
         sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
 
-        forgedLoanSet[Json::StaticString{"CounterpartySignature"}] = sigObject;
+        forgedLoanSet[json::StaticString{"CounterpartySignature"}] = sigObject;
 
         // ? Fails because the lender hasn't signed the tx
         env(env.json(forgedLoanSet, Fee(loanSetFee)), Ter(telENV_RPC_FAILED));
@@ -3720,13 +3720,13 @@ protected:
         // ! Should fail because the lender hasn't signed the tx
         env(batch::outer(borrower, seq, batchFee, tfAllOrNothing),
             batch::Inner(forgedLoanSet, seq + 1),
-            batch::Inner(pay(borrower, lender, kXRP(1)), seq + 2),
+            batch::Inner(pay(borrower, lender, XRP(1)), seq + 2),
             Ter(lendingBatchEnabled ? temBAD_SIGNATURE : temINVALID_INNER_BATCH));
         env.close();
 
         // ? Check that the loan was NOT created
         {
-            Json::Value params(Json::ObjectValue);
+            json::Value params(json::ObjectValue);
             params[jss::account] = borrower.human();
             params[jss::type] = "Loan";
             auto const res = env.rpc("json", "account_objects", to_string(params));
@@ -3749,7 +3749,7 @@ protected:
         Account const lender{"lender"};
 
         BrokerParameters const brokerParams{.debtMax = 0};
-        env.fund(kXRP(brokerParams.vaultDeposit * 100), issuer, noripple(lender));
+        env.fund(XRP(brokerParams.vaultDeposit * 100), issuer, noripple(lender));
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
@@ -3769,13 +3769,13 @@ protected:
 
         auto createJson = env.json(set(lender, broker.brokerID, principalRequest), Fee(loanSetFee));
 
-        Json::Value counterpartyJson{Json::ObjectValue};
+        json::Value counterpartyJson{json::ObjectValue};
         counterpartyJson[sfTxnSignature] = createJson[sfTxnSignature];
         counterpartyJson[sfSigningPubKey] = createJson[sfSigningPubKey];
         if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
             counterpartyJson[sfSigners] = createJson[sfSigners];
 
-        createJson = env.json(createJson, json(sfCounterpartySignature, counterpartyJson));
+        createJson = env.json(createJson, Json(sfCounterpartySignature, counterpartyJson));
         env(createJson);
 
         env.close();
@@ -3797,7 +3797,7 @@ protected:
         Account const borrower{"borrower"};
 
         BrokerParameters const brokerParams;
-        env.fund(kXRP(brokerParams.vaultDeposit * 100), issuer, lender, borrower);
+        env.fund(XRP(brokerParams.vaultDeposit * 100), issuer, lender, borrower);
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
@@ -3816,7 +3816,7 @@ protected:
             Fee(loanSetFee),
             kLOAN_SERVICE_FEE(serviceFee),
             kPAYMENT_TOTAL(numPayments),
-            json(sfCounterpartySignature, Json::ObjectValue));
+            Json(sfCounterpartySignature, json::ObjectValue));
 
         createJson["CloseInterestRate"] = 55374;
         createJson["ClosePaymentFee"] = "3825205248";
@@ -3874,7 +3874,7 @@ protected:
         auto const lenderPass = "lender";
         Account const lender{lenderPass, KeyType::Ed25519};
 
-        env.fund(kXRP(1'000'000), alice, lender, borrower);
+        env.fund(XRP(1'000'000), alice, lender, borrower);
         env.close();
         env(noop(lender));
         env(noop(lender));
@@ -3885,12 +3885,12 @@ protected:
 
         {
             testcase("RPC AccountSet");
-            Json::Value txJson{Json::ObjectValue};
+            json::Value txJson{json::ObjectValue};
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
             auto const signParams = [&]() {
-                Json::Value signParams{Json::ObjectValue};
+                json::Value signParams{json::ObjectValue};
                 signParams[jss::passphrase] = borrowerPass;
                 signParams[jss::key_type] = "ed25519";
                 signParams[jss::tx_json] = txJson;
@@ -3919,12 +3919,12 @@ protected:
         {
             testcase("RPC LoanSet - illegal signature_target");
 
-            Json::Value txJson{Json::ObjectValue};
+            json::Value txJson{json::ObjectValue};
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
             auto const borrowerSignParams = [&]() {
-                Json::Value params{Json::ObjectValue};
+                json::Value params{json::ObjectValue};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::signature_target] = "Destination";
@@ -3942,7 +3942,7 @@ protected:
         {
             testcase("RPC LoanSet - sign and submit borrower initiated");
             // 1. Borrower creates the transaction
-            Json::Value txJson{Json::ObjectValue};
+            json::Value txJson{json::ObjectValue};
             txJson[sfTransactionType] = "LoanSet";
             txJson[sfAccount] = borrower.human();
             txJson[sfCounterparty] = lender.human();
@@ -3959,7 +3959,7 @@ protected:
 
             // 2. Borrower signs the transaction
             auto const borrowerSignParams = [&]() {
-                Json::Value params{Json::ObjectValue};
+                json::Value params{json::ObjectValue};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::tx_json] = txJson;
@@ -3991,7 +3991,7 @@ protected:
             // 3. Borrower sends the signed transaction to the lender
             // 4. Lender signs the transaction
             auto const lenderSignParams = [&]() {
-                Json::Value params{Json::ObjectValue};
+                json::Value params{json::ObjectValue};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::signature_target] = "CounterpartySignature";
@@ -4049,7 +4049,7 @@ protected:
         {
             testcase("RPC LoanSet - sign and submit lender initiated");
             // 1. Lender creates the transaction
-            Json::Value txJson{Json::ObjectValue};
+            json::Value txJson{json::ObjectValue};
             txJson[sfTransactionType] = "LoanSet";
             txJson[sfAccount] = lender.human();
             txJson[sfCounterparty] = borrower.human();
@@ -4066,7 +4066,7 @@ protected:
 
             // 2. Lender signs the transaction
             auto const lenderSignParams = [&]() {
-                Json::Value params{Json::ObjectValue};
+                json::Value params{json::ObjectValue};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::tx_json] = txJson;
@@ -4097,7 +4097,7 @@ protected:
             // 3. Lender sends the signed transaction to the Borrower
             // 4. Borrower signs the transaction
             auto const borrowerSignParams = [&]() {
-                Json::Value params{Json::ObjectValue};
+                json::Value params{json::ObjectValue};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::signature_target] = "CounterpartySignature";
@@ -4185,7 +4185,7 @@ protected:
                 return STAmount{iou};
             };
 
-            env.fund(kXRP(20'000), issuer, broker, borrower);
+            env.fund(XRP(20'000), issuer, broker, borrower);
             env.close();
 
             env(trust(broker, iou(20'000'000)));
@@ -4202,7 +4202,7 @@ protected:
                 Sig(sfCounterpartySignature, broker),
                 kLOAN_SERVICE_FEE(iou(100).value()),
                 kPAYMENT_INTERVAL(100),
-                Fee(kXRP(100)));
+                Fee(XRP(100)));
             env.close();
 
             env(trust(borrower, iou(20'000'000)));
@@ -4219,7 +4219,7 @@ protected:
                     env.close();
                 }
 
-                env(pay(borrower, keylet.key, iou(10'100)), Fee(kXRP(100)));
+                env(pay(borrower, keylet.key, iou(10'100)), Fee(XRP(100)));
                 env.close();
 
                 if (deepFreeze)
@@ -4250,7 +4250,7 @@ protected:
         Account const lender("lender");
         Env env(*this);
 
-        env.fund(kXRP(1'000), issuer, lender);
+        env.fund(XRP(1'000), issuer, lender);
 
         std::int64_t constexpr kISSUER_BALANCE = 10'000'000;
         MPTTester const asset(
@@ -4287,7 +4287,7 @@ protected:
         {
             Account const alice{"alice"};
             Env env(*this);
-            env.fund(kXRP(1'000), alice);
+            env.fund(XRP(1'000), alice);
             env.close();
             env(del(alice, beast::kZERO), Ter(temINVALID));
         }
@@ -4304,7 +4304,7 @@ protected:
         {
             Account const alice{"alice"};
             Env env(*this);
-            env.fund(kXRP(1'000), alice);
+            env.fund(XRP(1'000), alice);
             env.close();
             env(manage(alice, beast::kZERO, tfLoanDefault), Ter(temINVALID));
         }
@@ -4323,7 +4323,7 @@ protected:
 
         // preclaim
         Env env(*this);
-        env.fund(kXRP(1'000), lender, issuer, borrower);
+        env.fund(XRP(1'000), lender, issuer, borrower);
         env(trust(lender, iou(10'000'000)));
         env(pay(issuer, lender, iou(5'000'000)));
         BrokerInfo brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
@@ -4401,7 +4401,7 @@ protected:
 
         auto testWrapper = [&](auto&& test) {
             Env env(*this);
-            env.fund(kXRP(1'000), lender, issuer, borrower);
+            env.fund(XRP(1'000), lender, issuer, borrower);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
             BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
@@ -4476,7 +4476,7 @@ protected:
             badPubKey[20] ^= 0xAA;
             counterpartySig.setFieldVL(sfSigningPubKey, badPubKey);
             local.setFieldObject(sfCounterpartySignature, counterpartySig);
-            Json::Value jvResult;
+            json::Value jvResult;
             jvResult[jss::tx_blob] = strHex(local.getSerializer().slice());
             auto res = env.rpc("json", "submit", to_string(jvResult))["result"];
             BEAST_EXPECT(
@@ -4543,7 +4543,7 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        env.fund(kXRP(1'000'000), issuer, lender, borrower);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
         MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
@@ -4565,7 +4565,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            json(sfCounterpartySignature, Json::ObjectValue));
+            Json(sfCounterpartySignature, json::ObjectValue));
 
         createJson["CloseInterestRate"] = 76671;
         createJson["ClosePaymentFee"] = "2061925410";
@@ -4604,7 +4604,7 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        env.fund(kXRP(1'000'000), issuer, lender, borrower);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
         PrettyAsset const iouAsset = issuer[iouCurrency_];
@@ -4629,7 +4629,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            json(sfCounterpartySignature, Json::ObjectValue));
+            Json(sfCounterpartySignature, json::ObjectValue));
 
         createJson["ClosePaymentFee"] = "0";
         createJson["GracePeriod"] = 60;
@@ -4695,7 +4695,7 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        env.fund(kXRP(1'000'000), issuer, lender, borrower);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
         PrettyAsset const iouAsset = issuer[iouCurrency_];
@@ -4719,7 +4719,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            json(sfCounterpartySignature, Json::ObjectValue));
+            Json(sfCounterpartySignature, json::ObjectValue));
 
         createJson["CloseInterestRate"] = 47299;
         createJson["ClosePaymentFee"] = "3985819770";
@@ -4761,7 +4761,7 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        env.fund(kXRP(1'000'000), issuer, lender, borrower);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
         PrettyAsset const iouAsset = issuer[iouCurrency_];
@@ -4782,7 +4782,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            json(sfCounterpartySignature, Json::ObjectValue));
+            Json(sfCounterpartySignature, json::ObjectValue));
 
         createJson["ClosePaymentFee"] = "0";
         createJson["GracePeriod"] = 60;
@@ -4840,7 +4840,7 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        env.fund(kXRP(1'000'000), issuer, lender, borrower);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
         PrettyAsset const iouAsset = issuer[iouCurrency_];
@@ -4864,7 +4864,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            json(sfCounterpartySignature, Json::ObjectValue));
+            Json(sfCounterpartySignature, json::ObjectValue));
 
         createJson["ClosePaymentFee"] = "0";
         createJson["InterestRate"] = 24346;
@@ -4941,7 +4941,7 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        env.fund(kXRP(1'000'000), issuer, lender, borrower);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
         PrettyAsset const iouAsset = issuer[iouCurrency_];
@@ -4970,7 +4970,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            json(sfCounterpartySignature, Json::ObjectValue));
+            Json(sfCounterpartySignature, json::ObjectValue));
 
         createJson["ClosePaymentFee"] = "0";
         createJson["InterestRate"] = 12833;
@@ -5027,7 +5027,7 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        env.fund(kXRP(1'000'000), issuer, lender, borrower);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
         PrettyAsset const iouAsset = issuer[iouCurrency_];
@@ -5063,7 +5063,7 @@ protected:
                 kLATE_INTEREST_RATE(TenthBips32(77048)),
                 kLATE_PAYMENT_FEE(0),
                 kLOAN_ORIGINATION_FEE(218),
-                json(sfCounterpartySignature, Json::ObjectValue));
+                Json(sfCounterpartySignature, json::ObjectValue));
 
             createJson.removeMember(sfSequence.getJsonName());
 
@@ -5278,7 +5278,7 @@ protected:
         Account const borrower{"borrower"};
         Env env(*this);
 
-        env.fund(kXRP(100'000), issuer, lender, borrower);
+        env.fund(XRP(100'000), issuer, lender, borrower);
         env.close();
 
         auto asset = MPTTester({
@@ -5336,7 +5336,7 @@ protected:
         Account const issuer{"issuer"};
         Account const alice{"alice"};
 
-        env.fund(kXRP(100'000), issuer, alice);
+        env.fund(XRP(100'000), issuer, alice);
         env.close();
 
         MPTTester mpt{env, issuer, kMPT_INIT_NO_FUND};
@@ -5686,7 +5686,7 @@ protected:
 
         Account const lender{"poc_lender4"};
         Account const borrower{"poc_borrower4"};
-        env.fund(kXRP(3'000'000), lender, borrower);
+        env.fund(XRP(3'000'000), lender, borrower);
         env.close();
 
         PrettyAsset const asset{xrpIssue(), 1'000'000};
@@ -5892,7 +5892,7 @@ protected:
         Account const borrower{"borrower"};
         Account const victim{"victim"};
 
-        env.fund(kXRP(1'000'000'00), issuer, lender, borrower, victim);
+        env.fund(XRP(1'000'000'00), issuer, lender, borrower, victim);
         env.close();
 
         // Step 1: Create vault with IOU asset
@@ -6169,19 +6169,19 @@ protected:
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
         Account const depositor{"depositor"};
-        auto const txFee = Fee(kXRP(100));
+        auto const txFee = Fee(XRP(100));
 
         Env env(*this);
         Vault const vault(env);
 
-        env.fund(kXRP(10'000), lender, issuer, borrower, depositor);
+        env.fund(XRP(10'000), lender, issuer, borrower, depositor);
         env.close();
 
         auto [tx, vaultKeyLet] = vault.create({.owner = lender, .asset = xrpIssue()});
         env(tx, txFee);
         env.close();
 
-        env(vault.deposit({.depositor = depositor, .id = vaultKeyLet.key, .amount = kXRP(1'000)}),
+        env(vault.deposit({.depositor = depositor, .id = vaultKeyLet.key, .amount = XRP(1'000)}),
             txFee);
         env.close();
 
@@ -6228,7 +6228,7 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        env.fund(kXRP(200'000), lender, borrower);
+        env.fund(XRP(200'000), lender, borrower);
         env.close();
 
         // Vault with XRP asset
@@ -6365,15 +6365,15 @@ protected:
 
             if (borrower == broker)
             {
-                env.fund(kXRP(10'000), broker, issuer, depositor);
+                env.fund(XRP(10'000), broker, issuer, depositor);
             }
             else
             {
-                env.fund(kXRP(10'000), broker, borrower, issuer, depositor);
+                env.fund(XRP(10'000), broker, borrower, issuer, depositor);
             }
             env.close();
 
-            auto const xrpFee = kXRP(100);
+            auto const xrpFee = XRP(100);
             auto const txFee = Fee(xrpFee);
 
             STAmount const debtMaximumRequest = getMaxDebt(env);
@@ -6594,7 +6594,7 @@ protected:
 
         Account const lender{"lender"}, borrower{"borrower"};
 
-        env.fund(kXRP(10'000'000), lender, borrower);
+        env.fund(XRP(10'000'000), lender, borrower);
         env.close();
 
         PrettyAsset const asset{xrpIssue(), 1000};
@@ -6646,7 +6646,7 @@ protected:
         Account const broker("broker");
         auto const iou = issuer["IOU"];
         Env env(*this, all_);
-        env.fund(kXRP(20'000), issuer, broker, borrower);
+        env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
         // Set up trustlines and fund accounts
         env(trust(broker, iou(20'000'000)));
@@ -6662,7 +6662,7 @@ protected:
             Sig(sfCounterpartySignature, broker),
             kLOAN_SERVICE_FEE(iou(100).value()),
             kPAYMENT_INTERVAL(100),
-            Fee(kXRP(100)));
+            Fee(XRP(100)));
         env.close();
         // Ensure broker has sufficient cover so brokerPayee == brokerOwner
         // We need coverAvailable >= (debtTotal * coverRateMinimum)
@@ -6688,7 +6688,7 @@ protected:
         BEAST_EXPECT(env.le(brokerTrustline) == nullptr);
         // Now borrower tries to make a payment
         // We should get a tesSUCCESS instead of a tecNO_LINE.
-        env(pay(borrower, keylet.key, iou(10'100)), Fee(kXRP(100)), Ter(tesSUCCESS));
+        env(pay(borrower, keylet.key, iou(10'100)), Fee(XRP(100)), Ter(tesSUCCESS));
         env.close();
         // Verify trustline is still deleted
         BEAST_EXPECT(env.le(brokerTrustline) == nullptr);
@@ -6699,7 +6699,7 @@ protected:
             Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
             auto const balance = env.balance(pseudo, iou);
             // 1,000 default + 50,000 extra + 100 service fee from LoanPay
-            BEAST_EXPECTS(balance == iou(51'100), to_string(Json::Value(balance)));
+            BEAST_EXPECTS(balance == iou(51'100), to_string(json::Value(balance)));
         }
     }
 
@@ -6715,7 +6715,7 @@ protected:
         Account const broker("broker");
 
         Env env(*this, all_);
-        env.fund(kXRP(20'000), issuer, broker, borrower);
+        env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
         MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
@@ -6742,7 +6742,7 @@ protected:
             Sig(sfCounterpartySignature, broker),
             kLOAN_SERVICE_FEE(mpt(100).value()),
             kPAYMENT_INTERVAL(100),
-            Fee(kXRP(100)));
+            Fee(XRP(100)));
         env.close();
         // Ensure broker has sufficient cover so brokerPayee == brokerOwner
         // We need coverAvailable >= (debtTotal * coverRateMinimum)
@@ -6769,7 +6769,7 @@ protected:
         // Now borrower tries to make a payment
         // We should get a tesSUCCESS instead of a tecNO_AUTH.
         auto const borrowerBalance = env.balance(borrower, mpt);
-        env(pay(borrower, keylet.key, mpt(10'100)), Fee(kXRP(100)), Ter(tesSUCCESS));
+        env(pay(borrower, keylet.key, mpt(10'100)), Fee(XRP(100)), Ter(tesSUCCESS));
         env.close();
         // Verify the MPT is still unauthorized.
         BEAST_EXPECT(env.le(brokerMpt) == nullptr);
@@ -6780,7 +6780,7 @@ protected:
             Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
             auto const balance = env.balance(pseudo, mpt);
             // 1,000 default + 50,000 extra + 100 service fee from LoanPay
-            BEAST_EXPECTS(balance == mpt(51'100), to_string(Json::Value(balance)));
+            BEAST_EXPECTS(balance == mpt(51'100), to_string(json::Value(balance)));
         }
     }
 
@@ -6796,7 +6796,7 @@ protected:
         Account const broker("broker");
 
         Env env(*this, all_);
-        env.fund(kXRP(20'000), issuer, broker, borrower);
+        env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
         auto credType = "credential1";
@@ -6842,7 +6842,7 @@ protected:
             Sig(sfCounterpartySignature, broker),
             kLOAN_SERVICE_FEE(mpt(100).value()),
             kPAYMENT_INTERVAL(100),
-            Fee(kXRP(100)));
+            Fee(XRP(100)));
         env.close();
         // Ensure broker has sufficient cover so brokerPayee == brokerOwner
         // We need coverAvailable >= (debtTotal * coverRateMinimum)
@@ -6872,7 +6872,7 @@ protected:
         // Now borrower tries to make a payment
         // We should get a tesSUCCESS instead of a tecNO_AUTH.
         auto const borrowerBalance = env.balance(borrower, mpt);
-        env(pay(borrower, keylet.key, mpt(10'100)), Fee(kXRP(100)), Ter(tesSUCCESS));
+        env(pay(borrower, keylet.key, mpt(10'100)), Fee(XRP(100)), Ter(tesSUCCESS));
         env.close();
         // Verify broker is still not authorized
         env(pay(issuer, broker, mpt(1'000)), Ter(tecNO_AUTH));
@@ -6883,7 +6883,7 @@ protected:
             Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
             auto const balance = env.balance(pseudo, mpt);
             // 1,000 default + 50,000 extra + 100 service fee from LoanPay
-            BEAST_EXPECTS(balance == mpt(51'100), to_string(Json::Value(balance)));
+            BEAST_EXPECTS(balance == mpt(51'100), to_string(json::Value(balance)));
         }
     }
 
@@ -6899,7 +6899,7 @@ protected:
         Account const broker("broker");
 
         Env env(*this, all_);
-        env.fund(kXRP(20'000), issuer, broker, borrower);
+        env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
         auto credType = "credential1";
@@ -6954,7 +6954,7 @@ protected:
             Sig(sfCounterpartySignature, broker),
             kLOAN_SERVICE_FEE(mpt(100).value()),
             kPAYMENT_INTERVAL(100),
-            Fee(kXRP(100)),
+            Fee(XRP(100)),
             Ter(tecNO_AUTH));
         env.close();
     }
@@ -6975,7 +6975,7 @@ protected:
         Account const borrowerA{"borrowerA"};
         Account const borrowerB{"borrowerB"};
 
-        env.fund(kXRP(1'000'000), issuer, lender, borrowerA, borrowerB);
+        env.fund(XRP(1'000'000), issuer, lender, borrowerA, borrowerB);
         env.close();
 
         PrettyAsset const asset = xrpIssue();
@@ -7013,7 +7013,7 @@ protected:
             kPAYMENT_TOTAL(12),
             loan::kPAYMENT_INTERVAL(loanPaymentInterval),
             loan::kGRACE_PERIOD(loanGracePeriod),
-            Fee(kXRP(10)));  // Sufficient fee for multi-sig transaction
+            Fee(XRP(10)));  // Sufficient fee for multi-sig transaction
         env(loanATx);
         env.close();
 
@@ -7027,7 +7027,7 @@ protected:
             kPAYMENT_TOTAL(12),
             loan::kPAYMENT_INTERVAL(loanPaymentInterval),
             loan::kGRACE_PERIOD(loanGracePeriod),
-            Fee(kXRP(10)));  // Sufficient fee for multi-sig transaction
+            Fee(XRP(10)));  // Sufficient fee for multi-sig transaction
         env(loanBTx);
         env.close();
 
@@ -7110,7 +7110,7 @@ protected:
         Account const depositorB{"lpB"};
         Account const borrower{"borrowerA"};
 
-        env.fund(kXRP(kINITIAL_FUNDING), issuer, lender, depositorA, depositorB, borrower);
+        env.fund(XRP(kINITIAL_FUNDING), issuer, lender, depositorA, depositorB, borrower);
         env.close();
 
         // Setup trust lines

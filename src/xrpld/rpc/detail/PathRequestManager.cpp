@@ -122,7 +122,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                             // it can be freed if the client disconnects, and
                             // thus fail to lock later.
                             ipSub.reset();
-                            Json::Value update = request->doUpdate(cache, false, continueCallback);
+                            json::Value update = request->doUpdate(cache, false, continueCallback);
                             request->updateComplete();
                             update[jss::type] = "path_find";
                             if ((ipSub = getSubscriber(request)))
@@ -228,11 +228,11 @@ PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
 }
 
 // Make a new-style path_find request
-Json::Value
+json::Value
 PathRequestManager::makePathRequest(
     std::shared_ptr<InfoSub> const& subscriber,
     std::shared_ptr<ReadView const> const& inLedger,
-    Json::Value const& requestJson)
+    json::Value const& requestJson)
 {
     auto req = std::make_shared<PathRequest>(app_, subscriber, ++lastIdentifier_, *this, journal_);
 
@@ -248,13 +248,13 @@ PathRequestManager::makePathRequest(
 }
 
 // Make an old-style ripple_path_find request
-Json::Value
+json::Value
 PathRequestManager::makeLegacyPathRequest(
     PathRequest::pointer& req,
     std::function<void(void)> completion,
     Resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
-    Json::Value const& request)
+    json::Value const& request)
 {
     // This assignment must take place before the
     // completion function is called
@@ -281,11 +281,11 @@ PathRequestManager::makeLegacyPathRequest(
     return std::move(jvRes);
 }
 
-Json::Value
+json::Value
 PathRequestManager::doLegacyPathRequest(
     Resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
-    Json::Value const& request)
+    json::Value const& request)
 {
     auto cache = std::make_shared<AssetCache>(inLedger, app_.getJournal("AssetCache"));
 

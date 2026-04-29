@@ -153,7 +153,7 @@ public:
  * @brief Builder for CheckCreate transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class CheckCreateBuilder : public TransactionBuilderBase<CheckCreateBuilder>

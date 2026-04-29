@@ -18,7 +18,7 @@ public:
         testcase("ChooseLedgerEntryType");
 
         // Test no type.
-        Json::Value tx = Json::ObjectValue;
+        json::Value tx = json::ObjectValue;
         auto result = RPC::chooseLedgerEntryType(tx);
         BEAST_EXPECT(result.first == RPC::Status::kOK);
         BEAST_EXPECT(result.second == 0);

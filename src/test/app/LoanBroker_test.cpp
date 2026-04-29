@@ -80,7 +80,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             Env env(*this, features);
 
             Account const alice{"alice"};
-            env.fund(kXRP(10000), alice);
+            env.fund(XRP(10000), alice);
 
             // Try to create a vault
             PrettyAsset const asset{xrpIssue(), 1'000'000};
@@ -303,7 +303,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             // Need one of brokerID or amount
             env(coverClawback(alice), Ter(temINVALID));
             env(coverClawback(alice), kLOAN_BROKER_ID(uint256(0)), Ter(temINVALID));
-            env(coverClawback(alice), kAMOUNT(kXRP(1000)), Ter(temBAD_AMOUNT));
+            env(coverClawback(alice), kAMOUNT(XRP(1000)), Ter(temBAD_AMOUNT));
             env(coverClawback(alice), kAMOUNT(vault.asset(-10)), Ter(temBAD_AMOUNT));
             // Clawbacks with an MPT need to specify the broker ID
             env(coverClawback(alice), kAMOUNT(kBAD_MPT_ASSET(1)), Ter(temINVALID));
@@ -558,7 +558,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         // Fund the accounts and trust lines with the same amount so that tests
         // can use the same values regardless of the asset.
-        env.fund(kXRP(100'000), issuer, noripple(alice, evan, bystander));
+        env.fund(XRP(100'000), issuer, noripple(alice, evan, bystander));
         env.close();
 
         env(fset(issuer, asfAllowTrustLineClawback));
@@ -868,7 +868,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Env env(*this);
         Vault const vault{env};
 
-        env.fund(kXRP(100'000), issuer, alice);
+        env.fund(XRP(100'000), issuer, alice);
         env.close();
 
         PrettyAsset const asset = [&]() {
@@ -970,7 +970,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
             // preclaim: tecDST_TAG_NEEDED
             Account const dest{"dest"};
-            env.fund(kXRP(1'000), dest);
+            env.fund(XRP(1'000), dest);
             env(fset(dest, asfRequireDest));
             env.close();
             env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
@@ -1047,7 +1047,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         if (brokerTest == Delete)
         {
             Account const borrower{"borrower"};
-            env.fund(kXRP(1'000), borrower);
+            env.fund(XRP(1'000), borrower);
             env(loan::set(borrower, brokerKeylet.key, asset(50).value()),
                 Sig(sfCounterpartySignature, alice),
                 Fee(env.current()->fees().base * 2));
@@ -1120,7 +1120,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             auto const usd = alice["USD"];
             Env env(*this);
-            env.fund(kXRP(100'000), alice);
+            env.fund(XRP(100'000), alice);
             env.close();
 
             auto jtx = env.jt(coverClawback(alice), kAMOUNT(usd(100)));
@@ -1225,7 +1225,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Env env(*this);
 
         Account const alice{"alice"};
-        env.fund(kXRP(10000), alice);
+        env.fund(XRP(10000), alice);
         env.close();
 
         // Create a Vault owned by alice with an XRP asset
@@ -1282,7 +1282,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Env env(*this);
         Vault vault{env};
 
-        env.fund(kXRP(100'000), issuer, alice);
+        env.fund(XRP(100'000), issuer, alice);
         env.close();
 
         auto asset = MPTTester({
@@ -1389,7 +1389,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Env env(*this);
         Vault const vault{env};
 
-        env.fund(kXRP(100'000), issuer, alice);
+        env.fund(XRP(100'000), issuer, alice);
         env.close();
 
         PrettyAsset const asset = [&]() {
@@ -1425,7 +1425,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         Account const borrower{"borrower"};
-        env.fund(kXRP(1'000), borrower);
+        env.fund(XRP(1'000), borrower);
         env(loan::set(borrower, brokerKeylet.key, asset(50).value()),
             Sig(sfCounterpartySignature, alice),
             Fee(env.current()->fees().base * 2));
@@ -1447,7 +1447,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         tx2[sfDebtMaximum] = 0;
         env(tx2, Ter(tesSUCCESS));
 
-        tx2[sfDebtMaximum] = Json::Value::kMAX_INT;
+        tx2[sfDebtMaximum] = json::Value::kMAX_INT;
         env(tx2, Ter(tesSUCCESS));
 
         {
@@ -1494,7 +1494,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         auto test = [&](auto&& getToken) {
             Env env(*this);
 
-            env.fund(kXRP(1'000), issuer, holder);
+            env.fund(XRP(1'000), issuer, holder);
             env.close();
 
             auto const [token, deposit, err] = getToken(env);
@@ -1567,7 +1567,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         Env env(*this);
 
         Account const issuer{"issuer"}, lender{"lender"}, borrower{"borrower"};
-        env.fund(kXRP(20'000), issuer, lender, borrower);
+        env.fund(XRP(20'000), issuer, lender, borrower);
         auto const iou = issuer["IOU"];
 
         Vault const vault{env};
@@ -1641,7 +1641,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 env.close();
             };
 
-            env.fund(kXRP(1'000), issuer, broker, dest);
+            env.fund(XRP(1'000), issuer, broker, dest);
             env.close();
 
             if (trustState == RequireAuth)
@@ -1730,7 +1730,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
             testcase << "RIPD-4274 MPT with state: " << static_cast<int>(mptState);
 
-            env.fund(kXRP(1'000), issuer, broker, dest);
+            env.fund(XRP(1'000), issuer, broker, dest);
             env.close();
 
             auto const maybeToken = [&]() -> std::optional<MPT> {

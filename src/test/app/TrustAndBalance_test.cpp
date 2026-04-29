@@ -32,7 +32,7 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        env(pay(env.master, "alice", kXRP(1)), Ter(tecNO_DST_INSUF_XRP));
+        env(pay(env.master, "alice", XRP(1)), Ter(tecNO_DST_INSUF_XRP));
         env.close();
     }
 
@@ -59,7 +59,7 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(10000), gw, alice, bob);
+        env.fund(XRP(10000), gw, alice, bob);
         env.close();
 
         // credit limit doesn't exist yet - verify ledger_entry
@@ -130,7 +130,7 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(10000), alice, bob);
+        env.fund(XRP(10000), alice, bob);
         env.close();
 
         env(trust(alice, bob["USD"](600)));
@@ -175,7 +175,7 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(10000), gw, alice, bob);
+        env.fund(XRP(10000), gw, alice, bob);
         env.close();
 
         env(trust(alice, gw["AUD"](100)));
@@ -214,10 +214,10 @@ class TrustAndBalance_test : public beast::unit_test::Suite
 
         if (subscribe)
         {
-            Json::Value jvs;
-            jvs[jss::accounts] = Json::ArrayValue;
+            json::Value jvs;
+            jvs[jss::accounts] = json::ArrayValue;
             jvs[jss::accounts].append(gw.human());
-            jvs[jss::streams] = Json::ArrayValue;
+            jvs[jss::streams] = json::ArrayValue;
             jvs[jss::streams].append("transactions");
             jvs[jss::streams].append("ledger");
             auto jv = wsc->invoke("subscribe", jvs);
@@ -248,7 +248,7 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(10000), gw, alice, bob);
+        env.fund(XRP(10000), gw, alice, bob);
         env.close();
 
         // set a transfer rate
@@ -295,7 +295,7 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(kXRP(10000), gw, alice, bob);
+        env.fund(XRP(10000), gw, alice, bob);
         env.close();
 
         env(trust(alice, gw["USD"](600)));
@@ -340,7 +340,7 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         Account const carol{"carol"};
 
-        env.fund(kXRP(10000), gw, amazon, alice, bob, carol);
+        env.fund(XRP(10000), gw, amazon, alice, bob, carol);
         env.close();
 
         env(trust(amazon, gw["USD"](2000)));
@@ -396,21 +396,21 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         auto wsc = test::makeWSClient(env.app().config());
 
-        env.fund(kXRP(10000), alice);
+        env.fund(XRP(10000), alice);
         env.close();
 
-        Json::Value jvs;
-        jvs[jss::accounts] = Json::ArrayValue;
+        json::Value jvs;
+        jvs[jss::accounts] = json::ArrayValue;
         jvs[jss::accounts].append(env.master.human());
-        jvs[jss::streams] = Json::ArrayValue;
+        jvs[jss::streams] = json::ArrayValue;
         jvs[jss::streams].append("transactions");
         BEAST_EXPECT(wsc->invoke("subscribe", jvs)[jss::status] == "success");
 
         char const* invoiceId = "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
 
-        Json::Value jv;
+        json::Value jv;
         auto tx =
-            env.jt(pay(env.master, alice, kXRP(10000)), json(sfInvoiceID.fieldName, invoiceId));
+            env.jt(pay(env.master, alice, XRP(10000)), Json(sfInvoiceID.fieldName, invoiceId));
         jv[jss::tx_blob] = strHex(tx.stx->getSerializer().slice());
         auto jrr = wsc->invoke("submit", jv)[jss::result];
         BEAST_EXPECT(jrr[jss::status] == "success");

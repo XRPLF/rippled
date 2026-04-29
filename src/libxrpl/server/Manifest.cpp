@@ -276,13 +276,13 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
 
         tokenStr = base64Decode(tokenStr);
 
-        Json::Reader r;
-        Json::Value token;
+        json::Reader r;
+        json::Value token;
 
         if (r.parse(tokenStr, token))
         {
-            auto const m = token.get("manifest", Json::Value{});
-            auto const k = token.get("validation_secret_key", Json::Value{});
+            auto const m = token.get("manifest", json::Value{});
+            auto const k = token.get("validation_secret_key", json::Value{});
 
             if (m.isString() && k.isString())
             {

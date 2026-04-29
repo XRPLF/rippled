@@ -23,7 +23,7 @@ private:
     STAmount const value_;
 
 public:
-    Balance(Account account, NoneT) : none_(true), account_(std::move(account)), value_(kXRP)
+    Balance(Account account, NoneT) : none_(true), account_(std::move(account)), value_(XRP)
     {
     }
 

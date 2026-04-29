@@ -394,11 +394,11 @@ OverlayImpl::makeRedirectResponse(
     }
     msg.insert("Content-Type", "application/json");
     msg.insert(boost::beast::http::field::connection, "close");
-    msg.body() = Json::ObjectValue;
+    msg.body() = json::ObjectValue;
     {
-        Json::Value& ips = (msg.body()["peer-ips"] = Json::ArrayValue);
+        json::Value& ips = (msg.body()["peer-ips"] = json::ArrayValue);
         for (auto const& _ : peerFinder_->redirect(slot))
-            ips.append(_.address.to_string());
+            ips.append(_.address.toString());
     }
     msg.prepare_payload();
     return std::make_shared<SimpleWriter>(msg);
@@ -742,15 +742,15 @@ OverlayImpl::limit()
     return peerFinder_->config().maxPeers;
 }
 
-Json::Value
+json::Value
 OverlayImpl::getOverlayInfo() const
 {
     using namespace std::chrono;
-    Json::Value jv;
-    auto& av = jv[jss::active] = Json::Value(Json::ArrayValue);
+    json::Value jv;
+    auto& av = jv[jss::active] = json::Value(json::ArrayValue);
 
     forEach([&](std::shared_ptr<PeerImp> const& sp) {
-        auto& pv = av.append(Json::Value(Json::ObjectValue));
+        auto& pv = av.append(json::Value(json::ObjectValue));
         pv[jss::public_key] = base64Encode(sp->getNodePublic().data(), sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ? jss::in : jss::out;
         pv[jss::uptime] = static_cast<std::uint32_t>(duration_cast<seconds>(sp->uptime()).count());
@@ -772,7 +772,7 @@ OverlayImpl::getOverlayInfo() const
             auto version{sp->getVersion()};
             if (!version.empty())
             {
-                // Could move here if Json::value supported moving from strings
+                // Could move here if json::value supported moving from strings
                 pv[jss::version] = std::string{version};
             }
         }
@@ -786,14 +786,14 @@ OverlayImpl::getOverlayInfo() const
     return jv;
 }
 
-Json::Value
+json::Value
 OverlayImpl::getServerInfo()
 {
     bool const humanReadable = false;
     bool const admin = false;
     bool const counters = false;
 
-    Json::Value serverInfo = app_.getOPs().getServerInfo(humanReadable, admin, counters);
+    json::Value serverInfo = app_.getOPs().getServerInfo(humanReadable, admin, counters);
 
     // Filter out some information
     serverInfo.removeMember(jss::hostid);
@@ -803,7 +803,7 @@ OverlayImpl::getServerInfo()
 
     if (serverInfo.isMember(jss::validated_ledger))
     {
-        Json::Value& validatedLedger = serverInfo[jss::validated_ledger];
+        json::Value& validatedLedger = serverInfo[jss::validated_ledger];
 
         validatedLedger.removeMember(jss::base_fee);
         validatedLedger.removeMember(jss::reserve_base_xrp);
@@ -813,20 +813,20 @@ OverlayImpl::getServerInfo()
     return serverInfo;
 }
 
-Json::Value
+json::Value
 OverlayImpl::getServerCounts()
 {
     return getCountsJson(app_, 10);
 }
 
-Json::Value
+json::Value
 OverlayImpl::getUnlInfo()
 {
-    Json::Value validators = app_.getValidators().getJson();
+    json::Value validators = app_.getValidators().getJson();
 
     if (validators.isMember(jss::publisher_lists))
     {
-        Json::Value& publisherLists = validators[jss::publisher_lists];
+        json::Value& publisherLists = validators[jss::publisher_lists];
 
         for (auto& publisher : publisherLists)
         {
@@ -838,7 +838,7 @@ OverlayImpl::getUnlInfo()
     validators.removeMember(jss::trusted_validator_keys);
     validators.removeMember(jss::validation_quorum);
 
-    Json::Value validatorSites = app_.getValidatorSites().getJson();
+    json::Value validatorSites = app_.getValidatorSites().getJson();
 
     if (validatorSites.isMember(jss::validator_sites))
     {
@@ -849,10 +849,10 @@ OverlayImpl::getUnlInfo()
 }
 
 // Returns information on verified peers.
-Json::Value
+json::Value
 OverlayImpl::json()
 {
-    Json::Value json;
+    json::Value json;
     for (auto const& peer : getActivePeers())
     {
         json.append(peer->json());
@@ -872,7 +872,7 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
-    msg.body()["version"] = Json::Value(2u);
+    msg.body()["version"] = json::Value(2u);
 
     if ((setup_.crawlOptions & CrawlOptions::Overlay) != 0u)
     {
@@ -918,7 +918,7 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
         msg.result(status);
         msg.insert("Content-Length", "0");
 
-        msg.body() = Json::NullValue;
+        msg.body() = json::NullValue;
 
         msg.prepare_payload();
         handoff.response = std::make_shared<SimpleWriter>(msg);
@@ -987,7 +987,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     auto health = HealthState::Healthy;
     auto setHealth = [&health](HealthState state) { health = std::max(health, state); };
 
-    msg.body()[jss::info] = Json::ObjectValue;
+    msg.body()[jss::info] = json::ObjectValue;
     if (lastValidatedLedgerAge >= 7 || lastValidatedLedgerAge < 0)
     {
         msg.body()[jss::info][jss::validated_ledger] = lastValidatedLedgerAge;

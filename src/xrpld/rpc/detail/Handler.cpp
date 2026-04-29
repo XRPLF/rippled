@@ -23,12 +23,12 @@ namespace {
 
 /** Adjust an old-style handler to be call-by-reference. */
 template <typename Function>
-Handler::Method<Json::Value>
+Handler::Method<json::Value>
 byRef(Function const& f)
 {
-    return [f](JsonContext& context, Json::Value& result) {
+    return [f](JsonContext& context, json::Value& result) {
         result = f(context);
-        if (result.type() != Json::ObjectValue)
+        if (result.type() != json::ObjectValue)
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::RPC::byRef : result is object");
@@ -68,7 +68,7 @@ handlerFrom()
 {
     return {
         HandlerImpl::name,
-        &handle<Json::Value, HandlerImpl>,
+        &handle<json::Value, HandlerImpl>,
         HandlerImpl::role,
         HandlerImpl::condition,
         HandlerImpl::minApiVer,

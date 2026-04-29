@@ -6,13 +6,13 @@
 
 namespace xrpl {
 
-JsonPropertyStream::JsonPropertyStream() : topValue(Json::ObjectValue)
+JsonPropertyStream::JsonPropertyStream() : topValue(json::ObjectValue)
 {
     stack.reserve(64);
     stack.push_back(&topValue);
 }
 
-Json::Value const&
+json::Value const&
 JsonPropertyStream::top() const
 {
     return topValue;
@@ -22,8 +22,8 @@ void
 JsonPropertyStream::mapBegin()
 {
     // top is array
-    Json::Value& top(*stack.back());
-    Json::Value& map(top.append(Json::ObjectValue));
+    json::Value& top(*stack.back());
+    json::Value& map(top.append(json::ObjectValue));
     stack.push_back(&map);
 }
 
@@ -31,8 +31,8 @@ void
 JsonPropertyStream::mapBegin(std::string const& key)
 {
     // top is a map
-    Json::Value& top(*stack.back());
-    Json::Value& map(top[key] = Json::ObjectValue);
+    json::Value& top(*stack.back());
+    json::Value& map(top[key] = json::ObjectValue);
     stack.push_back(&map);
 }
 
@@ -94,8 +94,8 @@ void
 JsonPropertyStream::arrayBegin()
 {
     // top is array
-    Json::Value& top(*stack.back());
-    Json::Value& vec(top.append(Json::ArrayValue));
+    json::Value& top(*stack.back());
+    json::Value& vec(top.append(json::ArrayValue));
     stack.push_back(&vec);
 }
 
@@ -103,8 +103,8 @@ void
 JsonPropertyStream::arrayBegin(std::string const& key)
 {
     // top is a map
-    Json::Value& top(*stack.back());
-    Json::Value& vec(top[key] = Json::ArrayValue);
+    json::Value& top(*stack.back());
+    json::Value& vec(top[key] = json::ArrayValue);
     stack.push_back(&vec);
 }
 

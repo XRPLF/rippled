@@ -182,7 +182,7 @@ public:
         int const fund = 10000;
         auto const alice = Account("alice");
         auto const bob = Account("bob");
-        env.fund(kXRP(fund), "alice", "bob");
+        env.fund(XRP(fund), "alice", "bob");
         env.trust(bob["USD"](fund), alice);
         env.close();
 
@@ -195,10 +195,10 @@ public:
         std::string usdTxBlob;
         auto wsc = makeWSClient(env.app().config());
         {
-            Json::Value requestUSD;
+            json::Value requestUSD;
             requestUSD[jss::secret] = toBase58(generateSeed("bob"));
             requestUSD[jss::tx_json] = pay("bob", "alice", bob["USD"](fund / 2));
-            Json::Value replyUSD = wsc->invoke("sign", requestUSD);
+            json::Value replyUSD = wsc->invoke("sign", requestUSD);
 
             usdTxBlob = toBinary(replyUSD[jss::result][jss::tx_blob].asString());
         }

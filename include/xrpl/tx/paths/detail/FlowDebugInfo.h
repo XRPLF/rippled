@@ -183,7 +183,7 @@ struct FlowDebugInfo
     }
 
     [[nodiscard]] std::string
-    to_string(bool writePassInfo) const
+    toString(bool writePassInfo) const
     {
         std::ostringstream ostr;
 

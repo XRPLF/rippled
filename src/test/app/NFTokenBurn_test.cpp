@@ -48,10 +48,10 @@ class NFTokenBurn_test : public beast::unit_test::Suite
     static std::uint32_t
     nftCount(test::jtx::Env& env, test::jtx::Account const& acct)
     {
-        Json::Value params;
+        json::Value params;
         params[jss::account] = acct.human();
         params[jss::type] = "state";
-        Json::Value nfts = env.rpc("json", "account_nfts", to_string(params));
+        json::Value nfts = env.rpc("json", "account_nfts", to_string(params));
         return nfts[jss::result][jss::account_nfts].size();
     };
 
@@ -96,11 +96,11 @@ class NFTokenBurn_test : public beast::unit_test::Suite
     static void
     printNFTPages(test::jtx::Env& env, Volume vol)
     {
-        Json::Value jvParams;
+        json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = false;
         {
-            Json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
+            json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
 
             // Iterate the state and print all NFTokenPages.
             if (!jrr.isMember(jss::result) || !jrr[jss::result].isMember(jss::state))
@@ -108,13 +108,13 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 std::cout << "No ledger state found!" << std::endl;
                 return;
             }
-            Json::Value& state = jrr[jss::result][jss::state];
+            json::Value& state = jrr[jss::result][jss::state];
             if (!state.isArray())
             {
                 std::cout << "Ledger state is not array!" << std::endl;
                 return;
             }
-            for (Json::UInt i = 0; i < state.size(); ++i)
+            for (json::UInt i = 0; i < state.size(); ++i)
             {
                 if (state[i].isMember(sfNFTokens.jsonName) &&
                     state[i][sfNFTokens.jsonName].isArray())
@@ -177,7 +177,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         AcctStat becky{"becky"};
         AcctStat minter{"minter"};
 
-        env.fund(kXRP(10000), alice, becky, minter);
+        env.fund(XRP(10000), alice, becky, minter);
         env.close();
 
         // Both alice and minter mint nfts in case that makes any difference.
@@ -236,7 +236,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 // We do the same work on alice and minter, so make a lambda.
                 auto xferNFT = [&env, &becky](AcctStat& acct, auto& iter) {
                     uint256 const offerIndex = keylet::nftoffer(acct.acct, env.seq(acct.acct)).key;
-                    env(token::createOffer(acct, *iter, kXRP(0)), Txflags(tfSellNFToken));
+                    env(token::createOffer(acct, *iter, XRP(0)), Txflags(tfSellNFToken));
                     env.close();
                     env(token::acceptSellOffer(becky, offerIndex));
                     env.close();
@@ -358,7 +358,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         Account const alice{"alice"};
 
         Env env{*this, features};
-        env.fund(kXRP(1000), alice);
+        env.fund(XRP(1000), alice);
 
         // A lambda that generates 96 nfts packed into three pages of 32 each.
         // Returns a sorted vector of the NFTokenIDs packed into the pages.
@@ -404,16 +404,16 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
             // Verify that the ledger does indeed contain exactly three pages
             // of NFTs with 32 entries in each page.
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = "current";
             jvParams[jss::binary] = false;
             {
-                Json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
+                json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
 
-                Json::Value& state = jrr[jss::result][jss::state];
+                json::Value& state = jrr[jss::result][jss::state];
 
                 int pageCount = 0;
-                for (Json::UInt i = 0; i < state.size(); ++i)
+                for (json::UInt i = 0; i < state.size(); ++i)
                 {
                     if (state[i].isMember(sfNFTokens.jsonName) &&
                         state[i][sfNFTokens.jsonName].isArray())
@@ -447,15 +447,15 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
         // A lambda verifies that the ledger no longer contains any NFT pages.
         auto checkNoTokenPages = [this, &env]() {
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = "current";
             jvParams[jss::binary] = false;
             {
-                Json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
+                json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
 
-                Json::Value& state = jrr[jss::result][jss::state];
+                json::Value& state = jrr[jss::result][jss::state];
 
-                for (Json::UInt i = 0; i < state.size(); ++i)
+                for (json::UInt i = 0; i < state.size(); ++i)
                 {
                     BEAST_EXPECT(!state[i].isMember(sfNFTokens.jsonName));
                 }
@@ -854,7 +854,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
             Account const alice("alice");
             Account const becky("becky");
-            env.fund(kXRP(100000), alice, becky);
+            env.fund(XRP(100000), alice, becky);
             env.close();
 
             // alice creates 498 sell offers and becky creates 1 buy offers.
@@ -901,7 +901,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
             Account const alice("alice");
             Account const becky("becky");
-            env.fund(kXRP(100000), alice, becky);
+            env.fund(XRP(100000), alice, becky);
             env.close();
 
             // alice creates 501 sell offers for the token
@@ -944,7 +944,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
             Account const alice("alice");
             Account const becky("becky");
-            env.fund(kXRP(100000), alice, becky);
+            env.fund(XRP(100000), alice, becky);
             env.close();
 
             // alice creates 499 sell offers and becky creates 2 buy offers.
@@ -1006,7 +1006,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         Account const minter{"minter"};
 
         Env env{*this, features};
-        env.fund(kXRP(1000), alice, minter);
+        env.fund(XRP(1000), alice, minter);
 
         // A lambda that generates 96 nfts packed into three pages of 32 each.
         // Returns a sorted vector of the NFTokenIDs packed into the pages.
@@ -1047,7 +1047,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
                 // Minter creates an offer for the NFToken.
                 uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
-                env(token::createOffer(minter, nfts.back(), kXRP(0)), Txflags(tfSellNFToken));
+                env(token::createOffer(minter, nfts.back(), XRP(0)), Txflags(tfSellNFToken));
                 env.close();
 
                 // alice accepts the offer.
@@ -1061,16 +1061,16 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
             // Verify that the ledger does indeed contain exactly three pages
             // of NFTs with 32 entries in each page.
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::ledger_index] = "current";
             jvParams[jss::binary] = false;
             {
-                Json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
+                json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
 
-                Json::Value& state = jrr[jss::result][jss::state];
+                json::Value& state = jrr[jss::result][jss::state];
 
                 int pageCount = 0;
-                for (Json::UInt i = 0; i < state.size(); ++i)
+                for (json::UInt i = 0; i < state.size(); ++i)
                 {
                     if (state[i].isMember(sfNFTokens.jsonName) &&
                         state[i][sfNFTokens.jsonName].isArray())
@@ -1118,7 +1118,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
             // alice creates an offer for the NFToken.
             uint256 const aliceOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::createOffer(alice, last32NFTs.back(), kXRP(0)), Txflags(tfSellNFToken));
+            env(token::createOffer(alice, last32NFTs.back(), XRP(0)), Txflags(tfSellNFToken));
             env.close();
 
             // minter accepts the offer.
@@ -1152,7 +1152,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         {
             // minter creates an offer for the NFToken.
             uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
-            env(token::createOffer(minter, nftID, kXRP(0)), Txflags(tfSellNFToken));
+            env(token::createOffer(minter, nftID, XRP(0)), Txflags(tfSellNFToken));
             env.close();
 
             // alice accepts the offer.
@@ -1165,8 +1165,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         {
             // Try the account_objects RPC command.  Alice's account only shows
             // two NFT pages even though she owns more.
-            Json::Value acctObjs = [&env, &alice]() {
-                Json::Value params;
+            json::Value acctObjs = [&env, &alice]() {
+                json::Value params;
                 params[jss::account] = alice.human();
                 return env.rpc("json", "account_objects", to_string(params));
             }();
@@ -1176,8 +1176,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         {
             // Try the account_nfts RPC command.  It only returns 64 NFTs
             // although alice owns 96.
-            Json::Value aliceNFTs = [&env, &alice]() {
-                Json::Value params;
+            json::Value aliceNFTs = [&env, &alice]() {
+                json::Value params;
                 params[jss::account] = alice.human();
                 params[jss::type] = "state";
                 return env.rpc("json", "account_nfts", to_string(params));
