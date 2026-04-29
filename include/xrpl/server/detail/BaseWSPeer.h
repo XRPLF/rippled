@@ -15,6 +15,7 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/logic/tribool.hpp>
 
+#include <algorithm>
 #include <functional>
 #include <list>
 
@@ -69,19 +70,19 @@ public:
     // WSSession
     //
 
-    Port const&
+    [[nodiscard]] Port const&
     port() const override
     {
         return this->port_;
     }
 
-    http_request_type const&
+    [[nodiscard]] http_request_type const&
     request() const override
     {
         return this->request_;
     }
 
-    boost::asio::ip::tcp::endpoint const&
+    [[nodiscard]] boost::asio::ip::tcp::endpoint const&
     remote_endpoint() const override
     {
         return this->remote_address_;
@@ -352,7 +353,7 @@ BaseWSPeer<Handler, Impl>::on_read(error_code const& ec)
     auto const& data = rb_.data();
     std::vector<boost::asio::const_buffer> b;
     b.reserve(std::distance(data.begin(), data.end()));
-    std::copy(data.begin(), data.end(), std::back_inserter(b));
+    std::ranges::copy(data, std::back_inserter(b));
     this->handler_.onWSMessage(impl().shared_from_this(), b);
     rb_.consume(rb_.size());
 }

@@ -19,8 +19,7 @@
 #include <memory>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class RCLValidations_test : public beast::unit_test::suite
 {
@@ -273,7 +272,7 @@ class RCLValidations_test : public beast::unit_test::suite
         // due to the 256 ancestry limit
         BEAST_EXPECT(trie.remove(ledg_258, 3));
         trie.insert(ledg_259, 3);
-        trie.getPreferred(1);
+        [[maybe_unused]] auto unused1 = trie.getPreferred(1);
         // trie.dump(std::cout);
         // 000000[0,1)(T:0,B:5)
         //                     |-AB868A..37C9[1,260)(T:3,B:3)
@@ -297,7 +296,7 @@ class RCLValidations_test : public beast::unit_test::suite
 
         BEAST_EXPECT(trie.remove(RCLValidatedLedger{history[257], env.journal}, 1));
         trie.insert(RCLValidatedLedger{history[258], env.journal}, 1);
-        trie.getPreferred(1);
+        [[maybe_unused]] auto unused2 = trie.getPreferred(1);
         // trie.dump(std::cout);
         // 000000[0,1)(T:0,B:5)
         //                      |-AB868A..37C9[1,260)(T:4,B:4)
@@ -325,5 +324,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RCLValidations, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

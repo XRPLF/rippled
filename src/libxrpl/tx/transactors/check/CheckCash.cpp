@@ -20,9 +20,11 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
@@ -162,8 +164,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 ctx.view,
                 sleCheck->at(sfAccount),
                 value,
-                fhZERO_IF_FROZEN,
-                ahZERO_IF_UNAUTHORIZED,
+                FreezeHandling::fhZERO_IF_FROZEN,
+                AuthHandling::ahZERO_IF_UNAUTHORIZED,
                 ctx.j)};
 
             // Note that src will have one reserve's worth of additional XRP
@@ -582,6 +584,20 @@ CheckCash::doApply()
 
     psb.apply(ctx_.rawView());
     return tesSUCCESS;
+}
+
+void
+CheckCash::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+CheckCash::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

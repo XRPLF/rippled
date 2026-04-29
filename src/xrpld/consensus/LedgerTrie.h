@@ -10,6 +10,7 @@
 #include <optional>
 #include <sstream>
 #include <stack>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -40,7 +41,7 @@ public:
         @note s must be less than or equal to the sequence number of the
               tip ledger
     */
-    ID
+    [[nodiscard]] ID
     ancestor(Seq const& s) const
     {
         XRPL_ASSERT(s <= seq, "xrpl::SpanTip::ancestor : valid input");
@@ -83,34 +84,34 @@ public:
     Span&
     operator=(Span&&) = default;
 
-    Seq
+    [[nodiscard]] Seq
     start() const
     {
         return start_;
     }
 
-    Seq
+    [[nodiscard]] Seq
     end() const
     {
         return end_;
     }
 
     // Return the Span from [spot,end_) or none if no such valid span
-    std::optional<Span>
+    [[nodiscard]] std::optional<Span>
     from(Seq spot) const
     {
         return sub(spot, end_);
     }
 
     // Return the Span from [start_,spot) or none if no such valid span
-    std::optional<Span>
+    [[nodiscard]] std::optional<Span>
     before(Seq spot) const
     {
         return sub(start_, spot);
     }
 
     // Return the ID of the ledger that starts this span
-    ID
+    [[nodiscard]] ID
     startID() const
     {
         return ledger_[start_];
@@ -118,14 +119,14 @@ public:
 
     // Return the ledger sequence number of the first possible difference
     // between this span and a given ledger.
-    Seq
+    [[nodiscard]] Seq
     diff(Ledger const& o) const
     {
         return clamp(mismatch(ledger_, o));
     }
 
     //  The tip of this span
-    SpanTip<Ledger>
+    [[nodiscard]] SpanTip<Ledger>
     tip() const
     {
         Seq const tipSeq{end_ - Seq{1}};
@@ -133,20 +134,20 @@ public:
     }
 
 private:
-    Span(Seq start, Seq end, Ledger const& l) : start_{start}, end_{end}, ledger_{l}
+    Span(Seq start, Seq end, Ledger l) : start_{start}, end_{end}, ledger_{std::move(l)}
     {
         // Spans cannot be empty
         XRPL_ASSERT(start < end, "xrpl::Span::Span : non-empty span input");
     }
 
-    Seq
+    [[nodiscard]] Seq
     clamp(Seq val) const
     {
         return std::min(std::max(start_, val), end_);
     }
 
     // Return a span of this over the half-open interval [from,to)
-    std::optional<Span>
+    [[nodiscard]] std::optional<Span>
     sub(Seq from, Seq to) const
     {
         Seq const newFrom = clamp(from);
@@ -218,7 +219,7 @@ struct Node
         return o << s.span << "(T:" << s.tipSupport << ",B:" << s.branchSupport << ")";
     }
 
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson() const
     {
         Json::Value res;
@@ -341,7 +342,7 @@ class LedgerTrie
         @return Pair of the found node and the sequence number of the first
                 ledger difference.
     */
-    std::pair<Node*, Seq>
+    [[nodiscard]] std::pair<Node*, Seq>
     find(Ledger const& ledger) const
     {
         // NOLINTNEXTLINE(misc-const-correctness)
@@ -469,7 +470,7 @@ public:
 
             // Loc truncates to prefix and newNode is its child
             XRPL_ASSERT(prefix, "xrpl::LedgerTrie::insert : prefix is set");
-            loc->span = *prefix;
+            loc->span = *prefix;  // NOLINT(bugprone-unchecked-optional-access) assert above
             newNode->parent = loc;
             loc->children.emplace_back(std::move(newNode));
             loc->tipSupport = 0;
@@ -566,7 +567,7 @@ public:
         @param ledger The ledger to lookup
         @return The number of entries in the trie for this *exact* ledger
      */
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     tipSupport(Ledger const& ledger) const
     {
         if (auto const* loc = findByLedgerID(ledger))
@@ -580,7 +581,7 @@ public:
         @return The number of entries in the trie for this ledger or a
                 descendant
      */
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     branchSupport(Ledger const& ledger) const
     {
         Node const* loc = findByLedgerID(ledger);
@@ -654,7 +655,7 @@ public:
         @return Pair with the sequence number and ID of the preferred ledger or
                 std::nullopt if no preferred ledger exists
     */
-    std::optional<SpanTip<Ledger>>
+    [[nodiscard]] std::optional<SpanTip<Ledger>>
     getPreferred(Seq const largestIssued) const
     {
         if (empty())
@@ -702,7 +703,11 @@ public:
                 // We did not consume the entire span, so we have found the
                 // preferred ledger
                 if (nextSeq < curr->span.end())
+                {
+                    // nextSeq within span guarantees before() is set
+                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                     return curr->span.before(nextSeq)->tip();
+                }
             }
 
             // We have reached the end of the current span, so we need to
@@ -753,7 +758,7 @@ public:
 
     /** Return whether the trie is tracking any ledgers
      */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return !root || root->branchSupport == 0;
@@ -769,7 +774,7 @@ public:
 
     /** Dump JSON representation of trie state
      */
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson() const
     {
         Json::Value res;
@@ -782,7 +787,7 @@ public:
 
     /** Check the compressed trie and support invariants.
      */
-    bool
+    [[nodiscard]] bool
     checkInvariants() const
     {
         std::map<Seq, std::uint32_t> expectedSeqSupport;

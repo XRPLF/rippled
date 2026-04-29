@@ -28,9 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 [[maybe_unused]] std::vector<STAmount>
 fund(
@@ -139,7 +137,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
     for (auto const& features : arg.features)
     {
         // Use small Number mantissas for the life of this test.
-        NumberMantissaScaleGuard const sg{xrpl::MantissaRange::small};
+        NumberMantissaScaleGuard const sg{xrpl::MantissaRange::mantissa_scale::small};
 
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
@@ -221,6 +219,4 @@ AMMTest::pathTestEnv()
         return cfg;
     }));
 }
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -5,9 +5,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 txflags::operator()(Env&, JTx& jt) const
@@ -15,6 +13,4 @@ txflags::operator()(Env&, JTx& jt) const
     jt[jss::Flags] = v_ /*| tfFullyCanonicalSig*/;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -60,8 +60,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Tests of AMM that use offers too.
@@ -69,7 +68,7 @@ namespace test {
 struct AMMExtended_test : public jtx::AMMTest
 {
     // Use small Number mantissas for the life of this test.
-    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::small};
+    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::mantissa_scale::small};
 
 private:
     void
@@ -3586,5 +3585,4 @@ private:
 
 BEAST_DEFINE_TESTSUITE_PRIO(AMMExtended, app, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

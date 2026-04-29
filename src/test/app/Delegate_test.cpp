@@ -50,8 +50,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 class Delegate_test : public beast::unit_test::suite
 {
     void
@@ -1861,10 +1860,10 @@ class Delegate_test : public beast::unit_test::suite
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegable, ...) \
-    if (delegable == xrpl::delegable)                 \
-    {                                                 \
-        delegableCount++;                             \
+#define TRANSACTION(tag, value, name, txDelegable, ...) \
+    if (txDelegable == xrpl::delegable)                 \
+    {                                                   \
+        delegableCount++;                               \
     }
 
 #include <xrpl/protocol/detail/transactions.macro>
@@ -1890,7 +1889,7 @@ class Delegate_test : public beast::unit_test::suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 75;
+        std::size_t const expectedDelegableCount = 51;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,
@@ -1945,5 +1944,4 @@ class Delegate_test : public beast::unit_test::suite
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

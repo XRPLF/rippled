@@ -7,8 +7,7 @@
 #include <atomic>
 #include <memory>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
@@ -142,5 +141,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JobQueue, core, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

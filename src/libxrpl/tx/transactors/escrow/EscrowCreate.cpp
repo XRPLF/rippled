@@ -24,6 +24,8 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -226,8 +228,8 @@ escrowCreatePreclaimHelper<Issue>(
     if (isFrozen(ctx.view, dest, issue))
         return tecFROZEN;
 
-    STAmount const spendableAmount =
-        accountHolds(ctx.view, account, issue.currency, issuer, fhIGNORE_FREEZE, ctx.j);
+    STAmount const spendableAmount = accountHolds(
+        ctx.view, account, issue.currency, issuer, FreezeHandling::fhIGNORE_FREEZE, ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)
@@ -303,7 +305,12 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return ter;
 
     STAmount const spendableAmount = accountHolds(
-        ctx.view, account, amount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j);
+        ctx.view,
+        account,
+        amount.get<MPTIssue>(),
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
+        ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)
@@ -523,4 +530,22 @@ EscrowCreate::doApply()
     return tesSUCCESS;
 }
 
+void
+EscrowCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+EscrowCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
 }  // namespace xrpl

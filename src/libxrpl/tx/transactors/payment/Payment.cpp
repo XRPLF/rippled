@@ -24,6 +24,7 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -375,8 +376,7 @@ Payment::preclaim(PreclaimContext const& ctx)
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
-        if (paths.size() > MaxPathSize ||
-            std::any_of(paths.begin(), paths.end(), [](STPath const& path) {
+        if (paths.size() > MaxPathSize || std::ranges::any_of(paths, [](STPath const& path) {
                 return path.size() > MaxPathLength;
             }))
         {
@@ -431,6 +431,7 @@ Payment::doApply()
         sleDst = std::make_shared<SLE>(k);
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
+        sleDst->setFieldAmount(sfBalance, XRPAmount(beast::zero));
 
         view().insert(sleDst);
     }
@@ -675,6 +676,20 @@ Payment::doApply()
         sleDst->clearFlag(lsfPasswordSpent);
 
     return tesSUCCESS;
+}
+
+void
+Payment::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+Payment::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

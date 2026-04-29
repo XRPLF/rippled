@@ -83,7 +83,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     }
 
     auto v(p->getFieldV256(sfIndexes));
-    auto it(std::find(v.begin(), v.end(), tip_.index()));
+    auto it(std::ranges::find(v, tip_.index()));
 
     if (it == v.end())
     {
@@ -132,7 +132,7 @@ accountFundsHelper(
 template <StepAmount TIn, StepAmount TOut>
 template <class TTakerPays, class TTakerGets>
     requires ValidTaker<TTakerPays, TTakerGets>
-bool
+[[nodiscard]] bool
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
     // Consider removing the offer if:
@@ -149,6 +149,9 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
         // don't need this extra check.
         return false;
     }
+
+    if (!ownerFunds_)
+        return false;
 
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
@@ -263,8 +266,8 @@ TOfferStreamBase<TIn, TOut>::step()
             offer_.owner(),
             amount.out,
             offer_.assetOut(),
-            fhZERO_IF_FROZEN,
-            ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::fhZERO_IF_FROZEN,
+            AuthHandling::ahZERO_IF_UNAUTHORIZED,
             j_);
 
         // Check for unfunded offer
@@ -278,8 +281,8 @@ TOfferStreamBase<TIn, TOut>::step()
                 offer_.owner(),
                 amount.out,
                 offer_.assetOut(),
-                fhZERO_IF_FROZEN,
-                ahZERO_IF_UNAUTHORIZED,
+                FreezeHandling::fhZERO_IF_FROZEN,
+                AuthHandling::ahZERO_IF_UNAUTHORIZED,
                 j_);
 
             if (original_funds == *ownerFunds_)
@@ -303,8 +306,8 @@ TOfferStreamBase<TIn, TOut>::step()
                 offer_.owner(),
                 amount.out,
                 offer_.assetOut(),
-                fhZERO_IF_FROZEN,
-                ahZERO_IF_UNAUTHORIZED,
+                FreezeHandling::fhZERO_IF_FROZEN,
+                AuthHandling::ahZERO_IF_UNAUTHORIZED,
                 j_);
 
             if (original_funds == *ownerFunds_)

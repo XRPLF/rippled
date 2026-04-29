@@ -8,6 +8,8 @@
 
 #include <boost/container/flat_map.hpp>
 
+#include <utility>
+
 namespace xrpl {
 
 /** A transaction discovered to be in dispute during consensus.
@@ -38,21 +40,21 @@ public:
         @param numPeers Anticipated number of peer votes
         @param j Journal for debugging
     */
-    DisputedTx(Tx_t const& tx, bool ourVote, std::size_t numPeers, beast::Journal j)
-        : ourVote_(ourVote), tx_(tx), j_(j)
+    DisputedTx(Tx_t tx, bool ourVote, std::size_t numPeers, beast::Journal j)
+        : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
         votes_.reserve(numPeers);
     }
 
     //! The unique id/hash of the disputed transaction.
-    TxID_t const&
+    [[nodiscard]] TxID_t const&
     ID() const
     {
         return tx_.id();
     }
 
     //! Our vote on whether the transaction should be included.
-    bool
+    [[nodiscard]] bool
     getOurVote() const
     {
         return ourVote_;
@@ -60,7 +62,7 @@ public:
 
     //! Are we and our peers "stalled" where we probably won't change
     //! our vote?
-    bool
+    [[nodiscard]] bool
     stalled(
         ConsensusParms const& p,
         bool proposing,
@@ -125,7 +127,7 @@ public:
     }
 
     //! The disputed transaction.
-    Tx_t const&
+    [[nodiscard]] Tx_t const&
     tx() const
     {
         return tx_;
@@ -171,7 +173,7 @@ public:
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
     //! JSON representation of dispute, used for debugging
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson() const;
 
 private:
@@ -183,7 +185,7 @@ private:
     //! The number of rounds we've gone without changing our vote
     std::size_t currentVoteCounter_ = 0;
     //! Which minimum acceptance percentage phase we are currently in
-    ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::init;
+    ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::AvalancheState::init;
     //! How long we have been in the current acceptance phase
     std::size_t avalancheCounter_ = 0;
     beast::Journal const j_;

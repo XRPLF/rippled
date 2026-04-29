@@ -64,12 +64,14 @@ public:
      * their location in the parsed document. An empty string is returned if no
      * error occurred during parsing.
      */
-    std::string
+    [[nodiscard]] std::string
     getFormattedErrorMessages() const;
 
     static constexpr unsigned nest_limit{25};
 
 private:
+    // 53 files, protocol-wide
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum TokenType {
         tokenEndOfStream = 0,
         tokenObjectBegin,

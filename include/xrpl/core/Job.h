@@ -11,6 +11,8 @@ namespace xrpl {
 // Note that this queue should only be used for CPU-bound jobs
 // It is primarily intended for signature checking
 
+// Protocol-wide
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum JobType {
     // Special type indicating an invalid job - will go away soon.
     jtINVALID = -1,
@@ -98,11 +100,11 @@ public:
         LoadMonitor& lm,
         std::function<void()> const& job);
 
-    JobType
+    [[nodiscard]] JobType
     getType() const;
 
     /** Returns the time when the job was queued. */
-    clock_type::time_point const&
+    [[nodiscard]] clock_type::time_point const&
     queue_time() const;
 
     void

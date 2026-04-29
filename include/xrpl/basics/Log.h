@@ -15,6 +15,7 @@
 namespace xrpl {
 
 // DEPRECATED use beast::severities::Severity instead
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LogSeverity {
     lsINVALID = -1,  // used to indicate an invalid severity
     lsTRACE = 0,     // Very low-level progress information, details inside
@@ -38,7 +39,7 @@ private:
         std::string partition_;
 
     public:
-        Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs);
+        Sink(std::string partition, beast::severities::Severity thresh, Logs& logs);
 
         Sink(Sink const&) = delete;
         Sink&
@@ -76,7 +77,7 @@ private:
             @return `true` if a system file is associated and opened for
             writing.
         */
-        bool
+        [[nodiscard]] bool
         isOpen() const noexcept;
 
         /** Associate a system file with the log.
@@ -207,6 +208,8 @@ public:
     fromString(std::string const& s);
 
 private:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // Maximum line length for log messages.
         // If the message exceeds this length it will be truncated with

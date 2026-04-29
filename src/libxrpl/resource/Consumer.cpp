@@ -12,8 +12,7 @@
 #include <ostream>
 #include <string>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 Consumer::Consumer(Logic& logic, Entry& entry) : m_logic(&logic), m_entry(&entry)
 {
@@ -79,7 +78,7 @@ Consumer::isUnlimited() const
 Disposition
 Consumer::disposition() const
 {
-    Disposition d = ok;
+    Disposition d = Disposition::ok;
     if ((m_logic != nullptr) && (m_entry != nullptr))
         d = m_logic->charge(*m_entry, Charge(0));
 
@@ -89,7 +88,7 @@ Consumer::disposition() const
 Disposition
 Consumer::charge(Charge const& what, std::string const& context)
 {
-    Disposition d = ok;
+    Disposition d = Disposition::ok;
 
     if ((m_logic != nullptr) && (m_entry != nullptr) && !m_entry->isUnlimited())
         d = m_logic->charge(*m_entry, what, context);
@@ -143,5 +142,4 @@ operator<<(std::ostream& os, Consumer const& v)
     return os;
 }
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

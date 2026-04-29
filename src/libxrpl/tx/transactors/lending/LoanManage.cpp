@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -14,22 +15,25 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
 bool
 LoanManage::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 std::uint32_t
@@ -163,7 +167,7 @@ LoanManage::defaultLoan(
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
     auto const defaultCovered = [&]() {
         // Always round the minimum required up.
-        NumberRoundModeGuard const mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::rounding_mode::upward);
         auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
         auto const covered = roundToAsset(
@@ -202,8 +206,8 @@ LoanManage::defaultLoan(
             // LCOV_EXCL_STOP
         }
 
-        auto const vaultDefaultRounded =
-            roundToAsset(vaultAsset, vaultDefaultAmount, vaultScale, Number::downward);
+        auto const vaultDefaultRounded = roundToAsset(
+            vaultAsset, vaultDefaultAmount, vaultScale, Number::rounding_mode::downward);
         vaultTotalProxy -= vaultDefaultRounded;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
@@ -428,6 +432,20 @@ LoanManage::doApply()
     }
 
     return result;
+}
+
+void
+LoanManage::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+LoanManage::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 //------------------------------------------------------------------------------

@@ -24,8 +24,7 @@
 #include <memory>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class LedgerHistory_test : public beast::unit_test::suite
 {
@@ -66,8 +65,8 @@ public:
         res->updateSkipList();
 
         {
-            res->stateMap().flushDirty(hotACCOUNT_NODE);
-            res->txMap().flushDirty(hotTRANSACTION_NODE);
+            res->stateMap().flushDirty(NodeObjectType::hotACCOUNT_NODE);
+            res->txMap().flushDirty(NodeObjectType::hotTRANSACTION_NODE);
         }
         res->unshare();
 
@@ -182,5 +181,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerHistory, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

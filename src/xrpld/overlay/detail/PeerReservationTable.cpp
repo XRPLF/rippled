@@ -32,11 +32,11 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
 {
     std::vector<PeerReservation> list;
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         list.reserve(table_.size());
-        std::copy(table_.begin(), table_.end(), std::back_inserter(list));
+        std::ranges::copy(table_, std::back_inserter(list));
     }
-    std::sort(list.begin(), list.end());
+    std::sort(list.begin(), list.end());  // NOLINT(modernize-use-ranges)
     return list;
 }
 
@@ -49,7 +49,7 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
 bool
 PeerReservationTable::load(DatabaseCon& connection)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     connection_ = &connection;
     auto db = connection.checkoutDb();
@@ -64,7 +64,7 @@ PeerReservationTable::insert_or_assign(PeerReservation const& reservation)
 {
     std::optional<PeerReservation> previous;
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto hint = table_.find(reservation);
     if (hint != table_.end())
@@ -98,7 +98,7 @@ PeerReservationTable::erase(PublicKey const& nodeId)
 {
     std::optional<PeerReservation> previous;
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto const it = table_.find({.nodeId = nodeId});
     if (it != table_.end())

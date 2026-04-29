@@ -37,8 +37,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
@@ -516,5 +515,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Server, server, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

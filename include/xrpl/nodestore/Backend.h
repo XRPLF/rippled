@@ -4,8 +4,7 @@
 
 #include <cstdint>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** A backend used for the NodeStore.
 
@@ -35,7 +34,7 @@ public:
 
     /** Get the block size for backends that support it
      */
-    virtual std::optional<std::size_t>
+    [[nodiscard]] virtual std::optional<std::size_t>
     getBlockSize() const
     {
         return std::nullopt;
@@ -136,9 +135,8 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need. */
-    virtual int
+    [[nodiscard]] virtual int
     fdRequired() const = 0;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

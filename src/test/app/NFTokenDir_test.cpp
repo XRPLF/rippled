@@ -42,7 +42,7 @@ class NFTokenDir_test : public beast::unit_test::suite
     //
     // It uses the ledger RPC command to show the NFT pages in the ledger.
     // This parameter controls how noisy the output is.
-    enum Volume : bool {
+    enum class Volume : bool {
         quiet = false,
         noisy = true,
     };
@@ -77,7 +77,7 @@ class NFTokenDir_test : public beast::unit_test::suite
                     std::cout << tokenCount << " NFtokens in page "
                               << state[i][jss::index].asString() << std::endl;
 
-                    if (vol == noisy)
+                    if (vol == Volume::noisy)
                     {
                         std::cout << state[i].toStyledString() << std::endl;
                     }
@@ -148,7 +148,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         }
 
         // Buyer accepts all of the offers in reverse order.
-        std::reverse(offers.begin(), offers.end());
+        std::ranges::reverse(offers);
         for (uint256 const& offer : offers)
         {
             env(token::acceptSellOffer(buyer, offer));
@@ -190,7 +190,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             for (std::string_view const seed : seeds)
             {
                 Account const& account =
-                    accounts.emplace_back(Account::base58Seed, std::string(seed));
+                    accounts.emplace_back(Account::AcctStringType::base58Seed, std::string(seed));
                 env.fund(XRP(10000), account);
 
                 // Do not close the ledger inside the loop.  If accounts are
@@ -257,7 +257,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             {
                 uint256 ownedID;
                 BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
-                auto const foundIter = std::find(nftIDs.begin(), nftIDs.end(), ownedID);
+                auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
                 // Assuming we find the NFT, erase it so we know it's been
                 // found and can't be found again.
@@ -394,7 +394,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             for (std::string_view const seed : seeds)
             {
                 Account const& account =
-                    accounts.emplace_back(Account::base58Seed, std::string(seed));
+                    accounts.emplace_back(Account::AcctStringType::base58Seed, std::string(seed));
                 env.fund(XRP(10000), account);
 
                 // Do not close the ledger inside the loop.  If accounts are
@@ -465,7 +465,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             {
                 uint256 ownedID;
                 BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
-                auto const foundIter = std::find(nftIDs.begin(), nftIDs.end(), ownedID);
+                auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
                 // Assuming we find the NFT, erase it so we know it's been
                 // found and can't be found again.
@@ -624,7 +624,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         accounts.reserve(seeds.size());
         for (std::string_view const seed : seeds)
         {
-            Account const& account = accounts.emplace_back(Account::base58Seed, std::string(seed));
+            Account const& account =
+                accounts.emplace_back(Account::AcctStringType::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
             // Do not close the ledger inside the loop.  If accounts are
@@ -703,7 +704,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         {
             uint256 ownedID;
             BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
-            auto const foundIter = std::find(nftIDs.begin(), nftIDs.end(), ownedID);
+            auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
             // Assuming we find the NFT, erase it so we know it's been found
             // and can't be found again.
@@ -787,7 +788,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         accounts.reserve(seeds.size());
         for (std::string_view const seed : seeds)
         {
-            Account const& account = accounts.emplace_back(Account::base58Seed, std::string(seed));
+            Account const& account =
+                accounts.emplace_back(Account::AcctStringType::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
             // Do not close the ledger inside the loop.  If accounts are

@@ -64,6 +64,7 @@ results::add(suite_results const& r)
     auto const elapsed = clock_type::now() - r.start;
     if (elapsed >= std::chrono::seconds{1})
     {
+        // NOLINTNEXTLINE(modernize-use-ranges)
         auto const iter = std::lower_bound(
             top.begin(),
             top.end(),
@@ -104,13 +105,9 @@ results::merge(results const& r)
     // combine the two top collections
     boost::container::static_vector<run_time, 2 * max_top> top_result;
     top_result.resize(top.size() + r.top.size());
-    std::merge(
-        top.begin(),
-        top.end(),
-        r.top.begin(),
-        r.top.end(),
-        top_result.begin(),
-        [](run_time const& t1, run_time const& t2) { return t1.second > t2.second; });
+    std::ranges::merge(top, r.top, top_result.begin(), [](run_time const& t1, run_time const& t2) {
+        return t1.second > t2.second;
+    });
 
     if (top_result.size() > max_top)
         top_result.resize(max_top);
@@ -170,7 +167,7 @@ template <bool IsParent>
 std::size_t
 multi_runner_base<IsParent>::inner::tests() const
 {
-    std::lock_guard const l{m_};
+    std::scoped_lock const l{m_};
     return results_.total;
 }
 
@@ -178,7 +175,7 @@ template <bool IsParent>
 std::size_t
 multi_runner_base<IsParent>::inner::suites() const
 {
-    std::lock_guard const l{m_};
+    std::scoped_lock const l{m_};
     return results_.suites;
 }
 
@@ -200,7 +197,7 @@ template <bool IsParent>
 void
 multi_runner_base<IsParent>::inner::add(results const& r)
 {
-    std::lock_guard const l{m_};
+    std::scoped_lock const l{m_};
     results_.merge(r);
 }
 
@@ -209,7 +206,7 @@ template <class S>
 void
 multi_runner_base<IsParent>::inner::print_results(S& s)
 {
-    std::lock_guard const l{m_};
+    std::scoped_lock const l{m_};
     results_.print(s);
 }
 
@@ -342,7 +339,7 @@ void
 multi_runner_base<IsParent>::message_queue_send(MessageType mt, std::string const& s)
 {
     // must use a mutex since the two "sends" must happen in order
-    std::lock_guard const l{inner_->m_};
+    std::scoped_lock const l{inner_->m_};
     message_queue_->send(&mt, sizeof(mt), /*priority*/ 0);
     message_queue_->send(s.c_str(), s.size(), /*priority*/ 0);
 }

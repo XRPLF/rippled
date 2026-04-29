@@ -22,6 +22,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
@@ -61,9 +62,7 @@
 #include <variant>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 // Functions used in debugging
 Json::Value
@@ -217,16 +216,16 @@ find_paths_request(
     Resource::Consumer c;
 
     RPC::JsonContext context{
-        {env.journal,
-         app,
-         loadType,
-         app.getOPs(),
-         app.getLedgerMaster(),
-         c,
-         Role::USER,
-         {},
-         {},
-         RPC::apiVersionIfUnspecified},
+        {.j = env.journal,
+         .app = app,
+         .loadType = loadType,
+         .netOps = app.getOPs(),
+         .ledgerMaster = app.getLedgerMaster(),
+         .consumer = c,
+         .role = Role::USER,
+         .coro = {},
+         .infoSub = {},
+         .apiVersion = RPC::apiVersionIfUnspecified},
         {},
         {}};
 
@@ -304,7 +303,8 @@ find_paths(
                 Json::Value p;
                 p["Paths"] = path[jss::paths_computed];
                 STParsedJSONObject po("generic", p);
-                paths = po.object->getFieldPathSet(sfPaths);
+                if (po.object)
+                    paths = po.object->getFieldPathSet(sfPaths);
             }
         }
     }
@@ -323,8 +323,20 @@ find_paths_by_element(
     std::optional<AccountID> const& srcIssuer,
     std::optional<uint256> const& domain)
 {
+    // srcElement is optional but is expected to always be present
+    XRPL_ASSERT(
+        srcElement.has_value(), "xrpl::test::jtx::find_paths_by_element::srcElement : nullptr");
+
     return find_paths(
-        env, src, dst, saDstAmount, saSendMax, srcElement->getPathAsset(), srcIssuer, domain);
+        env,
+        src,
+        dst,
+        saDstAmount,
+        saSendMax,
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        srcElement->getPathAsset(),
+        srcIssuer,
+        domain);
 }
 
 /******************************************************************************/
@@ -415,7 +427,7 @@ expectOffers(
         if (sle->getType() == ltOFFER)
         {
             ++cnt;
-            if (std::find_if(toMatch.begin(), toMatch.end(), [&](auto const& a) {
+            if (std::ranges::find_if(toMatch, [&](auto const& a) {
                     return a.in == sle->getFieldAmount(sfTakerPays) &&
                         a.out == sle->getFieldAmount(sfTakerGets);
                 }) != toMatch.end())
@@ -858,6 +870,4 @@ pay(AccountID const& account, uint256 const& loanID, STAmount const& amount, std
 }
 
 }  // namespace loan
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

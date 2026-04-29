@@ -43,8 +43,7 @@
 #define NODESTORE_TIMING_DO_VERIFY 0
 #endif
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 std::unique_ptr<Backend>
 make_Backend(Section const& config, Scheduler& scheduler, beast::Journal journal)
@@ -78,6 +77,8 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
 class Sequence
 {
 private:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { minLedger = 1, maxLedger = 1000000, minSize = 250, maxSize = 1250 };
 
     beast::xor_shift_engine gen_;
@@ -136,6 +137,8 @@ public:
 class Timing_test : public beast::unit_test::suite
 {
 public:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // percent of fetches for missing nodes
         missingNodePercent = 20
@@ -679,7 +682,7 @@ public:
     void
     run() override
     {
-        testcase("Timing", beast::unit_test::abort_on_fail);
+        testcase("Timing", beast::unit_test::abort_t::abort_on_fail);
 
         /*  Parameters:
 
@@ -729,5 +732,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, xrpl, 1);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

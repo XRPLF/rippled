@@ -33,6 +33,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <utility>
 
 namespace xrpl {
 
@@ -131,7 +132,7 @@ public:
     void
     close() override;
 
-    endpoint_type
+    [[nodiscard]] endpoint_type
     get_endpoint() const
     {
         return acceptor_.local_endpoint();
@@ -163,7 +164,7 @@ Door<Handler>::Detector::Detector(
     , ioc_(ioc)
     , stream_(std::move(stream))
     , socket_(stream_.socket())
-    , remote_address_(remote_address)
+    , remote_address_(std::move(remote_address))
     , strand_(boost::asio::make_strand(ioc_))
     , j_(j)
 {

@@ -14,8 +14,7 @@
 
 #include <algorithm>
 
-namespace xrpl {
-namespace permissioned_dex {
+namespace xrpl::permissioned_dex {
 
 bool
 accountInDomain(ReadView const& view, AccountID const& account, Domain const& domainID)
@@ -30,15 +29,14 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
 
     auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
 
-    bool const inDomain =
-        std::any_of(credentials.begin(), credentials.end(), [&](auto const& credential) {
-            auto const sleCred = view.read(
-                keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]));
-            if (!sleCred || !sleCred->isFlag(lsfAccepted))
-                return false;
+    bool const inDomain = std::ranges::any_of(credentials, [&](auto const& credential) {
+        auto const sleCred = view.read(
+            keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]));
+        if (!sleCred || !sleCred->isFlag(lsfAccepted))
+            return false;
 
-            return !credentials::checkExpired(sleCred, view.header().parentCloseTime);
-        });
+        return !credentials::checkExpired(sleCred, view.header().parentCloseTime);
+    });
 
     return inDomain;
 }
@@ -64,7 +62,8 @@ offerInDomain(
 
     if (view.rules().enabled(fixSecurity3_1_3))
     {
-        // post-fixSecurity3_1_3: also catches empty sfAdditionalBooks (size == 0)
+        // post-fixSecurity3_1_3: a valid hybrid offer must have
+        // sfAdditionalBooks present with exactly 1 entry
         if (sleOffer->isFlag(lsfHybrid) &&
             (!sleOffer->isFieldPresent(sfAdditionalBooks) ||
              sleOffer->getFieldArray(sfAdditionalBooks).size() != 1))
@@ -76,7 +75,8 @@ offerInDomain(
     }
     else
     {
-        // pre-fixSecurity3_1_3: only check for missing sfAdditionalBooks
+        // pre-fixSecurity3_1_3: a valid hybrid offer must have
+        // sfAdditionalBooks present (size is not checked)
         if (sleOffer->isFlag(lsfHybrid) && !sleOffer->isFieldPresent(sfAdditionalBooks))
         {
             JLOG(j.error()) << "Hybrid offer " << offerID << " missing AdditionalBooks field";
@@ -87,6 +87,4 @@ offerInDomain(
     return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);
 }
 
-}  // namespace permissioned_dex
-
-}  // namespace xrpl
+}  // namespace xrpl::permissioned_dex

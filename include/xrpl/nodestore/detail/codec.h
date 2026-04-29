@@ -17,8 +17,7 @@
 #include <cstring>
 #include <string>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
@@ -128,7 +127,7 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
             ostream os(out, result.second);
             write<std::uint32_t>(os, 0);
             write<std::uint32_t>(os, 0);
-            write<std::uint8_t>(os, hotUNKNOWN);
+            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::hotUNKNOWN));
             write<std::uint32_t>(os, static_cast<std::uint32_t>(HashPrefix::innerNode));
             if (mask == 0)
                 Throw<std::runtime_error>("nodeobject codec v1: empty inner node");
@@ -174,7 +173,7 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
             ostream os(out, result.second);
             write<std::uint32_t>(os, 0);
             write<std::uint32_t>(os, 0);
-            write<std::uint8_t>(os, hotUNKNOWN);
+            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::hotUNKNOWN));
             write<std::uint32_t>(os, static_cast<std::uint32_t>(HashPrefix::innerNode));
             write(os, is(512), 512);
             break;
@@ -308,10 +307,9 @@ filter_inner(void* in, std::size_t in_size)
             ostream os(in, 9);
             write<std::uint32_t>(os, 0);
             write<std::uint32_t>(os, 0);
-            write<std::uint8_t>(os, hotUNKNOWN);
+            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::hotUNKNOWN));
         }
     }
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

@@ -39,7 +39,7 @@ class TxConsequences
 public:
     /// Describes how the transaction affects subsequent
     /// transactions
-    enum Category {
+    enum class Category {
         /// Moves currency around, creates offers, etc.
         normal = 0,
         /// Affects the ability of subsequent transactions
@@ -89,42 +89,42 @@ public:
     operator=(TxConsequences&&) = default;
 
     /// Fee
-    XRPAmount
+    [[nodiscard]] XRPAmount
     fee() const
     {
         return fee_;
     }
 
     /// Potential Spend
-    XRPAmount const&
+    [[nodiscard]] XRPAmount const&
     potentialSpend() const
     {
         return potentialSpend_;
     }
 
     /// SeqProxy
-    SeqProxy
+    [[nodiscard]] SeqProxy
     seqProxy() const
     {
         return seqProx_;
     }
 
     /// Sequences consumed
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     sequencesConsumed() const
     {
         return sequencesConsumed_;
     }
 
     /// Returns true if the transaction is a blocker.
-    bool
+    [[nodiscard]] bool
     isBlocker() const
     {
         return isBlocker_;
     }
 
     // Return the SeqProxy that would follow this.
-    SeqProxy
+    [[nodiscard]] SeqProxy
     followingSeq() const
     {
         SeqProxy following = seqProx_;
@@ -202,7 +202,7 @@ public:
 
     /// Success flag - whether the transaction is likely to
     /// claim a fee
-    bool const likelyToClaimFee;
+    bool const likelyToClaimFee{};
 
     /// Constructor
     template <class Context>

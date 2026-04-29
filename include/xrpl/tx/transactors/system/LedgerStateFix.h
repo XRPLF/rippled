@@ -7,7 +7,7 @@ namespace xrpl {
 class LedgerStateFix : public Transactor
 {
 public:
-    enum FixType : std::uint16_t {
+    enum class FixType : std::uint16_t {
         nfTokenPageLink = 1,
     };
 
@@ -28,6 +28,20 @@ public:
 
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 };
 
 }  // namespace xrpl

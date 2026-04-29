@@ -17,13 +17,17 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <set>
 #include <utility>
@@ -317,6 +321,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         // Price the slot was purchased at.
         STAmount const pricePurchased = auctionSlot[sfPrice];
         XRPL_ASSERT(timeSlot, "xrpl::applyBid : timeSlot is set");
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
         auto const fractionUsed = (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
         auto const fractionRemaining = Number(1) - fractionUsed;
         auto const computedPrice = [&]() -> Number {
@@ -327,6 +332,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             // Other intervals slot price
             return pricePurchased * p1_05 * (1 - power(fractionUsed, 60)) + minSlotPrice;
         }();
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         auto const payPrice = getPayPrice(computedPrice);
 
@@ -374,6 +380,20 @@ AMMBid::doApply()
         sb.apply(ctx_.rawView());
 
     return result.first;
+}
+
+void
+AMMBid::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+AMMBid::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

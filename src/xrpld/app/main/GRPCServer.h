@@ -127,7 +127,7 @@ public:
     setupListeners();
 
     // Obtaining actually binded endpoint (if port 0 was used for server setup).
-    boost::asio::ip::tcp::endpoint
+    [[nodiscard]] boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 
 private:
@@ -186,7 +186,7 @@ private:
         std::vector<boost::asio::ip::address> const& secureGatewayIPs_;
 
     public:
-        virtual ~CallData() = default;
+        ~CallData() override = default;
 
         // Take in the "service" instance (in this case representing an
         // asynchronous server) and the completion queue "cq" used for
@@ -207,10 +207,10 @@ private:
         CallData&
         operator=(CallData const&) = delete;
 
-        virtual void
+        void
         process() override;
 
-        virtual bool
+        bool
         isFinished() override;
 
         std::shared_ptr<Processor>
@@ -305,7 +305,7 @@ public:
 
     ~GRPCServer();
 
-    boost::asio::ip::tcp::endpoint
+    [[nodiscard]] boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 
 private:

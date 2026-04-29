@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <optional>
 #include <queue>
+#include <utility>
 
 namespace xrpl {
 
@@ -313,7 +314,7 @@ public:
         id_t id,
         OverlayImpl& overlay);
 
-    virtual ~PeerImp();
+    ~PeerImp() override;
 
     beast::Journal const&
     pJournal() const
@@ -361,9 +362,8 @@ public:
     /** Send a set of PeerFinder endpoints as a protocol message. */
     template <
         class FwdIt,
-        class = typename std::enable_if_t<std::is_same<
-            typename std::iterator_traits<FwdIt>::value_type,
-            PeerFinder::Endpoint>::value>>
+        class = typename std::enable_if_t<
+            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>>>
     void
     sendEndpoints(FwdIt first, FwdIt last);
 
@@ -428,7 +428,7 @@ public:
     std::optional<std::size_t>
     publisherListSequence(PublicKey const& pubKey) const override
     {
-        std::lock_guard<std::mutex> const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
 
         auto iter = publisherListSequences_.find(pubKey);
         if (iter != publisherListSequences_.end())
@@ -439,7 +439,7 @@ public:
     void
     setPublisherListSequence(PublicKey const& pubKey, std::size_t const seq) override
     {
-        std::lock_guard<std::mutex> const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
 
         publisherListSequences_[pubKey] = seq;
     }
@@ -744,7 +744,7 @@ private:
     // lockedRecentLock is passed as a reminder to callers that recentLock_
     // must be locked.
     void
-    addLedger(uint256 const& hash, std::lock_guard<std::mutex> const& lockedRecentLock);
+    addLedger(uint256 const& hash, std::scoped_lock<std::mutex> const& lockedRecentLock);
 
     void
     doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
@@ -826,7 +826,7 @@ PeerImp::PeerImp(
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
     , inbound_(false)
-    , protocol_(protocol)
+    , protocol_(std::move(protocol))
     , tracking_(Tracking::unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
@@ -834,7 +834,7 @@ PeerImp::PeerImp(
     , creationTime_(clock_type::now())
     , squelch_(app_.getJournal("Squelch"))
     , usage_(usage)
-    , fee_{Resource::feeTrivialPeer}
+    , fee_{.fee = Resource::feeTrivialPeer}
     , slot_(std::move(slot))
     , response_(std::move(response))
     , headers_(response_)

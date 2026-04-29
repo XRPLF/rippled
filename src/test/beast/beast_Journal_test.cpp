@@ -18,7 +18,7 @@ public:
         {
         }
 
-        int
+        [[nodiscard]] int
         count() const
         {
             return m_count;

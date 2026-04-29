@@ -8,6 +8,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -15,25 +16,27 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 #include <xrpl/tx/transactors/lending/LoanManage.h>
 
 #include <algorithm>
 #include <bit>
 #include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
 bool
 LoanPay::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 std::uint32_t
@@ -135,12 +138,14 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // If making an overpayment, count it as a full payment because it will do
     // about the same amount of work, if not more.
-    NumberRoundModeGuard const mg(tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
+    NumberRoundModeGuard const mg(
+        tx.isFlag(tfLoanOverpayment) ? Number::rounding_mode::upward
+                                     : Number::rounding_mode::downward);
     // Estimate how many payments will be made
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
 
     // Charge one base fee per paymentsPerFeeIncrement payments, rounding up.
-    Number::setround(Number::upward);
+    Number::setround(Number::rounding_mode::upward);
     auto const feeIncrements = std::max(
         std::int64_t(1),
         static_cast<std::int64_t>(numPaymentEstimate / loanPaymentsPerFeeIncrement));
@@ -237,8 +242,8 @@ LoanPay::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             asset,
-            fhZERO_IF_FROZEN,
-            ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::fhZERO_IF_FROZEN,
+            AuthHandling::ahZERO_IF_UNAUTHORIZED,
             ctx.j,
             SpendableHandling::shFULL_BALANCE);
         balance < amount)
@@ -295,7 +300,7 @@ LoanPay::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::rounding_mode::upward);
         return coverAvailableProxy >=
             roundToAsset(
                    asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
@@ -401,7 +406,7 @@ LoanPay::doApply()
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
     auto const totalPaidToVaultRounded =
-        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::downward);
+        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::rounding_mode::downward);
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
@@ -508,8 +513,8 @@ LoanPay::doApply()
         view,
         account_,
         asset,
-        fhIGNORE_FREEZE,
-        ahIGNORE_AUTH,
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         j_,
         SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
@@ -518,8 +523,8 @@ LoanPay::doApply()
               view,
               vaultPseudoAccount,
               asset,
-              fhIGNORE_FREEZE,
-              ahIGNORE_AUTH,
+              FreezeHandling::fhIGNORE_FREEZE,
+              AuthHandling::ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
     auto const brokerBalanceBefore = account_ == brokerPayee
@@ -528,8 +533,8 @@ LoanPay::doApply()
               view,
               brokerPayee,
               asset,
-              fhIGNORE_FREEZE,
-              ahIGNORE_AUTH,
+              FreezeHandling::fhIGNORE_FREEZE,
+              AuthHandling::ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
 #endif
@@ -585,8 +590,8 @@ LoanPay::doApply()
         view,
         account_,
         asset,
-        fhIGNORE_FREEZE,
-        ahIGNORE_AUTH,
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         j_,
         SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
@@ -595,8 +600,8 @@ LoanPay::doApply()
               view,
               vaultPseudoAccount,
               asset,
-              fhIGNORE_FREEZE,
-              ahIGNORE_AUTH,
+              FreezeHandling::fhIGNORE_FREEZE,
+              AuthHandling::ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
     auto const brokerBalanceAfter = account_ == brokerPayee
@@ -605,8 +610,8 @@ LoanPay::doApply()
               view,
               brokerPayee,
               asset,
-              fhIGNORE_FREEZE,
-              ahIGNORE_AUTH,
+              FreezeHandling::fhIGNORE_FREEZE,
+              AuthHandling::ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
 
@@ -640,6 +645,20 @@ LoanPay::doApply()
 #endif
 
     return tesSUCCESS;
+}
+
+void
+LoanPay::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+LoanPay::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 //------------------------------------------------------------------------------

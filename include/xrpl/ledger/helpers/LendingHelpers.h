@@ -1,15 +1,14 @@
 #pragma once
 
 #include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/st.h>
 
 namespace xrpl {
 
-struct PreflightContext;
-
 // Lending protocol has dependencies, so capture them here.
 bool
-checkLendingProtocolDependencies(PreflightContext const& ctx);
+checkLendingProtocolDependencies(Rules const& rules, STTx const& tx);
 
 static constexpr std::uint32_t secondsInYear = 365 * 24 * 60 * 60;
 
@@ -20,7 +19,7 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 inline Number
 roundPeriodicPayment(Asset const& asset, Number const& periodicPayment, std::int32_t scale)
 {
-    return roundToAsset(asset, periodicPayment, scale, Number::upward);
+    return roundToAsset(asset, periodicPayment, scale, Number::rounding_mode::upward);
 }
 
 /* Represents the breakdown of amounts to be paid and changes applied to the
@@ -105,7 +104,7 @@ struct LoanState
     Number managementFeeDue;
 
     // Interest still due to be paid by the borrower.
-    Number
+    [[nodiscard]] Number
     interestOutstanding() const
     {
         XRPL_ASSERT_PARTS(
@@ -171,7 +170,7 @@ getAssetsTotalScale(SLE::const_ref vaultSle)
 {
     if (!vaultSle)
         return Number::minExponent - 1;  // LCOV_EXCL_LINE
-    return STAmount{vaultSle->at(sfAsset), vaultSle->at(sfAssetsTotal)}.exponent();
+    return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
 }
 
 TER
@@ -267,7 +266,7 @@ struct PaymentComponents
     //
     // @return The amount of tracked interest included in this payment that
     //         will be paid to the vault.
-    Number
+    [[nodiscard]] Number
     trackedInterestPart() const;
 };
 
@@ -341,7 +340,7 @@ struct LoanStateDeltas
     /* Calculates the total change across all components.
      * @return The sum of principal, interest, and management fee deltas.
      */
-    Number
+    [[nodiscard]] Number
     total() const
     {
         return principal + interest + managementFee;

@@ -32,7 +32,7 @@ namespace xrpl {
 std::shared_ptr<AssetCache>
 PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
 {
-    std::lock_guard const sl(mLock);
+    std::scoped_lock const sl(mLock);
 
     auto assetCache = assetCache_.lock();
 
@@ -66,7 +66,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
     // Get the ledger and cache we should be using
     {
-        std::lock_guard const sl(mLock);
+        std::scoped_lock const sl(mLock);
         requests = requests_;
         cache = getAssetCache(inLedger, true);
     }
@@ -145,21 +145,20 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
             if (remove)
             {
-                std::lock_guard const sl(mLock);
+                std::scoped_lock const sl(mLock);
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
-                auto ret = std::remove_if(
-                    requests_.begin(), requests_.end(), [&removed, &request](auto const& wl) {
-                        auto r = wl.lock();
+                auto ret = std::ranges::remove_if(requests_, [&removed, &request](auto const& wl) {
+                    auto r = wl.lock();
 
-                        if (r && r != request)
-                            return false;
-                        ++removed;
-                        return true;
-                    });
+                    if (r && r != request)
+                        return false;
+                    ++removed;
+                    return true;
+                });
 
-                requests_.erase(ret, requests_.end());
+                requests_.erase(ret.begin(), ret.end());
             }
 
             mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
@@ -190,7 +189,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         std::shared_ptr<AssetCache> lastCache;
         {
             // Get the latest requests, cache, and ledger for next pass
-            std::lock_guard const sl(mLock);
+            std::scoped_lock const sl(mLock);
 
             if (requests_.empty())
                 break;
@@ -207,18 +206,18 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 bool
 PathRequestManager::requestsPending() const
 {
-    std::lock_guard const sl(mLock);
+    std::scoped_lock const sl(mLock);
     return !requests_.empty();
 }
 
 void
 PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
 {
-    std::lock_guard const sl(mLock);
+    std::scoped_lock const sl(mLock);
 
     // Insert after any older unserviced requests but before
     // any serviced requests
-    auto ret = std::find_if(requests_.begin(), requests_.end(), [](auto const& wl) {
+    auto ret = std::ranges::find_if(requests_, [](auto const& wl) {
         auto r = wl.lock();
 
         // We come before handled requests

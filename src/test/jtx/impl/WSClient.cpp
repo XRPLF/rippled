@@ -42,8 +42,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class WSClientImpl : public WSClient
 {
@@ -282,7 +281,7 @@ public:
         return std::move(m->jv);
     }
 
-    unsigned
+    [[nodiscard]] unsigned
     version() const override
     {
         return rpc_version_;
@@ -305,7 +304,7 @@ private:
         rb_.consume(rb_.size());
         auto m = std::make_shared<msg>(std::move(jv));
         {
-            std::lock_guard const lock(m_);
+            std::scoped_lock const lock(m_);
             msgs_.push_front(m);
             cv_.notify_all();
         }
@@ -319,7 +318,7 @@ private:
     void
     on_read_done()
     {
-        std::lock_guard const lock(m0_);
+        std::scoped_lock const lock(m0_);
         b0_ = true;
         cv0_.notify_all();
     }
@@ -335,5 +334,4 @@ makeWSClient(
     return std::make_unique<WSClientImpl>(cfg, v2, rpc_version, headers);
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

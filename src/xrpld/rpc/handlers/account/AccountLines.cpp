@@ -138,7 +138,12 @@ doAccountLines(RPC::JsonContext& context)
         bool ignoreDefault;
         uint32_t foundCount;
     };
-    VisitData visitData = {{}, accountID, raPeerAccount, ignoreDefault, 0};
+    VisitData visitData = {
+        .items = {},
+        .accountID = accountID,
+        .raPeerAccount = raPeerAccount,
+        .ignoreDefault = ignoreDefault,
+        .foundCount = 0};
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
 

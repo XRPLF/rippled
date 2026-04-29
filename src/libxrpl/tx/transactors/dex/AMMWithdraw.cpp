@@ -22,6 +22,8 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -1102,9 +1104,9 @@ AMMWithdraw::singleWithdrawEPrice(
         Number const ae = amountBalance * ePrice;
         auto const f = getFee(tfee);
         auto const denom = lptAMMBalance * f - ae;
-        // fixCleanup_320: guard against division by zero
+        // fixCleanup3_2_0: guard against division by zero
         // when ePrice == lptAMMBalance*f/amountBalance
-        if (view.rules().enabled(fixCleanup_320) && denom == beast::zero)
+        if (view.rules().enabled(fixCleanup3_2_0) && denom == beast::zero)
             return {tecAMM_FAILED, STAmount{}};
         auto tokNoRoundCb = [&] { return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom; };
         auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
@@ -1154,4 +1156,18 @@ AMMWithdraw::isWithdrawAll(STTx const& tx)
         return WithdrawAll::Yes;
     return WithdrawAll::No;
 }
+void
+AMMWithdraw::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+AMMWithdraw::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
+}
+
 }  // namespace xrpl

@@ -42,7 +42,7 @@ seconds_clock_thread::~seconds_clock_thread()
     XRPL_ASSERT(
         thread_.joinable(), "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable");
     {
-        std::lock_guard const lock(mut_);
+        std::scoped_lock const lock(mut_);
         stop_ = true;
     }  // publish stop_ asap so if waiting thread times-out, it will see it
     cv_.notify_one();

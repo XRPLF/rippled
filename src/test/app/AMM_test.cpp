@@ -64,8 +64,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Basic tests of AMM that do not use offers.
@@ -74,7 +73,7 @@ namespace test {
 struct AMM_test : public jtx::AMMTest
 {
     // Use small Number mantissas for the life of this test.
-    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::small};
+    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::mantissa_scale::small};
 
 private:
     static FeatureBitset
@@ -2242,7 +2241,7 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 auto const err =
-                    env.enabled(fixCleanup_320) ? ter(tecAMM_FAILED) : ter(tecINTERNAL);
+                    env.enabled(fixCleanup3_2_0) ? ter(tecAMM_FAILED) : ter(tecINTERNAL);
                 ammAlice.withdraw(
                     WithdrawArg{
                         .account = alice,
@@ -2253,7 +2252,7 @@ private:
             {{USD(100), EUR(100)}},
             1000,
             std::nullopt,
-            {all | fixCleanup_320, all});
+            {all | fixCleanup3_2_0, all});
     }
 
     void
@@ -5828,7 +5827,7 @@ private:
         Env const env(*this, features, std::make_unique<CaptureLogs>(&logs));
         auto rules = env.current()->rules();
         CurrentTransactionRulesGuard const rg(rules);
-        NumberMantissaScaleGuard const sg(MantissaRange::small);
+        NumberMantissaScaleGuard const sg(MantissaRange::mantissa_scale::small);
 
         for (auto const& t : tests)
         {
@@ -6818,8 +6817,9 @@ private:
     {
         auto const [amount, amount2, lptBalance] = amm.balances(GBP, EUR);
 
-        NumberMantissaScaleGuard const sg(MantissaRange::small);
-        NumberRoundModeGuard const g(env.enabled(fixAMMv1_3) ? Number::upward : Number::getround());
+        NumberMantissaScaleGuard const sg(MantissaRange::mantissa_scale::small);
+        NumberRoundModeGuard const g(
+            env.enabled(fixAMMv1_3) ? Number::rounding_mode::upward : Number::getround());
         auto const res = root2(amount * amount2);
 
         if (shouldFail)
@@ -7161,5 +7161,4 @@ private:
 
 BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

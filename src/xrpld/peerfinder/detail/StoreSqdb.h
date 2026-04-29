@@ -5,8 +5,7 @@
 
 #include <xrpl/rdb/SociDB.h>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Database persistence for PeerFinder using SQLite */
 class StoreSqdb : public Store
@@ -16,6 +15,8 @@ private:
     soci::session m_sqlDb;
 
 public:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // This determines the on-database format of the data
         currentSchemaVersion = 4
@@ -26,9 +27,7 @@ public:
     {
     }
 
-    ~StoreSqdb()
-    {
-    }
+    ~StoreSqdb() override = default;
 
     void
     open(BasicConfig const& config)
@@ -85,5 +84,4 @@ private:
     }
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

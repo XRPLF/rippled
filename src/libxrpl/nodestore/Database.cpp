@@ -29,8 +29,7 @@
 #include <thread>
 #include <utility>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 Database::Database(
     Scheduler& scheduler,
@@ -144,7 +143,7 @@ void
 Database::stop()
 {
     {
-        std::lock_guard const lock(readLock_);
+        std::scoped_lock const lock(readLock_);
 
         if (!readStopping_.exchange(true, std::memory_order_relaxed))
         {
@@ -180,7 +179,7 @@ Database::asyncFetch(
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
-    std::lock_guard const lock(readLock_);
+    std::scoped_lock const lock(readLock_);
 
     if (!isStopping())
     {
@@ -276,5 +275,4 @@ Database::getCountsJson(Json::Value& obj)
     obj[jss::node_reads_duration_us] = std::to_string(fetchDurationUs_);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

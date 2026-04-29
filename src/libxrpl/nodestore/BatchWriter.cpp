@@ -11,8 +11,7 @@
 #include <mutex>
 #include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
     : m_callback(callback), m_scheduler(scheduler)
@@ -48,7 +47,7 @@ BatchWriter::store(std::shared_ptr<NodeObject> const& object)
 int
 BatchWriter::getWriteLoad()
 {
-    std::lock_guard const sl(mWriteMutex);
+    std::scoped_lock const sl(mWriteMutex);
 
     return std::max(mWriteLoad, static_cast<int>(mWriteSet.size()));
 }
@@ -69,7 +68,7 @@ BatchWriter::writeBatch()
         set.reserve(batchWritePreallocationSize);
 
         {
-            std::lock_guard const sl(mWriteMutex);
+            std::scoped_lock const sl(mWriteMutex);
 
             mWriteSet.swap(set);
             XRPL_ASSERT(
@@ -108,5 +107,4 @@ BatchWriter::waitForWriting()
         mWriteCondition.wait(sl);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

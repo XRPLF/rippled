@@ -66,8 +66,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class MPToken_test : public beast::unit_test::suite
 {
@@ -3042,45 +3041,83 @@ class MPToken_test : public beast::unit_test::suite
         testcase("Mutate MPTRequireAuth");
         using namespace test::jtx;
 
-        Env env{*this, features};
-        Account const alice("alice");
-        Account const bob("bob");
+        // test mutating RequireAuth flag on the issuance and its effect on payment authorization
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
 
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
-        mptAlice.create(
-            {.ownerCount = 1,
-             .flags = tfMPTRequireAuth,
-             .mutableFlags = tmfMPTCanMutateRequireAuth});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTRequireAuth,
+                 .mutableFlags = tmfMPTCanMutateRequireAuth});
 
-        mptAlice.authorize({.account = bob});
-        mptAlice.authorize({.account = alice, .holder = bob});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = alice, .holder = bob});
 
-        // Pay to bob
-        mptAlice.pay(alice, bob, 1000);
+            // Pay to bob
+            mptAlice.pay(alice, bob, 1000);
 
-        // Unauthorize bob
-        mptAlice.authorize({.account = alice, .holder = bob, .flags = tfMPTUnauthorize});
+            // Unauthorize bob
+            mptAlice.authorize({.account = alice, .holder = bob, .flags = tfMPTUnauthorize});
 
-        // Can not pay to bob
-        mptAlice.pay(bob, alice, 100, tecNO_AUTH);
+            // Can not pay to bob
+            mptAlice.pay(bob, alice, 100, tecNO_AUTH);
 
-        // Clear RequireAuth
-        mptAlice.set({.account = alice, .mutableFlags = tmfMPTClearRequireAuth});
+            // Clear RequireAuth
+            mptAlice.set({.account = alice, .mutableFlags = tmfMPTClearRequireAuth});
 
-        // Can pay to bob
-        mptAlice.pay(alice, bob, 1000);
+            // Can pay to bob
+            mptAlice.pay(alice, bob, 1000);
 
-        // Set RequireAuth again
-        mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetRequireAuth});
+            // Set RequireAuth again
+            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetRequireAuth});
 
-        // Can not pay to bob since he is not authorized
-        mptAlice.pay(bob, alice, 100, tecNO_AUTH);
+            // Can not pay to bob since he is not authorized
+            mptAlice.pay(bob, alice, 100, tecNO_AUTH);
 
-        // Authorize bob again
-        mptAlice.authorize({.account = alice, .holder = bob});
+            // Authorize bob again
+            mptAlice.authorize({.account = alice, .holder = bob});
 
-        // Can pay to bob again
-        mptAlice.pay(alice, bob, 100);
+            // Can pay to bob again
+            mptAlice.pay(alice, bob, 100);
+        }
+
+        // Cannot clear RequireAuth when a DomainID is set on the issuance
+        {
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const credIssuer{"credIssuer"};
+            pdomain::Credentials const credentials{
+                {.issuer = credIssuer, .credType = "credential"}};
+
+            Env env{*this, features};
+            env.fund(XRP(1000), credIssuer);
+            env.close();
+
+            env(pdomain::setTx(credIssuer, credentials));
+            env.close();
+            auto const domainId = pdomain::getNewDomain(env.meta());
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTRequireAuth,
+                .mutableFlags = tmfMPTCanMutateRequireAuth,
+                .domainID = domainId,
+            });
+
+            // Clearing RequireAuth while a DomainID is present must be rejected,
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTClearRequireAuth,
+                .err = tecNO_PERMISSION,
+            });
+
+            // Setting RequireAuth (already set) is still allowed, though it has no effect.
+            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetRequireAuth});
+        }
     }
 
     void
@@ -4145,18 +4182,18 @@ class MPToken_test : public beast::unit_test::suite
 
         // Holders are locked
         {
-            enum LockType { Global, Individual, None };
+            enum class LockType { Global, Individual, None };
             struct TestArg
             {
                 Account src;
                 Account dst;
                 Account offerOwner;
-                LockType srcFlag = None;
-                LockType dstFlag = None;
-                LockType offerFlagBuy = None;
-                LockType offerFlagSell = None;
-                LockType globalFlagBuy = None;
-                LockType globalFlagSell = None;
+                LockType srcFlag = LockType::None;
+                LockType dstFlag = LockType::None;
+                LockType offerFlagBuy = LockType::None;
+                LockType offerFlagSell = LockType::None;
+                LockType globalFlagBuy = LockType::None;
+                LockType globalFlagSell = LockType::None;
                 TER err = tesSUCCESS;
                 std::optional<TER> errIOU = std::nullopt;
             };
@@ -4201,11 +4238,11 @@ class MPToken_test : public beast::unit_test::suite
             };
             auto lock = [&]<typename Token>(
                             Env& env, Account const& account, Token& token, LockType lock) {
-                if (lock == None)
+                if (lock == LockType::None)
                     return;
                 if constexpr (std::is_same_v<Token, IOU>)
                 {
-                    if (lock == Global)
+                    if (lock == LockType::Global)
                     {
                         env(fset(gw, asfGlobalFreeze));
                     }
@@ -4217,7 +4254,7 @@ class MPToken_test : public beast::unit_test::suite
                 }
                 else if constexpr (std::is_same_v<Token, MPTTester>)
                 {
-                    if (lock == Global)
+                    if (lock == LockType::Global)
                     {
                         token.set({.flags = tfMPTLock});
                     }
@@ -4266,33 +4303,33 @@ class MPToken_test : public beast::unit_test::suite
             // clang-format off
             std::vector<TestArg> const tests = {
                     // src, dst, offer's owner are a holder
-                    {.src = alice, .dst = carol, .offerOwner = bob, .srcFlag = Individual, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = bob, .srcFlag = LockType::Individual, .err = tecPATH_DRY},
                     // dst can receive IOU even if the account is frozen
-                    {.src = alice, .dst = carol, .offerOwner = bob, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagBuy = Global, .err = tecPATH_DRY},
-                    {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagSell = Global, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = bob, .dstFlag = LockType::Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
+                    {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagBuy = LockType::Global, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagSell = LockType::Global, .err = tecPATH_DRY},
                     // offer's owner can receive IOU even if the account is frozen
-                    {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagBuy = Individual, .err =
+                    {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagBuy = LockType::Individual, .err =
                     tecPATH_PARTIAL, .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
+                    {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagSell = LockType::Individual, .err = tecPATH_PARTIAL},
                     // src, dst are a holder, offer's owner is an issuer
-                    {.src = alice, .dst = carol, .offerOwner = gw, .srcFlag = Individual, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = gw, .srcFlag = LockType::Individual, .err = tecPATH_DRY},
                     // dst can receive IOU even if the account is frozen
-                    {.src = alice, .dst = carol, .offerOwner = gw, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagBuy = Global, .err = tecPATH_DRY},
-                    {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagSell = Global, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = gw, .dstFlag = LockType::Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
+                    {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagBuy = LockType::Global, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagSell = LockType::Global, .err = tecPATH_DRY},
                     // src is issuer, dst and offer's owner are a holder
                     // dst can receive IOU even if the account is frozen
-                    {.src = gw, .dst = carol, .offerOwner = bob, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
+                    {.src = gw, .dst = carol, .offerOwner = bob, .dstFlag = LockType::Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
                     // offer's owner can receive IOU from an issuer even if takerBuys is frozen, MPT offer is unfunded in this case
-                    {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagBuy = Individual, .err = tecPATH_PARTIAL, .errIOU = tesSUCCESS},
-                    {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
+                    {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagBuy = LockType::Individual, .err = tecPATH_PARTIAL, .errIOU = tesSUCCESS},
+                    {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagSell = LockType::Individual, .err = tecPATH_PARTIAL},
                     // dst is issuer, src and offer's owner are a holder
-                    {.src = alice, .dst = gw, .offerOwner = bob, .srcFlag = Individual, .err = tecPATH_DRY},
+                    {.src = alice, .dst = gw, .offerOwner = bob, .srcFlag = LockType::Individual, .err = tecPATH_DRY},
                     // offer's owner can receive IOU even if the account is frozen
-                    {.src = alice, .dst = gw, .offerOwner = bob, .offerFlagBuy = Individual, .err = tecPATH_PARTIAL,
+                    {.src = alice, .dst = gw, .offerOwner = bob, .offerFlagBuy = LockType::Individual, .err = tecPATH_PARTIAL,
                      .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = gw, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
+                    {.src = alice, .dst = gw, .offerOwner = bob, .offerFlagSell = LockType::Individual, .err = tecPATH_PARTIAL},
             };
             // clang-format on
 
@@ -6775,5 +6812,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(MPToken, app, xrpl, 2);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -19,8 +19,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // a non-hashing Hasher that just copies the bytes.
 // Used to test hash_append in base_uint
@@ -51,8 +50,8 @@ struct nonhash
 struct base_uint_test : beast::unit_test::suite
 {
     using test96 = base_uint<96>;
-    static_assert(std::is_copy_constructible<test96>::value);
-    static_assert(std::is_copy_assignable<test96>::value);
+    static_assert(std::is_copy_constructible_v<test96>);
+    static_assert(std::is_copy_assignable_v<test96>);
 
     void
     testComparisons()
@@ -123,8 +122,8 @@ struct base_uint_test : beast::unit_test::suite
     {
         testcase("base_uint: general purpose tests");
 
-        static_assert(!std::is_constructible<test96, std::complex<double>>::value);
-        static_assert(!std::is_assignable<test96&, std::complex<double>>::value);
+        static_assert(!std::is_constructible_v<test96, std::complex<double>>);
+        static_assert(!std::is_assignable_v<test96&, std::complex<double>>);
 
         testComparisons();
 
@@ -356,5 +355,4 @@ struct base_uint_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(base_uint, basics, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

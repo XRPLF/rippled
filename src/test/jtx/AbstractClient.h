@@ -2,8 +2,7 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /* Abstract XRPL client interface.
 
@@ -34,9 +33,8 @@ public:
     invoke(std::string const& cmd, Json::Value const& params = {}) = 0;
 
     /// Get RPC 1.0 or RPC 2.0
-    virtual unsigned
+    [[nodiscard]] virtual unsigned
     version() const = 0;
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

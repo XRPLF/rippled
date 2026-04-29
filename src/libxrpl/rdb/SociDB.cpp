@@ -66,7 +66,7 @@ getSociInit(BasicConfig const& config, std::string const& dbName)
 
 }  // namespace detail
 
-DBConfig::DBConfig(std::string const& dbPath) : connectionString_(dbPath)
+DBConfig::DBConfig(std::string dbPath) : connectionString_(std::move(dbPath))
 {
 }
 
@@ -238,7 +238,7 @@ public:
     schedule() override
     {
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             if (running_)
                 return;
             running_ = true;
@@ -258,7 +258,7 @@ public:
                         self->checkpoint();
                 }))
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             running_ = false;
         }
     }
@@ -286,7 +286,7 @@ public:
             JLOG(j_.trace()) << "WAL(" << fname << "): frames=" << log << ", written=" << ckpt;
         }
 
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         running_ = false;
     }
 

@@ -13,12 +13,12 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <algorithm>
 #include <source_location>
+#include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Generic helper class for helper classes that set a field on a JTx.
 
@@ -40,13 +40,13 @@ protected:
     SV value_;
 
 public:
-    explicit JTxField(SF const& sfield, SV const& value) : sfield_(sfield), value_(value)
+    explicit JTxField(SF const& sfield, SV value) : sfield_(sfield), value_(std::move(value))
     {
     }
 
     virtual ~JTxField() = default;
 
-    virtual OV
+    [[nodiscard]] virtual OV
     value() const = 0;
 
     virtual void
@@ -68,7 +68,7 @@ protected:
     SV value_;
 
 public:
-    explicit JTxField(SF const& sfield, SV const& value) : sfield_(sfield), value_(value)
+    explicit JTxField(SF const& sfield, SV value) : sfield_(sfield), value_(std::move(value))
     {
     }
 
@@ -94,7 +94,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return value_.time_since_epoch().count();
@@ -116,7 +116,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return to_string(value_);
@@ -138,7 +138,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return toBase58(value_);
@@ -160,7 +160,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return value_.getJson(JsonOptions::none);
@@ -202,7 +202,7 @@ protected:
 public:
     using JTxField<SF, SV, OV>::JTxField;
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return value_.value();
@@ -367,7 +367,7 @@ void
 stpath_append_one(STPath& st, Account const& account);
 
 template <class T>
-std::enable_if_t<std::is_constructible<Account, T>::value>
+std::enable_if_t<std::is_constructible_v<Account, T>>
 stpath_append_one(STPath& st, T const& t)
 {
     stpath_append_one(st, Account{t});
@@ -424,7 +424,7 @@ same(STPathSet const& st1, Args const&... args)
 
     for (auto const& p : st2)
     {
-        if (std::find(st1.begin(), st1.end(), p) == st1.end())
+        if (std::ranges::find(st1, p) == st1.end())
             return false;
     }
     return true;
@@ -464,7 +464,7 @@ public:
     void
     signal()
     {
-        std::lock_guard const lk(mutex_);
+        std::scoped_lock const lk(mutex_);
         signaled_ = true;
         cv_.notify_all();
     }
@@ -1035,6 +1035,4 @@ testHelper3TokensMix(TTester&& tester)
     tester(detail::issueHelperIOU, detail::issueHelperIOU, detail::issueHelperMPT);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

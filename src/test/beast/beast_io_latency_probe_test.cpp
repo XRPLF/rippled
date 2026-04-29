@@ -66,7 +66,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
                         wait_err = ec;
                     auto const end{MeasureClock::now()};
                     elapsed_times_.emplace_back(end - start);
-                    std::lock_guard const lk{mtx};
+                    std::scoped_lock const lk{mtx};
                     done = true;
                     cv.notify_one();
                 });

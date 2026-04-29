@@ -11,9 +11,7 @@
 #include <optional>
 #include <tuple>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class Env;
 
@@ -30,7 +28,7 @@ struct Vault
     };
 
     /** Return a VaultCreate transaction and the Vault's expected keylet. */
-    std::tuple<Json::Value, Keylet>
+    [[nodiscard]] std::tuple<Json::Value, Keylet>
     create(CreateArgs const& args) const;
 
     struct SetArgs
@@ -83,6 +81,4 @@ struct Vault
     clawback(ClawbackArgs const& args);
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

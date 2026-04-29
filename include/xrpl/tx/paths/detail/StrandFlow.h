@@ -234,8 +234,11 @@ flow(
             }
         }
 
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) cachedIn/Out set after strand is stepped
+        // above
         auto const strandIn = *strand.front()->cachedIn();
         auto const strandOut = *strand.back()->cachedOut();
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
 #ifndef NDEBUG
         {
@@ -468,14 +471,14 @@ public:
                             // an unusual corner case.
                             continue;
                         }
-                        strandQualities.push_back({*qual, strand});
+                        strandQualities.emplace_back(*qual, strand);
                     }
                 }
                 // must stable sort for deterministic order across different c++
                 // standard library implementations
-                std::stable_sort(
-                    strandQualities.begin(),
-                    strandQualities.end(),
+                std::ranges::stable_sort(
+                    strandQualities,
+
                     [](auto const& lhs, auto const& rhs) {
                         // higher qualities first
                         return std::get<Quality>(lhs) > std::get<Quality>(rhs);
@@ -491,7 +494,7 @@ public:
         std::swap(cur_, next_);
     }
 
-    Strand const*
+    [[nodiscard]] Strand const*
     get(size_t i) const
     {
         if (i >= cur_.size())
@@ -519,18 +522,10 @@ public:
         next_.insert(next_.end(), std::next(cur_.begin(), i), cur_.end());
     }
 
-    auto
+    [[nodiscard]] auto
     size() const
     {
         return cur_.size();
-    }
-
-    void
-    removeIndex(std::size_t i)
-    {
-        if (i >= next_.size())
-            return;
-        next_.erase(next_.begin() + i);
     }
 };
 /// @endcond
@@ -658,11 +653,6 @@ flow(
         std::optional<BestStrand> best;
         if (flowDebugInfo)
             flowDebugInfo->newLiquidityPass();
-        // Index of strand to mark as inactive (remove from the active list) if
-        // the liquidity is used. This is used for strands that consume too many
-        // offers Constructed as `false,0` to workaround a gcc warning about
-        // uninitialized variables
-        std::optional<std::size_t> markInactiveOnUse;
         for (size_t strandIndex = 0, sie = activeStrands.size(); strandIndex != sie; ++strandIndex)
         {
             Strand const* strand = activeStrands.get(strandIndex);
@@ -675,7 +665,7 @@ flow(
             // the previous strand execution failed. It has to be reset
             // since this strand might not have AMM liquidity.
             ammContext.clear();
-            if (offerCrossing && limitQuality)
+            if (offerCrossing != OfferCrossing::no && limitQuality)
             {
                 auto const strandQ = qualityUpperBound(sb, *strand);
                 if (!strandQ || *strandQ < *limitQuality)
@@ -726,11 +716,6 @@ flow(
 
         if (best)
         {
-            if (markInactiveOnUse)
-            {
-                activeStrands.removeIndex(*markInactiveOnUse);
-                markInactiveOnUse.reset();
-            }
             savedIns.insert(best->in);
             savedOuts.insert(best->out);
             remainingOut = outReq - sum(savedOuts);
@@ -812,7 +797,8 @@ flow(
             // fixFillOrKill amendment:
             //   That case is handled here if tfSell is also not set; i.e,
             //   case 1.
-            if (!offerCrossing || (fillOrKillEnabled && offerCrossing != OfferCrossing::sell))
+            if (offerCrossing == OfferCrossing::no ||
+                (fillOrKillEnabled && offerCrossing != OfferCrossing::sell))
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
         }
         else if (actualOut == beast::zero)
@@ -820,7 +806,7 @@ flow(
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing &&
+    if (offerCrossing != OfferCrossing::no &&
         (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::sell)))
     {
         // If we're offer crossing and partialPayment is *not* true, then

@@ -19,9 +19,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace xrpl {
-
-namespace reduce_relay {
+namespace xrpl::reduce_relay {
 
 template <typename clock_type>
 class Slots;
@@ -52,9 +50,7 @@ epoch(TP const& t)
 class SquelchHandler
 {
 public:
-    virtual ~SquelchHandler()
-    {
-    }
+    virtual ~SquelchHandler() = default;
     /** Squelch handler
      * @param validator Public key of the source validator
      * @param id Peer's id to squelch
@@ -145,35 +141,35 @@ private:
     deletePeer(PublicKey const& validator, id_t id, bool erase);
 
     /** Get the time of the last peer selection round */
-    time_point const&
+    [[nodiscard]] time_point const&
     getLastSelected() const
     {
         return lastSelected_;
     }
 
     /** Return number of peers in state */
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     inState(PeerState state) const;
 
     /** Return number of peers not in state */
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     notInState(PeerState state) const;
 
     /** Return Slot's state */
-    SlotState
+    [[nodiscard]] SlotState
     getState() const
     {
         return state_;
     }
 
     /** Return selected peers */
-    std::set<id_t>
+    [[nodiscard]] std::set<id_t>
     getSelected() const;
 
     /** Get peers info. Return map of peer's state, count, squelch
      * expiration milsec, and last message time milsec.
      */
-    std::unordered_map<id_t, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
+    [[nodiscard]] std::unordered_map<id_t, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
     getPeers() const;
 
     /** Check if peers stopped relaying messages. If a peer is
@@ -613,7 +609,7 @@ public:
     deleteIdlePeers();
 
     /** Return number of peers in state */
-    std::optional<std::uint16_t>
+    [[nodiscard]] std::optional<std::uint16_t>
     inState(PublicKey const& validator, PeerState state) const
     {
         auto const& it = slots_.find(validator);
@@ -623,7 +619,7 @@ public:
     }
 
     /** Return number of peers not in state */
-    std::optional<std::uint16_t>
+    [[nodiscard]] std::optional<std::uint16_t>
     notInState(PublicKey const& validator, PeerState state) const
     {
         auto const& it = slots_.find(validator);
@@ -633,7 +629,7 @@ public:
     }
 
     /** Return true if Slot is in state */
-    bool
+    [[nodiscard]] bool
     inState(PublicKey const& validator, SlotState state) const
     {
         auto const& it = slots_.find(validator);
@@ -798,6 +794,4 @@ Slots<clock_type>::deleteIdlePeers()
     }
 }
 
-}  // namespace reduce_relay
-
-}  // namespace xrpl
+}  // namespace xrpl::reduce_relay
