@@ -923,18 +923,22 @@ jsonData:
     filterBySpanID: false
 ```
 
-### 5.8.7 Correlation with Insight/StatsD Metrics
+### 5.8.7 Correlation with Insight/OTel System Metrics
 
-To correlate traces with existing Beast Insight metrics:
+To correlate traces with Beast Insight system metrics:
 
 **Step 1: Export Insight metrics to Prometheus**
 
-```yaml
-# prometheus.yaml
-scrape_configs:
-  - job_name: "xrpld-statsd"
-    static_configs:
-      - targets: ["statsd-exporter:9102"]
+Beast Insight metrics are exported natively via OTLP to the OTel Collector,
+which exposes them on the Prometheus endpoint alongside spanmetrics. No
+separate StatsD exporter is needed when using `server=otel`.
+
+```ini
+# xrpld.cfg — native OTel metrics (recommended)
+[insight]
+server=otel
+endpoint=http://localhost:4318/v1/metrics
+prefix=xrpld
 ```
 
 **Step 2: Add exemplars to metrics**
