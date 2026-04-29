@@ -127,10 +127,10 @@ These metrics serve multiple external consumer categories identified during rese
 **What to do**:
 
 - Register OTel instruments for PerfLog RPC counters (from `PerfLogImp.cpp` line ~63):
-  - Counter: `rippled_rpc_method_started_total{method="<name>"}` — calls started
-  - Counter: `rippled_rpc_method_finished_total{method="<name>"}` — calls completed
-  - Counter: `rippled_rpc_method_errored_total{method="<name>"}` — calls errored
-  - Histogram: `rippled_rpc_method_duration_us{method="<name>"}` — execution time distribution
+  - Counter: `xrpld_rpc_method_started_total{method="<name>"}` — calls started
+  - Counter: `xrpld_rpc_method_finished_total{method="<name>"}` — calls completed
+  - Counter: `xrpld_rpc_method_errored_total{method="<name>"}` — calls errored
+  - Histogram: `xrpld_rpc_method_duration_us{method="<name>"}` — execution time distribution
 
 - Use OTel `Counter<int64_t>` and `Histogram<double>` instruments with `method` attribute label.
 
@@ -154,11 +154,11 @@ These metrics serve multiple external consumer categories identified during rese
 **What to do**:
 
 - Register OTel instruments for PerfLog job counters:
-  - Counter: `rippled_job_queued_total{job_type="<name>"}` — jobs queued
-  - Counter: `rippled_job_started_total{job_type="<name>"}` — jobs started
-  - Counter: `rippled_job_finished_total{job_type="<name>"}` — jobs completed
-  - Histogram: `rippled_job_queued_duration_us{job_type="<name>"}` — time spent waiting in queue
-  - Histogram: `rippled_job_running_duration_us{job_type="<name>"}` — execution time distribution
+  - Counter: `xrpld_job_queued_total{job_type="<name>"}` — jobs queued
+  - Counter: `xrpld_job_started_total{job_type="<name>"}` — jobs started
+  - Counter: `xrpld_job_finished_total{job_type="<name>"}` — jobs completed
+  - Histogram: `xrpld_job_queued_duration_us{job_type="<name>"}` — time spent waiting in queue
+  - Histogram: `xrpld_job_running_duration_us{job_type="<name>"}` — execution time distribution
 
 - Hook into PerfLog's existing job tracking alongside Task 9.4.
 
@@ -180,15 +180,15 @@ These metrics serve multiple external consumer categories identified during rese
 **What to do**:
 
 - Register OTel `ObservableGauge` callbacks for `CountedObject<T>` instance counts:
-  - `rippled_object_count{type="Transaction"}` — live Transaction objects
-  - `rippled_object_count{type="Ledger"}` — live Ledger objects
-  - `rippled_object_count{type="NodeObject"}` — live NodeObject instances
-  - `rippled_object_count{type="STTx"}` — serialized transaction objects
-  - `rippled_object_count{type="STLedgerEntry"}` — serialized ledger entries
-  - `rippled_object_count{type="InboundLedger"}` — ledgers being fetched
-  - `rippled_object_count{type="Pathfinder"}` — active pathfinding computations
-  - `rippled_object_count{type="PathRequest"}` — active path requests
-  - `rippled_object_count{type="HashRouterEntry"}` — hash router entries
+  - `xrpld_object_count{type="Transaction"}` — live Transaction objects
+  - `xrpld_object_count{type="Ledger"}` — live Ledger objects
+  - `xrpld_object_count{type="NodeObject"}` — live NodeObject instances
+  - `xrpld_object_count{type="STTx"}` — serialized transaction objects
+  - `xrpld_object_count{type="STLedgerEntry"}` — serialized ledger entries
+  - `xrpld_object_count{type="InboundLedger"}` — ledgers being fetched
+  - `xrpld_object_count{type="Pathfinder"}` — active pathfinding computations
+  - `xrpld_object_count{type="PathRequest"}` — active path requests
+  - `xrpld_object_count{type="HashRouterEntry"}` — hash router entries
 
 - The `CountedObject` template already tracks these via atomic counters. The callback just reads the current counts.
 

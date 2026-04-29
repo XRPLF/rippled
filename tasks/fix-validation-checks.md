@@ -16,11 +16,11 @@ CI run: https://github.com/XRPLF/rippled/actions/runs/23026466191
 **Symptoms:**
 
 ```
-[FAIL] metric.statsd_gauges.rippled_LedgerMaster_Validated_Ledger_Age: 0 series
-[FAIL] metric.statsd_counters.rippled_rpc_requests: 0 series
-[FAIL] metric.statsd_histograms.rippled_rpc_time: 0 series
-[FAIL] metric.overlay_traffic.rippled_total_Bytes_In: 0 series
-[FAIL] metric.phase9_nodestore.rippled_nodestore_reads_total: 0 series
+[FAIL] metric.statsd_gauges.xrpld_LedgerMaster_Validated_Ledger_Age: 0 series
+[FAIL] metric.statsd_counters.xrpld_rpc_requests: 0 series
+[FAIL] metric.statsd_histograms.xrpld_rpc_time: 0 series
+[FAIL] metric.overlay_traffic.xrpld_total_Bytes_In: 0 series
+[FAIL] metric.phase9_nodestore.xrpld_nodestore_reads_total: 0 series
 ... (25 total)
 ```
 
@@ -32,7 +32,7 @@ CI run: https://github.com/XRPLF/rippled/actions/runs/23026466191
    the validation harness configures xrpld nodes with `server=statsd`.
 
 2. **Metric name mismatch:** The `expected_metrics.json` expects StatsD-style metric
-   names (e.g., `rippled_LedgerMaster_Validated_Ledger_Age`). When using `server=otel`,
+   names (e.g., `xrpld_LedgerMaster_Validated_Ledger_Age`). When using `server=otel`,
    beast::insight emits OTLP metrics which may have different names/structure.
 
 **Fix Options (pick one):**
@@ -127,24 +127,24 @@ individual checks), but the parent-child relationship isn't established.
 **Symptoms:**
 
 ```
-[FAIL] dashboard.rippled-statsd-node-health: HTTP 404
-[FAIL] dashboard.rippled-statsd-network: HTTP 404
-[FAIL] dashboard.rippled-statsd-rpc: HTTP 404
-[FAIL] dashboard.rippled-statsd-overlay-detail: HTTP 404
-[FAIL] dashboard.rippled-statsd-ledger-sync: HTTP 404
+[FAIL] dashboard.xrpld-statsd-node-health: HTTP 404
+[FAIL] dashboard.xrpld-statsd-network: HTTP 404
+[FAIL] dashboard.xrpld-statsd-rpc: HTTP 404
+[FAIL] dashboard.xrpld-statsd-overlay-detail: HTTP 404
+[FAIL] dashboard.xrpld-statsd-ledger-sync: HTTP 404
 ```
 
-**Root Cause:** Dashboard UIDs were renamed from `rippled-statsd-*` to `rippled-system-*`
+**Root Cause:** Dashboard UIDs were renamed from `xrpld-statsd-*` to `xrpld-system-*`
 but `expected_metrics.json` still references the old names.
 
 **Actual UIDs in `docker/telemetry/grafana/dashboards/`:**
 | Expected (in expected_metrics.json) | Actual (in dashboard JSON) |
 |-------------------------------------|-------------------------------|
-| `rippled-statsd-node-health` | `rippled-system-node-health` |
-| `rippled-statsd-network` | `rippled-system-network` |
-| `rippled-statsd-rpc` | `rippled-system-rpc` |
-| `rippled-statsd-overlay-detail` | `rippled-system-overlay-detail` |
-| `rippled-statsd-ledger-sync` | `rippled-system-ledger-sync` |
+| `xrpld-statsd-node-health` | `xrpld-system-node-health` |
+| `xrpld-statsd-network` | `xrpld-system-network` |
+| `xrpld-statsd-rpc` | `xrpld-system-rpc` |
+| `xrpld-statsd-overlay-detail` | `xrpld-system-overlay-detail` |
+| `xrpld-statsd-ledger-sync` | `xrpld-system-ledger-sync` |
 
 **Fix:** Update the 5 UIDs in `expected_metrics.json` → `grafana_dashboards.uids[]`.
 

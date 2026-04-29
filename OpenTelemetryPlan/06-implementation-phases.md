@@ -846,7 +846,7 @@ flowchart LR
 
 ### Key Implementation Details
 
-- **Transaction submitter and RPC load generator** both use rippled's native WebSocket command format (`{"command": ...}`) — not JSON-RPC format. Response data lives inside `"result"` with `"status"` at the top level.
+- **Transaction submitter and RPC load generator** both use xrpld's native WebSocket command format (`{"command": ...}`) — not JSON-RPC format. Response data lives inside `"result"` with `"status"` at the top level.
 - **Node config** requires `[signing_support] true` for server-side signing, and `[ips]` (not `[ips_fixed]`) to ensure peer connections count in `Peer_Finder_Active_*` metrics.
 - **Metric validation** uses the Prometheus `/api/v1/series` endpoint (not instant queries) to avoid false negatives from stale StatsD gauges. Every metric in `expected_metrics.json` must have > 0 series.
 - **StatsD gauge fix**: `StatsDGaugeImpl` initializes `m_dirty = true` so all gauges emit their initial value on first flush. Without this, gauges starting at 0 that never change (e.g. `jobq_job_count`) would be invisible in Prometheus.
@@ -871,13 +871,13 @@ See [Phase10_taskList.md](./Phase10_taskList.md) for detailed per-task breakdown
 
 The validation suite (`validate_telemetry.py`) runs exactly 71 checks, broken down as:
 
-- **1 service registration** — `rippled` exists in Tempo
+- **1 service registration** — `xrpld` exists in Tempo
 - **17 span existence** — `rpc.request`, `rpc.process`, `rpc.ws_message`, `rpc.command.*`, `tx.process`, `tx.receive`, `tx.apply`, `consensus.proposal.send`, `consensus.ledger_close`, `consensus.accept`, `consensus.validation.send`, `consensus.accept.apply`, `ledger.build`, `ledger.validate`, `ledger.store`, `peer.proposal.receive`, `peer.validation.receive`
 - **14 span attribute** — required attributes on the 14 spans that define them (22 unique attributes total)
 - **2 span hierarchies** — `rpc.process` -> `rpc.command.*`, `ledger.build` -> `tx.apply` (1 skipped: `rpc.request` -> `rpc.process`, cross-thread)
 - **1 span duration bounds** — all spans > 0 and < 60 s
 - **26 metric existence** — 4 SpanMetrics (`traces_span_metrics_calls_total`, `..._duration_milliseconds_{bucket,count,sum}`), 6 StatsD gauges (`LedgerMaster_Validated_Ledger_Age`, `Published_Ledger_Age`, `State_Accounting_Full_duration`, `Peer_Finder_Active_{Inbound,Outbound}_Peers`, `jobq_job_count`), 2 StatsD counters (`rpc_requests_total`, `ledger_fetches_total`), 3 StatsD histograms (`rpc_time`, `rpc_size`, `ios_latency`), 4 overlay traffic (`total_Bytes_{In,Out}`, `total_Messages_{In,Out}`), 7 Phase 9 OTLP (`nodestore_state`, `cache_metrics`, `txq_metrics`, `rpc_method_{started,finished}_total`, `object_count`, `load_factor_metrics`)
-- **10 dashboard loads** — `rippled-rpc-perf`, `rippled-transactions`, `rippled-consensus`, `rippled-ledger-ops`, `rippled-peer-net`, `rippled-system-node-health`, `rippled-system-network`, `rippled-system-rpc`, `rippled-system-overlay-detail`, `rippled-system-ledger-sync`
+- **10 dashboard loads** — `xrpld-rpc-perf`, `xrpld-transactions`, `xrpld-consensus`, `xrpld-ledger-ops`, `xrpld-peer-net`, `xrpld-system-node-health`, `xrpld-system-network`, `xrpld-system-rpc`, `xrpld-system-overlay-detail`, `xrpld-system-ledger-sync`
 
 See [Phase10_taskList.md](./Phase10_taskList.md) for the full numbered check-by-check enumeration.
 

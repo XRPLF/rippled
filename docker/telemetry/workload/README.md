@@ -1,11 +1,11 @@
 # Telemetry Workload Tools
 
-Synthetic workload generation and validation tools for rippled's OpenTelemetry telemetry stack. These tools validate that all spans, metrics, dashboards, and log-trace correlation work end-to-end under controlled load.
+Synthetic workload generation and validation tools for xrpld's OpenTelemetry telemetry stack. These tools validate that all spans, metrics, dashboards, and log-trace correlation work end-to-end under controlled load.
 
 ## Quick Start
 
 ```bash
-# Build rippled with telemetry enabled
+# Build xrpld with telemetry enabled
 conan install . --build=missing -o telemetry=True
 cmake --preset default -Dtelemetry=ON
 cmake --build --preset default
@@ -19,7 +19,7 @@ docker/telemetry/workload/run-full-validation.sh --cleanup
 
 ## Architecture
 
-The validation suite runs a multi-node rippled cluster as local processes alongside
+The validation suite runs a multi-node xrpld cluster as local processes alongside
 a Docker Compose telemetry stack. The cluster exercises consensus, peer-to-peer
 spans (proposals, validations), and all metric pipelines.
 
@@ -108,7 +108,7 @@ Custom `"weights"` override the default command/transaction distribution.
 
 ### run-full-validation.sh
 
-Orchestrates the complete validation pipeline. Starts the telemetry stack, starts a multi-node rippled cluster, generates load, and validates the results.
+Orchestrates the complete validation pipeline. Starts the telemetry stack, starts a multi-node xrpld cluster, generates load, and validates the results.
 
 ```bash
 # Full validation with defaults (uses full-validation profile)
@@ -146,7 +146,7 @@ python3 workload_orchestrator.py --profile stress --report /tmp/report.json
 ### rpc_load_generator.py
 
 Generates RPC traffic matching realistic production distribution. Uses
-rippled's **native WebSocket command format** (`{"command": ...}`) with flat
+xrpld's **native WebSocket command format** (`{"command": ...}`) with flat
 parameters — the same format as `tx_submitter.py`.
 
 - 40% health checks (server_info, fee)
@@ -172,7 +172,7 @@ python3 rpc_load_generator.py --endpoints ws://localhost:6006 \
 ### tx_submitter.py
 
 Submits diverse transaction types to exercise the full span and metric surface.
-Uses rippled's **native WebSocket command format** (`{"command": ...}`) rather
+Uses xrpld's **native WebSocket command format** (`{"command": ...}`) rather
 than JSON-RPC format. The response payload is inside the `"result"` key, with
 `"status"` at the top level.
 
@@ -310,7 +310,7 @@ Categories:
 The validation runs as a GitHub Actions workflow (`.github/workflows/telemetry-validation.yml`):
 
 - Triggered manually or on pushes to telemetry branches
-- Builds rippled, starts the full stack, runs load, validates
+- Builds xrpld, starts the full stack, runs load, validates
 - Uploads reports as artifacts
 - Posts summary to PR
 
