@@ -175,7 +175,7 @@
 **What to do**:
 
 - Create `docs/telemetry-runbook.md`:
-  - **Setup**: How to enable telemetry in rippled
+  - **Setup**: How to enable telemetry in xrpld
   - **Configuration**: All config options with descriptions
   - **Collector Deployment**: Docker Compose vs. Kubernetes vs. bare metal
   - **Troubleshooting**: Common issues and resolutions
@@ -199,7 +199,7 @@
 **What to do**:
 
 1. Start full Docker stack (Collector, Tempo, Grafana, Prometheus)
-2. Build rippled with `telemetry=ON`
+2. Build xrpld with `telemetry=ON`
 3. Run in standalone mode with telemetry enabled
 4. Generate RPC traffic and verify traces in Tempo
 5. Verify dashboards populate in Grafana

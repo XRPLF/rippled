@@ -23,7 +23,7 @@
 
 **What to do**:
 
-- Edit `include/xrpl/proto/xrpl.proto` (or `src/ripple/proto/ripple.proto`, wherever the proto is):
+- Edit `include/xrpl/proto/xrpl.proto` (or `src/xrpld/proto/ripple.proto`, wherever the proto is):
   - Add `TraceContext` message definition:
     ```protobuf
     message TraceContext {

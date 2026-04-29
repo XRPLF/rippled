@@ -7,7 +7,7 @@ using namespace xrpl::telemetry;
 
 TEST(SpanGuardFactory, null_guard_methods_are_safe)
 {
-    auto span = SpanGuard::span("nonexistent.span");
+    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "nonexistent");
     EXPECT_FALSE(span);
 
     span.setAttribute("key", "value");
@@ -29,28 +29,28 @@ TEST(SpanGuardFactory, category_span_returns_null_when_disabled)
 
 TEST(SpanGuardFactory, child_span_null_when_no_parent)
 {
-    auto span = SpanGuard::span("parent.test");
+    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "parent");
     auto child = span.childSpan("child.test");
     EXPECT_FALSE(child);
 }
 
 TEST(SpanGuardFactory, linked_span_null_when_no_context)
 {
-    auto span = SpanGuard::span("source.test");
+    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "source");
     auto linked = span.linkedSpan("linked.test");
     EXPECT_FALSE(linked);
 }
 
 TEST(SpanGuardFactory, capture_context_returns_invalid_on_null)
 {
-    auto span = SpanGuard::span("ctx.test");
+    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "ctx");
     auto ctx = span.captureContext();
     EXPECT_FALSE(ctx.isValid());
 }
 
 TEST(SpanGuardFactory, move_construction_transfers_ownership)
 {
-    auto span = SpanGuard::span("move.test");
+    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "move");
     auto moved = std::move(span);
     EXPECT_FALSE(span);
     moved.setAttribute("key", "value");
