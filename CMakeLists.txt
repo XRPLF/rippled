@@ -94,6 +94,7 @@ find_package(secp256k1 REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(xxHash REQUIRED)
+find_package(spdlog REQUIRED)
 
 target_link_libraries(
     xrpl_libs
