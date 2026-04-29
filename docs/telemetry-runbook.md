@@ -241,12 +241,14 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ## Troubleshooting
 
-### No traces appearing in Jaeger
+### No traces appearing in Tempo
 
 1. Check xrpld logs for `Telemetry starting` message
 2. Verify `enabled=1` in the `[telemetry]` config section
 3. Test collector connectivity: `curl -v http://localhost:4318/v1/traces`
-4. Check collector logs: `docker compose logs otel-collector`
+4. Check collector logs: `docker compose -f docker/telemetry/docker-compose.yml logs otel-collector`
+5. Verify Tempo is receiving data: open Grafana → Explore → select Tempo datasource → search by `service.name = xrpld`
+6. Check Tempo logs: `docker compose -f docker/telemetry/docker-compose.yml logs tempo`
 
 ### High memory usage
 
