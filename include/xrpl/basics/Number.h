@@ -385,11 +385,12 @@ public:
 
     // Thread local rounding control.  Default is to_nearest
     enum RoundingMode { ToNearest, TowardsZero, Downward, Upward };
+
     static RoundingMode
     getround();
-    // Returns previously set mode
+
     static RoundingMode
-    setround(RoundingMode mode);
+    setround(RoundingMode inMode);
 
     /** Returns which mantissa scale is currently in use for normalization.
      *
@@ -397,6 +398,7 @@ public:
      */
     static MantissaRange::MantissaScale
     getMantissaScale();
+
     /** Changes which mantissa scale is used for normalization.
      *
      * If you think you need to call this outside of unit tests, no you don't.

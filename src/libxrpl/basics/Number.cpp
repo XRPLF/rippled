@@ -37,9 +37,9 @@ Number::getround()
 }
 
 Number::RoundingMode
-Number::setround(RoundingMode mode)
+Number::setround(RoundingMode inMode)
 {
-    return std::exchange(mode, mode);
+    return std::exchange(Number::mode, inMode);
 }
 
 MantissaRange::MantissaScale
