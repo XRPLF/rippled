@@ -23,6 +23,7 @@
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/telemetry/ConsensusReceiveTracing.h>
 #include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Log.h>
@@ -1959,10 +1960,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             app_.getTimeKeeper().closeTime(),
             calcNodeID(app_.getValidatorManifests().getMasterKey(publicKey))});
 
-    auto span = std::make_shared<telemetry::SpanGuard>(telemetry::SpanGuard::span(
-        telemetry::TraceCategory::Consensus,
-        telemetry::seg::consensus,
-        telemetry::cons_span::op::proposalReceive));
+    // Create a receive span that links to the sender's trace context
+    // (if propagated). shared_ptr keeps it alive across the job boundary.
+    auto span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
     span->setAttribute(telemetry::cons_span::attr::trusted, isTrusted);
     span->setAttribute(telemetry::cons_span::attr::round, static_cast<int64_t>(set.proposeseq()));
 
@@ -2545,10 +2545,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
-        auto span = std::make_shared<telemetry::SpanGuard>(telemetry::SpanGuard::span(
-            telemetry::TraceCategory::Consensus,
-            telemetry::seg::consensus,
-            telemetry::cons_span::op::validationReceive));
+        // Create a receive span that links to the sender's trace context
+        // (if propagated). shared_ptr keeps it alive across the job boundary.
+        auto span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
         span->setAttribute(telemetry::cons_span::attr::trusted, isTrusted);
         if (val->isFieldPresent(sfLedgerSequence))
         {

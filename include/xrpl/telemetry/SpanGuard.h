@@ -20,6 +20,7 @@
         | + hashSpan(cat, name, hash)            [static] |
         | + hashSpan(cat, name, hash, parent)    [static] |
         | + captureContext() : SpanContext                 |
+        | + getTraceBytes() : TraceBytes                   |
         | + setAttribute(key, value)                      |
         | + setOk() / setError(desc)                      |
         | + addEvent(name)                                |
@@ -116,6 +117,7 @@
       exposed — all interaction goes through the public methods.
 */
 
+#include <array>
 #include <cstdint>
 #include <exception>
 #include <initializer_list>
@@ -132,6 +134,26 @@ namespace xrpl::telemetry {
     whether to create a real span or return a null guard.
 */
 enum class TraceCategory { Rpc, Transactions, Consensus, Peer, Ledger };
+
+/** Raw trace context bytes for cross-node propagation.
+
+    Holds the binary trace_id, span_id, and trace_flags extracted from
+    an active span. Used by protocol-layer code to inject trace context
+    into outgoing protobuf messages without depending on OTel types.
+
+    @see SpanGuard::getTraceBytes(), TraceContextPropagator.h
+*/
+struct TraceBytes
+{
+    /// 16-byte W3C trace identifier.
+    std::array<std::uint8_t, 16> traceId{};
+    /// 8-byte span identifier of the current span.
+    std::array<std::uint8_t, 8> spanId{};
+    /// W3C trace flags (bit 0 = sampled).
+    std::uint8_t traceFlags{0};
+    /// True if this struct contains valid data from an active span.
+    bool valid{false};
+};
 
 /** Key-value pair for span event attributes.
     Used by addEvent(name, attrs) to attach structured metadata to events.
@@ -295,6 +317,18 @@ public:
     [[nodiscard]] SpanContext
     captureContext() const;
 
+    /** Extract raw trace context bytes from this span for propagation.
+
+        Unlike captureContext() which captures the thread-local runtime
+        context, this method reads the span's own SpanContext directly.
+        Safe to call from any thread that holds a reference to this guard.
+
+        @return A TraceBytes struct with valid=true if the span is active
+                and has a valid context, or valid=false otherwise.
+    */
+    [[nodiscard]] TraceBytes
+    getTraceBytes() const;
+
     // --- Attribute setters (explicit overloads, no OTel types) ---------
 
     /** Set a string attribute. No-op on a null guard. */
@@ -428,6 +462,11 @@ public:
 
     [[nodiscard]] SpanContext
     captureContext() const
+    {
+        return {};
+    }
+    [[nodiscard]] TraceBytes
+    getTraceBytes() const
     {
         return {};
     }
