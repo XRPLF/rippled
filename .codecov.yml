@@ -39,5 +39,3 @@ ignore:
   # Telemetry modules — conditionally compiled behind XRPL_ENABLE_TELEMETRY,
   # which is not enabled in coverage builds.
   - "src/xrpld/telemetry/"
-  - "src/libxrpl/beast/insight/OTelCollector.cpp"
-  - "include/xrpl/beast/insight/OTelCollector.h"

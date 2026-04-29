@@ -42,7 +42,7 @@ graph LR
     BP -->|"OTLP/gRPC :4317"| D
 
     SM -->|"span_calls_total<br/>span_duration_ms<br/>(6 dimension labels)"| E
-    R2 -->|"xrpld_* gauges<br/>xrpld_* counters<br/>xrpld_* summaries"| E
+    R2 -->|"rippled_* gauges<br/>rippled_* counters<br/>rippled_* summaries"| E
 
     E -->|"Prometheus<br/>data source"| F
     D -->|"Tempo<br/>data source"| F
@@ -400,56 +400,57 @@ These are system-level metrics emitted by xrpld's `beast::insight` framework via
 [insight]
 server=statsd
 address=127.0.0.1:8125
-prefix=xrpld
+prefix=rippled
 ```
+
+> **Note**: The `prefix` value is user-configurable — all metric names in the tables below assume `prefix=rippled` (matching the integration test and Grafana dashboards). If you change the prefix, replace `rippled_` with `{your_prefix}_` in all PromQL queries.
 
 ### 2.1 Gauges
 
-| Prometheus Metric                                 | Source File           | Description                               | Typical Range                   |
-| ------------------------------------------------- | --------------------- | ----------------------------------------- | ------------------------------- |
-| `xrpld_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger       | 0–10 (healthy), >30 (stale)     |
-| `xrpld_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger       | 0–10 (healthy)                  |
-| `xrpld_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state  | Monotonic                       |
-| `xrpld_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state     | Monotonic                       |
-| `xrpld_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state       | Monotonic                       |
-| `xrpld_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state      | Monotonic                       |
-| `xrpld_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state          | Monotonic (should dominate)     |
-| `xrpld_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected      | Low                             |
-| `xrpld_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected         | Low                             |
-| `xrpld_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing           | Low                             |
-| `xrpld_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking          | Low                             |
-| `xrpld_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full              | Low (should be 1 after startup) |
-| `xrpld_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections           | 0–85                            |
-| `xrpld_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
-| `xrpld_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
-| `xrpld_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
-| `xrpld_job_count`                                 | JobQueue.cpp          | Current job queue depth                   | 0–100 (healthy)                 |
+| Prometheus Metric                                   | Source File           | Description                              | Typical Range                   |
+| --------------------------------------------------- | --------------------- | ---------------------------------------- | ------------------------------- |
+| `rippled_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger      | 0–10 (healthy), >30 (stale)     |
+| `rippled_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger      | 0–10 (healthy)                  |
+| `rippled_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state | Monotonic                       |
+| `rippled_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state    | Monotonic                       |
+| `rippled_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state      | Monotonic                       |
+| `rippled_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state     | Monotonic                       |
+| `rippled_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state         | Monotonic (should dominate)     |
+| `rippled_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected     | Low                             |
+| `rippled_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected        | Low                             |
+| `rippled_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing          | Low                             |
+| `rippled_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking         | Low                             |
+| `rippled_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full             | Low (should be 1 after startup) |
+| `rippled_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections          | 0–85                            |
+| `rippled_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections         | 10–21                           |
+| `rippled_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count      | Low growth                      |
+| `rippled_job_count`                                 | JobQueue.cpp          | Current job queue depth                  | 0–100 (healthy)                 |
 
 **Grafana dashboard**: _Node Health (StatsD)_ (`xrpld-statsd-node-health`)
 
 ### 2.2 Counters
 
-| Prometheus Metric               | Source File        | Description                                   |
-| ------------------------------- | ------------------ | --------------------------------------------- |
-| `xrpld_rpc_requests`            | ServerHandler.cpp  | Total RPC requests received                   |
-| `xrpld_ledger_fetches`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
-| `xrpld_ledger_history_mismatch` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
-| `xrpld_warn`                    | Logic.h            | Resource manager warnings issued              |
-| `xrpld_drop`                    | Logic.h            | Resource manager drops (connections rejected) |
+| Prometheus Metric                 | Source File        | Description                                   |
+| --------------------------------- | ------------------ | --------------------------------------------- |
+| `rippled_rpc_requests`            | ServerHandler.cpp  | Total RPC requests received                   |
+| `rippled_ledger_fetches`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
+| `rippled_ledger_history_mismatch` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
+| `rippled_warn`                    | Logic.h            | Resource manager warnings issued              |
+| `rippled_drop`                    | Logic.h            | Resource manager drops (connections rejected) |
 
-**Note**: `xrpld_warn` and `xrpld_drop` use non-standard StatsD meter type (`|m`). The OTel StatsD receiver only recognizes `|c`, `|g`, `|ms`, `|h`, `|s` — these metrics may be silently dropped. See Known Issues below.
+**Note**: `rippled_warn` and `rippled_drop` use non-standard StatsD meter type (`|m`). The OTel StatsD receiver only recognizes `|c`, `|g`, `|ms`, `|h`, `|s` — these metrics may be silently dropped. See Known Issues below.
 
 **Grafana dashboard**: _RPC & Pathfinding (StatsD)_ (`xrpld-statsd-rpc`)
 
 ### 2.3 Histograms (from StatsD timers)
 
-| Prometheus Metric     | Source File       | Unit  | Description                    |
-| --------------------- | ----------------- | ----- | ------------------------------ |
-| `xrpld_rpc_time`      | ServerHandler.cpp | ms    | RPC response time distribution |
-| `xrpld_rpc_size`      | ServerHandler.cpp | bytes | RPC response size distribution |
-| `xrpld_ios_latency`   | Application.cpp   | ms    | I/O service loop latency       |
-| `xrpld_pathfind_fast` | PathRequests.h    | ms    | Fast pathfinding duration      |
-| `xrpld_pathfind_full` | PathRequests.h    | ms    | Full pathfinding duration      |
+| Prometheus Metric       | Source File       | Unit  | Description                    |
+| ----------------------- | ----------------- | ----- | ------------------------------ |
+| `rippled_rpc_time`      | ServerHandler.cpp | ms    | RPC response time distribution |
+| `rippled_rpc_size`      | ServerHandler.cpp | bytes | RPC response size distribution |
+| `rippled_ios_latency`   | Application.cpp   | ms    | I/O service loop latency       |
+| `rippled_pathfind_fast` | PathRequests.h    | ms    | Fast pathfinding duration      |
+| `rippled_pathfind_full` | PathRequests.h    | ms    | Full pathfinding duration      |
 
 Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
@@ -459,10 +460,10 @@ Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
 For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), four gauges are emitted:
 
-- `xrpld_{category}_Bytes_In`
-- `xrpld_{category}_Bytes_Out`
-- `xrpld_{category}_Messages_In`
-- `xrpld_{category}_Messages_Out`
+- `rippled_{category}_Bytes_In`
+- `rippled_{category}_Bytes_Out`
+- `rippled_{category}_Messages_In`
+- `rippled_{category}_Messages_Out`
 
 **Key categories**:
 
@@ -614,19 +615,19 @@ sum by (xrpl_peer_proposal_trusted) (rate(traces_span_metrics_calls_total{span_n
 
 ```promql
 # Validated ledger age (should be < 10s)
-xrpld_LedgerMaster_Validated_Ledger_Age
+rippled_LedgerMaster_Validated_Ledger_Age
 
 # Active peer count
-xrpld_Peer_Finder_Active_Inbound_Peers + xrpld_Peer_Finder_Active_Outbound_Peers
+rippled_Peer_Finder_Active_Inbound_Peers + rippled_Peer_Finder_Active_Outbound_Peers
 
 # RPC response time p95
-histogram_quantile(0.95, xrpld_rpc_time_bucket)
+histogram_quantile(0.95, rippled_rpc_time_bucket)
 
 # Total network bytes in (rate)
-rate(xrpld_total_Bytes_In[5m])
+rate(rippled_total_Bytes_In[5m])
 
 # Operating mode (should be "Full" after startup)
-xrpld_State_Accounting_Full_duration
+rippled_State_Accounting_Full_duration
 ```
 
 ---
@@ -655,8 +656,8 @@ All span names and attributes are defined as compile-time constants in colocated
 | Issue                                                              | Impact                                           | Status                                                               |
 | ------------------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
 | `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp |
-| `xrpld_job_count` may not emit in standalone mode                  | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
-| `xrpld_rpc_requests` depends on `[insight]` config                 | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
+| `rippled_job_count` may not emit in standalone mode                | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
+| `rippled_rpc_requests` depends on `[insight]` config               | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
 | Peer tracing disabled by default                                   | No `peer.*` spans unless `trace_peer=1`          | Intentional — high volume on mainnet                                 |
 
 ---
@@ -688,7 +689,7 @@ enabled=1
 [insight]
 server=statsd
 address=127.0.0.1:8125
-prefix=xrpld
+prefix=rippled
 ```
 
 ### Production Setup
@@ -705,7 +706,7 @@ max_queue_size=4096
 [insight]
 server=statsd
 address=otel-collector:8125
-prefix=xrpld
+prefix=rippled
 ```
 
 ### Trace Category Toggle
