@@ -39,22 +39,24 @@ cmake --build --preset default
 
 ## Configuration Reference
 
-| Option               | Default                           | Description                               |
-| -------------------- | --------------------------------- | ----------------------------------------- |
-| `enabled`            | `0`                               | Master switch for telemetry               |
-| `endpoint`           | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                        |
-| `exporter`           | `otlp_http`                       | Exporter type                             |
-| `sampling_ratio`     | `1.0`                             | Head-based sampling ratio (0.0–1.0)       |
-| `trace_rpc`          | `1`                               | Enable RPC request tracing                |
-| `trace_transactions` | `1`                               | Enable transaction tracing                |
-| `trace_consensus`    | `1`                               | Enable consensus tracing                  |
-| `trace_peer`         | `0`                               | Enable peer message tracing (high volume) |
-| `trace_ledger`       | `1`                               | Enable ledger tracing                     |
-| `batch_size`         | `512`                             | Max spans per batch export                |
-| `batch_delay_ms`     | `5000`                            | Delay between batch exports               |
-| `max_queue_size`     | `2048`                            | Max spans queued before dropping          |
-| `use_tls`            | `0`                               | Use TLS for exporter connection           |
-| `tls_ca_cert`        | (empty)                           | Path to CA certificate bundle             |
+| Option                     | Default                           | Description                                               |
+| -------------------------- | --------------------------------- | --------------------------------------------------------- |
+| `enabled`                  | `0`                               | Master switch for telemetry                               |
+| `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                        |
+| `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute             |
+| `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute      |
+| `sampling_ratio`           | `1.0`                             | Head-based sampling ratio (0.0--1.0)                      |
+| `trace_rpc`                | `1`                               | Enable RPC request tracing                                |
+| `trace_transactions`       | `1`                               | Enable transaction tracing                                |
+| `trace_consensus`          | `1`                               | Enable consensus tracing                                  |
+| `trace_peer`               | `0`                               | Enable peer message tracing (high volume)                 |
+| `trace_ledger`             | `1`                               | Enable ledger tracing                                     |
+| `consensus_trace_strategy` | `deterministic`                   | Consensus trace ID strategy (`deterministic` or `random`) |
+| `batch_size`               | `512`                             | Max spans per batch export                                |
+| `batch_delay_ms`           | `5000`                            | Delay between batch exports                               |
+| `max_queue_size`           | `2048`                            | Max spans queued before dropping                          |
+| `use_tls`                  | `0`                               | Use TLS for exporter connection                           |
+| `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                             |
 
 ## Span Reference
 
@@ -71,20 +73,46 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### Transaction Spans (Phase 3)
 
-| Span Name    | Source File         | Attributes                                      | Description                           |
-| ------------ | ------------------- | ----------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp:1227 | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path` | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp:1273    | `xrpl.peer.id`                                  | Transaction received from peer relay  |
+| Span Name    | Source File         | Attributes                                                                                  | Description                           |
+| ------------ | ------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process` | NetworkOPs.cpp:1227 | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                             | Transaction submission and processing |
+| `tx.receive` | PeerImp.cpp:1273    | `xrpl.peer.id`, `xrpl.tx.hash`, `xrpl.peer.version`, `xrpl.tx.suppressed`, `xrpl.tx.status` | Transaction received from peer relay  |
+
+### Transaction Queue Spans (Phase 3)
+
+| Span Name          | Source File | Attributes                                                            | Description                                        |
+| ------------------ | ----------- | --------------------------------------------------------------------- | -------------------------------------------------- |
+| `txq.enqueue`      | TxQ.cpp     | `xrpl.txq.tx_hash`                                                    | Transaction enqueue decision (child of tx.process) |
+| `txq.apply_direct` | TxQ.cpp     | --                                                                    | Direct apply attempt (bypassing queue)             |
+| `txq.batch_clear`  | TxQ.cpp     | --                                                                    | Batch clear of queued transactions for an account  |
+| `txq.accept`       | TxQ.cpp     | `xrpl.txq.queue_size`                                                 | Ledger-close accept loop over queued transactions  |
+| `txq.accept_tx`    | TxQ.cpp     | `xrpl.txq.tx_hash`, `xrpl.txq.retries_remaining`, `xrpl.txq.ter_code` | Per-transaction apply during accept                |
+| `txq.cleanup`      | TxQ.cpp     | `xrpl.txq.ledger_seq`                                                 | Post-close cleanup of expired queue entries        |
 
 ### Consensus Spans (Phase 4)
 
-| Span Name                   | Source File          | Attributes                                                                                                                    | Description                                |
-| --------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `consensus.proposal.send`   | RCLConsensus.cpp:177 | `xrpl.consensus.round`                                                                                                        | Consensus proposal broadcast               |
-| `consensus.ledger_close`    | RCLConsensus.cpp:282 | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                            | Ledger close event                         |
-| `consensus.accept`          | RCLConsensus.cpp:395 | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                                                                    | Ledger accepted by consensus               |
-| `consensus.validation.send` | RCLConsensus.cpp:753 | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                                                       | Validation sent after accept               |
-| `consensus.accept.apply`    | RCLConsensus.cpp:453 | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`, `proposing`, `round_time_ms`, `ledger.seq` | Ledger application with close time details |
+| Span Name                      | Source File      | Attributes                                                                                                                                                                                                                                                                                                                                                                                             | Description                                                        |
+| ------------------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `consensus.round`              | RCLConsensus.cpp | `xrpl.consensus.ledger_id`, `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`, `xrpl.consensus.trace_strategy`, `xrpl.consensus.round_id`                                                                                                                                                                                                                                                             | Root span for a consensus round (deterministic or random trace ID) |
+| `consensus.phase.open`         | Consensus.h      | --                                                                                                                                                                                                                                                                                                                                                                                                     | Open phase duration (child of round)                               |
+| `consensus.proposal.send`      | RCLConsensus.cpp | `xrpl.consensus.round`                                                                                                                                                                                                                                                                                                                                                                                 | Consensus proposal broadcast                                       |
+| `consensus.ledger_close`       | RCLConsensus.cpp | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                                                                                                                                                                                                     | Ledger close event                                                 |
+| `consensus.establish`          | Consensus.h      | `xrpl.consensus.converge_percent`, `xrpl.consensus.establish_count`, `xrpl.consensus.proposers`                                                                                                                                                                                                                                                                                                        | Establish phase duration (child of round)                          |
+| `consensus.update_positions`   | Consensus.h      | `xrpl.consensus.converge_percent`, `xrpl.consensus.proposers`, `xrpl.consensus.disputes_count`                                                                                                                                                                                                                                                                                                         | Position update and dispute resolution (see Events below)          |
+| `consensus.check`              | Consensus.h      | `xrpl.consensus.agree_count`, `xrpl.consensus.disagree_count`, `xrpl.consensus.converge_percent`, `xrpl.consensus.have_close_time_consensus`, `xrpl.consensus.threshold_percent`, `xrpl.consensus.result`                                                                                                                                                                                              | Consensus threshold check                                          |
+| `consensus.accept`             | RCLConsensus.cpp | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                                                                                                                                                                                                                                                                                                                                             | Ledger accepted by consensus                                       |
+| `consensus.accept.apply`       | RCLConsensus.cpp | `xrpl.consensus.ledger.seq`, `xrpl.consensus.close_time`, `xrpl.consensus.close_time_correct`, `xrpl.consensus.close_resolution_ms`, `xrpl.consensus.state`, `xrpl.consensus.proposing`, `xrpl.consensus.round_time_ms`, `xrpl.consensus.parent_close_time`, `xrpl.consensus.close_time_self`, `xrpl.consensus.close_time_vote_bins`, `xrpl.consensus.resolution_direction`, `xrpl.consensus.tx_count` | Ledger application with close time details (see Events below)      |
+| `consensus.validation.send`    | RCLConsensus.cpp | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                                                                                                                                                                                                                                                                                                                                | Validation sent after accept (follows-from link)                   |
+| `consensus.mode_change`        | RCLConsensus.cpp | `xrpl.consensus.mode.old`, `xrpl.consensus.mode.new`                                                                                                                                                                                                                                                                                                                                                   | Consensus mode transition                                          |
+| `consensus.proposal.receive`   | PeerImp.cpp      | `xrpl.consensus.trusted`, `xrpl.consensus.round`                                                                                                                                                                                                                                                                                                                                                       | Proposal received from peer (standalone span)                      |
+| `consensus.validation.receive` | PeerImp.cpp      | `xrpl.consensus.trusted`, `xrpl.consensus.ledger.seq`                                                                                                                                                                                                                                                                                                                                                  | Validation received from peer (standalone span)                    |
+
+#### Consensus Span Events
+
+| Parent Span                  | Event Name        | Event Attributes                                                                | Description                                             |
+| ---------------------------- | ----------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `consensus.update_positions` | `dispute.resolve` | `xrpl.tx.id`, `xrpl.dispute.our_vote`, `xrpl.dispute.yays`, `xrpl.dispute.nays` | Emitted per dispute when votes are tallied              |
+| `consensus.accept.apply`     | `tx.included`     | `xrpl.tx.id`                                                                    | Emitted per transaction included in the accepted ledger |
 
 #### Close Time Queries (Tempo TraceQL)
 
@@ -100,6 +128,12 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 # Find specific ledger's consensus details
 {name="consensus.accept.apply"} | xrpl.consensus.ledger.seq = 92345678
+
+# Find all spans in a consensus round (deterministic trace strategy)
+{name="consensus.round"} | xrpl.consensus.round_id = "<round_id>"
+
+# Find dispute resolutions
+{name="consensus.update_positions"} >> {event:name="dispute.resolve"}
 ```
 
 ## Prometheus Metrics (Spanmetrics)
@@ -178,18 +212,32 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### Span → Metric → Dashboard Summary
 
-| Span Name                   | Prometheus Metric Filter                  | Grafana Dashboard                             |
-| --------------------------- | ----------------------------------------- | --------------------------------------------- |
-| `rpc.request`               | `{span_name="rpc.request"}`               | — (available but not paneled)                 |
-| `rpc.process`               | `{span_name="rpc.process"}`               | — (available but not paneled)                 |
-| `rpc.command.*`             | `{span_name=~"rpc.command.*"}`            | RPC Performance (all 4 panels)                |
-| `tx.process`                | `{span_name="tx.process"}`                | Transaction Overview (3 panels)               |
-| `tx.receive`                | `{span_name="tx.receive"}`                | Transaction Overview (2 panels)               |
-| `consensus.accept`          | `{span_name="consensus.accept"}`          | Consensus Health (Round Duration)             |
-| `consensus.proposal.send`   | `{span_name="consensus.proposal.send"}`   | Consensus Health (Proposals Rate)             |
-| `consensus.ledger_close`    | `{span_name="consensus.ledger_close"}`    | Consensus Health (Close Duration)             |
-| `consensus.validation.send` | `{span_name="consensus.validation.send"}` | Consensus Health (Validation Rate)            |
-| `consensus.accept.apply`    | `{span_name="consensus.accept.apply"}`    | Consensus Health (Apply Duration, Close Time) |
+| Span Name                      | Prometheus Metric Filter                     | Grafana Dashboard                             |
+| ------------------------------ | -------------------------------------------- | --------------------------------------------- |
+| `rpc.request`                  | `{span_name="rpc.request"}`                  | -- (available but not paneled)                |
+| `rpc.process`                  | `{span_name="rpc.process"}`                  | -- (available but not paneled)                |
+| `rpc.command.*`                | `{span_name=~"rpc.command.*"}`               | RPC Performance (all 4 panels)                |
+| `tx.process`                   | `{span_name="tx.process"}`                   | Transaction Overview (3 panels)               |
+| `tx.receive`                   | `{span_name="tx.receive"}`                   | Transaction Overview (2 panels)               |
+| `txq.enqueue`                  | `{span_name="txq.enqueue"}`                  | -- (available but not paneled)                |
+| `txq.apply_direct`             | `{span_name="txq.apply_direct"}`             | -- (available but not paneled)                |
+| `txq.batch_clear`              | `{span_name="txq.batch_clear"}`              | -- (available but not paneled)                |
+| `txq.accept`                   | `{span_name="txq.accept"}`                   | -- (available but not paneled)                |
+| `txq.accept_tx`                | `{span_name="txq.accept_tx"}`                | -- (available but not paneled)                |
+| `txq.cleanup`                  | `{span_name="txq.cleanup"}`                  | -- (available but not paneled)                |
+| `consensus.round`              | `{span_name="consensus.round"}`              | -- (available but not paneled)                |
+| `consensus.phase.open`         | `{span_name="consensus.phase.open"}`         | -- (available but not paneled)                |
+| `consensus.establish`          | `{span_name="consensus.establish"}`          | -- (available but not paneled)                |
+| `consensus.update_positions`   | `{span_name="consensus.update_positions"}`   | -- (available but not paneled)                |
+| `consensus.check`              | `{span_name="consensus.check"}`              | -- (available but not paneled)                |
+| `consensus.accept`             | `{span_name="consensus.accept"}`             | Consensus Health (Round Duration)             |
+| `consensus.proposal.send`      | `{span_name="consensus.proposal.send"}`      | Consensus Health (Proposals Rate)             |
+| `consensus.ledger_close`       | `{span_name="consensus.ledger_close"}`       | Consensus Health (Close Duration)             |
+| `consensus.validation.send`    | `{span_name="consensus.validation.send"}`    | Consensus Health (Validation Rate)            |
+| `consensus.accept.apply`       | `{span_name="consensus.accept.apply"}`       | Consensus Health (Apply Duration, Close Time) |
+| `consensus.mode_change`        | `{span_name="consensus.mode_change"}`        | -- (available but not paneled)                |
+| `consensus.proposal.receive`   | `{span_name="consensus.proposal.receive"}`   | -- (available but not paneled)                |
+| `consensus.validation.receive` | `{span_name="consensus.validation.receive"}` | -- (available but not paneled)                |
 
 ## Troubleshooting
 
