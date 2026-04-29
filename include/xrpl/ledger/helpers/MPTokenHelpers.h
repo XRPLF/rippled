@@ -27,7 +27,13 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
 [[nodiscard]] bool
+isIndividualFrozen(ReadView const& view, AccountID const& account, SLE const& mptSLE);
+
+[[nodiscard]] bool
 isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth = 0);
+
+[[nodiscard]] bool
+isFrozen(ReadView const& view, AccountID const& account, SLE const& mptSLE, int depth = 0);
 
 [[nodiscard]] bool
 isAnyFrozen(

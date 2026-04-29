@@ -58,6 +58,12 @@ isVaultPseudoAccountFrozen(
     AccountID const& account,
     MPTIssue const& mptShare,
     int depth);
+[[nodiscard]] bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& mptSLE,
+    int depth);
 
 [[nodiscard]] bool
 isLPTokenFrozen(

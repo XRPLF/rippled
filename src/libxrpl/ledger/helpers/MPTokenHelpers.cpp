@@ -55,10 +55,24 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue cons
 }
 
 bool
+isIndividualFrozen(ReadView const& view, AccountID const& account, SLE const& mptSLE)
+{
+    return mptSLE.isFlag(lsfMPTLocked);
+}
+
+bool
 isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
 {
     return isGlobalFrozen(view, mptIssue) || isIndividualFrozen(view, account, mptIssue) ||
         isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
+}
+
+bool
+isFrozen(ReadView const& view, AccountID const& account, SLE const& mptSLE, int depth)
+{
+    MPTIssue const mptIssue{mptSLE[sfMPTokenIssuanceID]};
+    return isGlobalFrozen(view, mptIssue) || isIndividualFrozen(view, account, mptSLE) ||
+        isVaultPseudoAccountFrozen(view, account, mptSLE, depth);
 }
 
 [[nodiscard]] bool

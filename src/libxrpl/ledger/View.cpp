@@ -52,11 +52,13 @@ hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
     return exp && (view.parentCloseTime() >= tp{d{*exp}});
 }
 
+template <typename T>
+    requires(std::is_same_v<T, MPTIssue> || std::is_same_v<T, SLE>)
 bool
 isVaultPseudoAccountFrozen(
     ReadView const& view,
+    T const& mptShare,
     AccountID const& account,
-    MPTIssue const& mptShare,
     int depth)
 {
     if (!view.rules().enabled(featureSingleAssetVault))
@@ -65,11 +67,17 @@ isVaultPseudoAccountFrozen(
     if (depth >= maxAssetCheckDepth)
         return true;  // LCOV_EXCL_LINE
 
-    auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
-    if (mptIssuance == nullptr)
-        return false;  // zero MPToken won't block deletion of MPTokenIssuance
+    auto const issuer = [&]() {
+        if constexpr (std::is_same_v<T, MPTIssue>)
+        {
+            return mptShare.getIssuer();
+        }
+        if constexpr (std::is_same_v<T, SLE>)
+        {
+            return mptShare[sfAccount];
+        }
+    }();
 
-    auto const issuer = mptIssuance->getAccountID(sfIssuer);
     auto const mptIssuer = view.read(keylet::account(issuer));
     if (mptIssuer == nullptr)
     {
@@ -82,6 +90,13 @@ isVaultPseudoAccountFrozen(
     if (!mptIssuer->isFieldPresent(sfVaultID))
         return false;  // not a Vault pseudo-account, common case
 
+    if constexpr (std::is_same_v<T, MPTIssue>)
+    {
+        auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
+        if (mptIssuance == nullptr)
+            return false;  // zero MPToken won't block deletion of MPTokenIssuance
+    }
+
     auto const vault = view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
     if (vault == nullptr)
     {  // LCOV_EXCL_START
@@ -91,6 +106,26 @@ isVaultPseudoAccountFrozen(
     }
 
     return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
+}
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptShare,
+    int depth)
+{
+    return isVaultPseudoAccountFrozen(view, mptShare, account, depth);
+}
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& mptShareSLE,
+    int depth)
+{
+    return isVaultPseudoAccountFrozen(view, mptShareSLE, account, depth);
 }
 
 bool
