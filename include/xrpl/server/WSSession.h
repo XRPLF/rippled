@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -79,6 +80,30 @@ public:
         auto const pb = boost::beast::buffers_prefix(n_, sb_.data());
         std::vector<boost::asio::const_buffer> vb(std::distance(pb.begin(), pb.end()));
         std::copy(pb.begin(), pb.end(), std::back_inserter(vb));
+        return {done, vb};
+    }
+};
+
+class SharedStringWSMsg : public WSMsg
+{
+    std::shared_ptr<std::string const> str_;
+    std::size_t offset_ = 0;
+
+public:
+    explicit SharedStringWSMsg(std::shared_ptr<std::string const> s) : str_(std::move(s))
+    {
+    }
+
+    std::pair<boost::tribool, std::vector<boost::asio::const_buffer>>
+    prepare(std::size_t bytes, std::function<void(void)>) override
+    {
+        if (offset_ >= str_->size())
+            return {true, {}};
+        auto const n = std::min(bytes, str_->size() - offset_);
+        std::vector<boost::asio::const_buffer> vb;
+        vb.emplace_back(str_->data() + offset_, n);
+        offset_ += n;
+        boost::tribool const done = (offset_ >= str_->size());
         return {done, vb};
     }
 };

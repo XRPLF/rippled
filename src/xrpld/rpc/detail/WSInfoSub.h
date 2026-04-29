@@ -59,6 +59,18 @@ public:
         auto m = std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb));
         sp->send(m);
     }
+
+    void
+    send(
+        Json::Value const&,
+        std::shared_ptr<std::string const> const& serialized,
+        bool) override
+    {
+        auto sp = ws_.lock();
+        if (!sp)
+            return;
+        sp->send(std::make_shared<SharedStringWSMsg>(serialized));
+    }
 };
 
 }  // namespace xrpl

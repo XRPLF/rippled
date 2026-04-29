@@ -237,18 +237,36 @@ public:
     {
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
+        nudb::detail::buffer bf;
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status const status = fetch(h, &nObj);
-            if (status != Status::Ok)
+            Status status = Status::Ok;
+            nudb::error_code ec;
+            db_.fetch(
+                h.data(),
+                [&h, &nObj, &status, &bf](void const* data, std::size_t size) {
+                    auto const result = nodeobject_decompress(data, size, bf);
+                    DecodedBlob decoded(h.data(), result.first, result.second);
+                    if (!decoded.wasOk())
+                    {
+                        status = Status::DataCorrupt;
+                        return;
+                    }
+                    nObj = decoded.createObject();
+                },
+                ec);
+            if (ec == nudb::error::key_not_found)
             {
                 results.push_back({});
+                continue;
             }
+            if (ec)
+                Throw<nudb::system_error>(ec);
+            if (status != Status::Ok)
+                results.push_back({});
             else
-            {
-                results.push_back(nObj);
-            }
+                results.push_back(std::move(nObj));
         }
 
         return {results, Status::Ok};

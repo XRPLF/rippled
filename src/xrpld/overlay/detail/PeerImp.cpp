@@ -50,6 +50,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
@@ -302,23 +303,21 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         return;
     }
 
+    auto const& buf = m->getBuffer(compressionEnabled_);
+    auto const bufSize = static_cast<int>(buf.size());
+
     auto validator = m->getValidatorKey();
     if (validator && !squelch_.expireSquelch(*validator))
     {
         overlay_.reportOutboundTraffic(
-            TrafficCount::Category::SquelchSuppressed,
-            static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+            TrafficCount::Category::SquelchSuppressed, bufSize);
         return;
     }
 
-    // report categorized outgoing traffic
     overlay_.reportOutboundTraffic(
-        safeCast<TrafficCount::Category>(m->getCategory()),
-        static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+        safeCast<TrafficCount::Category>(m->getCategory()), bufSize);
 
-    // report total outgoing traffic
-    overlay_.reportOutboundTraffic(
-        TrafficCount::Category::Total, static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+    overlay_.reportOutboundTraffic(TrafficCount::Category::Total, bufSize);
 
     auto sendqSize = sendQueue_.size();
 
@@ -1427,37 +1426,45 @@ PeerImp::handleTransaction(
 
     if (app_.getOPs().isNeedNetworkLedger())
     {
-        // If we've never been in synch, there's nothing we can do
-        // with a transaction
         JLOG(pJournal_.debug()) << "Ignoring incoming transaction: Need network ledger";
         return;
     }
 
-    SerialIter sit(makeSlice(m->rawtransaction()));
+    // Compute transaction hash from raw bytes BEFORE constructing STTx.
+    // On well-connected nodes the vast majority of incoming transactions
+    // are duplicates. Checking the HashRouter first avoids expensive
+    // STTx construction (field parsing, template validation) for duplicates.
+    auto const rawTx = makeSlice(m->rawtransaction());
+    uint256 const txID = sha512Half(HashPrefix::transactionID, rawTx);
+
+    HashRouterFlags flags = HashRouterFlags::UNDEFINED;
+    constexpr std::chrono::seconds tx_interval = 10s;
+
+    if (!app_.getHashRouter().shouldProcess(txID, id_, flags, tx_interval))
+    {
+        if (any(flags & HashRouterFlags::BAD))
+        {
+            fee_.update(Resource::kFEE_USELESS_DATA, "known bad");
+            JLOG(pJournal_.debug()) << "Ignoring known bad tx " << txID;
+        }
+        else if (eraseTxQueue && txReduceRelayEnabled())
+        {
+            removeTxQueue(txID);
+        }
+
+        overlay_.reportInboundTraffic(
+            TrafficCount::Category::TransactionDuplicate, Message::messageSize(*m));
+
+        return;
+    }
+
+    SerialIter sit(rawTx);
 
     try
     {
         auto stx = std::make_shared<STTx const>(sit);
-        uint256 const txID = stx->getTransactionID();
 
-        // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
-        /*
-           There is no need to check whether the featureBatch amendment is
-           enabled.
-
-           * If the `tfInnerBatchTxn` flag is set, and the amendment is
-           enabled, then it's an invalid transaction because inner batch
-           transactions should not be relayed.
-           * If the `tfInnerBatchTxn` flag is set, and the amendment is *not*
-           enabled, then the transaction is malformed because it's using an
-           "unknown" flag. There's no need to waste the resources to send it
-           to the transaction engine.
-
-           We don't normally check transaction validity at this level, but
-           since we _need_ to check it when the amendment is enabled, we may as
-           well drop it if the flag is set regardless.
-        */
         if (stx->isFlag(tfInnerBatchTxn))
         {
             JLOG(pJournal_.warn()) << "Ignoring Network relayed Tx containing "
@@ -1466,31 +1473,6 @@ PeerImp::handleTransaction(
             return;
         }
         // LCOV_EXCL_STOP
-
-        HashRouterFlags flags = HashRouterFlags::UNDEFINED;
-        constexpr std::chrono::seconds kTX_INTERVAL = 10s;
-
-        if (!app_.getHashRouter().shouldProcess(txID, id_, flags, kTX_INTERVAL))
-        {
-            // we have seen this transaction recently
-            if (any(flags & HashRouterFlags::BAD))
-            {
-                fee_.update(Resource::kFEE_USELESS_DATA, "known bad");
-                JLOG(pJournal_.debug()) << "Ignoring known bad tx " << txID;
-            }
-
-            // Erase only if the server has seen this tx. If the server has not
-            // seen this tx then the tx could not has been queued for this peer.
-            else if (eraseTxQueue && txReduceRelayEnabled())
-            {
-                removeTxQueue(txID);
-            }
-
-            overlay_.reportInboundTraffic(
-                TrafficCount::Category::TransactionDuplicate, Message::messageSize(*m));
-
-            return;
-        }
 
         JLOG(pJournal_.debug()) << "Got tx " << txID;
 
@@ -2458,11 +2440,27 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
     try
     {
+        // Check HashRouter BEFORE constructing STValidation to avoid
+        // expensive deserialization + manifest lookup on duplicates.
+        auto const rawVal = makeSlice(m->validation());
+        auto key = sha512Half(rawVal);
+
+        auto [added, relayed] = app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
+
+        if (!added)
+        {
+            overlay_.reportInboundTraffic(
+                TrafficCount::Category::ValidationDuplicate, Message::messageSize(*m));
+
+            JLOG(pJournal_.trace()) << "Validation: duplicate";
+            return;
+        }
+
         auto const closeTime = app_.getTimeKeeper().closeTime();
 
         std::shared_ptr<STValidation> val;
         {
-            SerialIter sit(makeSlice(m->validation()));
+            SerialIter sit(rawVal);
             val = std::make_shared<STValidation>(
                 std::ref(sit),
                 [this](PublicKey const& pk) {
@@ -2499,29 +2497,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
             if (app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
                 return;
-        }
-
-        auto key = sha512Half(makeSlice(m->validation()));
-
-        auto [added, relayed] = app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
-
-        if (!added)
-        {
-            // Count unique messages (Slots has it's own 'HashRouter'), which a
-            // peer receives within IDLED seconds since the message has been
-            // relayed.
-            if (relayed && (stopwatch().now() - *relayed) < reduce_relay::kIDLED)
-            {
-                overlay_.updateSlotAndSquelch(
-                    key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
-            }
-
-            // increase duplicate validations received
-            overlay_.reportInboundTraffic(
-                TrafficCount::Category::ValidationDuplicate, Message::messageSize(*m));
-
-            JLOG(pJournal_.trace()) << "Validation: duplicate";
-            return;
         }
 
         if (!isTrusted && (tracking_.load() == Tracking::Diverged))

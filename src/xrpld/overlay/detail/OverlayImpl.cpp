@@ -152,12 +152,19 @@ OverlayImpl::Timer::onTimer(error_code ec)
     }
 
     overlay_.peerFinder_->oncePerSecond();
-    overlay_.sendEndpoints();
-    overlay_.autoConnect();
+
+    ++overlay_.timer_count_;
+
+    if ((overlay_.timer_count_ % 4) == 0)
+    {
+        overlay_.sendEndpoints();
+        overlay_.autoConnect();
+    }
+
     if (overlay_.app_.config().TX_REDUCE_RELAY_ENABLE)
         overlay_.sendTxQueue();
 
-    if ((++overlay_.timer_count_ % Tuning::CheckIdlePeers) == 0)
+    if ((overlay_.timer_count_ % Tuning::CheckIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
     asyncWait();
@@ -486,6 +493,8 @@ OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
         (void)result.second;
     }
 
+    rebuildPeerSnapshot();
+
     list_.emplace(peer.get(), peer);
 
     JLOG(journal.debug()) << "activated";
@@ -512,7 +521,9 @@ OverlayImpl::start()
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
-        setup_.ipLimit);
+        setup_.ipLimit,
+        setup_.subnetLimit,
+        setup_.reservedInbound);
 
     peerFinder_->setConfig(config);
     peerFinder_->start();
@@ -644,6 +655,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
             std::piecewise_construct, std::make_tuple(peer->id()), std::make_tuple(peer)));
         XRPL_ASSERT(result.second, "xrpl::OverlayImpl::activate : peer ID is inserted");
         (void)result.second;
+        rebuildPeerSnapshot();
     }
 
     JLOG(journal.debug()) << "activated";
@@ -657,6 +669,7 @@ OverlayImpl::onPeerDeactivate(Peer::id_t id)
 {
     std::scoped_lock const lock(mutex_);
     ids_.erase(id);
+    rebuildPeerSnapshot();
 }
 
 void
@@ -727,10 +740,12 @@ OverlayImpl::reportOutboundTraffic(TrafficCount::Category cat, int size)
 {
     traffic_.addCount(cat, false, size);
 }
-/** The number of active peers on the network
-    Active peers are only those peers that have completed the handshake
-    and are running the XRPL protocol.
-*/
+bool
+OverlayImpl::isInboundIPAllowed(boost::asio::ip::address const& addr)
+{
+    return m_peerFinder->is_inbound_ip_allowed(addr);
+}
+
 std::size_t
 OverlayImpl::size() const
 {
@@ -1078,9 +1093,14 @@ Overlay::PeerSequence
 OverlayImpl::getActivePeers() const
 {
     Overlay::PeerSequence ret;
-    ret.reserve(size());
+    auto snap = std::atomic_load(&peerSnapshot_);
+    ret.reserve(snap->size());
 
-    forEach([&ret](std::shared_ptr<PeerImp> const& sp) { ret.emplace_back(sp); });
+    for (auto& w : *snap)
+    {
+        if (auto p = w.lock())
+            ret.emplace_back(std::move(p));
+    }
 
     return ret;
 }
@@ -1292,8 +1312,17 @@ OverlayImpl::relay(
 
     txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
 
-    if (enabledTarget > enabledInSkip)
-        std::shuffle(peers.begin(), peers.end(), defaultPrng());
+    if (enabledTarget > enabledInSkip && peers.size() > 1)
+    {
+        auto const k = std::min(
+            static_cast<std::size_t>(enabledTarget), peers.size());
+        for (std::size_t i = 0; i < k; ++i)
+        {
+            auto const j =
+                i + randInt<std::size_t>(peers.size() - 1 - i);
+            std::swap(peers[i], peers[j]);
+        }
+    }
 
     JLOG(journal_.trace()) << "relaying tx, total peers " << peers.size() << " selected "
                            << enabledTarget << " skip " << toSkip.size() << " disabled "
@@ -1525,6 +1554,14 @@ setupOverlay(BasicConfig const& config)
         set(setup.ipLimit, "ip_limit", section);
         if (setup.ipLimit < 0)
             Throw<std::runtime_error>("Configured IP limit is invalid");
+
+        set(setup.subnetLimit, "subnet_limit", section);
+        if (setup.subnetLimit < 0)
+            Throw<std::runtime_error>("Configured subnet limit is invalid");
+
+        set(setup.reservedInbound, "reserved_inbound", section);
+        if (setup.reservedInbound < 0)
+            Throw<std::runtime_error>("Configured reserved inbound is invalid");
 
         std::string ip;
         set(ip, "public_ip", section);

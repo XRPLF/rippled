@@ -7,6 +7,9 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/Manifest.h>
 
+#include <memory>
+#include <string>
+
 namespace xrpl {
 
 // Operations that clients may wish to perform against the network
@@ -171,6 +174,15 @@ public:
 
     virtual void
     send(json::Value const& jvObj, bool broadcast) = 0;
+
+    virtual void
+    send(
+        Json::Value const& jvObj,
+        std::shared_ptr<std::string const> const& serialized,
+        bool broadcast)
+    {
+        send(jvObj, broadcast);
+    }
 
     [[nodiscard]] std::uint64_t
     getSeq() const;

@@ -83,7 +83,7 @@ private:
     boost::asio::io_context& io_context_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
+    mutable std::recursive_mutex mutex_;
     std::condition_variable_any cond_;
     std::weak_ptr<Timer> timer_;
     boost::container::flat_map<Child*, std::weak_ptr<Child>> list_;
@@ -95,6 +95,8 @@ private:
     TrafficCount traffic_;
     hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> peers_;
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
+    std::shared_ptr<std::vector<std::weak_ptr<PeerImp>>> peerSnapshot_ =
+        std::make_shared<std::vector<std::weak_ptr<PeerImp>>>();
     Resolver& resolver_;
     std::atomic<Peer::id_t> next_id_;
     int timer_count_{0};
@@ -166,6 +168,9 @@ public:
 
     int
     limit() override;
+
+    bool
+    isInboundIPAllowed(boost::asio::ip::address const& addr) override;
 
     std::size_t
     size() const override;
@@ -252,23 +257,24 @@ public:
     void
     forEach(UnaryFunc&& f) const
     {
-        std::vector<std::weak_ptr<PeerImp>> wp;
-        {
-            std::scoped_lock const lock(mutex_);
+        auto snap = std::atomic_load(&peerSnapshot_);
 
-            // Iterate over a copy of the peer list because peer
-            // destruction can invalidate iterators.
-            wp.reserve(ids_.size());
-
-            for (auto& x : ids_)
-                wp.push_back(x.second);
-        }
-
-        for (auto& w : wp)
+        for (auto& w : *snap)
         {
             if (auto p = w.lock())
                 f(std::move(p));
         }
+    }
+
+    // Must be called under mutex_ after any change to ids_.
+    void
+    rebuildPeerSnapshot()
+    {
+        auto snap = std::make_shared<std::vector<std::weak_ptr<PeerImp>>>();
+        snap->reserve(ids_.size());
+        for (auto& x : ids_)
+            snap->push_back(x.second);
+        std::atomic_store(&peerSnapshot_, std::move(snap));
     }
 
     // Called when TMManifests is received from a peer

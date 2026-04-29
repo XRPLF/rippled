@@ -5,7 +5,10 @@
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/AccountID.h>
 
-#include <map>
+#include <boost/container_hash/hash.hpp>
+
+#include <functional>
+#include <unordered_map>
 #include <utility>
 
 namespace xrpl {
@@ -18,6 +21,23 @@ class DeferredCredits
 {
 private:
     using KeyIOU = std::tuple<AccountID, AccountID, Currency>;
+
+    struct KeyIOUHasher
+    {
+        std::hash<AccountID> accountHash;
+        std::hash<Currency> currencyHash;
+
+        std::size_t
+        operator()(KeyIOU const& k) const
+        {
+            std::size_t seed = 0;
+            boost::hash_combine(seed, accountHash(std::get<0>(k)));
+            boost::hash_combine(seed, accountHash(std::get<1>(k)));
+            boost::hash_combine(seed, currencyHash(std::get<2>(k)));
+            return seed;
+        }
+    };
+
     struct ValueIOU
     {
         explicit ValueIOU() = default;
@@ -37,7 +57,7 @@ private:
     struct IssuerValueMPT
     {
         IssuerValueMPT() = default;
-        std::map<AccountID, HolderValueMPT> holders;
+        std::unordered_map<AccountID, HolderValueMPT> holders;
         // Credit to holder
         std::uint64_t credit = 0;
         // OutstandingAmount might overflow when MPTs are credited to a holder.
@@ -114,9 +134,9 @@ private:
     static KeyIOU
     makeKeyIOU(AccountID const& a1, AccountID const& a2, Currency const& currency);
 
-    std::map<KeyIOU, ValueIOU> creditsIOU_;
-    std::map<MPTID, IssuerValueMPT> creditsMPT_;
-    std::map<AccountID, std::uint32_t> ownerCounts_;
+    std::unordered_map<KeyIOU, ValueIOU, KeyIOUHasher> creditsIOU_;
+    std::unordered_map<MPTID, IssuerValueMPT, MPTID::hasher> creditsMPT_;
+    std::unordered_map<AccountID, std::uint32_t> ownerCounts_;
 };
 
 }  // namespace detail

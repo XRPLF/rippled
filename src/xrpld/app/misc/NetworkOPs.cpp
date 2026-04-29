@@ -2209,11 +2209,16 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
             jvObj[jss::domain] = mo.domain;
         jvObj[jss::manifest] = strHex(mo.serialized);
 
+        auto serialized = std::make_shared<std::string>();
+        Json::stream(jvObj, [&](void const* data, std::size_t n) {
+            serialized->append(static_cast<char const*>(data), n);
+        });
+
         for (auto i = streamMaps_[SManifests].begin(); i != streamMaps_[SManifests].end();)
         {
             if (auto p = i->second.lock())
             {
-                p->send(jvObj, true);
+                p->send(jvObj, serialized, true);
                 ++i;
             }
             else
@@ -2305,16 +2310,18 @@ NetworkOPsImp::pubServer()
 
         lastFeeSummary_ = f;
 
+        auto serialized = std::make_shared<std::string>();
+        Json::stream(jvObj, [&](void const* data, std::size_t n) {
+            serialized->append(static_cast<char const*>(data), n);
+        });
+
         for (auto i = streamMaps_[SServer].begin(); i != streamMaps_[SServer].end();)
         {
             InfoSub::pointer const p = i->second.lock();
 
-            // VFALCO TODO research the possibility of using thread queues and
-            //             linearizing the deletion of subscribers with the
-            //             sending of JSON data.
             if (p)
             {
-                p->send(jvObj, true);
+                p->send(jvObj, serialized, true);
                 ++i;
             }
             else
@@ -2337,11 +2344,16 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
         jvObj[jss::type] = "consensusPhase";
         jvObj[jss::consensus] = to_string(phase);
 
+        auto serialized = std::make_shared<std::string>();
+        Json::stream(jvObj, [&](void const* data, std::size_t n) {
+            serialized->append(static_cast<char const*>(data), n);
+        });
+
         for (auto i = streamMap.begin(); i != streamMap.end();)
         {
             if (auto p = i->second.lock())
             {
-                p->send(jvObj, true);
+                p->send(jvObj, serialized, true);
                 ++i;
             }
             else
@@ -2469,13 +2481,18 @@ NetworkOPsImp::pubPeerStatus(std::function<json::Value(void)> const& func)
 
         jvObj[jss::type] = "peerStatusChange";
 
+        auto serialized = std::make_shared<std::string>();
+        Json::stream(jvObj, [&](void const* data, std::size_t n) {
+            serialized->append(static_cast<char const*>(data), n);
+        });
+
         for (auto i = streamMaps_[SPeerStatus].begin(); i != streamMaps_[SPeerStatus].end();)
         {
             InfoSub::pointer const p = i->second.lock();
 
             if (p)
             {
-                p->send(jvObj, true);
+                p->send(jvObj, serialized, true);
                 ++i;
             }
             else
@@ -3093,13 +3110,18 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                     registry_.get().getLedgerMaster().getCompleteLedgers();
             }
 
+            auto serialized = std::make_shared<std::string>();
+            Json::stream(jvObj, [&](void const* data, std::size_t n) {
+                serialized->append(static_cast<char const*>(data), n);
+            });
+
             auto it = streamMaps_[SLedger].begin();
             while (it != streamMaps_[SLedger].end())
             {
                 InfoSub::pointer const p = it->second.lock();
                 if (p)
                 {
-                    p->send(jvObj, true);
+                    p->send(jvObj, serialized, true);
                     ++it;
                 }
                 else
@@ -3113,13 +3135,18 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
         {
             json::Value const jvObj = xrpl::RPC::computeBookChanges(lpAccepted);
 
+            auto serialized = std::make_shared<std::string>();
+            Json::stream(jvObj, [&](void const* data, std::size_t n) {
+                serialized->append(static_cast<char const*>(data), n);
+            });
+
             auto it = streamMaps_[SBookChanges].begin();
             while (it != streamMaps_[SBookChanges].end())
             {
                 InfoSub::pointer const p = it->second.lock();
                 if (p)
                 {
-                    p->send(jvObj, true);
+                    p->send(jvObj, serialized, true);
                     ++it;
                 }
                 else
