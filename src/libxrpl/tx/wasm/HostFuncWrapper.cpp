@@ -491,6 +491,7 @@ isAmendmentEnabled_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t*
         if (auto const ret = hf->isAmendmentEnabled(uint256::fromVoid(slice->data()));
             ret && *ret == 1)
             return returnResult(runtime, params, results, ret, index);
+        // Fall through to string lookup — the 32 bytes may be an amendment name
     }
 
     if (slice->size() > 64)
