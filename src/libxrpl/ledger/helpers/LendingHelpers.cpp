@@ -924,6 +924,7 @@ PaymentComponents::trackedInterestPart() const
  */
 PaymentComponents
 computePaymentComponents(
+    Rules const& rules,
     Asset const& asset,
     std::int32_t scale,
     Number const& totalValueOutstanding,
@@ -964,11 +965,20 @@ computePaymentComponents(
         periodicPayment, periodicRate, paymentRemaining - 1, managementFeeRate);
 
     // Round the target to the loan's scale to match how actual loan values
-    // are stored.
+    // are stored. With fixCleanup3_2_0 enabled, principal is rounded upward
+    // and interest downward so that at coarse scale principal sticks at the
+    // floor (until the final payment clears it) while interest absorbs each
+    // periodic payment. Without the amendment the pre-existing round-to-
+    // nearest behavior is preserved (which can hit the "Partial principal
+    // payment" assertion on degenerate integer-scale loans).
+    bool const fixCleanup3_2_0Enabled = rules.enabled(fixCleanup3_2_0);
+    auto const principalRounding = fixCleanup3_2_0Enabled ? Number::upward : Number::getround();
+    auto const interestRounding = fixCleanup3_2_0Enabled ? Number::downward : Number::getround();
     LoanState const roundedTarget = LoanState{
         .valueOutstanding = roundToAsset(asset, trueTarget.valueOutstanding, scale),
-        .principalOutstanding = roundToAsset(asset, trueTarget.principalOutstanding, scale),
-        .interestDue = roundToAsset(asset, trueTarget.interestDue, scale),
+        .principalOutstanding =
+            roundToAsset(asset, trueTarget.principalOutstanding, scale, principalRounding),
+        .interestDue = roundToAsset(asset, trueTarget.interestDue, scale, interestRounding),
         .managementFeeDue = roundToAsset(asset, trueTarget.managementFeeDue, scale)};
 
     // Get the current actual loan state from the ledger values
@@ -1722,6 +1732,7 @@ loanMakePayment(
     // payment is late or regular
     detail::ExtendedPaymentComponents periodic{
         detail::computePaymentComponents(
+            view.rules(),
             asset,
             loanScale,
             totalValueOutstandingProxy,
@@ -1830,6 +1841,7 @@ loanMakePayment(
 
         periodic = detail::ExtendedPaymentComponents{
             detail::computePaymentComponents(
+                view.rules(),
                 asset,
                 loanScale,
                 totalValueOutstandingProxy,

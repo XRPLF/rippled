@@ -415,6 +415,7 @@ computeOverpaymentComponents(
 
 PaymentComponents
 computePaymentComponents(
+    Rules const& rules,
     Asset const& asset,
     std::int32_t scale,
     Number const& totalValueOutstanding,
