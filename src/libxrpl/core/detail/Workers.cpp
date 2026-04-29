@@ -151,7 +151,7 @@ Workers::Worker::Worker(Workers& workers, std::string threadName, int const inst
 Workers::Worker::~Worker()
 {
     {
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         ++wakeCount_;
         shouldExit_ = true;
     }
@@ -163,7 +163,7 @@ Workers::Worker::~Worker()
 void
 Workers::Worker::notify()
 {
-    std::lock_guard const lock{mutex_};
+    std::scoped_lock const lock{mutex_};
     ++wakeCount_;
     wakeup_.notify_one();
 }
@@ -179,7 +179,7 @@ Workers::Worker::run()
         //
         if (++workers_.activeCount_ == 1)
         {
-            std::lock_guard const lk{workers_.mut_};
+            std::scoped_lock const lk{workers_.mut_};
             workers_.allPaused_ = false;
         }
 
@@ -226,7 +226,7 @@ Workers::Worker::run()
             // the predicate evaluation and the actual sleep.
             if (--workers_.runningTaskCount_ == 0)
             {
-                std::lock_guard const lk{workers_.mut_};
+                std::scoped_lock const lk{workers_.mut_};
                 workers_.cv_.notify_all();
             }
         }
@@ -242,7 +242,7 @@ Workers::Worker::run()
         //
         if (--workers_.activeCount_ == 0)
         {
-            std::lock_guard const lk{workers_.mut_};
+            std::scoped_lock const lk{workers_.mut_};
             workers_.allPaused_ = true;
             workers_.cv_.notify_all();
         }

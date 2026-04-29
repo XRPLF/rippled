@@ -106,7 +106,7 @@ public:
     void
     pushBack(LedgerIndex index, std::shared_ptr<STTx const> const& txn) override
     {
-        std::lock_guard const lock(lock_);
+        std::scoped_lock const lock(lock_);
 
         txns_.emplace_back(index, txn);
     }
@@ -119,7 +119,7 @@ public:
         // Get the set of local transactions as a canonical
         // set (so they apply in a valid order)
         {
-            std::lock_guard const lock(lock_);
+            std::scoped_lock const lock(lock_);
 
             for (auto const& it : txns_)
                 tset.insert(it.getTX());
@@ -133,7 +133,7 @@ public:
     void
     sweep(ReadView const& view) override
     {
-        std::lock_guard const lock(lock_);
+        std::scoped_lock const lock(lock_);
 
         txns_.remove_if([&view](auto const& txn) {
             if (txn.isExpired(view.header().seq))
@@ -170,7 +170,7 @@ public:
     std::size_t
     size() override
     {
-        std::lock_guard const lock(lock_);
+        std::scoped_lock const lock(lock_);
 
         return txns_.size();
     }

@@ -93,7 +93,7 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
                 "xrpl::Transaction::sqlTransactionStatus : unknown transaction status");
     }
 
-    return INVALID;
+    return TransStatus::INVALID;
 }
 
 Transaction::pointer

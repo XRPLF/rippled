@@ -92,7 +92,7 @@ public:
         Entry* entry(nullptr);
 
         {
-            std::lock_guard const _(lock_);
+            std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
                 std::make_tuple(KindInbound, address.atPort(0)),  // Key
@@ -122,7 +122,7 @@ public:
         Entry* entry(nullptr);
 
         {
-            std::lock_guard const _(lock_);
+            std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
                 std::make_tuple(KindOutbound, address),  // Key
@@ -155,7 +155,7 @@ public:
         Entry* entry(nullptr);
 
         {
-            std::lock_guard const _(lock_);
+            std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
                 std::make_tuple(KindUnlimited, address.atPort(1)),  // Key
@@ -190,7 +190,7 @@ public:
         clock_type::time_point const now(clock_.now());
 
         json::Value ret(json::ObjectValue);
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         for (auto& inboundEntry : inbound_)
         {
@@ -235,7 +235,7 @@ public:
         clock_type::time_point const now(clock_.now());
 
         Gossip gossip;
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         gossip.items.reserve(inbound_.size());
 
@@ -260,7 +260,7 @@ public:
     {
         auto const elapsed = clock_.now();
         {
-            std::lock_guard const _(lock_);
+            std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = importTable_.emplace(
                 std::piecewise_construct,
                 std::make_tuple(origin),                                    // Key
@@ -317,7 +317,7 @@ public:
     void
     periodicActivity()
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         auto const elapsed = clock_.now();
 
@@ -375,7 +375,7 @@ public:
     void
     erase(Table::iterator iter)
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         Entry& entry(iter->second);
         XRPL_ASSERT(entry.refcount == 0, "xrpl::Resource::Logic::erase : entry not used");
         inactive_.erase(inactive_.iteratorTo(entry));
@@ -385,14 +385,14 @@ public:
     void
     acquire(Entry& entry)
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         ++entry.refcount;
     }
 
     void
     release(Entry& entry)
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         if (--entry.refcount == 0)
         {
             JLOG(journal_.debug()) << "Inactive " << entry;
@@ -444,7 +444,7 @@ public:
         if (!context.empty())
             context = " (" + context + ")";
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         clock_type::time_point const now(clock_.now());
         int const balance(entry.add(fee.cost(), now));
         JLOG(kGET_STREAM(fee.cost(), journal_))
@@ -458,7 +458,7 @@ public:
         if (entry.isUnlimited())
             return false;
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         bool notify(false);
         auto const elapsed = clock_.now();
         if (entry.balance(clock_.now()) >= WarningThreshold && elapsed != entry.lastWarningTime)
@@ -481,7 +481,7 @@ public:
         if (entry.isUnlimited())
             return false;
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         bool drop(false);
         clock_type::time_point const now(clock_.now());
         int const balance(entry.balance(now));
@@ -503,7 +503,7 @@ public:
     int
     balance(Entry& entry)
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         return entry.balance(clock_.now());
     }
 
@@ -532,7 +532,7 @@ public:
     {
         clock_type::time_point const now(clock_.now());
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         {
             beast::PropertyStream::Set s("inbound", map);

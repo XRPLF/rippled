@@ -36,7 +36,7 @@ bumpLastPage(
         auto sleRoot = sb.peek(directory);
         if (!sleRoot)
         {
-            res = Unexpected<Error>(DirectoryRootNotFound);
+            res = Unexpected<Error>(Error::DirectoryRootNotFound);
             return false;
         }
 
@@ -44,26 +44,26 @@ bumpLastPage(
         auto const lastIndex = sleRoot->getFieldU64(sfIndexPrevious);
         if (lastIndex == 0)
         {
-            res = Unexpected<Error>(DirectoryTooSmall);
+            res = Unexpected<Error>(Error::DirectoryTooSmall);
             return false;
         }
 
         if (sb.exists(keylet::page(directory, newLastPage)))
         {
-            res = Unexpected<Error>(DirectoryPageDuplicate);
+            res = Unexpected<Error>(Error::DirectoryPageDuplicate);
             return false;
         }
 
         if (lastIndex >= newLastPage)
         {
-            res = Unexpected<Error>(InvalidLastPage);
+            res = Unexpected<Error>(Error::InvalidLastPage);
             return false;
         }
 
         auto slePage = sb.peek(keylet::page(directory, lastIndex));
         if (!slePage)
         {
-            res = Unexpected<Error>(DirectoryPageNotFound);
+            res = Unexpected<Error>(Error::DirectoryPageNotFound);
             return false;
         }
 
@@ -94,7 +94,7 @@ bumpLastPage(
             auto slePrev = sb.peek(keylet::page(directory, *prevIndex));
             if (!slePrev)
             {
-                res = Unexpected<Error>(DirectoryPageNotFound);
+                res = Unexpected<Error>(Error::DirectoryPageNotFound);
                 return false;
             }
             slePrev->setFieldU64(sfIndexNext, newLastPage);
@@ -109,7 +109,7 @@ bumpLastPage(
             {
                 if (!adjust(sb, key, newLastPage))
                 {
-                    res = Unexpected<Error>(AdjustmentError);
+                    res = Unexpected<Error>(Error::AdjustmentError);
                     return false;
                 }
             }

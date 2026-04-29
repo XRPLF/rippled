@@ -60,7 +60,7 @@ defaultPrng()
     thread_local beast::xor_shift_engine kENGINE = [] {
         std::uint64_t seed = 0;
         {
-            std::lock_guard const lk(kM);
+            std::scoped_lock const lk(kM);
             std::uniform_int_distribution<std::uint64_t> distribution{1};
             seed = distribution(kSEEDER);
         }

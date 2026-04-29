@@ -32,7 +32,7 @@ makeSeedPair() noexcept
         // state_t& operator=(state_t const&) = delete;
     };
     static StateT kSTATE;
-    std::lock_guard const lock(kSTATE.mutex);
+    std::scoped_lock const lock(kSTATE.mutex);
     return {kSTATE.dist(kSTATE.gen), kSTATE.dist(kSTATE.gen)};
 }
 

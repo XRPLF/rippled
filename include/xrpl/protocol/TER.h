@@ -21,6 +21,8 @@ using TERUnderlyingType = int;
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TELcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
@@ -52,6 +54,8 @@ enum TELcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TEMcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
@@ -128,6 +132,8 @@ enum TEMcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TEFcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
@@ -172,6 +178,8 @@ enum TEFcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TERcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
@@ -216,6 +224,8 @@ enum TERcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TEScodes : TERUnderlyingType {
     // Note: Exact number must stay stable.  This code is stored by value
     // in metadata for historic transactions.
@@ -231,6 +241,8 @@ enum TEScodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TECcodes : TERUnderlyingType {
     // Note: Exact numbers must stay stable.  These codes are stored by
     // value in metadata for historic transactions.

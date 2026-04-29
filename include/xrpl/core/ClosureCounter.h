@@ -56,7 +56,7 @@ private:
         // a lock.  This removes a small timing window that occurs if the
         // waiting thread is handling a spurious wakeup when closureCount_
         // drops to zero.
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
 
         // Update closureCount_.  Notify if stopping and closureCount_ == 0.
         if ((--closureCount_ == 0) && waitForClosures_)
@@ -170,7 +170,7 @@ public:
     {
         std::optional<Substitute<Closure>> ret;
 
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         if (!waitForClosures_)
             ret.emplace(*this, std::forward<Closure>(closure));
 
@@ -193,7 +193,7 @@ public:
     bool
     joined() const
     {
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         return waitForClosures_;
     }
 };

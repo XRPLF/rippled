@@ -39,8 +39,22 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <vector>
+
+namespace xrpl {
+static std::ostream&
+operator<<(std::ostream& os, Pathfinder::NodeType t)
+{
+    return os << static_cast<int>(t);
+}
+static std::ostream&
+operator<<(std::ostream& os, Pathfinder::PaymentType t)
+{
+    return os << static_cast<int>(t);
+}
+}  // namespace xrpl
 
 /*
 

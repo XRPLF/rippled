@@ -31,6 +31,8 @@ using namespace std::chrono_literals;
 // Timeout interval in milliseconds
 auto constexpr kTX_ACQUIRE_TIMEOUT = 250ms;
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     NormTimeouts = 4,
     MaxTimeouts = 20,

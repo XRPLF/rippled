@@ -55,7 +55,7 @@ public:
     void
     notify()
     {
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         ++count_;
         cond_.notify_one();
     }
@@ -76,7 +76,7 @@ public:
     bool
     tryWait()
     {
-        std::lock_guard lock{mutex_};
+        std::scoped_lock lock{mutex_};
         if (count_ == 0)
             return false;
         --count_;

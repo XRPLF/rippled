@@ -257,7 +257,7 @@ class NetworkOPsImp final : public NetworkOPs
         CounterData
         getCounterData() const
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             return {
                 .counters = counters_,
                 .mode = mode_,
@@ -809,6 +809,8 @@ private:
 
     SubAccountHistoryMapType subAccountHistory_;
 
+    // Used as array indices; converting to enum class would require casts at ~40 call sites.
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum SubTypes {
         SLedger,          // Accepted ledgers.
         SManifests,       // Received validator manifests.
@@ -1273,7 +1275,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     auto const sttx = *transaction->getSTransaction();
     if (sttx.isFlag(tfInnerBatchTxn) && view->rules().enabled(featureBatch))
     {
-        transaction->setStatus(INVALID);
+        transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temINVALID_FLAG);
         registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
         return false;
@@ -1332,7 +1334,7 @@ NetworkOPsImp::doTransactionAsync(
     bool bUnlimited,
     FailHard failType)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     if (transaction->getApplying())
         return;
@@ -1407,7 +1409,7 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
         std::string reason;
         auto transaction = std::make_shared<Transaction>(tx, reason, registry_.get().getApp());
 
-        if (transaction->getStatus() == INVALID)
+        if (transaction->getStatus() == TransStatus::INVALID)
         {
             if (!reason.empty())
             {
@@ -1594,7 +1596,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 JLOG(journal_.debug()) << "Transaction is likely to claim a"
                                        << " fee, but is queued until fee drops";
 
-                e.transaction->setStatus(HELD);
+                e.transaction->setStatus(TransStatus::HELD);
                 // Add to held transactions, because it could get
                 // kicked out of the queue, and this will try to
                 // put it back.
@@ -2189,7 +2191,7 @@ void
 NetworkOPsImp::pubManifest(Manifest const& mo)
 {
     // VFALCO consider std::shared_mutex
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
 
     if (!streamMaps_[SManifests].empty())
     {
@@ -2267,7 +2269,7 @@ NetworkOPsImp::pubServer()
     //             list into a local array while holding the lock then release
     //             the lock and call send on everyone.
     //
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
 
     if (!streamMaps_[SServer].empty())
     {
@@ -2326,7 +2328,7 @@ NetworkOPsImp::pubServer()
 void
 NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
 
     auto& streamMap = streamMaps_[SConsensusPhase];
     if (!streamMap.empty())
@@ -2354,7 +2356,7 @@ void
 NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 {
     // VFALCO consider std::shared_mutex
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
 
     if (!streamMaps_[SValidations].empty())
     {
@@ -2459,7 +2461,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 void
 NetworkOPsImp::pubPeerStatus(std::function<json::Value(void)> const& func)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
 
     if (!streamMaps_[SPeerStatus].empty())
     {
@@ -3016,7 +3018,7 @@ NetworkOPsImp::pubProposedTransaction(
     MultiApiJson jvObj = transJson(transaction, result, false, ledger, std::nullopt);
 
     {
-        std::lock_guard const sl(subLock_);
+        std::scoped_lock const sl(subLock_);
 
         auto it = streamMaps_[SRtTransactions].begin();
         while (it != streamMaps_[SRtTransactions].end())
@@ -3063,7 +3065,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
         JLOG(journal_.debug()) << "Publishing ledger " << lpAccepted->header().seq << " "
                                << lpAccepted->header().hash;
 
-        std::lock_guard const sl(subLock_);
+        std::scoped_lock const sl(subLock_);
 
         if (!streamMaps_[SLedger].empty())
         {
@@ -3308,7 +3310,7 @@ NetworkOPsImp::pubValidatedTransaction(
     MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
 
     {
-        std::lock_guard const sl(subLock_);
+        std::scoped_lock const sl(subLock_);
 
         auto it = streamMaps_[STransactions].begin();
         while (it != streamMaps_[STransactions].end())
@@ -3367,7 +3369,7 @@ NetworkOPsImp::pubAccountTransaction(
     std::vector<SubAccountHistoryInfo> accountHistoryNotify;
     auto const currLedgerSeq = ledger->seq();
     {
-        std::lock_guard const sl(subLock_);
+        std::scoped_lock const sl(subLock_);
 
         if (!subAccount_.empty() || !subRTAccount_.empty() || !subAccountHistory_.empty())
         {
@@ -3500,7 +3502,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
     std::vector<SubAccountHistoryInfo> accountHistoryNotify;
 
     {
-        std::lock_guard const sl(subLock_);
+        std::scoped_lock const sl(subLock_);
 
         if (subRTAccount_.empty())
             return;
@@ -3584,7 +3586,7 @@ NetworkOPsImp::subAccount(
         isrListener->insertSubAccountInfo(naAccountID, rt);
     }
 
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
@@ -3627,7 +3629,7 @@ NetworkOPsImp::unsubAccountInternal(
     hash_set<AccountID> const& vnaAccountIDs,
     bool rt)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
 
     SubInfoMapType& subMap = rt ? subRTAccount_ : subAccount_;
 
@@ -3932,7 +3934,7 @@ NetworkOPsImp::subAccountHistory(InfoSub::ref isrListener, AccountID const& acco
         return RpcInvalidParams;
     }
 
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     SubAccountHistoryInfoWeak ahi{
         .sinkWptr = isrListener, .index = std::make_shared<SubAccountHistoryIndex>(accountId)};
     auto simIterator = subAccountHistory_.find(accountId);
@@ -3980,7 +3982,7 @@ NetworkOPsImp::unsubAccountHistoryInternal(
     AccountID const& account,
     bool historyOnly)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     auto simIterator = subAccountHistory_.find(account);
     if (simIterator != subAccountHistory_.end())
     {
@@ -4069,7 +4071,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
         jvResult[jss::validated_ledgers] = registry_.get().getLedgerMaster().getCompleteLedgers();
     }
 
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SLedger].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4077,7 +4079,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
 bool
 NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SBookChanges].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4085,7 +4087,7 @@ NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SLedger].erase(uSeq) != 0u;
 }
 
@@ -4093,7 +4095,7 @@ NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 bool
 NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SBookChanges].erase(uSeq) != 0u;
 }
 
@@ -4101,7 +4103,7 @@ NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subManifests(InfoSub::ref isrListener)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SManifests].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4109,7 +4111,7 @@ NetworkOPsImp::subManifests(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubManifests(std::uint64_t uSeq)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SManifests].erase(uSeq) != 0u;
 }
 
@@ -4134,7 +4136,7 @@ NetworkOPsImp::subServer(InfoSub::ref isrListener, json::Value& jvResult, bool a
     jvResult[jss::pubkey_node] =
         toBase58(TokenType::NodePublic, registry_.get().getApp().nodeIdentity().first);
 
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SServer].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4142,7 +4144,7 @@ NetworkOPsImp::subServer(InfoSub::ref isrListener, json::Value& jvResult, bool a
 bool
 NetworkOPsImp::unsubServer(std::uint64_t uSeq)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SServer].erase(uSeq) != 0u;
 }
 
@@ -4150,7 +4152,7 @@ NetworkOPsImp::unsubServer(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subTransactions(InfoSub::ref isrListener)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[STransactions].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4158,7 +4160,7 @@ NetworkOPsImp::subTransactions(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubTransactions(std::uint64_t uSeq)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[STransactions].erase(uSeq) != 0u;
 }
 
@@ -4166,7 +4168,7 @@ NetworkOPsImp::unsubTransactions(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subRTTransactions(InfoSub::ref isrListener)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SRtTransactions].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4174,7 +4176,7 @@ NetworkOPsImp::subRTTransactions(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubRTTransactions(std::uint64_t uSeq)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SRtTransactions].erase(uSeq) != 0u;
 }
 
@@ -4182,7 +4184,7 @@ NetworkOPsImp::unsubRTTransactions(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subValidations(InfoSub::ref isrListener)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SValidations].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4196,7 +4198,7 @@ NetworkOPsImp::stateAccounting(json::Value& obj)
 bool
 NetworkOPsImp::unsubValidations(std::uint64_t uSeq)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SValidations].erase(uSeq) != 0u;
 }
 
@@ -4204,7 +4206,7 @@ NetworkOPsImp::unsubValidations(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subPeerStatus(InfoSub::ref isrListener)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SPeerStatus].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4212,7 +4214,7 @@ NetworkOPsImp::subPeerStatus(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubPeerStatus(std::uint64_t uSeq)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SPeerStatus].erase(uSeq) != 0u;
 }
 
@@ -4220,7 +4222,7 @@ NetworkOPsImp::unsubPeerStatus(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subConsensus(InfoSub::ref isrListener)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SConsensusPhase].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4228,14 +4230,14 @@ NetworkOPsImp::subConsensus(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     return streamMaps_[SConsensusPhase].erase(uSeq) != 0u;
 }
 
 InfoSub::pointer
 NetworkOPsImp::findRpcSub(std::string const& strUrl)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
 
     subRpcMapType::iterator const it = rpcSubMap_.find(strUrl);
 
@@ -4248,7 +4250,7 @@ NetworkOPsImp::findRpcSub(std::string const& strUrl)
 InfoSub::pointer
 NetworkOPsImp::addRpcSub(std::string const& strUrl, InfoSub::ref rspEntry)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
 
     rpcSubMap_.emplace(strUrl, rspEntry);
 
@@ -4258,7 +4260,7 @@ NetworkOPsImp::addRpcSub(std::string const& strUrl, InfoSub::ref rspEntry)
 bool
 NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
 {
-    std::lock_guard const sl(subLock_);
+    std::scoped_lock const sl(subLock_);
     auto pInfo = findRpcSub(strUrl);
 
     if (!pInfo)
@@ -4543,7 +4545,10 @@ NetworkOPsImp::getBookPage(
                     // Did not find balance in table.
 
                     saOwnerFunds = lesActive.accountHolds(
-                        uOfferOwnerID, book.out.currency, book.out.account, fhZERO_IF_FROZEN);
+                        uOfferOwnerID,
+                        book.out.currency,
+                        book.out.account,
+                        FreezeHandling::fhZERO_IF_FROZEN);
 
                     if (saOwnerFunds.isNegative())
                     {
@@ -4619,7 +4624,7 @@ NetworkOPsImp::collectMetrics()
         std::chrono::steady_clock::now() - start);
     counters[static_cast<std::size_t>(mode)].dur += current;
 
-    std::lock_guard const lock(statsMutex_);
+    std::scoped_lock const lock(statsMutex_);
     stats_.disconnected_duration.set(
         counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].dur.count());
     stats_.connected_duration.set(
@@ -4647,7 +4652,7 @@ NetworkOPsImp::StateAccounting::mode(OperatingMode om)
 {
     auto now = std::chrono::steady_clock::now();
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     ++counters_[static_cast<std::size_t>(om)].transitions;
     if (om == OperatingMode::FULL && counters_[static_cast<std::size_t>(om)].transitions == 1)
     {

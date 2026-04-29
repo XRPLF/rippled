@@ -45,14 +45,14 @@ namespace xrpl {
 void
 SHAMapStoreImp::SavedStateDB::init(BasicConfig const& config, std::string const& dbName)
 {
-    std::lock_guard const lock(mutex);
+    std::scoped_lock const lock(mutex);
     initStateDB(sqlDb, config, dbName);
 }
 
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
-    std::lock_guard const lock(mutex);
+    std::scoped_lock const lock(mutex);
 
     return xrpl::getCanDelete(sqlDb);
 }
@@ -60,7 +60,7 @@ SHAMapStoreImp::SavedStateDB::getCanDelete()
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 {
-    std::lock_guard const lock(mutex);
+    std::scoped_lock const lock(mutex);
 
     return xrpl::setCanDelete(sqlDb, canDelete);
 }
@@ -68,7 +68,7 @@ SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 SavedState
 SHAMapStoreImp::SavedStateDB::getState()
 {
-    std::lock_guard const lock(mutex);
+    std::scoped_lock const lock(mutex);
 
     return xrpl::getSavedState(sqlDb);
 }
@@ -76,14 +76,14 @@ SHAMapStoreImp::SavedStateDB::getState()
 void
 SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 {
-    std::lock_guard const lock(mutex);
+    std::scoped_lock const lock(mutex);
     xrpl::setSavedState(sqlDb, state);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 {
-    std::lock_guard const lock(mutex);
+    std::scoped_lock const lock(mutex);
     xrpl::setLastRotated(sqlDb, seq);
 }
 
@@ -209,7 +209,7 @@ void
 SHAMapStoreImp::onLedgerClosed(std::shared_ptr<Ledger const> const& ledger)
 {
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         newLedger_ = ledger;
         working_ = true;
     }
@@ -624,7 +624,7 @@ SHAMapStoreImp::stop()
     if (thread_.joinable())
     {
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             stop_ = true;
             cond_.notify_one();
         }

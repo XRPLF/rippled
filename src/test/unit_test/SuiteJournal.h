@@ -69,7 +69,7 @@ SuiteJournalSink::writeAlways(beast::severities::Severity level, std::string con
     }();
 
     static std::mutex kLOG_MUTEX;
-    std::lock_guard const lock(kLOG_MUTEX);
+    std::scoped_lock const lock(kLOG_MUTEX);
     suite_.log << s << partition_ << text << std::endl;
 }
 

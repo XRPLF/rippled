@@ -30,7 +30,7 @@ public:
     std::shared_ptr<Checkpointer>
     fromId(std::uintptr_t id)
     {
-        std::lock_guard const l{mutex_};
+        std::scoped_lock const l{mutex_};
         auto it = checkpointers_.find(id);
         if (it != checkpointers_.end())
             return it->second;
@@ -40,7 +40,7 @@ public:
     void
     erase(std::uintptr_t id)
     {
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         checkpointers_.erase(id);
     }
 
@@ -50,7 +50,7 @@ public:
         JobQueue& jobQueue,
         ServiceRegistry& registry)
     {
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         auto const id = nextId_++;
         auto const r = makeCheckpointer(id, session, jobQueue, registry);
         checkpointers_[id] = r;

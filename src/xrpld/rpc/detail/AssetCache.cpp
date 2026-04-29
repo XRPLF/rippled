@@ -45,7 +45,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
         direction == LineDirection::Outgoing ? LineDirection::Incoming : LineDirection::Outgoing,
         hash);
 
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
 
     auto [it, inserted] = [&]() {
         if (auto otheriter = lines_.find(otherkey); otheriter != lines_.end())
@@ -117,7 +117,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 std::shared_ptr<std::vector<PathFindMPT>> const&
 AssetCache::getMPTs(xrpl::AccountID const& account)
 {
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
 
     if (auto it = mpts_.find(account); it != mpts_.end())
         return it->second;

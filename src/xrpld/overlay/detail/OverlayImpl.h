@@ -254,7 +254,7 @@ public:
     {
         std::vector<std::weak_ptr<PeerImp>> wp;
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
 
             // Iterate over a copy of the peer list because peer
             // destruction can invalidate iterators.
@@ -572,7 +572,7 @@ private:
     collectMetrics()
     {
         auto counts = traffic_.getCounts();
-        std::lock_guard const lock(statsMutex_);
+        std::scoped_lock const lock(statsMutex_);
         XRPL_ASSERT(
             counts.size() == stats_.trafficGauges.size(),
             "xrpl::OverlayImpl::collect_metrics : counts size do match");

@@ -6,6 +6,8 @@
 
 namespace xrpl::NodeStore {
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // This is only used to pre-allocate the array for
     // batch objects and does not affect the amount written.

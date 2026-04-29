@@ -167,7 +167,7 @@ template <bool IsParent>
 std::size_t
 MultiRunnerBase<IsParent>::Inner::tests() const
 {
-    std::lock_guard const l{m};
+    std::scoped_lock const l{m};
     return results.total;
 }
 
@@ -175,7 +175,7 @@ template <bool IsParent>
 std::size_t
 MultiRunnerBase<IsParent>::Inner::suites() const
 {
-    std::lock_guard const l{m};
+    std::scoped_lock const l{m};
     return results.suites;
 }
 
@@ -197,7 +197,7 @@ template <bool IsParent>
 void
 MultiRunnerBase<IsParent>::Inner::add(Results const& r)
 {
-    std::lock_guard const l{m};
+    std::scoped_lock const l{m};
     results.merge(r);
 }
 
@@ -206,7 +206,7 @@ template <class S>
 void
 MultiRunnerBase<IsParent>::Inner::printResults(S& s)
 {
-    std::lock_guard const l{m};
+    std::scoped_lock const l{m};
     results.print(s);
 }
 
@@ -339,7 +339,7 @@ void
 MultiRunnerBase<IsParent>::messageQueueSend(MessageType mt, std::string const& s)
 {
     // must use a mutex since the two "sends" must happen in order
-    std::lock_guard const l{inner_->m};
+    std::scoped_lock const l{inner_->m};
     message_queue_->send(&mt, sizeof(mt), /*priority*/ 0);
     message_queue_->send(s.c_str(), s.size(), /*priority*/ 0);
 }

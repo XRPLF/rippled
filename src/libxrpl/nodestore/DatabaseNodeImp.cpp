@@ -71,7 +71,7 @@ DatabaseNodeImp::fetchNodeObject(
             break;
         default:
             JLOG(j_.warn()) << "fetchNodeObject " << hash << ": backend returns unknown result "
-                            << status;
+                            << static_cast<int>(status);
             break;
     }
 

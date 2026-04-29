@@ -15,6 +15,8 @@ namespace json {
 
 /** \brief Type of the value held by a Value object.
  */
+// Used throughout JSON layer
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum ValueType {
     NullValue = 0,  ///< 'null' value
     IntValue,       ///< signed integer value
@@ -147,7 +149,10 @@ private:
     class CZString
     {
     public:
+        // Stored as int field, implicit conversion
+        // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
         enum DuplicationPolicy { NoDuplication = 0, Duplicate, DuplicateOnCopy };
+
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
         CZString(CZString const& other);
@@ -471,6 +476,8 @@ operator>=(Value const& x, Value const& y)
 class ValueAllocator
 {
 public:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { Unknown = (unsigned)-1 };
 
     virtual ~ValueAllocator() = default;

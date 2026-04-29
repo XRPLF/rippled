@@ -665,7 +665,7 @@ flow(
             // the previous strand execution failed. It has to be reset
             // since this strand might not have AMM liquidity.
             ammContext.clear();
-            if (offerCrossing && limitQuality)
+            if (offerCrossing != OfferCrossing::no && limitQuality)
             {
                 auto const strandQ = qualityUpperBound(sb, *strand);
                 if (!strandQ || *strandQ < *limitQuality)

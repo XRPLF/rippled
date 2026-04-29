@@ -23,7 +23,7 @@ namespace xrpl {
 class Application;
 class Rules;
 
-enum TransStatus {
+enum class TransStatus {
     NEW = 0,         // just received / generated
     INVALID = 1,     // no valid signature, insufficient funds
     INCLUDED = 2,    // added to the current ledger

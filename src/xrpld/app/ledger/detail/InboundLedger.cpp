@@ -53,6 +53,8 @@ namespace xrpl {
 
 using namespace std::chrono_literals;
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // Number of peers to start with
     PeerCountStart = 5
@@ -1021,7 +1023,7 @@ InboundLedger::gotData(
     std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> const& data)
 {
-    std::lock_guard const sl(receivedDataLock_);
+    std::scoped_lock const sl(receivedDataLock_);
 
     if (isDone())
         return false;
@@ -1233,7 +1235,7 @@ InboundLedger::runData()
         data.clear();
 
         {
-            std::lock_guard const sl(receivedDataLock_);
+            std::scoped_lock const sl(receivedDataLock_);
 
             if (receivedData_.empty())
             {

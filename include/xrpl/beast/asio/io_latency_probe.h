@@ -83,7 +83,7 @@ public:
     void
     sampleOne(Handler&& handler)
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         if (cancel_)
             throw std::logic_error("io_latency_probe is canceled");
         boost::asio::post(
@@ -98,7 +98,7 @@ public:
     void
     sample(Handler&& handler)
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         if (cancel_)
             throw std::logic_error("io_latency_probe is canceled");
         boost::asio::post(
@@ -122,14 +122,14 @@ private:
     void
     addref()
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         ++count_;
     }
 
     void
     release()
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         if (--count_ == 0)
             cond_.notify_all();
     }
@@ -192,7 +192,7 @@ private:
             handler(elapsed);
 
             {
-                std::lock_guard const lock(probe->mutex_);
+                std::scoped_lock const lock(probe->mutex_);
                 if (probe->cancel_)
                     return;
             }

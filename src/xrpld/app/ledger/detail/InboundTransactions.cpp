@@ -27,6 +27,8 @@
 
 namespace xrpl {
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // Ideal number of peers to start with
     StartPeers = 2,
@@ -77,7 +79,7 @@ public:
     getAcquire(uint256 const& hash)
     {
         {
-            std::lock_guard const sl(lock_);
+            std::scoped_lock const sl(lock_);
 
             auto it = map_.find(hash);
 
@@ -93,7 +95,7 @@ public:
         TransactionAcquire::pointer ta;
 
         {
-            std::lock_guard const sl(lock_);
+            std::scoped_lock const sl(lock_);
 
             if (auto it = map_.find(hash); it != map_.end())
             {
@@ -176,7 +178,7 @@ public:
         bool isNew = true;
 
         {
-            std::lock_guard const sl(lock_);
+            std::scoped_lock const sl(lock_);
 
             auto& inboundSet = map_[hash];
 
@@ -201,7 +203,7 @@ public:
     void
     newRound(std::uint32_t seq) override
     {
-        std::lock_guard const lock(lock_);
+        std::scoped_lock const lock(lock_);
 
         // Protect zero set from expiration
         zeroSet_.seq = seq;
@@ -232,7 +234,7 @@ public:
     void
     stop() override
     {
-        std::lock_guard const lock(lock_);
+        std::scoped_lock const lock(lock_);
         stopping_ = true;
         map_.clear();
     }

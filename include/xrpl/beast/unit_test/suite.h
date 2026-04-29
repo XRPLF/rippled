@@ -37,7 +37,7 @@ makeReason(String const& reason, char const* file, int line)
 
 class Thread;
 
-enum AbortT { NoAbortOnFail, AbortOnFail };
+enum class AbortT { NoAbortOnFail, AbortOnFail };
 
 /** A testsuite class.
 
@@ -127,7 +127,7 @@ private:
             @param abort Determines if suite continues running after a failure.
         */
         void
-        operator()(std::string const& name, AbortT abort = NoAbortOnFail);
+        operator()(std::string const& name, AbortT abort = AbortT::NoAbortOnFail);
 
         ScopedTestcase
         operator()(AbortT abort);
@@ -363,14 +363,14 @@ public:
 inline void
 Suite::TestcaseT::operator()(std::string const& name, AbortT abort)
 {
-    suite_.abort_ = abort == AbortOnFail;
+    suite_.abort_ = abort == AbortT::AbortOnFail;
     suite_.runner_->testcase(name);
 }
 
 inline Suite::ScopedTestcase
 Suite::TestcaseT::operator()(AbortT abort)
 {
-    suite_.abort_ = abort == AbortOnFail;
+    suite_.abort_ = abort == AbortT::AbortOnFail;
     return {suite_, ss_};
 }
 

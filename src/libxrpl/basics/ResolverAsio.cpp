@@ -177,7 +177,7 @@ public:
         if (stopped.exchange(false))
         {
             {
-                std::lock_guard const lk{mut};
+                std::scoped_lock const lk{mut};
                 asyncHandlersCompleted = false;
             }
             addReference();

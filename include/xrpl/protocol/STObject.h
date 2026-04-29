@@ -413,7 +413,7 @@ public:
     class FieldErr;
 
 private:
-    enum WhichFields : bool {
+    enum class WhichFields : bool {
         // These values are carefully chosen to do the right thing if passed
         // to SField::shouldInclude (bool)
         OmitSigningFields = false,

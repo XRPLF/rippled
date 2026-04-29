@@ -158,7 +158,7 @@ PropertyStream::Source::Source(std::string name) : name_(std::move(name)), item_
 
 PropertyStream::Source::~Source()
 {
-    std::lock_guard const _(lock_);
+    std::scoped_lock const _(lock_);
     if (parent_ != nullptr)
         parent_->remove(*this);
     removeAll();
@@ -173,9 +173,7 @@ PropertyStream::Source::name() const
 void
 PropertyStream::Source::add(Source& source)
 {
-    std::lock(lock_, source.lock_);
-    std::lock_guard const lk1(lock_, std::adopt_lock);
-    std::lock_guard const lk2(source.lock_, std::adopt_lock);
+    std::scoped_lock const lock(lock_, source.lock_);
 
     XRPL_ASSERT(
         source.parent_ == nullptr, "beast::PropertyStream::Source::add : null source parent");
@@ -186,9 +184,7 @@ PropertyStream::Source::add(Source& source)
 void
 PropertyStream::Source::remove(Source& child)
 {
-    std::lock(lock_, child.lock_);
-    std::lock_guard const lk1(lock_, std::adopt_lock);
-    std::lock_guard const lk2(child.lock_, std::adopt_lock);
+    std::scoped_lock const lock(lock_, child.lock_);
 
     XRPL_ASSERT(
         child.parent_ == this, "beast::PropertyStream::Source::remove : child parent match");
@@ -199,10 +195,10 @@ PropertyStream::Source::remove(Source& child)
 void
 PropertyStream::Source::removeAll()
 {
-    std::lock_guard const _(lock_);
+    std::scoped_lock const _(lock_);
     for (auto iter = children_.begin(); iter != children_.end();)
     {
-        std::lock_guard const cl((*iter)->lock_);
+        std::scoped_lock const cl((*iter)->lock_);
         remove(*(*iter));
     }
 }
@@ -222,7 +218,7 @@ PropertyStream::Source::write(PropertyStream& stream)
     Map map(name_, stream);
     onWrite(map);
 
-    std::lock_guard const _(lock_);
+    std::scoped_lock const _(lock_);
 
     for (auto& child : children_)
         child.source().write(stream);
@@ -324,7 +320,7 @@ PropertyStream::Source::findOneDeep(std::string const& name)
     if (found != nullptr)
         return found;
 
-    std::lock_guard const _(lock_);
+    std::scoped_lock const _(lock_);
     for (auto& s : children_)
     {
         found = s.source().findOneDeep(name);
@@ -355,7 +351,7 @@ PropertyStream::Source::findPath(std::string path)
 PropertyStream::Source*
 PropertyStream::Source::findOne(std::string const& name)
 {
-    std::lock_guard const _(lock_);
+    std::scoped_lock const _(lock_);
     for (auto& s : children_)
     {
         if (s.source().name_ == name)

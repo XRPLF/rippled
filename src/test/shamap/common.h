@@ -91,8 +91,8 @@ public:
     void
     reset() override
     {
-        fbCache_->reset();
-        tnCache_->reset();
+        (*fbCache_).reset();
+        (*tnCache_).reset();
     }
 
     beast::ManualClock<std::chrono::steady_clock>

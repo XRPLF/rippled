@@ -11,6 +11,8 @@
 namespace xrpl {
 
 /** Kind of element in each entry of an SOTemplate. */
+// 2026 usages, 129 files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOEStyle {
     SoeInvalid = -1,
     SoeRequired = 0,  // required
@@ -20,6 +22,8 @@ enum SOEStyle {
                       // constructed with STObject::makeInnerObject()
 };
 
+// Part of a Python-parsed DSL (transactions.macro); bare enumerator names required by the parser
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 /** Amount fields that can support MPT */
 enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 

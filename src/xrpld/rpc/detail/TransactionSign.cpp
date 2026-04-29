@@ -698,7 +698,7 @@ transactionConstructImpl(
     {
         std::string reason;
         tpTrans = std::make_shared<Transaction>(stTx, reason, app);
-        if (tpTrans->getStatus() != NEW)
+        if (tpTrans->getStatus() != TransStatus::NEW)
         {
             ret.first = RPC::makeError(RpcInternal, "Unable to construct transaction: " + reason);
             return ret;

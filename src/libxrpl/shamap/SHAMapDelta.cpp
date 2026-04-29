@@ -344,7 +344,7 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                             }
                             else
                             {
-                                std::lock_guard const l{m};
+                                std::scoped_lock const l{m};
                                 missingNodes.emplace_back(type_, node->getChildHash(i));
                                 if (--maxMissing <= 0)
                                     return;
@@ -354,7 +354,7 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                 }
                 catch (SHAMapMissingNode const& e)
                 {
-                    std::lock_guard const l(m);
+                    std::scoped_lock const l(m);
                     exceptions.push_back(e);
                 }
             },
@@ -364,7 +364,7 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
     for (std::thread& worker : workers)
         worker.join();
 
-    std::lock_guard const l(m);
+    std::scoped_lock const l(m);
     if (exceptions.empty())
         return true;
     std::stringstream ss;

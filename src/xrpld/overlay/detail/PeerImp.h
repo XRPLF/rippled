@@ -428,7 +428,7 @@ public:
     std::optional<std::size_t>
     publisherListSequence(PublicKey const& pubKey) const override
     {
-        std::lock_guard<std::mutex> const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
 
         auto iter = publisherListSequences_.find(pubKey);
         if (iter != publisherListSequences_.end())
@@ -439,7 +439,7 @@ public:
     void
     setPublisherListSequence(PublicKey const& pubKey, std::size_t const seq) override
     {
-        std::lock_guard<std::mutex> const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
 
         publisherListSequences_[pubKey] = seq;
     }
@@ -744,7 +744,7 @@ private:
     // lockedRecentLock is passed as a reminder to callers that recentLock_
     // must be locked.
     void
-    addLedger(uint256 const& hash, std::lock_guard<std::mutex> const& lockedRecentLock);
+    addLedger(uint256 const& hash, std::scoped_lock<std::mutex> const& lockedRecentLock);
 
     void
     doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);

@@ -23,6 +23,8 @@ struct LedgerFill
             closeTime = context->ledgerMaster.getCloseTimeBySeq(ledger.seq());
     }
 
+    // Bitwise bitmask
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum Options {
         DumpTxrp = 1,
         DumpState = 2,

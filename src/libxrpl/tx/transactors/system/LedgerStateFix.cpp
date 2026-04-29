@@ -19,7 +19,7 @@ namespace xrpl {
 NotTEC
 LedgerStateFix::preflight(PreflightContext const& ctx)
 {
-    switch (ctx.tx[sfLedgerFixType])
+    switch (static_cast<FixType>(ctx.tx[sfLedgerFixType]))
     {
         case FixType::NfTokenPageLink:
             if (!ctx.tx.isFieldPresent(sfOwner))

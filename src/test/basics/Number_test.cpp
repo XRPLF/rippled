@@ -834,7 +834,7 @@ public:
         /*
         auto tests = [&](auto const& cSmall, auto const& cLarge) {
             test(cSmall);
-            if (scale != MantissaRange::small)
+            if (scale != MantissaRange::mantissa_scale::small)
                 test(cLarge);
         };
         */
@@ -1491,8 +1491,8 @@ public:
                 auto const res = static_cast<std::int64_t>(num);
                 BEAST_EXPECTS(
                     res == val,
-                    to_string(num) + " with mode " + std::to_string(mode) + " expected " +
-                        std::to_string(val) + " got " + std::to_string(res));
+                    to_string(num) + " with mode " + std::to_string(static_cast<int>(mode)) +
+                        " expected " + std::to_string(val) + " got " + std::to_string(res));
             }
         }
     }

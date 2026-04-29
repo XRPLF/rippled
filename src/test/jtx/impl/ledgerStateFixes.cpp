@@ -6,6 +6,8 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/transactors/system/LedgerStateFix.h>
 
+#include <cstdint>
+
 namespace xrpl::test::jtx::ledgerStateFix {
 
 // Fix NFTokenPage links on owner's account.  acct pays fee.

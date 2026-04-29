@@ -913,8 +913,8 @@ protected:
         return sp->id();
     }
 
-    enum State { On, Off, WaitReset };
-    enum EventType { LinkDown = 0, PeerDisconnected = 1 };
+    enum class State { On, Off, WaitReset };
+    enum class EventType { LinkDown = 0, PeerDisconnected = 1 };
     // Link down or Peer disconnect event
     // TBD - add new peer event
     // TBD - add overlapping type of events at any
@@ -938,7 +938,8 @@ protected:
     void
     random(bool log)
     {
-        std::unordered_map<EventType, Event> events{{LinkDown, {}}, {PeerDisconnected, {}}};
+        std::unordered_map<EventType, Event> events{
+            {EventType::LinkDown, {}}, {EventType::PeerDisconnected, {}}};
         time_point<ManualClock> lastCheck = ManualClock::now();
 
         network_.reset();

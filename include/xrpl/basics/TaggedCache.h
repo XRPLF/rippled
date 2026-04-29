@@ -166,7 +166,7 @@ public:
 
 private:
     SharedPointerType
-    initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l);
+    initialFetch(key_type const& key, std::scoped_lock<mutex_type> const& l);
 
     void
     collectMetrics();
@@ -265,7 +265,7 @@ private:
         typename KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);
+        std::scoped_lock<std::recursive_mutex> const&);
 
     [[nodiscard]] std::thread
     sweepHelper(
@@ -274,7 +274,7 @@ private:
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);
+        std::scoped_lock<std::recursive_mutex> const&);
 
     beast::Journal journal_;
     clock_type& clock_;

@@ -88,6 +88,8 @@ class STCurrency;
 #define TO_ENUM(name, value) name = (value),
 #define TO_MAP(name, value) {#name, value},
 
+// Protocol infrastructure, 39+ files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SerializedTypeID { XMACRO(TO_ENUM) };
 
 static std::map<std::string, int> const kS_TYPE_MAP = {XMACRO(TO_MAP)};
@@ -127,6 +129,8 @@ fieldCode(int id, int index)
 class SField
 {
 public:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         SMdNever = 0x00,
         SMdChangeOrig = 0x01,     // original value when it changes

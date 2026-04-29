@@ -73,7 +73,7 @@ InfoSub::onSendEmpty()
 void
 InfoSub::insertSubAccountInfo(AccountID const& account, bool rt)
 {
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
 
     if (rt)
     {
@@ -88,7 +88,7 @@ InfoSub::insertSubAccountInfo(AccountID const& account, bool rt)
 void
 InfoSub::deleteSubAccountInfo(AccountID const& account, bool rt)
 {
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
 
     if (rt)
     {
@@ -103,14 +103,14 @@ InfoSub::deleteSubAccountInfo(AccountID const& account, bool rt)
 bool
 InfoSub::insertSubAccountHistory(AccountID const& account)
 {
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
     return accountHistorySubscriptions_.insert(account).second;
 }
 
 void
 InfoSub::deleteSubAccountHistory(AccountID const& account)
 {
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
     accountHistorySubscriptions_.erase(account);
 }
 

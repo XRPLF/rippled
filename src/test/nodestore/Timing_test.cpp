@@ -77,6 +77,8 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
 class Sequence
 {
 private:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { MinLedger = 1, MaxLedger = 1000000, MinSize = 250, MaxSize = 1250 };
 
     beast::xor_shift_engine gen_;
@@ -135,6 +137,8 @@ public:
 class Timing_test : public beast::unit_test::Suite
 {
 public:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // percent of fetches for missing nodes
         MissingNodePercent = 20

@@ -121,7 +121,7 @@ PathRequest::~PathRequest()
 bool
 PathRequest::isNew()
 {
-    std::lock_guard const sl(indexLock_);
+    std::scoped_lock const sl(indexLock_);
 
     // does this path request still need its first full path
     return lastIndex_ == 0;
@@ -130,7 +130,7 @@ PathRequest::isNew()
 bool
 PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
 {
-    std::lock_guard const sl(indexLock_);
+    std::scoped_lock const sl(indexLock_);
 
     if (inProgress_)
     {
@@ -162,7 +162,7 @@ PathRequest::hasCompletion()
 void
 PathRequest::updateComplete()
 {
-    std::lock_guard const sl(indexLock_);
+    std::scoped_lock const sl(indexLock_);
 
     XRPL_ASSERT(inProgress_, "xrpl::PathRequest::updateComplete : in progress");
     inProgress_ = false;
@@ -478,7 +478,7 @@ json::Value
 PathRequest::doClose()
 {
     JLOG(journal_.debug()) << iIdentifier_ << " closed";
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
     jvStatus_[jss::closed] = true;
     return jvStatus_;
 }
@@ -486,7 +486,7 @@ PathRequest::doClose()
 json::Value
 PathRequest::doStatus(json::Value const&)
 {
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
     jvStatus_[jss::status] = jss::success;
     return jvStatus_;
 }
@@ -716,7 +716,7 @@ PathRequest::doUpdate(
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
 
     {
-        std::lock_guard const sl(lock_);
+        std::scoped_lock const sl(lock_);
 
         if (!isValid(cache))
             return jvStatus_;
@@ -807,7 +807,7 @@ PathRequest::doUpdate(
     }
 
     {
-        std::lock_guard const sl(lock_);
+        std::scoped_lock const sl(lock_);
         jvStatus_ = newStatus;
     }
 

@@ -70,7 +70,7 @@ isPowerOfTen(T value)
 struct MantissaRange
 {
     using rep = std::uint64_t;
-    enum MantissaScale { Small, Large };
+    enum class MantissaScale { Small, Large };
 
     explicit constexpr MantissaRange(MantissaScale scale)
         : min(getMin(scale)), log(logTen(min).value_or(-1)), scale(scale)
@@ -88,9 +88,9 @@ private:
     {
         switch (scale)
         {
-            case Small:
+            case MantissaScale::Small:
                 return 1'000'000'000'000'000ULL;
-            case Large:
+            case MantissaScale::Large:
                 return 1'000'000'000'000'000'000ULL;
             default:
                 // Since this can never be called outside a non-constexpr
@@ -384,7 +384,7 @@ public:
     root2(Number f);
 
     // Thread local rounding control.  Default is to_nearest
-    enum RoundingMode { ToNearest, TowardsZero, Downward, Upward };
+    enum class RoundingMode { ToNearest, TowardsZero, Downward, Upward };
 
     static RoundingMode
     getround();
@@ -445,14 +445,14 @@ private:
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
 
-    constexpr static MantissaRange kSMALL_RANGE{MantissaRange::Small};
+    constexpr static MantissaRange kSMALL_RANGE{MantissaRange::MantissaRange::Small};
     static_assert(isPowerOfTen(kSMALL_RANGE.min));
     static_assert(kSMALL_RANGE.min == 1'000'000'000'000'000LL);
     static_assert(kSMALL_RANGE.max == 9'999'999'999'999'999LL);
     static_assert(kSMALL_RANGE.log == 15);
     static_assert(kSMALL_RANGE.min < kMAX_REP);
     static_assert(kSMALL_RANGE.max < kMAX_REP);
-    constexpr static MantissaRange kLARGE_RANGE{MantissaRange::Large};
+    constexpr static MantissaRange kLARGE_RANGE{MantissaRange::MantissaRange::Large};
     static_assert(isPowerOfTen(kLARGE_RANGE.min));
     static_assert(kLARGE_RANGE.min == 1'000'000'000'000'000'000ULL);
     static_assert(kLARGE_RANGE.max == internalrep(9'999'999'999'999'999'999ULL));
@@ -761,9 +761,9 @@ to_string(MantissaRange::MantissaScale const& scale)
 {
     switch (scale)
     {
-        case MantissaRange::Small:
+        case MantissaRange::MantissaScale::Small:
             return "small";
-        case MantissaRange::Large:
+        case MantissaRange::MantissaScale::Large:
             return "large";
         default:
             throw std::runtime_error("Bad scale");
