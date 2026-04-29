@@ -995,8 +995,8 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
         telemetry::TraceCategory::Consensus,
         telemetry::seg::consensus,
         telemetry::cons_span::op::modeChange);
-    span.setAttribute(telemetry::cons_span::attr::modeOld, to_string(before).c_str());
-    span.setAttribute(telemetry::cons_span::attr::modeNew, to_string(after).c_str());
+    span.setAttribute(telemetry::cons_span::attr::modeOld, toDisplayString(before).c_str());
+    span.setAttribute(telemetry::cons_span::attr::modeNew, toDisplayString(after).c_str());
 
     JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
                     << ", after=" << to_string(after);
