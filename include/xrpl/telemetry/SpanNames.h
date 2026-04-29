@@ -24,8 +24,7 @@
 #include <cstddef>
 #include <string_view>
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 // ===== Compile-time string utility =========================================
 
@@ -117,5 +116,4 @@ inline constexpr auto error = makeStr("error");
 inline constexpr auto followsFrom = makeStr("follows_from");
 }  // namespace attr_val
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry

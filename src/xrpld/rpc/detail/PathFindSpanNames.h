@@ -41,9 +41,7 @@
 
 #include <xrpl/telemetry/SpanNames.h>
 
-namespace xrpl {
-namespace telemetry {
-namespace pathfind_span {
+namespace xrpl::telemetry::pathfind_span {
 
 // ===== Span prefixes =======================================================
 
@@ -85,6 +83,4 @@ inline constexpr auto numRequests = join(xrplPathfind, makeStr("num_requests"));
 inline constexpr auto ledgerIndex = join(xrplPathfind, makeStr("ledger_index"));
 }  // namespace attr
 
-}  // namespace pathfind_span
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry::pathfind_span

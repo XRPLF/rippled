@@ -3,6 +3,11 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
+#include <exception>
+#include <stdexcept>
+#include <utility>
+
 using namespace xrpl;
 using namespace xrpl::telemetry;
 
@@ -53,7 +58,7 @@ TEST(SpanGuardFactory, move_construction_transfers_ownership)
 {
     auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "move");
     auto moved = std::move(span);
-    EXPECT_FALSE(span);
+    EXPECT_FALSE(span);  // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
     moved.setAttribute("key", "value");
 }
 

@@ -35,7 +35,6 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
-#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 

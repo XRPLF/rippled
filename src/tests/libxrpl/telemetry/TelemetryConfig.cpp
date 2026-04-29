@@ -1,4 +1,5 @@
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <gtest/gtest.h>
@@ -9,7 +10,7 @@ using namespace xrpl;
 
 TEST(TelemetryConfig, setup_defaults)
 {
-    telemetry::Telemetry::Setup s;
+    telemetry::Telemetry::Setup const s;
     EXPECT_FALSE(s.enabled);
     EXPECT_EQ(s.serviceName, "xrpld");
     EXPECT_TRUE(s.serviceVersion.empty());
@@ -32,7 +33,7 @@ TEST(TelemetryConfig, setup_defaults)
 
 TEST(TelemetryConfig, parse_empty_section)
 {
-    Section section;
+    Section const section;
     auto setup = telemetry::setup_Telemetry(section, "nHUtest123", "2.0.0", 0);
 
     EXPECT_FALSE(setup.enabled);
@@ -92,7 +93,7 @@ TEST(TelemetryConfig, null_telemetry_factory)
     setup.enabled = false;
 
     beast::Journal::Sink& sink = beast::Journal::getNullSink();
-    beast::Journal j(sink);
+    beast::Journal const j(sink);
     auto tel = telemetry::make_Telemetry(setup, j);
     EXPECT_TRUE(tel != nullptr);
     EXPECT_FALSE(tel->isEnabled());
