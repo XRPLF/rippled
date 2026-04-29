@@ -35,6 +35,7 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/telemetry/PropagationHelpers.h>
 #include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Log.h>
@@ -1703,6 +1704,10 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     tx.set_receivetimestamp(
                         registry_.get().getTimeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);
+                    // Inject the tx.process span's trace context so the
+                    // receiving node can link its tx.receive span as a child.
+                    if (e.span && *e.span)
+                        telemetry::injectSpanContext(*e.span, *tx.mutable_trace_context());
                     // FIXME: This should be when we received it
                     registry_.get().getOverlay().relay(e.transaction->getID(), tx, *toSkip);
                     e.transaction->setBroadcast();
