@@ -7201,6 +7201,110 @@ protected:
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
     }
 
+    // ---- Shared scaffolding for the integer-MPT edge tests below ----
+    //
+    // All the dual-rounding edge tests want the same env + MPT + vault + broker
+    // + LoanSet boilerplate; they only differ in the loan terms and the
+    // payment pattern. setupEdgeLoan handles the boilerplate and returns the
+    // handles each test needs to drive payments.
+    struct EdgeLoanFixture
+    {
+        jtx::Account issuer;
+        jtx::Account lender;
+        jtx::Account borrower;
+        jtx::PrettyAsset asset;
+        Keylet brokerKeylet;
+        Keylet loanKeylet;
+    };
+
+    struct EdgeLoanSpec
+    {
+        Number principal;
+        TenthBips32 interestRate;
+        std::uint32_t paymentTotal;
+        std::uint32_t paymentInterval = 31'536'000;
+        std::optional<std::uint32_t> gracePeriodSec = std::nullopt;
+        std::optional<TenthBips32> lateRate = std::nullopt;
+        std::optional<Number> lateFee = std::nullopt;
+        std::uint32_t mptMaxAmt = 100'000;
+        std::int64_t fundEach = 10'000;
+        std::int64_t vaultDeposit = 5'000;
+        Number debtMax{100};
+    };
+
+    std::optional<EdgeLoanFixture>
+    setupEdgeLoan(jtx::Env& env, EdgeLoanSpec const& spec)
+    {
+        using namespace jtx;
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, lender, borrower);
+        env.close();
+
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create({.maxAmt = spec.mptMaxAmt, .flags = tfMPTCanTransfer});
+        PrettyAsset const asset{mptt.issuanceID()};
+
+        mptt.authorize({.account = lender});
+        mptt.authorize({.account = borrower});
+
+        env(pay(issuer, lender, asset(spec.fundEach)));
+        env(pay(issuer, borrower, asset(spec.fundEach)));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit(
+            {.depositor = lender, .id = vaultKeylet.key, .amount = asset(spec.vaultDeposit)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        {
+            using namespace loanBroker;
+            env(set(lender, vaultKeylet.key),
+                debtMaximum(spec.debtMax),
+                fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        auto const brokerStateBefore = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(brokerStateBefore))
+            return std::nullopt;
+        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
+
+        {
+            using namespace loan;
+            JTx tx{set(borrower, brokerKeylet.key, spec.principal)};
+            sig(sfCounterpartySignature, lender)(env, tx);
+            interestRate(spec.interestRate)(env, tx);
+            paymentTotal(spec.paymentTotal)(env, tx);
+            paymentInterval(spec.paymentInterval)(env, tx);
+            fee(env.current()->fees().base * 2)(env, tx);
+            if (spec.gracePeriodSec)
+                gracePeriod (*spec.gracePeriodSec)(env, tx);
+            if (spec.lateRate)
+                lateInterestRate (*spec.lateRate)(env, tx);
+            if (spec.lateFee)
+                latePaymentFee (*spec.lateFee)(env, tx);
+            env(tx);
+        }
+        env.close();
+
+        return EdgeLoanFixture{
+            .issuer = issuer,
+            .lender = lender,
+            .borrower = borrower,
+            .asset = asset,
+            .brokerKeylet = brokerKeylet,
+            .loanKeylet = loanKeylet};
+    }
+
     // An integer-scale MPT loan with principal=1 and high interest causes
     // the second LoanPay to compute a principal delta equal to the full
     // outstanding (1), but the code still classifies this as a non-final
@@ -7213,65 +7317,15 @@ protected:
 
         using namespace jtx;
         Env env(*this, all);
-
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        MPTTester mptt{env, issuer, mptInitNoFund};
-        mptt.create({.maxAmt = 100'000, .flags = tfMPTCanTransfer});
-        PrettyAsset const asset{mptt.issuanceID()};  // scale = 1
-
-        mptt.authorize({.account = lender});
-        mptt.authorize({.account = borrower});
-
-        env(pay(issuer, lender, asset(10'000)));
-        env(pay(issuer, borrower, asset(10'000)));
-        env.close();
-
-        Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
-        env(vaultTx);
-        env.close();
-
-        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5000)}));
-        env.close();
-
-        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
-        {
-            using namespace loanBroker;
-            env(set(lender, vaultKeylet.key),
-                debtMaximum(Number{100}),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
-
-        auto const brokerStateBefore = env.le(brokerKeylet);
-        BEAST_EXPECT(brokerStateBefore);
-        if (!brokerStateBefore)
+        auto f = setupEdgeLoan(
+            env, {.principal = Number{1}, .interestRate = TenthBips32{50'000}, .paymentTotal = 3});
+        if (!f)
             return;
-        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
-
-        // Loan: principal=1, interest=5% (50000 tenth-bips),
-        // 3 payments, 1 year interval.
-        {
-            using namespace loan;
-            env(set(borrower, brokerKeylet.key, Number{1}),
-                sig(sfCounterpartySignature, lender),
-                interestRate(TenthBips32{50'000}),
-                paymentTotal(3),
-                paymentInterval(31'536'000),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
 
         // LoanPay 2 MPT — the second computePaymentComponents call inside
-        // doPayment fires the "Partial principal payment" assertion.
-        env(loan::pay(borrower, loanKeylet.key, asset(2)), ter(tesSUCCESS));
+        // doPayment fires the "Partial principal payment" assertion under the
+        // pre-amendment rounding.
+        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(2)), ter(tesSUCCESS));
         env.close();
     }
 
@@ -7285,77 +7339,27 @@ protected:
 
         using namespace jtx;
         Env env(*this, all);
-
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        MPTTester mptt{env, issuer, mptInitNoFund};
-        mptt.create({.maxAmt = 100'000, .flags = tfMPTCanTransfer});
-        PrettyAsset const asset{mptt.issuanceID()};
-
-        mptt.authorize({.account = lender});
-        mptt.authorize({.account = borrower});
-
-        env(pay(issuer, lender, asset(10'000)));
-        env(pay(issuer, borrower, asset(10'000)));
-        env.close();
-
-        Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
-        env(vaultTx);
-        env.close();
-
-        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5000)}));
-        env.close();
-
-        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
-        {
-            using namespace loanBroker;
-            env(set(lender, vaultKeylet.key),
-                debtMaximum(Number{100}),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
-
-        auto const brokerStateBefore = env.le(brokerKeylet);
-        if (!BEAST_EXPECT(brokerStateBefore))
+        auto f = setupEdgeLoan(
+            env, {.principal = Number{1}, .interestRate = TenthBips32{50'000}, .paymentTotal = 3});
+        if (!f)
             return;
-        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
 
-        {
-            using namespace loan;
-            env(set(borrower, brokerKeylet.key, Number{1}),
-                sig(sfCounterpartySignature, lender),
-                interestRate(TenthBips32{50'000}),
-                paymentTotal(3),
-                paymentInterval(31'536'000),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
-
-        auto const borrowerStart = env.balance(borrower, asset).value();
+        auto const borrowerStart = env.balance(f->borrower, f->asset).value();
 
         // Three separate periodic payments of 1 each.
-        env(loan::pay(borrower, loanKeylet.key, asset(1)), ter(tesSUCCESS));
-        env.close();
-        env(loan::pay(borrower, loanKeylet.key, asset(1)), ter(tesSUCCESS));
-        env.close();
-        env(loan::pay(borrower, loanKeylet.key, asset(1)), ter(tesSUCCESS));
-        env.close();
+        for (int i = 0; i < 3; ++i)
+        {
+            env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(1)), ter(tesSUCCESS));
+            env.close();
+        }
 
-        // Loan should be marked complete (paymentRemaining == 0).
-        auto const loanSle = env.le(loanKeylet);
+        auto const loanSle = env.le(f->loanKeylet);
         if (BEAST_EXPECT(loanSle))
             BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
 
         // Borrower paid 3 total (1 principal + 2 interest, matching loan economics).
-        auto const borrowerEnd = env.balance(borrower, asset).value();
-        BEAST_EXPECT(borrowerStart - borrowerEnd == asset(3).value());
+        auto const borrowerEnd = env.balance(f->borrower, f->asset).value();
+        BEAST_EXPECT(borrowerStart - borrowerEnd == f->asset(3).value());
     }
 
     // A 2-payment integer-scale MPT loan: trueTarget.PO at the only
@@ -7368,72 +7372,24 @@ protected:
 
         using namespace jtx;
         Env env(*this, all);
-
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        MPTTester mptt{env, issuer, mptInitNoFund};
-        mptt.create({.maxAmt = 100'000, .flags = tfMPTCanTransfer});
-        PrettyAsset const asset{mptt.issuanceID()};
-
-        mptt.authorize({.account = lender});
-        mptt.authorize({.account = borrower});
-
-        env(pay(issuer, lender, asset(10'000)));
-        env(pay(issuer, borrower, asset(10'000)));
-        env.close();
-
-        Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
-        env(vaultTx);
-        env.close();
-
-        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5000)}));
-        env.close();
-
-        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
-        {
-            using namespace loanBroker;
-            env(set(lender, vaultKeylet.key),
-                debtMaximum(Number{100}),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
-
-        auto const brokerStateBefore = env.le(brokerKeylet);
-        if (!BEAST_EXPECT(brokerStateBefore))
+        auto f = setupEdgeLoan(
+            env, {.principal = Number{1}, .interestRate = TenthBips32{50'000}, .paymentTotal = 2});
+        if (!f)
             return;
-        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
 
-        // P=1, r=50%, n=2: PMT=0.6, RPP=1, TVO=2.
-        {
-            using namespace loan;
-            env(set(borrower, brokerKeylet.key, Number{1}),
-                sig(sfCounterpartySignature, lender),
-                interestRate(TenthBips32{50'000}),
-                paymentTotal(2),
-                paymentInterval(31'536'000),
-                fee(env.current()->fees().base * 2));
-        }
+        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(2)), ter(tesSUCCESS));
         env.close();
-
-        env(loan::pay(borrower, loanKeylet.key, asset(2)), ter(tesSUCCESS));
-        env.close();
-        auto const loanSle = env.le(loanKeylet);
+        auto const loanSle = env.le(f->loanKeylet);
         if (BEAST_EXPECT(loanSle))
             BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
     }
 
-    // Numerical trace says this setup triggers a zero-delta period:
-    // P=2, r=30%, n=4. Period 2 (paymentRemaining=2) has trueTarget.PO=1.251
-    // (rounds up to 2) and trueTarget.interest=0.595 (rounds nearest to 1),
-    // matching currentLedger PO=2 and interest=1, so all deltas are 0.
-    // The assertion `payment parts add to payment > 0` should fire.
+    // Numerical trace says this setup would trigger a zero-delta period
+    // under a principal-only round-up fix: P=2, r=30%, n=4. Period 2
+    // (paymentRemaining=2) has trueTarget.PO=1.251 (rounds up to 2) and
+    // trueTarget.interest=0.595 (rounds nearest to 1), matching currentLedger
+    // PO=2 and interest=1, so all deltas would be 0. The dual-rounding
+    // (interest rounded down) must keep total > 0 here.
     void
     testZeroDeltaAssertion()
     {
@@ -7441,65 +7397,15 @@ protected:
 
         using namespace jtx;
         Env env(*this, all);
-
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        MPTTester mptt{env, issuer, mptInitNoFund};
-        mptt.create({.maxAmt = 100'000, .flags = tfMPTCanTransfer});
-        PrettyAsset const asset{mptt.issuanceID()};
-
-        mptt.authorize({.account = lender});
-        mptt.authorize({.account = borrower});
-
-        env(pay(issuer, lender, asset(10'000)));
-        env(pay(issuer, borrower, asset(10'000)));
-        env.close();
-
-        Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
-        env(vaultTx);
-        env.close();
-
-        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5000)}));
-        env.close();
-
-        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
-        {
-            using namespace loanBroker;
-            env(set(lender, vaultKeylet.key),
-                debtMaximum(Number{100}),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
-
-        auto const brokerStateBefore = env.le(brokerKeylet);
-        if (!BEAST_EXPECT(brokerStateBefore))
+        auto f = setupEdgeLoan(
+            env, {.principal = Number{2}, .interestRate = TenthBips32{30'000}, .paymentTotal = 4});
+        if (!f)
             return;
-        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
 
-        // P=2, r=30% (30000 tenth-bips), n=4, yearly interval.
-        {
-            using namespace loan;
-            env(set(borrower, brokerKeylet.key, Number{2}),
-                sig(sfCounterpartySignature, lender),
-                interestRate(TenthBips32{30'000}),
-                paymentTotal(4),
-                paymentInterval(31'536'000),
-                fee(env.current()->fees().base * 2));
-        }
+        // Pay one period at a time. Period 2 must not hit the zero-delta path.
+        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(1)), ter(tesSUCCESS));
         env.close();
-
-        // Pay one period at a time. Period 2 should hit the zero-delta path.
-        env(loan::pay(borrower, loanKeylet.key, asset(1)), ter(tesSUCCESS));
-        env.close();
-        // This should fail with an assertion (or worse) under the fix.
-        env(loan::pay(borrower, loanKeylet.key, asset(1)), ter(tesSUCCESS));
+        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(1)), ter(tesSUCCESS));
         env.close();
     }
 
@@ -7515,65 +7421,24 @@ protected:
 
         using namespace jtx;
         Env env(*this, all - fixCleanup3_2_0);
-
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        MPTTester mptt{env, issuer, mptInitNoFund};
-        mptt.create({.maxAmt = 1'000'000, .flags = tfMPTCanTransfer});
-        PrettyAsset const asset{mptt.issuanceID()};
-
-        mptt.authorize({.account = lender});
-        mptt.authorize({.account = borrower});
-
-        env(pay(issuer, lender, asset(500'000)));
-        env(pay(issuer, borrower, asset(500'000)));
-        env.close();
-
-        Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
-        env(vaultTx);
-        env.close();
-
-        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(200'000)}));
-        env.close();
-
-        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
-        {
-            using namespace loanBroker;
-            env(set(lender, vaultKeylet.key),
-                debtMaximum(Number{200'000}),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
-
-        auto const brokerStateBefore = env.le(brokerKeylet);
-        if (!BEAST_EXPECT(brokerStateBefore))
+        auto f = setupEdgeLoan(
+            env,
+            {.principal = Number{10'000},
+             .interestRate = TenthBips32{12'000},
+             .paymentTotal = 12,
+             .paymentInterval = 2'592'000,
+             .mptMaxAmt = 1'000'000,
+             .fundEach = 500'000,
+             .vaultDeposit = 200'000,
+             .debtMax = Number{200'000}});
+        if (!f)
             return;
-        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
 
-        // Non-degenerate: P=10000, r=12%, n=12.
-        {
-            using namespace loan;
-            env(set(borrower, brokerKeylet.key, Number{10'000}),
-                sig(sfCounterpartySignature, lender),
-                interestRate(TenthBips32{12'000}),
-                paymentTotal(12),
-                paymentInterval(2'592'000),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
-
-        env(loan::pay(borrower, loanKeylet.key, asset(12'000)),
+        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(12'000)),
             fee(env.current()->fees().base * 5),
             ter(tesSUCCESS));
         env.close();
-        auto const loanSle = env.le(loanKeylet);
+        auto const loanSle = env.le(f->loanKeylet);
         if (BEAST_EXPECT(loanSle))
             BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
     }
@@ -7587,86 +7452,38 @@ protected:
         testcase("edge: late payment after stuck-principal period");
 
         using namespace jtx;
-        using namespace std::chrono_literals;
         Env env(*this, all);
-
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        MPTTester mptt{env, issuer, mptInitNoFund};
-        mptt.create({.maxAmt = 100'000, .flags = tfMPTCanTransfer});
-        PrettyAsset const asset{mptt.issuanceID()};
-
-        mptt.authorize({.account = lender});
-        mptt.authorize({.account = borrower});
-
-        env(pay(issuer, lender, asset(10'000)));
-        env(pay(issuer, borrower, asset(10'000)));
-        env.close();
-
-        Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
-        env(vaultTx);
-        env.close();
-
-        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5000)}));
-        env.close();
-
-        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
-        {
-            using namespace loanBroker;
-            env(set(lender, vaultKeylet.key),
-                debtMaximum(Number{100}),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
-
-        auto const brokerStateBefore = env.le(brokerKeylet);
-        if (!BEAST_EXPECT(brokerStateBefore))
+        auto f = setupEdgeLoan(
+            env,
+            {.principal = Number{1},
+             .interestRate = TenthBips32{50'000},
+             .paymentTotal = 3,
+             .gracePeriodSec = 2'592'000,
+             .lateRate = TenthBips32{1'000},
+             .lateFee = Number{0}});
+        if (!f)
             return;
-        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
-
-        // Bug case loan — principal sticks across non-final periods.
-        // 1-year payment interval and grace period of 30 days.
-        {
-            using namespace loan;
-            env(set(borrower, brokerKeylet.key, Number{1}),
-                sig(sfCounterpartySignature, lender),
-                interestRate(TenthBips32{50'000}),
-                paymentTotal(3),
-                paymentInterval(31'536'000),
-                gracePeriod(2'592'000),
-                lateInterestRate(TenthBips32{1'000}),
-                latePaymentFee(Number{0}),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
 
         // Pay first period normally.
-        env(loan::pay(borrower, loanKeylet.key, asset(1)), ter(tesSUCCESS));
+        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(1)), ter(tesSUCCESS));
         env.close();
 
         // Skip past the grace period — second payment is late.
         using tp = NetClock::time_point;
         using dur = NetClock::duration;
-        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        if (auto loan = env.le(f->loanKeylet); BEAST_EXPECT(loan))
         {
             env.close(tp{dur{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
         // Late payment with stuck principal — uses computePaymentComponents
         // internally to compute periodic, then layers late penalties.
-        env(loan::pay(borrower, loanKeylet.key, asset(2), tfLoanLatePayment), ter(tesSUCCESS));
+        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(2), tfLoanLatePayment),
+            ter(tesSUCCESS));
         env.close();
 
         // Loan should still be progressing (not killed, not at final).
-        auto const loanSle = env.le(loanKeylet);
-        BEAST_EXPECT(loanSle);
+        BEAST_EXPECT(env.le(f->loanKeylet));
     }
 
     // Larger principal at integer scale — verifies the fix is invisible
@@ -7678,68 +7495,27 @@ protected:
 
         using namespace jtx;
         Env env(*this, all);
-
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(100'000), issuer, lender, borrower);
-        env.close();
-
-        MPTTester mptt{env, issuer, mptInitNoFund};
-        mptt.create({.maxAmt = 1'000'000, .flags = tfMPTCanTransfer});
-        PrettyAsset const asset{mptt.issuanceID()};
-
-        mptt.authorize({.account = lender});
-        mptt.authorize({.account = borrower});
-
-        env(pay(issuer, lender, asset(500'000)));
-        env(pay(issuer, borrower, asset(500'000)));
-        env.close();
-
-        Vault const vault{env};
-        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
-        env(vaultTx);
-        env.close();
-
-        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(200'000)}));
-        env.close();
-
-        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
-        {
-            using namespace loanBroker;
-            env(set(lender, vaultKeylet.key),
-                debtMaximum(Number{200'000}),
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
-
-        auto const brokerStateBefore = env.le(brokerKeylet);
-        if (!BEAST_EXPECT(brokerStateBefore))
+        auto f = setupEdgeLoan(
+            env,
+            {.principal = Number{10'000},
+             .interestRate = TenthBips32{12'000},
+             .paymentTotal = 12,
+             .paymentInterval = 2'592'000,
+             .mptMaxAmt = 1'000'000,
+             .fundEach = 500'000,
+             .vaultDeposit = 200'000,
+             .debtMax = Number{200'000}});
+        if (!f)
             return;
-        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
-
-        // P=10000, r=12%, n=12: standard loan, principal moves smoothly.
-        {
-            using namespace loan;
-            env(set(borrower, brokerKeylet.key, Number{10'000}),
-                sig(sfCounterpartySignature, lender),
-                interestRate(TenthBips32{12'000}),  // 12%
-                paymentTotal(12),
-                paymentInterval(2'592'000),  // 30 days
-                fee(env.current()->fees().base * 2));
-        }
-        env.close();
 
         // Pay enough to cover all 12 periodic payments in a single LoanPay.
         // RPP for this loan is ~888, so 12 * 1000 = 12000 leaves enough margin.
         // Fee is per-payment-increment (5 payments = 1 increment), so bump it.
-        env(loan::pay(borrower, loanKeylet.key, asset(12'000)),
+        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(12'000)),
             fee(env.current()->fees().base * 5),
             ter(tesSUCCESS));
         env.close();
-        auto const loanSle = env.le(loanKeylet);
+        auto const loanSle = env.le(f->loanKeylet);
         if (BEAST_EXPECT(loanSle))
             BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
     }
