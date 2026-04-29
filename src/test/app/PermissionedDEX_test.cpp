@@ -1119,7 +1119,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         if (features[fixCleanup3_2_0])
         {
-            // post-fixCleanup3_2_0: hybrid offer CAN still be consumed via a regular
+            // post-fixCleanup3_2_0: hybrid offer can still be consumed via a regular
             // open-book payment even though the domain credential was revoked.
             auto const carolBalBefore = env.balance(carol, USD);
             env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
@@ -1151,7 +1151,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         }
         else
         {
-            // pre-fixCleanup3_2_0 (original behaviour): the open-book traversal
+            // pre-fixCleanup3_2_0: the open-book traversal
             // also runs the offerInDomain eviction check, so the hybrid offer
             // is treated as unfunded and the regular payment fails.
             env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)), ter(tecPATH_PARTIAL));
