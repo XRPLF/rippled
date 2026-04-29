@@ -64,58 +64,9 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                 skip = True
                 if os["distro_version"] == "bookworm":
                     if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-13"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}"
-                        skip = False
-                    if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
                         and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-16"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        cmake_args = f"-Dvoidstar=ON {cmake_args}"
-                        skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-17"
-                        and build_type == "Release"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}"
-                        skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
-                if skip:
-                    continue
-
-            # RHEL:
-            # - 9 using GCC 12: Debug on linux/amd64.
-            # - 10 using Clang: Release on linux/amd64.
-            if os["distro_name"] == "rhel":
-                skip = True
-                if os["distro_version"] == "9":
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
-                elif os["distro_version"] == "10":
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-any"
-                        and build_type == "Release"
-                        and architecture["platform"] == "linux/amd64"
+                        and architecture["platform"] == "linux/arm64"
                     ):
                         skip = False
                 if skip:
