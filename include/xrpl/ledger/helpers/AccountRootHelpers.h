@@ -40,15 +40,15 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
        (ownerCount + "sponsoring object count" - "sponsored object count" + additionalOwnerCount) *
    increment + (1 if not sponsored account + sponsoringAccountCount) * "reserve base"
 */
-XRPAmount
+[[nodiscard]] XRPAmount
 accountReserve(
     ReadView const& view,
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     beast::Journal j,
     std::int32_t ownerCountAdj = 0,
     std::int32_t reserveCountAdj = 0);
 
-inline XRPAmount
+[[nodiscard]] inline XRPAmount
 accountReserve(
     ReadView const& view,
     AccountID const& id,
@@ -76,7 +76,7 @@ checkInsufficientReserve(
 std::uint32_t
 ownerCount(
     ReadView const& view,
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     beast::Journal j,
     std::int32_t ownerCountAdj = 0);
 

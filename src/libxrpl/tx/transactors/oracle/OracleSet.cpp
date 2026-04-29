@@ -59,12 +59,6 @@ OracleSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-uint32_t
-OracleSet::calculateOracleReserve(std::size_t count)
-{
-    return count > 5 ? 2 : 1;
-}
-
 TER
 OracleSet::preclaim(PreclaimContext const& ctx)
 {
