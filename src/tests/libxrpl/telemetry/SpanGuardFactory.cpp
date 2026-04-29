@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 using namespace xrpl;

@@ -252,7 +252,7 @@ public:
     shouldTraceLedger() const = 0;
 
     /** @return The configured consensus trace correlation strategy. */
-    virtual std::string const&
+    [[nodiscard]] virtual std::string const&
     getConsensusTraceStrategy() const = 0;
 
 #ifdef XRPL_ENABLE_TELEMETRY
