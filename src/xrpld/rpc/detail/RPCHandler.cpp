@@ -17,8 +17,6 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/server/InfoSub.h>
-#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <atomic>
@@ -26,6 +24,7 @@
 #include <cstdint>
 #include <exception>
 #include <string>
+#include <string_view>
 
 namespace xrpl {
 using namespace telemetry;
@@ -212,10 +211,19 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
-        std::string const cmdName = context.params.isMember(jss::command)
-            ? context.params[jss::command].asString()
-            : context.params.isMember(jss::method) ? context.params[jss::method].asString()
-                                                   : "unknown";
+        std::string cmdName;
+        if (context.params.isMember(jss::command))
+        {
+            cmdName = context.params[jss::command].asString();
+        }
+        else if (context.params.isMember(jss::method))
+        {
+            cmdName = context.params[jss::method].asString();
+        }
+        else
+        {
+            cmdName = "unknown";
+        }
         auto span = SpanGuard::span(
             TraceCategory::Rpc, rpc_span::prefix::command, rpc_span::val::unknownCommand);
         span.setAttribute(rpc_span::attr::command, cmdName.c_str());

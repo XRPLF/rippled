@@ -20,9 +20,7 @@
 
 #include <xrpl/telemetry/SpanNames.h>
 
-namespace xrpl {
-namespace telemetry {
-namespace grpc_span {
+namespace xrpl::telemetry::grpc_span {
 
 // ===== Span prefixes =======================================================
 
@@ -59,6 +57,4 @@ inline constexpr auto resourceExhausted = makeStr("resource_exhausted");
 inline constexpr auto failedPrecondition = makeStr("failed_precondition");
 }  // namespace val
 
-}  // namespace grpc_span
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry::grpc_span
