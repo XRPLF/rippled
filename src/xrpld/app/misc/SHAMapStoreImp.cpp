@@ -1,29 +1,58 @@
-#include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/SHAMapStoreImp.h>
+
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem/directory.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 void
 SHAMapStoreImp::SavedStateDB::init(BasicConfig const& config, std::string const& dbName)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     initStateDB(sqlDb_, config, dbName);
 }
 
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     return xrpl::getCanDelete(sqlDb_);
 }
@@ -31,7 +60,7 @@ SHAMapStoreImp::SavedStateDB::getCanDelete()
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     return xrpl::setCanDelete(sqlDb_, canDelete);
 }
@@ -39,7 +68,7 @@ SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 SavedState
 SHAMapStoreImp::SavedStateDB::getState()
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     return xrpl::getSavedState(sqlDb_);
 }
@@ -47,14 +76,14 @@ SHAMapStoreImp::SavedStateDB::getState()
 void
 SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     xrpl::setSavedState(sqlDb_, state);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     xrpl::setLastRotated(sqlDb_, seq);
 }
 
@@ -180,7 +209,7 @@ void
 SHAMapStoreImp::onLedgerClosed(std::shared_ptr<Ledger const> const& ledger)
 {
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         newLedger_ = ledger;
         working_ = true;
     }
@@ -211,7 +240,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         node.getHash().as_uint256(), 0, NodeStore::FetchType::synchronous, true);
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
-        if (healthWait() == stopping)
+        if (healthWait() == HealthResult::stopping)
             return false;
     }
 
@@ -261,7 +290,7 @@ SHAMapStoreImp::run()
         }
 
         bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
-            canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
+            canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::keepGoing;
 
         // will delete up to (not including) lastRotated
         if (readyToRotate)
@@ -273,7 +302,7 @@ SHAMapStoreImp::run()
                                   << ledgerMaster_->getValidatedLedgerAge().count() << 's';
 
             clearPrior(lastRotated);
-            if (healthWait() == stopping)
+            if (healthWait() == HealthResult::stopping)
                 return;
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
@@ -295,7 +324,7 @@ SHAMapStoreImp::run()
                 continue;
             }
 
-            if (healthWait() == stopping)
+            if (healthWait() == HealthResult::stopping)
                 return;
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
@@ -303,7 +332,7 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
-            if (healthWait() == stopping)
+            if (healthWait() == HealthResult::stopping)
                 return;
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug()) << validatedSeq << " freshened caches";
@@ -313,7 +342,7 @@ SHAMapStoreImp::run()
             JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
 
             clearCaches(validatedSeq);
-            if (healthWait() == stopping)
+            if (healthWait() == HealthResult::stopping)
                 return;
 
             lastRotated = validatedSeq;
@@ -477,7 +506,7 @@ SHAMapStoreImp::clearSql(
         min = *m;
     }
 
-    if (min > lastRotated || healthWait() == stopping)
+    if (min > lastRotated || healthWait() == HealthResult::stopping)
         return;
     if (min == lastRotated)
     {
@@ -496,11 +525,11 @@ SHAMapStoreImp::clearSql(
         deleteBeforeSeq(min);
         JLOG(journal_.trace()) << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
                                << min << " from: " << TableName;
-        if (healthWait() == stopping)
+        if (healthWait() == HealthResult::stopping)
             return;
         if (min < lastRotated)
             std::this_thread::sleep_for(backOff_);
-        if (healthWait() == stopping)
+        if (healthWait() == HealthResult::stopping)
             return;
     }
     JLOG(journal_.debug()) << "finished deleting from: " << TableName;
@@ -534,7 +563,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     JLOG(journal_.trace()) << "Begin: Clear internal ledgers up to " << lastRotated;
     ledgerMaster_->clearPriorLedgers(lastRotated);
     JLOG(journal_.trace()) << "End: Clear internal ledgers up to " << lastRotated;
-    if (healthWait() == stopping)
+    if (healthWait() == HealthResult::stopping)
         return;
 
     auto& db = app_.getRelationalDatabase();
@@ -544,7 +573,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "Ledgers",
         [&db]() -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteBeforeLedgerSeq(min); });
-    if (healthWait() == stopping)
+    if (healthWait() == HealthResult::stopping)
         return;
 
     if (!app_.config().useTxTables())
@@ -555,7 +584,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "Transactions",
         [&db]() -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteTransactionsBeforeLedgerSeq(min); });
-    if (healthWait() == stopping)
+    if (healthWait() == HealthResult::stopping)
         return;
 
     clearSql(
@@ -563,7 +592,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "AccountTransactions",
         [&db]() -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteAccountTransactionsBeforeLedgerSeq(min); });
-    if (healthWait() == stopping)
+    if (healthWait() == HealthResult::stopping)
         return;
 }
 
@@ -586,7 +615,7 @@ SHAMapStoreImp::healthWait()
         lock.lock();
     }
 
-    return stop_ ? stopping : keepGoing;
+    return stop_ ? HealthResult::stopping : HealthResult::keepGoing;
 }
 
 void
@@ -595,7 +624,7 @@ SHAMapStoreImp::stop()
     if (thread_.joinable())
     {
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             stop_ = true;
             cond_.notify_one();
         }

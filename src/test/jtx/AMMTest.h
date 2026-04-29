@@ -7,9 +7,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class AMM;
 
@@ -142,7 +140,7 @@ protected:
         void
         signal()
         {
-            std::lock_guard const lk(mutex_);
+            std::scoped_lock const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }
@@ -152,6 +150,4 @@ protected:
     pathTestEnv();
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

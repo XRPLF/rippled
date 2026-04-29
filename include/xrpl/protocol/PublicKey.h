@@ -63,43 +63,43 @@ public:
     */
     explicit PublicKey(Slice const& slice);
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
         return buf_;
     }
 
-    std::size_t
-    size() const noexcept
+    static std::size_t
+    size() noexcept
     {
         return size_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return buf_ + size_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return buf_ + size_;
     }
 
-    Slice
+    [[nodiscard]] Slice
     slice() const noexcept
     {
         return {buf_, size_};
@@ -267,9 +267,10 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
     std::string const b58 = getOrThrow<std::string>(v, field);
-    if (auto pubKeyBlob = strUnHex(b58); publicKeyType(makeSlice(*pubKeyBlob)))
+    if (auto pubKeyBlob = strUnHex(b58); pubKeyBlob && publicKeyType(makeSlice(*pubKeyBlob)))
     {
-        return PublicKey{makeSlice(*pubKeyBlob)};
+        return PublicKey{makeSlice(
+            *pubKeyBlob)};  // NOLINT(bugprone-unchecked-optional-access) checked in condition above
     }
     for (auto const tokenType : {TokenType::NodePublic, TokenType::AccountPublic})
     {

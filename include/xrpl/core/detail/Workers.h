@@ -93,7 +93,7 @@ public:
     explicit Workers(
         Callback& callback,
         perf::PerfLog* perfLog,
-        std::string const& threadNames = "Worker",
+        std::string threadNames = "Worker",
         int numberOfThreads = static_cast<int>(std::thread::hardware_concurrency()));
 
     ~Workers();
@@ -106,7 +106,7 @@ public:
 
         @note This function is not thread-safe.
     */
-    int
+    [[nodiscard]] int
     getNumberOfThreads() const noexcept;
 
     /** Set the desired number of threads.
@@ -141,7 +141,7 @@ public:
         While this function is thread-safe, the value may not stay
         accurate for very long. It's mainly for diagnostic purposes.
     */
-    int
+    [[nodiscard]] int
     numberOfCurrentlyRunningTasks() const noexcept;
 
     //--------------------------------------------------------------------------
@@ -164,7 +164,7 @@ private:
                    public beast::LockFreeStack<Worker, PausedTag>::Node
     {
     public:
-        Worker(Workers& workers, std::string const& threadName, int const instance);
+        Worker(Workers& workers, std::string threadName, int const instance);
 
         ~Worker();
 

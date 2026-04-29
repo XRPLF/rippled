@@ -1,18 +1,34 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/detail/AmountSpec.h>
+#include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <boost/container/flat_set.hpp>
 
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -29,7 +45,7 @@ private:
     // for cachedIn and cachedOut and only one will ever be used
     std::optional<XRPAmount> cache_;
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cached() const
     {
         if (!cache_)
@@ -43,13 +59,13 @@ private:
     }
 
 public:
-    AccountID const&
+    [[nodiscard]] AccountID const&
     acc() const
     {
         return acc_;
     }
 
-    std::optional<std::pair<AccountID, AccountID>>
+    [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
         if (isLast_)
@@ -57,25 +73,25 @@ public:
         return std::make_pair(acc_, xrpAccount());
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
         return cached();
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
         return cached();
     }
 
-    DebtDirection
+    [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
         return DebtDirection::issues;
     }
 
-    std::pair<std::optional<Quality>, DebtDirection>
+    [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::pair<XRPAmount, XRPAmount>
@@ -96,7 +112,7 @@ public:
     validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
     // Check for errors and violations of frozen constraints.
-    TER
+    [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
 protected:
@@ -126,7 +142,7 @@ private:
         return !(lhs == rhs);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(Step const& rhs) const override
     {
         if (auto ds = dynamic_cast<XRPEndpointStep const*>(&rhs))
@@ -163,7 +179,7 @@ public:
         ;
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("XRPEndpointPaymentStep");
@@ -214,7 +230,7 @@ public:
         return xrpLiquidImpl(sb, reserveReduction_);
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("XRPEndpointOfferCrossingStep");
@@ -380,7 +396,7 @@ make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing != 0u)
+    if (ctx.offerCrossing != OfferCrossing::no)
     {
         auto offerCrossingStep = std::make_unique<XRPEndpointOfferCrossingStep>(ctx, acc);
         ter = offerCrossingStep->check(ctx);

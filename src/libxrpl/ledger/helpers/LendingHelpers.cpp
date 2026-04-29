@@ -1,13 +1,46 @@
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
-// DO NOT REMOVE forces header file include to sort first
-#include <xrpl/tx/transactors/vault/VaultCreate.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 
 namespace xrpl {
 
 bool
-checkLendingProtocolDependencies(PreflightContext const& ctx)
+checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
 {
-    return ctx.rules.enabled(featureSingleAssetVault) && VaultCreate::checkExtraFeatures(ctx);
+    if (!rules.enabled(featureSingleAssetVault))
+        return false;
+
+    if (!rules.enabled(featureMPTokensV1))
+        return false;
+
+    if (tx.isFieldPresent(sfDomainID) && !rules.enabled(featurePermissionedDomains))
+        return false;
+
+    return true;
 }
 
 LoanPaymentParts&
@@ -60,8 +93,8 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 {
-    return roundToAsset(asset, value, scale, Number::downward) ==
-        roundToAsset(asset, value, scale, Number::upward);
+    return roundToAsset(asset, value, scale, Number::rounding_mode::downward) ==
+        roundToAsset(asset, value, scale, Number::rounding_mode::upward);
 }
 
 namespace detail {
@@ -425,7 +458,11 @@ tryOverpayment(
     // preserved rounding errors. This ensures the loan's tracked state remains
     // consistent with its payment history.
     auto const principalOutstanding = std::clamp(
-        roundToAsset(asset, newTheoreticalState.principalOutstanding, loanScale, Number::upward),
+        roundToAsset(
+            asset,
+            newTheoreticalState.principalOutstanding,
+            loanScale,
+            Number::rounding_mode::upward),
         numZero,
         roundedOldState.principalOutstanding);
     auto const totalValueOutstanding = std::clamp(
@@ -433,7 +470,7 @@ tryOverpayment(
             asset,
             principalOutstanding + newTheoreticalState.interestOutstanding(),
             loanScale,
-            Number::upward),
+            Number::rounding_mode::upward),
         numZero,
         roundedOldState.valueOutstanding);
     auto const managementFeeOutstanding = std::clamp(
@@ -803,7 +840,8 @@ computeFullPayment(
     // Split the full payment interest into net interest (to vault) and
     // management fee (to broker), applying proper rounding.
     auto const [roundedFullInterest, roundedFullManagementFee] = [&]() {
-        auto const interest = roundToAsset(asset, fullPaymentInterest, loanScale, Number::downward);
+        auto const interest =
+            roundToAsset(asset, fullPaymentInterest, loanScale, Number::rounding_mode::downward);
         return computeInterestAndFeeParts(asset, interest, managementFeeRate, loanScale);
     }();
 
@@ -1253,7 +1291,7 @@ checkLoanGuards(
     // loan can't be amortized in the specified number of payments, raise an
     // error
     {
-        NumberRoundModeGuard const mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::rounding_mode::upward);
 
         if (std::int64_t const computedPayments{
                 properties.loanState.valueOutstanding / roundedPayment};
@@ -1432,7 +1470,8 @@ computeManagementFee(
     TenthBips32 managementFeeRate,
     std::int32_t scale)
 {
-    return roundToAsset(asset, tenthBipsOfValue(value, managementFeeRate), scale, Number::downward);
+    return roundToAsset(
+        asset, tenthBipsOfValue(value, managementFeeRate), scale, Number::rounding_mode::downward);
 }
 
 /*
@@ -1486,7 +1525,8 @@ computeLoanProperties(
 
     auto const [totalValueOutstanding, loanScale] = [&]() {
         // only round up if there should be interest
-        NumberRoundModeGuard const mg(periodicRate == 0 ? Number::to_nearest : Number::upward);
+        NumberRoundModeGuard const mg(
+            periodicRate == 0 ? Number::rounding_mode::to_nearest : Number::rounding_mode::upward);
         // Use STAmount's internal rounding instead of roundToAsset, because
         // we're going to use this result to determine the scale for all the
         // other rounding.
@@ -1515,7 +1555,7 @@ computeLoanProperties(
     // validate that the principal fits in it, so to allow this function to
     // succeed, round it here, and let the caller do the validation.
     auto const roundedPrincipalOutstanding =
-        roundToAsset(asset, principalOutstanding, loanScale, Number::to_nearest);
+        roundToAsset(asset, principalOutstanding, loanScale, Number::rounding_mode::to_nearest);
 
     // Equation (31) from XLS-66 spec, Section A-2 Equation Glossary
     auto const totalInterestOutstanding = totalValueOutstanding - roundedPrincipalOutstanding;

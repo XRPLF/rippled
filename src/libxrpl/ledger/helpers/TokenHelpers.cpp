@@ -1,19 +1,34 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-//
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
-#include <type_traits>
+#include <cstdint>
+#include <initializer_list>
+#include <string>
 #include <variant>
 
 namespace xrpl {
@@ -150,7 +165,7 @@ getLineIfUsable(
         return nullptr;
     }
 
-    if (zeroIfFrozen == fhZERO_IF_FROZEN)
+    if (zeroIfFrozen == FreezeHandling::fhZERO_IF_FROZEN)
     {
         if (isFrozen(view, account, currency, issuer) ||
             isDeepFrozen(view, account, currency, issuer))
@@ -237,7 +252,7 @@ accountHolds(
         return {xrpLiquid(view, account, 0, j)};
     }
 
-    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+    bool const returnSpendable = (includeFullBalance == SpendableHandling::shFULL_BALANCE);
     if (returnSpendable && account == issuer)
     {
         // If the account is the issuer, then their limit is effectively
@@ -275,7 +290,7 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
-    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+    bool const returnSpendable = (includeFullBalance == SpendableHandling::shFULL_BALANCE);
     STAmount amount{mptIssue};
     auto const& issuer = mptIssue.getIssuer();
     bool const mptokensV2 = view.rules().enabled(featureMPTokensV2);
@@ -302,7 +317,7 @@ accountHolds(
     {
         amount.clear(mptIssue);
     }
-    else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
+    else if (zeroIfFrozen == FreezeHandling::fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
     {
         amount.clear(mptIssue);
     }
@@ -312,14 +327,14 @@ accountHolds(
 
         // Only if auth check is needed, as it needs to do an additional read
         // operation. Note featureSingleAssetVault will affect error codes.
-        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
+        if (zeroIfUnauthorized == AuthHandling::ahZERO_IF_UNAUTHORIZED &&
             view.rules().enabled(featureSingleAssetVault))
         {
             if (auto const err = requireAuth(view, mptIssue, account, AuthType::StrongAuth);
                 !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
-        else if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        else if (zeroIfUnauthorized == AuthHandling::ahZERO_IF_UNAUTHORIZED)
         {
             auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
 
@@ -386,7 +401,13 @@ accountFunds(
         [&](Issue const&) { return accountFunds(view, id, saDefault, freezeHandling, j); },
         [&](MPTIssue const&) {
             return accountHolds(
-                view, id, saDefault.asset(), freezeHandling, authHandling, j, shFULL_BALANCE);
+                view,
+                id,
+                saDefault.asset(),
+                freezeHandling,
+                authHandling,
+                j,
+                SpendableHandling::shFULL_BALANCE);
         });
 }
 

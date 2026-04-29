@@ -4,15 +4,25 @@
 #include <test/beast/IPEndpointCommon.h>
 
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPAddressV4.h>
+#include <xrpl/beast/net/IPAddressV6.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/address_v6.hpp>
 #include <boost/predef.h>
+#include <boost/system/detail/error_code.hpp>
 
-namespace beast {
-namespace IP {
+#include <algorithm>
+#include <cstdint>
+#include <sstream>
+#include <string>
+#include <unordered_set>
+
+namespace beast::IP {
 
 //------------------------------------------------------------------------------
 
@@ -456,5 +466,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(IPEndpoint, beast, beast);
 
-}  // namespace IP
-}  // namespace beast
+}  // namespace beast::IP

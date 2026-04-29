@@ -1,17 +1,43 @@
+#include <xrpl/server/Manifest.h>
+
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STExchange.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DatabaseCon.h>
-#include <xrpl/server/Manifest.h>
 #include <xrpl/server/Wallet.h>
 
 #include <boost/algorithm/string/trim.hpp>
 
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <limits>
+#include <mutex>
 #include <numeric>
+#include <optional>
+#include <shared_mutex>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -263,7 +289,10 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
                 auto const key = strUnHex(k.asString());
 
                 if (key && key->size() == 32)
-                    return ValidatorToken{m.asString(), makeSlice(*key)};
+                {
+                    return ValidatorToken{
+                        .manifest = m.asString(), .validationSecret = makeSlice(*key)};
+                }
             }
         }
 
@@ -465,7 +494,11 @@ ManifestCache::applyManifest(Manifest m)
             logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
 
         if (!revoked)
-            signingToMasterKeys_.emplace(*m.signingKey, m.masterKey);
+        {
+            signingToMasterKeys_.emplace(
+                *m.signingKey, m.masterKey);  // NOLINT(bugprone-unchecked-optional-access)
+                                              // non-revoked manifest always has signingKey
+        }
 
         auto masterKey = m.masterKey;
         map_.emplace(std::move(masterKey), std::move(m));
@@ -481,10 +514,16 @@ ManifestCache::applyManifest(Manifest m)
     if (auto stream = j_.info())
         logMftAct(stream, "AcceptedUpdate", m.masterKey, m.sequence, iter->second.sequence);
 
-    signingToMasterKeys_.erase(*iter->second.signingKey);
+    signingToMasterKeys_.erase(
+        *iter->second.signingKey);  // NOLINT(bugprone-unchecked-optional-access) prewriteCheck
+                                    // ensures old manifest is not revoked
 
     if (!revoked)
-        signingToMasterKeys_.emplace(*m.signingKey, m.masterKey);
+    {
+        signingToMasterKeys_.emplace(
+            *m.signingKey, m.masterKey);  // NOLINT(bugprone-unchecked-optional-access) non-revoked
+                                          // manifest always has signingKey
+    }
 
     iter->second = std::move(m);
 

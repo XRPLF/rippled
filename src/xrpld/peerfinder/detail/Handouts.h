@@ -6,8 +6,9 @@
 #include <xrpl/beast/container/aged_set.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <utility>
+
+namespace xrpl::PeerFinder {
 
 namespace detail {
 
@@ -78,19 +79,19 @@ class RedirectHandouts
 {
 public:
     template <class = void>
-    explicit RedirectHandouts(SlotImp::ptr const& slot);
+    explicit RedirectHandouts(SlotImp::ptr slot);
 
     template <class = void>
     bool
     try_insert(Endpoint const& ep);
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
         return list_.size() >= Tuning::redirectEndpointCount;
     }
 
-    SlotImp::ptr const&
+    [[nodiscard]] SlotImp::ptr const&
     slot() const
     {
         return slot_;
@@ -102,7 +103,7 @@ public:
         return list_;
     }
 
-    std::vector<Endpoint> const&
+    [[nodiscard]] std::vector<Endpoint> const&
     list() const
     {
         return list_;
@@ -114,7 +115,7 @@ private:
 };
 
 template <class>
-RedirectHandouts::RedirectHandouts(SlotImp::ptr const& slot) : slot_(slot)
+RedirectHandouts::RedirectHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
     list_.reserve(Tuning::redirectEndpointCount);
 }
@@ -162,13 +163,13 @@ class SlotHandouts
 {
 public:
     template <class = void>
-    explicit SlotHandouts(SlotImp::ptr const& slot);
+    explicit SlotHandouts(SlotImp::ptr slot);
 
     template <class = void>
     bool
     try_insert(Endpoint const& ep);
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
         return list_.size() >= Tuning::numberOfEndpoints;
@@ -180,13 +181,13 @@ public:
         list_.push_back(ep);
     }
 
-    SlotImp::ptr const&
+    [[nodiscard]] SlotImp::ptr const&
     slot() const
     {
         return slot_;
     }
 
-    std::vector<Endpoint> const&
+    [[nodiscard]] std::vector<Endpoint> const&
     list() const
     {
         return list_;
@@ -198,7 +199,7 @@ private:
 };
 
 template <class>
-SlotHandouts::SlotHandouts(SlotImp::ptr const& slot) : slot_(slot)
+SlotHandouts::SlotHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
     list_.reserve(Tuning::numberOfEndpoints);
 }
@@ -264,13 +265,13 @@ public:
     bool
     try_insert(beast::IP::Endpoint const& endpoint);
 
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return m_list.empty();
     }
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
         return m_list.size() >= m_needed;
@@ -288,7 +289,7 @@ public:
         return m_list;
     }
 
-    list_type const&
+    [[nodiscard]] list_type const&
     list() const
     {
         return m_list;
@@ -329,5 +330,4 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
     return true;
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

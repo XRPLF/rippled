@@ -21,18 +21,18 @@ public:
     STVector256(SField const& n, std::vector<uint256> const& vector);
     STVector256(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
     void
     add(Serializer& s) const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     STVector256&
@@ -48,13 +48,13 @@ public:
     explicit
     operator std::vector<uint256>() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
     void
     resize(std::size_t n);
 
-    bool
+    [[nodiscard]] bool
     empty() const;
 
     std::vector<uint256>::reference
@@ -63,7 +63,7 @@ public:
     std::vector<uint256>::const_reference
     operator[](std::vector<uint256>::size_type n) const;
 
-    std::vector<uint256> const&
+    [[nodiscard]] std::vector<uint256> const&
     value() const;
 
     std::vector<uint256>::iterator
@@ -75,13 +75,13 @@ public:
     std::vector<uint256>::iterator
     begin();
 
-    std::vector<uint256>::const_iterator
+    [[nodiscard]] std::vector<uint256>::const_iterator
     begin() const;
 
     std::vector<uint256>::iterator
     end();
 
-    std::vector<uint256>::const_iterator
+    [[nodiscard]] std::vector<uint256>::const_iterator
     end() const;
 
     std::vector<uint256>::iterator
@@ -148,7 +148,7 @@ STVector256::size() const
 inline void
 STVector256::resize(std::size_t n)
 {
-    return mValue.resize(n);
+    mValue.resize(n);
 }
 
 inline bool
@@ -220,7 +220,7 @@ STVector256::erase(std::vector<uint256>::iterator position)
 inline void
 STVector256::clear() noexcept
 {
-    return mValue.clear();
+    mValue.clear();
 }
 
 }  // namespace xrpl

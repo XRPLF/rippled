@@ -28,25 +28,25 @@ public:
     }
 
     intr_ptr::SharedPtr<SHAMapTreeNode>
-    clone(std::uint32_t cowid) const final override
+    clone(std::uint32_t cowid) const final
     {
         return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(item_, cowid, hash_);
     }
 
     SHAMapNodeType
-    getType() const final override
+    getType() const final
     {
         return SHAMapNodeType::tnACCOUNT_STATE;
     }
 
     void
-    updateHash() final override
+    updateHash() final
     {
         hash_ = SHAMapHash{sha512Half(HashPrefix::leafNode, item_->slice(), item_->key())};
     }
 
     void
-    serializeForWire(Serializer& s) const final override
+    serializeForWire(Serializer& s) const final
     {
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
@@ -54,7 +54,7 @@ public:
     }
 
     void
-    serializeWithPrefix(Serializer& s) const final override
+    serializeWithPrefix(Serializer& s) const final
     {
         s.add32(HashPrefix::leafNode);
         s.addRaw(item_->slice());

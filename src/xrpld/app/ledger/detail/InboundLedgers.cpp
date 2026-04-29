@@ -1,18 +1,43 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
+
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/DecayingSample.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/container/aged_map.h>
+#include <xrpl/beast/container/detail/aged_ordered_container.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <xrpl.pb.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <set>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -259,7 +284,7 @@ public:
     std::size_t
     fetchRate() override
     {
-        std::lock_guard const lock(fetchRateMutex_);
+        std::scoped_lock const lock(fetchRateMutex_);
         return 60 * fetchRate_.value(m_clock.now());
     }
 
@@ -268,7 +293,7 @@ public:
     void
     onLedgerFetched() override
     {
-        std::lock_guard const lock(fetchRateMutex_);
+        std::scoped_lock const lock(fetchRateMutex_);
         fetchRate_.add(1, m_clock.now());
     }
 
@@ -286,7 +311,7 @@ public:
             for (auto const& it : mLedgers)
             {
                 XRPL_ASSERT(it.second, "xrpl::InboundLedgersImp::getInfo : non-null ledger");
-                acqs.push_back(it);
+                acqs.emplace_back(it);
             }
             for (auto const& it : mRecentFailures)
             {

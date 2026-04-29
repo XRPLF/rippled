@@ -1,12 +1,31 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/token/Clawback.h>
+
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/Clawback.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <variant>
 
 namespace xrpl {
 
@@ -119,8 +138,12 @@ preclaimHelper<Issue>(
     // the available balance of a trustline is prone to new changes (eg.
     // XLS-34). So we must use `accountHolds`.
     if (accountHolds(
-            ctx.view, holder, clawAmount.get<Issue>().currency, issuer, fhIGNORE_FREEZE, ctx.j) <=
-        beast::zero)
+            ctx.view,
+            holder,
+            clawAmount.get<Issue>().currency,
+            issuer,
+            FreezeHandling::fhIGNORE_FREEZE,
+            ctx.j) <= beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -150,8 +173,12 @@ preclaimHelper<MPTIssue>(
         return tecOBJECT_NOT_FOUND;
 
     if (accountHolds(
-            ctx.view, holder, clawAmount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) <=
-        beast::zero)
+            ctx.view,
+            holder,
+            clawAmount.get<MPTIssue>(),
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            ctx.j) <= beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -210,7 +237,7 @@ applyHelper<Issue>(ApplyContext& ctx)
         holder,
         clawAmount.get<Issue>().currency,
         clawAmount.getIssuer(),
-        fhIGNORE_FREEZE,
+        FreezeHandling::fhIGNORE_FREEZE,
         ctx.journal);
 
     return directSendNoFee(
@@ -230,8 +257,8 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ctx.view(),
         holder,
         clawAmount.get<MPTIssue>(),
-        fhIGNORE_FREEZE,
-        ahIGNORE_AUTH,
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         ctx.journal);
 
     return directSendNoFee(
@@ -249,6 +276,20 @@ Clawback::doApply()
     return std::visit(
         [&]<typename T>(T const&) { return applyHelper<T>(ctx_); },
         ctx_.tx[sfAmount].asset().value());
+}
+
+void
+Clawback::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

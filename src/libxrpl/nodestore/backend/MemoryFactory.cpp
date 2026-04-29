@@ -1,16 +1,30 @@
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 
 #include <boost/beast/core/string.hpp>
 #include <boost/core/ignore_unused.hpp>
 
+#include <cstddef>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 struct MemoryDB
 {
@@ -31,7 +45,7 @@ private:
 public:
     explicit MemoryFactory(Manager& manager);
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override;
 
     std::unique_ptr<Backend>
@@ -45,7 +59,7 @@ public:
     MemoryDB&
     open(std::string const& path)
     {
-        std::lock_guard const _(mutex_);
+        std::scoped_lock const _(mutex_);
         auto const result =
             map_.emplace(std::piecewise_construct, std::make_tuple(path), std::make_tuple());
         MemoryDB& db = result.first->second;
@@ -120,16 +134,16 @@ public:
     {
         XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::fetch : non-null database");
 
-        std::lock_guard const _(db_->mutex);
+        std::scoped_lock const _(db_->mutex);
 
         Map::iterator const iter = db_->table.find(hash);
         if (iter == db_->table.end())
         {
             pObject->reset();
-            return notFound;
+            return Status::notFound;
         }
         *pObject = iter->second;
-        return ok;
+        return Status::ok;
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
@@ -141,7 +155,7 @@ public:
         {
             std::shared_ptr<NodeObject> nObj;
             Status const status = fetch(h, &nObj);
-            if (status != ok)
+            if (status != Status::ok)
             {
                 results.push_back({});
             }
@@ -151,14 +165,14 @@ public:
             }
         }
 
-        return {results, ok};
+        return {results, Status::ok};
     }
 
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
         XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::store : non-null database");
-        std::lock_guard const _(db_->mutex);
+        std::scoped_lock const _(db_->mutex);
         db_->table.emplace(object->getHash(), object);
     }
 
@@ -193,7 +207,7 @@ public:
     {
     }
 
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
@@ -224,5 +238,4 @@ MemoryFactory::createInstance(
     return std::make_unique<MemoryBackend>(keyBytes, keyValues, journal);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

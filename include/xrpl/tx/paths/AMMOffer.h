@@ -47,34 +47,34 @@ public:
         TAmounts<TIn, TOut> const& balances,
         Quality const& quality);
 
-    Quality
+    [[nodiscard]] Quality
     quality() const noexcept
     {
         return quality_;
     }
 
-    Asset const&
+    [[nodiscard]] Asset const&
     assetIn() const;
 
-    Asset const&
+    [[nodiscard]] Asset const&
     assetOut() const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     owner() const;
 
-    std::optional<uint256>
+    [[nodiscard]] std::optional<uint256>
     key() const
     {
         return std::nullopt;
     }
 
-    TAmounts<TIn, TOut> const&
+    [[nodiscard]] TAmounts<TIn, TOut> const&
     amount() const;
 
     void
     consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed);
 
-    bool
+    [[nodiscard]] bool
     fully_consumed() const
     {
         return consumed_;
@@ -84,17 +84,17 @@ public:
      * using current balances. If multi-path then ceil_out using
      * current quality.
      */
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
 
     /** Limit in of the provided offer. If one-path then swapIn
      * using current balances. If multi-path then ceil_in using
      * current quality.
      */
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const;
 
-    QualityFunction
+    [[nodiscard]] QualityFunction
     getQualityFunc() const;
 
     /** Send funds without incurring the transfer fee
@@ -107,7 +107,7 @@ public:
             std::forward<Args>(args)..., WaiveTransferFee::Yes, AllowMPTOverflow::Yes);
     }
 
-    bool
+    [[nodiscard]] bool
     isFunded() const
     {
         // AMM offer is fully funded by the pool
@@ -124,7 +124,7 @@ public:
     /** Check the new pool product is greater or equal to the old pool
      * product or if decreases then within some threshold.
      */
-    bool
+    [[nodiscard]] bool
     checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const;
 };
 

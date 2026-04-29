@@ -1,4 +1,5 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
@@ -53,13 +54,13 @@ class PerfLogTest : public PerfLog
     {
     }
 
-    Json::Value
+    [[nodiscard]] Json::Value
     countersJson() const override
     {
         return Json::Value();
     }
 
-    Json::Value
+    [[nodiscard]] Json::Value
     currentJson() const override
     {
         return Json::Value();
@@ -88,7 +89,7 @@ public:
         void
         processTask(int instance) override
         {
-            std::lock_guard const lk{mut};
+            std::scoped_lock const lk{mut};
             if (--count == 0)
                 cv.notify_all();
         }
