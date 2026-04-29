@@ -103,6 +103,7 @@ test.csf > xrpld.consensus
 test.csf > xrpl.json
 test.csf > xrpl.ledger
 test.csf > xrpl.protocol
+test.csf > xrpl.telemetry
 test.json > test.jtx
 test.json > xrpl.json
 test.jtx > xrpl.basics
@@ -190,6 +191,7 @@ test.toplevel > xrpl.json
 test.unit_test > xrpl.basics
 test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
+tests.libxrpl > xrpld.telemetry
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
 tests.libxrpl > xrpl.protocol
@@ -300,4 +302,5 @@ xrpld.shamap > xrpld.core
 xrpld.shamap > xrpl.protocol
 xrpld.shamap > xrpl.shamap
 xrpld.telemetry > xrpl.basics
+xrpld.telemetry > xrpl.protocol
 xrpld.telemetry > xrpl.telemetry
