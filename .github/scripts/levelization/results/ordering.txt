@@ -194,6 +194,7 @@ tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
+tests.libxrpl > xrpl.telemetry
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.core > xrpl.basics
