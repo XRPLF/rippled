@@ -448,10 +448,13 @@ ValidConfidentialMPToken::visitEntry(
 
         bool const hasAnyHolder = hasHolderInbox || hasHolderSpending;
 
-        if (hasAnyHolder != hasIssuerBalance)
-        {
+        // sfIssuerEncryptedBalance, sfConfidentialBalanceInbox, and sfConfidentialBalanceSpending
+        // must all exist or not exist same time.
+        if (hasHolderInbox != hasHolderSpending)
             changes_[id].badConsistency = true;
-        }
+
+        if (hasHolderInbox != hasIssuerBalance)
+            changes_[id].badConsistency = true;
 
         // Privacy flag consistency
         bool const hasEncrypted = hasAnyHolder || hasIssuerBalance;

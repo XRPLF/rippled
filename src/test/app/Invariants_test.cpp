@@ -4306,8 +4306,10 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, A2.id()));
                 if (!sleToken)
                     return false;
-                // Inject fields correctly, but the Issuance was built without the privacy flag.
+                // Inject all three encrypted fields consistently (inbox+spending+issuer must be
+                // in sync or badConsistency fires first and masks requiresPrivacyFlag).
                 sleToken->setFieldVL(sfConfidentialBalanceInbox, Blob{0x00});
+                sleToken->setFieldVL(sfConfidentialBalanceSpending, Blob{0x00});
                 sleToken->setFieldVL(sfIssuerEncryptedBalance, Blob{0x00});
                 ac.view().update(sleToken);
                 return true;
