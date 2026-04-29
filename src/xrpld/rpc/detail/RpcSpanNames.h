@@ -20,9 +20,7 @@
 
 #include <xrpl/telemetry/SpanNames.h>
 
-namespace xrpl {
-namespace telemetry {
-namespace rpc_span {
+namespace xrpl::telemetry::rpc_span {
 
 // ===== Span prefixes =======================================================
 
@@ -69,6 +67,4 @@ inline constexpr auto user = makeStr("user");
 inline constexpr auto unknownCommand = makeStr("unknown_command");
 }  // namespace val
 
-}  // namespace rpc_span
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry::rpc_span
