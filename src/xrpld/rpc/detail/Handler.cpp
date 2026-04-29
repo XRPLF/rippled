@@ -373,7 +373,7 @@ private:
     {
         XRPL_ASSERT(minVer <= maxVer, "xrpl::RPC::HandlerTable : valid API version range");
         XRPL_ASSERT(
-            maxVer <= RPC::apiMaximumValidVersion,
+            maxVer <= RPC::kAPI_MAXIMUM_VALID_VERSION,
             "xrpl::RPC::HandlerTable : valid max API version");
 
         return std::any_of(

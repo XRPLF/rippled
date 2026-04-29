@@ -96,7 +96,7 @@ inline MPTAmount
 toAmount<MPTAmount>(STAmount const& amt)
 {
     XRPL_ASSERT(
-        amt.holds<MPTIssue>() && amt.mantissa() <= maxMPTokenAmount && amt.exponent() == 0,
+        amt.holds<MPTIssue>() && amt.mantissa() <= kMAX_MP_TOKEN_AMOUNT && amt.exponent() == 0,
         "xrpl::toAmount<MPTAmount> : maximum mantissa");
     if (amt.mantissa() > kMAX_MP_TOKEN_AMOUNT || amt.exponent() != 0)
         Throw<std::runtime_error>("toAmount<MPTAmount>: invalid mantissa or exponent");

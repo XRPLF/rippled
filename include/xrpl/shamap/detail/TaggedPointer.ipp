@@ -55,7 +55,7 @@ constexpr auto chunksPerBlock =
 [[nodiscard]] inline std::uint8_t
 numAllocatedChildren(std::uint8_t n)
 {
-    XRPL_ASSERT(n <= SHAMapInnerNode::branchFactor, "xrpl::numAllocatedChildren : valid input");
+    XRPL_ASSERT(n <= SHAMapInnerNode::kBRANCH_FACTOR, "xrpl::numAllocatedChildren : valid input");
     return *std::lower_bound(boundaries.begin(), boundaries.end(), n);
 }
 
@@ -63,7 +63,7 @@ numAllocatedChildren(std::uint8_t n)
 boundariesIndex(std::uint8_t numChildren)
 {
     XRPL_ASSERT(
-        numChildren <= SHAMapInnerNode::branchFactor, "xrpl::boundariesIndex : valid input");
+        numChildren <= SHAMapInnerNode::kBRANCH_FACTOR, "xrpl::boundariesIndex : valid input");
     return std::distance(
         boundaries.begin(), std::lower_bound(boundaries.begin(), boundaries.end(), numChildren));
 }
@@ -250,7 +250,7 @@ inline TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t numChildren)
         "xrpl::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
         "maximum tag");
     XRPL_ASSERT(
-        (reinterpret_cast<std::uintptr_t>(p) & ptrMask) == reinterpret_cast<std::uintptr_t>(p),
+        (reinterpret_cast<std::uintptr_t>(p) & kPTR_MASK) == reinterpret_cast<std::uintptr_t>(p),
         "xrpl::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
         "valid pointer");
     tp_ = reinterpret_cast<std::uintptr_t>(p) + tag;

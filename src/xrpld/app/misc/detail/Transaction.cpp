@@ -89,7 +89,7 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
             return INCLUDED;
         default:
             XRPL_ASSERT(
-                c == TxnSql::txnSqlUnknown,
+                c == TxnSql::TxnSqlUnknown,
                 "xrpl::Transaction::sqlTransactionStatus : unknown transaction status");
     }
 

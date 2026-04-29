@@ -731,7 +731,7 @@ STAmount::getText() const
     if (std::distance(preFrom, preTo) > padPrefix)
         preFrom += padPrefix;
 
-    XRPL_ASSERT(post_to >= post_from, "xrpl::STAmount::getText : first distance check");
+    XRPL_ASSERT(postTo >= postFrom, "xrpl::STAmount::getText : first distance check");
 
     preFrom = std::find_if(preFrom, preTo, [](char c) { return c != '0'; });
 
@@ -740,7 +740,7 @@ STAmount::getText() const
     if (std::distance(postFrom, postTo) > padSuffix)
         postTo -= padSuffix;
 
-    XRPL_ASSERT(post_to >= post_from, "xrpl::STAmount::getText : second distance check");
+    XRPL_ASSERT(postTo >= postFrom, "xrpl::STAmount::getText : second distance check");
 
     postTo = std::find_if(
                  std::make_reverse_iterator(postTo),
@@ -976,10 +976,10 @@ STAmount::canonicalize()
         Throw<std::runtime_error>("value overflow");
 
     XRPL_ASSERT(
-        (value_ == 0) || ((value_ >= cMinValue) && (value_ <= cMaxValue)),
+        (value_ == 0) || ((value_ >= kC_MIN_VALUE) && (value_ <= kC_MAX_VALUE)),
         "xrpl::STAmount::canonicalize : value inside range");
     XRPL_ASSERT(
-        (value_ == 0) || ((offset_ >= cMinOffset) && (offset_ <= cMaxOffset)),
+        (value_ == 0) || ((offset_ >= kC_MIN_OFFSET) && (offset_ <= kC_MAX_OFFSET)),
         "xrpl::STAmount::canonicalize : offset inside range");
     XRPL_ASSERT(
         (value_ != 0) || (offset_ != -100), "xrpl::STAmount::canonicalize : value or offset set");

@@ -32,8 +32,7 @@ private:
                        int limit,
                        std::chrono::milliseconds avgLatency,
                        std::chrono::milliseconds peakLatency) {
-            XRPL_ASSERT(
-                !map_.contains(jt), "xrpl::JobTypes::JobTypes::add : unique job type input");
+            XRPL_ASSERT(!map.contains(jt), "xrpl::JobTypes::JobTypes::add : unique job type input");
 
             [[maybe_unused]] auto const inserted =
                 map.emplace(
@@ -116,7 +115,7 @@ public:
     get(JobType jt) const
     {
         Map::const_iterator const iter(map.find(jt));
-        XRPL_ASSERT(iter != map_.end(), "xrpl::JobTypes::get : valid input");
+        XRPL_ASSERT(iter != map.end(), "xrpl::JobTypes::get : valid input");
 
         if (iter != map.end())
             return iter->second;

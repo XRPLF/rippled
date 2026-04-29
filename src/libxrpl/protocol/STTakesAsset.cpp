@@ -29,10 +29,10 @@ associateAsset(SLE& sle, Asset const& asset)
             auto& ta = entry.downcast<STTakesAsset>();
             auto const style = sle.getStyle(ta.getFName());
             XRPL_ASSERT_PARTS(
-                style != soeINVALID, "xrpl::associateAsset", "valid template element style");
+                style != SoeInvalid, "xrpl::associateAsset", "valid template element style");
 
             XRPL_ASSERT_PARTS(
-                style != soeDEFAULT || !ta.isDefault(),
+                style != SoeDefault || !ta.isDefault(),
                 "xrpl::associateAsset",
                 "non-default value");
             ta.associateAsset(asset);

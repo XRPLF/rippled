@@ -154,7 +154,7 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    XRPL_ASSERT(account_ == beast::zero, "xrpl::Change::preCompute : zero account");
+    XRPL_ASSERT(account_ == beast::kZERO, "xrpl::Change::preCompute : zero account");
 }
 
 TER

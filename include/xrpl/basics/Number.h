@@ -555,7 +555,7 @@ Number::mantissa() const noexcept
     if (m > kMAX_REP)
     {
         XRPL_ASSERT_PARTS(
-            !isnormal() || (m % 10 == 0 && m / 10 <= maxRep),
+            !isnormal() || (m % 10 == 0 && m / 10 <= kMAX_REP),
             "xrpl::Number::mantissa",
             "large normalized mantissa has no remainder");
         m /= 10;
@@ -576,7 +576,7 @@ Number::exponent() const noexcept
     if (mantissa_ > kMAX_REP)
     {
         XRPL_ASSERT_PARTS(
-            !isnormal() || (mantissa_ % 10 == 0 && mantissa_ / 10 <= maxRep),
+            !isnormal() || (mantissa_ % 10 == 0 && mantissa_ / 10 <= kMAX_REP),
             "xrpl::Number::exponent",
             "large normalized mantissa has no remainder");
         ++e;

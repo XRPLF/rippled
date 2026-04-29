@@ -798,7 +798,7 @@ accountSendIOU(
     {
         // LCOV_EXCL_START
         XRPL_ASSERT(
-            saAmount >= beast::zero && !saAmount.holds<MPTIssue>(),
+            saAmount >= beast::kZERO && !saAmount.holds<MPTIssue>(),
             "xrpl::accountSendIOU : minimum amount and not MPT");
         // LCOV_EXCL_STOP
     }
@@ -1210,7 +1210,7 @@ directSendNoLimitMultiMPT(
             if (senderID == issuer)
             {
                 XRPL_ASSERT_PARTS(
-                    takeFromSender == beast::zero,
+                    takeFromSender == beast::kZERO,
                     "xrpl::directSendNoLimitMultiMPT",
                     "sender == issuer, takeFromSender == zero");
 
@@ -1292,7 +1292,7 @@ accountSendMPT(
     AllowMPTOverflow allowOverflow)
 {
     XRPL_ASSERT(
-        saAmount >= beast::zero && saAmount.holds<MPTIssue>(),
+        saAmount >= beast::kZERO && saAmount.holds<MPTIssue>(),
         "xrpl::accountSendMPT : minimum amount and MPT");
 
     /* If we aren't sending anything or if the sender is the same as the
@@ -1394,8 +1394,8 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j)
 {
-    XRPL_ASSERT(from != beast::zero, "xrpl::transferXRP : nonzero from account");
-    XRPL_ASSERT(to != beast::zero, "xrpl::transferXRP : nonzero to account");
+    XRPL_ASSERT(from != beast::kZERO, "xrpl::transferXRP : nonzero from account");
+    XRPL_ASSERT(to != beast::kZERO, "xrpl::transferXRP : nonzero to account");
     XRPL_ASSERT(from != to, "xrpl::transferXRP : sender is not receiver");
     XRPL_ASSERT(amount.native(), "xrpl::transferXRP : amount is XRP");
 

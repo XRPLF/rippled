@@ -351,7 +351,7 @@ Number::one()
 {
     if (&kRANGE.get() == &kSMALL_RANGE)
         return kONE_SML;
-    XRPL_ASSERT(&range_.get() == &largeRange, "Number::one() : valid range_");
+    XRPL_ASSERT(&kRANGE.get() == &kLARGE_RANGE, "Number::one() : valid range_");
     return kONE_LRG;
 }
 

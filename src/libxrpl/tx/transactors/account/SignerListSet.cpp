@@ -137,7 +137,7 @@ SignerListSet::preCompute()
         isTesSuccess(std::get<0>(result)),
         "xrpl::SignerListSet::preCompute : result is tesSUCCESS");
     XRPL_ASSERT(
-        std::get<3>(result) != unknown,
+        std::get<3>(result) != Unknown,
         "xrpl::SignerListSet::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);
@@ -168,10 +168,10 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // be in the range from 1 to 32.
     // We've got a lot of room to grow.
     XRPL_ASSERT(
-        entryCount >= STTx::minMultiSigners,
+        entryCount >= STTx::kMIN_MULTI_SIGNERS,
         "xrpl::signerCountBasedOwnerCountDelta : minimum signers");
     XRPL_ASSERT(
-        entryCount <= STTx::maxMultiSigners,
+        entryCount <= STTx::kMAX_MULTI_SIGNERS,
         "xrpl::signerCountBasedOwnerCountDelta : maximum signers");
     return 2 + static_cast<int>(entryCount);
 }

@@ -75,11 +75,11 @@ public:
     }
 
     /** Returns the Status as an error_code_i.
-        This may only be called if type() == Type::error_code_i. */
+        This may only be called if type() == Type::ErrorCodeI. */
     [[nodiscard]] ErrorCodeI
     toErrorCode() const
     {
-        XRPL_ASSERT(type_ == Type::error_code_i, "xrpl::RPC::Status::toTER : type is error code");
+        XRPL_ASSERT(type_ == Type::ErrorCodeI, "xrpl::RPC::Status::toTER : type is error code");
         return ErrorCodeI(code_);
     }
 

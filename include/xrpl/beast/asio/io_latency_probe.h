@@ -150,7 +150,7 @@ private:
             : handler(handler), start(start), repeat(repeat), probe(probe)
         {
             XRPL_ASSERT(
-                probe_,
+                probe,
                 "beast::io_latency_probe::sample_op::sample_op : non-null "
                 "probe input");
             probe->addref();
@@ -163,7 +163,7 @@ private:
             , probe(from.probe)
         {
             XRPL_ASSERT(
-                probe_,
+                probe,
                 "beast::io_latency_probe::sample_op::sample_op(sample_op&&) : "
                 "non-null probe input");
             from.probe = nullptr;

@@ -483,7 +483,7 @@ OfferCreate::flowCross(
                     afterCross.in -= nonGatewayAmountIn;
 
                     // It's possible that the divRound will cause our subtract
-                    // to go slightly negative.  So limit afterCross.in to zero.
+                    // to go slightly negative.  So limit afterCross.in to beast::kZERO.
                     if (afterCross.in < beast::kZERO)
                     {
                         // We should verify that the difference *is* small, but
@@ -501,7 +501,7 @@ OfferCreate::flowCross(
                     // Quality.
                     afterCross.out -= result.actualAmountOut;
                     XRPL_ASSERT(
-                        afterCross.out >= beast::zero,
+                        afterCross.out >= beast::kZERO,
                         "xrpl::OfferCreate::flowCross : minimum offer");
                     if (afterCross.out < beast::kZERO)
                         afterCross.out.clear();
@@ -676,7 +676,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             }
             if (!saTakerGets || !saTakerPays)
             {
-                JLOG(j_.debug()) << "Offer rounded to zero";
+                JLOG(j_.debug()) << "Offer rounded to beast::kZERO";
                 return {result, true};
             }
 
@@ -764,7 +764,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     XRPL_ASSERT(
-        saTakerPays > zero && saTakerGets > zero,
+        saTakerPays > beast::kZERO && saTakerGets > beast::kZERO,
         "xrpl::OfferCreate::applyGuts : taker pays and gets positive");
 
     if (!isTesSuccess(result))

@@ -241,7 +241,7 @@ saveValidatedLedger(
     }
 
     XRPL_ASSERT(
-        ledger->header().txHash == ledger->txMap().getHash().as_uint256(),
+        ledger->header().txHash == ledger->txMap().getHash().asUint256(),
         "xrpl::detail::saveValidatedLedger : transaction hash match");
 
     // Save the ledger header in the hashed object store

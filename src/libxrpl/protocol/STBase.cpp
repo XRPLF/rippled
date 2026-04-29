@@ -18,7 +18,7 @@ STBase::STBase() : fName_(&kSF_GENERIC)
 
 STBase::STBase(SField const& n) : fName_(&n)
 {
-    XRPL_ASSERT(fName, "xrpl::STBase::STBase : field is set");
+    XRPL_ASSERT(fName_, "xrpl::STBase::STBase : field is set");
 }
 
 STBase&
@@ -119,7 +119,7 @@ void
 STBase::setFName(SField const& n)
 {
     fName_ = &n;
-    XRPL_ASSERT(fName, "xrpl::STBase::setFName : field is set");
+    XRPL_ASSERT(fName_, "xrpl::STBase::setFName : field is set");
 }
 
 SField const&
@@ -131,7 +131,7 @@ STBase::getFName() const
 void
 STBase::addFieldID(Serializer& s) const
 {
-    XRPL_ASSERT(fName->isBinary(), "xrpl::STBase::addFieldID : field is binary");
+    XRPL_ASSERT(fName_->isBinary(), "xrpl::STBase::addFieldID : field is binary");
     s.addFieldID(fName_->fieldType, fName_->fieldValue);
 }
 

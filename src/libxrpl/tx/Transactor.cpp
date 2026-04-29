@@ -617,7 +617,7 @@ Transactor::ticketDelete(
 void
 Transactor::preCompute()
 {
-    XRPL_ASSERT(account_ != beast::zero, "xrpl::Transactor::preCompute : nonzero account");
+    XRPL_ASSERT(account_ != beast::kZERO, "xrpl::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -632,7 +632,7 @@ Transactor::apply()
     // sle must exist except for transactions
     // that allow zero account.
     XRPL_ASSERT(
-        sle != nullptr || account_ == beast::zero,
+        sle != nullptr || account_ == beast::kZERO,
         "xrpl::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
@@ -881,7 +881,7 @@ Transactor::checkMultiSign(
         }
 
         XRPL_ASSERT(
-            (flags & tapDRY_RUN) || !spk.empty(),
+            (flags & TapDryRun) || !spk.empty(),
             "xrpl::Transactor::checkMultiSign : non-empty signer or "
             "simulation");
         AccountID const signingAcctIDFromPubKey =
@@ -1082,7 +1082,7 @@ Transactor::reset(XRPAmount fee)
 
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
-        balance != beast::zero && (!view().open() || balance >= fee),
+        balance != beast::kZERO && (!view().open() || balance >= fee),
         "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or

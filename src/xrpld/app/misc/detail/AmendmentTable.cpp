@@ -679,7 +679,7 @@ AmendmentTableImpl::persistVote(
     AmendmentVote vote) const
 {
     XRPL_ASSERT(
-        vote != AmendmentVote::obsolete,
+        vote != AmendmentVote::Obsolete,
         "xrpl::AmendmentTableImpl::persistVote : valid vote input");
     auto db = db_.checkoutDb();
     voteAmendment(*db, amendment, name, vote);

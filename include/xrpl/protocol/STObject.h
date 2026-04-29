@@ -1090,7 +1090,7 @@ STObject::at(TypedField<T> const& f) const
         Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
 
     XRPL_ASSERT(
-        type_->style(f) == soeDEFAULT,
+        type_->style(f) == SoeDefault,
         "xrpl::STObject::at(TypedField auto) : template style is default");
 
     // Used to help handle the case where value_type is a const reference,
@@ -1119,7 +1119,7 @@ STObject::at(OptionaledField<T> const& of) const
         if (type_->style(*of.f) == SoeOptional)
             return std::nullopt;
         XRPL_ASSERT(
-            type_->style(*of.f) == soeDEFAULT,
+            type_->style(*of.f) == SoeDefault,
             "xrpl::STObject::at(OptionaledField auto) : template style is "
             "default");
         return typename T::value_type{};

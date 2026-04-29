@@ -1225,7 +1225,7 @@ public:
     bucket(Key const& k) const
     {
         XRPL_ASSERT(
-            bucket_count() != 0,
+            bucketCount() != 0,
             "beast::detail::AgedUnorderedContainer::bucket : nonzero bucket "
             "count");
         return m_cont_.bucket(k, std::cref(m_config_.hashFunction()));
@@ -1369,7 +1369,7 @@ private:
         if (wouldExceed(additional))
             m_buck_.resize(size() + additional, m_cont_);
         XRPL_ASSERT(
-            load_factor() <= maxLoadFactor(),
+            loadFactor() <= maxLoadFactor(),
             "beast::detail::AgedUnorderedContainer::maybe_rehash : maximum "
             "load factor");
     }

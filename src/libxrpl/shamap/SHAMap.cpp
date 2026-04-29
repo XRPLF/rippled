@@ -352,7 +352,7 @@ SHAMap::descend(
 {
     XRPL_ASSERT(parent->isInner(), "xrpl::SHAMap::descend : valid parent input");
     XRPL_ASSERT(
-        (branch >= 0) && (branch < branchFactor), "xrpl::SHAMap::descend : valid branch input");
+        (branch >= 0) && (branch < kBRANCH_FACTOR), "xrpl::SHAMap::descend : valid branch input");
     XRPL_ASSERT(
         !parent->isEmptyBranch(branch), "xrpl::SHAMap::descend : parent branch is non-empty");
 
@@ -768,7 +768,7 @@ bool
 SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item)
 {
     XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::addGiveItem : not immutable");
-    XRPL_ASSERT(type != SHAMapNodeType::tnINNER, "xrpl::SHAMap::addGiveItem : valid type input");
+    XRPL_ASSERT(type != SHAMapNodeType::TnInner, "xrpl::SHAMap::addGiveItem : valid type input");
 
     // add the specified item, does not update
     uint256 const tag = item->key();

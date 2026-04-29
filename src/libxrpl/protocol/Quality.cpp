@@ -112,10 +112,10 @@ Quality
 composedQuality(Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhsRate(lhs.rate());
-    XRPL_ASSERT(lhsRate != beast::zero, "xrpl::composed_quality : nonzero left input");
+    XRPL_ASSERT(lhsRate != beast::kZERO, "xrpl::composed_quality : nonzero left input");
 
     STAmount const rhsRate(rhs.rate());
-    XRPL_ASSERT(rhsRate != beast::zero, "xrpl::composed_quality : nonzero right input");
+    XRPL_ASSERT(rhsRate != beast::kZERO, "xrpl::composed_quality : nonzero right input");
 
     STAmount const rate(mulRound(lhsRate, rhsRate, lhsRate.asset(), true));
 

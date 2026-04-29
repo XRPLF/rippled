@@ -36,7 +36,7 @@ public:
         , parentBatchId(parentBatchId)
         , j(j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
+        XRPL_ASSERT((flags & TapBatch) == TapBatch, "Batch apply flag should be set");
     }
 
     PreflightContext(
@@ -47,7 +47,7 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : registry(registry), tx(tx), rules(std::move(rules)), flags(flags), j(j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
     }
 
     PreflightContext&
@@ -83,7 +83,7 @@ public:
         , j(j)
     {
         XRPL_ASSERT(
-            parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
+            parentBatchId.has_value() == ((flags & TapBatch) == TapBatch),
             "Parent Batch ID should be set if batch apply flag is set");
     }
 
@@ -96,7 +96,7 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : PreclaimContext(registry, view, preflightResult, tx, flags, std::nullopt, j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
     }
 
     PreclaimContext&

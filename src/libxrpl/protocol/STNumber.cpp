@@ -57,7 +57,7 @@ STNumber::associateAsset(Asset const& a)
     STTakesAsset::associateAsset(a);
 
     XRPL_ASSERT_PARTS(
-        getFName().shouldMeta(SField::sMD_NeedsAsset),
+        getFName().shouldMeta(SField::SMdNeedsAsset),
         "STNumber::associateAsset",
         "field needs asset");
 
@@ -95,7 +95,7 @@ STNumber::add(Serializer& s) const
             // Json. Regardless, the only time we should be serializing an
             // STNumber is when the scale is large.
             XRPL_ASSERT_PARTS(
-                Number::getMantissaScale() == MantissaRange::large,
+                Number::getMantissaScale() == MantissaRange::Large,
                 "xrpl::STNumber::add",
                 "STNumber only used with large mantissa scale");
 #endif

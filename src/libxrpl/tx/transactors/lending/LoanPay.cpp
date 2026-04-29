@@ -447,8 +447,8 @@ LoanPay::doApply()
             view,
             vaultPseudoAccount,
             asset,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
+            FreezeHandling::FhIgnoreFreeze,
+            AuthHandling::AhIgnoreAuth,
             j_);
 
         XRPL_ASSERT_PARTS(
@@ -508,33 +508,27 @@ LoanPay::doApply()
 
 #if !NDEBUG
     auto const accountBalanceBefore = accountHolds(
-        view,
-        account_,
-        asset,
-        fhIGNORE_FREEZE,
-        ahIGNORE_AUTH,
-        j_,
-        SpendableHandling::shFULL_BALANCE);
+        view, account_, asset, FhIgnoreFreeze, AhIgnoreAuth, j_, SpendableHandling::ShFullBalance);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
               vaultPseudoAccount,
               asset,
-              fhIGNORE_FREEZE,
-              ahIGNORE_AUTH,
+              FhIgnoreFreeze,
+              AhIgnoreAuth,
               j_,
-              SpendableHandling::shFULL_BALANCE);
+              SpendableHandling::ShFullBalance);
     auto const brokerBalanceBefore = account_ == brokerPayee
         ? STAmount{asset, 0}
         : accountHolds(
               view,
               brokerPayee,
               asset,
-              fhIGNORE_FREEZE,
-              ahIGNORE_AUTH,
+              FhIgnoreFreeze,
+              AhIgnoreAuth,
               j_,
-              SpendableHandling::shFULL_BALANCE);
+              SpendableHandling::ShFullBalance);
 #endif
 
     if (totalPaidToVaultRounded != beast::kZERO)
@@ -576,8 +570,8 @@ LoanPay::doApply()
         view,
         vaultPseudoAccount,
         asset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::FhIgnoreFreeze,
+        AuthHandling::AhIgnoreAuth,
         j_);
     XRPL_ASSERT_PARTS(
         assetsAvailableAfter == pseudoAccountBalanceAfter,
@@ -585,33 +579,26 @@ LoanPay::doApply()
         "vault pseudo balance agrees after");
 
     auto const accountBalanceAfter = accountHolds(
-        view,
-        account_,
-        asset,
-        fhIGNORE_FREEZE,
-        ahIGNORE_AUTH,
-        j_,
-        SpendableHandling::shFULL_BALANCE);
+        view, account_, asset, FhIgnoreFreeze, AhIgnoreAuth, j_, SpendableHandling::ShFullBalance);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
               vaultPseudoAccount,
               asset,
-              fhIGNORE_FREEZE,
-              ahIGNORE_AUTH,
+              FhIgnoreFreeze,
+              AhIgnoreAuth,
               j_,
-              SpendableHandling::shFULL_BALANCE);
-    auto const brokerBalanceAfter = account_ == brokerPayee
-        ? STAmount{asset, 0}
-        : accountHolds(
-              view,
-              brokerPayee,
-              asset,
-              fhIGNORE_FREEZE,
-              ahIGNORE_AUTH,
-              j_,
-              SpendableHandling::shFULL_BALANCE);
+              SpendableHandling::ShFullBalance);
+    auto const brokerBalanceAfter = account_ == brokerPayee ? STAmount{asset, 0}
+                                                            : accountHolds(
+                                                                  view,
+                                                                  brokerPayee,
+                                                                  asset,
+                                                                  FhIgnoreFreeze,
+                                                                  AhIgnoreAuth,
+                                                                  j_,
+                                                                  SpendableHandling::ShFullBalance);
 
     XRPL_ASSERT_PARTS(
         accountBalanceBefore + vaultBalanceBefore + brokerBalanceBefore ==
@@ -619,13 +606,13 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "funds are conserved (with rounding)");
     XRPL_ASSERT_PARTS(
-        accountBalanceAfter >= beast::zero, "xrpl::LoanPay::doApply", "positive account balance");
+        accountBalanceAfter >= beast::kZERO, "xrpl::LoanPay::doApply", "positive account balance");
     XRPL_ASSERT_PARTS(
         accountBalanceAfter < accountBalanceBefore || account_ == asset.getIssuer(),
         "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(
-        vaultBalanceAfter >= beast::zero && brokerBalanceAfter >= beast::zero,
+        vaultBalanceAfter >= beast::kZERO && brokerBalanceAfter >= beast::kZERO,
         "xrpl::LoanPay::doApply",
         "positive vault and broker balances");
     XRPL_ASSERT_PARTS(

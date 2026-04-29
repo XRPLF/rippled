@@ -581,7 +581,7 @@ SharedWeakUnion<T>::convertToStrong()
     {
         [[maybe_unused]] auto action = p->releaseWeakRef();
         XRPL_ASSERT(
-            (action == ReleaseWeakRefAction::noop),
+            (action == ReleaseWeakRefAction::Noop),
             "xrpl::SharedWeakUnion::convertToStrong : "
             "action is noop");
         unsafeSetRawPtr(p, RefStrength::Strong);

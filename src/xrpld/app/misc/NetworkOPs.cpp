@@ -174,7 +174,7 @@ class NetworkOPsImp final : public NetworkOPs
             : transaction(std::move(t)), admin(a), local(l), failType(f)
         {
             XRPL_ASSERT(
-                local || failType == FailHard::no,
+                local || failType == FailHard::No,
                 "xrpl::NetworkOPsImp::TransactionStatus::TransactionStatus : "
                 "valid inputs");
         }
@@ -1483,7 +1483,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
     transactions_.swap(transactions);
     XRPL_ASSERT(!transactions.empty(), "xrpl::NetworkOPsImp::apply : non-empty transactions");
     XRPL_ASSERT(
-        dispatchState_ != DispatchState::running, "xrpl::NetworkOPsImp::apply : is not running");
+        dispatchState_ != DispatchState::Running, "xrpl::NetworkOPsImp::apply : is not running");
 
     dispatchState_ = DispatchState::Running;
 
@@ -3470,7 +3470,7 @@ NetworkOPsImp::pubAccountTransaction(
             jvObj.set(jss::account_history_boundary, true);
 
         XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApijson::none,
+            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::None,
             "xrpl::NetworkOPsImp::pubAccountTransaction : "
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
@@ -3549,7 +3549,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
         }
 
         XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApijson::none,
+            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::None,
             "xrpl::NetworkOPs::pubProposedAccountTransaction : "
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)

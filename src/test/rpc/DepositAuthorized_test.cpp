@@ -425,7 +425,7 @@ public:
                 "88004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "98004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
             };
-            assert(kCRED_IDS.size() > maxCredentialsArraySize);
+            assert(kCRED_IDS.size() > kMAX_CREDENTIALS_ARRAY_SIZE);
 
             testcase("deposit_authorized too long credentials");
             auto const jv = env.rpc(

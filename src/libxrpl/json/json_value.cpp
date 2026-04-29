@@ -470,7 +470,7 @@ operator==(Value const& x, Value const& y)
 char const*
 Value::asCString() const
 {
-    XRPL_ASSERT(type_ == stringValue, "json::Value::asCString : valid type");
+    XRPL_ASSERT(type_ == StringValue, "json::Value::asCString : valid type");
     return value_.string;
 }
 
@@ -828,7 +828,7 @@ void
 Value::clear()
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == arrayValue || type_ == objectValue,
+        type_ == NullValue || type_ == ArrayValue || type_ == ObjectValue,
         "json::Value::clear : valid type");
 
     switch (type_)
@@ -847,7 +847,7 @@ Value&
 Value::operator[](UInt index)
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == arrayValue, "json::Value::operator[](UInt) : valid type");
+        type_ == NullValue || type_ == ArrayValue, "json::Value::operator[](UInt) : valid type");
 
     if (type_ == NullValue)
         *this = Value(ArrayValue);
@@ -867,7 +867,7 @@ Value const&
 Value::operator[](UInt index) const
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == arrayValue,
+        type_ == NullValue || type_ == ArrayValue,
         "json::Value::operator[](UInt) const : valid type");
 
     if (type_ == NullValue)
@@ -892,7 +892,7 @@ Value&
 Value::resolveReference(char const* key, bool isStatic)
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == objectValue, "json::Value::resolveReference : valid type");
+        type_ == NullValue || type_ == ObjectValue, "json::Value::resolveReference : valid type");
 
     if (type_ == NullValue)
         *this = Value(ObjectValue);
@@ -926,7 +926,7 @@ Value const&
 Value::operator[](char const* key) const
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == objectValue,
+        type_ == NullValue || type_ == ObjectValue,
         "json::Value::operator[](const char*) const : valid type");
 
     if (type_ == NullValue)
@@ -994,7 +994,7 @@ Value
 Value::removeMember(char const* key)
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == objectValue, "json::Value::removeMember : valid type");
+        type_ == NullValue || type_ == ObjectValue, "json::Value::removeMember : valid type");
 
     if (type_ == NullValue)
         return kNULL;
@@ -1042,7 +1042,7 @@ Value::Members
 Value::getMemberNames() const
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == objectValue, "json::Value::getMemberNames : valid type");
+        type_ == NullValue || type_ == ObjectValue, "json::Value::getMemberNames : valid type");
 
     if (type_ == NullValue)
         return Value::Members();

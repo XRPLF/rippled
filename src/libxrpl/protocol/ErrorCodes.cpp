@@ -220,7 +220,7 @@ errorCodeHttpStatus(ErrorCodeI code)
 std::string
 rpcErrorString(json::Value const& jv)
 {
-    XRPL_ASSERT(RPC::contains_error(jv), "xrpl::RPC::rpcErrorString : input contains an error");
+    XRPL_ASSERT(RPC::containsError(jv), "xrpl::RPC::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();
 }
 

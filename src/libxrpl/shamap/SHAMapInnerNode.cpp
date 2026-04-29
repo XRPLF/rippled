@@ -268,7 +268,7 @@ void
 SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 {
     XRPL_ASSERT(
-        (m >= 0) && (m < branchFactor), "xrpl::SHAMapInnerNode::setChild : valid branch input");
+        (m >= 0) && (m < kBRANCH_FACTOR), "xrpl::SHAMapInnerNode::setChild : valid branch input");
     XRPL_ASSERT(cowid_, "xrpl::SHAMapInnerNode::setChild : nonzero cowid");
     XRPL_ASSERT(child.get() != this, "xrpl::SHAMapInnerNode::setChild : valid child input");
 
@@ -310,7 +310,7 @@ void
 SHAMapInnerNode::shareChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> const& child)
 {
     XRPL_ASSERT(
-        (m >= 0) && (m < branchFactor), "xrpl::SHAMapInnerNode::shareChild : valid branch input");
+        (m >= 0) && (m < kBRANCH_FACTOR), "xrpl::SHAMapInnerNode::shareChild : valid branch input");
     XRPL_ASSERT(cowid_, "xrpl::SHAMapInnerNode::shareChild : nonzero cowid");
     XRPL_ASSERT(child, "xrpl::SHAMapInnerNode::shareChild : non-null child input");
     XRPL_ASSERT(child.get() != this, "xrpl::SHAMapInnerNode::shareChild : valid child input");
@@ -324,7 +324,7 @@ SHAMapTreeNode*
 SHAMapInnerNode::getChildPointer(int branch)
 {
     XRPL_ASSERT(
-        branch >= 0 && branch < branchFactor,
+        branch >= 0 && branch < kBRANCH_FACTOR,
         "xrpl::SHAMapInnerNode::getChildPointer : valid branch input");
     XRPL_ASSERT(
         !isEmptyBranch(branch), "xrpl::SHAMapInnerNode::getChildPointer : non-empty branch input");
@@ -341,7 +341,7 @@ intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::getChild(int branch)
 {
     XRPL_ASSERT(
-        branch >= 0 && branch < branchFactor,
+        branch >= 0 && branch < kBRANCH_FACTOR,
         "xrpl::SHAMapInnerNode::getChild : valid branch input");
     XRPL_ASSERT(!isEmptyBranch(branch), "xrpl::SHAMapInnerNode::getChild : non-empty branch input");
 
@@ -357,7 +357,8 @@ SHAMapHash const&
 SHAMapInnerNode::getChildHash(int m) const
 {
     XRPL_ASSERT(
-        (m >= 0) && (m < branchFactor), "xrpl::SHAMapInnerNode::getChildHash : valid branch input");
+        (m >= 0) && (m < kBRANCH_FACTOR),
+        "xrpl::SHAMapInnerNode::getChildHash : valid branch input");
     if (auto const i = getChildIndex(m))
         return hashesAndChildren_.getHashes()[*i];
 
@@ -368,7 +369,7 @@ intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNode> node)
 {
     XRPL_ASSERT(
-        branch >= 0 && branch < branchFactor,
+        branch >= 0 && branch < kBRANCH_FACTOR,
         "xrpl::SHAMapInnerNode::canonicalizeChild : valid branch input");
     XRPL_ASSERT(node != nullptr, "xrpl::SHAMapInnerNode::canonicalizeChild : valid node input");
     XRPL_ASSERT(

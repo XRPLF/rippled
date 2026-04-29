@@ -118,8 +118,8 @@ toStep(
     }
 
     XRPL_ASSERT(
-        (e2->getNodeType() & STPathElement::typeAsset) ||
-            (e2->getNodeType() & STPathElement::typeIssuer),
+        (e2->getNodeType() & STPathElement::TypeAsset) ||
+            (e2->getNodeType() & STPathElement::TypeIssuer),
         "xrpl::toStep : currency or issuer");
     PathAsset const outAsset =
         ((e2->getNodeType() & STPathElement::TypeAsset) != 0u) ? e2->getPathAsset() : curAsset;

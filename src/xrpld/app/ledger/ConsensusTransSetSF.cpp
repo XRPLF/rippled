@@ -53,7 +53,7 @@ ConsensusTransSetSF::gotNode(
             SerialIter sit(s.slice());
             auto stx = std::make_shared<STTx const>(std::ref(sit));
             XRPL_ASSERT(
-                stx->getTransactionID() == nodeHash.as_uint256(),
+                stx->getTransactionID() == nodeHash.asUint256(),
                 "xrpl::ConsensusTransSetSF::gotNode : transaction hash "
                 "match");
             auto const pap = &app_;
@@ -85,7 +85,7 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
         s.add32(HashPrefix::TransactionId);
         txn->getSTransaction()->add(s);
         XRPL_ASSERT(
-            sha512Half(s.slice()) == nodeHash.as_uint256(),
+            sha512Half(s.slice()) == nodeHash.asUint256(),
             "xrpl::ConsensusTransSetSF::getNode : transaction hash match");
         nodeData = s.peekData();
         return nodeData;

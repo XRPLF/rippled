@@ -55,7 +55,7 @@ doChannelAuthorize(RPC::JsonContext& context)
         RPC::keypairForSignature(params, result, context.apiVersion);
 
     XRPL_ASSERT(
-        keyPair || RPC::contains_error(result),
+        keyPair || RPC::containsError(result),
         "xrpl::doChannelAuthorize : valid keyPair or an error");
     if (!keyPair || RPC::containsError(result))
         return result;

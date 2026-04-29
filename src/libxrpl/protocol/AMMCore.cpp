@@ -113,7 +113,7 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     // but check just to be safe
     auto const expiration = auctionSlot[sfExpiration];
     XRPL_ASSERT(
-        expiration >= TOTAL_TIME_SLOT_SECS, "xrpl::ammAuctionTimeSlot : minimum expiration");
+        expiration >= kTOTAL_TIME_SLOT_SECS, "xrpl::ammAuctionTimeSlot : minimum expiration");
     if (expiration >= kTOTAL_TIME_SLOT_SECS)
     {
         if (auto const start = expiration - kTOTAL_TIME_SLOT_SECS; current >= start)

@@ -245,7 +245,7 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(!channelExists(*env.current(), chan));
             auto const feeDrops = env.current()->fees().base;
             auto const delta = chanAmt - chanBal;
-            assert(delta > beast::zero);
+            assert(delta > beast::kZERO);
             BEAST_EXPECT(env.balance(alice) == preAlice + delta);
             BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
         }
@@ -1930,7 +1930,7 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(!channelExists(*env.current(), chan));
             auto const feeDrops = env.current()->fees().base;
             auto const delta = chanAmt - chanBal;
-            assert(delta > beast::zero);
+            assert(delta > beast::kZERO);
             BEAST_EXPECT(env.balance(alice) == preAlice + delta);
             BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
         }

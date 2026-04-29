@@ -331,7 +331,7 @@ public:
 
         // The object must exist in our table
         XRPL_ASSERT(
-            slots_.find(slot->remoteEndpoint()) != slots_.end(),
+            slots.find(slot->remoteEndpoint()) != slots.end(),
             "xrpl::PeerFinder::Logic::onConnected : valid slot input");
         // Assign the local endpoint now that it's known
         slot->localEndpoint(localEndpoint);
@@ -370,7 +370,7 @@ public:
 
         // The object must exist in our table
         XRPL_ASSERT(
-            slots_.find(slot->remoteEndpoint()) != slots_.end(),
+            slots.find(slot->remoteEndpoint()) != slots.end(),
             "xrpl::PeerFinder::Logic::activate : valid slot input");
         // Must be accepted or connected
         XRPL_ASSERT(
@@ -744,7 +744,7 @@ public:
 
         // The object must exist in our table
         XRPL_ASSERT(
-            slots_.find(slot->remoteEndpoint()) != slots_.end(),
+            slots.find(slot->remoteEndpoint()) != slots.end(),
             "xrpl::PeerFinder::Logic::on_endpoints : valid slot input");
 
         // Must be handshaked!

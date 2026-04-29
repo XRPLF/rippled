@@ -72,7 +72,7 @@ JobQueue::collect()
 bool
 JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction const& func)
 {
-    XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::addRefCountedJob : valid input job type");
+    XRPL_ASSERT(type != JtInvalid, "xrpl::JobQueue::addRefCountedJob : valid input job type");
 
     auto iter(jobData_.find(type));
     XRPL_ASSERT(
@@ -86,7 +86,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
     // FIXME: Workaround incorrect client shutdown ordering
     // do not add jobs to a queue with no threads
     XRPL_ASSERT(
-        (type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) || workers_.getNumberOfThreads() > 0,
+        (type >= JtClient && type <= JtClientWebsocket) || workers_.getNumberOfThreads() > 0,
         "xrpl::JobQueue::addRefCountedJob : threads available or job "
         "requires no threads");
 
@@ -96,7 +96,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
         auto const& job = *result.first;
 
         JobType const type(job.getType());
-        XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::addRefCountedJob : has valid job type");
+        XRPL_ASSERT(type != JtInvalid, "xrpl::JobQueue::addRefCountedJob : has valid job type");
         XRPL_ASSERT(jobSet_.contains(job), "xrpl::JobQueue::addRefCountedJob : job found");
         perfLog_.jobQueue(type);
 
@@ -196,7 +196,7 @@ JobQueue::getJson(int c)
 
     for (auto& x : jobData_)
     {
-        XRPL_ASSERT(x.first != jtINVALID, "xrpl::JobQueue::getJson : valid job type");
+        XRPL_ASSERT(x.first != JtInvalid, "xrpl::JobQueue::getJson : valid job type");
 
         if (x.first == JtGeneric)
             continue;
@@ -252,7 +252,7 @@ JobQueue::getJobTypeData(JobType type)
     JobDataMap::iterator const c(jobData_.find(type));
     XRPL_ASSERT(c != jobData_.end(), "xrpl::JobQueue::getJobTypeData : valid job type input");
 
-    // NIKB: This is ugly and I hate it. We must remove jtINVALID completely
+    // NIKB: This is ugly and I hate it. We must remove JtInvalid completely
     //       and use something sane.
     if (c == jobData_.end())
         return invalidJobData_;
@@ -296,7 +296,7 @@ JobQueue::getNextJob(Job& job)
     for (iter = jobSet_.begin(); iter != jobSet_.end(); ++iter)
     {
         JobType const type = iter->getType();
-        XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::getNextJob : valid job type");
+        XRPL_ASSERT(type != JtInvalid, "xrpl::JobQueue::getNextJob : valid job type");
 
         JobTypeData& data(getJobTypeData(type));
         XRPL_ASSERT(
@@ -320,7 +320,7 @@ JobQueue::getNextJob(Job& job)
 void
 JobQueue::finishJob(JobType type)
 {
-    XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::finishJob : valid input job type");
+    XRPL_ASSERT(type != JtInvalid, "xrpl::JobQueue::finishJob : valid input job type");
 
     JobTypeData& data = getJobTypeData(type);
 
@@ -393,7 +393,7 @@ int
 JobQueue::getJobLimit(JobType type)
 {
     JobTypeInfo const& j(JobTypes::instance().get(type));
-    XRPL_ASSERT(j.type() != jtINVALID, "xrpl::JobQueue::getJobLimit : valid job type");
+    XRPL_ASSERT(j.type() != JtInvalid, "xrpl::JobQueue::getJobLimit : valid job type");
 
     return j.limit();
 }

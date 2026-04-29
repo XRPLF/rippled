@@ -205,7 +205,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         if (amountBalance != beast::kZERO || amount2Balance != beast::kZERO)
         {
             // LCOV_EXCL_START
-            JLOG(ctx.j.debug()) << "AMM Deposit: tokens balance is not zero.";
+            JLOG(ctx.j.debug()) << "AMM Deposit: tokens balance is not beast::kZERO.";
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
@@ -218,7 +218,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             lptAMMBalance < beast::kZERO)
         {
             // LCOV_EXCL_START
-            JLOG(ctx.j.debug()) << "AMM Deposit: reserves or tokens balance is zero.";
+            JLOG(ctx.j.debug()) << "AMM Deposit: reserves or tokens balance is beast::kZERO.";
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
@@ -468,7 +468,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     if (isTesSuccess(result))
     {
         XRPL_ASSERT(
-            newLPTokenBalance > beast::zero,
+            newLPTokenBalance > beast::kZERO,
             "xrpl::AMMDeposit::applyGuts : valid new LP token balance");
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         // LP depositing into AMM empty state gets the auction slot
@@ -549,7 +549,7 @@ AMMDeposit::deposit(
 
     if (lpTokensDepositActual <= beast::kZERO)
     {
-        JLOG(ctx_.journal.debug()) << "AMM Deposit: adjusted tokens zero";
+        JLOG(ctx_.journal.debug()) << "AMM Deposit: adjusted tokens beast::kZERO";
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
 

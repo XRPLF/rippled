@@ -48,15 +48,15 @@ LoanPaymentParts::operator+=(LoanPaymentParts const& other)
 {
     XRPL_ASSERT(
 
-        other.principalPaid >= beast::zero,
+        other.principalPaid >= beast::kZERO,
         "xrpl::LoanPaymentParts::operator+= : other principal "
         "non-negative");
     XRPL_ASSERT(
-        other.interestPaid >= beast::zero,
+        other.interestPaid >= beast::kZERO,
         "xrpl::LoanPaymentParts::operator+= : other interest paid "
         "non-negative");
     XRPL_ASSERT(
-        other.feePaid >= beast::zero,
+        other.feePaid >= beast::kZERO,
         "xrpl::LoanPaymentParts::operator+= : other fee paid "
         "non-negative");
 
@@ -366,7 +366,7 @@ doPayment(
     XRPL_ASSERT_PARTS(
         // Use an explicit cast because the template parameter can be
         // ValueProxy<Number> or Number
-        static_cast<Number>(managementFeeOutstandingProxy) >= beast::zero,
+        static_cast<Number>(managementFeeOutstandingProxy) >= beast::kZERO,
         "xrpl::detail::doPayment",
         "fee outstanding stays valid");
 
@@ -727,7 +727,7 @@ computeLatePayment(
 
     XRPL_ASSERT(roundedLateInterest >= 0, "xrpl::detail::computeLatePayment : valid late interest");
     XRPL_ASSERT_PARTS(
-        periodic.specialCase != PaymentSpecialCase::extra,
+        periodic.specialCase != PaymentSpecialCase::Extra,
         "xrpl::detail::computeLatePayment",
         "no extra parts to this payment");
 
@@ -1028,7 +1028,9 @@ computePaymentComponents(
             excess -= part;
         }
         XRPL_ASSERT_PARTS(
-            excess >= beast::zero, "xrpl::detail::computePaymentComponents", "excess non-negative");
+            excess >= beast::kZERO,
+            "xrpl::detail::computePaymentComponents",
+            "excess non-negative");
     };
     // Helper to reduce deltas when they collectively exceed a limit.
     // Order matters: we prefer to reduce interest first (most flexible),
@@ -1074,7 +1076,9 @@ computePaymentComponents(
     // periodic payment (due to rounding or component caps).
     // shortage < 0 would mean we're trying to pay more than allowed (bug).
     XRPL_ASSERT_PARTS(
-        shortage >= beast::zero, "xrpl::detail::computePaymentComponents", "no shortage or excess");
+        shortage >= beast::kZERO,
+        "xrpl::detail::computePaymentComponents",
+        "no shortage or excess");
 
     // Final validation that all components are valid
     XRPL_ASSERT_PARTS(
@@ -1083,22 +1087,22 @@ computePaymentComponents(
         "total value adds up");
 
     XRPL_ASSERT_PARTS(
-        deltas.principal >= beast::zero &&
+        deltas.principal >= beast::kZERO &&
             deltas.principal <= currentLedgerState.principalOutstanding,
         "xrpl::detail::computePaymentComponents",
         "valid principal result");
     XRPL_ASSERT_PARTS(
-        deltas.interest >= beast::zero && deltas.interest <= currentLedgerState.interestDue,
+        deltas.interest >= beast::kZERO && deltas.interest <= currentLedgerState.interestDue,
         "xrpl::detail::computePaymentComponents",
         "valid interest result");
     XRPL_ASSERT_PARTS(
-        deltas.managementFee >= beast::zero &&
+        deltas.managementFee >= beast::kZERO &&
             deltas.managementFee <= currentLedgerState.managementFeeDue,
         "xrpl::detail::computePaymentComponents",
         "valid fee result");
 
     XRPL_ASSERT_PARTS(
-        deltas.principal + deltas.interest + deltas.managementFee > beast::zero,
+        deltas.principal + deltas.interest + deltas.managementFee > beast::kZERO,
         "xrpl::detail::computePaymentComponents",
         "payment parts add to payment");
 
@@ -1788,7 +1792,7 @@ loanMakePayment(
     // regular periodic payment handling
 
     XRPL_ASSERT_PARTS(
-        paymentType == LoanPaymentType::regular || paymentType == LoanPaymentType::overpayment,
+        paymentType == LoanPaymentType::Regular || paymentType == LoanPaymentType::Overpayment,
         "xrpl::loanMakePayment",
         "regular payment type");
 
@@ -1819,7 +1823,7 @@ loanMakePayment(
         ++numPayments;
 
         XRPL_ASSERT_PARTS(
-            (periodic.specialCase == detail::PaymentSpecialCase::final) ==
+            (periodic.specialCase == detail::PaymentSpecialCase::Final) ==
                 (paymentRemainingProxy == 0),
             "xrpl::loanMakePayment",
             "final payment is the final payment");
@@ -1883,7 +1887,7 @@ loanMakePayment(
         if (overpaymentComponents.trackedPrincipalDelta > 0)
         {
             XRPL_ASSERT_PARTS(
-                overpaymentComponents.untrackedInterest >= beast::zero,
+                overpaymentComponents.untrackedInterest >= beast::kZERO,
                 "xrpl::loanMakePayment",
                 "overpayment penalty did not reduce value of loan");
             // Can't just use `periodicPayment` here, because it might
@@ -1919,17 +1923,17 @@ loanMakePayment(
     // intermediate steps were rounded.
     XRPL_ASSERT(
         isRounded(asset, totalParts.principalPaid, loanScale) &&
-            totalParts.principalPaid >= beast::zero,
+            totalParts.principalPaid >= beast::kZERO,
         "xrpl::loanMakePayment : total principal paid is valid");
     XRPL_ASSERT(
         isRounded(asset, totalParts.interestPaid, loanScale) &&
-            totalParts.interestPaid >= beast::zero,
+            totalParts.interestPaid >= beast::kZERO,
         "xrpl::loanMakePayment : total interest paid is valid");
     XRPL_ASSERT(
         isRounded(asset, totalParts.valueChange, loanScale),
         "xrpl::loanMakePayment : loan value change is valid");
     XRPL_ASSERT(
-        isRounded(asset, totalParts.feePaid, loanScale) && totalParts.feePaid >= beast::zero,
+        isRounded(asset, totalParts.feePaid, loanScale) && totalParts.feePaid >= beast::kZERO,
         "xrpl::loanMakePayment : fee paid is valid");
     return totalParts;
 }

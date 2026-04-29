@@ -140,7 +140,7 @@ struct MultiApiJson
             -> std::invoke_result_t<Fn, decltype(json.val[0])>
         {
             XRPL_ASSERT(
-                valid(version) && index(version) >= 0 && index(version) < size,
+                valid(version) && index(version) >= 0 && index(version) < kSIZE,
                 "xrpl::detail::MultiApijson::operator() : valid version");
             return std::invoke(fn, json.val[index(version)]);
         }

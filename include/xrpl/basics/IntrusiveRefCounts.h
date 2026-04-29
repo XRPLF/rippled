@@ -252,7 +252,7 @@ IntrusiveRefCounts::releaseStrongRef() const
     {
         RefCountPair const prevVal{prevIntVal};
         XRPL_ASSERT(
-            (prevVal.strong >= strongDelta),
+            (prevVal.strong >= kSTRONG_DELTA),
             "xrpl::IntrusiveRefCounts::releaseStrongRef : previous ref "
             "higher than new");
         auto nextIntVal = prevIntVal - kSTRONG_DELTA;
@@ -276,7 +276,7 @@ IntrusiveRefCounts::releaseStrongRef() const
             // count to zero can start a partial destroy, and that can't happen
             // twice.
             XRPL_ASSERT(
-                (action == noop) || !(prevIntVal & partialDestroyStartedMask),
+                (action == Noop) || !(prevIntVal & kPARTIAL_DESTROY_STARTED_MASK),
                 "xrpl::IntrusiveRefCounts::releaseStrongRef : not in partial "
                 "destroy");
             return action;
@@ -329,7 +329,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
         if (refCounts_.compare_exchange_weak(prevIntVal, nextIntVal, std::memory_order_acq_rel))
         {
             XRPL_ASSERT(
-                (!(prevIntVal & partialDestroyStartedMask)),
+                (!(prevIntVal & kPARTIAL_DESTROY_STARTED_MASK)),
                 "xrpl::IntrusiveRefCounts::addWeakReleaseStrongRef : not "
                 "started partial destroy");
             return action;
@@ -398,11 +398,12 @@ IntrusiveRefCounts::useCount() const noexcept
 inline IntrusiveRefCounts::~IntrusiveRefCounts() noexcept
 {
 #ifndef NDEBUG
-    auto v = refCounts.load(std::memory_order_acquire);
+    auto v = refCounts_.load(std::memory_order_acquire);
     XRPL_ASSERT(
-        (!(v & valueMask)), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
-    auto t = v & tagMask;
-    XRPL_ASSERT((!t || t == tagMask), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
+        (!(v & kVALUE_MASK)), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
+    auto t = v & kTAG_MASK;
+    XRPL_ASSERT(
+        (!t || t == kTAG_MASK), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
 #endif
 }
 
@@ -415,7 +416,7 @@ inline IntrusiveRefCounts::RefCountPair::RefCountPair(IntrusiveRefCounts::FieldT
     , partialDestroyFinishedBit{v & kPARTIAL_DESTROY_FINISHED_MASK}
 {
     XRPL_ASSERT(
-        (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
+        (strong < kCHECK_STRONG_MAX_VALUE && weak < kCHECK_WEAK_MAX_VALUE),
         "xrpl::IntrusiveRefCounts::RefCountPair(FieldType) : inputs inside "
         "range");
 }
@@ -426,7 +427,7 @@ inline IntrusiveRefCounts::RefCountPair::RefCountPair(
     : strong{s}, weak{w}
 {
     XRPL_ASSERT(
-        (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
+        (strong < kCHECK_STRONG_MAX_VALUE && weak < kCHECK_WEAK_MAX_VALUE),
         "xrpl::IntrusiveRefCounts::RefCountPair(CountType, CountType) : "
         "inputs inside range");
 }
@@ -435,7 +436,7 @@ inline IntrusiveRefCounts::FieldType
 IntrusiveRefCounts::RefCountPair::combinedValue() const noexcept
 {
     XRPL_ASSERT(
-        (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
+        (strong < kCHECK_STRONG_MAX_VALUE && weak < kCHECK_WEAK_MAX_VALUE),
         "xrpl::IntrusiveRefCounts::RefCountPair::combinedValue : inputs "
         "inside range");
     return (static_cast<IntrusiveRefCounts::FieldType>(weak)

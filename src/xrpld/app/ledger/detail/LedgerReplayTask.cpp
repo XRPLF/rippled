@@ -47,7 +47,7 @@ LedgerReplayTask::TaskParameter::update(
     skipList.emplace_back(finishHash);
     startHash = skipList[skipList.size() - totalLedgers];
     XRPL_ASSERT(
-        startHash_.isNonZero(),
+        startHash.isNonZero(),
         "xrpl::LedgerReplayTask::TaskParameter::update : nonzero start hash");
     startSeq = finishSeq - totalLedgers + 1;
     full = true;

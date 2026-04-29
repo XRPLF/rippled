@@ -369,7 +369,7 @@ chooseLedgerEntryType(json::Value const& params)
         {
             result.first = RPC::Status{RpcInvalidParams, "Invalid field 'type', not string."};
             XRPL_ASSERT(
-                result.first.type() == RPC::Status::Type::error_code_i,
+                result.first.type() == RPC::Status::Type::ErrorCodeI,
                 "xrpl::RPC::chooseLedgerEntryType : first valid result type");
             return result;
         }
@@ -385,7 +385,7 @@ chooseLedgerEntryType(json::Value const& params)
         {
             result.first = RPC::Status{RpcInvalidParams, "Invalid field 'type'."};
             XRPL_ASSERT(
-                result.first.type() == RPC::Status::Type::error_code_i,
+                result.first.type() == RPC::Status::Type::ErrorCodeI,
                 "xrpl::RPC::chooseLedgerEntryType : second valid result "
                 "type");
             return result;

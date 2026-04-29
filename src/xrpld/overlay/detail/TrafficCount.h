@@ -193,7 +193,7 @@ public:
     addCount(Category cat, bool inbound, int bytes)
     {
         XRPL_ASSERT(
-            cat <= category::Unknown, "xrpl::TrafficCount::addCount : valid category input");
+            cat <= Category::Unknown, "xrpl::TrafficCount::addCount : valid category input");
 
         auto it = counts_.find(cat);
 
