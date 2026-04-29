@@ -7,12 +7,14 @@
     See cfg/xrpld-example.cfg for the full list of available options.
 */
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <string>
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 namespace {
 
@@ -78,5 +80,4 @@ setup_Telemetry(
     return setup;
 }
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry

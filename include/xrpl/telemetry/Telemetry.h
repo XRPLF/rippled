@@ -85,8 +85,7 @@
 #include <opentelemetry/trace/tracer.h>
 #endif
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 class Telemetry
 {
@@ -222,27 +221,27 @@ public:
     stop() = 0;
 
     /** @return true if this instance is actively exporting spans. */
-    virtual bool
+    [[nodiscard]] virtual bool
     isEnabled() const = 0;
 
     /** @return true if transaction processing should be traced. */
-    virtual bool
+    [[nodiscard]] virtual bool
     shouldTraceTransactions() const = 0;
 
     /** @return true if consensus rounds should be traced. */
-    virtual bool
+    [[nodiscard]] virtual bool
     shouldTraceConsensus() const = 0;
 
     /** @return true if RPC request handling should be traced. */
-    virtual bool
+    [[nodiscard]] virtual bool
     shouldTraceRpc() const = 0;
 
     /** @return true if peer-to-peer messages should be traced. */
-    virtual bool
+    [[nodiscard]] virtual bool
     shouldTracePeer() const = 0;
 
     /** @return true if ledger close/accept should be traced. */
-    virtual bool
+    [[nodiscard]] virtual bool
     shouldTraceLedger() const = 0;
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -318,5 +317,4 @@ setup_Telemetry(
     std::string const& version,
     std::uint32_t networkId);
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry
