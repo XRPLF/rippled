@@ -12,6 +12,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/KeyType.h>
 
 #include <cstddef>
 #include <utility>

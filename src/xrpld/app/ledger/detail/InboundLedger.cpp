@@ -30,6 +30,8 @@
 #include <xrpl/shamap/SHAMapSyncFilter.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SystemParameters.h>
 
 #include <xrpl.pb.h>
 

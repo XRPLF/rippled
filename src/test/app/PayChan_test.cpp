@@ -38,6 +38,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/beast/utility/Zero.h>
 
 #include <algorithm>
 #include <cassert>

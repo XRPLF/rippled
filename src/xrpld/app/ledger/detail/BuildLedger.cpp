@@ -16,6 +16,8 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SystemParameters.h>
 
 #include <cstddef>
 #include <exception>

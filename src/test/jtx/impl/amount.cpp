@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <ios>
+#include <limits>
 #include <ostream>
 #include <sstream>
 #include <string>

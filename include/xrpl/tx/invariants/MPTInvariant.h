@@ -86,7 +86,7 @@ private:
      * returns true if reqAuth is false or lsfMPTAuthorized was set at deletion.
      * For existing MPTokens, returns the result of requireAuth()
      */
-    bool
+    [[nodiscard]] bool
     isAuthorized(
         ReadView const& view,
         MPTID const& mptid,
