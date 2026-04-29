@@ -592,6 +592,21 @@ ValidConfidentialMPToken::finalize(
                 return false;
             }
         }
+        else if (
+            std::ranges::find(confidentialMPTTxTypes, tx.getTxnType()) !=
+            confidentialMPTTxTypes.end())
+        {
+            // Only Send and MergeInbox does not change coaDelta, so encrypted balances between
+            // holders must never modify sfOutstandingAmount.
+            if (checks.outstandingDelta != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: OutstandingAmount changed "
+                                   "by confidential transaction that should not "
+                                   "modify it for MPT "
+                                << to_string(id);
+                return false;
+            }
+        }
 
         if (checks.badVersion)
         {
