@@ -6,9 +6,7 @@
 #include <cmath>
 #include <map>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Basic histogram.
 
@@ -39,35 +37,35 @@ public:
     }
 
     /** The number of samples */
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return samples;
     }
 
     /** The number of distinct samples (bins) */
-    std::size_t
+    [[nodiscard]] std::size_t
     numBins() const
     {
         return counts_.size();
     }
 
     /** Minimum observed value */
-    T
+    [[nodiscard]] T
     minValue() const
     {
         return counts_.empty() ? T{} : counts_.begin()->first;
     }
 
     /** Maximum observed value */
-    T
+    [[nodiscard]] T
     maxValue() const
     {
         return counts_.empty() ? T{} : counts_.rbegin()->first;
     }
 
     /** Histogram average */
-    T
+    [[nodiscard]] T
     avg() const
     {
         T tmp{};
@@ -88,11 +86,11 @@ public:
                  If the percentile falls between two bins, uses the nearest bin.
         @return The given percentile of the distribution
     */
-    T
+    [[nodiscard]] T
     percentile(float p) const
     {
         assert(p >= 0 && p <= 1);
-        std::size_t pos = std::round(p * samples);
+        std::size_t const pos = std::round(p * samples);
 
         if (counts_.empty())
             return T{};
@@ -108,6 +106,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

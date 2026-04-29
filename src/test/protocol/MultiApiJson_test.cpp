@@ -1,14 +1,16 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/MultiApiJson.h>
 
-#include <cstdint>
+#include <array>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <type_traits>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 namespace {
 
@@ -236,7 +238,7 @@ struct MultiApiJson_test : beast::unit_test::suite
                         std::forward<decltype(v)>(v).visit(),  //
                         [](auto...) {});
                 };
-            }(std::move(std::as_const(s1))));
+            }(std::move(std::as_const(s1))));  // NOLINT(performance-move-const-arg)
         }
 
         {
@@ -867,22 +869,22 @@ struct MultiApiJson_test : beast::unit_test::suite
                 return !requires {
                     std::forward<decltype(v)>(v).visit(1, [](Json::Value const&&) {});
                 };
-            }(std::move(std::as_const(s1))));
+            }(std::move(std::as_const(s1))));  // NOLINT(performance-move-const-arg)
             static_assert([](auto&& v) {
                 return requires {
                     std::forward<decltype(v)>(v).visit(1, [](Json::Value const&) {});
                 };
-            }(std::move(std::as_const(s1))));
+            }(std::move(std::as_const(s1))));  // NOLINT(performance-move-const-arg)
             static_assert([](auto&& v) {
                 return !requires {
                     std::forward<decltype(v)>(v).visit()(1, [](Json::Value const&&) {});
                 };
-            }(std::move(std::as_const(s1))));
+            }(std::move(std::as_const(s1))));  // NOLINT(performance-move-const-arg)
             static_assert([](auto&& v) {
                 return requires {
                     std::forward<decltype(v)>(v).visit()(1, [](Json::Value const&) {});
                 };
-            }(std::move(std::as_const(s1))));
+            }(std::move(std::as_const(s1))));  // NOLINT(performance-move-const-arg)
 
             // Missing const
             static_assert([](auto&& v) {
@@ -917,5 +919,4 @@ struct MultiApiJson_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

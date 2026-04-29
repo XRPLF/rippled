@@ -92,13 +92,13 @@ flowchart TD
 ```mermaid
 flowchart TB
     subgraph validators["Validator Nodes"]
-        v1[rippled<br/>Validator 1]
-        v2[rippled<br/>Validator 2]
+        v1[xrpld<br/>Validator 1]
+        v2[xrpld<br/>Validator 2]
     end
 
     subgraph stock["Stock Nodes"]
-        s1[rippled<br/>Stock 1]
-        s2[rippled<br/>Stock 2]
+        s1[xrpld<br/>Stock 1]
+        s2[xrpld<br/>Stock 2]
     end
 
     subgraph collector["OTel Collector Cluster"]
@@ -140,7 +140,7 @@ flowchart TB
 
 **Reading the diagram:**
 
-- **Validator / Stock Nodes**: All rippled nodes emit trace data via OTLP. Validators and stock nodes are grouped separately because they may reside in different network zones.
+- **Validator / Stock Nodes**: All xrpld nodes emit trace data via OTLP. Validators and stock nodes are grouped separately because they may reside in different network zones.
 - **Collector Cluster (DC1, DC2)**: Regional collectors receive OTLP from nodes in their datacenter, apply processing (sampling, enrichment), and fan out to multiple backends.
 - **Storage Backends**: Tempo and Elastic provide queryable trace storage; S3/GCS Archive provides long-term cold storage for compliance or post-incident analysis.
 - **Grafana Dashboards**: The single visualization layer that queries both Tempo and Elastic, giving operators a unified view of all traces.
@@ -160,7 +160,7 @@ flowchart TB
 | **DaemonSet** | Collector per host   | Shared resources         | Complexity              |
 | **Gateway**   | Central collector(s) | Centralized processing   | Single point of failure |
 
-**Recommendation**: Use **Gateway** pattern with regional collectors for rippled networks:
+**Recommendation**: Use **Gateway** pattern with regional collectors for xrpld networks:
 
 - One collector cluster per datacenter/region
 - Tail-based sampling at collector level
@@ -197,7 +197,7 @@ flowchart LR
 
 **Reading the diagram:**
 
-- **Head Sampling (Node)**: The first filter -- each rippled node decides whether to sample a trace at creation time (default 100%, recommended 10% in production). This controls the volume leaving the node.
+- **Head Sampling (Node)**: The first filter -- each xrpld node decides whether to sample a trace at creation time (default 100%, recommended 10% in production). This controls the volume leaving the node.
 - **Tail Sampling (Collector)**: The second filter -- the collector inspects completed traces and applies rules: keep all errors, keep anything slower than 5 seconds, and keep 10% of the remainder.
 - **Arrow head → tail**: All head-sampled traces flow to the collector, where tail sampling further reduces volume while preserving the most valuable data.
 - **Final Traces**: The output after both sampling stages; this is what gets stored and queried. The two-stage approach balances cost with debuggability.
@@ -226,15 +226,15 @@ flowchart LR
 
 ## 7.6 Grafana Dashboard Examples
 
-Pre-built dashboards for rippled observability.
+Pre-built dashboards for xrpld observability.
 
 ### 7.6.1 Consensus Health Dashboard
 
 ```json
 {
-  "title": "rippled Consensus Health",
-  "uid": "rippled-consensus-health",
-  "tags": ["rippled", "consensus", "tracing"],
+  "title": "xrpld Consensus Health",
+  "uid": "xrpld-consensus-health",
+  "tags": ["xrpld", "consensus", "tracing"],
   "panels": [
     {
       "title": "Consensus Round Duration",
@@ -243,7 +243,7 @@ Pre-built dashboards for rippled observability.
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"consensus.round\"} | avg(duration) by (resource.service.instance.id)"
+          "query": "{resource.service.name=\"xrpld\" && name=\"consensus.round\"} | avg(duration) by (resource.service.instance.id)"
         }
       ],
       "fieldConfig": {
@@ -267,7 +267,7 @@ Pre-built dashboards for rippled observability.
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=~\"consensus.phase.*\"} | avg(duration) by (name)"
+          "query": "{resource.service.name=\"xrpld\" && name=~\"consensus.phase.*\"} | avg(duration) by (name)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
@@ -279,7 +279,7 @@ Pre-built dashboards for rippled observability.
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"consensus.round\"} | avg(span.xrpl.consensus.proposers)"
+          "query": "{resource.service.name=\"xrpld\" && name=\"consensus.round\"} | avg(span.xrpl.consensus.proposers)"
         }
       ],
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 }
@@ -291,7 +291,7 @@ Pre-built dashboards for rippled observability.
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"consensus.round\"} | duration > 5s"
+          "query": "{resource.service.name=\"xrpld\" && name=\"consensus.round\"} | duration > 5s"
         }
       ],
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 }
@@ -304,8 +304,8 @@ Pre-built dashboards for rippled observability.
 
 ```json
 {
-  "title": "rippled Node Overview",
-  "uid": "rippled-node-overview",
+  "title": "xrpld Node Overview",
+  "uid": "xrpld-node-overview",
   "panels": [
     {
       "title": "Active Nodes",
@@ -314,7 +314,7 @@ Pre-built dashboards for rippled observability.
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\"} | count_over_time() by (resource.service.instance.id) | count()"
+          "query": "{resource.service.name=\"xrpld\"} | count_over_time() by (resource.service.instance.id) | count()"
         }
       ],
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 }
@@ -326,7 +326,7 @@ Pre-built dashboards for rippled observability.
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"tx.receive\"} | count()"
+          "query": "{resource.service.name=\"xrpld\" && name=\"tx.receive\"} | count()"
         }
       ],
       "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 }
@@ -338,7 +338,7 @@ Pre-built dashboards for rippled observability.
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && status.code=error} | rate() / {resource.service.name=\"rippled\"} | rate() * 100"
+          "query": "{resource.service.name=\"xrpld\" && status.code=error} | rate() / {resource.service.name=\"xrpld\"} | rate() * 100"
         }
       ],
       "fieldConfig": {
@@ -373,8 +373,8 @@ Pre-built dashboards for rippled observability.
 apiVersion: 1
 
 groups:
-  - name: rippled-tracing-alerts
-    folder: rippled
+  - name: xrpld-tracing-alerts
+    folder: xrpld
     interval: 1m
     rules:
       - uid: consensus-slow
@@ -385,7 +385,7 @@ groups:
             datasourceUid: tempo
             model:
               queryType: traceql
-              query: '{resource.service.name="rippled" && name="consensus.round"} | avg(duration) > 5s'
+              query: '{resource.service.name="xrpld" && name="consensus.round"} | avg(duration) > 5s'
               # Note: Verify TraceQL aggregate queries are supported by your
               # Tempo version. Aggregate alerting (e.g., avg(duration)) requires
               # Tempo 2.3+ with TraceQL metrics enabled.
@@ -404,7 +404,7 @@ groups:
             datasourceUid: tempo
             model:
               queryType: traceql
-              query: '{resource.service.name="rippled" && name=~"rpc.command.*" && status.code=error} | rate() > 0.05'
+              query: '{resource.service.name="xrpld" && name=~"rpc.command.*" && status.code=error} | rate() > 0.05'
               # Note: Verify TraceQL aggregate queries are supported by your
               # Tempo version. Aggregate alerting (e.g., rate()) requires
               # Tempo 2.3+ with TraceQL metrics enabled.
@@ -422,7 +422,7 @@ groups:
             datasourceUid: tempo
             model:
               queryType: traceql
-              query: '{resource.service.name="rippled" && name="tx.receive"} | rate() < 10'
+              query: '{resource.service.name="xrpld" && name="tx.receive"} | rate() < 10'
         for: 10m
         annotations:
           summary: Transaction throughput below threshold
@@ -436,13 +436,13 @@ groups:
 
 > **OTLP** = OpenTelemetry Protocol
 
-How to correlate OpenTelemetry traces with existing rippled observability.
+How to correlate OpenTelemetry traces with existing xrpld observability.
 
 ### 7.7.1 Correlation Architecture
 
 ```mermaid
 flowchart TB
-    subgraph rippled["rippled Node"]
+    subgraph xrpld["xrpld Node"]
         otel[OpenTelemetry<br/>Spans]
         perflog[PerfLog<br/>JSON Logs]
         insight[Beast Insight<br/>StatsD Metrics]
@@ -479,7 +479,7 @@ flowchart TB
     logs --> corr
     metrics --> corr
 
-    style rippled fill:#0d47a1,stroke:#082f6a,color:#fff
+    style xrpld fill:#0d47a1,stroke:#082f6a,color:#fff
     style collectors fill:#bf360c,stroke:#8c2809,color:#fff
     style storage fill:#1b5e20,stroke:#0d3d14,color:#fff
     style grafana fill:#4a148c,stroke:#2e0d57,color:#fff
@@ -500,7 +500,7 @@ flowchart TB
 
 **Reading the diagram:**
 
-- **rippled Node (three sources)**: A single node emits three independent data streams -- OpenTelemetry spans, PerfLog JSON logs, and Beast Insight StatsD metrics.
+- **xrpld Node (three sources)**: A single node emits three independent data streams -- OpenTelemetry spans, PerfLog JSON logs, and Beast Insight StatsD metrics.
 - **Data Collection layer**: Each stream has its own collector -- OTel Collector for spans, Promtail/Fluentd for logs, and a StatsD exporter for metrics. They operate independently.
 - **Storage layer (Tempo, Loki, Prometheus)**: Each data type lands in a purpose-built store optimized for its query patterns (trace search, log grep, metric aggregation).
 - **Grafana Correlation Panel**: The key integration point -- Grafana queries all three stores and links them via shared fields (`trace_id`, `xrpl.tx.hash`, `ledger_seq`), enabling a single-pane debugging experience.
@@ -522,7 +522,7 @@ flowchart TB
 
 ```
 # In Grafana Explore with Tempo
-{resource.service.name="rippled" && span.xrpl.tx.hash="ABC123..."}
+{resource.service.name="xrpld" && span.xrpl.tx.hash="ABC123..."}
 ```
 
 **Step 2: Get the trace_id from the trace view**
@@ -535,14 +535,14 @@ Trace ID: 4bf92f3577b34da6a3ce929d0e0e4736
 
 ```
 # In Grafana Explore with Loki
-{job="rippled"} |= "4bf92f3577b34da6a3ce929d0e0e4736"
+{job="xrpld"} |= "4bf92f3577b34da6a3ce929d0e0e4736"
 ```
 
 **Step 4: Check Insight metrics for the time window**
 
 ```
 # In Grafana with Prometheus
-rate(rippled_tx_applied_total[1m])
+rate(xrpld_tx_applied_total[1m])
   @ timestamp_from_trace
 ```
 
@@ -550,8 +550,8 @@ rate(rippled_tx_applied_total[1m])
 
 ```json
 {
-  "title": "rippled Unified Observability",
-  "uid": "rippled-unified",
+  "title": "xrpld Unified Observability",
+  "uid": "xrpld-unified",
   "panels": [
     {
       "title": "Transaction Latency (Traces)",
@@ -560,7 +560,7 @@ rate(rippled_tx_applied_total[1m])
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"tx.receive\"} | histogram_over_time(duration)"
+          "query": "{resource.service.name=\"xrpld\" && name=\"tx.receive\"} | histogram_over_time(duration)"
         }
       ],
       "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 }
@@ -571,7 +571,7 @@ rate(rippled_tx_applied_total[1m])
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "rate(rippled_tx_received_total[5m])",
+          "expr": "rate(xrpld_tx_received_total[5m])",
           "legendFormat": "{{ instance }}"
         }
       ],
@@ -580,7 +580,7 @@ rate(rippled_tx_applied_total[1m])
           "links": [
             {
               "title": "View traces",
-              "url": "/explore?left={\"datasource\":\"Tempo\",\"query\":\"{resource.service.name=\\\"rippled\\\" && name=\\\"tx.receive\\\"}\"}"
+              "url": "/explore?left={\"datasource\":\"Tempo\",\"query\":\"{resource.service.name=\\\"xrpld\\\" && name=\\\"tx.receive\\\"}\"}"
             }
           ]
         }
@@ -593,7 +593,7 @@ rate(rippled_tx_applied_total[1m])
       "datasource": "Loki",
       "targets": [
         {
-          "expr": "{job=\"rippled\"} | json"
+          "expr": "{job=\"xrpld\"} | json"
         }
       ],
       "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 }
@@ -605,7 +605,7 @@ rate(rippled_tx_applied_total[1m])
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\"}"
+          "query": "{resource.service.name=\"xrpld\"}"
         }
       ],
       "fieldConfig": {
@@ -622,7 +622,7 @@ rate(rippled_tx_applied_total[1m])
                   },
                   {
                     "title": "View logs",
-                    "url": "/explore?left={\"datasource\":\"Loki\",\"query\":\"{job=\\\"rippled\\\"} |= \\\"${__value.raw}\\\"\"}"
+                    "url": "/explore?left={\"datasource\":\"Loki\",\"query\":\"{job=\\\"xrpld\\\"} |= \\\"${__value.raw}\\\"\"}"
                   }
                 ]
               }

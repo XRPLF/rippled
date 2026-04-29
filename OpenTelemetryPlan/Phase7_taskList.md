@@ -130,7 +130,7 @@
 
 - Edit `docker/telemetry/docker-compose.yml`:
   - Remove UDP :8125 port mapping from otel-collector service
-  - Update rippled service config: change `[insight] server=statsd` to `server=otel`
+  - Update xrpld service config: change `[insight] server=statsd` to `server=otel`
 
 **Key modified files**:
 
@@ -148,14 +148,14 @@
 **What to do**:
 
 - In `OTelCollector.cpp`, construct OTel instrument names to match existing Prometheus metric names:
-  - beast::insight `make_gauge("LedgerMaster", "Validated_Ledger_Age")` → OTel instrument name: `rippled_LedgerMaster_Validated_Ledger_Age`
+  - beast::insight `make_gauge("LedgerMaster", "Validated_Ledger_Age")` → OTel instrument name: `xrpld_LedgerMaster_Validated_Ledger_Age`
   - The prefix + group + name concatenation must produce the same string as `StatsDCollector`'s format
   - Use underscores as separators (matching StatsD convention)
 
 - Verify in integration test that key Prometheus queries still return data:
-  - `rippled_LedgerMaster_Validated_Ledger_Age`
-  - `rippled_Peer_Finder_Active_Inbound_Peers`
-  - `rippled_rpc_requests`
+  - `xrpld_LedgerMaster_Validated_Ledger_Age`
+  - `xrpld_Peer_Finder_Active_Inbound_Peers`
+  - `xrpld_rpc_requests`
 
 **Key consideration**: OTel Prometheus exporter may normalize metric names differently than StatsD receiver. Test this early (Task 7.2) and adjust naming strategy if needed. The OTel SDK's Prometheus exporter adds `_total` suffix to counters and converts dots to underscores — match existing conventions.
 
@@ -321,7 +321,7 @@ struct WindowEvent {
 
 ```cpp
 validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
-    "rippled_validator_health", "Validator health indicators");
+    "xrpld_validator_health", "Validator health indicators");
 ```
 
 **Gauge label values**:
@@ -333,12 +333,63 @@ validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
 | `unl_expiry_days`   | double | `app_.validators().expires()` → days until expiry |
 | `validation_quorum` | int64  | `app_.validators().quorum()`                      |
 
+### Sub-task 7.10a: Per-Validator Validation Count (Flag Ledger Window)
+
+**Objective**: Track how many ledgers each UNL validator has validated over
+the last 256 consecutive ledgers (one flag ledger window). This is the key
+UNL participation metric — validators consistently below threshold may be
+candidates for removal from the UNL.
+
+**What to do**:
+
+- Add a new observable gauge:
+
+```cpp
+validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
+    "xrpld_validator_participation",
+    "Per-validator validation count over the last 256 ledgers");
+```
+
+- The callback queries `app_.getValidations()` to get the trusted
+  validation set for each of the last 256 ledger hashes (from
+  `LedgerMaster::getValidatedLedger()` walking backwards). For each
+  validator public key in the UNL, count how many of those 256 ledgers
+  have a matching validation.
+
+- **Label dimensions**:
+  - `validator` — base58-encoded validator master public key
+  - `exported_instance` — this node's identity (standard)
+
+- **Emission**: every flag ledger (256 ledgers, ~15 minutes) or on a
+  10-second async gauge callback with cached results (recompute only
+  at flag ledger boundaries).
+
+- **Data source**: `RCLValidations::getTrustedForLedger(hash, seq)` returns
+  `std::vector<std::shared_ptr<STValidation>>` with `getSignerPublic()`
+  for each. The UNL list is from `app_.getValidators().getTrustedMasterKeys()`.
+
+- **Dashboard panel**: Add a table panel to the Validator Health dashboard
+  showing `xrpld_validator_participation` grouped by `validator` label,
+  with a threshold color (green >= 240, yellow >= 200, red < 200).
+
 **Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
 
 **Exit Criteria**:
 
-- [ ] All 4 label values emitted every 10s
+- [ ] Gauge emits one time series per UNL validator
+- [ ] Values range 0-256 and update at flag ledger boundaries
+- [ ] Grafana table panel shows per-validator participation
+- [ ] Validators below 75% participation are highlighted in red
+
+---
+
+**Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
+
+**Exit Criteria**:
+
+- [ ] All 4 base label values emitted every 10s
 - [ ] `unl_expiry_days` is negative when expired, positive when active
+- [ ] Per-validator participation gauge emits at flag ledger boundaries
 - [ ] Values visible in Prometheus
 
 ---
@@ -362,7 +413,7 @@ validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
 | -------------------------- | ------ | ------------------------------------- |
 | `peer_latency_p90_ms`      | double | P90 from sorted peer latencies        |
 | `peers_insane_count`       | int64  | Peers with diverged tracking status   |
-| `peers_higher_version_pct` | double | % of peers on newer rippled version   |
+| `peers_higher_version_pct` | double | % of peers on newer xrpld version     |
 | `upgrade_recommended`      | int64  | 1 if `peers_higher_version_pct > 60%` |
 
 **Implementation note**: The callback runs every 10s on the metrics reader thread. Iterating ~50-200 peers is acceptable overhead.
@@ -373,7 +424,7 @@ validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
 
 - [ ] P90 latency computed correctly
 - [ ] Insane count matches `peers` RPC output
-- [ ] Version comparison handles format variations (e.g., "rippled-2.4.0-rc1")
+- [ ] Version comparison handles format variations (e.g., "xrpld-2.4.0-rc1")
 
 ---
 
@@ -435,10 +486,10 @@ validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
 
 **Gauge label values**:
 
-| Gauge Name               | Label `metric=`                 | Type   | Source                        |
-| ------------------------ | ------------------------------- | ------ | ----------------------------- |
-| `rippled_storage_detail` | `nudb_bytes`                    | int64  | NuDB backend file size        |
-| `rippled_sync_info`      | `initial_sync_duration_seconds` | double | Time from start to first FULL |
+| Gauge Name             | Label `metric=`                 | Type   | Source                        |
+| ---------------------- | ------------------------------- | ------ | ----------------------------- |
+| `xrpld_storage_detail` | `nudb_bytes`                    | int64  | NuDB backend file size        |
+| `xrpld_sync_info`      | `initial_sync_duration_seconds` | double | Time from start to first FULL |
 
 **Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
 
@@ -455,15 +506,15 @@ validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
 
 **Objective**: Add 7 new event counters incremented at their respective instrumentation sites.
 
-| Counter Name                          | Increment Site                   | Source File           |
-| ------------------------------------- | -------------------------------- | --------------------- |
-| `rippled_ledgers_closed_total`        | `onAccept()` in consensus        | RCLConsensus.cpp      |
-| `rippled_validations_sent_total`      | `validate()` in consensus        | RCLConsensus.cpp      |
-| `rippled_validations_checked_total`   | Network validation received      | LedgerMaster.cpp      |
-| `rippled_validation_agreements_total` | ValidationTracker reconciliation | ValidationTracker.cpp |
-| `rippled_validation_missed_total`     | ValidationTracker reconciliation | ValidationTracker.cpp |
-| `rippled_state_changes_total`         | `setMode()` in NetworkOPs        | NetworkOPs.cpp        |
-| `rippled_jq_trans_overflow_total`     | Job queue overflow path          | JobQueue.cpp          |
+| Counter Name                        | Increment Site                   | Source File           |
+| ----------------------------------- | -------------------------------- | --------------------- |
+| `xrpld_ledgers_closed_total`        | `onAccept()` in consensus        | RCLConsensus.cpp      |
+| `xrpld_validations_sent_total`      | `validate()` in consensus        | RCLConsensus.cpp      |
+| `xrpld_validations_checked_total`   | Network validation received      | LedgerMaster.cpp      |
+| `xrpld_validation_agreements_total` | ValidationTracker reconciliation | ValidationTracker.cpp |
+| `xrpld_validation_missed_total`     | ValidationTracker reconciliation | ValidationTracker.cpp |
+| `xrpld_state_changes_total`         | `setMode()` in NetworkOPs        | NetworkOPs.cpp        |
+| `xrpld_jq_trans_overflow_total`     | Job queue overflow path          | JobQueue.cpp          |
 
 **Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp` (declarations), plus recording sites in RCLConsensus.cpp, LedgerMaster.cpp, NetworkOPs.cpp, JobQueue.cpp
 
@@ -482,14 +533,14 @@ validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
 
 **Gauge label values**:
 
-| Gauge Name                     | Label `metric=`     | Type   | Source                      |
-| ------------------------------ | ------------------- | ------ | --------------------------- |
-| `rippled_validation_agreement` | `agreement_pct_1h`  | double | `tracker.agreementPct1h()`  |
-|                                | `agreements_1h`     | int64  | `tracker.agreements1h()`    |
-|                                | `missed_1h`         | int64  | `tracker.missed1h()`        |
-|                                | `agreement_pct_24h` | double | `tracker.agreementPct24h()` |
-|                                | `agreements_24h`    | int64  | `tracker.agreements24h()`   |
-|                                | `missed_24h`        | int64  | `tracker.missed24h()`       |
+| Gauge Name                   | Label `metric=`     | Type   | Source                      |
+| ---------------------------- | ------------------- | ------ | --------------------------- |
+| `xrpld_validation_agreement` | `agreement_pct_1h`  | double | `tracker.agreementPct1h()`  |
+|                              | `agreements_1h`     | int64  | `tracker.agreements1h()`    |
+|                              | `missed_1h`         | int64  | `tracker.missed1h()`        |
+|                              | `agreement_pct_24h` | double | `tracker.agreementPct24h()` |
+|                              | `agreements_24h`    | int64  | `tracker.agreements24h()`   |
+|                              | `missed_24h`        | int64  | `tracker.missed24h()`       |
 
 **Key modified files**: `src/xrpld/telemetry/MetricsRegistry.cpp`
 

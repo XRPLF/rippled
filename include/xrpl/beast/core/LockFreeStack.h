@@ -13,22 +13,18 @@ class LockFreeStackIterator
 {
 protected:
     using Node = typename Container::Node;
-    using NodePtr = typename std::conditional<IsConst, Node const*, Node*>::type;
+    using NodePtr = std::conditional_t<IsConst, Node const*, Node*>;
 
 public:
     using iterator_category = std::forward_iterator_tag;
     using value_type = typename Container::value_type;
     using difference_type = typename Container::difference_type;
-    using pointer = typename std::
-        conditional<IsConst, typename Container::const_pointer, typename Container::pointer>::type;
-    using reference = typename std::conditional<
-        IsConst,
-        typename Container::const_reference,
-        typename Container::reference>::type;
+    using pointer =
+        std::conditional_t<IsConst, typename Container::const_pointer, typename Container::pointer>;
+    using reference = std::
+        conditional_t<IsConst, typename Container::const_reference, typename Container::reference>;
 
-    LockFreeStackIterator() : m_node()
-    {
-    }
+    LockFreeStackIterator() = default;
 
     LockFreeStackIterator(NodePtr node) : m_node(node)
     {
@@ -81,7 +77,7 @@ public:
     }
 
 private:
-    NodePtr m_node;
+    NodePtr m_node{};
 };
 
 //------------------------------------------------------------------------------
@@ -166,7 +162,7 @@ public:
     operator=(LockFreeStack const&) = delete;
 
     /** Returns true if the stack is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return m_head.load() == &m_end;
@@ -187,7 +183,7 @@ public:
     bool
     push_front(Node* node)
     {
-        bool first;
+        bool first = false;
         Node* old_head = m_head.load(std::memory_order_relaxed);
         do
         {
@@ -211,7 +207,7 @@ public:
     pop_front()
     {
         Node* node = m_head.load();
-        Node* new_head;
+        Node* new_head = nullptr;
         do
         {
             if (node == &m_end)
@@ -241,25 +237,25 @@ public:
         return iterator(&m_end);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return const_iterator(m_head.load());
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return const_iterator(&m_end);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
         return const_iterator(m_head.load());
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
         return const_iterator(&m_end);

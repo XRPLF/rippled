@@ -13,7 +13,7 @@ namespace path {
 
 namespace detail {
 struct FlowDebugInfo;
-}
+}  // namespace detail
 
 /** RippleCalc calculates the quality of a payment path.
 
@@ -53,7 +53,7 @@ public:
         TER calculationResult_ = temUNKNOWN;
 
     public:
-        TER
+        [[nodiscard]] TER
         result() const
         {
             return calculationResult_;

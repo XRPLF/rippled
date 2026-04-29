@@ -146,24 +146,26 @@ public:
     }
 
     /** Return the sign of the amount */
-    constexpr int
+    [[nodiscard]] constexpr int
     signum() const noexcept
     {
-        return (drops_ < 0) ? -1 : (drops_ ? 1 : 0);
+        if (drops_ < 0)
+            return -1;
+        return (drops_ != 0) ? 1 : 0;
     }
 
     /** Returns the number of drops */
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     drops() const
     {
         return drops_;
     }
 
-    constexpr double
+    [[nodiscard]] constexpr double
     decimalXRP() const;
 
     template <class Dest>
-    std::optional<Dest>
+    [[nodiscard]] std::optional<Dest>
     dropsAs() const
     {
         if ((drops_ > std::numeric_limits<Dest>::max()) ||
@@ -183,7 +185,7 @@ public:
     }
 
     template <class Dest>
-    Dest
+    [[nodiscard]] Dest
     dropsAs(XRPAmount defaultValue) const
     {
         return dropsAs<Dest>().value_or(defaultValue.drops());
@@ -193,7 +195,7 @@ public:
      * in contexts that don't expect the value to ever approach
      * the 32-bit limits (i.e. fees and reserves).
      */
-    Json::Value
+    [[nodiscard]] Json::Value
     jsonClipped() const
     {
         static_assert(
@@ -214,7 +216,7 @@ public:
         function unless the type has been abstracted away,
         e.g. in a templated function.
     */
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     value() const
     {
         return drops_;
@@ -262,7 +264,7 @@ mulRatio(XRPAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
 {
     using namespace boost::multiprecision;
 
-    if (!den)
+    if (den == 0u)
         Throw<std::runtime_error>("division by zero");
 
     int128_t const amt128(amt.drops());

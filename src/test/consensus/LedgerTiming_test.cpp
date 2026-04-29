@@ -1,8 +1,12 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/LedgerTiming.h>
 
-namespace xrpl {
-namespace test {
+#include <chrono>
+#include <cstdint>
+#include <utility>
+
+namespace xrpl::test {
 
 class LedgerTiming_test : public beast::unit_test::suite
 {
@@ -66,7 +70,7 @@ class LedgerTiming_test : public beast::unit_test::suite
         using namespace std::chrono_literals;
         // A closeTime equal to the epoch is not modified
         using tp = NetClock::time_point;
-        tp def;
+        tp const def;
         BEAST_EXPECT(def == roundCloseTime(def, 30s));
 
         // Otherwise, the closeTime is rounded to the nearest
@@ -111,5 +115,4 @@ class LedgerTiming_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

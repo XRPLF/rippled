@@ -10,9 +10,9 @@ std::string
 strHex(FwdIt begin, FwdIt end)
 {
     static_assert(
-        std::is_convertible<
+        std::is_convertible_v<
             typename std::iterator_traits<FwdIt>::iterator_category,
-            std::forward_iterator_tag>::value,
+            std::forward_iterator_tag>,
         "FwdIt must be a forward iterator");
     std::string result;
     result.reserve(2 * std::distance(begin, end));

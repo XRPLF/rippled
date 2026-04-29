@@ -391,6 +391,6 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "rippled RPC & Pathfinding (StatsD)",
+  "title": "RPC & Pathfinding (StatsD)",
   "uid": "rippled-statsd-rpc"
 }

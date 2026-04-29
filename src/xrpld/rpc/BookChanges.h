@@ -11,7 +11,7 @@
 
 namespace Json {
 class Value;
-}
+}  // namespace Json
 
 namespace xrpl {
 
@@ -44,7 +44,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             continue;
 
         std::optional<uint32_t> offerCancel;
-        uint16_t tt = tx.first->getFieldU16(sfTransactionType);
+        uint16_t const tt = tx.first->getFieldU16(sfTransactionType);
         switch (tt)
         {
             case ttOFFER_CANCEL:
@@ -62,7 +62,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         for (auto const& node : tx.second->getFieldArray(sfAffectedNodes))
         {
             SField const& metaType = node.getFName();
-            uint16_t nodeType = node.getFieldU16(sfLedgerEntryType);
+            uint16_t const nodeType = node.getFieldU16(sfLedgerEntryType);
 
             // we only care about ltOFFER objects being modified or
             // deleted
@@ -94,15 +94,15 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
             // compute the difference in gets and pays actually
             // affected onto the offer
-            STAmount deltaGets = finalFields.getFieldAmount(sfTakerGets) -
+            STAmount const deltaGets = finalFields.getFieldAmount(sfTakerGets) -
                 previousFields.getFieldAmount(sfTakerGets);
-            STAmount deltaPays = finalFields.getFieldAmount(sfTakerPays) -
+            STAmount const deltaPays = finalFields.getFieldAmount(sfTakerPays) -
                 previousFields.getFieldAmount(sfTakerPays);
 
-            std::string g{to_string(deltaGets.issue())};
-            std::string p{to_string(deltaPays.issue())};
+            std::string const g{to_string(deltaGets.asset())};
+            std::string const p{to_string(deltaPays.asset())};
 
-            bool const noswap = isXRP(deltaGets) ? true : (isXRP(deltaPays) ? false : (g < p));
+            bool const noswap = isXRP(deltaGets) || (!isXRP(deltaPays) && (g < p));
 
             STAmount first = noswap ? deltaGets : deltaPays;
             STAmount second = noswap ? deltaPays : deltaGets;
@@ -111,7 +111,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             if (second == beast::zero)
                 continue;
 
-            STAmount rate = divide(first, second, noIssue());
+            STAmount const rate = divide(first, second, noIssue());
 
             if (first < beast::zero)
                 first = -first;
@@ -121,15 +121,20 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
             std::stringstream ss;
             if (noswap)
+            {
                 ss << g << "|" << p;
+            }
             else
+            {
                 ss << p << "|" << g;
+            }
 
-            std::optional<uint256> domain = finalFields[~sfDomainID];
+            std::optional<uint256> const domain = finalFields[~sfDomainID];
 
-            std::string key{ss.str()};
+            std::string const key{ss.str()};
 
-            if (tally.find(key) == tally.end())
+            if (!tally.contains(key))
+            {
                 tally[key] = {
                     first,   // side A vol
                     second,  // side B vol
@@ -138,6 +143,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                     rate,    // open
                     rate,    // close
                     domain};
+            }
             else
             {
                 // increment volume
@@ -170,18 +176,37 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
     jvObj[jss::changes] = Json::arrayValue;
 
+    auto volToStr = [](STAmount const& vol) {
+        return vol.asset().visit(
+            [&](Issue const& issue) {
+                if (isXRP(issue))
+                    return to_string(vol.xrp());
+                return to_string(vol.iou());
+            },
+            [&](MPTIssue const&) { return to_string(vol.mpt()); });
+    };
+
     for (auto const& entry : tally)
     {
         Json::Value& inner = jvObj[jss::changes].append(Json::objectValue);
 
-        STAmount volA = std::get<0>(entry.second);
-        STAmount volB = std::get<1>(entry.second);
+        STAmount const volA = std::get<0>(entry.second);
+        STAmount const volB = std::get<1>(entry.second);
 
-        inner[jss::currency_a] = (isXRP(volA) ? "XRP_drops" : to_string(volA.issue()));
-        inner[jss::currency_b] = (isXRP(volB) ? "XRP_drops" : to_string(volB.issue()));
+        volA.asset().visit(
+            [&](Issue const&) {
+                inner[jss::currency_a] = (isXRP(volA) ? "XRP_drops" : to_string(volA.asset()));
+            },
+            [&](MPTIssue const&) { inner[jss::mpt_issuance_id_a] = to_string(volA.asset()); });
 
-        inner[jss::volume_a] = (isXRP(volA) ? to_string(volA.xrp()) : to_string(volA.iou()));
-        inner[jss::volume_b] = (isXRP(volB) ? to_string(volB.xrp()) : to_string(volB.iou()));
+        volB.asset().visit(
+            [&](Issue const&) {
+                inner[jss::currency_b] = (isXRP(volB) ? "XRP_drops" : to_string(volB.asset()));
+            },
+            [&](MPTIssue const&) { inner[jss::mpt_issuance_id_b] = to_string(volB.asset()); });
+
+        inner[jss::volume_a] = volToStr(volA);
+        inner[jss::volume_b] = volToStr(volB);
 
         inner[jss::high] = to_string(std::get<2>(entry.second).iou());
         inner[jss::low] = to_string(std::get<3>(entry.second).iou());

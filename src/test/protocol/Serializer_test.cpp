@@ -1,6 +1,8 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <cstdint>
+#include <initializer_list>
 #include <limits>
 
 namespace xrpl {
@@ -17,7 +19,7 @@ struct Serializer_test : public beast::unit_test::suite
                 0,
                 1,
                 std::numeric_limits<std::int32_t>::max()};
-            for (std::int32_t value : values)
+            for (std::int32_t const value : values)
             {
                 Serializer s;
                 s.add32(value);
@@ -33,7 +35,7 @@ struct Serializer_test : public beast::unit_test::suite
                 0,
                 1,
                 std::numeric_limits<std::int64_t>::max()};
-            for (std::int64_t value : values)
+            for (std::int64_t const value : values)
             {
                 Serializer s;
                 s.add64(value);

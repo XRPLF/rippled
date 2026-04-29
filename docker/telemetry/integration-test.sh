@@ -357,8 +357,8 @@ trace_peer=1
 trace_ledger=1
 
 [insight]
-server=otel
-endpoint=http://localhost:4318/v1/metrics
+server=statsd
+address=127.0.0.1:8125
 prefix=rippled
 
 [rpc_startup]
@@ -481,18 +481,8 @@ seq_num=$(echo "$acct_result" | jq -r '.result.account_data.Sequence' 2>/dev/nul
 log "  Genesis account sequence: $seq_num"
 
 # Submit payment
-submit_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" -d "{
-  \"method\": \"submit\",
-  \"params\": [{
-    \"secret\": \"$GENESIS_SEED\",
-    \"tx_json\": {
-      \"TransactionType\": \"Payment\",
-      \"Account\": \"$GENESIS_ACCOUNT\",
-      \"Destination\": \"$DEST_ACCOUNT\",
-      \"Amount\": \"10000000\"
-    }
-  }]
-}")
+submit_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
+    -d "{\"method\":\"submit\",\"params\":[{\"secret\":\"$GENESIS_SEED\",\"tx_json\":{\"TransactionType\":\"Payment\",\"Account\":\"$GENESIS_ACCOUNT\",\"Destination\":\"$DEST_ACCOUNT\",\"Amount\":\"10000000\"}}]}")
 
 engine_result=$(echo "$submit_result" | jq -r '.result.engine_result' 2>/dev/null || echo "unknown")
 tx_hash=$(echo "$submit_result" | jq -r '.result.tx_json.hash' 2>/dev/null || echo "unknown")
@@ -592,52 +582,42 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 10b: Verify native OTel metrics in Prometheus (beast::insight)
+# Step 10b: Verify StatsD metrics in Prometheus
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 7: Native OTel Metrics (beast::insight via OTLP) ---"
-log "Waiting 20s for OTLP metric export + Prometheus scrape..."
+log "--- Phase 6: StatsD Metrics (beast::insight) ---"
+log "Waiting 20s for StatsD aggregation + Prometheus scrape..."
 sleep 20
 
-check_otel_metric() {
+check_statsd_metric() {
     local metric_name="$1"
     local result
     result=$(curl -sf "$PROM/api/v1/query?query=$metric_name" \
         | jq '.data.result | length' 2>/dev/null || echo 0)
     if [ "$result" -gt 0 ]; then
-        ok "OTel: $metric_name ($result series)"
+        ok "StatsD: $metric_name ($result series)"
     else
-        fail "OTel: $metric_name (0 series)"
+        fail "StatsD: $metric_name (0 series)"
     fi
 }
 
-# Node health gauges (ObservableGauge — no _total suffix)
-check_otel_metric "rippled_LedgerMaster_Validated_Ledger_Age"
-check_otel_metric "rippled_LedgerMaster_Published_Ledger_Age"
-check_otel_metric "rippled_job_count"
+# Node health gauges
+check_statsd_metric "rippled_LedgerMaster_Validated_Ledger_Age"
+check_statsd_metric "rippled_LedgerMaster_Published_Ledger_Age"
+check_statsd_metric "rippled_job_count"
 
 # State accounting
-check_otel_metric "rippled_State_Accounting_Full_duration"
+check_statsd_metric "rippled_State_Accounting_Full_duration"
 
 # Peer finder
-check_otel_metric "rippled_Peer_Finder_Active_Inbound_Peers"
-check_otel_metric "rippled_Peer_Finder_Active_Outbound_Peers"
+check_statsd_metric "rippled_Peer_Finder_Active_Inbound_Peers"
+check_statsd_metric "rippled_Peer_Finder_Active_Outbound_Peers"
 
-# RPC counters (Counter — Prometheus adds _total suffix automatically)
-check_otel_metric "rippled_rpc_requests_total"
+# RPC counters (only if RPC was exercised — should be true from Steps 5-8)
+check_statsd_metric "rippled_rpc_requests"
 
 # Overlay traffic
-check_otel_metric "rippled_total_Bytes_In"
-
-# Verify StatsD receiver is NOT required (no statsd receiver in pipeline)
-log ""
-log "--- Verify StatsD receiver is not required ---"
-statsd_port_check=$(curl -sf "http://localhost:8125" 2>&1 || echo "refused")
-if echo "$statsd_port_check" | grep -qi "refused\|error\|connection"; then
-    ok "StatsD port 8125 is not listening (not required)"
-else
-    fail "StatsD port 8125 appears to be listening (should not be needed)"
-fi
+check_statsd_metric "rippled_total_Bytes_In"
 
 # ---------------------------------------------------------------------------
 # Step 11: Summary

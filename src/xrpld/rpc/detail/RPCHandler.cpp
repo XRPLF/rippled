@@ -1,29 +1,35 @@
-#include <xrpld/app/ledger/InboundLedgers.h>
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/rpc/RPCHandler.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/rpc/detail/Tuning.h>
-#include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <atomic>
 #include <chrono>
+#include <cstdint>
+#include <exception>
+#include <string>
+#include <string_view>
 
 namespace xrpl {
+using namespace telemetry;
 namespace RPC {
 
 namespace {
@@ -130,7 +136,7 @@ fillHandler(JsonContext& context, Handler const*& result)
             return rpcUNKNOWN_COMMAND;
     }
 
-    std::string strCommand = context.params.isMember(jss::command)
+    std::string const strCommand = context.params.isMember(jss::command)
         ? context.params[jss::command].asString()
         : context.params[jss::method].asString();
 
@@ -144,7 +150,7 @@ fillHandler(JsonContext& context, Handler const*& result)
     if (handler->role_ == Role::ADMIN && context.role != Role::ADMIN)
         return rpcNO_PERMISSION;
 
-    error_code_i res = conditionMet(handler->condition_, context);
+    error_code_i const res = conditionMet(handler->condition_, context);
     if (res != rpcSUCCESS)
     {
         return res;
@@ -158,12 +164,15 @@ template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
-    XRPL_TRACE_RPC(context.app.getTelemetry(), "rpc.command." + name);
-    XRPL_TRACE_SET_ATTR("xrpl.rpc.command", name.c_str());
-    XRPL_TRACE_SET_ATTR("xrpl.rpc.version", static_cast<int64_t>(context.apiVersion));
-    XRPL_TRACE_SET_ATTR("xrpl.rpc.role", (context.role == Role::ADMIN ? "admin" : "user"));
-    XRPL_TRACE_SET_ATTR("xrpl.node.amendment_blocked", context.app.getOPs().isAmendmentBlocked());
-    XRPL_TRACE_SET_ATTR("xrpl.node.server_state", context.app.getOPs().strOperatingMode().c_str());
+    auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, name);
+    span.setAttribute(rpc_span::attr::command, name.c_str());
+    span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
+    span.setAttribute(
+        rpc_span::attr::role,
+        context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
+                                    : std::string_view(rpc_span::val::user));
+    span.setAttribute(attr::nodeAmendmentBlocked, context.app.getOPs().isAmendmentBlocked());
+    span.setAttribute(attr::nodeServerState, context.app.getOPs().strOperatingMode());
 
     static std::atomic<std::uint64_t> requestId{0};
     auto& perfLog = context.app.getPerfLog();
@@ -177,22 +186,18 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         auto ret = method(context, result);
         auto end = std::chrono::system_clock::now();
 
-        [[maybe_unused]] auto const durationMs =
-            std::chrono::duration<double, std::milli>(end - start).count();
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
-        XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "success");
-        XRPL_TRACE_SET_ATTR("xrpl.rpc.duration_ms", durationMs);
+        span.setAttribute(rpc_span::attr::status, rpc_span::val::success);
         return ret;
     }
     catch (std::exception& e)
     {
         perfLog.rpcError(name, curId);
         JLOG(context.j.info()) << "Caught throw: " << e.what();
-        XRPL_TRACE_EXCEPTION(e);
-        XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "error");
-        XRPL_TRACE_SET_ATTR("xrpl.rpc.error_message", e.what());
+        span.recordException(e);
+        span.setAttribute(rpc_span::attr::status, rpc_span::val::error);
 
         if (context.loadType == Resource::feeReferenceRPC)
             context.loadType = Resource::feeExceptionRPC;
@@ -210,6 +215,24 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
+        std::string cmdName;
+        if (context.params.isMember(jss::command))
+        {
+            cmdName = context.params[jss::command].asString();
+        }
+        else if (context.params.isMember(jss::method))
+        {
+            cmdName = context.params[jss::method].asString();
+        }
+        else
+        {
+            cmdName = "unknown";
+        }
+        auto span = SpanGuard::span(
+            TraceCategory::Rpc, rpc_span::prefix::command, rpc_span::val::unknownCommand);
+        span.setAttribute(rpc_span::attr::command, cmdName.c_str());
+        span.setError(get_error_info(error).token.c_str());
+
         inject_error(error, result);
         return error;
     }

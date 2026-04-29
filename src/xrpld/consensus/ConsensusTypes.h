@@ -137,10 +137,10 @@ class ConsensusTimer
 {
     using time_point = std::chrono::steady_clock::time_point;
     time_point start_;
-    std::chrono::milliseconds dur_;
+    std::chrono::milliseconds dur_{};
 
 public:
-    std::chrono::milliseconds
+    [[nodiscard]] std::chrono::milliseconds
     read() const
     {
         return dur_;

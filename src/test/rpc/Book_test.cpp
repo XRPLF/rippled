@@ -1,17 +1,39 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/domain.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_dex.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/require.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <chrono>
+#include <memory>
+#include <optional>
+#include <string>
+
+namespace xrpl::test {
 
 class Book_test : public beast::unit_test::suite
 {
@@ -877,9 +899,9 @@ public:
         testcase("TrackOffers");
         using namespace jtx;
         Env env(*this);
-        Account gw{"gw"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         auto wsc = makeWSClient(env.app().config());
         env.fund(XRP(20000), alice, bob, gw);
         env.close();
@@ -940,7 +962,7 @@ public:
         BEAST_EXPECT(jrr[jss::offers].size() == 1);
         auto const jrOffer = jrr[jss::offers][0u];
         BEAST_EXPECT(jrOffer[sfAccount.fieldName] == alice.human());
-        BEAST_EXPECT(jrOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD.issue()));
+        BEAST_EXPECT(jrOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD));
         BEAST_EXPECT(jrOffer[sfBookNode.fieldName] == "0");
         BEAST_EXPECT(jrOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
@@ -984,7 +1006,7 @@ public:
         BEAST_EXPECT(jrr[jss::offers].size() == 2);
         auto const jrNextOffer = jrr[jss::offers][1u];
         BEAST_EXPECT(jrNextOffer[sfAccount.fieldName] == bob.human());
-        BEAST_EXPECT(jrNextOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD.issue()));
+        BEAST_EXPECT(jrNextOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD));
         BEAST_EXPECT(jrNextOffer[sfBookNode.fieldName] == "0");
         BEAST_EXPECT(jrNextOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrNextOffer[sfLedgerEntryType.fieldName] == jss::Offer);
@@ -1186,8 +1208,8 @@ public:
         testcase("BookOffersRPC Errors");
         using namespace jtx;
         Env env(*this);
-        Account gw{"gw"};
-        Account alice{"alice"};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
         env.fund(XRP(10000), alice, gw);
         env.close();
         auto USD = gw["USD"];
@@ -1515,7 +1537,7 @@ public:
         testcase("BookOffer Limits");
         using namespace jtx;
         Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
-        Account gw{"gw"};
+        Account const gw{"gw"};
         env.fund(XRP(200000), gw);
         // Note that calls to env.close() fail without admin permission.
         if (asAdmin)
@@ -1562,7 +1584,7 @@ public:
             featurePermissionedDEX};
 
         Env env(*this, all);
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
         auto const carol = permDex.carol;
@@ -1685,7 +1707,7 @@ public:
             featurePermissionedDEX};
 
         Env env(*this, all);
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
         auto const carol = permDex.carol;
@@ -1825,5 +1847,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(Book, rpc, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

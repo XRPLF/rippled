@@ -406,7 +406,7 @@ flowchart TB
 
 ## Distributed Traces Across Nodes
 
-In distributed systems like rippled, traces span **multiple independent nodes**. The trace context must be propagated in network messages:
+In distributed systems like xrpld, traces span **multiple independent nodes**. The trace context must be propagated in network messages:
 
 ```mermaid
 sequenceDiagram
@@ -492,7 +492,7 @@ traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
              └── Version
 ```
 
-### Protocol Buffers (rippled P2P messages)
+### Protocol Buffers (xrpld P2P messages)
 
 ```protobuf
 message TMTransaction {
@@ -534,7 +534,7 @@ Trace completes → Collector evaluates:
 
 ---
 
-## Key Benefits for rippled
+## Key Benefits for xrpld
 
 | Challenge                          | How Tracing Helps                        |
 | ---------------------------------- | ---------------------------------------- |

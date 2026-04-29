@@ -3,8 +3,11 @@
     Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
     telemetry=ON). Contains:
 
+      - FilteringSpanProcessor: decorator that drops spans marked with
+        kDiscardedAttr before they enter the batch export queue.
       - TelemetryImpl: configures the OTel SDK with an OTLP/HTTP exporter,
-        batch span processor, trace-ID-ratio sampler, and resource attributes.
+        FilteringSpanProcessor wrapping a batch span processor,
+        trace-ID-ratio sampler, and resource attributes.
       - NullTelemetryOtel: no-op fallback used when telemetry is compiled in
         but disabled at runtime (enabled=0 in config).
       - make_Telemetry(): factory that selects the appropriate implementation.
@@ -12,24 +15,24 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/telemetry/Telemetry.h>
 
-#include <opentelemetry/common/attribute_value.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/telemetry/DiscardFlag.h>
+#include <xrpl/telemetry/SpanNames.h>
+
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
 #include <opentelemetry/sdk/resource/semantic_conventions.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_factory.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_options.h>
+#include <opentelemetry/sdk/trace/processor.h>
 #include <opentelemetry/sdk/trace/sampler.h>
 #include <opentelemetry/sdk/trace/samplers/trace_id_ratio.h>
 #include <opentelemetry/sdk/trace/tracer_provider.h>
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
 #include <opentelemetry/trace/noop.h>
 #include <opentelemetry/trace/provider.h>
-#include <opentelemetry/trace/span_context.h>
-
-#include <map>
 
 namespace xrpl {
 namespace telemetry {
@@ -40,6 +43,91 @@ namespace trace_api = opentelemetry::trace;
 namespace trace_sdk = opentelemetry::sdk::trace;
 namespace otlp_http = opentelemetry::exporter::otlp;
 namespace resource = opentelemetry::sdk::resource;
+
+/** SpanProcessor decorator that drops discarded spans.
+
+    Wraps a delegate processor (typically BatchSpanProcessor). In OnEnd(),
+    checks the tl_discardCurrentSpan thread-local flag. If set (by
+    SpanGuard::discard()), the span is silently dropped — never entering
+    the batch queue, never sent over the network, never stored.
+
+    Uses a thread-local flag rather than inspecting Recordable attributes
+    because the Recordable type varies by exporter (SpanData for simple
+    exporters, OtlpRecordable for OTLP) and none expose a uniform getter.
+    The flag is safe because Span::End() calls OnEnd() synchronously on
+    the same thread.
+
+    All other methods delegate directly to the wrapped processor.
+
+    Dependency diagram:
+
+        +---------------------------+
+        | FilteringSpanProcessor    |
+        +---------------------------+
+        | - delegate_ : unique_ptr  |
+        |   <SpanProcessor>         |
+        +---------------------------+
+                    |  wraps
+          +---------+-----------+
+          | BatchSpanProcessor  |
+          +---------------------+
+
+    @note Thread safety: OnEnd() may be called concurrently from multiple
+    threads. The tl_discardCurrentSpan flag is thread-local, so each
+    thread's discard state is independent — no synchronization needed.
+*/
+class FilteringSpanProcessor : public trace_sdk::SpanProcessor
+{
+    std::unique_ptr<trace_sdk::SpanProcessor> delegate_;
+
+public:
+    explicit FilteringSpanProcessor(std::unique_ptr<trace_sdk::SpanProcessor> delegate)
+        : delegate_(std::move(delegate))
+    {
+    }
+
+    std::unique_ptr<trace_sdk::Recordable>
+    MakeRecordable() noexcept override
+    {
+        return delegate_->MakeRecordable();
+    }
+
+    void
+    OnStart(
+        trace_sdk::Recordable& span,
+        opentelemetry::trace::SpanContext const& parentContext) noexcept override
+    {
+        delegate_->OnStart(span, parentContext);
+    }
+
+    void
+    OnEnd(std::unique_ptr<trace_sdk::Recordable>&& span) noexcept override
+    {
+        if (tl_discardCurrentSpan)
+        {
+            // SpanGuard::discard() set the flag on this thread just before
+            // calling Span::End(), which invokes OnEnd() synchronously.
+            // Clear the flag and drop the span.
+            tl_discardCurrentSpan = false;
+            return;
+        }
+        delegate_->OnEnd(std::move(span));
+    }
+
+    bool
+    ForceFlush(
+        std::chrono::microseconds timeout = (std::chrono::microseconds::max)()) noexcept override
+    {
+        return delegate_->ForceFlush(timeout);
+    }
+
+    bool
+    Shutdown(
+        std::chrono::microseconds timeout = (std::chrono::microseconds::max)()) noexcept override
+    {
+        return delegate_->Shutdown(timeout);
+    }
+};
 
 /** No-op implementation used when XRPL_ENABLE_TELEMETRY is defined but
     setup.enabled is false at runtime.
@@ -60,11 +148,13 @@ public:
     void
     start() override
     {
+        Telemetry::setInstance(this);
     }
 
     void
     stop() override
     {
+        Telemetry::setInstance(nullptr);
     }
 
     bool
@@ -129,19 +219,6 @@ public:
     {
         return opentelemetry::nostd::shared_ptr<trace_api::Span>(new trace_api::NoopSpan(nullptr));
     }
-
-    /** No-op: returns a NoopSpan, ignoring links. */
-    opentelemetry::nostd::shared_ptr<trace_api::Span>
-    startSpan(
-        std::string_view,
-        opentelemetry::context::Context const&,
-        std::vector<std::pair<
-            trace_api::SpanContext,
-            std::vector<std::pair<std::string, opentelemetry::common::AttributeValue>>>> const&,
-        trace_api::SpanKind) override
-    {
-        return opentelemetry::nostd::shared_ptr<trace_api::Span>(new trace_api::NoopSpan(nullptr));
-    }
 };
 
 /** Full OTel SDK implementation that exports trace spans via OTLP/HTTP.
@@ -198,16 +275,20 @@ public:
         processorOpts.schedule_delay_millis = std::chrono::milliseconds(setup_.batchDelay);
         processorOpts.max_export_batch_size = setup_.batchSize;
 
-        auto processor =
+        auto batchProcessor =
             trace_sdk::BatchSpanProcessorFactory::Create(std::move(exporter), processorOpts);
+
+        // Wrap batch processor with filtering processor that drops spans
+        // marked with kDiscardedAttr (via SpanGuard::discard()).
+        auto processor = std::make_unique<FilteringSpanProcessor>(std::move(batchProcessor));
 
         // Configure resource attributes
         auto resourceAttrs = resource::Resource::Create({
             {resource::SemanticConventions::kServiceName, setup_.serviceName},
             {resource::SemanticConventions::kServiceVersion, setup_.serviceVersion},
             {resource::SemanticConventions::kServiceInstanceId, setup_.serviceInstanceId},
-            {"xrpl.network.id", static_cast<int64_t>(setup_.networkId)},
-            {"xrpl.network.type", setup_.networkType},
+            {std::string(attr::networkId), static_cast<int64_t>(setup_.networkId)},
+            {std::string(attr::networkType), setup_.networkType},
         });
 
         // Configure sampler
@@ -221,6 +302,10 @@ public:
         trace_api::Provider::SetTracerProvider(
             opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(sdkProvider_));
 
+        // Register as the global Telemetry instance so SpanGuard factory
+        // methods can access it without callers passing a reference.
+        Telemetry::setInstance(this);
+
         JLOG(journal_.info()) << "Telemetry started successfully";
     }
 
@@ -228,10 +313,15 @@ public:
     stop() override
     {
         JLOG(journal_.info()) << "Telemetry stopping";
+
+        // Unregister global instance before tearing down the pipeline.
+        Telemetry::setInstance(nullptr);
+
         if (sdkProvider_)
         {
-            // Force flush before shutdown
-            sdkProvider_->ForceFlush();
+            // Force flush with timeout to avoid blocking indefinitely
+            // when the OTLP endpoint is unreachable.
+            sdkProvider_->ForceFlush(std::chrono::milliseconds(5000));
             // TODO: sdkProvider_ is not thread-safe. This reset() races with
             // getTracer() if any thread is still calling startSpan().
             // Currently safe because Application::stop() shuts down
@@ -300,7 +390,7 @@ public:
     opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view name, trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer("rippled");
+        auto tracer = getTracer("xrpld");
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
         return tracer->StartSpan(std::string(name), opts);
@@ -312,46 +402,11 @@ public:
         opentelemetry::context::Context const& parentContext,
         trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer("rippled");
+        auto tracer = getTracer("xrpld");
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
         opts.parent = parentContext;
         return tracer->StartSpan(std::string(name), opts);
-    }
-
-    /** Start a span with explicit parent context and span links.
-
-        Links are passed as the third argument to Tracer::StartSpan(),
-        which accepts any type satisfying is_span_context_kv_iterable
-        (a container of pairs where .first is SpanContext and .second is
-        a key-value iterable).
-
-        @param name           Span name.
-        @param parentContext  The parent span's context.
-        @param links          Span links for follows-from relationships.
-        @param kind           The span kind.
-        @return A shared pointer to the new Span.
-    */
-    opentelemetry::nostd::shared_ptr<trace_api::Span>
-    startSpan(
-        std::string_view name,
-        opentelemetry::context::Context const& parentContext,
-        std::vector<std::pair<
-            trace_api::SpanContext,
-            std::vector<std::pair<std::string, opentelemetry::common::AttributeValue>>>> const&
-            links,
-        trace_api::SpanKind kind) override
-    {
-        auto tracer = getTracer("rippled");
-        trace_api::StartSpanOptions opts;
-        opts.kind = kind;
-        opts.parent = parentContext;
-        // Links are passed as a separate parameter to StartSpan;
-        // the SDK wraps them in a SpanContextKeyValueIterableView.
-        // Empty attributes map is passed explicitly to select the
-        // template overload that accepts (name, attributes, links, opts).
-        std::map<std::string, opentelemetry::common::AttributeValue> emptyAttrs;
-        return tracer->StartSpan(std::string(name), emptyAttrs, links, opts);
     }
 };
 

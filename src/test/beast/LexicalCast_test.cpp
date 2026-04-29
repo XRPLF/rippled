@@ -1,6 +1,11 @@
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/xor_shift_engine.h>
+
+#include <cstdint>
+#include <limits>
+#include <sstream>
+#include <string>
 
 namespace beast {
 
@@ -19,7 +24,7 @@ public:
     testInteger(IntType in)
     {
         std::string s;
-        IntType out(in + 1);
+        IntType out = static_cast<IntType>(~in);  // Ensure out != in
 
         expect(lexicalCastChecked(s, in));
         expect(lexicalCastChecked(out, s));
@@ -224,7 +229,7 @@ public:
 
         while (i <= std::numeric_limits<std::int16_t>::max())
         {
-            std::int16_t j = static_cast<std::int16_t>(i);
+            std::int16_t const j = static_cast<std::int16_t>(i);
 
             auto actual = std::to_string(j);
 

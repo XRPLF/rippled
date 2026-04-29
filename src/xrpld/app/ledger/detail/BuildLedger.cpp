@@ -1,13 +1,29 @@
 #include <xrpld/app/ledger/BuildLedger.h>
+
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/ledger/detail/LedgerSpanNames.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/telemetry/TracingInstrumentation.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
+
+#include <cstddef>
+#include <exception>
+#include <memory>
+#include <set>
 
 namespace xrpl {
 
@@ -28,7 +44,8 @@ buildLedgerImpl(
     beast::Journal j,
     ApplyTxs&& applyTxs)
 {
-    XRPL_TRACE_LEDGER(app.getTelemetry(), "ledger.build");  // LCOV_EXCL_LINE
+    using namespace telemetry;
+    auto buildSpan = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::build);
 
     auto built = std::make_shared<Ledger>(*parent, closeTime);
 
@@ -63,23 +80,14 @@ buildLedgerImpl(
         built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()),
         "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
-    XRPL_TRACE_SET_ATTR(                                                      // LCOV_EXCL_LINE
-        "xrpl.ledger.seq", static_cast<int64_t>(built->header().seq));  // LCOV_EXCL_LINE
-    // Close time details for the built ledger — mirrors the consensus
-    // attributes but on the ledger span for independent querying.
-    XRPL_TRACE_SET_ATTR(                             // LCOV_EXCL_LINE
-        "xrpl.ledger.close_time",                    // LCOV_EXCL_LINE
-        static_cast<int64_t>(                        // LCOV_EXCL_LINE
-            closeTime.time_since_epoch().count()));   // LCOV_EXCL_LINE
-    XRPL_TRACE_SET_ATTR(                             // LCOV_EXCL_LINE
-        "xrpl.ledger.close_time_correct",            // LCOV_EXCL_LINE
-        closeTimeCorrect);                           // LCOV_EXCL_LINE
-    XRPL_TRACE_SET_ATTR(                             // LCOV_EXCL_LINE
-        "xrpl.ledger.close_resolution_ms",           // LCOV_EXCL_LINE
-        static_cast<int64_t>(                        // LCOV_EXCL_LINE
-            std::chrono::duration_cast<              // LCOV_EXCL_LINE
-                std::chrono::milliseconds>(           // LCOV_EXCL_LINE
-                closeResolution).count()));           // LCOV_EXCL_LINE
+    buildSpan.setAttribute(ledger_span::attr::seq, static_cast<int64_t>(built->header().seq));
+    buildSpan.setAttribute(
+        ledger_span::attr::closeTime, static_cast<int64_t>(closeTime.time_since_epoch().count()));
+    buildSpan.setAttribute(ledger_span::attr::closeTimeCorrect, closeTimeCorrect);
+    buildSpan.setAttribute(
+        ledger_span::attr::closeResolutionMs,
+        static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(closeResolution).count()));
 
     return built;
 }
@@ -103,7 +111,8 @@ applyTransactions(
     OpenView& view,
     beast::Journal j)
 {
-    XRPL_TRACE_TX(app.getTelemetry(), "tx.apply");  // LCOV_EXCL_LINE
+    using namespace telemetry;
+    auto applySpan = SpanGuard::span(TraceCategory::Transactions, seg::tx, ledger_span::op::apply);
 
     bool certainRetry = true;
     std::size_t count = 0;
@@ -171,9 +180,8 @@ applyTransactions(
     // If there are any transactions left, we must have
     // tried them in at least one final pass
     XRPL_ASSERT(txns.empty() || !certainRetry, "xrpl::applyTransactions : retry transactions");
-    XRPL_TRACE_SET_ATTR("xrpl.ledger.tx_count", static_cast<int64_t>(count));  // LCOV_EXCL_LINE
-    XRPL_TRACE_SET_ATTR(                                                      // LCOV_EXCL_LINE
-        "xrpl.ledger.tx_failed", static_cast<int64_t>(failed.size()));  // LCOV_EXCL_LINE
+    applySpan.setAttribute(ledger_span::attr::txCount, static_cast<int64_t>(count));
+    applySpan.setAttribute(ledger_span::attr::txFailed, static_cast<int64_t>(failed.size()));
     return count;
 }
 

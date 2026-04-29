@@ -1,8 +1,9 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/crypto/csprng.h>
 
+#include <xrpl/basics/contract.h>
+
+#include <openssl/opensslv.h>
 #include <openssl/rand.h>
-#include <openssl/ssl.h>
 
 #include <array>
 #include <cstddef>
@@ -42,7 +43,7 @@ csprng_engine::mix_entropy(void* buffer, std::size_t count)
             e = rd();
     }
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     // We add data to the pool, but we conservatively assume that
     // it contributes no actual entropy.

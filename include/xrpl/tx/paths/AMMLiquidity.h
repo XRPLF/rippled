@@ -3,14 +3,14 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
 class AMMOffer;
 
 /** AMMLiquidity class provides AMM offers to BookStep class.
@@ -35,8 +35,8 @@ private:
     AMMContext& ammContext_;
     AccountID const ammAccountID_;
     std::uint32_t const tradingFee_;
-    Issue const issueIn_;
-    Issue const issueOut_;
+    Asset const assetIn_;
+    Asset const assetOut_;
     // Initial AMM pool balances
     TAmounts<TIn, TOut> const initialBalances_;
     beast::Journal const j_;
@@ -46,8 +46,8 @@ public:
         ReadView const& view,
         AccountID const& ammAccountID,
         std::uint32_t tradingFee,
-        Issue const& in,
-        Issue const& out,
+        Asset const& in,
+        Asset const& out,
         AMMContext& ammContext,
         beast::Journal j);
     ~AMMLiquidity() = default;
@@ -60,49 +60,49 @@ public:
      * If clobQuality is provided then AMM offer size is set based on the
      * quality.
      */
-    std::optional<AMMOffer<TIn, TOut>>
+    [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
     getOffer(ReadView const& view, std::optional<Quality> const& clobQuality) const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     ammAccount() const
     {
         return ammAccountID_;
     }
 
-    bool
+    [[nodiscard]] bool
     multiPath() const
     {
         return ammContext_.multiPath();
     }
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     tradingFee() const
     {
         return tradingFee_;
     }
 
-    AMMContext&
+    [[nodiscard]] AMMContext&
     context() const
     {
         return ammContext_;
     }
 
-    Issue const&
-    issueIn() const
+    [[nodiscard]] Asset const&
+    assetIn() const
     {
-        return issueIn_;
+        return assetIn_;
     }
 
-    Issue const&
-    issueOut() const
+    [[nodiscard]] Asset const&
+    assetOut() const
     {
-        return issueOut_;
+        return assetOut_;
     }
 
 private:
     /** Fetches current AMM balances.
      */
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     fetchBalances(ReadView const& view) const;
 
     /** Generate AMM offers with the offer size based on Fibonacci sequence.
@@ -112,7 +112,7 @@ private:
      * If the generated offer exceeds the pool balance then the function
      * throws overflow exception.
      */
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
 
     /** Generate max offer.
@@ -124,7 +124,7 @@ private:
      * takerPays = max input amount;
      * takerGets = swapIn(takerPays).
      */
-    std::optional<AMMOffer<TIn, TOut>>
+    [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
     maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
 };
 

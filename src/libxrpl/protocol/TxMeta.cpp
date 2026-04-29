@@ -1,4 +1,7 @@
+#include <xrpl/protocol/TxMeta.h>
+
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -10,13 +13,12 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxMeta.h>
 
 #include <boost/container/flat_set.hpp>
 
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
-#include <string>
 
 namespace xrpl {
 
@@ -39,7 +41,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
 {
     SerialIter sit(makeSlice(vec));
 
-    STObject obj(sit, sfMetadata);
+    STObject const obj(sit, sfMetadata);
     result_ = obj.getFieldU8(sfTransactionResult);
     index_ = obj.getFieldU32(sfTransactionIndex);
     nodes_ = obj.getFieldArray(sfAffectedNodes);
@@ -89,7 +91,7 @@ TxMeta::getAffectedAccounts() const
     // Meta#getAffectedAccounts
     for (auto const& node : nodes_)
     {
-        int index =
+        int const index =
             node.getFieldIndex((node.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
 
         if (index != -1)
@@ -146,7 +148,7 @@ TxMeta::getAffectedAccounts() const
 STObject&
 TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 {
-    uint256 index = node->key();
+    uint256 const index = node->key();
     for (auto& n : nodes_)
     {
         if (n.getFieldH256(sfLedgerIndex) == index)

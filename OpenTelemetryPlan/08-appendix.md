@@ -26,7 +26,7 @@
 | **Resource**          | Entity producing telemetry (service, host, etc.)           |
 | **Instrumentation**   | Code that creates telemetry data                           |
 
-### rippled-Specific Terms
+### xrpld-Specific Terms
 
 | Term              | Definition                                                    |
 | ----------------- | ------------------------------------------------------------- |
@@ -36,8 +36,8 @@
 | **Validation**    | Validator's signature on a closed ledger                      |
 | **HashRouter**    | Component for transaction deduplication                       |
 | **JobQueue**      | Thread pool for asynchronous task execution                   |
-| **PerfLog**       | Existing performance logging system in rippled                |
-| **Beast Insight** | Existing metrics framework in rippled                         |
+| **PerfLog**       | Existing performance logging system in xrpld                  |
+| **Beast Insight** | Existing metrics framework in xrpld                           |
 | **PathFinding**   | Payment path computation engine for cross-currency payments   |
 | **TxQ**           | Transaction queue managing fee-based prioritization           |
 | **LoadManager**   | Dynamic fee escalation based on network load                  |
@@ -146,13 +146,13 @@ flowchart TB
 6. [W3C Baggage](https://www.w3.org/TR/baggage/)
 7. [Protocol Buffers](https://protobuf.dev/)
 
-### rippled Resources
+### xrpld Resources
 
-8. [rippled Source Code](https://github.com/XRPLF/rippled)
+8. [xrpld Source Code](https://github.com/XRPLF/rippled)
 9. [XRP Ledger Documentation](https://xrpl.org/docs/)
-10. [rippled Overlay README](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/README.md)
-11. [rippled RPC README](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/README.md)
-12. [rippled Consensus README](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/README.md)
+10. [xrpld Overlay README](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/README.md)
+11. [xrpld RPC README](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/README.md)
+12. [xrpld Consensus README](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/README.md)
 
 ---
 
@@ -174,11 +174,11 @@ flowchart TB
 | -------------------------------------------------------------------- | -------------------------------------------- |
 | [OpenTelemetryPlan.md](./OpenTelemetryPlan.md)                       | Master overview and executive summary        |
 | [00-tracing-fundamentals.md](./00-tracing-fundamentals.md)           | Distributed tracing concepts and OTel primer |
-| [01-architecture-analysis.md](./01-architecture-analysis.md)         | rippled architecture and trace points        |
+| [01-architecture-analysis.md](./01-architecture-analysis.md)         | xrpld architecture and trace points          |
 | [02-design-decisions.md](./02-design-decisions.md)                   | SDK selection, exporters, span conventions   |
 | [03-implementation-strategy.md](./03-implementation-strategy.md)     | Directory structure, performance analysis    |
 | [04-code-samples.md](./04-code-samples.md)                           | C++ code examples for all components         |
-| [05-configuration-reference.md](./05-configuration-reference.md)     | rippled config, CMake, Collector configs     |
+| [05-configuration-reference.md](./05-configuration-reference.md)     | xrpld config, CMake, Collector configs       |
 | [06-implementation-phases.md](./06-implementation-phases.md)         | Timeline, tasks, risks, success metrics      |
 | [07-observability-backends.md](./07-observability-backends.md)       | Backend selection and architecture           |
 | [08-appendix.md](./08-appendix.md)                                   | Glossary, references, version history        |

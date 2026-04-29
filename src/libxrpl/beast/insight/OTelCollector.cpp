@@ -30,13 +30,14 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <xrpl/beast/insight/OTelCollector.h>
+
 #include <xrpl/beast/insight/CounterImpl.h>
 #include <xrpl/beast/insight/EventImpl.h>
 #include <xrpl/beast/insight/GaugeImpl.h>
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/MeterImpl.h>
-#include <xrpl/beast/insight/OTelCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
@@ -357,10 +358,10 @@ private:
  * Example usage:
  * @code
  *   auto collector = OTelCollector::New(
- *       "http://localhost:4318/v1/metrics", "rippled", journal);
+ *       "http://localhost:4318/v1/metrics", "xrpld", journal);
  *   auto counter = collector->make_counter("rpc.requests");
  *   counter.increment(1);
- *   // Metric "rippled_rpc_requests" exported via OTLP every 1s.
+ *   // Metric "xrpld_rpc_requests" exported via OTLP every 1s.
  * @endcode
  */
 class OTelCollectorImp : public OTelCollector, public std::enable_shared_from_this<OTelCollectorImp>
@@ -460,8 +461,8 @@ public:
      * @brief Format a metric name with the configured prefix.
      *
      * Replaces dots with underscores to match StatsD->Prometheus naming.
-     * Example: prefix="rippled", name="LedgerMaster.Validated_Ledger_Age"
-     *   -> "rippled_LedgerMaster_Validated_Ledger_Age"
+     * Example: prefix="xrpld", name="LedgerMaster.Validated_Ledger_Age"
+     *   -> "xrpld_LedgerMaster_Validated_Ledger_Age"
      *
      * @param name  Raw metric name from beast::insight callers.
      * @return Fully-qualified metric name.
@@ -473,7 +474,7 @@ private:
     /** Journal for log output. */
     Journal m_journal;
 
-    /** Prefix for all metric names (e.g., "rippled"). */
+    /** Prefix for all metric names (e.g., "xrpld"). */
     std::string m_prefix;
 
     /** OTel SDK MeterProvider owning the export pipeline. RAII lifecycle. */
@@ -678,7 +679,7 @@ OTelCollectorImp::OTelCollectorImp(
     // Include service.instance.id when provided so Prometheus
     // exported_instance labels distinguish multi-node deployments.
     resource::ResourceAttributes attrs;
-    attrs[resource::SemanticConventions::kServiceName] = "rippled";
+    attrs[resource::SemanticConventions::kServiceName] = "xrpld";
     if (!instanceId.empty())
         attrs[resource::SemanticConventions::kServiceInstanceId] = instanceId;
     auto resourceAttrs = resource::Resource::Create(attrs);
@@ -692,7 +693,7 @@ OTelCollectorImp::OTelCollectorImp(
     // These match the SpanMetrics connector buckets for consistency.
     auto histogramSelector = metrics_sdk::InstrumentSelectorFactory::Create(
         metrics_sdk::InstrumentType::kHistogram, "*", "ms");
-    auto meterSelector = metrics_sdk::MeterSelectorFactory::Create("rippled_metrics", "", "");
+    auto meterSelector = metrics_sdk::MeterSelectorFactory::Create("xrpld_metrics", "", "");
     auto histogramConfig = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
     histogramConfig->boundaries_ =
         std::vector<double>{1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 5000.0};
@@ -707,7 +708,7 @@ OTelCollectorImp::OTelCollectorImp(
         std::move(histogramSelector), std::move(meterSelector), std::move(histogramView));
 
     // Create the OTel Meter for creating instruments.
-    m_otelMeter = m_provider->GetMeter("rippled_metrics", "1.0.0");
+    m_otelMeter = m_provider->GetMeter("xrpld_metrics", "1.0.0");
 
     if (m_journal.info())
         m_journal.info() << "OTelCollector started successfully";
@@ -820,8 +821,8 @@ OTelCollectorImp::formatName(std::string const& name) const
     // converts dots to underscores for Prometheus. We replicate this
     // to preserve metric name compatibility.
     //
-    // Example: prefix="rippled", name="LedgerMaster.Validated_Ledger_Age"
-    //   -> "rippled_LedgerMaster_Validated_Ledger_Age"
+    // Example: prefix="xrpld", name="LedgerMaster.Validated_Ledger_Age"
+    //   -> "xrpld_LedgerMaster_Validated_Ledger_Age"
     std::string result;
     if (!m_prefix.empty())
     {
