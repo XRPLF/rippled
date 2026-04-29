@@ -2639,7 +2639,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                     {
                         fee_.update(
                             Resource::feeModerateBurdenPeer,
-                            " Reply limit reached. Truncating reply.");
+                            "Reply limit reached. Truncating reply.");
                         break;
                     }
                 }
