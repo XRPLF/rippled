@@ -311,6 +311,26 @@ SpanGuard::captureContext() const
     return SpanContext(std::make_shared<SpanContext::Impl>(ctx));
 }
 
+TraceBytes
+SpanGuard::getTraceBytes() const
+{
+    if (!impl_ || !impl_->span)
+        return {};
+
+    auto const& spanCtx = impl_->span->GetContext();
+    if (!spanCtx.IsValid())
+        return {};
+
+    TraceBytes result;
+    auto const& tid = spanCtx.trace_id();
+    std::memcpy(result.traceId.data(), tid.Id().data(), 16);
+    auto const& sid = spanCtx.span_id();
+    std::memcpy(result.spanId.data(), sid.Id().data(), 8);
+    result.traceFlags = spanCtx.trace_flags().flags();
+    result.valid = true;
+    return result;
+}
+
 // ===== Attribute setters ===================================================
 
 void
