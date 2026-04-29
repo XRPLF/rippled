@@ -2,9 +2,15 @@
 
 #include <test/jtx/Env.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/tx/apply.h>
+
+#include <functional>
+#include <memory>
 
 namespace xrpl {
 
@@ -37,7 +43,7 @@ public:
         {
             test::jtx::Env fully_canonical(*this, test::jtx::testable_amendments());
 
-            Validity valid =
+            Validity const valid =
                 checkValidity(
                     fully_canonical.app().getHashRouter(), tx, fully_canonical.current()->rules())
                     .first;

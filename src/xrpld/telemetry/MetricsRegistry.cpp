@@ -1,4 +1,4 @@
-/** MetricsRegistry implementation — OpenTelemetry metric instruments for rippled.
+/** MetricsRegistry implementation — OpenTelemetry metric instruments for xrpld.
 
     This file contains:
     - Construction / destruction logic for the OTel MeterProvider pipeline.
@@ -100,7 +100,7 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     // Configure resource attributes so Prometheus exported_instance labels
     // distinguish metrics from different nodes (matches OTelCollector setup).
     resource::ResourceAttributes attrs;
-    attrs[resource::SemanticConventions::kServiceName] = "rippled";
+    attrs[resource::SemanticConventions::kServiceName] = "xrpld";
     if (!instanceId.empty())
         attrs[resource::SemanticConventions::kServiceInstanceId] = instanceId;
     auto resourceAttrs = resource::Resource::Create(attrs);
@@ -110,48 +110,48 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
         std::make_unique<metric_sdk::ViewRegistry>(), resourceAttrs);
     provider_->AddMetricReader(std::move(reader));
 
-    // Get a meter for all rippled instruments.
-    meter_ = provider_->GetMeter("rippled", "1.0.0");
+    // Get a meter for all xrpld instruments.
+    meter_ = provider_->GetMeter("xrpld", "1.0.0");
 
     // --- Create synchronous instruments ---
 
     // RPC per-method counters and histogram.
     rpcStartedCounter_ = meter_->CreateUInt64Counter(
-        "rippled_rpc_method_started_total", "Total RPC method calls started");
+        "xrpld_rpc_method_started_total", "Total RPC method calls started");
     rpcFinishedCounter_ = meter_->CreateUInt64Counter(
-        "rippled_rpc_method_finished_total", "Total RPC method calls completed successfully");
+        "xrpld_rpc_method_finished_total", "Total RPC method calls completed successfully");
     rpcErroredCounter_ = meter_->CreateUInt64Counter(
-        "rippled_rpc_method_errored_total", "Total RPC method calls that errored");
+        "xrpld_rpc_method_errored_total", "Total RPC method calls that errored");
     rpcDurationHistogram_ = meter_->CreateDoubleHistogram(
-        "rippled_rpc_method_duration_us", "RPC method execution time in microseconds");
+        "xrpld_rpc_method_duration_us", "RPC method execution time in microseconds");
 
     // Job queue per-type counters and histograms.
     jobQueuedCounter_ =
-        meter_->CreateUInt64Counter("rippled_job_queued_total", "Total jobs enqueued");
+        meter_->CreateUInt64Counter("xrpld_job_queued_total", "Total jobs enqueued");
     jobStartedCounter_ =
-        meter_->CreateUInt64Counter("rippled_job_started_total", "Total jobs started");
+        meter_->CreateUInt64Counter("xrpld_job_started_total", "Total jobs started");
     jobFinishedCounter_ =
-        meter_->CreateUInt64Counter("rippled_job_finished_total", "Total jobs completed");
+        meter_->CreateUInt64Counter("xrpld_job_finished_total", "Total jobs completed");
     jobQueuedDurationHistogram_ = meter_->CreateDoubleHistogram(
-        "rippled_job_queued_duration_us", "Time jobs spent waiting in the queue (microseconds)");
+        "xrpld_job_queued_duration_us", "Time jobs spent waiting in the queue (microseconds)");
     jobRunningDurationHistogram_ = meter_->CreateDoubleHistogram(
-        "rippled_job_running_duration_us", "Job execution time in microseconds");
+        "xrpld_job_running_duration_us", "Job execution time in microseconds");
 
     // --- External dashboard parity counters (Task 7.14) ---
     ledgersClosedCounter_ = meter_->CreateUInt64Counter(
-        "rippled_ledgers_closed_total", "Total ledgers closed by consensus");
+        "xrpld_ledgers_closed_total", "Total ledgers closed by consensus");
     validationsSentCounter_ = meter_->CreateUInt64Counter(
-        "rippled_validations_sent_total", "Total validations sent by this node");
+        "xrpld_validations_sent_total", "Total validations sent by this node");
     validationsCheckedCounter_ = meter_->CreateUInt64Counter(
-        "rippled_validations_checked_total", "Total network validations received and checked");
+        "xrpld_validations_checked_total", "Total network validations received and checked");
     stateChangesCounter_ =
-        meter_->CreateUInt64Counter("rippled_state_changes_total", "Total operating mode changes");
+        meter_->CreateUInt64Counter("xrpld_state_changes_total", "Total operating mode changes");
     jqTransOverflowCounter_ = meter_->CreateUInt64Counter(
-        "rippled_jq_trans_overflow_total", "Total job queue transaction overflows");
+        "xrpld_jq_trans_overflow_total", "Total job queue transaction overflows");
     validationAgreementsCounter_ = meter_->CreateUInt64Counter(
-        "rippled_validation_agreements_total", "Total validation agreements");
+        "xrpld_validation_agreements_total", "Total validation agreements");
     validationMissedCounter_ =
-        meter_->CreateUInt64Counter("rippled_validation_missed_total", "Total validation misses");
+        meter_->CreateUInt64Counter("xrpld_validation_missed_total", "Total validation misses");
 
     // Register all observable (async) gauges.
     registerAsyncGauges();
@@ -297,7 +297,7 @@ MetricsRegistry::registerAsyncGauges()
 {
     // --- Task 9.2: Cache hit rate and size gauges ---
     cacheHitRateGauge_ =
-        meter_->CreateDoubleObservableGauge("rippled_cache_metrics", "Cache hit rates and sizes");
+        meter_->CreateDoubleObservableGauge("xrpld_cache_metrics", "Cache hit rates and sizes");
     cacheHitRateGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -362,7 +362,7 @@ MetricsRegistry::registerAsyncGauges()
 
     // --- Task 9.3: TxQ metrics gauges ---
     txqGauge_ =
-        meter_->CreateDoubleObservableGauge("rippled_txq_metrics", "Transaction queue metrics");
+        meter_->CreateDoubleObservableGauge("xrpld_txq_metrics", "Transaction queue metrics");
     txqGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -404,7 +404,7 @@ MetricsRegistry::registerAsyncGauges()
 
     // --- Task 9.6: Counted object instance gauges ---
     objectCountGauge_ = meter_->CreateInt64ObservableGauge(
-        "rippled_object_count", "Live instance counts for key internal object types");
+        "xrpld_object_count", "Live instance counts for key internal object types");
     objectCountGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* /* state */) {
             try
@@ -429,7 +429,7 @@ MetricsRegistry::registerAsyncGauges()
 
     // --- Task 9.7: Load factor breakdown gauges ---
     loadFactorGauge_ = meter_->CreateDoubleObservableGauge(
-        "rippled_load_factor_metrics", "Fee load factor breakdown");
+        "xrpld_load_factor_metrics", "Fee load factor breakdown");
     loadFactorGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -499,7 +499,7 @@ MetricsRegistry::registerAsyncGauges()
     // libxrpl nodestore code — the MetricsRegistry reads the existing atomic
     // counters from Database via its public accessors.
     nodeStoreGauge_ = meter_->CreateInt64ObservableGauge(
-        "rippled_nodestore_state", "NodeStore I/O counters, queue depth, and write load");
+        "xrpld_nodestore_state", "NodeStore I/O counters, queue depth, and write load");
     nodeStoreGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -566,7 +566,7 @@ MetricsRegistry::registerAsyncGauges()
 
     // --- Task 9.7a: Server info gauges ---
     serverInfoGauge_ =
-        meter_->CreateInt64ObservableGauge("rippled_server_info", "Server-level health metrics");
+        meter_->CreateInt64ObservableGauge("xrpld_server_info", "Server-level health metrics");
     serverInfoGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -629,7 +629,7 @@ MetricsRegistry::registerAsyncGauges()
 
     // --- Task 9.7b: Build info gauge ---
     buildInfoGauge_ =
-        meter_->CreateInt64ObservableGauge("rippled_build_info", "Build version information");
+        meter_->CreateInt64ObservableGauge("xrpld_build_info", "Build version information");
     buildInfoGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* /* state */) {
             try
@@ -646,7 +646,7 @@ MetricsRegistry::registerAsyncGauges()
 
     // --- Task 9.7c: Complete ledgers range gauge ---
     completeLedgersGauge_ = meter_->CreateInt64ObservableGauge(
-        "rippled_complete_ledgers", "Complete ledger range start/end pairs");
+        "xrpld_complete_ledgers", "Complete ledger range start/end pairs");
     completeLedgersGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -699,7 +699,7 @@ MetricsRegistry::registerAsyncGauges()
 
     // --- Task 9.7d: Database size and fetch rate gauges ---
     dbMetricsGauge_ = meter_->CreateInt64ObservableGauge(
-        "rippled_db_metrics", "Database storage sizes and fetch rates");
+        "xrpld_db_metrics", "Database storage sizes and fetch rates");
     dbMetricsGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -732,7 +732,7 @@ MetricsRegistry::registerAsyncGauges()
 
     // --- Task 7.9: Validator health gauges ---
     validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
-        "rippled_validator_health", "Validator health indicators");
+        "xrpld_validator_health", "Validator health indicators");
     validatorHealthGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -775,7 +775,7 @@ MetricsRegistry::registerAsyncGauges()
     // Uses Peer::json() to read latency and version since those accessors
     // are not on the abstract Peer interface (they live on PeerImp).
     peerQualityGauge_ =
-        meter_->CreateDoubleObservableGauge("rippled_peer_quality", "Peer network quality metrics");
+        meter_->CreateDoubleObservableGauge("xrpld_peer_quality", "Peer network quality metrics");
     peerQualityGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -850,7 +850,7 @@ MetricsRegistry::registerAsyncGauges()
 
     // --- Task 7.11: Ledger economy gauges ---
     ledgerEconomyGauge_ = meter_->CreateDoubleObservableGauge(
-        "rippled_ledger_economy", "Ledger fee and economy metrics");
+        "xrpld_ledger_economy", "Ledger fee and economy metrics");
     ledgerEconomyGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -903,8 +903,8 @@ MetricsRegistry::registerAsyncGauges()
         this);
 
     // --- Task 7.12: State tracking gauges ---
-    stateTrackingGauge_ = meter_->CreateDoubleObservableGauge(
-        "rippled_state_tracking", "Node state and mode tracking");
+    stateTrackingGauge_ =
+        meter_->CreateDoubleObservableGauge("xrpld_state_tracking", "Node state and mode tracking");
     stateTrackingGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -947,7 +947,7 @@ MetricsRegistry::registerAsyncGauges()
     // --- Task 7.13: Storage detail gauges ---
     // Reports NuDB on-disk size via the NodeStore JSON counters interface.
     storageDetailGauge_ =
-        meter_->CreateInt64ObservableGauge("rippled_storage_detail", "Storage detail metrics");
+        meter_->CreateInt64ObservableGauge("xrpld_storage_detail", "Storage detail metrics");
     storageDetailGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
@@ -979,7 +979,7 @@ MetricsRegistry::registerAsyncGauges()
     // window data is read (the callback fires every ~10 s from the
     // PeriodicExportingMetricReader thread).
     validationAgreementGauge_ = meter_->CreateDoubleObservableGauge(
-        "rippled_validation_agreement",
+        "xrpld_validation_agreement",
         "Validation agreement percentages and counts (1h/24h windows)");
     validationAgreementGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
@@ -1021,7 +1021,7 @@ MetricsRegistry::registerAsyncGauges()
 
     // Note: validationAgreementsCounter_ and validationMissedCounter_ are
     // created above but not currently incremented.  The
-    // rippled_validation_agreement gauge already provides agreement and miss
+    // xrpld_validation_agreement gauge already provides agreement and miss
     // counts from ValidationTracker's rolling windows and lifetime totals.
     // These counters are reserved for future use if a push-style counter
     // integration with ValidationTracker is desired.

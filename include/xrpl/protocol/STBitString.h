@@ -19,7 +19,7 @@ public:
     using value_type = base_uint<Bits>;
 
 private:
-    value_type value_;
+    value_type value_{};
 
 public:
     STBitString() = default;
@@ -29,26 +29,26 @@ public:
     STBitString(SField const& n, value_type const& v);
     STBitString(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     template <typename Tag>
     void
     setValue(base_uint<Bits, Tag> const& v);
 
-    value_type const&
+    [[nodiscard]] value_type const&
     value() const;
 
     operator value_type() const;

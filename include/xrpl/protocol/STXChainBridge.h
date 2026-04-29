@@ -54,45 +54,45 @@ public:
     STXChainBridge&
     operator=(STXChainBridge const& rhs) = default;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    STObject
+    [[nodiscard]] STObject
     toSTObject() const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     lockingChainDoor() const;
 
-    Issue const&
+    [[nodiscard]] Issue const&
     lockingChainIssue() const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     issuingChainDoor() const;
 
-    Issue const&
+    [[nodiscard]] Issue const&
     issuingChainIssue() const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     door(ChainType ct) const;
 
-    Issue const&
+    [[nodiscard]] Issue const&
     issue(ChainType ct) const;
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
-    value_type const&
+    [[nodiscard]] value_type const&
     value() const noexcept;
 
 private:

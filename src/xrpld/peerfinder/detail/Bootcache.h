@@ -12,8 +12,7 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Stores IP addresses useful for gaining initial connections.
 
@@ -46,7 +45,7 @@ private:
             return m_valence;
         }
 
-        int
+        [[nodiscard]] int
         valence() const
         {
             return m_valence;
@@ -55,9 +54,7 @@ private:
         friend bool
         operator<(Entry const& lhs, Entry const& rhs)
         {
-            if (lhs.valence() > rhs.valence())
-                return true;
-            return false;
+            return lhs.valence() > rhs.valence();
         }
 
     private:
@@ -97,7 +94,7 @@ private:
     clock_type::time_point m_whenUpdate;
 
     // Set to true when a database update is needed
-    bool m_needsUpdate;
+    bool m_needsUpdate{false};
 
 public:
     static constexpr int staticValence = 32;
@@ -111,22 +108,22 @@ public:
     ~Bootcache();
 
     /** Returns `true` if the cache is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const;
 
     /** Returns the number of entries in the cache. */
-    map_type::size_type
+    [[nodiscard]] map_type::size_type
     size() const;
 
     /** IP::Endpoint iterators that traverse in decreasing valence. */
     /** @{ */
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const;
     void
     clear();
@@ -171,5 +168,4 @@ private:
     flagForUpdate();
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

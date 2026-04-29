@@ -1,4 +1,4 @@
-# OpenTelemetry Distributed Tracing for rippled
+# OpenTelemetry Distributed Tracing for xrpld
 
 ---
 
@@ -10,7 +10,7 @@
 
 OpenTelemetry is an open-source, CNCF-backed observability framework for distributed tracing, metrics, and logs.
 
-### Why OpenTelemetry for rippled?
+### Why OpenTelemetry for xrpld?
 
 - **End-to-End Transaction Visibility**: Track transactions from submission → consensus → ledger inclusion
 - **Cross-Node Correlation**: Follow requests across multiple independent nodes using a unique `trace_id`
@@ -59,13 +59,13 @@ flowchart LR
 
 ## Slide 3: Adoption Scope — Traces Only (Current Plan)
 
-OpenTelemetry supports three signal types: **Traces**, **Metrics**, and **Logs**. rippled already captures metrics (StatsD via Beast Insight) and logs (Journal/PerfLog). The question is: how much of OTel do we adopt?
+OpenTelemetry supports three signal types: **Traces**, **Metrics**, and **Logs**. xrpld already captures metrics (StatsD via Beast Insight) and logs (Journal/PerfLog). The question is: how much of OTel do we adopt?
 
 > **Scenario A**: Add distributed tracing. Keep StatsD for metrics and Journal for logs.
 
 ```mermaid
 flowchart LR
-    subgraph rippled["rippled Process"]
+    subgraph xrpld["xrpld Process"]
         direction TB
         OTel["OTel SDK<br/>(Traces)"]
         Insight["Beast Insight<br/>(StatsD Metrics)"]
@@ -80,7 +80,7 @@ flowchart LR
     StatsD --> Graphite["Graphite / Grafana"]
     LogFile --> Loki["Loki (optional)"]
 
-    style rippled fill:#424242,stroke:#212121,color:#fff
+    style xrpld fill:#424242,stroke:#212121,color:#fff
     style OTel fill:#2e7d32,stroke:#1b5e20,color:#fff
     style Insight fill:#1565c0,stroke:#0d47a1,color:#fff
     style Journal fill:#e65100,stroke:#bf360c,color:#fff
@@ -106,7 +106,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    subgraph rippled["rippled Process"]
+    subgraph xrpld["xrpld Process"]
         direction TB
         OTel["OTel SDK<br/>(Traces + Metrics)"]
         Journal["Journal + PerfLog<br/>(Logging)"]
@@ -119,7 +119,7 @@ flowchart LR
     Collector --> Prom["Prometheus<br/>(Metrics)"]
     LogFile --> Loki["Loki (optional)"]
 
-    style rippled fill:#424242,stroke:#212121,color:#fff
+    style xrpld fill:#424242,stroke:#212121,color:#fff
     style OTel fill:#2e7d32,stroke:#1b5e20,color:#fff
     style Journal fill:#e65100,stroke:#bf360c,color:#fff
     style Collector fill:#2e7d32,stroke:#1b5e20,color:#fff
@@ -136,7 +136,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    subgraph rippled["rippled Process"]
+    subgraph xrpld["xrpld Process"]
         OTel["OTel SDK<br/>(Traces + Metrics + Logs)"]
     end
 
@@ -146,7 +146,7 @@ flowchart LR
     Collector --> Prom["Prometheus<br/>(Metrics)"]
     Collector --> Loki["Loki / Elastic<br/>(Logs)"]
 
-    style rippled fill:#424242,stroke:#212121,color:#fff
+    style xrpld fill:#424242,stroke:#212121,color:#fff
     style OTel fill:#2e7d32,stroke:#1b5e20,color:#fff
     style Collector fill:#2e7d32,stroke:#1b5e20,color:#fff
 ```
@@ -177,7 +177,7 @@ flowchart LR
 
 ---
 
-## Slide 5: Comparison with rippled's Existing Solutions
+## Slide 5: Comparison with xrpld's Existing Solutions
 
 ### Current Observability Stack
 
@@ -211,7 +211,7 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    subgraph rippled["rippled Node"]
+    subgraph xrpld["xrpld Node"]
         subgraph services["Core Services"]
             direction LR
             RPC["RPC Server<br/>(HTTP/WS)"] ~~~ Overlay["Overlay<br/>(P2P Network)"] ~~~ Consensus["Consensus<br/>(RCLConsensus)"]
@@ -227,7 +227,7 @@ flowchart TB
     Collector --> Tempo["Grafana Tempo"]
     Collector --> Elastic["Elastic APM"]
 
-    style rippled fill:#424242,stroke:#212121,color:#fff
+    style xrpld fill:#424242,stroke:#212121,color:#fff
     style services fill:#1565c0,stroke:#0d47a1,color:#fff
     style Telemetry fill:#2e7d32,stroke:#1b5e20,color:#fff
     style Collector fill:#e65100,stroke:#bf360c,color:#fff
@@ -236,9 +236,9 @@ flowchart TB
 **Reading the diagram:**
 
 - **Core Services (blue, top)**: RPC Server, Overlay, and Consensus are the three primary components that generate trace data — they represent the entry points for client requests, peer messages, and consensus rounds respectively.
-- **Telemetry Module (green, middle)**: The OpenTelemetry SDK sits below the core services and receives span data from all three; it acts as a single collection point within the rippled process.
-- **OTel Collector (orange, center)**: An external process that receives spans over OTLP/gRPC from the Telemetry Module; it decouples rippled from backend choices and handles batching, sampling, and routing.
-- **Backends (bottom row)**: Tempo and Elastic APM are interchangeable — the Collector fans out to any combination, so operators can switch backends without modifying rippled code.
+- **Telemetry Module (green, middle)**: The OpenTelemetry SDK sits below the core services and receives span data from all three; it acts as a single collection point within the xrpld process.
+- **OTel Collector (orange, center)**: An external process that receives spans over OTLP/gRPC from the Telemetry Module; it decouples xrpld from backend choices and handles batching, sampling, and routing.
+- **Backends (bottom row)**: Tempo and Elastic APM are interchangeable — the Collector fans out to any combination, so operators can switch backends without modifying xrpld code.
 - **Top-to-bottom flow**: Data flows from instrumented code down through the SDK, out over the network to the Collector, and finally into storage/visualization backends.
 
 ### Context Propagation
@@ -496,7 +496,7 @@ flowchart LR
 
 | Aspect                        | Details                                                                                                                                                                                                  |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Where it runs**             | Inside rippled (SDK-level). Configured via `sampling_ratio` in `rippled.cfg`.                                                                                                                            |
+| **Where it runs**             | Inside xrpld (SDK-level). Configured via `sampling_ratio` in `xrpld.cfg`.                                                                                                                                |
 | **When the decision happens** | At trace creation time — before the first span is even populated.                                                                                                                                        |
 | **How it works**              | `sampling_ratio=0.1` means each trace has a 10% probability of being recorded. Dropped traces incur near-zero overhead (no spans created, no attributes set, no export).                                 |
 | **Propagation**               | Once a trace is sampled, the `trace_flags` field (1 byte in the context header) tells downstream nodes to also sample it. Unsampled traces propagate `trace_flags=0`, so downstream nodes skip them too. |
@@ -504,7 +504,7 @@ flowchart LR
 | **Cons**                      | **Blind** — it doesn't know if the trace will be interesting. A rare error or slow consensus round has only a 10% chance of being captured.                                                              |
 | **Best for**                  | High-volume, steady-state traffic where most traces look similar (e.g., routine RPC requests).                                                                                                           |
 
-**rippled configuration**:
+**xrpld configuration**:
 
 ```ini
 [telemetry]
@@ -538,16 +538,16 @@ flowchart TB
     style E fill:#4a148c,stroke:#2e0d57,color:#fff
 ```
 
-| Aspect                        | Details                                                                                                                                                                                                   |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Where it runs**             | In the **OTel Collector** (external process), not inside rippled. rippled exports 100% of traces; the Collector decides what to keep.                                                                     |
-| **When the decision happens** | After the Collector has received all spans for a trace (waits `decision_wait=10s` for stragglers).                                                                                                        |
-| **How it works**              | Policy rules evaluate the completed trace: keep all errors, keep slow operations above a threshold, keep all consensus rounds, then probabilistically sample the rest at 10%.                             |
-| **Pros**                      | **Never misses important traces**. Errors, slow requests, and consensus anomalies are always captured regardless of probability.                                                                          |
-| **Cons**                      | Higher resource usage — rippled must export 100% of spans to the Collector, which buffers them in memory before deciding. The Collector needs more RAM (configured via `num_traces` and `decision_wait`). |
-| **Best for**                  | Production troubleshooting where you can't afford to miss errors or anomalies.                                                                                                                            |
+| Aspect                        | Details                                                                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Where it runs**             | In the **OTel Collector** (external process), not inside xrpld. xrpld exports 100% of traces; the Collector decides what to keep.                                                                       |
+| **When the decision happens** | After the Collector has received all spans for a trace (waits `decision_wait=10s` for stragglers).                                                                                                      |
+| **How it works**              | Policy rules evaluate the completed trace: keep all errors, keep slow operations above a threshold, keep all consensus rounds, then probabilistically sample the rest at 10%.                           |
+| **Pros**                      | **Never misses important traces**. Errors, slow requests, and consensus anomalies are always captured regardless of probability.                                                                        |
+| **Cons**                      | Higher resource usage — xrpld must export 100% of spans to the Collector, which buffers them in memory before deciding. The Collector needs more RAM (configured via `num_traces` and `decision_wait`). |
+| **Best for**                  | Production troubleshooting where you can't afford to miss errors or anomalies.                                                                                                                          |
 
-**Collector configuration** (tail sampling rules for rippled):
+**Collector configuration** (tail sampling rules for xrpld):
 
 ```yaml
 processors:
@@ -576,22 +576,22 @@ processors:
 
 |                               | Head Sampling                            | Tail Sampling                                    |
 | ----------------------------- | ---------------------------------------- | ------------------------------------------------ |
-| **Decision point**            | Trace start (inside rippled)             | Trace end (in OTel Collector)                    |
+| **Decision point**            | Trace start (inside xrpld)               | Trace end (in OTel Collector)                    |
 | **Knows trace content?**      | No (random coin flip)                    | Yes (evaluates completed trace)                  |
-| **Overhead on rippled**       | Lowest (dropped traces = no-op)          | Higher (must export 100% to Collector)           |
+| **Overhead on xrpld**         | Lowest (dropped traces = no-op)          | Higher (must export 100% to Collector)           |
 | **Collector resource usage**  | Low (receives only sampled traces)       | Higher (buffers all traces before deciding)      |
 | **Captures all errors?**      | No (only if trace was randomly selected) | **Yes** (error policy catches them)              |
 | **Captures slow operations?** | No (random)                              | **Yes** (latency policy catches them)            |
-| **Configuration**             | `rippled.cfg`: `sampling_ratio=0.1`      | `otel-collector.yaml`: `tail_sampling` processor |
+| **Configuration**             | `xrpld.cfg`: `sampling_ratio=0.1`        | `otel-collector.yaml`: `tail_sampling` processor |
 | **Best for**                  | High-throughput steady-state             | Troubleshooting & anomaly detection              |
 
-### Recommended Strategy for rippled
+### Recommended Strategy for xrpld
 
 Use **both** in a layered approach:
 
 ```mermaid
 flowchart LR
-    subgraph rippled["rippled (Head Sampling)"]
+    subgraph xrpld["xrpld (Head Sampling)"]
         HS["sampling_ratio=1.0<br/>(export everything)"]
     end
 
@@ -603,14 +603,14 @@ flowchart LR
         ST["Only interesting traces<br/>stored long-term"]
     end
 
-    rippled -->|"100% of spans"| collector -->|"~15-20% kept"| storage
+    xrpld -->|"100% of spans"| collector -->|"~15-20% kept"| storage
 
-    style rippled fill:#424242,stroke:#212121,color:#fff
+    style xrpld fill:#424242,stroke:#212121,color:#fff
     style collector fill:#1565c0,stroke:#0d47a1,color:#fff
     style storage fill:#2e7d32,stroke:#1b5e20,color:#fff
 ```
 
-> **Why this works**: rippled exports everything (no blind drops), the Collector applies intelligent filtering (keep errors/slow/anomalies, sample the rest), and only ~15-20% of traces reach storage. If Collector resource usage becomes a concern, add head sampling at `sampling_ratio=0.5` to halve the export volume while still giving the Collector enough data for good tail-sampling decisions.
+> **Why this works**: xrpld exports everything (no blind drops), the Collector applies intelligent filtering (keep errors/slow/anomalies, sample the rest), and only ~15-20% of traces reach storage. If Collector resource usage becomes a concern, add head sampling at `sampling_ratio=0.5` to halve the export volume while still giving the Collector enough data for good tail-sampling decisions.
 
 ---
 

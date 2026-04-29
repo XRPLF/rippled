@@ -1,18 +1,43 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
+
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/DecayingSample.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/container/aged_map.h>
+#include <xrpl/beast/container/detail/aged_ordered_container.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <xrpl.pb.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <set>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -110,7 +135,7 @@ public:
             if (pendingAcquires_.contains(hash))
                 return;
             pendingAcquires_.insert(hash);
-            scope_unlock unlock(lock);
+            scope_unlock const unlock(lock);
             acquire(hash, seq, reason);
         }
         catch (std::exception const& e)
@@ -133,7 +158,7 @@ public:
         std::shared_ptr<InboundLedger> ret;
 
         {
-            ScopedLockType sl(mLock);
+            ScopedLockType const sl(mLock);
 
             auto it = mLedgers.find(hash);
             if (it != mLedgers.end())
@@ -197,7 +222,7 @@ public:
     void
     logFailure(uint256 const& h, std::uint32_t seq) override
     {
-        ScopedLockType sl(mLock);
+        ScopedLockType const sl(mLock);
 
         mRecentFailures.emplace(h, seq);
     }
@@ -205,7 +230,7 @@ public:
     bool
     isFailure(uint256 const& h) override
     {
-        ScopedLockType sl(mLock);
+        ScopedLockType const sl(mLock);
 
         beast::expire(mRecentFailures, kReacquireInterval);
         return mRecentFailures.find(h) != mRecentFailures.end();
@@ -250,7 +275,7 @@ public:
     void
     clearFailures() override
     {
-        ScopedLockType sl(mLock);
+        ScopedLockType const sl(mLock);
 
         mRecentFailures.clear();
         mLedgers.clear();
@@ -259,7 +284,7 @@ public:
     std::size_t
     fetchRate() override
     {
-        std::lock_guard lock(fetchRateMutex_);
+        std::lock_guard const lock(fetchRateMutex_);
         return 60 * fetchRate_.value(m_clock.now());
     }
 
@@ -268,7 +293,7 @@ public:
     void
     onLedgerFetched() override
     {
-        std::lock_guard lock(fetchRateMutex_);
+        std::lock_guard const lock(fetchRateMutex_);
         fetchRate_.add(1, m_clock.now());
     }
 
@@ -280,13 +305,13 @@ public:
         std::vector<std::pair<uint256, std::shared_ptr<InboundLedger>>> acqs;
 
         {
-            ScopedLockType sl(mLock);
+            ScopedLockType const sl(mLock);
 
             acqs.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
                 XRPL_ASSERT(it.second, "xrpl::InboundLedgersImp::getInfo : non-null ledger");
-                acqs.push_back(it);
+                acqs.emplace_back(it);
             }
             for (auto const& it : mRecentFailures)
             {
@@ -304,7 +329,7 @@ public:
         for (auto const& it : acqs)
         {
             // getJson is expensive, so call without the lock
-            std::uint32_t seq = it.second->getSeq();
+            std::uint32_t const seq = it.second->getSeq();
             if (seq > 1)
             {
                 ret[std::to_string(seq)] = it.second->getJson(0);
@@ -323,7 +348,7 @@ public:
     {
         std::vector<std::shared_ptr<InboundLedger>> acquires;
         {
-            ScopedLockType sl(mLock);
+            ScopedLockType const sl(mLock);
 
             acquires.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
@@ -352,7 +377,7 @@ public:
         std::size_t total = 0;
 
         {
-            ScopedLockType sl(mLock);
+            ScopedLockType const sl(mLock);
             MapType::iterator it(mLedgers.begin());
             total = mLedgers.size();
 
@@ -393,7 +418,7 @@ public:
     void
     stop() override
     {
-        ScopedLockType lock(mLock);
+        ScopedLockType const lock(mLock);
         stopping_ = true;
         mLedgers.clear();
         mRecentFailures.clear();
@@ -402,7 +427,7 @@ public:
     std::size_t
     cacheSize() override
     {
-        ScopedLockType lock(mLock);
+        ScopedLockType const lock(mLock);
         return mLedgers.size();
     }
 

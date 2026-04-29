@@ -16,7 +16,7 @@ struct CopyConst
 {
     explicit CopyConst() = default;
 
-    using type = typename std::remove_const<U>::type;
+    using type = std::remove_const_t<U>;
 };
 
 template <typename T, typename U>
@@ -35,9 +35,11 @@ struct CopyConst<T const, U>
 template <typename T, typename Tag>
 class ListNode
 {
-private:
+    ListNode() = default;
+
     using value_type = T;
 
+    friend T;
     friend class List<T, Tag>;
 
     template <typename>
@@ -126,7 +128,7 @@ public:
     }
 
 private:
-    reference
+    [[nodiscard]] reference
     dereference() const noexcept
     {
         return static_cast<reference>(*m_node);
@@ -285,14 +287,14 @@ public:
     /** Determine if the list is empty.
         @return `true` if the list is empty.
     */
-    bool
+    [[nodiscard]] bool
     empty() const noexcept
     {
         return size() == 0;
     }
 
     /** Returns the number of elements in the list. */
-    size_type
+    [[nodiscard]] size_type
     size() const noexcept
     {
         return m_size;
@@ -312,7 +314,7 @@ public:
         @invariant The list may not be empty.
         @return A const reference to the first element.
     */
-    const_reference
+    [[nodiscard]] const_reference
     front() const noexcept
     {
         return element_from(m_head.m_next);
@@ -332,7 +334,7 @@ public:
         @invariant The list may not be empty.
         @return A const reference to the last element.
     */
-    const_reference
+    [[nodiscard]] const_reference
     back() const noexcept
     {
         return element_from(m_tail.m_prev);
@@ -350,7 +352,7 @@ public:
     /** Obtain a const iterator to the beginning of the list.
         @return A const iterator pointing to the beginning of the list.
     */
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return const_iterator(m_head.m_next);
@@ -359,7 +361,7 @@ public:
     /** Obtain a const iterator to the beginning of the list.
         @return A const iterator pointing to the beginning of the list.
     */
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return const_iterator(m_head.m_next);
@@ -377,7 +379,7 @@ public:
     /** Obtain a const iterator to the end of the list.
         @return A constiterator pointing to the end of the list.
     */
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return const_iterator(&m_tail);
@@ -386,7 +388,7 @@ public:
     /** Obtain a const iterator to the end of the list
         @return A constiterator pointing to the end of the list.
     */
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return const_iterator(&m_tail);
@@ -449,7 +451,7 @@ public:
     iterator
     erase(iterator pos) noexcept
     {
-        Node* node = &*pos;
+        Node const* node = &*pos;
         ++pos;
         node->m_next->m_prev = node->m_prev;
         node->m_prev->m_next = node->m_next;
@@ -547,7 +549,7 @@ public:
         @param element The element to obtain an iterator for.
         @return A const iterator to the element.
     */
-    const_iterator
+    [[nodiscard]] const_iterator
     const_iterator_to(T const& element) const noexcept
     {
         return const_iterator(static_cast<Node const*>(&element));

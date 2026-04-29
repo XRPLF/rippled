@@ -2,7 +2,7 @@
 
 > **Status**: Future Enhancement
 >
-> **Goal**: Instrument rippled to emit ~50+ metrics that exist in `get_counts`/`server_info`/TxQ/PerfLog but currently lack time-series export via the OTel or beast::insight pipelines.
+> **Goal**: Instrument xrpld to emit ~50+ metrics that exist in `get_counts`/`server_info`/TxQ/PerfLog but currently lack time-series export via the OTel or beast::insight pipelines.
 >
 > **Scope**: Hybrid approach — extend `beast::insight` for metrics near existing registrations, use OTel Metrics SDK `ObservableGauge` callbacks for new categories (TxQ, PerfLog, CountedObjects).
 >
@@ -57,7 +57,7 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/libxrpl/nodestore/Database.cpp`
 - `src/libxrpl/nodestore/Database.h` (add insight members)
 
-**Derived Prometheus metrics**: `rippled_nodestore_reads_total`, `rippled_nodestore_reads_hit`, `rippled_nodestore_write_load`, etc.
+**Derived Prometheus metrics**: `xrpld_nodestore_reads_total`, `xrpld_nodestore_reads_hit`, `xrpld_nodestore_write_load`, etc.
 
 **Grafana dashboard**: Add "NodeStore I/O" panel group to _Node Health_ dashboard.
 
@@ -87,7 +87,7 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/rpc/handlers/GetCounts.cpp` (extract shared access methods)
 - `src/xrpld/app/main/Application.cpp` (register MetricsRegistry at startup)
 
-**Derived Prometheus metrics**: `rippled_cache_SLE_hit_rate`, `rippled_cache_ledger_hit_rate`, `rippled_cache_treenode_size`, etc.
+**Derived Prometheus metrics**: `xrpld_cache_SLE_hit_rate`, `xrpld_cache_ledger_hit_rate`, `xrpld_cache_treenode_size`, etc.
 
 ---
 
@@ -114,9 +114,9 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/telemetry/MetricsRegistry.cpp` (add TxQ callbacks)
 - `src/xrpld/app/tx/detail/TxQ.h` (expose metrics accessor if needed)
 
-**Derived Prometheus metrics**: `rippled_txq_count`, `rippled_txq_max_size`, `rippled_txq_open_ledger_fee_level`, etc.
+**Derived Prometheus metrics**: `xrpld_txq_count`, `xrpld_txq_max_size`, `xrpld_txq_open_ledger_fee_level`, etc.
 
-**Grafana dashboard**: New _Fee Market & TxQ_ dashboard (`rippled-fee-market`).
+**Grafana dashboard**: New _Fee Market & TxQ_ dashboard (`xrpld-fee-market`).
 
 ---
 
@@ -141,7 +141,7 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/perflog/detail/PerfLogImp.cpp` (add OTel instrument updates alongside existing JSON counters)
 - `src/xrpld/telemetry/MetricsRegistry.cpp` (register instruments)
 
-**Derived Prometheus metrics**: `rippled_rpc_method_started_total{method="server_info"}`, `rippled_rpc_method_duration_us_bucket{method="ledger"}`, etc.
+**Derived Prometheus metrics**: `xrpld_rpc_method_started_total{method="server_info"}`, `xrpld_rpc_method_duration_us_bucket{method="ledger"}`, etc.
 
 **Grafana dashboard**: Add "Per-Method RPC Breakdown" panel group to _RPC Performance_ dashboard.
 
@@ -167,9 +167,9 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/perflog/detail/PerfLogImp.cpp`
 - `src/xrpld/telemetry/MetricsRegistry.cpp`
 
-**Derived Prometheus metrics**: `rippled_job_queued_total{job_type="ledgerData"}`, `rippled_job_running_duration_us_bucket{job_type="transaction"}`, etc.
+**Derived Prometheus metrics**: `xrpld_job_queued_total{job_type="ledgerData"}`, `xrpld_job_running_duration_us_bucket{job_type="transaction"}`, etc.
 
-**Grafana dashboard**: New _Job Queue Analysis_ dashboard (`rippled-job-queue`).
+**Grafana dashboard**: New _Job Queue Analysis_ dashboard (`xrpld-job-queue`).
 
 ---
 
@@ -197,7 +197,7 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/telemetry/MetricsRegistry.cpp` (add counted object callbacks)
 - `include/xrpl/basics/CountedObject.h` (may need static accessor for iteration)
 
-**Derived Prometheus metrics**: `rippled_object_count{type="Transaction"}`, `rippled_object_count{type="NodeObject"}`, etc.
+**Derived Prometheus metrics**: `xrpld_object_count{type="Transaction"}`, `xrpld_object_count{type="NodeObject"}`, etc.
 
 **Grafana dashboard**: Add "Object Instance Counts" panel to _Node Health_ dashboard.
 
@@ -225,7 +225,7 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/telemetry/MetricsRegistry.cpp`
 - `src/xrpld/app/misc/NetworkOPs.cpp` (expose load factor accessors if needed)
 
-**Derived Prometheus metrics**: `rippled_load_factor`, `rippled_load_factor_fee_escalation`, etc.
+**Derived Prometheus metrics**: `xrpld_load_factor`, `xrpld_load_factor_fee_escalation`, etc.
 
 **Grafana dashboard**: Add "Load Factor Breakdown" panel to _Fee Market & TxQ_ dashboard.
 
@@ -243,7 +243,7 @@ These metrics serve multiple external consumer categories identified during rese
   - `read_request_bundle` (native JSON int)
   - `read_threads_running` (native JSON int)
   - `read_threads_total` (native JSON int)
-- Added new `rippled_server_info` Int64ObservableGauge with 8 metrics:
+- Added new `xrpld_server_info` Int64ObservableGauge with 8 metrics:
   - `server_state` — operating mode as int (0=DISCONNECTED .. 4=FULL)
   - `uptime` — seconds since server start
   - `peers` — total peer count
@@ -252,9 +252,9 @@ These metrics serve multiple external consumer categories identified during rese
   - `peer_disconnects_resources` — cumulative resource-related disconnects
   - `last_close_proposers` — from `getConsensusInfo()["previous_proposers"]`
   - `last_close_converge_time_ms` — from `getConsensusInfo()["previous_mseconds"]`
-- Added new `rippled_build_info` Int64ObservableGauge (info-style, value=1 with `version` label)
-- Added new `rippled_complete_ledgers` Int64ObservableGauge parsing comma-separated ranges into `{bound, index}` pairs
-- Added new `rippled_db_metrics` Int64ObservableGauge with 4 metrics:
+- Added new `xrpld_build_info` Int64ObservableGauge (info-style, value=1 with `version` label)
+- Added new `xrpld_complete_ledgers` Int64ObservableGauge parsing comma-separated ranges into `{bound, index}` pairs
+- Added new `xrpld_db_metrics` Int64ObservableGauge with 4 metrics:
   - `db_kb_total`, `db_kb_ledger`, `db_kb_transaction` (SQLite stat queries)
   - `historical_perminute` (historical ledger fetch rate)
 
@@ -263,11 +263,11 @@ These metrics serve multiple external consumer categories identified during rese
 - `src/xrpld/telemetry/MetricsRegistry.h` (4 new gauge members, updated ASCII diagram)
 - `src/xrpld/telemetry/MetricsRegistry.cpp` (4 new callback registrations, 2 callback extensions)
 
-**Not implementable inside rippled**:
+**Not implementable inside xrpld**:
 
 - `connection_count_51233/51234` — OS-level port connection counts from external shell script (`get_connection.sh`)
 
-**Derived Prometheus metrics**: `rippled_server_info{metric="server_state"}`, `rippled_build_info{version="2.4.0"}`, `rippled_complete_ledgers{bound="start",index="0"}`, `rippled_db_metrics{metric="db_kb_total"}`, etc.
+**Derived Prometheus metrics**: `xrpld_server_info{metric="server_state"}`, `xrpld_build_info{version="2.4.0"}`, `xrpld_complete_ledgers{bound="start",index="0"}`, `xrpld_db_metrics{metric="db_kb_total"}`, etc.
 
 **Grafana dashboard**: New panels added to _Node Health_ dashboard (`system-node-health.json`).
 
@@ -280,12 +280,12 @@ These metrics serve multiple external consumer categories identified during rese
 **What to do**:
 
 - Create 2 new dashboards:
-  1. **Fee Market & TxQ** (`rippled-fee-market`) — TxQ depth/capacity, fee levels, load factor breakdown, fee escalation timeline
-  2. **Job Queue Analysis** (`rippled-job-queue`) — Per-job-type rates, queue wait times, execution times, job queue depth
+  1. **Fee Market & TxQ** (`xrpld-fee-market`) — TxQ depth/capacity, fee levels, load factor breakdown, fee escalation timeline
+  2. **Job Queue Analysis** (`xrpld-job-queue`) — Per-job-type rates, queue wait times, execution times, job queue depth
 
 - Update 2 existing dashboards:
-  1. **Node Health** (`rippled-statsd-node-health`) — Add NodeStore I/O panels, cache hit rate panels, object instance counts
-  2. **RPC Performance** (`rippled-rpc-perf`) — Add per-method RPC breakdown panels
+  1. **Node Health** (`xrpld-statsd-node-health`) — Add NodeStore I/O panels, cache hit rate panels, object instance counts
+  2. **RPC Performance** (`xrpld-rpc-perf`) — Add per-method RPC breakdown panels
 
 **Key modified files**:
 
@@ -325,7 +325,7 @@ These metrics serve multiple external consumer categories identified during rese
 **What to do**:
 
 - Extend the existing telemetry integration test:
-  - Start rippled with `[telemetry] enabled=1` and `[insight] server=otel`
+  - Start xrpld with `[telemetry] enabled=1` and `[insight] server=otel`
   - Submit a batch of RPC calls and transactions
   - Query Prometheus for each new metric family
   - Assert non-zero values for: NodeStore reads, cache hit rates, TxQ count, PerfLog RPC counters, object counts, load factors
@@ -351,23 +351,23 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Objective**: Create a Grafana dashboard for validation agreement, amendment/UNL health, and state tracking.
 
-**Dashboard**: `rippled-validator-health.json`
+**Dashboard**: `xrpld-validator-health.json`
 
-| Panel                      | Type       | PromQL                                                           |
-| -------------------------- | ---------- | ---------------------------------------------------------------- |
-| Agreement % (1h)           | stat       | `rippled_validation_agreement{metric="agreement_pct_1h"}`        |
-| Agreement % (24h)          | stat       | `rippled_validation_agreement{metric="agreement_pct_24h"}`       |
-| Agreements vs Missed (1h)  | bargauge   | `agreements_1h` and `missed_1h` side by side                     |
-| Agreements vs Missed (24h) | bargauge   | `agreements_24h` and `missed_24h` side by side                   |
-| Validation Rate            | stat       | `rate(rippled_validations_sent_total[5m]) * 60`                  |
-| Validations Checked Rate   | stat       | `rate(rippled_validations_checked_total[5m]) * 60`               |
-| Amendment Blocked          | stat       | `rippled_validator_health{metric="amendment_blocked"}`           |
-| UNL Expiry (days)          | stat       | `rippled_validator_health{metric="unl_expiry_days"}`             |
-| Validation Quorum          | stat       | `rippled_validator_health{metric="validation_quorum"}`           |
-| State Value Timeline       | timeseries | `rippled_state_tracking{metric="state_value"}`                   |
-| Time in Current State      | stat       | `rippled_state_tracking{metric="time_in_current_state_seconds"}` |
-| State Changes Rate         | stat       | `rate(rippled_state_changes_total[1h])`                          |
-| Ledgers Closed Rate        | stat       | `rate(rippled_ledgers_closed_total[5m]) * 60`                    |
+| Panel                      | Type       | PromQL                                                         |
+| -------------------------- | ---------- | -------------------------------------------------------------- |
+| Agreement % (1h)           | stat       | `xrpld_validation_agreement{metric="agreement_pct_1h"}`        |
+| Agreement % (24h)          | stat       | `xrpld_validation_agreement{metric="agreement_pct_24h"}`       |
+| Agreements vs Missed (1h)  | bargauge   | `agreements_1h` and `missed_1h` side by side                   |
+| Agreements vs Missed (24h) | bargauge   | `agreements_24h` and `missed_24h` side by side                 |
+| Validation Rate            | stat       | `rate(xrpld_validations_sent_total[5m]) * 60`                  |
+| Validations Checked Rate   | stat       | `rate(xrpld_validations_checked_total[5m]) * 60`               |
+| Amendment Blocked          | stat       | `xrpld_validator_health{metric="amendment_blocked"}`           |
+| UNL Expiry (days)          | stat       | `xrpld_validator_health{metric="unl_expiry_days"}`             |
+| Validation Quorum          | stat       | `xrpld_validator_health{metric="validation_quorum"}`           |
+| State Value Timeline       | timeseries | `xrpld_state_tracking{metric="state_value"}`                   |
+| Time in Current State      | stat       | `xrpld_state_tracking{metric="time_in_current_state_seconds"}` |
+| State Changes Rate         | stat       | `rate(xrpld_state_changes_total[1h])`                          |
+| Ledgers Closed Rate        | stat       | `rate(xrpld_ledgers_closed_total[5m]) * 60`                    |
 
 **Dashboard conventions**: `$node` template variable for `exported_instance` filtering, dark theme, matching existing panel sizes and color schemes.
 
@@ -387,16 +387,16 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Objective**: Create a Grafana dashboard for peer health aggregates.
 
-**Dashboard**: `rippled-peer-quality.json`
+**Dashboard**: `xrpld-peer-quality.json`
 
-| Panel                  | Type       | PromQL                                                           |
-| ---------------------- | ---------- | ---------------------------------------------------------------- |
-| P90 Peer Latency       | timeseries | `rippled_peer_quality{metric="peer_latency_p90_ms"}`             |
-| Insane/Diverged Peers  | stat       | `rippled_peer_quality{metric="peers_insane_count"}`              |
-| Higher Version Peers % | stat       | `rippled_peer_quality{metric="peers_higher_version_pct"}`        |
-| Upgrade Recommended    | stat       | `rippled_peer_quality{metric="upgrade_recommended"}`             |
-| Resource Disconnects   | timeseries | `rippled_Overlay_Peer_Disconnects_Charges`                       |
-| Inbound vs Outbound    | bargauge   | `rippled_Peer_Finder_Active_Inbound_Peers`, `..._Outbound_Peers` |
+| Panel                  | Type       | PromQL                                                         |
+| ---------------------- | ---------- | -------------------------------------------------------------- |
+| P90 Peer Latency       | timeseries | `xrpld_peer_quality{metric="peer_latency_p90_ms"}`             |
+| Insane/Diverged Peers  | stat       | `xrpld_peer_quality{metric="peers_insane_count"}`              |
+| Higher Version Peers % | stat       | `xrpld_peer_quality{metric="peers_higher_version_pct"}`        |
+| Upgrade Recommended    | stat       | `xrpld_peer_quality{metric="upgrade_recommended"}`             |
+| Resource Disconnects   | timeseries | `xrpld_Overlay_Peer_Disconnects_Charges`                       |
+| Inbound vs Outbound    | bargauge   | `xrpld_Peer_Finder_Active_Inbound_Peers`, `..._Outbound_Peers` |
 
 **Key new files**: `docker/telemetry/grafana/dashboards/rippled-peer-quality.json`
 
@@ -414,13 +414,13 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Objective**: Add "Ledger Economy" row to the existing `system-node-health.json` dashboard.
 
-| Panel                | Type       | PromQL                                                |
-| -------------------- | ---------- | ----------------------------------------------------- |
-| Base Fee (drops)     | stat       | `rippled_ledger_economy{metric="base_fee_xrp"}`       |
-| Reserve Base (drops) | stat       | `rippled_ledger_economy{metric="reserve_base_xrp"}`   |
-| Reserve Inc (drops)  | stat       | `rippled_ledger_economy{metric="reserve_inc_xrp"}`    |
-| Ledger Age           | stat       | `rippled_ledger_economy{metric="ledger_age_seconds"}` |
-| Transaction Rate     | timeseries | `rippled_ledger_economy{metric="transaction_rate"}`   |
+| Panel                | Type       | PromQL                                              |
+| -------------------- | ---------- | --------------------------------------------------- |
+| Base Fee (drops)     | stat       | `xrpld_ledger_economy{metric="base_fee_xrp"}`       |
+| Reserve Base (drops) | stat       | `xrpld_ledger_economy{metric="reserve_base_xrp"}`   |
+| Reserve Inc (drops)  | stat       | `xrpld_ledger_economy{metric="reserve_inc_xrp"}`    |
+| Ledger Age           | stat       | `xrpld_ledger_economy{metric="ledger_age_seconds"}` |
+| Transaction Rate     | timeseries | `xrpld_ledger_economy{metric="transaction_rate"}`   |
 
 **Key modified files**: `docker/telemetry/grafana/dashboards/system-node-health.json`
 

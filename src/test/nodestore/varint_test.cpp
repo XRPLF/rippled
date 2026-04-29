@@ -1,12 +1,12 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/nodestore/detail/varint.h>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 
-namespace xrpl {
-namespace NodeStore {
-namespace tests {
+namespace xrpl::NodeStore::tests {
 
 class varint_test : public beast::unit_test::suite
 {
@@ -54,6 +54,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(varint, nodestore, xrpl);
 
-}  // namespace tests
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore::tests

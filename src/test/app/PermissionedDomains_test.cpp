@@ -1,18 +1,35 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/fee.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 
+#include <cstddef>
 #include <exception>
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 using namespace jtx;
 
@@ -49,7 +66,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         Account const alice("alice");
         Env env(*this, features);
         env.fund(XRP(1000), alice);
-        pdomain::Credentials credentials{{alice, "first credential"}};
+        pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials));
         BEAST_EXPECT(env.ownerCount(alice) == 1);
         auto objects = pdomain::getObjects(alice, env);
@@ -71,7 +88,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         Account const alice("alice");
         Env env(*this, amendments);
         env.fund(XRP(1000), alice);
-        pdomain::Credentials credentials{{alice, "first credential"}};
+        pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), ter(temDISABLED));
     }
 
@@ -83,7 +100,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         Account const alice("alice");
         Env env(*this, withoutFeature_);
         env.fund(XRP(1000), alice);
-        pdomain::Credentials credentials{{alice, "first credential"}};
+        pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), ter(temDISABLED));
         env(pdomain::deleteTx(alice, uint256(75)), ter(temDISABLED));
     }
@@ -391,7 +408,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         constexpr std::size_t deleteDelta = 255;
         {
             // Close enough ledgers to make it potentially deletable if empty.
-            std::size_t ownerSeq = env.seq(alice[0]);
+            std::size_t const ownerSeq = env.seq(alice[0]);
             while (deleteDelta + ownerSeq > env.current()->seq())
                 env.close();
             env(acctdelete(alice[0], alice[2]), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
@@ -402,7 +419,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             for (auto const& objs : pdomain::getObjects(alice[0], env))
                 env(pdomain::deleteTx(alice[0], objs.first));
             env.close();
-            std::size_t ownerSeq = env.seq(alice[0]);
+            std::size_t const ownerSeq = env.seq(alice[0]);
             while (deleteDelta + ownerSeq > env.current()->seq())
                 env.close();
             env(acctdelete(alice[0], alice[2]), fee(acctDelFee));
@@ -420,7 +437,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice);
         auto const setFee(drops(env.current()->fees().increment));
 
-        pdomain::Credentials credentials{{alice, "first credential"}};
+        pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials));
         env.close();
 
@@ -484,7 +501,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(env.ownerCount(alice) == 0);
 
         // alice does not have enough XRP to cover the reserve.
-        pdomain::Credentials credentials{{alice, "first credential"}};
+        pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), ter(tecINSUFFICIENT_RESERVE));
         BEAST_EXPECT(env.ownerCount(alice) == 0);
         BEAST_EXPECT(pdomain::getObjects(alice, env).empty());
@@ -531,5 +548,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PermissionedDomains, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

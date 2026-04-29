@@ -2,7 +2,7 @@
 
 > **Status**: Future Enhancement
 >
-> **Goal**: Build a custom OTel Collector receiver that periodically polls rippled's admin RPCs and exports structured metrics for external consumers — making all XRPL health, validator, peer, fee, and DEX data available as Prometheus/OTLP metrics without rippled code changes.
+> **Goal**: Build a custom OTel Collector receiver that periodically polls xrpld's admin RPCs and exports structured metrics for external consumers — making all XRPL health, validator, peer, fee, and DEX data available as Prometheus/OTLP metrics without xrpld code changes.
 >
 > **Scope**: Go-based OTel Collector receiver plugin + Grafana dashboards + Prometheus alerting rules.
 >
@@ -20,7 +20,7 @@
 
 ### Third-Party Consumer Gap Analysis
 
-This phase addresses the cross-cutting gap identified during research: **rippled has no native Prometheus/OTLP metrics export for data accessible only via RPC**. Every consumer (exchanges, payment processors, analytics providers, validators, researchers, compliance firms, custodians) must build custom JSON-RPC polling and conversion. This receiver centralizes that work.
+This phase addresses the cross-cutting gap identified during research: **xrpld has no native Prometheus/OTLP metrics export for data accessible only via RPC**. Every consumer (exchanges, payment processors, analytics providers, validators, researchers, compliance firms, custodians) must build custom JSON-RPC polling and conversion. This receiver centralizes that work.
 
 | Consumer Category          | Data Unlocked by This Phase                                        |
 | -------------------------- | ------------------------------------------------------------------ |
@@ -39,7 +39,7 @@ This phase addresses the cross-cutting gap identified during research: **rippled
 
 ## Task 11.1: OTel Collector Receiver Scaffold
 
-**Objective**: Create the Go project structure for a custom OTel Collector receiver that polls rippled JSON-RPC.
+**Objective**: Create the Go project structure for a custom OTel Collector receiver that polls xrpld JSON-RPC.
 
 **What to do**:
 
@@ -52,8 +52,8 @@ This phase addresses the cross-cutting gap identified during research: **rippled
 - Configuration model:
 
   ```yaml
-  rippled_receiver:
-    endpoint: "http://localhost:5005" # rippled admin RPC
+  xrpld_receiver:
+    endpoint: "http://localhost:5005" # xrpld admin RPC
     poll_interval: 30s # how often to poll
     enabled_collectors:
       - server_info
@@ -249,7 +249,7 @@ This phase addresses the cross-cutting gap identified during research: **rippled
   - `xrpl_fee_minimum_fee_drops` — base reference fee
   - `xrpl_fee_queue_size` — current queue depth
 
-- This overlaps with Phase 9's internal TxQ metrics but provides an external-only collection path that doesn't require rippled code changes.
+- This overlaps with Phase 9's internal TxQ metrics but provides an external-only collection path that doesn't require xrpld code changes.
 
 **Key files**:
 
@@ -362,24 +362,24 @@ This phase addresses the cross-cutting gap identified during research: **rippled
 
 **What to do**:
 
-- **Validator Health** (`rippled-validator-health`):
+- **Validator Health** (`xrpld-validator-health`):
   - Server state timeline, state duration breakdown
   - Proposer count trend, converge time trend, validation quorum
   - Validator list expiration countdown
   - Amendment voting status (majority/enabled/vetoed)
 
-- **Network Topology** (`rippled-network-topology`):
+- **Network Topology** (`xrpld-network-topology`):
   - Peer count (inbound/outbound/cluster), peer version distribution
   - Peer latency distribution (p50/p95/p99), diverged peer count
   - Geographic distribution (if enriched with GeoIP)
   - Peer uptime distribution
 
-- **Fee Market** (`rippled-fee-market-external`):
+- **Fee Market** (`xrpld-fee-market-external`):
   - Current fee levels (open ledger, median, minimum), fee escalation timeline
   - Queue depth vs. capacity, transactions per ledger
   - Load factor breakdown (server/network/cluster/escalation)
 
-- **DEX & AMM Overview** (`rippled-dex-amm`) (only populated when DEX collectors are configured):
+- **DEX & AMM Overview** (`xrpld-dex-amm`) (only populated when DEX collectors are configured):
   - AMM pool TVL, reserve ratios, LP token supply
   - Order book depth per pair, spread trends
   - Trading fee revenue estimates
@@ -405,7 +405,7 @@ This phase addresses the cross-cutting gap identified during research: **rippled
   - Verify alerting rules fire correctly (inject a "bad" state and check alert)
 
 - Update `docker/telemetry/docker-compose.workload.yaml`:
-  - Add the custom OTel Collector build with the rippled receiver
+  - Add the custom OTel Collector build with the xrpld receiver
   - Configure the receiver to poll one of the test nodes
 
 **Key files**:
@@ -448,6 +448,6 @@ This phase addresses the cross-cutting gap identified during research: **rippled
 - [ ] Prometheus alerting rules fire correctly for simulated failure conditions
 - [ ] DEX/AMM collector works when configured (optional — not required for base exit criteria)
 - [ ] Phase 10 validation suite passes with receiver metrics included
-- [ ] Receiver handles rippled restart/unavailability gracefully (no crash, logs warning, retries)
+- [ ] Receiver handles xrpld restart/unavailability gracefully (no crash, logs warning, retries)
 - [ ] Documentation complete: receiver README, metric reference, alerting playbook
 - [ ] Go receiver has unit tests with >80% coverage

@@ -38,7 +38,7 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 **What to do**:
 
 - Create `docker/telemetry/docker-compose.workload.yaml`:
-  - 5 rippled validator nodes with UNL configured for each other
+  - 5 xrpld validator nodes with UNL configured for each other
   - All telemetry enabled: `[telemetry] enabled=1`, `[insight] server=otel`
   - Full OTel stack: Collector, Tempo, Prometheus, Loki, Grafana
   - Shared network with service discovery
@@ -66,7 +66,7 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 **What to do**:
 
 - Create `docker/telemetry/workload/rpc_load_generator.py`:
-  - Connects to one or more rippled WebSocket endpoints
+  - Connects to one or more xrpld WebSocket endpoints
   - Fires all RPC commands that have trace spans: `server_info`, `ledger`, `tx`, `account_info`, `account_lines`, `fee`, `submit`, etc.
   - Configurable parameters: rate (RPS), duration, command distribution weights
   - Injects `traceparent` HTTP headers to test W3C context propagation
@@ -129,8 +129,8 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 
   **Metric validation** (queries Prometheus API):
   - Assert all SpanMetrics-derived metrics are non-zero: `traces_span_metrics_calls_total`, `traces_span_metrics_duration_milliseconds_bucket`
-  - Assert all StatsD metrics are non-zero: `rippled_LedgerMaster_Validated_Ledger_Age`, `rippled_Peer_Finder_Active_*`, etc.
-  - Assert all Phase 9 metrics are non-zero: `rippled_nodestore_*`, `rippled_cache_*`, `rippled_txq_*`, `rippled_rpc_method_*`, `rippled_object_count`, `rippled_load_factor*`
+  - Assert all StatsD metrics are non-zero: `xrpld_LedgerMaster_Validated_Ledger_Age`, `xrpld_Peer_Finder_Active_*`, etc.
+  - Assert all Phase 9 metrics are non-zero: `xrpld_nodestore_*`, `xrpld_cache_*`, `xrpld_txq_*`, `xrpld_rpc_method_*`, `xrpld_object_count`, `xrpld_load_factor*`
   - Assert metric label cardinality is within bounds
 
   **Log-trace correlation validation** (queries Loki API):
@@ -191,7 +191,7 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 **What to do**:
 
 - Create a CI workflow (GitHub Actions or equivalent) that:
-  1. Builds rippled with `-DXRPL_ENABLE_TELEMETRY=ON`
+  1. Builds xrpld with `-DXRPL_ENABLE_TELEMETRY=ON`
   2. Starts the multi-node workload harness
   3. Runs the RPC load generator + transaction submitter for 2 minutes
   4. Runs the validation suite

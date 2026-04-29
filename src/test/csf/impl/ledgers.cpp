@@ -1,10 +1,19 @@
 #include <test/csf/ledgers.h>
 
-#include <algorithm>
+#include <test/csf/Tx.h>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+#include <xrpl/basics/chrono.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/LedgerTiming.h>
+
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <optional>
+#include <set>
+#include <vector>
+
+namespace xrpl::test::csf {
 
 Ledger::Instance const Ledger::genesis;
 
@@ -42,14 +51,14 @@ mismatch(Ledger const& a, Ledger const& b)
 
     // end is 1 past end of range
     Seq start{0};
-    Seq end = std::min(a.seq() + Seq{1}, b.seq() + Seq{1});
+    Seq const end = std::min(a.seq() + Seq{1}, b.seq() + Seq{1});
 
     // Find mismatch in [start,end)
     // Binary search
     Seq count = end - start;
     while (count > Seq{0})
     {
-        Seq step = count / Seq{2};
+        Seq const step = count / Seq{2};
         Seq curr = start + step;
         if (a[curr] == b[curr])
         {
@@ -155,6 +164,4 @@ LedgerOracle::branches(std::set<Ledger> const& ledgers)
     // The size of tips is the number of branches
     return tips.size();
 }
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

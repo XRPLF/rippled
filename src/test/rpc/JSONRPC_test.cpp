@@ -1,19 +1,42 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Env_ss.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/trust.h>
 
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/core/ConfigSections.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
 
-namespace xrpl {
+#include <array>
+#include <cassert>
+#include <chrono>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <tuple>
 
-namespace RPC {
+namespace xrpl::RPC {
 
 struct TxnTestData
 {
@@ -2119,7 +2142,7 @@ public:
             jt.jv.removeMember(jss::Fee);
             jt.jv.removeMember(jss::TxnSignature);
             req[jss::tx_json] = jt.jv;
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2189,7 +2212,7 @@ public:
                     alice));
 
             req[jss::tx_json] = jt.jv;
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2216,7 +2239,7 @@ public:
         {
             Json::Value req;
             Json::Reader().parse("{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2236,7 +2259,7 @@ public:
                 "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 2, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2253,7 +2276,7 @@ public:
         {
             Json::Value req;
             Json::Reader().parse("{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2274,7 +2297,7 @@ public:
                 "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 6, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2293,7 +2316,7 @@ public:
                 "{ \"fee_mult_max\" : 0, \"fee_div_max\" : 2, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2312,7 +2335,7 @@ public:
                 "{ \"fee_mult_max\" : 10, \"fee_div_max\" : 0, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2330,7 +2353,7 @@ public:
             Json::Value req;
             test::jtx::Account const alice("alice");
             req[jss::tx_json] = test::jtx::acctdelete(env.master.human(), alice.human());
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2367,7 +2390,7 @@ public:
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2389,7 +2412,7 @@ public:
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2417,7 +2440,7 @@ public:
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2440,7 +2463,7 @@ public:
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2463,7 +2486,7 @@ public:
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2486,7 +2509,7 @@ public:
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2509,7 +2532,7 @@ public:
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2530,7 +2553,7 @@ public:
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2552,7 +2575,7 @@ public:
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            Json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2648,7 +2671,7 @@ public:
                 env(noop(env.master), fee(47));
             }
 
-            Env_ss envs(env);
+            Env_ss const envs(env);
 
             Json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
@@ -2732,7 +2755,7 @@ public:
         env(pay(g, env.master, USD(50)));
         env.close();
 
-        ProcessTransactionFn processTxn = fakeProcessTransaction;
+        ProcessTransactionFn const processTxn = fakeProcessTransaction;
 
         // A list of all the functions we want to test.
         using signFunc = Json::Value (*)(
@@ -2773,7 +2796,7 @@ public:
                 static Role const testedRoles[] = {
                     Role::GUEST, Role::USER, Role::ADMIN, Role::FORBID};
 
-                for (Role testRole : testedRoles)
+                for (Role const testRole : testedRoles)
                 {
                     Json::Value result;
                     auto const signFn = get<0>(testFunc);
@@ -2824,5 +2847,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, xrpl);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

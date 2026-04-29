@@ -4,11 +4,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace credentials {
+namespace xrpl::test::jtx::credentials {
 
 inline Keylet
 keylet(
@@ -80,7 +76,4 @@ ledgerEntry(
 Json::Value
 ledgerEntry(jtx::Env& env, std::string const& credIdx);
 
-}  // namespace credentials
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::credentials

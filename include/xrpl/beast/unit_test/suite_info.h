@@ -9,8 +9,7 @@
 #include <string>
 #include <utility>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 class runner;
 
@@ -43,33 +42,33 @@ public:
     {
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     module() const
     {
         return module_;
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     library() const
     {
         return library_;
     }
 
     /// Returns `true` if this suite only runs manually.
-    bool
+    [[nodiscard]] bool
     manual() const
     {
         return manual_;
     }
 
     /// Return the canonical suite name as a string.
-    std::string
+    [[nodiscard]] std::string
     full_name() const
     {
         return library_ + "." + module_ + "." + name_;
@@ -110,5 +109,4 @@ make_suite_info(
         });
 }
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

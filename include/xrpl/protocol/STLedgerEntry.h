@@ -8,7 +8,7 @@ namespace xrpl {
 class Rules;
 namespace test {
 class Invariants_test;
-}
+}  // namespace test
 
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {
@@ -28,30 +28,30 @@ public:
     STLedgerEntry(SerialIter&& sit, uint256 const& index);
     STLedgerEntry(STObject const& object, uint256 const& index);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getFullText() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson(JsonOptions options = JsonOptions::none) const override;
 
     /** Returns the 'key' (or 'index') of this item.
         The key identifies this entry's position in
         the SHAMap associative container.
     */
-    uint256 const&
+    [[nodiscard]] uint256 const&
     key() const;
 
-    LedgerEntryType
+    [[nodiscard]] LedgerEntryType
     getType() const;
 
     // is this a ledger entry that can be threaded
-    bool
+    [[nodiscard]] bool
     isThreadedType(Rules const& rules) const;
 
     bool
@@ -86,7 +86,9 @@ inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, uint256 const& key)
 {
 }
 
-inline STLedgerEntry::STLedgerEntry(SerialIter&& sit, uint256 const& index)
+inline STLedgerEntry::STLedgerEntry(
+    SerialIter&& sit,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    uint256 const& index)
     : STLedgerEntry(sit, index)
 {
 }

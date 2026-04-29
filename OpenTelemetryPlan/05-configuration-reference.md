@@ -5,7 +5,7 @@
 
 ---
 
-## 5.1 rippled Configuration
+## 5.1 xrpld Configuration
 
 > **OTLP** = OpenTelemetry Protocol | **TxQ** = Transaction Queue
 
@@ -61,8 +61,16 @@ Add to `cfg/xrpld-example.cfg`:
 # trace_validator=0        # Validator list and manifest updates (low volume)
 # trace_amendment=0        # Amendment voting (very low volume)
 #
+# # Trace ID strategies for cross-node correlation
+# # "deterministic" (default) derives trace_id from a workflow hash
+# #   (txHash for transactions, prevLedgerHash for consensus) so all nodes
+# #   produce spans under the same trace_id for the same workflow.
+# # "attribute" uses random trace_id; correlation via attribute queries.
+# tx_trace_strategy=deterministic
+# consensus_trace_strategy=deterministic
+#
 # # Service identification (automatically detected if not specified)
-# # service_name=rippled
+# # service_name=xrpld
 # # service_instance_id=<node_public_key>
 
 [telemetry]
@@ -71,28 +79,30 @@ enabled=0
 
 ### 5.1.2 Configuration Options Summary
 
-| Option                | Type   | Default          | Description                               |
-| --------------------- | ------ | ---------------- | ----------------------------------------- |
-| `enabled`             | bool   | `false`          | Enable/disable telemetry                  |
-| `exporter`            | string | `"otlp_grpc"`    | Exporter type: otlp_grpc, otlp_http, none |
-| `endpoint`            | string | `localhost:4317` | OTLP collector endpoint                   |
-| `use_tls`             | bool   | `false`          | Enable TLS for exporter connection        |
-| `tls_ca_cert`         | string | `""`             | Path to CA certificate file               |
-| `sampling_ratio`      | float  | `1.0`            | Sampling ratio (0.0-1.0)                  |
-| `batch_size`          | uint   | `512`            | Spans per export batch                    |
-| `batch_delay_ms`      | uint   | `5000`           | Max delay before sending batch (ms)       |
-| `max_queue_size`      | uint   | `2048`           | Maximum queued spans                      |
-| `trace_transactions`  | bool   | `true`           | Enable transaction tracing                |
-| `trace_consensus`     | bool   | `true`           | Enable consensus tracing                  |
-| `trace_rpc`           | bool   | `true`           | Enable RPC tracing                        |
-| `trace_peer`          | bool   | `false`          | Enable peer message tracing (high volume) |
-| `trace_ledger`        | bool   | `true`           | Enable ledger tracing                     |
-| `trace_pathfind`      | bool   | `true`           | Enable path computation tracing           |
-| `trace_txq`           | bool   | `true`           | Enable transaction queue tracing          |
-| `trace_validator`     | bool   | `false`          | Enable validator list/manifest tracing    |
-| `trace_amendment`     | bool   | `false`          | Enable amendment voting tracing           |
-| `service_name`        | string | `"rippled"`      | Service name for traces                   |
-| `service_instance_id` | string | `<node_pubkey>`  | Instance identifier                       |
+| Option                     | Type   | Default           | Description                                                                                                |
+| -------------------------- | ------ | ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| `enabled`                  | bool   | `false`           | Enable/disable telemetry                                                                                   |
+| `exporter`                 | string | `"otlp_grpc"`     | Exporter type: otlp_grpc, otlp_http, none                                                                  |
+| `endpoint`                 | string | `localhost:4317`  | OTLP collector endpoint                                                                                    |
+| `use_tls`                  | bool   | `false`           | Enable TLS for exporter connection                                                                         |
+| `tls_ca_cert`              | string | `""`              | Path to CA certificate file                                                                                |
+| `sampling_ratio`           | float  | `1.0`             | Sampling ratio (0.0-1.0)                                                                                   |
+| `batch_size`               | uint   | `512`             | Spans per export batch                                                                                     |
+| `batch_delay_ms`           | uint   | `5000`            | Max delay before sending batch (ms)                                                                        |
+| `max_queue_size`           | uint   | `2048`            | Maximum queued spans                                                                                       |
+| `trace_transactions`       | bool   | `true`            | Enable transaction tracing                                                                                 |
+| `trace_consensus`          | bool   | `true`            | Enable consensus tracing                                                                                   |
+| `trace_rpc`                | bool   | `true`            | Enable RPC tracing                                                                                         |
+| `trace_peer`               | bool   | `false`           | Enable peer message tracing (high volume)                                                                  |
+| `trace_ledger`             | bool   | `true`            | Enable ledger tracing                                                                                      |
+| `trace_pathfind`           | bool   | `true`            | Enable path computation tracing                                                                            |
+| `trace_txq`                | bool   | `true`            | Enable transaction queue tracing                                                                           |
+| `trace_validator`          | bool   | `false`           | Enable validator list/manifest tracing                                                                     |
+| `trace_amendment`          | bool   | `false`           | Enable amendment voting tracing                                                                            |
+| `tx_trace_strategy`        | string | `"deterministic"` | TX trace ID strategy: `"deterministic"` (trace_id = txHash[0:16]) or `"attribute"` (random)                |
+| `consensus_trace_strategy` | string | `"deterministic"` | Consensus trace ID strategy: `"deterministic"` (trace_id = prevLedgerHash[0:16]) or `"attribute"` (random) |
+| `service_name`             | string | `"xrpld"`         | Service name for traces                                                                                    |
+| `service_instance_id`      | string | `<node_pubkey>`   | Instance identifier                                                                                        |
 
 ---
 
@@ -119,7 +129,7 @@ setup_Telemetry(
 
     // Basic settings
     setup.enabled = section.value_or("enabled", false);
-    setup.serviceName = section.value_or("service_name", "rippled");
+    setup.serviceName = section.value_or("service_name", "xrpld");
     setup.serviceVersion = version;
     setup.serviceInstanceId = section.value_or(
         "service_instance_id", nodePublicKey);
@@ -173,86 +183,96 @@ setup_Telemetry(
 
 ### 5.3.1 ApplicationImp Changes
 
+> **Deferred identity**: The node public key (`nodeIdentity_`) is not
+> available during `ApplicationImp`'s member initializer list — it is
+> resolved later in `setup()`. The `Telemetry` object is therefore
+> constructed with an empty `serviceInstanceId` and patched via
+> `setServiceInstanceId()` once `setup()` has called `getNodeIdentity()`.
+
 ```cpp
 // src/xrpld/app/main/Application.cpp (modified)
 
 #include <xrpl/telemetry/Telemetry.h>
 
-class ApplicationImp : public Application
+class ApplicationImp : public Application, public BasicApp
 {
-    // ... existing members ...
+    // ... existing members (perfLog_, etc.) ...
 
-    // Telemetry (must be constructed early, destroyed late)
+    // Telemetry — constructed in the member initializer list with
+    // an empty serviceInstanceId, patched in setup().
     std::unique_ptr<telemetry::Telemetry> telemetry_;
 
-public:
-    ApplicationImp(...)
+    // Member initializer list (excerpt):
+    // ...
+    // , telemetry_(
+    //       telemetry::make_Telemetry(
+    //           telemetry::setup_Telemetry(
+    //               config_->section("telemetry"),
+    //               "",  // Updated later via setServiceInstanceId()
+    //               BuildInfo::getVersionString()),
+    //           logs_->journal("Telemetry")))
+    // ...
+
+    bool setup(...) override
     {
-        // Initialize telemetry early (before other components)
-        auto telemetrySection = config_->section("telemetry");
-        auto telemetrySetup = telemetry::setup_Telemetry(
-            telemetrySection,
-            toBase58(TokenType::NodePublic, nodeIdentity_.publicKey()),
-            BuildInfo::getVersionString());
+        // ... existing setup code ...
 
-        // Set network attributes
-        telemetrySetup.networkId = config_->NETWORK_ID;
-        telemetrySetup.networkType = [&]() {
-            if (config_->NETWORK_ID == 0) return "mainnet";
-            if (config_->NETWORK_ID == 1) return "testnet";
-            if (config_->NETWORK_ID == 2) return "devnet";
-            return "custom";
-        }();
+        nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
-        telemetry_ = telemetry::make_Telemetry(
-            telemetrySetup,
-            logs_->journal("Telemetry"));
+        // Inject node identity into telemetry resource attributes,
+        // unless the user already set a custom service_instance_id.
+        if (!config_->section("telemetry").exists("service_instance_id"))
+            telemetry_->setServiceInstanceId(
+                toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
-        // ... rest of initialization ...
+        // ... rest of setup ...
     }
 
-    void start() override
+    void start(bool withTimers) override
     {
-        // Start telemetry first
-        if (telemetry_)
-            telemetry_->start();
-
         // ... existing start code ...
+        telemetry_->start();
     }
 
-    void stop() override
+    void run() override
     {
-        // ... existing stop code ...
-
-        // Stop telemetry last (to capture shutdown spans)
-        if (telemetry_)
-            telemetry_->stop();
+        // ... existing run/shutdown code ...
+        telemetry_->stop();
     }
 
-    telemetry::Telemetry& getTelemetry() override
+    telemetry::Telemetry&
+    getTelemetry() override
     {
-        assert(telemetry_);
         return *telemetry_;
     }
 };
 ```
 
-### 5.3.2 Application Interface Addition
+### 5.3.2 ServiceRegistry Interface Addition
 
 ```cpp
-// include/xrpl/app/main/Application.h (modified)
+// include/xrpl/core/ServiceRegistry.h (modified)
 
-namespace telemetry { class Telemetry; }
+namespace telemetry {
+class Telemetry;
+}  // namespace telemetry
 
-class Application
+class ServiceRegistry
 {
 public:
     // ... existing virtual methods ...
 
-    /** Get the telemetry system for distributed tracing */
-    virtual telemetry::Telemetry& getTelemetry() = 0;
+    /** Get the telemetry system for distributed tracing. */
+    virtual telemetry::Telemetry&
+    getTelemetry() = 0;
 };
 ```
+
+> **Note:** `Application` extends `ServiceRegistry`, so `getTelemetry()` is
+> available on both. Components that hold a `ServiceRegistry&` (e.g.
+> `NetworkOPsImp`) call `registry_.get().getTelemetry()`. Components that
+> still hold an `Application&` (e.g. `ServerHandler`, `PeerImp`,
+> `RCLConsensusAdaptor`) call `app_.getTelemetry()` directly.
 
 ---
 
@@ -403,13 +423,7 @@ exporters:
     sampling_initial: 5
     sampling_thereafter: 200
 
-  # Tempo for trace visualization
-  otlp/tempo:
-    endpoint: tempo:4317
-    tls:
-      insecure: true
-
-  # Grafana Tempo for trace storage
+  # Tempo for trace storage
   otlp/tempo:
     endpoint: tempo:4317
     tls:
@@ -420,7 +434,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, jaeger, otlp/tempo]
+      exporters: [logging, otlp/tempo]
 ```
 
 ### 5.5.2 Production Configuration
@@ -554,24 +568,13 @@ services:
     depends_on:
       - tempo
 
-  # Tempo for trace visualization
+  # Tempo for trace storage
   tempo:
     image: grafana/tempo:2.6.1
     container_name: tempo
     ports:
       - "3200:3200" # Tempo HTTP API
       - "4317" # OTLP gRPC (internal)
-
-  # Grafana Tempo for trace storage (recommended for production)
-  tempo:
-    image: grafana/tempo:2.7.2
-    container_name: tempo
-    command: ["-config.file=/etc/tempo.yaml"]
-    volumes:
-      - ./tempo.yaml:/etc/tempo.yaml:ro
-      - tempo-data:/var/tempo
-    ports:
-      - "3200:3200" # HTTP API
 
   # Grafana for dashboards
   grafana:
@@ -586,7 +589,6 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - jaeger
       - tempo
 
   # Prometheus for metrics (optional, for correlation)
@@ -600,7 +602,7 @@ services:
 
 networks:
   default:
-    name: rippled-telemetry
+    name: xrpld-telemetry
 ```
 
 ---
@@ -653,7 +655,7 @@ flowchart TB
 - **Configuration Sources**: `xrpld.cfg` provides runtime settings (endpoint, sampling) while the CMake flag controls whether telemetry is compiled in at all.
 - **Initialization**: `setup_Telemetry()` parses config values, then `make_Telemetry()` constructs the provider, processor, and exporter objects.
 - **Runtime Components**: The `TracerProvider` creates spans, the `BatchProcessor` buffers them, and the `OTLP Exporter` serializes and sends them over the wire.
-- **OTLP arrow to Collector**: Trace data leaves the rippled process via OTLP (gRPC or HTTP) and enters the external Collector pipeline.
+- **OTLP arrow to Collector**: Trace data leaves the xrpld process via OTLP (gRPC or HTTP) and enters the external Collector pipeline.
 - **Collector Pipeline**: `Receivers` ingest OTLP data, `Processors` apply sampling/filtering/enrichment, and `Exporters` forward traces to storage backends (Tempo, etc.).
 
 ---
@@ -662,7 +664,7 @@ flowchart TB
 
 > **APM** = Application Performance Monitoring
 
-Step-by-step instructions for integrating rippled traces with Grafana.
+Step-by-step instructions for integrating xrpld traces with Grafana.
 
 ### 5.8.1 Data Source Configuration
 
@@ -721,10 +723,10 @@ datasources:
 apiVersion: 1
 
 providers:
-  - name: "rippled-dashboards"
+  - name: "xrpld-dashboards"
     orgId: 1
-    folder: "rippled"
-    folderUid: "rippled"
+    folder: "xrpld"
+    folderUid: "xrpld"
     type: file
     disableDeletion: false
     updateIntervalSeconds: 30
@@ -736,8 +738,8 @@ providers:
 
 ```json
 {
-  "title": "rippled RPC Performance",
-  "uid": "rippled-rpc-performance",
+  "title": "xrpld RPC Performance",
+  "uid": "xrpld-rpc-performance",
   "panels": [
     {
       "title": "RPC Latency by Command",
@@ -746,7 +748,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && span.xrpl.rpc.command != \"\"} | histogram_over_time(duration) by (span.xrpl.rpc.command)"
+          "query": "{resource.service.name=\"xrpld\" && span.xrpl.rpc.command != \"\"} | histogram_over_time(duration) by (span.xrpl.rpc.command)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
@@ -758,7 +760,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && status.code=error} | rate() by (span.xrpl.rpc.command)"
+          "query": "{resource.service.name=\"xrpld\" && status.code=error} | rate() by (span.xrpl.rpc.command)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
@@ -770,7 +772,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && span.xrpl.rpc.command != \"\"} | avg(duration) by (span.xrpl.rpc.command) | topk(10)"
+          "query": "{resource.service.name=\"xrpld\" && span.xrpl.rpc.command != \"\"} | avg(duration) by (span.xrpl.rpc.command) | topk(10)"
         }
       ],
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
@@ -782,7 +784,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\"}"
+          "query": "{resource.service.name=\"xrpld\"}"
         }
       ],
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
@@ -795,8 +797,8 @@ providers:
 
 ```json
 {
-  "title": "rippled Transaction Tracing",
-  "uid": "rippled-tx-tracing",
+  "title": "xrpld Transaction Tracing",
+  "uid": "xrpld-tx-tracing",
   "panels": [
     {
       "title": "Transaction Throughput",
@@ -805,7 +807,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"tx.receive\"} | rate()"
+          "query": "{resource.service.name=\"xrpld\" && name=\"tx.receive\"} | rate()"
         }
       ],
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
@@ -817,7 +819,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"tx.relay\"} | avg(span.xrpl.tx.relay_count)"
+          "query": "{resource.service.name=\"xrpld\" && name=\"tx.relay\"} | avg(span.xrpl.tx.relay_count)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
@@ -829,7 +831,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"tx.validate\" && status.code=error}"
+          "query": "{resource.service.name=\"xrpld\" && name=\"tx.validate\" && status.code=error}"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
@@ -840,26 +842,26 @@ providers:
 
 ### 5.8.5 TraceQL Query Examples
 
-Common queries for rippled traces:
+Common queries for xrpld traces:
 
 ```
 # Find all traces for a specific transaction hash
-{resource.service.name="rippled" && span.xrpl.tx.hash="ABC123..."}
+{resource.service.name="xrpld" && span.xrpl.tx.hash="ABC123..."}
 
 # Find slow RPC commands (>100ms)
-{resource.service.name="rippled" && name=~"rpc.command.*"} | duration > 100ms
+{resource.service.name="xrpld" && name=~"rpc.command.*"} | duration > 100ms
 
 # Find consensus rounds taking >5 seconds
-{resource.service.name="rippled" && name="consensus.round"} | duration > 5s
+{resource.service.name="xrpld" && name="consensus.round"} | duration > 5s
 
 # Find failed transactions with error details
-{resource.service.name="rippled" && name="tx.validate" && status.code=error}
+{resource.service.name="xrpld" && name="tx.validate" && status.code=error}
 
 # Find transactions relayed to many peers
-{resource.service.name="rippled" && name="tx.relay"} | span.xrpl.tx.relay_count > 10
+{resource.service.name="xrpld" && name="tx.relay"} | span.xrpl.tx.relay_count > 10
 
 # Compare latency across nodes
-{resource.service.name="rippled" && name="rpc.command.account_info"} | avg(duration) by (resource.service.instance.id)
+{resource.service.name="xrpld" && name="rpc.command.account_info"} | avg(duration) by (resource.service.instance.id)
 ```
 
 ### 5.8.6 Correlation with PerfLog
@@ -871,12 +873,12 @@ To correlate OpenTelemetry traces with existing PerfLog data:
 ```yaml
 # promtail-config.yaml
 scrape_configs:
-  - job_name: rippled-perflog
+  - job_name: xrpld-perflog
     static_configs:
       - targets:
           - localhost
         labels:
-          job: rippled
+          job: xrpld
           __path__: /var/log/rippled/perf*.log
     pipeline_stages:
       - json:
@@ -921,22 +923,18 @@ jsonData:
     filterBySpanID: false
 ```
 
-### 5.8.7 Correlation with Insight/OTel System Metrics
+### 5.8.7 Correlation with Insight/StatsD Metrics
 
-To correlate traces with Beast Insight system metrics:
+To correlate traces with existing Beast Insight metrics:
 
 **Step 1: Export Insight metrics to Prometheus**
 
-Beast Insight metrics are exported natively via OTLP to the OTel Collector,
-which exposes them on the Prometheus endpoint alongside spanmetrics. No
-separate StatsD exporter is needed when using `server=otel`.
-
-```ini
-# xrpld.cfg — native OTel metrics (recommended)
-[insight]
-server=otel
-endpoint=http://localhost:4318/v1/metrics
-prefix=rippled
+```yaml
+# prometheus.yaml
+scrape_configs:
+  - job_name: "xrpld-statsd"
+    static_configs:
+      - targets: ["statsd-exporter:9102"]
 ```
 
 **Step 2: Add exemplars to metrics**
@@ -962,7 +960,7 @@ jsonData:
   "datasource": "Prometheus",
   "targets": [
     {
-      "expr": "histogram_quantile(0.99, rate(rippled_rpc_duration_seconds_bucket[5m]))",
+      "expr": "histogram_quantile(0.99, rate(xrpld_rpc_duration_seconds_bucket[5m]))",
       "exemplar": true
     }
   ]

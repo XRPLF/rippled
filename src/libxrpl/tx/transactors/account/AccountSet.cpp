@@ -1,13 +1,33 @@
+#include <xrpl/tx/transactors/account/AccountSet.h>
+
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/st.h>
-#include <xrpl/tx/transactors/account/AccountSet.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <cstdint>
+#include <memory>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -63,8 +83,9 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // RequireAuth
     //
-    bool bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
-    bool bClearRequireAuth = ((uTxFlags & tfOptionalAuth) != 0u) || (uClearFlag == asfRequireAuth);
+    bool const bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
+    bool const bClearRequireAuth =
+        ((uTxFlags & tfOptionalAuth) != 0u) || (uClearFlag == asfRequireAuth);
 
     if (bSetRequireAuth && bClearRequireAuth)
     {
@@ -75,8 +96,9 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // RequireDestTag
     //
-    bool bSetRequireDest = ((uTxFlags & tfRequireDestTag) != 0u) || (uSetFlag == asfRequireDest);
-    bool bClearRequireDest =
+    bool const bSetRequireDest =
+        ((uTxFlags & tfRequireDestTag) != 0u) || (uSetFlag == asfRequireDest);
+    bool const bClearRequireDest =
         ((uTxFlags & tfOptionalDestTag) != 0u) || (uClearFlag == asfRequireDest);
 
     if (bSetRequireDest && bClearRequireDest)
@@ -88,8 +110,9 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // DisallowXRP
     //
-    bool bSetDisallowXRP = ((uTxFlags & tfDisallowXRP) != 0u) || (uSetFlag == asfDisallowXRP);
-    bool bClearDisallowXRP = ((uTxFlags & tfAllowXRP) != 0u) || (uClearFlag == asfDisallowXRP);
+    bool const bSetDisallowXRP = ((uTxFlags & tfDisallowXRP) != 0u) || (uSetFlag == asfDisallowXRP);
+    bool const bClearDisallowXRP =
+        ((uTxFlags & tfAllowXRP) != 0u) || (uClearFlag == asfDisallowXRP);
 
     if (bSetDisallowXRP && bClearDisallowXRP)
     {
@@ -100,7 +123,7 @@ AccountSet::preflight(PreflightContext const& ctx)
     // TransferRate
     if (tx.isFieldPresent(sfTransferRate))
     {
-        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
+        std::uint32_t const uRate = tx.getFieldU32(sfTransferRate);
 
         if ((uRate != 0u) && (uRate < QUALITY_ONE))
         {
@@ -217,7 +240,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     std::uint32_t const uSetFlag = ctx.tx.getFieldU32(sfSetFlag);
 
     // legacy AccountSet flags
-    bool bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
+    bool const bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
 
     //
     // RequireAuth
@@ -531,7 +554,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfTransferRate))
     {
-        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
+        std::uint32_t const uRate = tx.getFieldU32(sfTransferRate);
 
         if (uRate == 0 || uRate == QUALITY_ONE)
         {
@@ -632,6 +655,20 @@ AccountSet::doApply()
     ctx_.view().update(sle);
 
     return tesSUCCESS;
+}
+
+void
+AccountSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+AccountSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

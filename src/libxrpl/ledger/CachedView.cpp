@@ -1,8 +1,17 @@
-#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/ledger/CachedView.h>
 
-namespace xrpl {
-namespace detail {
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <memory>
+#include <mutex>
+#include <optional>
+
+namespace xrpl::detail {
 
 bool
 CachedViewImpl::exists(Keylet const& k) const
@@ -21,7 +30,7 @@ CachedViewImpl::read(Keylet const& k) const
 
     auto const digest = [&]() -> std::optional<uint256> {
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             auto const iter = map_.find(k.key);
             if (iter != map_.end())
             {
@@ -57,7 +66,7 @@ CachedViewImpl::read(Keylet const& k) const
         // Avoid acquiring this lock unless necessary. It is only necessary if
         // the key was not found in the map_. The lock is needed to add the key
         // and digest.
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         map_.emplace(k.key, *digest);
     }
     if (!sle || !k.check(*sle))
@@ -65,5 +74,4 @@ CachedViewImpl::read(Keylet const& k) const
     return sle;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

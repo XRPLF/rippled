@@ -1,12 +1,29 @@
-#include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/shamap/SHAMapInnerNode.h>
+
+#include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/spinlock.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/shamap/SHAMapInnerNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/shamap/detail/TaggedPointer.h>
 #include <xrpl/shamap/detail/TaggedPointer.ipp>
+
+#include <cstddef>
+#include <cstdint>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -82,7 +99,7 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     }
 
     spinlock sl(lock_);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
 
     if (thisIsSparse)
     {
@@ -274,7 +291,8 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 
     if (child)
     {
-        auto const childIndex = *getChildIndex(m);
+        auto const childIndex =
+            *getChildIndex(m);  // NOLINT(bugprone-unchecked-optional-access) isBranch_ set above
         auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
         hashes[childIndex].zero();
         children[childIndex] = std::move(child);
@@ -298,6 +316,7 @@ SHAMapInnerNode::shareChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> const& ch
     XRPL_ASSERT(child.get() != this, "xrpl::SHAMapInnerNode::shareChild : valid child input");
 
     XRPL_ASSERT(!isEmptyBranch(m), "xrpl::SHAMapInnerNode::shareChild : non-empty branch input");
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access) assert above
     hashesAndChildren_.getChildren()[*getChildIndex(m)] = child;
 }
 
@@ -310,10 +329,11 @@ SHAMapInnerNode::getChildPointer(int branch)
     XRPL_ASSERT(
         !isEmptyBranch(branch), "xrpl::SHAMapInnerNode::getChildPointer : non-empty branch input");
 
-    auto const index = *getChildIndex(branch);
+    auto const index =
+        *getChildIndex(branch);  // NOLINT(bugprone-unchecked-optional-access) assert above
 
     packed_spinlock sl(lock_, index);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
     return hashesAndChildren_.getChildren()[index].get();
 }
 
@@ -325,10 +345,11 @@ SHAMapInnerNode::getChild(int branch)
         "xrpl::SHAMapInnerNode::getChild : valid branch input");
     XRPL_ASSERT(!isEmptyBranch(branch), "xrpl::SHAMapInnerNode::getChild : non-empty branch input");
 
-    auto const index = *getChildIndex(branch);
+    auto const index =
+        *getChildIndex(branch);  // NOLINT(bugprone-unchecked-optional-access) assert above
 
     packed_spinlock sl(lock_, index);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
     return hashesAndChildren_.getChildren()[index];
 }
 
@@ -353,7 +374,8 @@ SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNod
     XRPL_ASSERT(
         !isEmptyBranch(branch),
         "xrpl::SHAMapInnerNode::canonicalizeChild : non-empty branch input");
-    auto const childIndex = *getChildIndex(branch);
+    auto const childIndex =
+        *getChildIndex(branch);  // NOLINT(bugprone-unchecked-optional-access) assert above
     auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
     XRPL_ASSERT(
         node->getHash() == hashes[childIndex],
@@ -361,7 +383,7 @@ SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNod
         "hash do match");
 
     packed_spinlock sl(lock_, childIndex);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
 
     if (children[childIndex])
     {

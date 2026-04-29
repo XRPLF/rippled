@@ -10,16 +10,17 @@
     its own factory that can return the real TelemetryImpl.
 */
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
-#include <opentelemetry/common/attribute_value.h>
 #include <opentelemetry/trace/noop.h>
-#include <opentelemetry/trace/span_context.h>
 #endif
 
-namespace xrpl {
-namespace telemetry {
+#include <memory>
+#include <utility>
+
+namespace xrpl::telemetry {
 
 namespace {
 
@@ -34,51 +35,53 @@ class NullTelemetry : public Telemetry
     Setup const setup_;
 
 public:
-    explicit NullTelemetry(Setup const& setup) : setup_(setup)
+    explicit NullTelemetry(Setup setup) : setup_(std::move(setup))
     {
     }
 
     void
     start() override
     {
+        Telemetry::setInstance(this);
     }
 
     void
     stop() override
     {
+        Telemetry::setInstance(nullptr);
     }
 
-    bool
+    [[nodiscard]] bool
     isEnabled() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceTransactions() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceConsensus() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceRpc() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTracePeer() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceLedger() const override
     {
         return false;
@@ -115,20 +118,6 @@ public:
         return opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>(
             new opentelemetry::trace::NoopSpan(nullptr));
     }
-
-    /** No-op: returns a NoopSpan, ignoring links. */
-    opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
-    startSpan(
-        std::string_view,
-        opentelemetry::context::Context const&,
-        std::vector<std::pair<
-            opentelemetry::trace::SpanContext,
-            std::vector<std::pair<std::string, opentelemetry::common::AttributeValue>>>> const&,
-        opentelemetry::trace::SpanKind) override
-    {
-        return opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>(
-            new opentelemetry::trace::NoopSpan(nullptr));
-    }
 #endif
 };
 
@@ -145,5 +134,4 @@ make_Telemetry(Telemetry::Setup const& setup, beast::Journal)
 }
 #endif
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry

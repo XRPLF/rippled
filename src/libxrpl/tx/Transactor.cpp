@@ -1,23 +1,54 @@
+#include <xrpl/tx/Transactor.h>
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
-#include <xrpl/json/to_string.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/SignerEntries.h>
-#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -34,7 +65,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
-        uint32_t nodeNID = ctx.registry.getNetworkIDService().getNetworkID();
+        uint32_t const nodeNID = ctx.registry.get().getNetworkIDService().getNetworkID();
         std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
 
         if (nodeNID <= 1024)
@@ -211,7 +242,7 @@ Transactor::preflight2(PreflightContext const& ctx)
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 
-    auto const sigValid = checkValidity(ctx.registry.getHashRouter(), ctx.tx, ctx.rules);
+    auto const sigValid = checkValidity(ctx.registry.get().getHashRouter(), ctx.tx, ctx.rules);
     if (sigValid.first == Validity::SigBad)
     {  // LCOV_EXCL_START
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
@@ -363,6 +394,13 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const balance = (*sle)[sfBalance].xrp();
 
+    // NOTE: Because preclaim evaluates against a static readview, it
+    // does not reflect fee deductions from other transactions paid by
+    // the same account within the current ledger.
+    // As a result, if an account's balance is over-committed across multiple
+    // transactions, this check may pass optimistically.
+    // The fee shortfall will be handled by the Transactor::reset mechanism,
+    // which caps the fee to the remaining actual balance.
     if (balance < feePaid)
     {
         JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
@@ -777,7 +815,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> sleAccountSigners = view.read(keylet::signers(id));
+    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -999,6 +1037,26 @@ removeDeletedTrustLines(
     }
 }
 
+static void
+removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Journal viewJ)
+{
+    // There could be at most two MPTs - one for each side of AMM pool
+    if (mpts.size() > 2)
+    {
+        JLOG(viewJ.error()) << "removeDeletedMPTs: deleted mpts exceed 2 " << mpts.size();
+        return;
+    }
+
+    for (auto const& index : mpts)
+    {
+        if (auto const sleState = view.peek({ltMPTOKEN, index}); sleState &&
+            deleteAMMMPToken(view, sleState, (*sleState)[sfIssuer], viewJ) != tesSUCCESS)
+        {
+            JLOG(viewJ.error()) << "removeDeletedMPTs: failed to delete AMM MPT";
+        }
+    }
+}
+
 /** Reset the context, discarding any changes made and adjust the fee.
 
     @param fee The transaction fee to be charged.
@@ -1061,6 +1119,59 @@ Transactor::trapTransaction(uint256 txHash) const
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
 
+[[nodiscard]] TER
+Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
+{
+    try
+    {
+        // Phase 1: visit modified entries
+        ctx_.visit(
+            [this](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+                this->visitInvariantEntry(isDelete, before, after);
+            });
+
+        // Phase 2: finalize
+        if (!this->finalizeInvariants(ctx_.tx, result, fee, ctx_.view(), ctx_.journal))
+        {
+            JLOG(ctx_.journal.fatal()) <<                                             //
+                "Transaction has failed one or more transaction invariants, tx: " <<  //
+                to_string(ctx_.tx.getJson(JsonOptions::none));
+            return tecINVARIANT_FAILED;
+        }
+    }
+    catch (std::exception const& ex)
+    {
+        JLOG(ctx_.journal.fatal()) <<                               //
+            "Exception while checking transaction invariants: " <<  //
+            ex.what() <<                                            //
+            ", tx: " <<                                             //
+            to_string(ctx_.tx.getJson(JsonOptions::none));
+
+        return tecINVARIANT_FAILED;
+    }
+
+    return result;
+}
+
+[[nodiscard]] TER
+Transactor::checkInvariants(TER result, XRPAmount fee)
+{
+    // Transaction invariants first (more specific). These check post-conditions of the specific
+    // transaction. If these fail, the transaction's core logic is wrong.
+    auto const txResult = checkTransactionInvariants(result, fee);
+
+    // Protocol invariants second (broader). These check properties that must hold regardless of
+    // transaction type.
+    auto const protoResult = ctx_.checkInvariants(result, fee);
+
+    // Fail if either check failed. tef (fatal) takes priority over tec.
+    if (protoResult == tefINVARIANT_FAILED)
+        return tefINVARIANT_FAILED;
+    if (txResult == tecINVARIANT_FAILED || protoResult == tecINVARIANT_FAILED)
+        return tecINVARIANT_FAILED;
+
+    return result;
+}
 //------------------------------------------------------------------------------
 ApplyResult
 Transactor::operator()()
@@ -1073,15 +1184,15 @@ Transactor::operator()()
     //
     // raii classes for the current ledger rules.
     // fixUniversalNumber predate the rulesGuard and should be replaced.
-    NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
-    CurrentTransactionRulesGuard currentTransactionRulesGuard(view().rules());
+    NumberSO const stNumberSO{view().rules().enabled(fixUniversalNumber)};
+    CurrentTransactionRulesGuard const currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {
         Serializer ser;
         ctx_.tx.add(ser);
         SerialIter sit(ser.slice());
-        STTx s2(sit);
+        STTx const s2(sit);
 
         if (!s2.isEquivalent(ctx_.tx))
         {
@@ -1095,7 +1206,8 @@ Transactor::operator()()
     }
 #endif
 
-    if (auto const& trap = ctx_.registry.getTrapTxID(); trap && *trap == ctx_.tx.getTransactionID())
+    if (auto const& trap = ctx_.registry.get().getTrapTxID();
+        trap && *trap == ctx_.tx.getTransactionID())
     {
         trapTransaction(*trap);
     }
@@ -1136,19 +1248,21 @@ Transactor::operator()()
         //        when transactions fail with a `tec` code.
         std::vector<uint256> removedOffers;
         std::vector<uint256> removedTrustLines;
+        std::vector<uint256> removedMPTs;
         std::vector<uint256> expiredNFTokenOffers;
         std::vector<uint256> expiredCredentials;
 
         bool const doOffers = ((result == tecOVERSIZE) || (result == tecKILLED));
-        bool const doLines = (result == tecINCOMPLETE);
+        bool const doLinesOrMPTs = (result == tecINCOMPLETE);
         bool const doNFTokenOffers = (result == tecEXPIRED);
         bool const doCredentials = (result == tecEXPIRED);
-        if (doOffers || doLines || doNFTokenOffers || doCredentials)
+        if (doOffers || doLinesOrMPTs || doNFTokenOffers || doCredentials)
         {
             ctx_.visit([doOffers,
                         &removedOffers,
-                        doLines,
+                        doLinesOrMPTs,
                         &removedTrustLines,
+                        &removedMPTs,
                         doNFTokenOffers,
                         &expiredNFTokenOffers,
                         doCredentials,
@@ -1170,10 +1284,17 @@ Transactor::operator()()
                         removedOffers.push_back(index);
                     }
 
-                    if (doLines && before && after && (before->getType() == ltRIPPLE_STATE))
+                    if (doLinesOrMPTs && before && after)
                     {
                         // Removal of obsolete AMM trust line
-                        removedTrustLines.push_back(index);
+                        if (before->getType() == ltRIPPLE_STATE)
+                        {
+                            removedTrustLines.push_back(index);
+                        }
+                        else if (before->getType() == ltMPTOKEN)
+                        {
+                            removedMPTs.push_back(index);
+                        }
                     }
 
                     if (doNFTokenOffers && before && after &&
@@ -1198,23 +1319,26 @@ Transactor::operator()()
         // If necessary, remove any offers found unfunded during processing
         if ((result == tecOVERSIZE) || (result == tecKILLED))
         {
-            removeUnfundedOffers(view(), removedOffers, ctx_.registry.getJournal("View"));
+            removeUnfundedOffers(view(), removedOffers, ctx_.registry.get().getJournal("View"));
         }
 
         if (result == tecEXPIRED)
         {
             removeExpiredNFTokenOffers(
-                view(), expiredNFTokenOffers, ctx_.registry.getJournal("View"));
+                view(), expiredNFTokenOffers, ctx_.registry.get().getJournal("View"));
         }
 
         if (result == tecINCOMPLETE)
         {
-            removeDeletedTrustLines(view(), removedTrustLines, ctx_.registry.getJournal("View"));
+            removeDeletedTrustLines(
+                view(), removedTrustLines, ctx_.registry.get().getJournal("View"));
+            removeDeletedMPTs(view(), removedMPTs, ctx_.registry.get().getJournal("View"));
         }
 
         if (result == tecEXPIRED)
         {
-            removeExpiredCredentials(view(), expiredCredentials, ctx_.registry.getJournal("View"));
+            removeExpiredCredentials(
+                view(), expiredCredentials, ctx_.registry.get().getJournal("View"));
         }
 
         applied = isTecClaim(result);
@@ -1224,20 +1348,20 @@ Transactor::operator()()
     {
         // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
         // proceed to apply the tx
-        result = ctx_.checkInvariants(result, fee);
-
+        result = checkInvariants(result, fee);
         if (result == tecINVARIANT_FAILED)
         {
-            // if invariants checking failed again, reset the context and
-            // attempt to only claim a fee.
+            // Reset to fee-claim only
             auto const resetResult = reset(fee);
             if (!isTesSuccess(resetResult.first))
                 result = resetResult.first;
 
             fee = resetResult.second;
 
-            // Check invariants again to ensure the fee claiming doesn't
-            // violate invariants.
+            // Check invariants again to ensure the fee claiming doesn't violate
+            // invariants. After reset, only protocol invariants are re-checked.
+            // Transaction invariants are not meaningful here — the transaction's
+            // effects have been rolled back.
             if (isTesSuccess(result) || isTecClaim(result))
                 result = ctx_.checkInvariants(result, fee);
         }

@@ -1,99 +1,98 @@
 #include <xrpld/app/consensus/RCLConsensus.h>
+
+#include <xrpld/app/consensus/RCLCensorshipDetector.h>
+#include <xrpld/app/consensus/RCLCxLedger.h>
+#include <xrpld/app/consensus/RCLCxPeerPos.h>
+#include <xrpld/app/consensus/RCLCxTx.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/BuildLedger.h>
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LocalTxs.h>
 #include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/consensus/Consensus.h>
+#include <xrpld/consensus/ConsensusSpanNames.h>
+#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/telemetry/MetricsRegistry.h>
-#include <xrpld/telemetry/TracingInstrumentation.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
-#ifdef XRPL_ENABLE_TELEMETRY
-#include <xrpl/crypto/csprng.h>
-#include <xrpl/telemetry/SpanGuard.h>
-
-#include <opentelemetry/trace/context.h>
-#include <opentelemetry/trace/default_span.h>
-#include <opentelemetry/trace/span_context.h>
-#include <opentelemetry/trace/trace_flags.h>
-#include <opentelemetry/trace/trace_id.h>
-#endif
-#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/crypto/csprng.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/LedgerTiming.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/BuildInfo.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/Telemetry.h>
+#include <xrpl/telemetry/TraceContextPropagator.h>
 
-#include <algorithm>
-#include <iomanip>
-#include <mutex>
-
-namespace xrpl {
+#include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #ifdef XRPL_ENABLE_TELEMETRY
-namespace {
+#include <opentelemetry/context/runtime_context.h>
+#endif
 
-/** Create an OTel context with a deterministic trace ID.
- *
- *  Derives the trace_id from the first 16 bytes of a uint256 ledger hash
- *  so that all validators participating in the same consensus round
- *  produce spans sharing the same trace_id. This enables cross-node
- *  trace correlation in the backend without requiring explicit context
- *  propagation over the peer protocol.
- *
- *  The span_id is randomly generated (8 bytes from the CSPRNG) so each
- *  validator's root span is unique within the shared trace.
- *
- *  @param ledgerId  The previousLedger.id() hash for the consensus round.
- *  @return An OTel Context containing a synthetic parent span with the
- *          deterministic trace_id and a random span_id.
- */
-opentelemetry::context::Context
-createDeterministicContext(uint256 const& ledgerId)
-{
-    namespace trace = opentelemetry::trace;
+#include <xrpl.pb.h>
 
-    // Use first 16 bytes of the 256-bit ledger hash as trace ID.
-    // uint256::data() returns a const uint8_t* to 32 bytes in
-    // big-endian order; the first 16 are the most-significant half.
-    trace::TraceId traceId(opentelemetry::nostd::span<uint8_t const, 16>(ledgerId.data(), 16));
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <iomanip>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <set>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
-    // Generate a random 8-byte span ID using the crypto PRNG.
-    uint8_t spanIdBytes[8];
-    crypto_prng()(spanIdBytes, sizeof(spanIdBytes));
-    trace::SpanId spanId(opentelemetry::nostd::span<uint8_t const, 8>(spanIdBytes, 8));
-
-    // Build a synthetic SpanContext that is sampled (flag 0x01)
-    // and not remote (originated locally).
-    trace::SpanContext syntheticCtx(
-        traceId,
-        spanId,
-        trace::TraceFlags(1),
-        /* remote = */ false);
-
-    // Wrap in a DefaultSpan and set on an empty Context via the
-    // standard kSpanKey used by the OTel SDK for context propagation.
-    return opentelemetry::context::Context{}.SetValue(
-        trace::kSpanKey,
-        opentelemetry::nostd::shared_ptr<trace::Span>(new trace::DefaultSpan(syntheticCtx)));
-}
-
-}  // namespace
-#endif  // XRPL_ENABLE_TELEMETRY
+namespace xrpl {
 
 RCLConsensus::RCLConsensus(
     Application& app,
@@ -200,7 +199,7 @@ RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
 
     prop.set_currenttxhash(proposal.position().begin(), proposal.position().size());
-    prop.set_previousledger(proposal.prevLedger().begin(), proposal.position().size());
+    prop.set_previousledger(proposal.prevLedger().begin(), proposal.prevLedger().size());
 
     auto const pk = peerPos.publicKey().slice();
     prop.set_nodepubkey(pk.data(), pk.size());
@@ -223,7 +222,7 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
         msg.set_rawtransaction(slice.data(), slice.size());
         msg.set_status(protocol::tsNEW);
         msg.set_receivetimestamp(app_.getTimeKeeper().now().time_since_epoch().count());
-        static std::set<Peer::id_t> skip{};
+        static std::set<Peer::id_t> const skip{};
         app_.getOverlay().relay(tx.id(), msg, skip);
     }
     else
@@ -234,8 +233,12 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
-    XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.proposal.send");
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.round", static_cast<int64_t>(proposal.proposeSeq()));
+    auto span = telemetry::SpanGuard::span(
+        telemetry::TraceCategory::Consensus,
+        telemetry::seg::consensus,
+        telemetry::cons_span::op::proposalSend);
+    span.setAttribute(
+        telemetry::cons_span::attr::round, static_cast<int64_t>(proposal.proposeSeq()));
 
     JLOG(j_.trace()) << (proposal.isBowOut() ? "We bow out: " : "We propose: ")
                      << xrpl::to_string(proposal.prevLedger()) << " -> "
@@ -272,6 +275,16 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         sig);
 
     app_.getHashRouter().addSuppression(suppression);
+
+    // Inject the current thread's active span context (e.g. the
+    // consensus round span from Phase 4) so receiving peers can link
+    // their proposal.receive span as a child of this trace.
+#ifdef XRPL_ENABLE_TELEMETRY
+    {
+        auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+        telemetry::injectToProtobuf(ctx, *prop.mutable_trace_context());
+    }
+#endif
 
     app_.getOverlay().broadcast(prop);
 }
@@ -339,10 +352,14 @@ RCLConsensus::Adaptor::onClose(
     NetClock::time_point const& closeTime,
     ConsensusMode mode) -> Result
 {
-    XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.ledger_close");
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.ledger.seq", static_cast<int64_t>(ledger.ledger_->header().seq + 1));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode", toDisplayString(mode).c_str());
+    auto span = telemetry::SpanGuard::span(
+        telemetry::TraceCategory::Consensus,
+        telemetry::seg::consensus,
+        telemetry::cons_span::op::ledgerClose);
+    span.setAttribute(
+        telemetry::cons_span::attr::ledgerSeq,
+        static_cast<int64_t>(ledger.ledger_->header().seq + 1));
+    span.setAttribute(telemetry::cons_span::attr::mode, toDisplayString(mode).c_str());
 
     bool const wrongLCL = mode == ConsensusMode::wrongLedger;
     bool const proposing = mode == ConsensusMode::proposing;
@@ -439,7 +456,15 @@ RCLConsensus::Adaptor::onForceAccept(
     ConsensusMode const& mode,
     Json::Value&& consensusJson)
 {
-    doAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(consensusJson));
+    auto acceptSpan = makeAcceptSpan(result);
+    doAccept(
+        result,
+        prevLedger,
+        closeResolution,
+        rawCloseTimes,
+        mode,
+        std::move(consensusJson),
+        std::move(acceptSpan));
 }
 
 void
@@ -452,29 +477,44 @@ RCLConsensus::Adaptor::onAccept(
     Json::Value&& consensusJson,
     bool const validating)
 {
-    XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.accept");
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.proposers", static_cast<int64_t>(result.proposers));
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.round_time_ms", static_cast<int64_t>(result.roundTime.read().count()));
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.validation_quorum", static_cast<int64_t>(app_.getValidators().quorum()));
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.proposers_validated", static_cast<int64_t>(result.proposers));
+    auto acceptSpan = makeAcceptSpan(result);
 
     app_.getJobQueue().addJob(
         jtACCEPT,
         "AcceptLedger",
         // NOLINTNEXTLINE(cppcoreguidelines-misleading-capture-default-by-value)
-        [=, this, cj = std::move(consensusJson)]() mutable {
+        [=, this, cj = std::move(consensusJson), sp = std::move(acceptSpan)]() mutable {
             // Note that no lock is held or acquired during this job.
             // This is because generic Consensus guarantees that once a ledger
             // is accepted, the consensus results and capture by reference state
             // will not change until startRound is called (which happens via
             // endConsensus).
             RclConsensusLogger clog("onAccept", validating, j_);
-            this->doAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(cj));
+            this->doAccept(
+                result,
+                prevLedger,
+                closeResolution,
+                rawCloseTimes,
+                mode,
+                std::move(cj),
+                std::move(sp));
             this->app_.getOPs().endConsensus(clog.ss());
         });
+}
+
+std::shared_ptr<telemetry::SpanGuard>
+RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
+{
+    auto span = std::make_shared<telemetry::SpanGuard>(
+        telemetry::SpanGuard::childSpan(telemetry::cons_span::accept, roundSpanContext_));
+    span->setAttribute(
+        telemetry::cons_span::attr::proposers, static_cast<int64_t>(result.proposers));
+    span->setAttribute(
+        telemetry::cons_span::attr::roundTimeMs,
+        static_cast<int64_t>(result.roundTime.read().count()));
+    span->setAttribute(
+        telemetry::cons_span::attr::quorum, static_cast<int64_t>(app_.getValidators().quorum()));
+    return span;
 }
 
 void
@@ -484,7 +524,8 @@ RCLConsensus::Adaptor::doAccept(
     NetClock::duration closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson)
+    Json::Value&& consensusJson,
+    std::shared_ptr<telemetry::SpanGuard> acceptSpan)
 {
     prevProposers_ = result.proposers;
     prevRoundTime_ = result.roundTime.read();
@@ -512,55 +553,40 @@ RCLConsensus::Adaptor::doAccept(
         closeTimeCorrect = true;
     }
 
-    /// @note This method runs on a JobQueue worker thread (jtACCEPT), not the
-    /// consensus thread where roundSpan_ is active. OTel's thread-local
-    /// context propagation does NOT cross thread boundaries, so the
-    /// consensus.accept.apply span below is standalone — it is NOT a child
-    /// of consensus.round. Cross-thread context propagation for this path
-    /// is a future enhancement (Phase 4b).
-
-    // Trace the ledger application phase with close time details.
-    // This span runs on the jtACCEPT job queue thread (posted by onAccept),
-    // separate from the consensus.accept span which fires synchronously in
-    // onAccept.  It captures the agreed-upon close time, whether validators
-    // converged on it (per avCT_CONSENSUS_PCT), the consensus outcome,
-    // parent close time, this node's own close time proposal, the number
-    // of distinct vote bins, and the resolution adaptation direction.
-    XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.accept.apply");
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.ledger.seq", static_cast<int64_t>(prevLedger.seq() + 1));
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.close_time",
+    auto doAcceptSpan = acceptSpan
+        ? acceptSpan->childSpan(telemetry::cons_span::acceptApply)
+        : telemetry::SpanGuard::childSpan(telemetry::cons_span::acceptApply, roundSpanContext_);
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq() + 1));
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::closeTime,
         static_cast<int64_t>(consensusCloseTime.time_since_epoch().count()));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.close_time_correct", closeTimeCorrect);
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.close_resolution_ms",
+    doAcceptSpan.setAttribute(telemetry::cons_span::attr::closeTimeCorrect, closeTimeCorrect);
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::closeResolutionMs,
         static_cast<int64_t>(
             std::chrono::duration_cast<std::chrono::milliseconds>(closeResolution).count()));
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.state", std::string(consensusFail ? "moved_on" : "finished"));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.proposing", proposing);
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.round_time_ms", static_cast<int64_t>(result.roundTime.read().count()));
-    // Parent ledger's close time — enables computing close-time deltas across
-    // consecutive rounds without correlating separate spans.
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.parent_close_time",
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::state, std::string(consensusFail ? "moved_on" : "finished"));
+    doAcceptSpan.setAttribute(telemetry::cons_span::attr::proposing, proposing);
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::roundTimeMs,
+        static_cast<int64_t>(result.roundTime.read().count()));
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::parentCloseTime,
         static_cast<int64_t>(prevLedger.closeTime().time_since_epoch().count()));
-    // This node's own proposed close time before consensus voting.
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.close_time_self",
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::closeTimeSelf,
         static_cast<int64_t>(rawCloseTimes.self.time_since_epoch().count()));
-    // Number of distinct close-time vote bins from peer proposals.
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.close_time_vote_bins", static_cast<int64_t>(rawCloseTimes.peers.size()));
-    // Whether close-time resolution increased (coarser), decreased (finer),
-    // or stayed the same relative to the previous ledger.
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::closeTimeVoteBins,
+        static_cast<int64_t>(rawCloseTimes.peers.size()));
     {
         auto const prevRes = prevLedger.closeTimeResolution();
         std::string dir = (closeResolution > prevRes) ? "increased"
             : (closeResolution < prevRes)             ? "decreased"
                                                       : "unchanged";
-        XRPL_TRACE_SET_ATTR("xrpl.consensus.resolution_direction", std::move(dir));
+        doAcceptSpan.setAttribute(telemetry::cons_span::attr::resolutionDirection, std::move(dir));
     }
 
     JLOG(j_.debug()) << "Report: Prop=" << (proposing ? "yes" : "no")
@@ -580,12 +606,18 @@ RCLConsensus::Adaptor::doAccept(
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 
+    int64_t txCount = 0;
     for (auto const& item : *result.txns.map_)
     {
         try
         {
             retriableTxs.insert(std::make_shared<STTx const>(SerialIter{item.slice()}));
             JLOG(j_.debug()) << "    Tx: " << item.key();
+            ++txCount;
+            auto const txHash = to_string(item.key());
+            doAcceptSpan.addEvent(
+                telemetry::cons_span::event::txIncluded,
+                {{telemetry::cons_span::attr::txId, txHash}});
         }
         catch (std::exception const& ex)
         {
@@ -593,6 +625,7 @@ RCLConsensus::Adaptor::doAccept(
             JLOG(j_.warn()) << "    Tx: " << item.key() << " throws: " << ex.what();
         }
     }
+    doAcceptSpan.setAttribute(telemetry::cons_span::attr::txCount, txCount);
 
     auto built = buildLCL(
         prevLedger,
@@ -884,18 +917,13 @@ RCLConsensus::Adaptor::buildLCL(
 void
 RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing)
 {
-    /// @note This method is called from doAccept(), which runs on a JobQueue
-    /// worker thread (jtACCEPT). The consensus.validation.send span is
-    /// therefore standalone — NOT a child of consensus.round. A span link
-    /// to the round span is added below to establish the follows-from
-    /// relationship without requiring parent-child context propagation.
-#ifdef XRPL_ENABLE_TELEMETRY
-    std::optional<telemetry::SpanGuard> _xrpl_guard_ = createValidationSpan();
-#endif
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.ledger.seq", static_cast<int64_t>(ledger.seq()));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.proposing", proposing);
-    XRPL_TRACE_SET_ATTR("xrpl.validation.ledger_hash", to_string(ledger.id()).c_str());
-    XRPL_TRACE_SET_ATTR("xrpl.validation.full", proposing);
+    auto valSpan = createValidationSpan();
+    if (valSpan)
+    {
+        valSpan->setAttribute(
+            telemetry::cons_span::attr::ledgerSeq, static_cast<int64_t>(ledger.seq()));
+        valSpan->setAttribute(telemetry::cons_span::attr::proposing, proposing);
+    }
 
     using namespace std::chrono_literals;
 
@@ -975,6 +1003,14 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     // Broadcast to all our peers:
     protocol::TMValidation val;
     val.set_validation(serialized.data(), serialized.size());
+    // Inject the current thread's active span context so receiving
+    // peers can link their validation.receive span as a child.
+#ifdef XRPL_ENABLE_TELEMETRY
+    {
+        auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+        telemetry::injectToProtobuf(ctx, *val.mutable_trace_context());
+    }
+#endif
     app_.getOverlay().broadcast(val);
 
     // Publish to all our subscribers:
@@ -993,12 +1029,12 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 void
 RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
 {
-    // Trace mode transitions as short-lived spans for visibility in the
-    // trace backend. Each transition (e.g. observing -> proposing) appears
-    // as a child of the current consensus.round span.
-    XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.mode_change");
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode.old", toDisplayString(before).c_str());
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode.new", toDisplayString(after).c_str());
+    auto span = telemetry::SpanGuard::span(
+        telemetry::TraceCategory::Consensus,
+        telemetry::seg::consensus,
+        telemetry::cons_span::op::modeChange);
+    span.setAttribute(telemetry::cons_span::attr::modeOld, toDisplayString(before).c_str());
+    span.setAttribute(telemetry::cons_span::attr::modeNew, toDisplayString(after).c_str());
 
     JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
                     << ", after=" << to_string(after);
@@ -1017,7 +1053,7 @@ RCLConsensus::getJson(bool full) const
 {
     Json::Value ret;
     {
-        std::lock_guard _{mutex_};
+        std::lock_guard const _{mutex_};
         ret = consensus_.getJson(full);
     }
     ret["validating"] = adaptor_.validating();
@@ -1031,7 +1067,7 @@ RCLConsensus::timerEntry(
 {
     try
     {
-        std::lock_guard _{mutex_};
+        std::lock_guard const _{mutex_};
         consensus_.timerEntry(now, clog);
     }
     catch (SHAMapMissingNode const& mn)
@@ -1050,7 +1086,7 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
 {
     try
     {
-        std::lock_guard _{mutex_};
+        std::lock_guard const _{mutex_};
         consensus_.gotTxSet(now, txSet);
     }
     catch (SHAMapMissingNode const& mn)
@@ -1068,14 +1104,14 @@ RCLConsensus::simulate(
     NetClock::time_point const& now,
     std::optional<std::chrono::milliseconds> consensusDelay)
 {
-    std::lock_guard _{mutex_};
+    std::lock_guard const _{mutex_};
     consensus_.simulate(now, consensusDelay);
 }
 
 bool
 RCLConsensus::peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal)
 {
-    std::lock_guard _{mutex_};
+    std::lock_guard const _{mutex_};
     return consensus_.peerProposal(now, newProposal);
 }
 
@@ -1122,9 +1158,7 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID
     if (!nowTrusted.empty())
         nUnlVote_.newValidators(prevLgr.seq() + 1, nowTrusted);
 
-#ifdef XRPL_ENABLE_TELEMETRY
     startRoundTracing(prevLgr);
-#endif
 
     // propose only if we're in sync with the network (and validating)
     return validating_ && synced;
@@ -1169,103 +1203,53 @@ RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
         app_.getOPs().setMode(OperatingMode::CONNECTED);
 }
 
-#ifdef XRPL_ENABLE_TELEMETRY
-telemetry::Telemetry&
-RCLConsensus::Adaptor::getTelemetry()
-{
-    return app_.getTelemetry();
-}
-
 void
 RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
 {
-    // Save the previous round's context for span links, then end the
-    // previous round span before creating a new one.
+    using namespace telemetry;
+
     if (roundSpan_)
-    {
-        prevRoundContext_ = roundSpan_->context();
         roundSpan_.reset();
-    }
 
-    auto& tel = app_.getTelemetry();
-    if (!tel.shouldTraceConsensus())
-        return;
-
-    auto const& strategy = tel.getConsensusTraceStrategy();
-
-    // Build span links to previous round (follows-from) if available.
-    // This creates a causal chain between consecutive consensus rounds
-    // in the trace backend.
-    using LinkAttr = std::pair<std::string, opentelemetry::common::AttributeValue>;
-    using SpanLink = std::pair<opentelemetry::trace::SpanContext, std::vector<LinkAttr>>;
-    std::vector<SpanLink> links;
-
-    auto prevSpan = opentelemetry::trace::GetSpan(prevRoundContext_);
-    if (prevSpan && prevSpan->GetContext().IsValid())
-    {
-        links.emplace_back(
-            prevSpan->GetContext(),
-            std::vector<LinkAttr>{{"xrpl.link.type", std::string("follows_from")}});
-    }
+    auto const& strategy = app_.getTelemetry().getConsensusTraceStrategy();
 
     if (strategy == "deterministic")
     {
-        // Derive trace_id from ledger hash so all validators in this
-        // round produce spans under the same trace.
-        auto parentCtx = createDeterministicContext(prevLgr.id());
-        roundSpan_.emplace(tel.startSpan("consensus.round", parentCtx, links));
+        roundSpan_.emplace(
+            SpanGuard::hashSpan(
+                TraceCategory::Consensus,
+                cons_span::round,
+                prevLgr.id().data(),
+                prevLgr.id().bytes));
     }
     else
     {
-        // "attribute" strategy: random trace_id, correlation via
-        // the xrpl.consensus.ledger_id attribute.
-        if (links.empty())
-            roundSpan_.emplace(tel.startSpan("consensus.round"));
-        else
-        {
-            // Use an empty context as parent (new root trace).
-            roundSpan_.emplace(
-                tel.startSpan("consensus.round", opentelemetry::context::Context{}, links));
-        }
+        roundSpan_.emplace(
+            SpanGuard::span(TraceCategory::Consensus, seg::consensus, cons_span::op::round));
     }
 
-    // Set standard attributes on the round span.
-    roundSpan_->setAttribute("xrpl.consensus.ledger_id", to_string(prevLgr.id()).c_str());
-    roundSpan_->setAttribute("xrpl.consensus.ledger.seq", static_cast<int64_t>(prevLgr.seq() + 1));
-    roundSpan_->setAttribute("xrpl.consensus.mode", toDisplayString(mode_.load()).c_str());
-    roundSpan_->setAttribute("xrpl.consensus.trace_strategy", strategy.c_str());
-    roundSpan_->setAttribute("xrpl.consensus.round_id", static_cast<int64_t>(prevLgr.seq() + 1));
+    if (!*roundSpan_)
+        return;
 
-    // Snapshot the SpanContext for cross-thread use by createValidationSpan().
-    roundSpanContext_ = roundSpan_->span().GetContext();
+    roundSpan_->setAttribute(cons_span::attr::ledgerId, to_string(prevLgr.id()).c_str());
+    roundSpan_->setAttribute(cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq() + 1));
+    roundSpan_->setAttribute(cons_span::attr::mode, toDisplayString(mode_.load()).c_str());
+    roundSpan_->setAttribute(cons_span::attr::traceStrategy, strategy.c_str());
+    roundSpan_->setAttribute(cons_span::attr::roundId, static_cast<int64_t>(prevLgr.seq() + 1));
+
+    roundSpanContext_ = roundSpan_->captureContext();
 }
 
 std::optional<telemetry::SpanGuard>
 RCLConsensus::Adaptor::createValidationSpan()
 {
-    if (!app_.getTelemetry().shouldTraceConsensus())
+    using namespace telemetry;
+
+    if (!roundSpanContext_.isValid())
         return std::nullopt;
 
-    // Build span link to the round span (follows-from relationship).
-    // The validation is triggered by the round but executes on a
-    // different thread and may outlive the round span.
-    std::vector<std::pair<
-        opentelemetry::trace::SpanContext,
-        std::vector<std::pair<std::string, opentelemetry::common::AttributeValue>>>>
-        links;
-
-    // Use the snapshotted SpanContext (set on consensus thread in
-    // startRoundTracing) rather than accessing roundSpan_ directly,
-    // since this method runs on the jtACCEPT worker thread.
-    if (roundSpanContext_ && roundSpanContext_->IsValid())
-    {
-        links.push_back({*roundSpanContext_, {}});
-    }
-
-    return telemetry::SpanGuard(app_.getTelemetry().startSpan(
-        "consensus.validation.send", opentelemetry::context::RuntimeContext::GetCurrent(), links));
+    return SpanGuard::linkedSpan(cons_span::validationSend, roundSpanContext_);
 }
-#endif
 
 void
 RCLConsensus::startRound(
@@ -1276,7 +1260,7 @@ RCLConsensus::startRound(
     hash_set<NodeID> const& nowTrusted,
     std::unique_ptr<std::stringstream> const& clog)
 {
-    std::lock_guard _{mutex_};
+    std::lock_guard const _{mutex_};
     consensus_.startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr, nowTrusted), clog);
 }

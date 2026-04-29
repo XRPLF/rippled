@@ -49,7 +49,7 @@ public:
     /** Return a strong pointer if this is already a strong pointer (i.e. don't
         lock the weak pointer. Use the `lock` method if that's what's needed)
      */
-    std::shared_ptr<T> const&
+    [[nodiscard]] std::shared_ptr<T> const&
     getStrong() const;
 
     /** Return true if this is a strong pointer and the strong pointer is
@@ -67,30 +67,30 @@ public:
     /** If this is a strong pointer, return the raw pointer. Otherwise return
         null.
      */
-    T*
+    [[nodiscard]] T*
     get() const;
 
     /** If this is a strong pointer, return the strong count. Otherwise return 0
      */
-    std::size_t
+    [[nodiscard]] std::size_t
     use_count() const;
 
     /** Return true if there is a non-zero strong count. */
-    bool
+    [[nodiscard]] bool
     expired() const;
 
     /** If this is a strong pointer, return the strong pointer. Otherwise
         attempt to lock the weak pointer.
      */
-    std::shared_ptr<T>
+    [[nodiscard]] std::shared_ptr<T>
     lock() const;
 
     /** Return true is this represents a strong pointer. */
-    bool
+    [[nodiscard]] bool
     isStrong() const;
 
     /** Return true is this represents a weak pointer. */
-    bool
+    [[nodiscard]] bool
     isWeak() const;
 
     /** If this is a weak pointer, attempt to convert it to a strong pointer.

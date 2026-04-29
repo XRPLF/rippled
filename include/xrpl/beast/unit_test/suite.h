@@ -14,8 +14,7 @@
 #include <sstream>
 #include <string>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 namespace detail {
 
@@ -36,7 +35,7 @@ make_reason(String const& reason, char const* file, int line)
 
 }  // namespace detail
 
-class thread;
+class Thread;
 
 enum abort_t { no_abort_on_fail, abort_on_fail };
 
@@ -58,7 +57,7 @@ private:
     // in the event of a failure, if the option to stop is set.
     struct abort_exception : public std::exception
     {
-        char const*
+        [[nodiscard]] char const*
         what() const noexcept override
         {
             return "test suite aborted";
@@ -75,7 +74,7 @@ private:
         {
         }
 
-        ~log_buf()
+        ~log_buf() override
         {
             sync();
         }
@@ -295,12 +294,12 @@ public:
     }
 
 private:
-    friend class thread;
+    friend class Thread;
 
     static suite**
     p_this_suite()
     {
-        static suite* pts = nullptr;
+        static suite* pts = nullptr;  // NOLINT(misc-const-correctness)
         return &pts;
     }
 
@@ -309,7 +308,7 @@ private:
     run() = 0;
 
     void
-    propagate_abort();
+    propagate_abort() const;
 
     template <class = void>
     void
@@ -486,9 +485,13 @@ suite::unexpected(Condition shouldBeFalse, String const& reason)
 {
     bool const b = static_cast<bool>(shouldBeFalse);
     if (!b)
+    {
         pass();
+    }
     else
+    {
         fail(reason);
+    }
     return !b;
 }
 
@@ -522,7 +525,7 @@ suite::fail(String const& reason, char const* file, int line)
 }
 
 inline void
-suite::propagate_abort()
+suite::propagate_abort() const
 {
     if (abort_ && aborted_)
         BOOST_THROW_EXCEPTION(abort_exception());
@@ -538,7 +541,7 @@ suite::run(runner& r)
     {
         run();
     }
-    catch (abort_exception const&)
+    catch (abort_exception const&)  // NOLINT(bugprone-empty-catch)
     {
         // ends the suite
     }
@@ -569,8 +572,7 @@ suite::run(runner& r)
     ((cond) ? (pass(), true) : (fail((reason), __FILE__, __LINE__), false))
 #endif
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test
 
 //------------------------------------------------------------------------------
 

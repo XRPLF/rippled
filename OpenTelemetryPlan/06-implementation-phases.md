@@ -46,10 +46,8 @@ gantt
     Consensus Tracing         :p4, after p3, 2w
     Consensus Round Spans     :p4a, after p3, 3d
     Proposal Handling         :p4b, after p4a, 3d
-    Validator List & Manifest Tracing :p4f, after p4b, 2d
-    Amendment Voting Tracing  :p4g, after p4f, 2d
-    SHAMap Sync Tracing       :p4h, after p4g, 2d
-    Validation Tests          :p4c, after p4h, 4d
+    Establish Phase (4a)      :p4f, after p4b, 3d
+    Validation Tests          :p4c, after p4f, 4d
     Buffer & Review           :p4e, after p4c, 4d
 
     section Phase 5
@@ -136,21 +134,31 @@ gantt
 
 ## 6.4 Phase 3: Transaction Tracing (Weeks 5-6)
 
-**Objective**: Trace transaction lifecycle across network
+**Objective**: Trace transaction lifecycle across network with deterministic cross-node correlation
 
 ### Tasks
 
-| Task | Description                                          |
-| ---- | ---------------------------------------------------- |
-| 3.1  | Define `TraceContext` Protocol Buffer message        |
-| 3.2  | Implement protobuf context serialization             |
-| 3.3  | Instrument `PeerImp::handleTransaction()`            |
-| 3.4  | Instrument `NetworkOPs::submitTransaction()`         |
-| 3.5  | Instrument HashRouter integration                    |
-| 3.6  | Fee escalation instrumentation (`fee.escalate` span) |
-| 3.7  | Implement relay context propagation                  |
-| 3.8  | Integration tests (multi-node)                       |
-| 3.9  | Performance benchmarks                               |
+| Task | Description                                                    |
+| ---- | -------------------------------------------------------------- |
+| 3.1  | Define `TraceContext` Protocol Buffer message                  |
+| 3.2  | Implement protobuf context serialization                       |
+| 3.3  | Instrument `PeerImp::handleTransaction()`                      |
+| 3.4  | Instrument `NetworkOPs::submitTransaction()`                   |
+| 3.5  | Instrument HashRouter integration                              |
+| 3.6  | Fee escalation instrumentation (`fee.escalate` span)           |
+| 3.7  | Implement relay context propagation                            |
+| 3.8  | Integration tests (multi-node)                                 |
+| 3.9  | Deterministic transaction trace ID (`trace_id = txHash[0:16]`) |
+| 3.10 | Performance benchmarks                                         |
+
+### Deterministic Trace ID (Task 3.9)
+
+Transaction spans use **deterministic trace IDs** derived from the transaction hash:
+`trace_id = txHash[0:16]`. All nodes handling the same transaction independently
+produce spans under the same trace_id. Protobuf `span_id` propagation (Task 3.7)
+additionally provides parent-child relay ordering when available. See
+[02-design-decisions.md §2.5.0](./02-design-decisions.md) for the design rationale
+and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementation spec.
 
 ### Exit Criteria
 
@@ -159,6 +167,8 @@ gantt
 - [ ] HashRouter deduplication visible in traces
 - [ ] Multi-node integration tests passing
 - [ ] <5% overhead on transaction throughput
+- [ ] Deterministic trace_id: all nodes produce same trace_id for same transaction
+- [ ] Protobuf span_id propagation preserves parent-child ordering when available
 
 ---
 
@@ -168,38 +178,44 @@ gantt
 
 ### Tasks
 
-| Task | Description                                    |
-| ---- | ---------------------------------------------- |
-| 4.1  | Instrument `RCLConsensusAdaptor::startRound()` |
-| 4.2  | Instrument phase transitions                   |
-| 4.3  | Instrument proposal handling                   |
-| 4.4  | Instrument validation handling                 |
-| 4.5  | Add consensus-specific attributes              |
-| 4.6  | Correlate with transaction traces              |
-| 4.7  | Validator list and manifest tracing            |
-| 4.8  | Amendment voting tracing                       |
-| 4.9  | SHAMap sync tracing                            |
-| 4.10 | Multi-validator integration tests              |
-| 4.11 | Performance validation                         |
+| Task | Description                                    | Status             |
+| ---- | ---------------------------------------------- | ------------------ |
+| 4.1  | Instrument `RCLConsensusAdaptor::startRound()` | ✅ Done (via 4a.2) |
+| 4.2  | Instrument phase transitions                   | ✅ Done            |
+| 4.3  | Instrument proposal handling                   | ✅ Done            |
+| 4.4  | Instrument validation handling                 | ✅ Done            |
+| 4.5  | Add consensus-specific attributes              | ✅ Done            |
+| 4.6  | Correlate with transaction traces              | ✅ Done            |
+| 4.7  | Build verification and testing                 | ✅ Done            |
+| 4.8  | Validation span enrichment (ext. dashboard)    | ❌ Not done        |
+
+**Note**: The original plan doc listed tasks 4.7-4.11 as "Validator list tracing",
+"Amendment voting tracing", "SHAMap sync tracing", "Multi-validator integration tests",
+and "Performance validation". These were descoped and replaced by the tasklist's 4.7
+(build verification) and 4.8 (validation span enrichment). Validator, amendment, and
+SHAMap tracing are not implemented.
 
 ### Spans Produced
 
 | Span Name                   | Location               | Attributes                                                                                                                                                                                                            |
 | --------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.proposal.send`   | `RCLConsensus.cpp:177` | `xrpl.consensus.round`                                                                                                                                                                                                |
-| `consensus.ledger_close`    | `RCLConsensus.cpp:282` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                    |
-| `consensus.accept`          | `RCLConsensus.cpp:395` | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                                                                                                                                                            |
-| `consensus.accept.apply`    | `RCLConsensus.cpp:521` | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`, `proposing`, `round_time_ms`, `ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
-| `consensus.validation.send` | `RCLConsensus.cpp:753` | `xrpl.consensus.proposing`                                                                                                                                                                                            |
+| `consensus.phase.open`      | `Consensus.h:707`      | _(none)_                                                                                                                                                                                                              |
+| `consensus.proposal.send`   | `RCLConsensus.cpp:232` | `xrpl.consensus.round`                                                                                                                                                                                                |
+| `consensus.ledger_close`    | `RCLConsensus.cpp:341` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                    |
+| `consensus.accept`          | `RCLConsensus.cpp:492` | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`, `xrpl.consensus.quorum`                                                                                                                                   |
+| `consensus.accept.apply`    | `RCLConsensus.cpp:541` | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`, `proposing`, `round_time_ms`, `ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
+| `consensus.validation.send` | `RCLConsensus.cpp:900` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                                                                                                                                               |
 
 ### Exit Criteria
 
 - [x] Complete consensus round traces
-- [x] Phase transitions visible
-- [x] Proposals and validations traced
+- [x] Phase transitions visible (open, establish, close, accept)
+- [x] Proposals and validations traced — send and receive; relay deferred to Phase 4b
 - [x] Close time agreement tracked (per `avCT_CONSENSUS_PCT`)
 - [x] No impact on consensus timing
 - [ ] Multi-validator test network validated
+- [x] Transaction-consensus correlation (Task 4.6) — `tx.included` events in doAccept
+- [ ] Validation span enrichment (Task 4.8) — not implemented
 
 ### Implementation Status — Phase 4a Complete
 
@@ -230,44 +246,47 @@ See [Phase4_taskList.md](./Phase4_taskList.md) for the full spec and implementat
 **Objective**: Fill tracing gaps in the establish phase and establish cross-node
 correlation using deterministic trace IDs derived from `previousLedger.id()`.
 
-**Approach**: Direct instrumentation in `Consensus.h`. Long-lived spans use
-direct SpanGuard members; short-lived scoped spans use `XRPL_TRACE_*` macros.
+**Approach**: Direct instrumentation in `Consensus.h` and `RCLConsensus.cpp`.
+All spans use `SpanGuard` factory methods (`span()`, `hashSpan()`, `linkedSpan()`)
+with `TraceCategory::Consensus` gating. No macros used — all tracing via direct
+`SpanGuard` API calls.
 
 ### Tasks
 
-| Task | Description                                      | Effort | Risk   |
-| ---- | ------------------------------------------------ | ------ | ------ |
-| 4a.0 | Prerequisites: extend SpanGuard & Telemetry APIs | 1d     | Medium |
-| 4a.1 | Adaptor `getTelemetry()` method                  | 0.5d   | Low    |
-| 4a.2 | Switchable round span with deterministic traceID | 2d     | High   |
-| 4a.3 | Span members in `Consensus.h`                    | 0.5d   | Medium |
-| 4a.4 | Instrument `phaseEstablish()`                    | 1d     | Medium |
-| 4a.5 | Instrument `updateOurPositions()`                | 1d     | Medium |
-| 4a.6 | Instrument `haveConsensus()` (thresholds)        | 1d     | Medium |
-| 4a.7 | Instrument mode changes                          | 0.5d   | Low    |
-| 4a.8 | Reparent existing spans under round              | 0.5d   | Low    |
-| 4a.9 | Build verification and testing                   | 1d     | Low    |
+| Task | Description                                      | Effort | Risk   | Status                   |
+| ---- | ------------------------------------------------ | ------ | ------ | ------------------------ |
+| 4a.0 | Prerequisites: extend SpanGuard & Telemetry APIs | 1d     | Medium | ✅ Done (no macros)      |
+| 4a.1 | Adaptor `getTelemetry()` method                  | 0.5d   | Low    | ⏭️ Skipped (not needed)  |
+| 4a.2 | Switchable round span with deterministic traceID | 2d     | High   | ✅ Done                  |
+| 4a.3 | Span members in `Consensus.h`                    | 0.5d   | Medium | ✅ Done (with deviation) |
+| 4a.4 | Instrument `phaseEstablish()`                    | 1d     | Medium | ✅ Done                  |
+| 4a.5 | Instrument `updateOurPositions()`                | 1d     | Medium | ✅ Done                  |
+| 4a.6 | Instrument `haveConsensus()` (thresholds)        | 1d     | Medium | ✅ Done                  |
+| 4a.7 | Instrument mode changes                          | 0.5d   | Low    | ✅ Done                  |
+| 4a.8 | Reparent existing spans under round              | 0.5d   | Low    | ✅ Done                  |
+| 4a.9 | Build verification and testing                   | 1d     | Low    | ✅ Done                  |
 
 **Total Effort**: 9 days
 
 ### Spans Produced
 
-| Span Name                    | Location           | Key Attributes                                                   |
-| ---------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `consensus.round`            | `RCLConsensus.cpp` | `round_id`, `ledger_id`, `ledger.seq`, `mode`; link → prev round |
-| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`               |
-| `consensus.update_positions` | `Consensus.h`      | `disputes_count`, `converge_percent`, `proposers_agreed/total`   |
-| `consensus.check`            | `Consensus.h`      | `agree/disagree_count`, `threshold_percent`, `result`            |
-| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode.old`, `mode.new`                                           |
+| Span Name                    | Location           | Key Attributes (actually set)                                                                                                 |
+| ---------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.round`            | `RCLConsensus.cpp` | `round_id`, `ledger_id`, `ledger.seq`, `mode`, `trace_strategy`                                                               |
+| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`                                                                            |
+| `consensus.update_positions` | `Consensus.h`      | `converge_percent`, `proposers`, `have_close_time_consensus`, `close_time_threshold`, `disputes_count`, `avalanche_threshold` |
+| `consensus.check`            | `Consensus.h`      | `agree/disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `result`                        |
+| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode.old`, `mode.new`                                                                                                        |
 
 ### Exit Criteria
 
-- [ ] Establish phase internals fully traced (disputes, convergence, thresholds)
-- [ ] Cross-node correlation works via deterministic trace_id
-- [ ] Strategy switchable via config (`deterministic` / `attribute`)
-- [ ] Consecutive rounds linked via follows-from spans
-- [ ] Build passes with telemetry ON and OFF
-- [ ] No impact on consensus timing
+- [x] Establish phase internals traced (establish, update_positions, check spans)
+- [x] Establish phase fully traced — `disputes_count`, `avalanche_threshold`, dispute `yays`/`nays` all implemented
+- [x] Cross-node correlation works via deterministic trace_id
+- [x] Strategy switchable via config (`deterministic` / `attribute`)
+- [x] Consecutive rounds linked via follows-from spans
+- [x] Build passes with telemetry ON and OFF
+- [x] No impact on consensus timing
 
 See [Phase4_taskList.md](./Phase4_taskList.md) for full task details.
 
@@ -279,7 +298,7 @@ See [Phase4_taskList.md](./Phase4_taskList.md) for full task details.
 validations) to enable true distributed tracing between nodes.
 
 **Status**: Design documented, NOT implemented. Protobuf fields (field 1001)
-and `TraceContextPropagator` class exist. Wiring deferred until Phase 4a is
+and `TraceContextPropagator` free functions exist. Wiring deferred until Phase 4a is
 validated in a multi-node environment.
 
 **Prerequisites**: Phase 4a complete and validated.
@@ -294,25 +313,25 @@ See [Phase4_taskList.md § Phase 4b](./Phase4_taskList.md) for full design.
 
 ### Tasks
 
-| Task | Description                   |
-| ---- | ----------------------------- |
-| 5.1  | Operator runbook              |
-| 5.2  | Grafana dashboards            |
-| 5.3  | Alert definitions             |
-| 5.4  | Collector deployment examples |
-| 5.5  | Developer documentation       |
-| 5.6  | Training materials            |
-| 5.7  | Final integration testing     |
+| Task | Description                   | Status              |
+| ---- | ----------------------------- | ------------------- |
+| 5.1  | Operator runbook              | Complete            |
+| 5.2  | Grafana dashboards            | Complete            |
+| 5.3  | Alert definitions             | Deferred — post-MVP |
+| 5.4  | Collector deployment examples | Complete            |
+| 5.5  | Developer documentation       | Complete            |
+| 5.6  | Training materials            | Deferred — post-MVP |
+| 5.7  | Final integration testing     | Complete            |
 
 ---
 
 ## 6.7 Phase 6: StatsD Metrics Integration (Week 10)
 
-**Objective**: Bridge rippled's existing `beast::insight` StatsD metrics into the OpenTelemetry collection pipeline, exposing 300+ pre-existing metrics alongside span-derived RED metrics in Prometheus/Grafana.
+**Objective**: Bridge xrpld's existing `beast::insight` StatsD metrics into the OpenTelemetry collection pipeline, exposing 300+ pre-existing metrics alongside span-derived RED metrics in Prometheus/Grafana.
 
 ### Background
 
-rippled has a mature metrics framework (`beast::insight`) that emits StatsD-format metrics over UDP. These metrics cover node health, peer networking, RPC performance, job queue, and overlay traffic — data that **does not** overlap with the span-based instrumentation from Phases 1-5. By adding a StatsD receiver to the OTel Collector, both metric sources converge in Prometheus.
+xrpld has a mature metrics framework (`beast::insight`) that emits StatsD-format metrics over UDP. These metrics cover node health, peer networking, RPC performance, job queue, and overlay traffic — data that **does not** overlap with the span-based instrumentation from Phases 1-5. By adding a StatsD receiver to the OTel Collector, both metric sources converge in Prometheus.
 
 ### Metric Inventory
 
@@ -342,8 +361,8 @@ rippled has a mature metrics framework (`beast::insight`) that emits StatsD-form
 | 6.2  | Add `statsd` receiver to OTel Collector config                                                                  |
 | 6.3  | Expose UDP port 8125 in docker-compose.yml                                                                      |
 | 6.4  | Add `[insight]` config to integration test node configs                                                         |
-| 6.5  | Create "Node Health" Grafana dashboard (8 panels)                                                               |
-| 6.6  | Create "Network Traffic" Grafana dashboard (8 panels)                                                           |
+| 6.5  | Create "Node Health" Grafana dashboard (16 panels)                                                              |
+| 6.6  | Create "Network Traffic" Grafana dashboard (10 panels)                                                          |
 | 6.7  | Create "RPC & Pathfinding (StatsD)" Grafana dashboard (8 panels)                                                |
 | 6.8  | Update integration test to verify StatsD metrics in Prometheus                                                  |
 | 6.9  | Update TESTING.md and telemetry-runbook.md                                                                      |
@@ -356,204 +375,24 @@ The `StatsDMeterImpl` in `StatsDCollector.cpp:706` sends metrics with `|m` suffi
 
 ### New Grafana Dashboards
 
-**Node Health** (`statsd-node-health.json`, uid: `rippled-statsd-node-health`):
+**Node Health** (`statsd-node-health.json`, uid: `xrpld-statsd-node-health`):
 
-- Validated/Published Ledger Age, Operating Mode Duration/Transitions, I/O Latency, Job Queue Depth, Ledger Fetch Rate, Ledger History Mismatches
+- Validated/Published Ledger Age, Operating Mode Duration/Transitions, I/O Latency, Job Queue Depth, Ledger Fetch Rate, Ledger History Mismatches, Key Jobs Execution/Dequeue Time, FullBelowCache Size/Hit Rate, Ledger Publish Gap, State Duration Rate, All Jobs Detail
 
-**Network Traffic** (`statsd-network-traffic.json`, uid: `rippled-statsd-network`):
+**Network Traffic** (`statsd-network-traffic.json`, uid: `xrpld-statsd-network`):
 
-- Active Inbound/Outbound Peers, Peer Disconnects, Total Bytes/Messages In/Out, Transaction/Proposal/Validation Traffic, Top Traffic Categories
+- Active Inbound/Outbound Peers, Peer Disconnects, Total Bytes/Messages In/Out, Transaction/Proposal/Validation Traffic, Top Traffic Categories, Duplicate Traffic, All Traffic Categories Detail
 
-**RPC & Pathfinding (StatsD)** (`statsd-rpc-pathfinding.json`, uid: `rippled-statsd-rpc`):
+**RPC & Pathfinding (StatsD)** (`statsd-rpc-pathfinding.json`, uid: `xrpld-statsd-rpc`):
 
 - RPC Request Rate, Response Time p95/p50, Response Size p95/p50, Pathfinding Fast/Full Duration, Resource Warnings/Drops, Response Time Heatmap
 
 ### Exit Criteria
 
-- [ ] StatsD metrics visible in Prometheus (`curl localhost:9090/api/v1/query?query=rippled_LedgerMaster_Validated_Ledger_Age`)
+- [ ] StatsD metrics visible in Prometheus (`curl localhost:9090/api/v1/query?query=xrpld_LedgerMaster_Validated_Ledger_Age`)
 - [ ] All 3 new Grafana dashboards load without errors
 - [ ] Integration test verifies at least core StatsD metrics (ledger age, peer counts, RPC requests)
-- [ ] ~~Meter metrics (`warn`, `drop`) flow correctly after `|m` → `|c` fix~~ — DEFERRED (breaking change, tracked separately; resolved by Phase 7's OTel Counter mapping)
-
----
-
-## 6.8 Phase 7: Native OTel Metrics Migration (Weeks 11-12)
-
-**Objective**: Replace `StatsDCollector` with a native OpenTelemetry Metrics SDK implementation behind the existing `beast::insight::Collector` interface, eliminating the StatsD UDP dependency and unifying traces and metrics into a single OTLP pipeline.
-
-### Motivation: Why Migrate from StatsD to Native OTel Metrics
-
-The Phase 6 StatsD bridge was a pragmatic first step, but it retains inherent limitations that native OTel export resolves.
-
-#### What We Gain
-
-1. **Unified telemetry pipeline** — Traces and metrics export via the same OTLP/HTTP endpoint to the same OTel Collector. One protocol, one endpoint, one config. Eliminates the split-brain architecture of "OTLP for traces, StatsD UDP for metrics."
-
-2. **Eliminates StatsD UDP limitations** — StatsD is fire-and-forget over UDP with no delivery guarantees, no backpressure, 1472-byte MTU packet fragmentation, and text-based encoding overhead. OTLP uses HTTP/gRPC with retries, binary protobuf encoding, and connection-level flow control.
-
-3. **Fixes the `|m` wire format issue** — The `StatsDMeterImpl` uses non-standard `|m` StatsD type that the OTel StatsD receiver silently drops. Native OTel counters eliminate this problem entirely (Phase 6 Task 6.1 — DEFERRED becomes resolved).
-
-4. **Richer metric semantics** — OTel Metrics SDK supports explicit histogram bucket boundaries, exemplars (linking metrics to traces), resource attributes, and metric views. StatsD has no concept of these.
-
-5. **Removes infrastructure dependency** — No more StatsD receiver needed in the OTel Collector. One less receiver to configure, monitor, and debug. Simplifies the collector YAML.
-
-6. **Metric-to-trace correlation** — OTel metrics and traces share the same resource attributes (service.name, service.instance.id). Grafana can link from a metric spike directly to the traces that caused it — impossible with StatsD-sourced metrics.
-
-7. **Production-grade export** — OTel's `PeriodicMetricReader` provides configurable export intervals, batch sizes, timeout handling, and graceful shutdown — all built into the SDK rather than hand-rolled in `StatsDCollectorImp`.
-
-#### What We Lose
-
-1. **StatsD ecosystem compatibility** — Operators using external StatsD-compatible backends (Datadog Agent, Graphite, Telegraph) will need to switch to OTLP-compatible backends or keep `server=statsd` as a fallback.
-
-2. **Simplicity of UDP** — StatsD's UDP fire-and-forget model is dead simple and has zero connection management. OTLP/HTTP requires a TCP connection, TLS negotiation (in production), and retry logic. The OTel SDK handles this, but it's more moving parts.
-
-3. **Slightly higher memory** — OTel SDK maintains internal aggregation state for metrics before export. StatsD just formats and sends strings. Expected overhead: ~1-2 MB additional for metric state.
-
-4. **Dependency on OTel C++ Metrics SDK stability** — The Metrics SDK is GA since 1.0 and on version 1.18.0, but it's less battle-tested than the tracing SDK in the C++ ecosystem.
-
-#### Decision
-
-The gains (unified pipeline, delivery guarantees, metric-trace correlation, simpler collector config) significantly outweigh the losses. `StatsDCollector` is retained as a fallback via `server=statsd` for operators who need StatsD ecosystem compatibility during the transition period.
-
-### Architecture
-
-#### Class Hierarchy (after Phase 7)
-
-```
-beast::insight::Collector (abstract interface — unchanged)
-    |
-    +-- StatsDCollector        (existing — retained as fallback, deprecated)
-    |     +-- StatsDCounterImpl    -> StatsD |c over UDP
-    |     +-- StatsDGaugeImpl      -> StatsD |g over UDP
-    |     +-- StatsDMeterImpl      -> StatsD |m over UDP (non-standard)
-    |     +-- StatsDEventImpl      -> StatsD |ms over UDP
-    |     +-- StatsDHookImpl       -> 1s periodic callback
-    |
-    +-- NullCollector          (existing — unchanged, used when disabled)
-    |     +-- NullCounterImpl      -> no-op
-    |     +-- NullGaugeImpl        -> no-op
-    |     +-- NullMeterImpl        -> no-op
-    |     +-- NullEventImpl        -> no-op
-    |     +-- NullHookImpl         -> no-op
-    |
-    +-- OTelCollector          (NEW — Phase 7)
-          +-- OTelCounterImpl      -> otel::Counter<int64_t>
-          +-- OTelGaugeImpl        -> otel::ObservableGauge<uint64_t>
-          +-- OTelMeterImpl        -> otel::Counter<uint64_t>
-          +-- OTelEventImpl        -> otel::Histogram<double>
-          +-- OTelHookImpl         -> 1s periodic callback (same pattern)
-```
-
-#### Data Flow (after Phase 7)
-
-```mermaid
-graph LR
-    subgraph rippledNode["rippled Node"]
-        A["Trace Macros<br/>XRPL_TRACE_SPAN"]
-        B["beast::insight<br/>OTelCollector"]
-    end
-
-    subgraph collector["OTel Collector  :4317 / :4318"]
-        direction TB
-        R1["OTLP Receiver<br/>:4317 gRPC  |  :4318 HTTP"]
-        BP["Batch Processor"]
-        SM["SpanMetrics Connector"]
-
-        R1 --> BP
-        BP --> SM
-    end
-
-    subgraph backends["Trace Backends"]
-        D["Jaeger / Tempo"]
-    end
-
-    subgraph metrics["Metrics Stack"]
-        E["Prometheus  :9090<br/>scrapes :8889<br/>span-derived + native OTel metrics"]
-    end
-
-    subgraph viz["Visualization"]
-        F["Grafana  :3000"]
-    end
-
-    A -->|"OTLP/HTTP :4318<br/>(traces)"| R1
-    B -->|"OTLP/HTTP :4318<br/>(metrics)"| R1
-
-    BP -->|"OTLP/gRPC"| D
-    SM -->|"RED metrics"| E
-    R1 -->|"rippled_* metrics<br/>(native OTLP)"| E
-
-    E --> F
-    D --> F
-
-    style A fill:#4a90d9,color:#fff,stroke:#2a6db5
-    style B fill:#d9534f,color:#fff,stroke:#b52d2d
-    style R1 fill:#5cb85c,color:#fff,stroke:#3d8b3d
-    style BP fill:#449d44,color:#fff,stroke:#2d6e2d
-    style SM fill:#449d44,color:#fff,stroke:#2d6e2d
-    style D fill:#f0ad4e,color:#000,stroke:#c78c2e
-    style E fill:#f0ad4e,color:#000,stroke:#c78c2e
-    style F fill:#5bc0de,color:#000,stroke:#3aa8c1
-    style rippledNode fill:#1a2633,color:#ccc,stroke:#4a90d9
-    style collector fill:#1a3320,color:#ccc,stroke:#5cb85c
-    style backends fill:#332a1a,color:#ccc,stroke:#f0ad4e
-    style metrics fill:#332a1a,color:#ccc,stroke:#f0ad4e
-    style viz fill:#1a2d33,color:#ccc,stroke:#5bc0de
-```
-
-**Key change**: StatsD receiver removed from collector. Both traces and metrics enter via OTLP receiver on the same port.
-
-#### Configuration
-
-```ini
-# [insight] section — new "otel" server option
-[insight]
-server=otel              # NEW: uses OTel OTLP metrics exporter
-prefix=rippled           # metric name prefix (preserved)
-
-# Endpoint and auth inherited from [telemetry] section:
-[telemetry]
-enabled=1
-endpoint=http://localhost:4318/v1/traces
-```
-
-The `OTelCollector` reads the OTLP endpoint from `[telemetry]` config (replacing `/v1/traces` with `/v1/metrics` for the metrics exporter). No additional config keys needed.
-
-**Backward compatibility**: `server=statsd` continues to work exactly as before.
-
-See [Phase7_taskList.md](./Phase7_taskList.md) for detailed per-task breakdown.
-
-### Instrument Type Mapping
-
-| beast::insight         | OTel Metrics SDK                 | Rationale                                                        |
-| ---------------------- | -------------------------------- | ---------------------------------------------------------------- |
-| Counter (int64, `\|c`) | `Counter<int64_t>`               | Direct 1:1 mapping                                               |
-| Gauge (uint64, `\|g`)  | `ObservableGauge<uint64_t>`      | Async callback matches existing Hook polling pattern             |
-| Meter (uint64, `\|m`)  | `Counter<uint64_t>`              | Fixes non-standard wire format; meters are semantically counters |
-| Event (ms, `\|ms`)     | `Histogram<double>`              | Duration distributions with explicit bucket boundaries           |
-| Hook (1s callback)     | `PeriodicMetricReader` alignment | Same 1s collection interval                                      |
-
-### Tasks
-
-| Task | Description                                                               |
-| ---- | ------------------------------------------------------------------------- |
-| 7.1  | Add OTel Metrics SDK to build deps (conan/cmake)                          |
-| 7.2  | Implement `OTelCollector` class (~400-500 lines)                          |
-| 7.3  | Update `CollectorManager` — add `server=otel`                             |
-| 7.4  | Update OTel Collector YAML (add metrics pipeline, remove StatsD receiver) |
-| 7.5  | Preserve metric names in Prometheus (naming strategy)                     |
-| 7.6  | Update Grafana dashboards (if names change)                               |
-| 7.7  | Update integration tests                                                  |
-| 7.8  | Update documentation (runbook, reference docs)                            |
-
-### Exit Criteria
-
-- [ ] All 255+ metrics visible in Prometheus via OTLP pipeline (no StatsD receiver)
-- [ ] `server=otel` is the default in development docker-compose
-- [ ] `server=statsd` still works as a fallback
-- [ ] Existing Grafana dashboards display data correctly
-- [ ] Integration test passes with OTLP-only metrics pipeline
-- [ ] No performance regression vs StatsD baseline (< 1% CPU overhead)
-- [ ] Deferred Task 6.1 (`|m` wire format) no longer relevant
+- [ ] ~~Meter metrics (`warn`, `drop`) flow correctly after `|m` → `|c` fix~~ — DEFERRED (breaking change, tracked separately)
 
 ---
 
@@ -561,14 +400,14 @@ See [Phase7_taskList.md](./Phase7_taskList.md) for detailed per-task breakdown.
 
 ### Motivation
 
-rippled's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Jaeger/Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
+xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Jaeger/Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
 
 #### Gains
 
 1. **One-click trace-to-log navigation** — Click a trace in Tempo/Jaeger and immediately see the corresponding log lines in Loki, filtered by `trace_id`.
 2. **Reverse lookup (log-to-trace)** — Loki derived fields make `trace_id` values clickable links back to Tempo.
 3. **Unified observability** — All three pillars (traces, metrics, logs) flow through the same OTel Collector pipeline and are visible in a single Grafana instance.
-4. **Zero new dependencies in rippled** — Uses existing OTel SDK headers (`GetSpan`, `GetContext`) already linked in Phase 1.
+4. **Zero new dependencies in xrpld** — Uses existing OTel SDK headers (`GetSpan`, `GetContext`) already linked in Phase 1.
 5. **Negligible overhead** — `GetSpan()` + `GetContext()` are thread-local reads (<10ns/call). At ~1000 JLOG calls/min, this adds <10us/min.
 
 #### Losses / Risks
@@ -586,13 +425,13 @@ The correlation value far outweighs the risks. The log format change is backward
 Phase 8 has two independent sub-phases that can be developed in parallel:
 
 - **Phase 8a (code change)**: Modify `Logs::format()` in `src/libxrpl/basics/Log.cpp` to append `trace_id=<hex32> span_id=<hex16>` when the current thread has an active OTel span. Guarded by `#ifdef XRPL_ENABLE_TELEMETRY`.
-- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `filelog` receiver to tail rippled's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
+- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `filelog` receiver to tail xrpld's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
 
 #### Trace ID Injection Flow
 
 ```mermaid
 flowchart LR
-    subgraph rippled["rippled process"]
+    subgraph xrpld["xrpld process"]
         JLOG["JLOG(j.info())"]
         Format["Logs::format()"]
         OTelCtx["OTel Context<br/>(thread-local)"]
@@ -606,7 +445,7 @@ flowchart LR
 
     Format --> LogLine
 
-    style rippled fill:#1a237e,stroke:#0d1642,color:#fff
+    style xrpld fill:#1a237e,stroke:#0d1642,color:#fff
     style output fill:#1b5e20,stroke:#0d3d14,color:#fff
     style JLOG fill:#283593,stroke:#1a237e,color:#fff
     style Format fill:#283593,stroke:#1a237e,color:#fff
@@ -626,7 +465,7 @@ flowchart LR
         FR --> RP --> BP --> LE
     end
 
-    LogFile["rippled<br/>debug.log"] --> FR
+    LogFile["xrpld<br/>debug.log"] --> FR
     LE --> Loki["Grafana Loki<br/>:3100"]
     Loki <-->|"derivedFields ↔<br/>tracesToLogs"| Tempo["Grafana Tempo"]
 
@@ -657,7 +496,7 @@ flowchart LR
 
 - [ ] Log lines within active spans contain `trace_id=<hex> span_id=<hex>`
 - [ ] Log lines outside spans have no trace context (no empty fields)
-- [ ] Loki ingests rippled logs via OTel Collector filelog receiver
+- [ ] Loki ingests xrpld logs via OTel Collector filelog receiver
 - [ ] Grafana Tempo → Loki one-click correlation works
 - [ ] Grafana Loki → Tempo reverse lookup works via derived field
 - [ ] Integration test verifies trace_id presence in logs
@@ -671,7 +510,7 @@ flowchart LR
 
 ### Motivation
 
-Phases 1-8 establish trace spans, StatsD metrics bridge, native OTel metrics, and log-trace correlation. However, ~68 metrics that exist inside rippled's `get_counts`, `server_info`, TxQ, PerfLog, and `CountedObject` systems have **no time-series export path**. These are the metrics that exchanges, payment processors, analytics providers, validators, and researchers need most — NodeStore I/O performance, cache hit rates, per-RPC-method counters, transaction queue depth, fee escalation levels, and live object instance counts.
+Phases 1-8 establish trace spans, StatsD metrics bridge, native OTel metrics, and log-trace correlation. However, ~68 metrics that exist inside xrpld's `get_counts`, `server_info`, TxQ, PerfLog, and `CountedObject` systems have **no time-series export path**. These are the metrics that exchanges, payment processors, analytics providers, validators, and researchers need most — NodeStore I/O performance, cache hit rates, per-RPC-method counters, transaction queue depth, fee escalation levels, and live object instance counts.
 
 ### Architecture
 
@@ -679,7 +518,7 @@ Hybrid approach — two instrumentation strategies based on proximity to existin
 
 ```mermaid
 flowchart TB
-    subgraph rippled["rippled process"]
+    subgraph xrpld["xrpld process"]
         subgraph existing["Existing beast::insight registrations"]
             NS["NodeStore I/O<br/>(Database.cpp)"]
         end
@@ -707,7 +546,7 @@ flowchart TB
     BI --> OTLP["OTLP/HTTP :4318<br/>/v1/metrics"]
     OS --> OTLP
 
-    style rippled fill:#1a2633,color:#ccc,stroke:#4a90d9
+    style xrpld fill:#1a2633,color:#ccc,stroke:#4a90d9
     style existing fill:#2a4a6b,color:#fff,stroke:#4a90d9
     style newreg fill:#2a4a6b,color:#fff,stroke:#4a90d9
     style export fill:#1a3320,color:#ccc,stroke:#5cb85c
@@ -845,7 +684,7 @@ See [Phase10_taskList.md](./Phase10_taskList.md) for detailed per-task breakdown
 
 ### Motivation
 
-rippled has no native Prometheus/OTLP metrics export for data accessible only via JSON-RPC (`server_info`, `get_counts`, `fee`, `peers`, `validators`, `feature`). Every external consumer — exchanges, payment processors, analytics providers, validators, compliance firms, DeFi protocols, researchers, custodians, and CBDC platforms — must build custom JSON-RPC polling and conversion pipelines. This phase centralizes that work into a reusable custom OTel Collector receiver.
+xrpld has no native Prometheus/OTLP metrics export for data accessible only via JSON-RPC (`server_info`, `get_counts`, `fee`, `peers`, `validators`, `feature`). Every external consumer — exchanges, payment processors, analytics providers, validators, compliance firms, DeFi protocols, researchers, custodians, and CBDC platforms — must build custom JSON-RPC polling and conversion pipelines. This phase centralizes that work into a reusable custom OTel Collector receiver.
 
 ### Architecture
 
@@ -861,7 +700,7 @@ flowchart LR
         DX["DEX/AMM<br/>collector<br/>(optional)"]
     end
 
-    rippled["rippled<br/>Admin RPC<br/>:5005"] -->|"JSON-RPC<br/>poll every 30s"| receiver
+    xrpld["xrpld<br/>Admin RPC<br/>:5005"] -->|"JSON-RPC<br/>poll every 30s"| receiver
 
     receiver -->|"xrpl_* metrics"| PROM["Prometheus<br/>:9090"]
     receiver -->|"OTLP export"| OTLP["Any OTLP-<br/>compatible<br/>backend"]
@@ -876,7 +715,7 @@ flowchart LR
     style PE fill:#5cb85c,color:#fff,stroke:#3d8b3d
     style VA fill:#5cb85c,color:#fff,stroke:#3d8b3d
     style DX fill:#449d44,color:#fff,stroke:#2d6e2d
-    style rippled fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style xrpld fill:#4a90d9,color:#fff,stroke:#2a6db5
     style PROM fill:#f0ad4e,color:#000,stroke:#c78c2e
     style OTLP fill:#f0ad4e,color:#000,stroke:#c78c2e
     style GF fill:#5bc0de,color:#000,stroke:#3aa8c1
@@ -921,7 +760,7 @@ See [Phase11_taskList.md](./Phase11_taskList.md) for detailed per-task breakdown
 - [ ] Custom OTel Collector receiver exports all `xrpl_*` metrics to Prometheus
 - [ ] 4 new Grafana dashboards operational (Validator Health, Network Topology, Fee Market, DEX/AMM)
 - [ ] Prometheus alerting rules fire correctly for simulated failures
-- [ ] Receiver handles rippled restart/unavailability gracefully
+- [ ] Receiver handles xrpld restart/unavailability gracefully
 - [ ] Go receiver has unit tests with >80% coverage
 
 ---
@@ -994,7 +833,7 @@ flowchart TB
 
     subgraph run["🏃 RUN (Week 6-9)"]
         direction LR
-        r1[Consensus Tracing] ~~~ r2[Validator, Amendment,<br/>SHAMap Tracing] ~~~ r3[Full Correlation] ~~~ r4[Production Deploy]
+        r1[Consensus Tracing] ~~~ r2[Establish Phase<br/>& Cross-Node Correlation] ~~~ r3[StatsD Integration] ~~~ r4[Production Deploy]
     end
 
     crawl --> walk --> run
@@ -1022,7 +861,7 @@ flowchart TB
 
 - **CRAWL (Weeks 1-2)**: Minimal investment -- set up the SDK, instrument RPC and PathFinding/TxQ handlers, and verify on a single node. Delivers immediate latency visibility.
 - **WALK (Weeks 3-5)**: Expand to transaction lifecycle tracing, fee escalation, cross-node context propagation, and basic Grafana dashboards. This is where distributed tracing starts working.
-- **RUN (Weeks 6-9)**: Full consensus instrumentation, validator/amendment/SHAMap tracing, end-to-end correlation, and production deployment with sampling and alerting.
+- **RUN (Weeks 6-9)**: Full consensus instrumentation, establish-phase gap fill, cross-node correlation, StatsD integration, and production deployment with sampling and alerting.
 - **Arrows (crawl → walk → run)**: Each phase builds on the prior one; you cannot skip ahead because later phases depend on infrastructure established earlier.
 
 ### 6.9.2 Quick Wins (Immediate Value)
@@ -1087,17 +926,17 @@ flowchart TB
 - Complete consensus round visibility
 - Phase transition timing
 - Validator proposal tracking
-- Validator list and manifest tracing
-- Amendment voting tracing
-- SHAMap sync tracing
-- Full end-to-end traces (client → RPC → TX → consensus → ledger)
+- ~~Validator list and manifest tracing~~ — descoped
+- ~~Amendment voting tracing~~ — descoped
+- ~~SHAMap sync tracing~~ — descoped
+- Full end-to-end traces (client → RPC → TX → consensus → ledger) — partial (tx-consensus correlation not yet done)
 
-**Code Changes**: ~100 lines across 3 consensus files, plus validator/amendment/SHAMap modules
+**Code Changes**: ~100 lines across 3 consensus files
 
 **Why Do This Last**:
 
 - Highest complexity (consensus is critical path)
-- Validator, amendment, and SHAMap components are lower priority
+- Validator, amendment, and SHAMap components were descoped (lower priority)
 - Requires thorough testing
 - Lower relative value (consensus issues are rarer)
 
@@ -1123,13 +962,13 @@ quadrantChart
 
 ---
 
-## 6.12 Definition of Done
+## 6.13 Definition of Done
 
 > **TxQ** = Transaction Queue | **HA** = High Availability
 
 Clear, measurable criteria for each phase.
 
-### 6.12.1 Phase 1: Core Infrastructure
+### 6.13.1 Phase 1: Core Infrastructure
 
 | Criterion       | Measurement                                                | Target                       |
 | --------------- | ---------------------------------------------------------- | ---------------------------- |
@@ -1141,7 +980,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: All criteria met, PR merged, no regressions in CI.
 
-### 6.12.2 Phase 2: RPC Tracing
+### 6.13.2 Phase 2: RPC Tracing
 
 | Criterion          | Measurement                        | Target                     |
 | ------------------ | ---------------------------------- | -------------------------- |
@@ -1153,19 +992,22 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: RPC traces visible in Tempo for all commands, dashboard shows latency distribution.
 
-### 6.12.3 Phase 3: Transaction Tracing
+### 6.13.3 Phase 3: Transaction Tracing
 
-| Criterion        | Measurement                     | Target                             |
-| ---------------- | ------------------------------- | ---------------------------------- |
-| Local Trace      | Submit → validate → TxQ traced  | Single-node test passes            |
-| Cross-Node       | Context propagates via protobuf | Multi-node test passes             |
-| Relay Visibility | relay_count attribute correct   | Spot check 100 txs                 |
-| HashRouter       | Deduplication visible in trace  | Duplicate txs show suppressed=true |
-| Performance      | TX throughput overhead          | <5% degradation                    |
+| Criterion             | Measurement                                       | Target                                                   |
+| --------------------- | ------------------------------------------------- | -------------------------------------------------------- |
+| Local Trace           | Submit → validate → TxQ traced                    | Single-node test passes                                  |
+| Cross-Node            | Context propagates via protobuf                   | Multi-node test passes                                   |
+| Deterministic TraceID | Same trace_id on all nodes for same tx            | Multi-node test: query by txHash[0:16] returns all spans |
+| Relay Ordering        | Protobuf span_id propagation creates parent-child | Tempo trace tree shows relay chain                       |
+| Graceful Degradation  | Old peer drops trace_context                      | Spans still grouped by deterministic trace_id            |
+| Relay Visibility      | relay_count attribute correct                     | Spot check 100 txs                                       |
+| HashRouter            | Deduplication visible in trace                    | Duplicate txs show suppressed=true                       |
+| Performance           | TX throughput overhead                            | <5% degradation                                          |
 
-**Definition of Done**: Transaction traces span 3+ nodes in test network, performance within bounds.
+**Definition of Done**: Transaction traces span 3+ nodes in test network with deterministic trace_id correlation, parent-child ordering via protobuf propagation, and performance within bounds.
 
-### 6.12.4 Phase 4: Consensus Tracing
+### 6.13.4 Phase 4: Consensus Tracing
 
 | Criterion            | Measurement                   | Target                    |
 | -------------------- | ----------------------------- | ------------------------- |
@@ -1177,7 +1019,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Consensus rounds fully traceable, no impact on consensus timing.
 
-### 6.12.5 Phase 5: Production Deployment
+### 6.13.5 Phase 5: Production Deployment
 
 | Criterion    | Measurement                  | Target                     |
 | ------------ | ---------------------------- | -------------------------- |
@@ -1190,7 +1032,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Telemetry running in production, operators trained, alerts active.
 
-### 6.12.6 Success Metrics Summary
+### 6.13.6 Success Metrics Summary
 
 | Phase    | Primary Metric                   | Secondary Metric            | Deadline       | Status             |
 | -------- | -------------------------------- | --------------------------- | -------------- | ------------------ |

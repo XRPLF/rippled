@@ -5,15 +5,15 @@
 
 ---
 
-## 1.1 Current rippled Architecture Overview
+## 1.1 Current xrpld Architecture Overview
 
 > **WS** = WebSocket | **UNL** = Unique Node List | **TxQ** = Transaction Queue | **StatsD** = Statistics Daemon
 
-The rippled node software consists of several interconnected components that need instrumentation for distributed tracing:
+The xrpld node software consists of several interconnected components that need instrumentation for distributed tracing:
 
 ```mermaid
 flowchart TB
-    subgraph rippled["rippled Node"]
+    subgraph xrpld["xrpld Node"]
         subgraph services["Core Services"]
             RPC["RPC Server<br/>(HTTP/WS/gRPC)"]
             Overlay["Overlay<br/>(P2P Network)"]
@@ -47,7 +47,7 @@ flowchart TB
         JobQueue --> appservices
     end
 
-    style rippled fill:#424242,stroke:#212121,color:#ffffff
+    style xrpld fill:#424242,stroke:#212121,color:#ffffff
     style services fill:#1565c0,stroke:#0d47a1,color:#ffffff
     style processing fill:#2e7d32,stroke:#1b5e20,color:#ffffff
     style appservices fill:#6a1b9a,stroke:#4a148c,color:#ffffff
@@ -56,7 +56,7 @@ flowchart TB
 
 **Reading the diagram:**
 
-- **Core Services (blue)**: The entry points into rippled -- RPC Server handles client requests, Overlay manages peer-to-peer networking, Consensus drives agreement, and ValidatorList manages trusted validators.
+- **Core Services (blue)**: The entry points into xrpld -- RPC Server handles client requests, Overlay manages peer-to-peer networking, Consensus drives agreement, and ValidatorList manages trusted validators.
 - **JobQueue (center)**: The asynchronous thread pool that decouples Core Services from the Processing and Application layers. All work flows through it.
 - **Processing Layer (green)**: Core business logic -- NetworkOPs processes transactions, LedgerMaster manages ledger state, NodeStore handles persistence, and InboundLedgers synchronizes missing data.
 - **Application Services (purple)**: Higher-level features -- PathFinding computes payment routes, TxQ manages fee-based queuing, and LoadManager tracks server load.
@@ -71,7 +71,7 @@ flowchart TB
 
 | Who (Plain English)                       | Technical Term             |
 | ----------------------------------------- | -------------------------- |
-| Network node running XRPL software        | rippled node               |
+| Network node running XRPL software        | xrpld node                 |
 | External client submitting requests       | RPC Client                 |
 | Network neighbor sharing data             | Peer (PeerImp)             |
 | Request handler for client queries        | RPC Server (ServerHandler) |
@@ -354,17 +354,17 @@ After implementing OpenTelemetry, operators and developers will gain visibility 
 
 ### 1.8.1 What You Will See: Traces
 
-| Trace Type                 | Description                                                                                 | Example Query in Grafana/Tempo                         |
-| -------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| **Transaction Lifecycle**  | Full journey from RPC submission through validation, relay, consensus, and ledger inclusion | `{service.name="rippled" && xrpl.tx.hash="ABC123..."}` |
-| **Cross-Node Propagation** | Transaction path across multiple rippled nodes with timing                                  | `{xrpl.tx.relay_count > 0}`                            |
-| **Consensus Rounds**       | Complete round with all phases (open, establish, accept)                                    | `{span.name=~"consensus.round.*"}`                     |
-| **RPC Request Processing** | Individual command execution with timing breakdown                                          | `{xrpl.rpc.command="account_info"}`                    |
-| **Ledger Acquisition**     | Peer-to-peer ledger data requests and responses                                             | `{span.name="ledger.acquire"}`                         |
-| **PathFinding Latency**    | Path computation time and cache effectiveness for payment RPCs                              | `{span.name="pathfind.compute"}`                       |
-| **TxQ Behavior**           | Queue depth, eviction patterns, fee escalation during congestion                            | `{span.name=~"txq.*"}`                                 |
-| **Ledger Sync**            | Full acquisition timeline including delta and transaction fetches                           | `{span.name=~"ledger.acquire.*"}`                      |
-| **Validator Health**       | UNL fetch success, manifest updates, stale list detection                                   | `{span.name=~"validator.*"}`                           |
+| Trace Type                 | Description                                                                                 | Example Query in Grafana/Tempo                       |
+| -------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| **Transaction Lifecycle**  | Full journey from RPC submission through validation, relay, consensus, and ledger inclusion | `{service.name="xrpld" && xrpl.tx.hash="ABC123..."}` |
+| **Cross-Node Propagation** | Transaction path across multiple xrpld nodes with timing                                    | `{xrpl.tx.relay_count > 0}`                          |
+| **Consensus Rounds**       | Complete round with all phases (open, establish, accept)                                    | `{span.name=~"consensus.round.*"}`                   |
+| **RPC Request Processing** | Individual command execution with timing breakdown                                          | `{xrpl.rpc.command="account_info"}`                  |
+| **Ledger Acquisition**     | Peer-to-peer ledger data requests and responses                                             | `{span.name="ledger.acquire"}`                       |
+| **PathFinding Latency**    | Path computation time and cache effectiveness for payment RPCs                              | `{span.name="pathfind.compute"}`                     |
+| **TxQ Behavior**           | Queue depth, eviction patterns, fee escalation during congestion                            | `{span.name=~"txq.*"}`                               |
+| **Ledger Sync**            | Full acquisition timeline including delta and transaction fetches                           | `{span.name=~"ledger.acquire.*"}`                    |
+| **Validator Health**       | UNL fetch success, manifest updates, stale list detection                                   | `{span.name=~"validator.*"}`                         |
 
 ### 1.8.2 What You Will See: Metrics (Derived from Traces)
 

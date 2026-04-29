@@ -1,6 +1,6 @@
 # OpenTelemetry Integration Testing Guide
 
-This document describes how to verify the rippled OpenTelemetry telemetry
+This document describes how to verify the xrpld OpenTelemetry telemetry
 pipeline end-to-end, from span generation through the observability stack
 (otel-collector, Tempo, Prometheus, Grafana).
 
@@ -118,25 +118,25 @@ Wait 5 seconds for the batch export, then:
 ```bash
 TEMPO="http://localhost:3200"
 
-# Check rippled service is registered
+# Check xrpld service is registered
 curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues[].value'
 
 # Check RPC spans
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="rippled" && name="rpc.request"}' \
+  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.request"}' \
   --data-urlencode 'limit=5' | jq '.traces | length'
 
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="rippled" && name="rpc.process"}' \
+  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.process"}' \
   --data-urlencode 'limit=5' | jq '.traces | length'
 
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="rippled" && name="rpc.command.server_info"}' \
+  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.command.server_info"}' \
   --data-urlencode 'limit=5' | jq '.traces | length'
 
 # Check transaction spans
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="rippled" && name="tx.process"}' \
+  --data-urlencode 'q={resource.service.name="xrpld" && name="tx.process"}' \
   --data-urlencode 'limit=5' | jq '.traces | length'
 ```
 
@@ -374,21 +374,27 @@ See the "Verification Queries" section below.
 
 ## Expected Span Catalog
 
-All 12 production span names instrumented across Phases 2-4:
+All 16 production span names instrumented across Phases 2-5:
 
-| Span Name                   | Source File           | Phase | Key Attributes                                                                    | How to Trigger            |
-| --------------------------- | --------------------- | ----- | --------------------------------------------------------------------------------- | ------------------------- |
-| `rpc.request`               | ServerHandler.cpp:271 | 2     | --                                                                                | Any HTTP RPC call         |
-| `rpc.process`               | ServerHandler.cpp:573 | 2     | --                                                                                | Any HTTP RPC call         |
-| `rpc.ws_message`            | ServerHandler.cpp:384 | 2     | --                                                                                | WebSocket RPC message     |
-| `rpc.command.<name>`        | RPCHandler.cpp:161    | 2     | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                           | Any RPC command           |
-| `tx.process`                | NetworkOPs.cpp:1227   | 3     | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                   | Submit transaction        |
-| `tx.receive`                | PeerImp.cpp:1273      | 3     | `xrpl.peer.id`                                                                    | Peer relays transaction   |
-| `consensus.proposal.send`   | RCLConsensus.cpp:177  | 4     | `xrpl.consensus.round`                                                            | Consensus proposing phase |
-| `consensus.ledger_close`    | RCLConsensus.cpp:282  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                | Ledger close event        |
-| `consensus.accept`          | RCLConsensus.cpp:395  | 4     | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                        | Ledger accepted           |
-| `consensus.validation.send` | RCLConsensus.cpp:753  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                           | Validation sent           |
-| `consensus.accept.apply`    | RCLConsensus.cpp:453  | 4     | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state` | Ledger apply + close time |
+| Span Name                   | Source File           | Phase | Key Attributes                                                                           | How to Trigger            |
+| --------------------------- | --------------------- | ----- | ---------------------------------------------------------------------------------------- | ------------------------- |
+| `rpc.request`               | ServerHandler.cpp:271 | 2     | --                                                                                       | Any HTTP RPC call         |
+| `rpc.process`               | ServerHandler.cpp:573 | 2     | --                                                                                       | Any HTTP RPC call         |
+| `rpc.ws_message`            | ServerHandler.cpp:384 | 2     | --                                                                                       | WebSocket RPC message     |
+| `rpc.command.<name>`        | RPCHandler.cpp:161    | 2     | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                                  | Any RPC command           |
+| `tx.process`                | NetworkOPs.cpp:1227   | 3     | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                          | Submit transaction        |
+| `tx.receive`                | PeerImp.cpp:1273      | 3     | `xrpl.peer.id`                                                                           | Peer relays transaction   |
+| `consensus.proposal.send`   | RCLConsensus.cpp:177  | 4     | `xrpl.consensus.round`                                                                   | Consensus proposing phase |
+| `consensus.ledger_close`    | RCLConsensus.cpp:282  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                       | Ledger close event        |
+| `consensus.accept`          | RCLConsensus.cpp:395  | 4     | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                               | Ledger accepted           |
+| `consensus.validation.send` | RCLConsensus.cpp:753  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                  | Validation sent           |
+| `consensus.accept.apply`    | RCLConsensus.cpp:453  | 4     | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`        | Ledger apply + close time |
+| `tx.apply`                  | BuildLedger.cpp:88    | 5     | `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed`                                          | Ledger close (tx set)     |
+| `ledger.build`              | BuildLedger.cpp:31    | 5     | `xrpl.ledger.seq`, `xrpl.ledger.close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build              |
+| `ledger.validate`           | LedgerMaster.cpp:915  | 5     | `xrpl.ledger.seq`, `xrpl.ledger.validations`                                             | Ledger validated          |
+| `ledger.store`              | LedgerMaster.cpp:409  | 5     | `xrpl.ledger.seq`                                                                        | Ledger stored             |
+| `peer.proposal.receive`     | PeerImp.cpp:1667      | 5     | `xrpl.peer.id`, `xrpl.peer.proposal.trusted`                                             | Peer sends proposal       |
+| `peer.validation.receive`   | PeerImp.cpp:2264      | 5     | `xrpl.peer.id`, `xrpl.peer.validation.trusted`                                           | Peer sends validation     |
 
 ---
 
@@ -407,12 +413,14 @@ curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues
 # Query traces by operation
 for op in "rpc.request" "rpc.process" \
           "rpc.command.server_info" "rpc.command.server_state" "rpc.command.ledger" \
-          "tx.process" "tx.receive" \
+          "tx.process" "tx.receive" "tx.apply" \
           "consensus.proposal.send" "consensus.ledger_close" \
           "consensus.accept" "consensus.accept.apply" \
-          "consensus.validation.send"; do
+          "consensus.validation.send" \
+          "ledger.build" "ledger.validate" "ledger.store" \
+          "peer.proposal.receive" "peer.validation.receive"; do
   count=$(curl -s "$TEMPO/api/search" \
-    --data-urlencode "q={resource.service.name=\"rippled\" && name=\"$op\"}" \
+    --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
     --data-urlencode "limit=5" \
     | jq '.traces | length')
   printf "%-35s %s traces\n" "$op" "$count"
@@ -445,9 +453,11 @@ Open http://localhost:3000 (anonymous admin access enabled).
 
 Pre-configured dashboards:
 
-- **RPC Performance**: Request rates, latency percentiles by command
-- **Transaction Overview**: Transaction processing rates and paths
-- **Consensus Health**: Consensus round duration and proposer counts
+- **RPC Performance**: Request rates, latency percentiles by command, top commands, WebSocket rate
+- **Transaction Overview**: Transaction processing rates, apply duration, peer relay, failed tx rate
+- **Consensus Health**: Consensus round duration, proposer counts, mode tracking, accept heatmap
+- **Ledger Operations**: Build/validate/store rates and durations, TX apply metrics
+- **Peer Network**: Proposal/validation receive rates, trusted vs untrusted breakdown (requires `trace_peer=1`)
 
 Pre-configured datasources:
 
@@ -459,14 +469,14 @@ Pre-configured datasources:
 
 ## Test 3: Log-Trace Correlation (Phase 8)
 
-Phase 8 injects `trace_id` and `span_id` into rippled's log output when
+Phase 8 injects `trace_id` and `span_id` into xrpld's log output when
 a log line is emitted within an active OTel span. This test verifies the
 end-to-end log-trace correlation pipeline.
 
 ### Step 1: Verify trace_id in log output
 
 After running Test 1 or Test 2 (which generate RPC spans), check the
-rippled debug.log for trace context:
+xrpld debug.log for trace context:
 
 ```bash
 grep 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' /path/to/debug.log
@@ -496,13 +506,13 @@ Expected result: `1` (the trace exists in Jaeger).
 
 ### Step 3: Verify Loki log ingestion
 
-The OTel Collector's filelog receiver tails rippled's debug.log and
+The OTel Collector's filelog receiver tails xrpld's debug.log and
 exports parsed entries to Loki. Verify Loki has received entries:
 
 ```bash
-# Query Loki for any rippled logs
+# Query Loki for any xrpld logs
 curl -sG "http://localhost:3100/loki/api/v1/query" \
-  --data-urlencode 'query={job="rippled"}' \
+  --data-urlencode 'query={job="xrpld"}' \
   --data-urlencode 'limit=5' | jq '.data.result | length'
 ```
 
@@ -519,7 +529,7 @@ Expected: > 0 results.
 ### Step 5: Verify Grafana Loki-to-Tempo correlation
 
 1. In Grafana **Explore**, select **Loki** datasource
-2. Query: `{job="rippled"} |= "trace_id="`
+2. Query: `{job="xrpld"} |= "trace_id="`
 3. In the log results, click the **TraceID** derived field link
 4. Verify it navigates to the full trace in Tempo
 
@@ -578,7 +588,7 @@ Expected: > 0 results.
 
 ### No trace_id in log output (Phase 8)
 
-1. Verify rippled was built with `telemetry=ON` (`-Dtelemetry=ON` in CMake)
+1. Verify xrpld was built with `telemetry=ON` (`-Dtelemetry=ON` in CMake)
 2. Verify `enabled=1` in the `[telemetry]` config section
 3. Log lines only contain trace context when emitted inside an active span.
    Background logs (startup, periodic tasks outside spans) will not have
