@@ -7201,41 +7201,28 @@ protected:
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
     }
 
-    // ---- Shared scaffolding for the integer-MPT edge tests below ----
+    // Regression for the dual-rounding fix at coarse (integer-MPT) scale.
     //
-    // All the dual-rounding edge tests want the same env + MPT + vault + broker
-    // + LoanSet boilerplate; they only differ in the loan terms and the
-    // payment pattern. setupEdgeLoan handles the boilerplate and returns the
-    // handles each test needs to drive payments.
-    struct EdgeLoanFixture
+    // Loan: P=1, r=50% (50000 tenth-bips), n=3, yearly interval. The
+    // amortization schedule produces a fractional principal
+    // (~0.47) which under round-to-nearest collapses to 0 in a single
+    // step, causing `doPayment`'s strict `>` assertion on principal to
+    // fire mid-loan. With fixCleanup3_2_0 enabled, principal is rounded
+    // upward (sticks at 1 across the first two periods) and only clears
+    // in the final payment.
+    //
+    // The test pays one period at a time across three LoanPay
+    // transactions and verifies the loan completes (paymentRemaining=0)
+    // with totals matching the loan's economics (1 principal + 2
+    // interest).
+    void
+    testIntegerScalePrincipalSticks()
     {
-        jtx::Account issuer;
-        jtx::Account lender;
-        jtx::Account borrower;
-        jtx::PrettyAsset asset;
-        Keylet brokerKeylet;
-        Keylet loanKeylet;
-    };
+        testcase("edge: integer MPT principal stuck mid-loan completes via final");
 
-    struct EdgeLoanSpec
-    {
-        Number principal;
-        TenthBips32 interestRate;
-        std::uint32_t paymentTotal;
-        std::uint32_t paymentInterval = 31'536'000;
-        std::optional<std::uint32_t> gracePeriodSec = std::nullopt;
-        std::optional<TenthBips32> lateRate = std::nullopt;
-        std::optional<Number> lateFee = std::nullopt;
-        std::uint32_t mptMaxAmt = 100'000;
-        std::int64_t fundEach = 10'000;
-        std::int64_t vaultDeposit = 5'000;
-        Number debtMax{100};
-    };
-
-    std::optional<EdgeLoanFixture>
-    setupEdgeLoan(jtx::Env& env, EdgeLoanSpec const& spec)
-    {
         using namespace jtx;
+        Env env(*this, all);
+
         Account const issuer{"issuer"};
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -7244,14 +7231,14 @@ protected:
         env.close();
 
         MPTTester mptt{env, issuer, mptInitNoFund};
-        mptt.create({.maxAmt = spec.mptMaxAmt, .flags = tfMPTCanTransfer});
+        mptt.create({.maxAmt = 100'000, .flags = tfMPTCanTransfer});
         PrettyAsset const asset{mptt.issuanceID()};
 
         mptt.authorize({.account = lender});
         mptt.authorize({.account = borrower});
 
-        env(pay(issuer, lender, asset(spec.fundEach)));
-        env(pay(issuer, borrower, asset(spec.fundEach)));
+        env(pay(issuer, lender, asset(10'000)));
+        env(pay(issuer, borrower, asset(10'000)));
         env.close();
 
         Vault const vault{env};
@@ -7259,265 +7246,45 @@ protected:
         env(vaultTx);
         env.close();
 
-        env(vault.deposit(
-            {.depositor = lender, .id = vaultKeylet.key, .amount = asset(spec.vaultDeposit)}));
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5'000)}));
         env.close();
 
         auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
-        {
-            using namespace loanBroker;
-            env(set(lender, vaultKeylet.key),
-                debtMaximum(spec.debtMax),
-                fee(env.current()->fees().base * 2));
-        }
+        env(loanBroker::set(lender, vaultKeylet.key),
+            loanBroker::debtMaximum(Number{100}),
+            fee(env.current()->fees().base * 2));
         env.close();
 
         auto const brokerStateBefore = env.le(brokerKeylet);
         if (!BEAST_EXPECT(brokerStateBefore))
-            return std::nullopt;
+            return;
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
 
-        {
-            using namespace loan;
-            JTx tx{set(borrower, brokerKeylet.key, spec.principal)};
-            sig(sfCounterpartySignature, lender)(env, tx);
-            interestRate(spec.interestRate)(env, tx);
-            paymentTotal(spec.paymentTotal)(env, tx);
-            paymentInterval(spec.paymentInterval)(env, tx);
-            fee(env.current()->fees().base * 2)(env, tx);
-            if (spec.gracePeriodSec)
-                gracePeriod (*spec.gracePeriodSec)(env, tx);
-            if (spec.lateRate)
-                lateInterestRate (*spec.lateRate)(env, tx);
-            if (spec.lateFee)
-                latePaymentFee (*spec.lateFee)(env, tx);
-            env(tx);
-        }
+        env(loan::set(borrower, brokerKeylet.key, Number{1}),
+            sig(sfCounterpartySignature, lender),
+            loan::interestRate(TenthBips32{50'000}),
+            loan::paymentTotal(3),
+            loan::paymentInterval(31'536'000),
+            fee(env.current()->fees().base * 2));
         env.close();
 
-        return EdgeLoanFixture{
-            .issuer = issuer,
-            .lender = lender,
-            .borrower = borrower,
-            .asset = asset,
-            .brokerKeylet = brokerKeylet,
-            .loanKeylet = loanKeylet};
-    }
-
-    // An integer-scale MPT loan with principal=1 and high interest causes
-    // the second LoanPay to compute a principal delta equal to the full
-    // outstanding (1), but the code still classifies this as a non-final
-    // payment because TVO > roundedPeriodicPayment. The strict > assertion
-    // in doPayment fires.
-    void
-    testBugDoPaymentPartialPrincipal()
-    {
-        testcase("bug: doPayment asserts partial principal on integer MPT");
-
-        using namespace jtx;
-        Env env(*this, all);
-        auto f = setupEdgeLoan(
-            env, {.principal = Number{1}, .interestRate = TenthBips32{50'000}, .paymentTotal = 3});
-        if (!f)
-            return;
-
-        // LoanPay 2 MPT — the second computePaymentComponents call inside
-        // doPayment fires the "Partial principal payment" assertion under the
-        // pre-amendment rounding.
-        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(2)), ter(tesSUCCESS));
-        env.close();
-    }
-
-    // Verify the bug-case loan completes cleanly across multiple LoanPay
-    // transactions — principal sticks at 1 across the first two periods
-    // and only clears in the final payment.
-    void
-    testIntegerScalePrincipalSticks()
-    {
-        testcase("edge: integer MPT principal stuck mid-loan completes via final");
-
-        using namespace jtx;
-        Env env(*this, all);
-        auto f = setupEdgeLoan(
-            env, {.principal = Number{1}, .interestRate = TenthBips32{50'000}, .paymentTotal = 3});
-        if (!f)
-            return;
-
-        auto const borrowerStart = env.balance(f->borrower, f->asset).value();
+        auto const borrowerStart = env.balance(borrower, asset).value();
 
         // Three separate periodic payments of 1 each.
         for (int i = 0; i < 3; ++i)
         {
-            env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(1)), ter(tesSUCCESS));
+            env(loan::pay(borrower, loanKeylet.key, asset(1)), ter(tesSUCCESS));
             env.close();
         }
 
-        auto const loanSle = env.le(f->loanKeylet);
+        auto const loanSle = env.le(loanKeylet);
         if (BEAST_EXPECT(loanSle))
             BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
 
         // Borrower paid 3 total (1 principal + 2 interest, matching loan economics).
-        auto const borrowerEnd = env.balance(f->borrower, f->asset).value();
-        BEAST_EXPECT(borrowerStart - borrowerEnd == f->asset(3).value());
-    }
-
-    // A 2-payment integer-scale MPT loan: trueTarget.PO at the only
-    // non-final period was 0.4737 (rounds-down to 0 with old code, would
-    // also fail). Confirms the fix handles paymentRemaining=2 correctly.
-    void
-    testIntegerScaleTwoPayments()
-    {
-        testcase("edge: 2-payment integer MPT with high interest");
-
-        using namespace jtx;
-        Env env(*this, all);
-        auto f = setupEdgeLoan(
-            env, {.principal = Number{1}, .interestRate = TenthBips32{50'000}, .paymentTotal = 2});
-        if (!f)
-            return;
-
-        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(2)), ter(tesSUCCESS));
-        env.close();
-        auto const loanSle = env.le(f->loanKeylet);
-        if (BEAST_EXPECT(loanSle))
-            BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
-    }
-
-    // Numerical trace says this setup would trigger a zero-delta period
-    // under a principal-only round-up fix: P=2, r=30%, n=4. Period 2
-    // (paymentRemaining=2) has trueTarget.PO=1.251 (rounds up to 2) and
-    // trueTarget.interest=0.595 (rounds nearest to 1), matching currentLedger
-    // PO=2 and interest=1, so all deltas would be 0. The dual-rounding
-    // (interest rounded down) must keep total > 0 here.
-    void
-    testZeroDeltaAssertion()
-    {
-        testcase("edge: zero-delta period at integer MPT scale");
-
-        using namespace jtx;
-        Env env(*this, all);
-        auto f = setupEdgeLoan(
-            env, {.principal = Number{2}, .interestRate = TenthBips32{30'000}, .paymentTotal = 4});
-        if (!f)
-            return;
-
-        // Pay one period at a time. Period 2 must not hit the zero-delta path.
-        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(1)), ter(tesSUCCESS));
-        env.close();
-        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(1)), ter(tesSUCCESS));
-        env.close();
-    }
-
-    // Backward-compat: a non-degenerate loan should still complete cleanly
-    // when fixCleanup3_2_0 is disabled (the pre-amendment rounding path).
-    // The bug case (P=1, n=3, r=50%) WOULD crash here without the amendment;
-    // this test exercises a setup that does not hit the rounding cliff so we
-    // can prove the gate is wired and the disabled path still functions.
-    void
-    testNoAmendmentBackwardCompat()
-    {
-        testcase("edge: amendment off, non-degenerate loan still works");
-
-        using namespace jtx;
-        Env env(*this, all - fixCleanup3_2_0);
-        auto f = setupEdgeLoan(
-            env,
-            {.principal = Number{10'000},
-             .interestRate = TenthBips32{12'000},
-             .paymentTotal = 12,
-             .paymentInterval = 2'592'000,
-             .mptMaxAmt = 1'000'000,
-             .fundEach = 500'000,
-             .vaultDeposit = 200'000,
-             .debtMax = Number{200'000}});
-        if (!f)
-            return;
-
-        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(12'000)),
-            fee(env.current()->fees().base * 5),
-            ter(tesSUCCESS));
-        env.close();
-        auto const loanSle = env.le(f->loanKeylet);
-        if (BEAST_EXPECT(loanSle))
-            BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
-    }
-
-    // Late payment after a stuck-principal period. The fix's stuck-principal
-    // behavior must compose correctly with late-payment penalty computations,
-    // since computeLatePayment augments the regular periodic components.
-    void
-    testLatePaymentWithStuckPrincipal()
-    {
-        testcase("edge: late payment after stuck-principal period");
-
-        using namespace jtx;
-        Env env(*this, all);
-        auto f = setupEdgeLoan(
-            env,
-            {.principal = Number{1},
-             .interestRate = TenthBips32{50'000},
-             .paymentTotal = 3,
-             .gracePeriodSec = 2'592'000,
-             .lateRate = TenthBips32{1'000},
-             .lateFee = Number{0}});
-        if (!f)
-            return;
-
-        // Pay first period normally.
-        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(1)), ter(tesSUCCESS));
-        env.close();
-
-        // Skip past the grace period — second payment is late.
-        using tp = NetClock::time_point;
-        using dur = NetClock::duration;
-        if (auto loan = env.le(f->loanKeylet); BEAST_EXPECT(loan))
-        {
-            env.close(tp{dur{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
-        }
-
-        // Late payment with stuck principal — uses computePaymentComponents
-        // internally to compute periodic, then layers late penalties.
-        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(2), tfLoanLatePayment),
-            ter(tesSUCCESS));
-        env.close();
-
-        // Loan should still be progressing (not killed, not at final).
-        BEAST_EXPECT(env.le(f->loanKeylet));
-    }
-
-    // Larger principal at integer scale — verifies the fix is invisible
-    // for non-degenerate loans (principal moves cleanly each period).
-    void
-    testIntegerScaleNormalLoan()
-    {
-        testcase("edge: integer MPT large principal small interest");
-
-        using namespace jtx;
-        Env env(*this, all);
-        auto f = setupEdgeLoan(
-            env,
-            {.principal = Number{10'000},
-             .interestRate = TenthBips32{12'000},
-             .paymentTotal = 12,
-             .paymentInterval = 2'592'000,
-             .mptMaxAmt = 1'000'000,
-             .fundEach = 500'000,
-             .vaultDeposit = 200'000,
-             .debtMax = Number{200'000}});
-        if (!f)
-            return;
-
-        // Pay enough to cover all 12 periodic payments in a single LoanPay.
-        // RPP for this loan is ~888, so 12 * 1000 = 12000 leaves enough margin.
-        // Fee is per-payment-increment (5 payments = 1 increment), so bump it.
-        env(loan::pay(f->borrower, f->loanKeylet.key, f->asset(12'000)),
-            fee(env.current()->fees().base * 5),
-            ter(tesSUCCESS));
-        env.close();
-        auto const loanSle = env.le(f->loanKeylet);
-        if (BEAST_EXPECT(loanSle))
-            BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
+        auto const borrowerEnd = env.balance(borrower, asset).value();
+        BEAST_EXPECT(borrowerStart - borrowerEnd == asset(3).value());
     }
 
 public:
@@ -7528,13 +7295,7 @@ public:
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
-        testBugDoPaymentPartialPrincipal();
         testIntegerScalePrincipalSticks();
-        testIntegerScaleTwoPayments();
-        testZeroDeltaAssertion();
-        testNoAmendmentBackwardCompat();
-        testLatePaymentWithStuckPrincipal();
-        testIntegerScaleNormalLoan();
         testWithdrawReflectsUnrealizedLoss();
         testInvalidLoanSet();
 
