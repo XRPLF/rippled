@@ -653,6 +653,42 @@ public:
         for (auto const& nonArray : nonArrays)
         {
             Json::Value jv;
+            jv[jss::mpt_issuances] = nonArray;
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            Json::Value jv;
+            jv[jss::mpt_issuances] = Json::arrayValue;
+            jv[jss::mpt_issuances][0u] = 1;
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            Json::Value jv;
+            jv[jss::mpt_issuances] = Json::arrayValue;
+            jv[jss::mpt_issuances][0u] = "not-an-mpt-issuance-id";
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            Json::Value jv;
+            jv[jss::mpt_issuances] = Json::arrayValue;
+            jv[jss::mpt_issuances][0u] = "0123456789ABCDEF";
+            auto jr = wsc->invoke(method, jv)[jss::result];
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
+        }
+
+        for (auto const& nonArray : nonArrays)
+        {
+            Json::Value jv;
             jv[jss::books] = nonArray;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
@@ -1529,7 +1565,10 @@ public:
 
         // Transfer fee is 10%
         mptAlice.create(
-            {.transferFee = 10'000, .ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+            {.transferFee = 10'000,
+             .ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer | tfMPTCanLock});
         mptCarol.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
 
         Json::Value stream;
@@ -1544,7 +1583,7 @@ public:
         mptAlice.authorize({.account = bob});
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
             return jv[jss::engine_result] == "tesSUCCESS" &&
-                jv[jss::transaction][jss::Account] == "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK" &&
+                jv[jss::transaction][jss::Account] == bob.human() &&
                 jv[jss::transaction][jss::Flags] == 0 &&
                 jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
                 to_string(mptAlice.issuanceID()) &&
@@ -1556,7 +1595,7 @@ public:
         mptCarol.authorize({.account = dan});
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
             return jv[jss::engine_result] == "tesSUCCESS" &&
-                jv[jss::transaction][jss::Account] == "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&
+                jv[jss::transaction][jss::Account] == dan.human() &&
                 jv[jss::transaction][jss::Flags] == 0 &&
                 jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
                 to_string(mptCarol.issuanceID()) &&
@@ -1571,14 +1610,14 @@ public:
         mptAlice.pay(alice, bob, 2000);
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
             return jv[jss::engine_result] == "tesSUCCESS" &&
-                jv[jss::transaction][jss::Account] == "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn" &&
+                jv[jss::transaction][jss::Account] == alice.human() &&
                 jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
                 to_string(mptAlice.issuanceID()) &&
                 jv[jss::transaction][jss::Amount][jss::value] == "2000" &&
                 jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
                 to_string(mptAlice.issuanceID()) &&
                 jv[jss::transaction][jss::DeliverMax][jss::value] == "2000" &&
-                jv[jss::transaction][jss::Destination] == "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK" &&
+                jv[jss::transaction][jss::Destination] == bob.human() &&
                 jv[jss::transaction][jss::Flags] == 2147483648u &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
                 jv[jss::type] == "mptTransaction";
@@ -1590,17 +1629,41 @@ public:
         mptCarol.pay(carol, dan, 1000);
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
             return jv[jss::engine_result] == "tesSUCCESS" &&
-                jv[jss::transaction][jss::Account] == "rH4KEcG9dEwGwpn6AyoWK9cZPLL4RLSmWW" &&
+                jv[jss::transaction][jss::Account] == carol.human() &&
                 jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
                 to_string(mptCarol.issuanceID()) &&
                 jv[jss::transaction][jss::Amount][jss::value] == "1000" &&
                 jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
                 to_string(mptCarol.issuanceID()) &&
                 jv[jss::transaction][jss::DeliverMax][jss::value] == "1000" &&
-                jv[jss::transaction][jss::Destination] == "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&
+                jv[jss::transaction][jss::Destination] == dan.human() &&
                 jv[jss::transaction][jss::Flags] == 2147483648u &&
                 jv[jss::transaction][jss::Sequence] == 6 &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // subscribe stream sees alice's MPT lock
+        mptAlice.set({.account = alice, .flags = tfMPTLock});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == alice.human() &&
+                jv[jss::transaction][jss::Flags] == tfMPTLock &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceSet" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // subscribe stream sees alice's MPT unlock
+        mptAlice.set({.account = alice, .flags = tfMPTUnlock});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::transaction][jss::Account] == alice.human() &&
+                jv[jss::transaction][jss::Flags] == tfMPTUnlock &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceSet" &&
                 jv[jss::type] == "mptTransaction";
         }));
 
@@ -1628,14 +1691,14 @@ public:
         // only carol's MPT txn will be seen
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
             return jv[jss::engine_result] == "tesSUCCESS" &&
-                jv[jss::transaction][jss::Account] == "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&
+                jv[jss::transaction][jss::Account] == dan.human() &&
                 jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
                 to_string(mptCarol.issuanceID()) &&
                 jv[jss::transaction][jss::Amount][jss::value] == "100" &&
                 jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
                 to_string(mptCarol.issuanceID()) &&
                 jv[jss::transaction][jss::DeliverMax][jss::value] == "100" &&
-                jv[jss::transaction][jss::Destination] == "rH4KEcG9dEwGwpn6AyoWK9cZPLL4RLSmWW" &&
+                jv[jss::transaction][jss::Destination] == carol.human() &&
                 jv[jss::transaction][jss::Flags] == 2147483648u &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
                 jv[jss::type] == "mptTransaction";

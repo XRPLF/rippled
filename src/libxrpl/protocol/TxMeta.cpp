@@ -149,7 +149,6 @@ boost::container::flat_set<MPTID>
 TxMeta::getAffectedMPTs() const
 {
     boost::container::flat_set<MPTID> list;
-    list.reserve(10);
 
     for (auto const& it : nodes_)
     {
@@ -164,11 +163,10 @@ TxMeta::getAffectedMPTs() const
             {
                 for (auto const& field : *inner)
                 {
-                    if (field.getFName() == sfMPTokenIssuanceID)
+                    if (auto mptID = dynamic_cast<STBitString<192> const*>(&field);
+                        field.getFName() == sfMPTokenIssuanceID && mptID)
                     {
-                        auto mptID = dynamic_cast<STBitString<192> const*>(&field);
-                        if (mptID != nullptr)
-                            list.insert(mptID->value());
+                        list.insert(mptID->value());
                     }
                 }
             }

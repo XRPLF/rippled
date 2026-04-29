@@ -206,6 +206,7 @@ doUnsubscribe(RPC::JsonContext& context)
         if (ids.empty())
             return rpcError(rpcINVALID_PARAMS);
         context.netOps.unsubMPT(ispSub, ids);
+        JLOG(context.j.debug()) << "doUnsubscribe: mpts: " << ids.size();
     }
 
     if (removeUrl)

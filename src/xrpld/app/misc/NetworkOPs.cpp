@@ -560,6 +560,10 @@ public:
         override;
 
     void
+    subMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) override;
+    void
+    unsubMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) override;
+    void
     unsubMPTInternal(std::uint64_t seq, hash_set<MPTID> const& mptIDs) override;
 
     error_code_i
@@ -625,11 +629,6 @@ public:
     subConsensus(InfoSub::ref ispListener) override;
     bool
     unsubConsensus(std::uint64_t uListener) override;
-
-    void
-    subMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) override;
-    void
-    unsubMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) override;
 
     InfoSub::pointer
     findRpcSub(std::string const& strUrl) override;
@@ -701,7 +700,7 @@ private:
         bool validated,
         std::shared_ptr<ReadView const> const& ledger,
         std::optional<std::reference_wrapper<TxMeta const>> meta,
-        Json::Value jsonType = "transaction");
+        std::string const& type = "transaction");
 
     void
     pubValidatedTransaction(
@@ -3214,7 +3213,7 @@ NetworkOPsImp::transJson(
     bool validated,
     std::shared_ptr<ReadView const> const& ledger,
     std::optional<std::reference_wrapper<TxMeta const>> meta,
-    Json::Value jsonType)
+    std::string const& type)
 {
     Json::Value jvObj(Json::objectValue);
     std::string sToken;
@@ -3222,7 +3221,7 @@ NetworkOPsImp::transJson(
 
     transResultInfo(result, sToken, sHuman);
 
-    jvObj[jss::type] = jsonType;
+    jvObj[jss::type] = type;
     // NOTE jvObj is not a finished object for either API version. After
     // it's populated, we need to finish it for a specific API version. This is
     // done in a loop, near the end of this function.
@@ -3674,13 +3673,21 @@ NetworkOPsImp::pubMPTTransaction(
     AcceptedLedgerTx const& transaction)
 {
     hash_set<InfoSub::pointer> notify;
-    std::lock_guard sl(mSubLock);
+    auto const& stTxn = transaction.getTxn();
 
-    auto const& meta = transaction.getMeta();
-
-    if (!mSubMPT.empty())
     {
-        for (auto const& affectedMPT : meta.getAffectedMPTs())
+        std::lock_guard const sl(mSubLock);
+
+        if (mSubMPT.empty())
+            return;
+
+        auto affectedMPTs = transaction.getMeta().getAffectedMPTs();
+        // MPTokenIssuance ledger entries do not store their own issuance ID, so
+        // global MPT set/lock/unlock transactions must be matched from the tx.
+        if (stTxn->isFieldPresent(sfMPTokenIssuanceID))
+            affectedMPTs.insert(stTxn->getFieldH192(sfMPTokenIssuanceID));
+
+        for (auto const& affectedMPT : affectedMPTs)
         {
             if (auto simiIt = mSubMPT.find(affectedMPT); simiIt != mSubMPT.end())
             {
@@ -3701,21 +3708,19 @@ NetworkOPsImp::pubMPTTransaction(
         }
     }
 
-    if (!notify.empty())
+    if (notify.empty())
+        return;
+
+    // Create two different Json objects, for different API versions
+    auto const metaRef = std::ref(transaction.getMeta());
+    auto const trResult = transaction.getResult();
+    MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef, "mptTransaction");
+
+    for (InfoSub::ref isrListener : notify)
     {
-        auto const& stTxn = transaction.getTxn();
-
-        // Create two different Json objects, for different API versions
-        auto const metaRef = std::ref(transaction.getMeta());
-        auto const trResult = transaction.getResult();
-        MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef, "mptTransaction");
-
-        for (InfoSub::ref isrListener : notify)
-        {
-            jvObj.visit(isrListener->getApiVersion(), [&](Json::Value const& jv) {
-                isrListener->send(jv, true);
-            });
-        }
+        jvObj.visit(isrListener->getApiVersion(), [&](Json::Value const& jv) {
+            isrListener->send(jv, true);
+        });
     }
 }
 
