@@ -277,9 +277,9 @@ Configured in `otel-collector-config.yaml`:
 1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s
 ```
 
-## StatsD Metrics (beast::insight)
+## System Metrics (OTel native -- beast::insight)
 
-xrpld has a built-in metrics framework (`beast::insight`) that emits StatsD-format metrics over UDP. These complement the span-derived RED metrics by providing system-level gauges, counters, and timers that don't map to individual trace spans.
+xrpld has a built-in metrics framework (`beast::insight`) that exports metrics natively via OTLP to the OTel Collector. These complement the span-derived RED metrics by providing system-level gauges, counters, and timers that don't map to individual trace spans.
 
 ### Configuration
 
@@ -287,12 +287,14 @@ Add to `xrpld.cfg`:
 
 ```ini
 [insight]
-server=statsd
-address=127.0.0.1:8125
+server=otel
+endpoint=http://localhost:4318/v1/metrics
 prefix=xrpld
 ```
 
-The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and exports them to Prometheus alongside spanmetrics.
+The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTel Collector that receives traces. No separate StatsD receiver is needed.
+
+> **Fallback**: Set `server=statsd` and `address=127.0.0.1:8125` to use the legacy StatsD UDP path during the transition period.
 
 ### Metric Reference
 
@@ -321,7 +323,7 @@ The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and e
 | `xrpld_warn`                    | Logic.h:33            | Resource manager warning count |
 | `xrpld_drop`                    | Logic.h:34            | Resource manager drop count    |
 
-#### Histograms (from StatsD timers)
+#### Histograms
 
 | Prometheus Metric     | Source                | Description                    |
 | --------------------- | --------------------- | ------------------------------ |
@@ -400,7 +402,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Proposals Trusted vs Untrusted   | piechart   | by `xrpl_peer_proposal_trusted`   | `xrpl_peer_proposal_trusted`   |
 | Validations Trusted vs Untrusted | piechart   | by `xrpl_peer_validation_trusted` | `xrpl_peer_validation_trusted` |
 
-### Node Health -- StatsD (`xrpld-statsd-node-health`)
+### Node Health -- System Metrics (`xrpld-system-node-health`)
 
 | Panel                                  | Type       | PromQL                                                          | Labels Used |
 | -------------------------------------- | ---------- | --------------------------------------------------------------- | ----------- |
@@ -421,7 +423,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"xrpld_<all_jobs>", quantile="$quantile"}`          | `quantile`  |
 | All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"xrpld_<all_jobs>_q", quantile="$quantile"}`        | `quantile`  |
 
-### Network Traffic -- StatsD (`xrpld-statsd-network`)
+### Network Traffic -- System Metrics (`xrpld-system-network`)
 
 | Panel                                | Type       | PromQL                                     | Labels Used |
 | ------------------------------------ | ---------- | ------------------------------------------ | ----------- |
@@ -436,7 +438,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(xrpld_*_duplicate_Bytes_In/Out[5m])` | —           |
 | All Traffic Categories (Detail)      | timeseries | `topk(15, rate(xrpld_*_Bytes_In[5m]))`     | —           |
 
-### RPC & Pathfinding -- StatsD (`xrpld-statsd-rpc`)
+### RPC & Pathfinding -- System Metrics (`xrpld-system-rpc`)
 
 | Panel                     | Type       | PromQL                                                 | Labels Used |
 | ------------------------- | ---------- | ------------------------------------------------------ | ----------- |
@@ -539,6 +541,14 @@ count_over_time({job="xrpld"} |= "trace_id=" [5m])
 4. Check collector logs: `docker compose -f docker/telemetry/docker-compose.yml logs otel-collector`
 5. Verify Tempo is receiving data: open Grafana → Explore → select Tempo datasource → search by `service.name = xrpld`
 6. Check Tempo logs: `docker compose -f docker/telemetry/docker-compose.yml logs tempo`
+
+### No system metrics in Prometheus
+
+1. Check xrpld logs for `OTelCollector starting` message
+2. Verify `server=otel` in the `[insight]` config section
+3. Verify the endpoint in `[insight]` points to the OTLP/HTTP port (default: `http://localhost:4318/v1/metrics`)
+4. Check that the `otlp` receiver is in the metrics pipeline receivers in `otel-collector-config.yaml`
+5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=xrpld_job_count'`
 
 ### High memory usage
 
