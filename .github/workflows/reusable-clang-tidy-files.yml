@@ -74,6 +74,12 @@ jobs:
         run: |
           ninja -j ${{ steps.nproc.outputs.nproc }} xrpl.libpb
 
+      # clang-tidy needs cxxbridge headers generated from Rust crates
+      - name: Build xrpl_crates
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl_crates
+
       - name: Run clang tidy
         id: run_clang_tidy
         continue-on-error: true
