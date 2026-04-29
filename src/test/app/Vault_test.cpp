@@ -6183,7 +6183,7 @@ class Vault_test : public beast::unit_test::suite
         env(pay(issuer, bob, asset(100'000)));
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
         env(createTx);
         env.close();
