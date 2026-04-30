@@ -165,6 +165,16 @@ public:
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
         }
+
+        {
+            // binary not a boolean
+            Json::Value jvParams;
+            jvParams[jss::binary] = "true";
+            auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'binary', not boolean.");
+        }
     }
 
     void

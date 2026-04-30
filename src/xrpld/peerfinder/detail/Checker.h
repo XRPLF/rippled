@@ -149,7 +149,7 @@ template <class Protocol>
 void
 Checker<Protocol>::stop()
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     if (!stop_)
     {
         stop_ = true;
@@ -175,7 +175,7 @@ Checker<Protocol>::async_connect(beast::IP::Endpoint const& endpoint, Handler&& 
     auto const op =
         std::make_shared<async_op<Handler>>(*this, io_context_, std::forward<Handler>(handler));
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         list_.push_back(*op);
     }
     op->socket_.async_connect(
@@ -187,7 +187,7 @@ template <class Protocol>
 void
 Checker<Protocol>::remove(basic_async_op& op)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     list_.erase(list_.iterator_to(op));
     if (list_.size() == 0)
         cond_.notify_all();

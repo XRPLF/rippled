@@ -59,6 +59,8 @@ struct results
     // pointers from different memory spaces do not co-mingle
     using run_time = std::pair<static_string, typename clock_type::duration>;
 
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { max_top = 10 };
 
     std::size_t suites = 0;

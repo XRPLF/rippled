@@ -12,7 +12,7 @@
 /** Directory operations. */
 namespace xrpl::test::jtx::directory {
 
-enum Error {
+enum class Error {
     DirectoryRootNotFound,
     DirectoryTooSmall,
     DirectoryPageDuplicate,

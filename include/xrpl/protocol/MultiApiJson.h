@@ -66,8 +66,7 @@ struct MultiApiJson
             a[key] = v;
     }
 
-    // Intentionally not using class enum here, MultivarJson is scope enough
-    enum IsMemberResult : int { none = 0, some, all };
+    enum class IsMemberResult : int { none = 0, some, all };
 
     [[nodiscard]] IsMemberResult
     isMember(char const* key) const
@@ -80,8 +79,8 @@ struct MultiApiJson
         }
 
         if (count == 0)
-            return none;
-        return count < size ? some : all;
+            return IsMemberResult::none;
+        return count < size ? IsMemberResult::some : IsMemberResult::all;
     }
 
     static constexpr struct visitor_t final
