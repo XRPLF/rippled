@@ -14,7 +14,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
-#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -237,43 +236,15 @@ VaultDeposit::doApply()
         sharesCreated.asset() != assetsDeposited.asset(),
         "xrpl::VaultDeposit::doApply : assets are not shares");
 
-    vault->at(sfAssetsTotal) += assetsDeposited;
-    vault->at(sfAssetsAvailable) += assetsDeposited;
-    view().update(vault);
-
-    // A deposit must not push the vault over its limit.
-    auto const maximum = *vault->at(sfAssetsMaximum);
-    if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
-        return tecLIMIT_EXCEEDED;
-
-    // Transfer assets from depositor to vault.
-    if (auto const ter =
-            accountSend(view(), account_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
+    if (auto const ter = depositToVault(view(), vault, account_, assetsDeposited, j_);
         !isTesSuccess(ter))
         return ter;
-
-    // Sanity check
-    if (accountHolds(
-            view(),
-            account_,
-            assetsDeposited.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_) < beast::zero)
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
 
     // Transfer shares from vault to depositor.
     if (auto const ter =
             accountSend(view(), vaultAccount, account_, sharesCreated, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
-
-    associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
 }

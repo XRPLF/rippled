@@ -6139,10 +6139,79 @@ class Vault_test : public beast::unit_test::suite
         runTest(amendments);
     }
 
+    // Regression test for the associateAsset rounding bug: alice deposits at
+    // the 16-digit IOU mantissa edge, bob's +2 deposit would push sfAssetsTotal
+    // to 17 digits which silently rounds back. Pre-fixCleanup3_2_0 this fired
+    // the "deposit and assets outstanding must add up" invariant
+    // (tecINVARIANT_FAILED). Post-amendment, depositToVault detects the delta
+    // mismatch and returns tecPRECISION_LOSS before invariants run.
+    void
+    testBugAssociateAssetRoundingDeposit()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+
+            STAmount const trustLimit{usd.raw(), Number{9'999'999'999'999'999LL}};
+            STAmount const aliceFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, trustLimit));
+            env(trust(bob, trustLimit));
+            env.close();
+
+            env(pay(issuer, alice, aliceFund));
+            env(pay(issuer, bob, usd(1'000)));
+            env.close();
+
+            Vault const vault{env};
+
+            // Scale=0 so sfAssetsTotal stores whole USD
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = usd(2)}),
+                ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: associateAsset rounding fires deposit invariant "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testable_amendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+
+        {
+            testcase(
+                "bug: associateAsset rounding caught by transactor "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testable_amendments(), tecPRECISION_LOSS);
+        }
+    }
+
 public:
     void
     run() override
     {
+        testBugAssociateAssetRoundingDeposit();
         testSequences();
         testPreflight();
         testCreateFailXRP();
