@@ -68,15 +68,12 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
             {
-                // Before fixExpiredNFTokenOfferRemoval amendment, expired
-                // offers caused tecEXPIRED in preclaim, leaving them on ledger
-                // forever. After the amendment, we allow expired offers to
-                // reach doApply() where they get deleted and tecEXPIRED is
-                // returned.
-                if (!ctx.view.rules().enabled(fixExpiredNFTokenOfferRemoval))
+                // Before fixSecurity3_1_3 amendment, expired offers caused tecEXPIRED in preclaim,
+                // leaving them on ledger forever. After the amendment, we allow expired offers to
+                // reach doApply() where they get deleted and tecEXPIRED is returned.
+                if (!ctx.view.rules().enabled(fixSecurity3_1_3))
                     return {nullptr, tecEXPIRED};
-                // Amendment enabled: return the expired offer to be handled in
-                // doApply
+                // Amendment enabled: return the expired offer to be handled in doApply.
             }
 
             if ((*offerSLE)[sfAmount].negative())
@@ -453,10 +450,9 @@ NFTokenAcceptOffer::doApply()
     auto bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
     auto so = loadToken(ctx_.tx[~sfNFTokenSellOffer]);
 
-    // With fixExpiredNFTokenOfferRemoval amendment, check for expired offers
-    // and delete them, returning tecEXPIRED. This ensures expired offers
-    // are properly cleaned up from the ledger.
-    if (view().rules().enabled(fixExpiredNFTokenOfferRemoval))
+    // With fixSecurity3_1_3 amendment, check for expired offers and delete them, returning
+    // tecEXPIRED. This ensures expired offers are properly cleaned up from the ledger.
+    if (view().rules().enabled(fixSecurity3_1_3))
     {
         bool foundExpired = false;
 
