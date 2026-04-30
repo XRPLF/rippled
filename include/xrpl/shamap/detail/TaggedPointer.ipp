@@ -13,7 +13,7 @@ namespace {
 // Given n children, an array of size `*std::lower_bound(boundaries.begin(),
 // boundaries.end(), n);` is used to store the children. Note that the last
 // element must be the number of children in a dense array.
-constexpr std::array<std::uint8_t, 4> boundaries{2, 3, 5, SHAMapInnerNode::branchFactor};
+constexpr std::array<std::uint8_t, 4> boundaries{2, 3, 6, SHAMapInnerNode::branchFactor};
 static_assert(
     boundaries.size() <= 4,
     "The hashesAndChildren member uses a tagged array format with two bits "
