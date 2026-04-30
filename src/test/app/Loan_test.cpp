@@ -7219,7 +7219,7 @@ protected:
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
     }
 
-    // A near-zero interest rate (1 TenthBips = 0.0001%) on a 100 USD loan
+    // A near-zero interest rate on a 100 USD loan
     // produces total interest of ~6 units at loanScale -9. Numerical error
     // in the amortization formula pushes the theoretical principal above
     // the theoretical value, producing a negative theoretical interest.

@@ -121,12 +121,6 @@ LoanStateDeltas::nonNegative()
  *   term_{k+1} = term_k * r * (n - k) / (k + 1)
  *
  * The loop terminates early once the next term is below Number precision.
- *
- * Precondition: r >= 0. Negative rates would produce alternating-sign
- * terms; the early-termination check (next == sum) could exit before the
- * series stabilizes, yielding an incorrect result. The lending protocol
- * derives rates from `TenthBips32` (unsigned), so this is always met in
- * production paths.
  */
 Number
 computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining)
@@ -160,16 +154,10 @@ computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining
  * The closed-form `power(1 + r, n) - 1` loses sig digits to cancellation
  * when `r * n` is small: the result `~r*n` sits well below the `1` that
  * dominates `(1+r)^n`, so most of Number's stored precision is consumed
- * by the leading `1`. The lending code path uses Number's large-mantissa
- * range (mantissa in `[10^18, 10^19)` — 19 significant digits).
+ * by the leading `1`.
  *
- * Repeated squaring in `power(...)` contributes roughly `log2(n)` ULPs of
- * error at the scale of `(1+r)^n` (~1 for small `r*n`), so the absolute
- * error after the subtraction is around `log2(n) * 1e-18`. To retain at
- * least ~10 significant digits of `(1+r)^n - 1`, we need
- * `r*n >= log2(n) * 1e-18 * 1e9 ~ 1e-9` across realistic `n`. A threshold
- * of `1e-9` preserves the closed-form path for any rate the lending code
- * actually sees in practice (fixtures at moderate rates are bit-exact),
+ * A threshold of `1e-9` preserves the closed-form path for any rate the
+ *  lending code actually sees in practice (fixtures at moderate rates are bit-exact),
  * while routing the pathological near-zero regime through the binomial
  * expansion where cancellation is severe.
  */
