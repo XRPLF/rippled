@@ -246,8 +246,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             recipients.push_back({.publicKey = Slice(destPubKey), .encryptedAmount = destAmt});
             recipients.push_back({.publicKey = Slice(issuerPubKey), .encryptedAmount = issuerAmt});
             if (auditor)
+            {
                 recipients.push_back(
                     {.publicKey = Slice(*auditorPubKey), .encryptedAmount = *auditorAmt});
+            }
         }
 
         // Generate proof with current account sequence
