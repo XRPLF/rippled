@@ -5473,7 +5473,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(7), result(1);
             auto* trap =
                 ww(floatSubtract_wrap,
-                   &import.at("float_from_mantissa_and_exponent"),
+                   &import.at("float_from_m_e"),
                    params,
                    result,
                    0,
@@ -5495,7 +5495,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(7), result(1);
             auto* trap =
                 ww(floatSubtract_wrap,
-                   &import.at("float_from_mantissa_and_exponent"),
+                   &import.at("float_from_m_e"),
                    params,
                    result,
                    0,
@@ -5519,7 +5519,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatSubtract_wrap,
-                   &import.at("float_from_mantissa_and_exponent"),
+                   &import.at("float_from_m_e"),
                    params,
                    result,
                    0,
@@ -5543,7 +5543,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatMaxIOU.data(), floatMaxIOU.size());
             auto* trap =
                 ww(floatSubtract_wrap,
-                   &import.at("float_from_mantissa_and_exponent"),
+                   &import.at("float_from_m_e"),
                    params,
                    result,
                    0,
@@ -5567,7 +5567,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatSubtract_wrap,
-                   &import.at("float_from_mantissa_and_exponent"),
+                   &import.at("float_from_m_e"),
                    params,
                    result,
                    0,
@@ -5591,7 +5591,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
             auto* trap =
                 ww(floatSubtract_wrap,
-                   &import.at("float_from_mantissa_and_exponent"),
+                   &import.at("float_from_m_e"),
                    params,
                    result,
                    0,
@@ -7069,7 +7069,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(floatToMantissaAndExponent_wrap,
-                   &import.at("float_to_mantissa_and_exponent"),
+                   &import.at("float_to_m_e"),
                    params,
                    result,
                    0,
@@ -7091,7 +7091,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(floatToMantissaAndExponent_wrap,
-                   &import.at("float_to_mantissa_and_exponent"),
+                   &import.at("float_to_m_e"),
                    params,
                    result,
                    0,
@@ -7119,7 +7119,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(floatToMantissaAndExponent_wrap,
-                   &import.at("float_to_mantissa_and_exponent"),
+                   &import.at("float_to_m_e"),
                    params,
                    result,
                    0,
@@ -7146,7 +7146,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(floatToMantissaAndExponent_wrap,
-                   &import.at("float_to_mantissa_and_exponent"),
+                   &import.at("float_to_m_e"),
                    params,
                    result,
                    0,
@@ -7173,7 +7173,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(floatToMantissaAndExponent_wrap,
-                   &import.at("float_to_mantissa_and_exponent"),
+                   &import.at("float_to_m_e"),
                    params,
                    result,
                    0,
@@ -7201,7 +7201,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(floatToMantissaAndExponent_wrap,
-                   &import.at("float_to_mantissa_and_exponent"),
+                   &import.at("float_to_m_e"),
                    params,
                    result,
                    0,
@@ -7228,7 +7228,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(floatToMantissaAndExponent_wrap,
-                   &import.at("float_to_mantissa_and_exponent"),
+                   &import.at("float_to_m_e"),
                    params,
                    result,
                    0,
@@ -7256,7 +7256,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(floatToMantissaAndExponent_wrap,
-                   &import.at("float_to_mantissa_and_exponent"),
+                   &import.at("float_to_m_e"),
                    params,
                    result,
                    0,
@@ -7284,7 +7284,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(floatToMantissaAndExponent_wrap,
-                   &import.at("float_to_mantissa_and_exponent"),
+                   &import.at("float_to_m_e"),
                    params,
                    result,
                    0,

@@ -50,7 +50,7 @@ unsafe extern "C" {
         rounding: i32,
     ) -> i32;
 
-    #[link_name = "float_to_mantissa_and_exponent"]
+    #[link_name = "float_to_m_e"]
     fn float_to_mantissa_and_exponent(
         float_ptr: *const u8,
         float_len: i32,
@@ -60,7 +60,7 @@ unsafe extern "C" {
         exponent_len: i32,
     ) -> i32;
 
-   #[link_name = "float_from_mantissa_and_exponent"]
+   #[link_name = "float_from_m_e"]
     fn float_from_mantissa_and_exponent(
         exponent: i32,
         mantissa: i64,
