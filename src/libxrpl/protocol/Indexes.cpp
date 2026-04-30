@@ -405,7 +405,7 @@ nftokenPage(Keylet const& k, uint256 const& token)
 }
 
 Keylet
-nftoffer(AccountID const& owner, std::uint32_t seq)
+nftokenOffer(AccountID const& owner, std::uint32_t seq)
 {
     return {ltNFTOKEN_OFFER, indexHash(LedgerNameSpace::NFTOKEN_OFFER, owner, seq)};
 }

@@ -600,7 +600,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
         // deleting during iteration.
         for (int i = offerIndexes.size() - 1; i >= 0; --i)
         {
-            if (auto const offer = view.peek(keylet::nftoffer(offerIndexes[i])))
+            if (auto const offer = view.peek(keylet::nftokenOffer(offerIndexes[i])))
             {
                 if (deleteTokenOffer(view, offer))
                 {
@@ -937,7 +937,7 @@ tokenOfferCreateApply(
         priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const offerID = keylet::nftoffer(acctID, seqProxy.value());
+    auto const offerID = keylet::nftokenOffer(acctID, seqProxy.value());
 
     // Create the offer:
     {

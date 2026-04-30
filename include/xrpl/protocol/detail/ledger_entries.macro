@@ -21,7 +21,7 @@
 
 /** A ledger object which identifies an offer to buy or sell an NFT.
 
-    \sa keylet::nftoffer
+    \sa keylet::nftokenOffer
  */
 LEDGER_ENTRY(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, nft_offer, ({
     {sfOwner,                soeREQUIRED},

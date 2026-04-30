@@ -1779,7 +1779,7 @@ class Freeze_test : public beast::unit_test::suite
             env(token::mint(A2, 0), txflags(tfTransferable));
             env.close();
 
-            auto const buyIdx = keylet::nftoffer(A1, env.seq(A1)).key;
+            auto const buyIdx = keylet::nftokenOffer(A1, env.seq(A1)).key;
             env(token::createOffer(A1, nftID, USD(10)), token::owner(A2));
             env.close();
 
@@ -1865,10 +1865,10 @@ class Freeze_test : public beast::unit_test::suite
             env(token::mint(A2, 0), txflags(tfTransferable));
             env.close();
 
-            uint256 const sellIdx = keylet::nftoffer(A2, env.seq(A2)).key;
+            uint256 const sellIdx = keylet::nftokenOffer(A2, env.seq(A2)).key;
             env(token::createOffer(A2, nftID, USD(10)), txflags(tfSellNFToken));
             env.close();
-            auto const buyIdx = keylet::nftoffer(A1, env.seq(A1)).key;
+            auto const buyIdx = keylet::nftokenOffer(A1, env.seq(A1)).key;
             env(token::createOffer(A1, nftID, USD(11)), token::owner(A2));
             env.close();
 
@@ -1891,13 +1891,13 @@ class Freeze_test : public beast::unit_test::suite
             env(token::mint(minter, 0), token::xferFee(1u), txflags(tfTransferable));
             env.close();
 
-            uint256 const minterSellIdx = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const minterSellIdx = keylet::nftokenOffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftID, drops(1)), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(A2, minterSellIdx));
             env.close();
 
-            uint256 const sellIdx = keylet::nftoffer(A2, env.seq(A2)).key;
+            uint256 const sellIdx = keylet::nftokenOffer(A2, env.seq(A2)).key;
             env(token::createOffer(A2, nftID, USD(100)), txflags(tfSellNFToken));
             env.close();
             env(trust(G1, minter["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
@@ -1950,7 +1950,7 @@ class Freeze_test : public beast::unit_test::suite
         env(token::mint(account, 0), txflags(tfTransferable));
         env.close();
 
-        uint256 const sellOfferIndex = keylet::nftoffer(account, env.seq(account)).key;
+        uint256 const sellOfferIndex = keylet::nftokenOffer(account, env.seq(account)).key;
         env(token::createOffer(account, nftID, currency), txflags(tfSellNFToken));
         env.close();
 

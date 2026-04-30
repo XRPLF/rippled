@@ -359,7 +359,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // bob creates a sell offer for lptoken
-        uint256 const sellOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+        uint256 const sellOfferIndex = keylet::nftokenOffer(bob, env.seq(bob)).key;
         env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}), txflags(tfSellNFToken));
         env.close();
 
@@ -420,7 +420,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // bob creates a buy offer with lptoken despite bob's USD is frozen
-            uint256 const buyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            uint256 const buyOfferIndex = keylet::nftokenOffer(bob, env.seq(bob)).key;
             env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}), token::owner(carol));
             env.close();
 

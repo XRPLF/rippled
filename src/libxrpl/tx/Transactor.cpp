@@ -996,7 +996,7 @@ removeExpiredNFTokenOffers(
 
     for (auto const& index : offers)
     {
-        if (auto const offer = view.peek(keylet::nftoffer(index)))
+        if (auto const offer = view.peek(keylet::nftokenOffer(index)))
         {
             nft::deleteTokenOffer(view, offer);
             if (++removed == expiredOfferRemoveLimit)

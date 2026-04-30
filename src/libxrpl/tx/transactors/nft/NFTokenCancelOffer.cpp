@@ -83,7 +83,7 @@ NFTokenCancelOffer::doApply()
 {
     for (auto const& id : ctx_.tx[sfNFTokenOffers])
     {
-        if (auto offer = view().peek(keylet::nftoffer(id));
+        if (auto offer = view().peek(keylet::nftokenOffer(id));
             offer && !nft::deleteTokenOffer(view(), offer))
         {
             // LCOV_EXCL_START

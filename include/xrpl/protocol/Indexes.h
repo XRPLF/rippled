@@ -233,10 +233,10 @@ nftokenPage(Keylet const& k, uint256 const& token);
 
 /** An offer from an account to buy or sell an NFT */
 Keylet
-nftoffer(AccountID const& owner, std::uint32_t seq);
+nftokenOffer(AccountID const& owner, std::uint32_t seq);
 
 inline Keylet
-nftoffer(uint256 const& offer)
+nftokenOffer(uint256 const& offer)
 {
     return {ltNFTOKEN_OFFER, offer};
 }
