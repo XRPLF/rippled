@@ -81,7 +81,7 @@ public:
     void
     start(CollectionType ct)
     {
-        char const ch = (ct == array) ? openBracket : openBrace;
+        char const ch = (ct == CollectionType::array) ? openBracket : openBrace;
         output({&ch, 1});
         stack_.emplace(Collection{.type = ct});
     }
@@ -134,7 +134,9 @@ public:
         auto t = stack_.top().type;
         if (t != type)
         {
-            check(false, "Not an " + ((type == array ? "array: " : "object: ") + message));
+            check(
+                false,
+                "Not an " + ((type == CollectionType::array ? "array: " : "object: ") + message));
         }
         if (stack_.top().isFirst)
         {
@@ -171,7 +173,7 @@ public:
     {
         check(!empty(), "Empty stack in finish()");
 
-        auto isArray = stack_.top().type == array;
+        auto isArray = stack_.top().type == CollectionType::array;
         auto ch = isArray ? closeBracket : closeBrace;
         output_({&ch, 1});
         stack_.pop();
@@ -301,7 +303,7 @@ Writer::finishAll()
 void
 Writer::rawAppend()
 {
-    impl_->nextCollectionEntry(array, "append");
+    impl_->nextCollectionEntry(CollectionType::array, "append");
 }
 
 void
@@ -309,7 +311,7 @@ Writer::rawSet(std::string const& tag)
 {
     check(!tag.empty(), "Tag can't be empty");
 
-    impl_->nextCollectionEntry(object, "set");
+    impl_->nextCollectionEntry(CollectionType::object, "set");
     impl_->writeObjectTag(tag);
 }
 
@@ -322,14 +324,14 @@ Writer::startRoot(CollectionType type)
 void
 Writer::startAppend(CollectionType type)
 {
-    impl_->nextCollectionEntry(array, "startAppend");
+    impl_->nextCollectionEntry(CollectionType::array, "startAppend");
     impl_->start(type);
 }
 
 void
 Writer::startSet(CollectionType type, std::string const& key)
 {
-    impl_->nextCollectionEntry(object, "startSet");
+    impl_->nextCollectionEntry(CollectionType::object, "startSet");
     impl_->writeObjectTag(key);
     impl_->start(type);
 }

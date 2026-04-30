@@ -207,7 +207,7 @@ class ValidatorList
     boost::filesystem::path const dataPath_;
     beast::Journal const j_;
     std::shared_mutex mutable mutex_;
-    using lock_guard = std::lock_guard<decltype(mutex_)>;
+    using scoped_lock = std::scoped_lock<decltype(mutex_)>;
     using shared_lock = std::shared_lock<decltype(mutex_)>;
 
     std::atomic<std::size_t> quorum_;
@@ -759,7 +759,7 @@ private:
         std::uint32_t version,
         std::string siteUri,
         std::optional<uint256> const& hash,
-        lock_guard const&);
+        scoped_lock const&);
 
     // This function updates the keyListings_ counts for all the trusted
     // master keys
@@ -768,7 +768,7 @@ private:
         PublicKey const& pubKey,
         PublisherList const& current,
         std::vector<PublicKey> const& oldList,
-        lock_guard const&);
+        scoped_lock const&);
 
     static void
     buildBlobInfos(
@@ -804,7 +804,7 @@ private:
     /** Get the filename used for caching UNLs
      */
     boost::filesystem::path
-    getCacheFileName(lock_guard const&, PublicKey const& pubKey) const;
+    getCacheFileName(scoped_lock const&, PublicKey const& pubKey) const;
 
     /** Build a Json representation of the collection, suitable for
         writing to a cache file, or serving to a /vl/ query
@@ -836,7 +836,7 @@ private:
     /** Write a JSON UNL to a cache file
      */
     void
-    cacheValidatorFile(lock_guard const& lock, PublicKey const& pubKey) const;
+    cacheValidatorFile(scoped_lock const& lock, PublicKey const& pubKey) const;
 
     /** Check response for trusted valid published list
 
@@ -848,7 +848,7 @@ private:
     */
     std::pair<ListDisposition, std::optional<PublicKey>>
     verify(
-        lock_guard const&,
+        scoped_lock const&,
         Json::Value& list,
         Manifest manifest,
         std::string const& blob,
@@ -865,7 +865,7 @@ private:
         Calling public member function is expected to lock mutex
     */
     bool
-    removePublisherList(lock_guard const&, PublicKey const& publisherKey, PublisherStatus reason);
+    removePublisherList(scoped_lock const&, PublicKey const& publisherKey, PublisherStatus reason);
 
     /** Return quorum for trusted validator set
 

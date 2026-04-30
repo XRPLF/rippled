@@ -162,7 +162,7 @@ getLineIfUsable(
         return nullptr;
     }
 
-    if (zeroIfFrozen == fhZERO_IF_FROZEN)
+    if (zeroIfFrozen == FreezeHandling::fhZERO_IF_FROZEN)
     {
         if (isFrozen(view, account, currency, issuer) ||
             isDeepFrozen(view, account, currency, issuer))
@@ -249,7 +249,7 @@ accountHolds(
         return {xrpLiquid(view, account, 0, j)};
     }
 
-    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+    bool const returnSpendable = (includeFullBalance == SpendableHandling::shFULL_BALANCE);
     if (returnSpendable && account == issuer)
     {
         // If the account is the issuer, then their limit is effectively
@@ -287,7 +287,7 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
-    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+    bool const returnSpendable = (includeFullBalance == SpendableHandling::shFULL_BALANCE);
     STAmount amount{mptIssue};
     auto const& issuer = mptIssue.getIssuer();
     bool const mptokensV2 = view.rules().enabled(featureMPTokensV2);
@@ -314,7 +314,7 @@ accountHolds(
     {
         amount.clear(mptIssue);
     }
-    else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
+    else if (zeroIfFrozen == FreezeHandling::fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
     {
         amount.clear(mptIssue);
     }
@@ -324,14 +324,14 @@ accountHolds(
 
         // Only if auth check is needed, as it needs to do an additional read
         // operation. Note featureSingleAssetVault will affect error codes.
-        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
+        if (zeroIfUnauthorized == AuthHandling::ahZERO_IF_UNAUTHORIZED &&
             view.rules().enabled(featureSingleAssetVault))
         {
             if (auto const err = requireAuth(view, mptIssue, account, AuthType::StrongAuth);
                 !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
-        else if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        else if (zeroIfUnauthorized == AuthHandling::ahZERO_IF_UNAUTHORIZED)
         {
             auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
 
@@ -398,7 +398,13 @@ accountFunds(
         [&](Issue const&) { return accountFunds(view, id, saDefault, freezeHandling, j); },
         [&](MPTIssue const&) {
             return accountHolds(
-                view, id, saDefault.asset(), freezeHandling, authHandling, j, shFULL_BALANCE);
+                view,
+                id,
+                saDefault.asset(),
+                freezeHandling,
+                authHandling,
+                j,
+                SpendableHandling::shFULL_BALANCE);
         });
 }
 

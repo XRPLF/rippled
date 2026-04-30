@@ -131,7 +131,7 @@ public:
      * @tparam LockType The type of lock to use
      * @return A lock on the mutex and a reference to the protected data
      */
-    template <template <typename...> typename LockType = std::lock_guard>
+    template <template <typename...> typename LockType = std::scoped_lock>
     Lock<ProtectedDataType const, LockType, MutexType>
     lock() const
     {
@@ -144,7 +144,7 @@ public:
      * @tparam LockType The type of lock to use
      * @return A lock on the mutex and a reference to the protected data
      */
-    template <template <typename...> typename LockType = std::lock_guard>
+    template <template <typename...> typename LockType = std::scoped_lock>
     Lock<ProtectedDataType, LockType, MutexType>
     lock()
     {
