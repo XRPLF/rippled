@@ -358,7 +358,7 @@ private:
     // allocated and processing time. This number is much larger than the actual
     // number of attestation a server would ever expect.
     static constexpr std::uint32_t kMAX_ATTESTATIONS = 256;
-    AttCollection attestations_{};
+    AttCollection attestations_;
 
 protected:
     // Prevent slicing to the base class

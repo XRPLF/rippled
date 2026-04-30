@@ -365,16 +365,17 @@ ValidMPTPayment::finalize(
         for (auto const& [id, data] : data_)
         {
             (void)id;
-            constexpr auto iBefore = static_cast<std::size_t>(Order::Before);
-            constexpr auto iAfter = static_cast<std::size_t>(Order::After);
+            constexpr auto kI_BEFORE = static_cast<std::size_t>(Order::Before);
+            constexpr auto kI_AFTER = static_cast<std::size_t>(Order::After);
             bool const addOverflows =
-                (data.mptAmount > 0 && data.outstanding[iBefore] > (signedMax - data.mptAmount)) ||
-                (data.mptAmount < 0 && data.outstanding[iBefore] < (-signedMax - data.mptAmount));
+                (data.mptAmount > 0 &&
+                 data.outstanding[kI_BEFORE] > (signedMax - data.mptAmount)) ||
+                (data.mptAmount < 0 && data.outstanding[kI_BEFORE] < (-signedMax - data.mptAmount));
             if (addOverflows ||
-                data.outstanding[iAfter] != (data.outstanding[iBefore] + data.mptAmount))
+                data.outstanding[kI_AFTER] != (data.outstanding[kI_BEFORE] + data.mptAmount))
             {
                 JLOG(j.fatal()) << "Invariant failed: invalid OutstandingAmount balance "
-                                << data.outstanding[iBefore] << " " << data.outstanding[iAfter]
+                                << data.outstanding[kI_BEFORE] << " " << data.outstanding[kI_AFTER]
                                 << " " << data.mptAmount;
                 return !enforce;
             }

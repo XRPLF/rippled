@@ -1,7 +1,6 @@
 #pragma once
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 template <class ValueType>
 ReadViewFwdRange<ValueType>::Iterator::Iterator(Iterator const& other)
@@ -107,5 +106,4 @@ ReadViewFwdRange<ValueType>::Iterator::operator++(int) -> Iterator
     return prev;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

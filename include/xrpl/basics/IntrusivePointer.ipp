@@ -184,8 +184,10 @@ SharedIntrusive<T>::SharedIntrusive(DynamicCastTagSharedIntrusive, SharedIntrusi
     {
         ptr_ = dynamic_cast<T*>(toSet);
         if (!ptr_)
+        {
             // need to set the pointer back or will leak
             rhs.unsafeExchange(toSet);
+        }
     }
 }
 
@@ -345,7 +347,7 @@ template <class T>
 bool
 WeakIntrusive<T>::expired() const
 {
-    return (!ptr_ || ptr_->expired());
+    return ((ptr_ == nullptr) || ptr_->expired());
 }
 
 template <class T>
@@ -360,7 +362,7 @@ template <class T>
 void
 WeakIntrusive<T>::unsafeReleaseNoStore()
 {
-    if (!ptr_)
+    if (ptr_ == nullptr)
         return;
 
     using enum ReleaseWeakRefAction;
@@ -385,9 +387,13 @@ SharedWeakUnion<T>::SharedWeakUnion(SharedWeakUnion const& rhs) : tp_{rhs.tp_}
         return;
 
     if (rhs.isStrong())
+    {
         p->addStrongRef();
+    }
     else
+    {
         p->addWeakRef();
+    }
 }
 
 template <class T>
@@ -559,14 +565,14 @@ template <class T>
 bool
 SharedWeakUnion<T>::isStrong() const
 {
-    return !(tp_ & kTAG_MASK);
+    return (tp_ & kTAG_MASK) == 0u;
 }
 
 template <class T>
 bool
 SharedWeakUnion<T>::isWeak() const
 {
-    return tp_ & kTAG_MASK;
+    return (tp_ & kTAG_MASK) != 0u;
 }
 
 template <class T>

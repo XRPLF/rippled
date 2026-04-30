@@ -81,7 +81,7 @@ TEST(AccountSet, MostFlags)
 
     auto testFlags = [&alice, &aliceRegularKey, &env](
                          std::initializer_list<std::uint32_t> goodFlags) {
-        std::uint32_t const orig_flags = env.getAccountRoot(alice).getFlags();
+        std::uint32_t const origFlags = env.getAccountRoot(alice).getFlags();
         for (std::uint32_t flag{1u}; flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
         {
             if (flag == asfNoFreeze)
@@ -139,18 +139,18 @@ TEST(AccountSet, MostFlags)
 
                 EXPECT_FALSE(env.getAccountRoot(alice).isFlag(asfToLsf(flag)));
 
-                std::uint32_t const now_flags = env.getAccountRoot(alice).getFlags();
-                EXPECT_EQ(now_flags, orig_flags);
+                std::uint32_t const nowFlags = env.getAccountRoot(alice).getFlags();
+                EXPECT_EQ(nowFlags, origFlags);
             }
             else
             {
                 // Bad flag
-                EXPECT_EQ(env.getAccountRoot(alice).getFlags(), orig_flags);
+                EXPECT_EQ(env.getAccountRoot(alice).getFlags(), origFlags);
                 EXPECT_EQ(
                     env.submit(transactions::AccountSetBuilder{alice}.setSetFlag(flag), alice).ter,
                     tesSUCCESS);
                 env.close();
-                EXPECT_EQ(env.getAccountRoot(alice).getFlags(), orig_flags);
+                EXPECT_EQ(env.getAccountRoot(alice).getFlags(), origFlags);
 
                 EXPECT_EQ(
                     env.submit(
@@ -159,7 +159,7 @@ TEST(AccountSet, MostFlags)
                         .ter,
                     tesSUCCESS);
                 env.close();
-                EXPECT_EQ(env.getAccountRoot(alice).getFlags(), orig_flags);
+                EXPECT_EQ(env.getAccountRoot(alice).getFlags(), origFlags);
             }
         }
     };
@@ -181,7 +181,7 @@ TEST(AccountSet, SetAndResetAccountTxnID)
 
     env.createAccount(alice, XRP(10000));
 
-    std::uint32_t const orig_flags = env.getAccountRoot(alice).getFlags();
+    std::uint32_t const origFlags = env.getAccountRoot(alice).getFlags();
 
     // asfAccountTxnID is special and not actually set as a flag,
     // so we check the field presence instead
@@ -201,8 +201,8 @@ TEST(AccountSet, SetAndResetAccountTxnID)
 
     EXPECT_FALSE(env.getAccountRoot(alice).hasAccountTxnID());
 
-    std::uint32_t const now_flags = env.getAccountRoot(alice).getFlags();
-    EXPECT_EQ(now_flags, orig_flags);
+    std::uint32_t const nowFlags = env.getAccountRoot(alice).getFlags();
+    EXPECT_EQ(nowFlags, origFlags);
 }
 
 TEST(AccountSet, SetNoFreeze)
@@ -682,7 +682,7 @@ TEST(AccountSet, Gateway)
     Account const alice("alice");
     Account const bob("bob");
     Account const gw("gateway");
-    IOU const USD("USD", gw);
+    IOU const usd("USD", gw);
 
     // Test gateway with a variety of allowed transfer rates
     for (double transferRate = 1.0; transferRate <= 2.0; transferRate += 0.03125)
@@ -696,11 +696,11 @@ TEST(AccountSet, Gateway)
 
         // Set up trust lines: alice and bob trust gw for USD
         EXPECT_EQ(
-            env.submit(transactions::TrustSetBuilder{alice}.setLimitAmount(USD.amount(10)), alice)
+            env.submit(transactions::TrustSetBuilder{alice}.setLimitAmount(usd.amount(10)), alice)
                 .ter,
             tesSUCCESS);
         EXPECT_EQ(
-            env.submit(transactions::TrustSetBuilder{bob}.setLimitAmount(USD.amount(10)), bob).ter,
+            env.submit(transactions::TrustSetBuilder{bob}.setLimitAmount(usd.amount(10)), bob).ter,
             tesSUCCESS);
         env.close();
 
@@ -715,29 +715,29 @@ TEST(AccountSet, Gateway)
         env.close();
 
         // Calculate the amount with transfer rate applied
-        auto const amount = USD.amount(1);
+        auto const amount = usd.amount(1);
         Rate const rate(static_cast<std::uint32_t>(transferRate * QUALITY_ONE));
         auto const amountWithRate = multiply(amount, rate);
 
         // Gateway pays alice 10 USD
         EXPECT_EQ(
-            env.submit(transactions::PaymentBuilder{gw, alice, USD.amount(10)}, gw).ter,
+            env.submit(transactions::PaymentBuilder{gw, alice, usd.amount(10)}, gw).ter,
             tesSUCCESS);
         env.close();
 
         // Alice pays bob 1 USD (with sendmax to cover transfer fee)
         EXPECT_EQ(
             env.submit(
-                   transactions::PaymentBuilder{alice, bob, USD.amount(1)}.setSendMax(
-                       USD.amount(10)),
+                   transactions::PaymentBuilder{alice, bob, usd.amount(1)}.setSendMax(
+                       usd.amount(10)),
                    alice)
                 .ter,
             tesSUCCESS);
         env.close();
 
         // Check balances
-        EXPECT_EQ(env.getBalance(alice.id(), USD), USD.amount(10) - amountWithRate);
-        EXPECT_EQ(env.getBalance(bob.id(), USD), USD.amount(1));
+        EXPECT_EQ(env.getBalance(alice.id(), usd), usd.amount(10) - amountWithRate);
+        EXPECT_EQ(env.getBalance(bob.id(), usd), usd.amount(1));
     }
 
     // Test out-of-bounds legacy transfer rates (4.0 and 4.294967295)
@@ -752,11 +752,11 @@ TEST(AccountSet, Gateway)
 
         // Set up trust lines
         EXPECT_EQ(
-            env.submit(transactions::TrustSetBuilder{alice}.setLimitAmount(USD.amount(10)), alice)
+            env.submit(transactions::TrustSetBuilder{alice}.setLimitAmount(usd.amount(10)), alice)
                 .ter,
             tesSUCCESS);
         EXPECT_EQ(
-            env.submit(transactions::TrustSetBuilder{bob}.setLimitAmount(USD.amount(10)), bob).ter,
+            env.submit(transactions::TrustSetBuilder{bob}.setLimitAmount(usd.amount(10)), bob).ter,
             tesSUCCESS);
         env.close();
 
@@ -780,25 +780,25 @@ TEST(AccountSet, Gateway)
         view.rawReplace(sleCopy);
 
         // Calculate the amount with the legacy transfer rate
-        auto const amount = USD.amount(1);
+        auto const amount = usd.amount(1);
         auto const amountWithRate = multiply(amount, Rate(transferRate));
 
         // Gateway pays alice 10 USD
         EXPECT_EQ(
-            env.submit(transactions::PaymentBuilder{gw, alice, USD.amount(10)}, gw).ter,
+            env.submit(transactions::PaymentBuilder{gw, alice, usd.amount(10)}, gw).ter,
             tesSUCCESS);
 
         // Alice pays bob 1 USD
         EXPECT_EQ(
             env.submit(
-                   transactions::PaymentBuilder{alice, bob, amount}.setSendMax(USD.amount(10)),
+                   transactions::PaymentBuilder{alice, bob, amount}.setSendMax(usd.amount(10)),
                    alice)
                 .ter,
             tesSUCCESS);
 
         // Check balances
-        EXPECT_EQ(env.getBalance(alice.id(), USD), USD.amount(10) - amountWithRate);
-        EXPECT_EQ(env.getBalance(bob.id(), USD), amount);
+        EXPECT_EQ(env.getBalance(alice.id(), usd), usd.amount(10) - amountWithRate);
+        EXPECT_EQ(env.getBalance(bob.id(), usd), amount);
     }
 }
 

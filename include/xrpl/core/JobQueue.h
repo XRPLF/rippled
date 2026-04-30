@@ -54,16 +54,15 @@ public:
         std::mutex mutex_;
         std::mutex mutex_run_;
         std::condition_variable cv_;
+        boost::coroutines2::coroutine<void>::push_type* yield_{};
         boost::coroutines2::coroutine<void>::pull_type coro_;
-        boost::coroutines2::coroutine<void>::push_type* yield_;
 #ifndef NDEBUG
         bool finished_ = false;
 #endif
 
     public:
-        // Private: Used in the implementation
         template <class F>
-        Coro(CoroCreateT, JobQueue&, JobType, std::string const&, F&&);
+        Coro(CoroCreateT, JobQueue&, JobType, std::string, F&&);
 
         // Not copy-constructible or assignable
         Coro(Coro const&) = delete;

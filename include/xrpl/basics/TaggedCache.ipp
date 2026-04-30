@@ -68,7 +68,7 @@ inline std::size_t
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     size() const
 {
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return cache_.size();
 }
 
@@ -85,7 +85,7 @@ inline int
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     getCacheSize() const
 {
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return cache_count_;
 }
 
@@ -102,7 +102,7 @@ inline int
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     getTrackSize() const
 {
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return cache_.size();
 }
 
@@ -119,7 +119,7 @@ inline float
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     getHitRate()
 {
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto const total = static_cast<float>(hits_ + misses_);
     return hits_ * (100.0f / std::max(1.0f, total));
 }
@@ -137,7 +137,7 @@ inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     clear()
 {
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     cache_.clear();
     cache_count_ = 0;
 }
@@ -155,7 +155,7 @@ inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     reset()
 {
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     cache_.clear();
     cache_count_ = 0;
     hits_ = 0;
@@ -176,7 +176,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     touchIfExists(KeyComparable const& key)
 {
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto const iter(cache_.find(key));
     if (iter == cache_.end())
     {
@@ -207,27 +207,27 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     std::vector<SweptPointersVector> allStuffToSweep(cache_.partitions());
 
     clock_type::time_point const now(clock_.now());
-    clock_type::time_point when_expire;
+    clock_type::time_point whenExpire;
 
     auto const start = std::chrono::steady_clock::now();
     {
-        std::scoped_lock lock(mutex_);
+        std::scoped_lock const lock(mutex_);
 
         if (target_size_ == 0 || (static_cast<int>(cache_.size()) <= target_size_))
         {
-            when_expire = now - target_age_;
+            whenExpire = now - target_age_;
         }
         else
         {
-            when_expire = now - target_age_ * target_size_ / cache_.size();
+            whenExpire = now - (target_age_ * target_size_ / cache_.size());
 
             clock_type::duration const minimumAge(std::chrono::seconds(1));
-            if (when_expire > (now - minimumAge))
-                when_expire = now - minimumAge;
+            if (whenExpire > (now - minimumAge))
+                whenExpire = now - minimumAge;
 
             JLOG(journal_.trace())
                 << name_ << " is growing fast " << cache_.size() << " of " << target_size_
-                << " aging at " << (now - when_expire).count() << " of " << target_age_.count();
+                << " aging at " << (now - whenExpire).count() << " of " << target_age_.count();
         }
 
         std::vector<std::thread> workers;
@@ -237,7 +237,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         for (std::size_t p = 0; p < cache_.partitions(); ++p)
         {
             workers.push_back(sweepHelper(
-                when_expire, now, cache_.map()[p], allStuffToSweep[p], allRemovals, lock));
+                whenExpire, now, cache_.map()[p], allStuffToSweep[p], allRemovals, lock));
         }
         for (std::thread& worker : workers)
             worker.join();
@@ -267,7 +267,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     del(key_type const& key, bool valid)
 {
     // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto cit = cache_.find(key);
 
@@ -307,7 +307,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 {
     // Return canonical value, store if needed, refresh in cache
     // Return values: true=we had the data already
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto cit = cache_.find(key);
 
@@ -421,7 +421,7 @@ inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     fetch(key_type const& key)
 {
-    std::scoped_lock<mutex_type> l(mutex_);
+    std::scoped_lock<mutex_type> const l(mutex_);
     auto ret = initialFetch(key, l);
     if (!ret)
         ++misses_;
@@ -472,7 +472,7 @@ inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     insert(key_type const& key) -> std::enable_if_t<IsKeyCache, ReturnType>
 {
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     clock_type::time_point const now(clock_.now());
     auto [it, inserted] = cache_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(now));
@@ -536,7 +536,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     std::vector<key_type> v;
 
     {
-        std::scoped_lock lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         v.reserve(cache_.size());
         for (auto const& _ : cache_)
             v.push_back(_.first);
@@ -558,7 +558,7 @@ inline double
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     rate() const
 {
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto const tot = hits_ + misses_;
     if (tot == 0)
         return 0;
@@ -580,7 +580,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     fetch(key_type const& digest, Handler const& h)
 {
     {
-        std::scoped_lock l(mutex_);
+        std::scoped_lock const l(mutex_);
         if (auto ret = initialFetch(digest, l))
             return ret;
     }
@@ -589,7 +589,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     if (!sle)
         return {};
 
-    std::scoped_lock l(mutex_);
+    std::scoped_lock const l(mutex_);
     ++misses_;
     auto const [it, inserted] = cache_.emplace(digest, Entry(clock_.now(), std::move(sle)));
     if (!inserted)
@@ -651,14 +651,14 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     stats_.size.set(getCacheSize());
 
     {
-        beast::insight::Gauge::value_type hit_rate(0);
+        beast::insight::Gauge::value_type hitRate(0);
         {
-            std::scoped_lock lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             auto const total(hits_ + misses_);
             if (total != 0)
-                hit_rate = (hits_ * 100) / total;
+                hitRate = (hits_ * 100) / total;
         }
-        stats_.hit_rate.set(hit_rate);
+        stats_.hit_rate.set(hitRate);
     }
 }
 
@@ -762,8 +762,10 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         std::scoped_lock<std::recursive_mutex> const&)
 {
     return std::thread([&, this]() {
+        // NOLINTBEGIN https://github.com/XRPLF/rippled/issues/7056
         int cacheRemovals = 0;
         int mapRemovals = 0;
+        // NOLINTEND
 
         // Keep references to all the stuff we sweep
         // so that we can destroy them outside the lock.
@@ -787,7 +789,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             }
         }
 
-        if (mapRemovals || cacheRemovals)
+        if (mapRemovals > 0 || cacheRemovals > 0)
         {
             JLOG(journal_.debug())
                 << "TaggedCache partition sweep " << name_ << ": cache = " << partition.size()

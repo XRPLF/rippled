@@ -362,7 +362,7 @@ SHAMapInnerNode::getChildHash(int m) const
     if (auto const i = getChildIndex(m))
         return hashesAndChildren_.getHashes()[*i];
 
-    return zeroSHAMapHash;
+    return kZERO_SHA_MAP_HASH;
 }
 
 intr_ptr::SharedPtr<SHAMapTreeNode>
