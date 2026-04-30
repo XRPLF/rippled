@@ -376,7 +376,7 @@ escrow(AccountID const& src, std::uint32_t seq) noexcept
 }
 
 Keylet
-payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
+payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
 {
     return {ltPAYCHAN, indexHash(LedgerNameSpace::XRP_PAYMENT_CHANNEL, src, dst, seq)};
 }

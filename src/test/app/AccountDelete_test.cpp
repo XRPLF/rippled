@@ -385,7 +385,7 @@ public:
         env(escrow::cancel(becky, alice, escrowSeq));
         env.close();
 
-        Keylet const alicePayChanKey{keylet::payChan(alice, becky, env.seq(alice))};
+        Keylet const alicePayChanKey{keylet::payChannel(alice, becky, env.seq(alice))};
 
         env(payChanCreate(alice, becky, XRP(57), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -416,7 +416,7 @@ public:
 
         // gw creates a PayChannel with alice as the destination, this should
         // prevent alice from deleting her account.
-        Keylet const gwPayChanKey{keylet::payChan(gw, alice, env.seq(gw))};
+        Keylet const gwPayChanKey{keylet::payChannel(gw, alice, env.seq(gw))};
 
         env(payChanCreate(gw, alice, XRP(68), 4s, env.now() + 2s, alice.pk()));
         env.close();

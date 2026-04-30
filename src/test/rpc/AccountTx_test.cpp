@@ -589,7 +589,7 @@ class AccountTx_test : public beast::unit_test::suite
             env(payChanCreate, sig(alie));
             env.close();
 
-            std::string const payChanIndex{strHex(keylet::payChan(alice, gw, payChanSeq).key)};
+            std::string const payChanIndex{strHex(keylet::payChannel(alice, gw, payChanSeq).key)};
 
             {
                 Json::Value payChanFund;

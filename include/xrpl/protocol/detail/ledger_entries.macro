@@ -346,7 +346,7 @@ LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
 
 /** A ledger object describing a single unidirectional XRP payment channel.
 
-    \sa keylet::payChan
+    \sa keylet::payChannel
  */
 LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, payment_channel, ({
     {sfAccount,              soeREQUIRED},

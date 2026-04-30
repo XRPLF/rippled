@@ -576,7 +576,7 @@ claim(
 uint256
 channel(AccountID const& account, AccountID const& dst, std::uint32_t seqProxyValue)
 {
-    auto const k = keylet::payChan(account, dst, seqProxyValue);
+    auto const k = keylet::payChannel(account, dst, seqProxyValue);
     return k.key;
 }
 

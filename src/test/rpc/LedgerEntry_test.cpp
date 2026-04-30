@@ -1710,7 +1710,7 @@ class LedgerEntry_test : public beast::unit_test::suite
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
-        uint256 const payChanIndex{keylet::payChan(alice, env.master, env.seq(alice) - 1).key};
+        uint256 const payChanIndex{keylet::payChannel(alice, env.master, env.seq(alice) - 1).key};
         {
             // Request the payment channel using its index.
             Json::Value jvParams;
