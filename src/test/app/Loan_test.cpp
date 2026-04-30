@@ -7271,16 +7271,28 @@ protected:
 
         auto const borrowerStart = env.balance(borrower, asset).value();
 
-        // Three separate periodic payments of 1 each.
+        // Three separate periodic payments of 1 each. Expected per-period
+        // evolution at integer MPT scale:
+        //   start:        PO=1, TVO=3, paymentRemaining=3
+        //   after pay #1: PO=1, TVO=2, paymentRemaining=2  (principal sticks)
+        //   after pay #2: PO=1, TVO=1, paymentRemaining=1  (principal sticks)
+        //   after pay #3: PO=0, TVO=0, paymentRemaining=0  (final clears)
+        Number const expectedPO[] = {Number{1}, Number{1}, Number{0}};
+        Number const expectedTVO[] = {Number{2}, Number{1}, Number{0}};
+        std::uint32_t const expectedRemaining[] = {2, 1, 0};
+
         for (int i = 0; i < 3; ++i)
         {
             env(loan::pay(borrower, loanKeylet.key, asset(1)), ter(tesSUCCESS));
             env.close();
-        }
 
-        auto const loanSle = env.le(loanKeylet);
-        if (BEAST_EXPECT(loanSle))
-            BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
+            auto const sle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(sle->at(sfPrincipalOutstanding) == expectedPO[i]);
+            BEAST_EXPECT(sle->at(sfTotalValueOutstanding) == expectedTVO[i]);
+            BEAST_EXPECT(sle->at(sfPaymentRemaining) == expectedRemaining[i]);
+        }
 
         // Borrower paid 3 total (1 principal + 2 interest, matching loan economics).
         auto const borrowerEnd = env.balance(borrower, asset).value();
