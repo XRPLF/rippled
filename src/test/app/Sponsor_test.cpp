@@ -725,7 +725,7 @@ public:
 
             sle = env.le(keylet::sponsor(sponsor, alice));
             BEAST_EXPECT(sle);
-            BEAST_EXPECT(sle->at(sfReserveCount) == 100);  // paybacked
+            BEAST_EXPECT(sle->at(sfReserveCount) == 99);  // not paybacked
             BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(99));
         }
 
