@@ -60,7 +60,7 @@ public:
         AccountID const& srcIssuer,
         std::function<bool(void)> const& continueCallback = {});
 
-    enum NodeType {
+    enum class NodeType {
         nt_SOURCE,      // The source account: with an issuer account, if needed.
         nt_ACCOUNTS,    // Accounts that connect from this source/currency.
         nt_BOOKS,       // Order books that connect to this currency.
@@ -74,7 +74,7 @@ public:
 
     // PaymentType represents the types of the source and destination currencies
     // in a path request.
-    enum PaymentType {
+    enum class PaymentType {
         pt_XRP_to_XRP,
         pt_XRP_to_nonXRP,
         pt_nonXRP_to_XRP,

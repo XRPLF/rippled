@@ -4116,7 +4116,7 @@ class Invariants_test : public beast::unit_test::suite
             std::vector<ValidVault::DeltaInfo> values;
         };
 
-        NumberMantissaScaleGuard const g{MantissaRange::large};
+        NumberMantissaScaleGuard const g{MantissaRange::mantissa_scale::large};
 
         auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
             return {.delta = n, .scale = scale(n, vaultAsset.raw())};
