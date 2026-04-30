@@ -267,7 +267,7 @@ parseAuthorizeCredentials(Json::Value const& jv)
         if (!jo.isObject())
         {
             return LedgerEntryHelpers::invalidFieldError(
-                "malformedAuthorizedCredentials", jss::authorized_credentials, "array");
+                "malformedAuthorizedCredentials", jss::authorized_credentials, "array of objects");
         }
 
         if (auto const value = LedgerEntryHelpers::hasRequired(
