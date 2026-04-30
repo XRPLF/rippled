@@ -251,9 +251,8 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        // Without fixCleanup3_2_0: validate domain membership for any book
-        // (original behaviour).
-        // With fixCleanup3_2_0: only validate when walking a domain book.
+        // Pre-fixCleanup3_2_0: validate domain membership for any book.
+        // Post-fixCleanup3_2_0: only validate when walking a domain book.
         // Hybrid offers carry sfDomainID but also participate in the open
         // book; expiry of the owner's domain credential should not evict
         // the offer from the open book.
