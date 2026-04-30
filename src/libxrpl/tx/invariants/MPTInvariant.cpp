@@ -18,6 +18,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 
@@ -303,7 +304,7 @@ ValidMPTPayment::visitEntry(
                 overflow_ = true;
                 return false;
             }
-            data_[makeKey(sle)].outstanding[order] = outstanding;
+            data_[makeKey(sle)].outstanding[static_cast<std::size_t>(order)] = outstanding;
         }
         else if (type == ltMPTOKEN)
         {
@@ -317,7 +318,7 @@ ValidMPTPayment::visitEntry(
             }
             auto const res = static_cast<std::int64_t>(mptAmt + lockedAmt);
             // subtract before from after
-            if (order == Before)
+            if (order == Order::Before)
             {
                 data_[makeKey(sle)].mptAmount -= res;
             }
@@ -329,7 +330,7 @@ ValidMPTPayment::visitEntry(
         return true;
     };
 
-    if (before && !update(*before, Before))
+    if (before && !update(*before, Order::Before))
         return;
 
     if (after)
@@ -338,7 +339,7 @@ ValidMPTPayment::visitEntry(
         {
             overflow_ = (*after)[sfOutstandingAmount] > maxMPTAmount(*after);
         }
-        if (!update(*after, After))
+        if (!update(*after, Order::After))
             return;
     }
 }
@@ -364,15 +365,17 @@ ValidMPTPayment::finalize(
         for (auto const& [id, data] : data_)
         {
             (void)id;
+            constexpr auto iBefore = static_cast<std::size_t>(Order::Before);
+            constexpr auto iAfter = static_cast<std::size_t>(Order::After);
             bool const addOverflows =
-                (data.mptAmount > 0 && data.outstanding[Before] > (signedMax - data.mptAmount)) ||
-                (data.mptAmount < 0 && data.outstanding[Before] < (-signedMax - data.mptAmount));
+                (data.mptAmount > 0 && data.outstanding[iBefore] > (signedMax - data.mptAmount)) ||
+                (data.mptAmount < 0 && data.outstanding[iBefore] < (-signedMax - data.mptAmount));
             if (addOverflows ||
-                data.outstanding[After] != (data.outstanding[Before] + data.mptAmount))
+                data.outstanding[iAfter] != (data.outstanding[iBefore] + data.mptAmount))
             {
                 JLOG(j.fatal()) << "Invariant failed: invalid OutstandingAmount balance "
-                                << data.outstanding[Before] << " " << data.outstanding[After] << " "
-                                << data.mptAmount;
+                                << data.outstanding[iBefore] << " " << data.outstanding[iAfter]
+                                << " " << data.mptAmount;
                 return !enforce;
             }
         }

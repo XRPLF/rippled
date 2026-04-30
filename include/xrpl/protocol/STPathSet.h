@@ -25,6 +25,8 @@ class STPathElement final : public CountedObject<STPathElement>
     std::size_t hash_value_;
 
 public:
+    // Bitwise values (typeCurrency | typeMPT)
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum Type {
         typeNone = 0x00,
         typeAccount = 0x01,   // Rippling through an account (vs taking an offer).

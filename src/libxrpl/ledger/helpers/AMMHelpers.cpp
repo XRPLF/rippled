@@ -46,7 +46,8 @@ STAmount
 ammLPTokens(STAmount const& asset1, STAmount const& asset2, Asset const& lptIssue)
 {
     // AMM invariant: sqrt(asset1 * asset2) >= LPTokensBalance
-    auto const rounding = isFeatureEnabled(fixAMMv1_3) ? Number::downward : Number::getround();
+    auto const rounding =
+        isFeatureEnabled(fixAMMv1_3) ? Number::rounding_mode::downward : Number::getround();
     NumberRoundModeGuard const g(rounding);
     auto const tokens = root2(asset1 * asset2);
     return toSTAmount(lptIssue, tokens);
@@ -77,7 +78,7 @@ lpTokensOut(
 
     // minimize tokens out
     auto const frac = (r - c) / (1 + c);
-    return multiply(lptAMMBalance, frac, Number::downward);
+    return multiply(lptAMMBalance, frac, Number::rounding_mode::downward);
 }
 
 /* Equation 4 solves equation 3 for b:
@@ -113,7 +114,7 @@ ammAssetIn(
 
     // maximize deposit
     auto const frac = solveQuadraticEq(a, b, c);
-    return multiply(asset1Balance, frac, Number::upward);
+    return multiply(asset1Balance, frac, Number::rounding_mode::upward);
 }
 
 /* Equation 7:
@@ -138,7 +139,7 @@ lpTokensIn(
 
     // maximize tokens in
     auto const frac = (c - root2(c * c - 4 * fr)) / 2;
-    return multiply(lptAMMBalance, frac, Number::upward);
+    return multiply(lptAMMBalance, frac, Number::rounding_mode::upward);
 }
 
 /* Equation 8 solves equation 7 for b:
@@ -168,7 +169,7 @@ ammAssetOut(
 
     // minimize withdraw
     auto const frac = (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
-    return multiply(assetBalance, frac, Number::downward);
+    return multiply(assetBalance, frac, Number::rounding_mode::downward);
 }
 
 Number

@@ -4182,18 +4182,18 @@ class MPToken_test : public beast::unit_test::suite
 
         // Holders are locked
         {
-            enum LockType { Global, Individual, None };
+            enum class LockType { Global, Individual, None };
             struct TestArg
             {
                 Account src;
                 Account dst;
                 Account offerOwner;
-                LockType srcFlag = None;
-                LockType dstFlag = None;
-                LockType offerFlagBuy = None;
-                LockType offerFlagSell = None;
-                LockType globalFlagBuy = None;
-                LockType globalFlagSell = None;
+                LockType srcFlag = LockType::None;
+                LockType dstFlag = LockType::None;
+                LockType offerFlagBuy = LockType::None;
+                LockType offerFlagSell = LockType::None;
+                LockType globalFlagBuy = LockType::None;
+                LockType globalFlagSell = LockType::None;
                 TER err = tesSUCCESS;
                 std::optional<TER> errIOU = std::nullopt;
             };
@@ -4238,11 +4238,11 @@ class MPToken_test : public beast::unit_test::suite
             };
             auto lock = [&]<typename Token>(
                             Env& env, Account const& account, Token& token, LockType lock) {
-                if (lock == None)
+                if (lock == LockType::None)
                     return;
                 if constexpr (std::is_same_v<Token, IOU>)
                 {
-                    if (lock == Global)
+                    if (lock == LockType::Global)
                     {
                         env(fset(gw, asfGlobalFreeze));
                     }
@@ -4254,7 +4254,7 @@ class MPToken_test : public beast::unit_test::suite
                 }
                 else if constexpr (std::is_same_v<Token, MPTTester>)
                 {
-                    if (lock == Global)
+                    if (lock == LockType::Global)
                     {
                         token.set({.flags = tfMPTLock});
                     }
@@ -4303,33 +4303,33 @@ class MPToken_test : public beast::unit_test::suite
             // clang-format off
             std::vector<TestArg> const tests = {
                     // src, dst, offer's owner are a holder
-                    {.src = alice, .dst = carol, .offerOwner = bob, .srcFlag = Individual, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = bob, .srcFlag = LockType::Individual, .err = tecPATH_DRY},
                     // dst can receive IOU even if the account is frozen
-                    {.src = alice, .dst = carol, .offerOwner = bob, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagBuy = Global, .err = tecPATH_DRY},
-                    {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagSell = Global, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = bob, .dstFlag = LockType::Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
+                    {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagBuy = LockType::Global, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagSell = LockType::Global, .err = tecPATH_DRY},
                     // offer's owner can receive IOU even if the account is frozen
-                    {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagBuy = Individual, .err =
+                    {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagBuy = LockType::Individual, .err =
                     tecPATH_PARTIAL, .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
+                    {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagSell = LockType::Individual, .err = tecPATH_PARTIAL},
                     // src, dst are a holder, offer's owner is an issuer
-                    {.src = alice, .dst = carol, .offerOwner = gw, .srcFlag = Individual, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = gw, .srcFlag = LockType::Individual, .err = tecPATH_DRY},
                     // dst can receive IOU even if the account is frozen
-                    {.src = alice, .dst = carol, .offerOwner = gw, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagBuy = Global, .err = tecPATH_DRY},
-                    {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagSell = Global, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = gw, .dstFlag = LockType::Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
+                    {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagBuy = LockType::Global, .err = tecPATH_DRY},
+                    {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagSell = LockType::Global, .err = tecPATH_DRY},
                     // src is issuer, dst and offer's owner are a holder
                     // dst can receive IOU even if the account is frozen
-                    {.src = gw, .dst = carol, .offerOwner = bob, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
+                    {.src = gw, .dst = carol, .offerOwner = bob, .dstFlag = LockType::Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
                     // offer's owner can receive IOU from an issuer even if takerBuys is frozen, MPT offer is unfunded in this case
-                    {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagBuy = Individual, .err = tecPATH_PARTIAL, .errIOU = tesSUCCESS},
-                    {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
+                    {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagBuy = LockType::Individual, .err = tecPATH_PARTIAL, .errIOU = tesSUCCESS},
+                    {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagSell = LockType::Individual, .err = tecPATH_PARTIAL},
                     // dst is issuer, src and offer's owner are a holder
-                    {.src = alice, .dst = gw, .offerOwner = bob, .srcFlag = Individual, .err = tecPATH_DRY},
+                    {.src = alice, .dst = gw, .offerOwner = bob, .srcFlag = LockType::Individual, .err = tecPATH_DRY},
                     // offer's owner can receive IOU even if the account is frozen
-                    {.src = alice, .dst = gw, .offerOwner = bob, .offerFlagBuy = Individual, .err = tecPATH_PARTIAL,
+                    {.src = alice, .dst = gw, .offerOwner = bob, .offerFlagBuy = LockType::Individual, .err = tecPATH_PARTIAL,
                      .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = gw, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
+                    {.src = alice, .dst = gw, .offerOwner = bob, .offerFlagSell = LockType::Individual, .err = tecPATH_PARTIAL},
             };
             // clang-format on
 

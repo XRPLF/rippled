@@ -163,7 +163,7 @@ LedgerMaster::isCompatible(ReadView const& view, beast::Journal::Stream s, char 
     }
 
     {
-        std::lock_guard const sl(m_mutex);
+        std::scoped_lock const sl(m_mutex);
 
         if ((mLastValidLedger.second != 0) &&
             !areCompatible(mLastValidLedger.first, mLastValidLedger.second, view, s, reason))
@@ -342,7 +342,7 @@ LedgerMaster::setPubLedger(std::shared_ptr<Ledger const> const& l)
 void
 LedgerMaster::addHeldTransaction(std::shared_ptr<Transaction> const& transaction)
 {
-    std::lock_guard const ml(m_mutex);
+    std::scoped_lock const ml(m_mutex);
     mHeldTransactions.insert(transaction->getSTransaction());
 }
 
@@ -425,7 +425,7 @@ LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
         LogicError("The new last closed ledger is open!");
 
     {
-        std::lock_guard const ml(m_mutex);
+        std::scoped_lock const ml(m_mutex);
         mClosedLedger.set(lastClosed);
     }
 
@@ -463,7 +463,7 @@ void
 LedgerMaster::applyHeldTransactions()
 {
     CanonicalTXSet const set = [this]() {
-        std::lock_guard const sl(m_mutex);
+        std::scoped_lock const sl(m_mutex);
         // VFALCO NOTE The hash for an open ledger is undefined so we use
         // something that is a reasonable substitute.
         CanonicalTXSet set(app_.getOpenLedger().current()->header().parentHash);
@@ -478,7 +478,7 @@ LedgerMaster::applyHeldTransactions()
 std::shared_ptr<STTx const>
 LedgerMaster::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
 {
-    std::lock_guard const sl(m_mutex);
+    std::scoped_lock const sl(m_mutex);
 
     return mHeldTransactions.popAcctTransaction(tx);
 }
@@ -492,14 +492,14 @@ LedgerMaster::setBuildingLedger(LedgerIndex i)
 bool
 LedgerMaster::haveLedger(std::uint32_t seq)
 {
-    std::lock_guard const sl(mCompleteLock);
+    std::scoped_lock const sl(mCompleteLock);
     return boost::icl::contains(mCompleteLedgers, seq);
 }
 
 void
 LedgerMaster::clearLedger(std::uint32_t seq)
 {
-    std::lock_guard const sl(mCompleteLock);
+    std::scoped_lock const sl(mCompleteLock);
     mCompleteLedgers.erase(seq);
 }
 
@@ -560,7 +560,7 @@ LedgerMaster::getFullValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal
 
     std::optional<std::uint32_t> maybeMin;
     {
-        std::lock_guard const sl(mCompleteLock);
+        std::scoped_lock const sl(mCompleteLock);
         maybeMin = prevMissing(mCompleteLedgers, maxVal);
     }
 
@@ -655,7 +655,7 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
     while (!app_.getJobQueue().isStopping() && seq > 0)
     {
         {
-            std::lock_guard const ml(m_mutex);
+            std::scoped_lock const ml(m_mutex);
             minHas = seq;
             --seq;
 
@@ -671,7 +671,7 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
                 return;
 
             {
-                std::lock_guard const ml(mCompleteLock);
+                std::scoped_lock const ml(mCompleteLock);
                 mCompleteLedgers.insert(range(minHas, maxHas));
             }
             maxHas = minHas;
@@ -699,11 +699,11 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
     }
 
     {
-        std::lock_guard const ml(mCompleteLock);
+        std::scoped_lock const ml(mCompleteLock);
         mCompleteLedgers.insert(range(minHas, maxHas));
     }
     {
-        std::lock_guard const ml(m_mutex);
+        std::scoped_lock const ml(m_mutex);
         mFillInProgress = 0;
         tryAdvance();
     }
@@ -841,12 +841,12 @@ LedgerMaster::setFullLedger(
     pendSaveValidated(app_, ledger, isSynchronous, isCurrent);
 
     {
-        std::lock_guard const ml(mCompleteLock);
+        std::scoped_lock const ml(mCompleteLock);
         mCompleteLedgers.insert(ledger->header().seq);
     }
 
     {
-        std::lock_guard const ml(m_mutex);
+        std::scoped_lock const ml(m_mutex);
 
         if (ledger->header().seq > mValidLedgerSeq)
             setValidLedger(ledger);
@@ -896,7 +896,7 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
         valCount = validations.size();
         if (valCount >= app_.getValidators().quorum())
         {
-            std::lock_guard const ml(m_mutex);
+            std::scoped_lock const ml(m_mutex);
             if (seq > mLastValidLedger.second)
                 mLastValidLedger = std::make_pair(hash, seq);
         }
@@ -950,7 +950,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 
     // Can we advance the last fully-validated ledger? If so, can we
     // publish?
-    std::lock_guard const ml(m_mutex);
+    std::scoped_lock const ml(m_mutex);
 
     if (ledger->header().seq <= mValidLedgerSeq)
         return;
@@ -1344,7 +1344,7 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
 void
 LedgerMaster::tryAdvance()
 {
-    std::lock_guard const ml(m_mutex);
+    std::scoped_lock const ml(m_mutex);
 
     // Can't advance without at least one fully-valid ledger
     mAdvanceWork = true;
@@ -1379,7 +1379,7 @@ void
 LedgerMaster::updatePaths()
 {
     {
-        std::lock_guard const ml(m_mutex);
+        std::scoped_lock const ml(m_mutex);
         if (app_.getOPs().isNeedNetworkLedger())
         {
             --mPathFindThread;
@@ -1394,7 +1394,7 @@ LedgerMaster::updatePaths()
         JLOG(m_journal.debug()) << "updatePaths running";
         std::shared_ptr<ReadView const> lastLedger;
         {
-            std::lock_guard const ml(m_mutex);
+            std::scoped_lock const ml(m_mutex);
 
             if (!mValidLedger.empty() &&
                 (!mPathLedger || (mPathLedger->header().seq != mValidLedgerSeq)))
@@ -1423,7 +1423,7 @@ LedgerMaster::updatePaths()
             if (age > 1min)
             {
                 JLOG(m_journal.debug()) << "Published ledger too old for updating paths";
-                std::lock_guard const ml(m_mutex);
+                std::scoped_lock const ml(m_mutex);
                 --mPathFindThread;
                 mPathLedger.reset();
                 return;
@@ -1434,7 +1434,7 @@ LedgerMaster::updatePaths()
         {
             auto& pathRequests = app_.getPathRequestManager();
             {
-                std::lock_guard const ml(m_mutex);
+                std::scoped_lock const ml(m_mutex);
                 if (!pathRequests.requestsPending())
                 {
                     --mPathFindThread;
@@ -1448,7 +1448,7 @@ LedgerMaster::updatePaths()
             JLOG(m_journal.debug()) << "Updating paths";
             pathRequests.updateAll(lastLedger);
 
-            std::lock_guard const ml(m_mutex);
+            std::scoped_lock const ml(m_mutex);
             if (!pathRequests.requestsPending())
             {
                 JLOG(m_journal.debug()) << "No path requests left. No need for further updating "
@@ -1492,7 +1492,7 @@ LedgerMaster::newPathRequest()
 bool
 LedgerMaster::isNewPathRequest()
 {
-    std::lock_guard const ml(m_mutex);
+    std::scoped_lock const ml(m_mutex);
     bool const ret = mPathFindNewRequest;
     mPathFindNewRequest = false;
     return ret;
@@ -1565,14 +1565,14 @@ LedgerMaster::getValidatedRules()
 std::shared_ptr<ReadView const>
 LedgerMaster::getPublishedLedger()
 {
-    std::lock_guard const lock(m_mutex);
+    std::scoped_lock const lock(m_mutex);
     return mPubLedger;
 }
 
 std::string
 LedgerMaster::getCompleteLedgers()
 {
-    std::lock_guard const sl(mCompleteLock);
+    std::scoped_lock const sl(mCompleteLock);
     return to_string(mCompleteLedgers);
 }
 
@@ -1731,7 +1731,7 @@ LedgerMaster::getLedgerByHash(uint256 const& hash)
 void
 LedgerMaster::setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV)
 {
-    std::lock_guard const sl(mCompleteLock);
+    std::scoped_lock const sl(mCompleteLock);
     mCompleteLedgers.insert(range(minV, maxV));
 }
 
@@ -1751,7 +1751,7 @@ LedgerMaster::getCacheHitRate()
 void
 LedgerMaster::clearPriorLedgers(LedgerIndex seq)
 {
-    std::lock_guard const sl(mCompleteLock);
+    std::scoped_lock const sl(mCompleteLock);
     if (seq > 0)
         mCompleteLedgers.erase(range(0u, seq - 1));
 }
@@ -1812,7 +1812,7 @@ LedgerMaster::fetchForHistory(
             setFullLedger(ledger, false, false);
             int fillInProgress = 0;
             {
-                std::lock_guard const lock(m_mutex);
+                std::scoped_lock const lock(m_mutex);
                 mHistLedger = ledger;
                 fillInProgress = mFillInProgress;
             }
@@ -1821,7 +1821,7 @@ LedgerMaster::fetchForHistory(
             {
                 {
                     // Previous ledger is in DB
-                    std::lock_guard const lock(m_mutex);
+                    std::scoped_lock const lock(m_mutex);
                     mFillInProgress = seq;
                 }
                 app_.getJobQueue().addJob(
@@ -1893,7 +1893,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                 InboundLedger::Reason const reason = InboundLedger::Reason::HISTORY;
                 std::optional<std::uint32_t> missing;
                 {
-                    std::lock_guard const sll(mCompleteLock);
+                    std::scoped_lock const sll(mCompleteLock);
                     missing = prevMissing(
                         mCompleteLedgers,
                         mPubLedger->header().seq,
