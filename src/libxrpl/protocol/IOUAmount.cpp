@@ -1,6 +1,5 @@
 #include <xrpl/protocol/IOUAmount.h>
 
-#include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -62,7 +61,6 @@ IOUAmount::normalize()
     {
         *this = beast::zero;
     }
-    return;
 }
 
 IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
