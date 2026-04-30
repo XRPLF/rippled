@@ -53,6 +53,8 @@ namespace xrpl {
 
 using namespace std::chrono_literals;
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // Number of peers to start with
     peerCountStart = 5
@@ -276,7 +278,8 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
             if (std::addressof(dstDB) != std::addressof(srcDB))
             {
                 Blob blob{nodeObject->getData()};
-                dstDB.store(hotLEDGER, std::move(blob), hash_, mLedger->header().seq);
+                dstDB.store(
+                    NodeObjectType::hotLEDGER, std::move(blob), hash_, mLedger->header().seq);
             }
         }
         else
@@ -294,7 +297,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
 
             // Store the ledger header in the ledger's database
             mLedger->stateMap().family().db().store(
-                hotLEDGER, std::move(*data), hash_, mLedger->header().seq);
+                NodeObjectType::hotLEDGER, std::move(*data), hash_, mLedger->header().seq);
         }
 
         if (mSeq == 0)
@@ -820,7 +823,7 @@ InboundLedger::takeHeader(std::string const& data)
     Serializer s(data.size() + 4);
     s.add32(HashPrefix::ledgerMaster);
     s.addRaw(data.data(), data.size());
-    f->db().store(hotLEDGER, std::move(s.modData()), hash_, mSeq);
+    f->db().store(NodeObjectType::hotLEDGER, std::move(s.modData()), hash_, mSeq);
 
     if (mLedger->header().txHash.isZero())
         mHaveTransactions = true;
@@ -1021,7 +1024,7 @@ InboundLedger::gotData(
     std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> const& data)
 {
-    std::lock_guard const sl(mReceivedDataLock);
+    std::scoped_lock const sl(mReceivedDataLock);
 
     if (isDone())
         return false;
@@ -1233,7 +1236,7 @@ InboundLedger::runData()
         data.clear();
 
         {
-            std::lock_guard const sl(mReceivedDataLock);
+            std::scoped_lock const sl(mReceivedDataLock);
 
             if (mReceivedData.empty())
             {

@@ -304,7 +304,7 @@ private:
         rb_.consume(rb_.size());
         auto m = std::make_shared<msg>(std::move(jv));
         {
-            std::lock_guard const lock(m_);
+            std::scoped_lock const lock(m_);
             msgs_.push_front(m);
             cv_.notify_all();
         }
@@ -318,7 +318,7 @@ private:
     void
     on_read_done()
     {
-        std::lock_guard const lock(m0_);
+        std::scoped_lock const lock(m0_);
         b0_ = true;
         cv0_.notify_all();
     }

@@ -82,5 +82,12 @@ tools.info.package_id:confs+=["tools.build:cxxflags", "tools.build:exelinkflags"
         boost/*:without_context=False
         # Boost stacktrace fails to build with some sanitizers
         boost/*:without_stacktrace=True
+    {% elif "thread" in sanitizers %}
+        # Build Boost.Context with ucontext backend for TSAN. fcontext (assembly)
+        # has no TSAN annotations, so without this the BOOST_USE_TSAN/BOOST_USE_UCONTEXT
+        # defines in [conf] would be ineffective.
+        boost/*:extra_b2_flags=context-impl=ucontext thread-sanitizer=on define=BOOST_USE_TSAN=1
+        boost/*:without_context=False
+        boost/*:without_stacktrace=True
     {% endif %}
 {% endif %}
