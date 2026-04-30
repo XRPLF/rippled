@@ -2257,7 +2257,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // transfer that enables a transfer fee of 1 basis point.
             STAmount beckyBalance = env.balance(becky);
             uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
-            pmt = NumberSwitchOver ? drops(50001) : drops(100000);
+            pmt = drops(50001);
             env(token::createOffer(becky, nftID, pmt), token::owner(carol));
             env.close();
             env(token::acceptBuyOffer(carol, beckyBuyOfferIndex));

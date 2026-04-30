@@ -1822,7 +1822,6 @@ public:
         using namespace jtx;
 
         Env env{*this, features};
-        env.enableFeature(fixUniversalNumber);
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
