@@ -973,9 +973,9 @@ computePaymentComponents(
     // payment" assertion on degenerate integer-scale loans).
     bool const fixCleanup3_2_0Enabled = rules.enabled(fixCleanup3_2_0);
     Number::rounding_mode const principalRounding =
-        fixCleanup3_2_0Enabled ? Number::upward : Number::getround();
+        fixCleanup3_2_0Enabled ? Number::rounding_mode::upward : Number::getround();
     Number::rounding_mode const interestRounding =
-        fixCleanup3_2_0Enabled ? Number::downward : Number::getround();
+        fixCleanup3_2_0Enabled ? Number::rounding_mode::downward : Number::getround();
     LoanState const roundedTarget = LoanState{
         .valueOutstanding = roundToAsset(asset, trueTarget.valueOutstanding, scale),
         .principalOutstanding =
