@@ -461,7 +461,8 @@ ValidVault::finalize(
                     if (isXRP(issue))
                         return get(deltas_.find(keylet::account(id).key));
                     return get(
-                        deltas_.find(keylet::line(id, issue).key), id > issue.getIssuer() ? -1 : 1);
+                        deltas_.find(keylet::rippleState(id, issue).key),
+                        id > issue.getIssuer() ? -1 : 1);
                 }
                 else if constexpr (std::is_same_v<TIss, MPTIssue>)
                 {

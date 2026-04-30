@@ -27,7 +27,7 @@ checkFreeze(
         }
     }
 
-    if (auto sle = view.read(keylet::line(src, dst, currency)))
+    if (auto sle = view.read(keylet::rippleState(src, dst, currency)))
     {
         if (sle->isFlag((dst > src) ? lsfHighFreeze : lsfLowFreeze))
         {
@@ -71,8 +71,8 @@ checkNoRipple(
     beast::Journal j)
 {
     // fetch the ripple lines into and out of this node
-    auto sleIn = view.read(keylet::line(prev, cur, currency));
-    auto sleOut = view.read(keylet::line(cur, next, currency));
+    auto sleIn = view.read(keylet::rippleState(prev, cur, currency));
+    auto sleOut = view.read(keylet::rippleState(cur, next, currency));
 
     if (!sleIn || !sleOut)
         return terNO_LINE;

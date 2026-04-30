@@ -155,7 +155,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(
-        keylet::line(
+        keylet::rippleState(
             tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.get<Issue>().currency));
 
     // if the trustline does not exist, granular permissions are
@@ -231,7 +231,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
         //   o The trust line already exists
         // Then allow the TrustSet.
         if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
-            ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+            ctx.view.exists(keylet::rippleState(id, uDstAccountID, currency)))
         {
             // pass
         }
@@ -251,7 +251,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
         // TrustSet if the asset is AMM LP token and AMM is not in empty state.
         if (sleDst->isFieldPresent(sfAMMID))
         {
-            if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+            if (ctx.view.exists(keylet::rippleState(id, uDstAccountID, currency)))
             {
                 // pass
             }
@@ -274,7 +274,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
         }
         else if (sleDst->isFieldPresent(sfVaultID) || sleDst->isFieldPresent(sfLoanBrokerID))
         {
-            if (!ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+            if (!ctx.view.exists(keylet::rippleState(id, uDstAccountID, currency)))
                 return tecNO_PERMISSION;
             // else pass
         }
@@ -308,7 +308,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
         bool const bHigh = id > uDstAccountID;
         // Fetching current state of trust line
-        auto const sleRippleState = ctx.view.read(keylet::line(id, uDstAccountID, currency));
+        auto const sleRippleState = ctx.view.read(keylet::rippleState(id, uDstAccountID, currency));
         std::uint32_t uFlags = sleRippleState ? sleRippleState->getFieldU32(sfFlags) : 0u;
         // Computing expected trust line state
         uFlags = computeFreezeFlags(
@@ -401,7 +401,7 @@ TrustSet::doApply()
     saLimitAllow.get<Issue>().account = account_;
 
     SLE::pointer const sleRippleState =
-        view().peek(keylet::line(account_, uDstAccountID, currency));
+        view().peek(keylet::rippleState(account_, uDstAccountID, currency));
 
     if (sleRippleState)
     {
@@ -649,7 +649,7 @@ TrustSet::doApply()
         // Zero balance in currency.
         STAmount const saBalance(Issue{currency, noAccount()});
 
-        auto const k = keylet::line(account_, uDstAccountID, currency);
+        auto const k = keylet::rippleState(account_, uDstAccountID, currency);
 
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 

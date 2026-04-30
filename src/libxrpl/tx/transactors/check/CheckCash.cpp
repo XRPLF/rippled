@@ -189,7 +189,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 [&](Issue const& issue) -> TER {
                     Currency const currency{issue.currency};
                     auto const sleTrustLine =
-                        ctx.view.read(keylet::line(dstId, issuerId, currency));
+                        ctx.view.read(keylet::rippleState(dstId, issuerId, currency));
 
                     auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
                     if (!sleIssuer)
@@ -407,7 +407,7 @@ CheckCash::doApply()
                     // If a trust line does not exist yet create one.
                     Issue const& trustLineIssue = issue;
                     AccountID const truster = deliverIssuer == account_ ? srcId : account_;
-                    trustLineKey = keylet::line(truster, trustLineIssue);
+                    trustLineKey = keylet::rippleState(truster, trustLineIssue);
                     destLow = deliverIssuer > account_;
 
                     if (!psb.exists(*trustLineKey))

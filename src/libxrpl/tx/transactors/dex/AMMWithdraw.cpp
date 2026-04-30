@@ -611,7 +611,7 @@ AMMWithdraw::withdraw(
         bool const isIssue = asset.holds<Issue>();
         bool const assetNotExists = [&] {
             if (isIssue)
-                return !view.exists(keylet::line(account, asset.get<Issue>()));
+                return !view.exists(keylet::rippleState(account, asset.get<Issue>()));
             auto const issuanceKey = keylet::mptIssuance(asset.get<MPTIssue>());
             mptokenKey = keylet::mptoken(issuanceKey.key, account);
             if (!view.exists(*mptokenKey))

@@ -114,7 +114,7 @@ preclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
-        ctx.view.read(keylet::line(holder, issuer, clawAmount.get<Issue>().currency));
+        ctx.view.read(keylet::rippleState(holder, issuer, clawAmount.get<Issue>().currency));
     if (!sleRippleState)
         return tecNO_LINE;
 

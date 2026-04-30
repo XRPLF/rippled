@@ -456,7 +456,7 @@ class Invariants_test : public beast::unit_test::suite
                 BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
 
                 for (auto const& trustKeylet :
-                     {keylet::line(ammAcctID, A1["USD"]), keylet::line(A1, ammIssue)})
+                     {keylet::rippleState(ammAcctID, A1["USD"]), keylet::rippleState(A1, ammIssue)})
                 {
                     auto const line = ac.view().peek(trustKeylet);
                     if (!line)
@@ -557,7 +557,7 @@ class Invariants_test : public beast::unit_test::suite
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // create simple trust SLE with xrp currency
                 auto const sleNew =
-                    std::make_shared<SLE>(keylet::line(A1, A2, xrpIssue().currency));
+                    std::make_shared<SLE>(keylet::rippleState(A1, A2, xrpIssue().currency));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -573,7 +573,8 @@ class Invariants_test : public beast::unit_test::suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(A1, A2, A1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::rippleState(A1, A2, A1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, A1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, A1["USD"](0));
 
@@ -588,7 +589,8 @@ class Invariants_test : public beast::unit_test::suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(A1, A2, A1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::rippleState(A1, A2, A1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, A1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, A1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -602,7 +604,8 @@ class Invariants_test : public beast::unit_test::suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(A1, A2, A1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::rippleState(A1, A2, A1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, A1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, A1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -616,7 +619,8 @@ class Invariants_test : public beast::unit_test::suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(A1, A2, A1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::rippleState(A1, A2, A1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, A1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, A1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -630,7 +634,8 @@ class Invariants_test : public beast::unit_test::suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(A1, A2, A1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::rippleState(A1, A2, A1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, A1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, A1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -685,8 +690,8 @@ class Invariants_test : public beast::unit_test::suite
                                         ApplyContext& ac,
                                         int A1Balance,
                                         int A2Balance) {
-            auto const sleA1 = ac.view().peek(keylet::line(A1, G1["USD"]));
-            auto const sleA2 = ac.view().peek(keylet::line(A2, G1["USD"]));
+            auto const sleA1 = ac.view().peek(keylet::rippleState(A1, G1["USD"]));
+            auto const sleA2 = ac.view().peek(keylet::rippleState(A2, G1["USD"]));
 
             sleA1->setFieldAmount(sfBalance, G1["USD"](A1Balance));
             sleA2->setFieldAmount(sfBalance, G1["USD"](A2Balance));
@@ -4129,8 +4134,8 @@ class Invariants_test : public beast::unit_test::suite
                                                    auto const& goodConfig) {
             char const* const c1 = "USD";
             char const* const c2 = "EUR";
-            auto const k1 = keylet::line(A1, A2, A1[c1].currency);
-            auto const k2 = keylet::line(A1, A3, A1[c2].currency);
+            auto const k1 = keylet::rippleState(A1, A2, A1[c1].currency);
+            auto const k2 = keylet::rippleState(A1, A3, A1[c2].currency);
 
             bool const k1First = k1.key < k2.key;
             auto const& badKey = k1First ? k1 : k2;

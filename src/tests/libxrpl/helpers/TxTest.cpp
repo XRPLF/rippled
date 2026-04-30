@@ -231,7 +231,7 @@ TxTest::getCloseTime() const
 STAmount
 TxTest::getBalance(AccountID const& account, IOU const& iou) const
 {
-    auto const sle = openLedger_->read(keylet::line(account, iou.issue()));
+    auto const sle = openLedger_->read(keylet::rippleState(account, iou.issue()));
     if (!sle)
         return STAmount{iou.issue(), 0};
 

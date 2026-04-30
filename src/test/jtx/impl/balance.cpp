@@ -36,7 +36,7 @@ doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, 
     }
     else
     {
-        auto const sle = env.le(keylet::line(account, issue));
+        auto const sle = env.le(keylet::rippleState(account, issue));
         if (none)
         {
             TEST_EXPECT(!sle);

@@ -2678,7 +2678,7 @@ class Vault_test : public beast::unit_test::suite
             env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
             env.close();
 
-            auto trustline = env.le(keylet::line(owner, asset.raw().get<Issue>()));
+            auto trustline = env.le(keylet::rippleState(owner, asset.raw().get<Issue>()));
             BEAST_EXPECT(trustline == nullptr);
 
             // Withdraw without trust line, will succeed
@@ -2860,7 +2860,7 @@ class Vault_test : public beast::unit_test::suite
                 env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
                 env.close();
 
-                auto trustline = env.le(keylet::line(owner, asset.raw().get<Issue>()));
+                auto trustline = env.le(keylet::rippleState(owner, asset.raw().get<Issue>()));
                 BEAST_EXPECT(trustline == nullptr);
 
                 env(ticket::create(owner, 1));

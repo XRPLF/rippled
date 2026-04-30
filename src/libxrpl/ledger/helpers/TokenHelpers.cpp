@@ -158,7 +158,7 @@ getLineIfUsable(
     FreezeHandling zeroIfFrozen,
     beast::Journal j)
 {
-    auto sle = view.read(keylet::line(account, issuer, currency));
+    auto sle = view.read(keylet::rippleState(account, issuer, currency));
 
     if (!sle)
     {
@@ -541,7 +541,7 @@ directSendNoFeeIOU(
     XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::directSendNoFeeIOU : sender is not receiver");
 
     bool const bSenderHigh = uSenderID > uReceiverID;
-    auto const index = keylet::line(uSenderID, uReceiverID, currency);
+    auto const index = keylet::rippleState(uSenderID, uReceiverID, currency);
 
     XRPL_ASSERT(
         !isXRP(uSenderID) && uSenderID != noAccount(),

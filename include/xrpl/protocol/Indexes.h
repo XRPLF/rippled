@@ -93,10 +93,10 @@ static book_t const book{};
 */
 /** @{ */
 Keylet
-line(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
+rippleState(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
 
 inline Keylet
-line(AccountID const& id, Issue const& issue) noexcept
+rippleState(AccountID const& id, Issue const& issue) noexcept
 {
     return line(id, issue.account, issue.currency);
 }

@@ -1949,8 +1949,8 @@ class Check_test : public beast::unit_test::suite
                                  Account const& acct2,
                                  IOU const& offerIou,
                                  IOU const& checkIou) {
-            auto const offerLine = env.le(keylet::line(acct1, acct2, offerIou.currency));
-            auto const checkLine = env.le(keylet::line(acct1, acct2, checkIou.currency));
+            auto const offerLine = env.le(keylet::rippleState(acct1, acct2, offerIou.currency));
+            auto const checkLine = env.le(keylet::rippleState(acct1, acct2, checkIou.currency));
             if (offerLine == nullptr || checkLine == nullptr)
             {
                 BEAST_EXPECT(offerLine == nullptr && checkLine == nullptr);
@@ -2021,7 +2021,7 @@ class Check_test : public beast::unit_test::suite
             IOU const OF1 = gw1["OF1"];
             env(offer(gw1, XRP(98), OF1(98)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(gw1, alice, OF1.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, alice, OF1.currency)) == nullptr);
             env(offer(alice, OF1(98), XRP(98)));
             ++alice.owners;
             env.close();
@@ -2039,7 +2039,7 @@ class Check_test : public beast::unit_test::suite
             uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
             env(check::create(gw1, alice, CK1(98)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(gw1, alice, CK1.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, alice, CK1.currency)) == nullptr);
             env(check::cash(alice, chkId, CK1(98)));
             ++alice.owners;
             verifyDeliveredAmount(env, CK1(98));
@@ -2068,7 +2068,7 @@ class Check_test : public beast::unit_test::suite
             IOU const OF1 = gw1["OF1"];
             env(offer(alice, XRP(97), OF1(97)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(alice, bob, OF1.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(alice, bob, OF1.currency)) == nullptr);
             env(offer(bob, OF1(97), XRP(97)));
             ++bob.owners;
             env.close();
@@ -2092,12 +2092,12 @@ class Check_test : public beast::unit_test::suite
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, CK1(97)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(alice, bob, CK1.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(alice, bob, CK1.currency)) == nullptr);
             env(check::cash(bob, chkId, CK1(97)), ter(terNO_RIPPLE));
             env.close();
 
-            BEAST_EXPECT(env.le(keylet::line(gw1, bob, OF1.currency)) != nullptr);
-            BEAST_EXPECT(env.le(keylet::line(gw1, bob, CK1.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, bob, OF1.currency)) != nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, bob, CK1.currency)) == nullptr);
 
             // Delete alice's check since it is no longer needed.
             env(check::cancel(alice, chkId));
@@ -2121,7 +2121,7 @@ class Check_test : public beast::unit_test::suite
             IOU const OF2 = gw1["OF2"];
             env(offer(gw1, XRP(96), OF2(96)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(gw1, alice, OF2.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, alice, OF2.currency)) == nullptr);
             env(offer(alice, OF2(96), XRP(96)));
             ++alice.owners;
             env.close();
@@ -2139,7 +2139,7 @@ class Check_test : public beast::unit_test::suite
             uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
             env(check::create(gw1, alice, CK2(96)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(gw1, alice, CK2.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, alice, CK2.currency)) == nullptr);
             env(check::cash(alice, chkId, CK2(96)));
             ++alice.owners;
             verifyDeliveredAmount(env, CK2(96));
@@ -2165,7 +2165,7 @@ class Check_test : public beast::unit_test::suite
             IOU const OF2 = gw1["OF2"];
             env(offer(alice, XRP(95), OF2(95)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(alice, bob, OF2.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(alice, bob, OF2.currency)) == nullptr);
             env(offer(bob, OF2(95), XRP(95)));
             ++bob.owners;
             env.close();
@@ -2180,7 +2180,7 @@ class Check_test : public beast::unit_test::suite
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, CK2(95)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(alice, bob, CK2.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(alice, bob, CK2.currency)) == nullptr);
             env(check::cash(bob, chkId, CK2(95)));
             ++bob.owners;
             verifyDeliveredAmount(env, CK2(95));
@@ -2212,7 +2212,7 @@ class Check_test : public beast::unit_test::suite
             IOU const OF3 = gw1["OF3"];
             env(offer(gw1, XRP(94), OF3(94)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(gw1, alice, OF3.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, alice, OF3.currency)) == nullptr);
             env(offer(alice, OF3(94), XRP(94)));
             ++alice.owners;
             env.close();
@@ -2230,7 +2230,7 @@ class Check_test : public beast::unit_test::suite
             uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
             env(check::create(gw1, alice, CK3(94)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(gw1, alice, CK3.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, alice, CK3.currency)) == nullptr);
             env(check::cash(alice, chkId, CK3(94)));
             ++alice.owners;
             verifyDeliveredAmount(env, CK3(94));
@@ -2256,7 +2256,7 @@ class Check_test : public beast::unit_test::suite
             IOU const OF3 = gw1["OF3"];
             env(offer(alice, XRP(93), OF3(93)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(alice, bob, OF3.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(alice, bob, OF3.currency)) == nullptr);
             env(offer(bob, OF3(93), XRP(93)));
             ++bob.owners;
             env.close();
@@ -2271,7 +2271,7 @@ class Check_test : public beast::unit_test::suite
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, CK3(93)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(alice, bob, CK3.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(alice, bob, CK3.currency)) == nullptr);
             env(check::cash(bob, chkId, CK3(93)));
             ++bob.owners;
             verifyDeliveredAmount(env, CK3(93));
@@ -2297,7 +2297,7 @@ class Check_test : public beast::unit_test::suite
             IOU const OF4 = gw1["OF4"];
             env(offer(gw1, XRP(92), OF4(92)), ter(tecFROZEN));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(gw1, alice, OF4.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, alice, OF4.currency)) == nullptr);
             env(offer(alice, OF4(92), XRP(92)), ter(tecFROZEN));
             env.close();
 
@@ -2311,7 +2311,7 @@ class Check_test : public beast::unit_test::suite
             uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
             env(check::create(gw1, alice, CK4(92)), ter(tecFROZEN));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(gw1, alice, CK4.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, alice, CK4.currency)) == nullptr);
             env(check::cash(alice, chkId, CK4(92)), ter(tecNO_ENTRY));
             env.close();
 
@@ -2322,8 +2322,8 @@ class Check_test : public beast::unit_test::suite
 
             // Because gw1 has set lsfGlobalFreeze, neither trust line
             // is created.
-            BEAST_EXPECT(env.le(keylet::line(gw1, alice, OF4.currency)) == nullptr);
-            BEAST_EXPECT(env.le(keylet::line(gw1, alice, CK4.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, alice, OF4.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, alice, CK4.currency)) == nullptr);
         }
         //------------ lsfGlobalFreeze, check written by non-issuer ------------
         {
@@ -2335,7 +2335,7 @@ class Check_test : public beast::unit_test::suite
             IOU const OF4 = gw1["OF4"];
             env(offer(alice, XRP(91), OF4(91)), ter(tecFROZEN));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(alice, bob, OF4.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(alice, bob, OF4.currency)) == nullptr);
             env(offer(bob, OF4(91), XRP(91)), ter(tecFROZEN));
             env.close();
 
@@ -2349,7 +2349,7 @@ class Check_test : public beast::unit_test::suite
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, CK4(91)), ter(tecFROZEN));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(alice, bob, CK4.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(alice, bob, CK4.currency)) == nullptr);
             env(check::cash(bob, chkId, CK4(91)), ter(tecNO_ENTRY));
             env.close();
 
@@ -2360,8 +2360,8 @@ class Check_test : public beast::unit_test::suite
 
             // Because gw1 has set lsfGlobalFreeze, neither trust line
             // is created.
-            BEAST_EXPECT(env.le(keylet::line(gw1, bob, OF4.currency)) == nullptr);
-            BEAST_EXPECT(env.le(keylet::line(gw1, bob, CK4.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, bob, OF4.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw1, bob, CK4.currency)) == nullptr);
         }
 
         //-------------- lsfRequireAuth, check written by issuer ---------------
@@ -2385,7 +2385,7 @@ class Check_test : public beast::unit_test::suite
             env(offer(gw2, XRP(92), OF5(92)));
             ++gw2.owners;
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(gw2, alice, OF5.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw2, alice, OF5.currency)) == nullptr);
             env(offer(alice, OF5(92), XRP(92)), ter(tecNO_LINE));
             env.close();
 
@@ -2407,7 +2407,7 @@ class Check_test : public beast::unit_test::suite
             env(check::create(gw2, alice, CK5(92)));
             ++gw2.owners;
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(gw2, alice, CK5.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw2, alice, CK5.currency)) == nullptr);
             env(check::cash(alice, chkId, CK5(92)), ter(tecNO_AUTH));
             env.close();
 
@@ -2419,8 +2419,8 @@ class Check_test : public beast::unit_test::suite
 
             // Because gw2 has set lsfRequireAuth, neither trust line
             // is created.
-            BEAST_EXPECT(env.le(keylet::line(gw2, alice, OF5.currency)) == nullptr);
-            BEAST_EXPECT(env.le(keylet::line(gw2, alice, CK5.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw2, alice, OF5.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw2, alice, CK5.currency)) == nullptr);
 
             // Since we don't need it any more, remove gw2's check.
             env(check::cancel(gw2, chkId));
@@ -2439,7 +2439,7 @@ class Check_test : public beast::unit_test::suite
             env(offer(alice, XRP(91), OF5(91)), ter(tecUNFUNDED_OFFER));
             env.close();
             env(offer(bob, OF5(91), XRP(91)), ter(tecNO_LINE));
-            BEAST_EXPECT(env.le(keylet::line(gw2, bob, OF5.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw2, bob, OF5.currency)) == nullptr);
             env.close();
 
             gw2.verifyOwners(__LINE__);
@@ -2451,7 +2451,7 @@ class Check_test : public beast::unit_test::suite
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, CK5(91)));
             env.close();
-            BEAST_EXPECT(env.le(keylet::line(alice, bob, CK5.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(alice, bob, CK5.currency)) == nullptr);
             env(check::cash(bob, chkId, CK5(91)), ter(tecPATH_PARTIAL));
             env.close();
 
@@ -2466,8 +2466,8 @@ class Check_test : public beast::unit_test::suite
 
             // Because gw2 has set lsfRequireAuth, neither trust line
             // is created.
-            BEAST_EXPECT(env.le(keylet::line(gw2, bob, OF5.currency)) == nullptr);
-            BEAST_EXPECT(env.le(keylet::line(gw2, bob, CK5.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw2, bob, OF5.currency)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::rippleState(gw2, bob, CK5.currency)) == nullptr);
         }
     }
 

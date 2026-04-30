@@ -272,7 +272,7 @@ LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, xchain_owned_c
 
     @note Per Vinnie Falco this should be renamed to ltTRUST_LINE
 
-    \sa keylet::line
+    \sa keylet::rippleState
  */
 LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
     {sfBalance,              soeREQUIRED},
