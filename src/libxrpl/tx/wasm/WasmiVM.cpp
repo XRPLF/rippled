@@ -756,24 +756,22 @@ WasmiEngine::run(
     ImportVec const& imports,
     beast::Journal j)
 {
-    j_ = j;
-
     if (gas <= 0)
         return Unexpected<TER>(temBAD_AMOUNT);
 
     try
     {
         checkImports(imports, &hfs);
-        return runHlp(wasmCode, hfs, gas, funcName, params, imports);
+        return runHlp(wasmCode, hfs, gas, funcName, params, imports, j);
     }
     catch (std::exception const& e)
     {
-        print_wasm_error(std::string("exception: ") + e.what(), nullptr, j_);
+        print_wasm_error(std::string("exception: ") + e.what(), nullptr, j);
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        print_wasm_error(std::string("exception: unknown"), nullptr, j_);
+        print_wasm_error(std::string("exception: unknown"), nullptr, j);
     }
     // LCOV_EXCL_STOP
     return Unexpected<TER>(tecFAILED_PROCESSING);
@@ -786,10 +784,12 @@ WasmiEngine::runHlp(
     int64_t gas,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    ImportVec const& imports)
+    ImportVec const& imports,
+    beast::Journal j)
 {
     // currently only 1 module support, possible parallel UT run
     std::lock_guard<decltype(m_)> const lg(m_);
+    j_ = j;
 
     if (wasmCode.empty())
         throw std::runtime_error("empty module");
@@ -861,21 +861,19 @@ WasmiEngine::check(
     ImportVec const& imports,
     beast::Journal j)
 {
-    j_ = j;
-
     try
     {
         checkImports(imports, &hfs);
-        return checkHlp(wasmCode, hfs, funcName, params, imports);
+        return checkHlp(wasmCode, hfs, funcName, params, imports, j);
     }
     catch (std::exception const& e)
     {
-        print_wasm_error(std::string("exception: ") + e.what(), nullptr, j_);
+        print_wasm_error(std::string("exception: ") + e.what(), nullptr, j);
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        print_wasm_error(std::string("exception: unknown"), nullptr, j_);
+        print_wasm_error(std::string("exception: unknown"), nullptr, j);
     }
     // LCOV_EXCL_STOP
 
@@ -888,10 +886,12 @@ WasmiEngine::checkHlp(
     HostFunctions& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    ImportVec const& imports)
+    ImportVec const& imports,
+    beast::Journal j)
 {
     // currently only 1 module support, possible parallel UT run
     std::lock_guard<decltype(m_)> const lg(m_);
+    j_ = j;
 
     // Create and instantiate the module.
     if (wasmCode.empty())
