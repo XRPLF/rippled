@@ -1,21 +1,24 @@
 #include <xrpl/basics/Logger.h>
 
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/Expected.h>
 
+#include <fmt/format.h>
 #include <spdlog/async.h>
 #include <spdlog/async_logger.h>
 #include <spdlog/common.h>
 #include <spdlog/details/log_msg.h>
+#include <spdlog/details/os.h>
 #include <spdlog/formatter.h>
 #include <spdlog/logger.h>
 #include <spdlog/pattern_formatter.h>
 #include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <array>
 #include <cstddef>
 #include <cstring>
+#include <ctime>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -25,6 +28,7 @@
 #include <string_view>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 

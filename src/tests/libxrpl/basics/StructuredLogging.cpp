@@ -49,7 +49,7 @@ TEST(AppendJsonValue, integral_zero)
 TEST(AppendJsonValue, string_quoted)
 {
     std::string dest;
-    std::string val = "hello";
+    std::string const val = "hello";
     detail::appendJsonValue(dest, val);
     EXPECT_EQ(dest, "\"hello\"");
 }

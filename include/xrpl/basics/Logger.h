@@ -93,9 +93,9 @@ defaultJsonLogFormat()
 
 struct LoggingConfiguration
 {
-    bool enableConsole;
+    bool enableConsole{};
     std::optional<std::string> directory;
-    bool isAsync;
+    bool isAsync{};
     Severity defaultSeverity;
     bool jsonMode{false};
 };
