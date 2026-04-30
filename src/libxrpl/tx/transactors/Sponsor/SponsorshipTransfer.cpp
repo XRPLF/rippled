@@ -6,7 +6,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -417,7 +416,7 @@ SponsorshipTransfer::doApply()
             UNREACHABLE("xrpl::SponsorshipTransfer::doApply : Invalid sponsor field value");
             return;
         }
-        else if (newValue == 0)
+        if (newValue == 0)
         {
             sle->makeFieldAbsent(field);
         }
