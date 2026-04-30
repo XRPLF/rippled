@@ -52,56 +52,29 @@ IOUAmount::normalize()
         return;
     }
 
-    if (getSTNumberSwitchover())
+    Number const v{mantissa_, exponent_};
+    *this = fromNumber(v);
+    if (exponent_ > maxExponent)
     {
-        Number const v{mantissa_, exponent_};
-        *this = fromNumber(v);
-        if (exponent_ > maxExponent)
-            Throw<std::overflow_error>("value overflow");
-        if (exponent_ < minExponent)
-            *this = beast::zero;
-        return;
+        Throw<std::overflow_error>("value overflow");
     }
-
-    bool const negative = (mantissa_ < 0);
-
-    if (negative)
-        mantissa_ = -mantissa_;
-
-    while ((mantissa_ < minMantissa) && (exponent_ > minExponent))
-    {
-        mantissa_ *= 10;
-        --exponent_;
-    }
-
-    while (mantissa_ > maxMantissa)
-    {
-        if (exponent_ >= maxExponent)
-            Throw<std::overflow_error>("IOUAmount::normalize");
-
-        mantissa_ /= 10;
-        ++exponent_;
-    }
-
-    if ((exponent_ < minExponent) || (mantissa_ < minMantissa))
+    if (exponent_ < minExponent)
     {
         *this = beast::zero;
-        return;
     }
-
-    if (exponent_ > maxExponent)
-        Throw<std::overflow_error>("value overflow");
-
-    if (negative)
-        mantissa_ = -mantissa_;
+    return;
 }
 
 IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
 {
     if (exponent_ > maxExponent)
+    {
         Throw<std::overflow_error>("value overflow");
+    }
     if (exponent_ < minExponent)
+    {
         *this = beast::zero;
+    }
 }
 
 IOUAmount&
