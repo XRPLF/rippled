@@ -108,7 +108,8 @@ enforceMPTokenAuthorization(
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,
-    beast::Journal j);
+    beast::Journal j,
+    std::uint32_t flags = 0);
 
 /** Check if the destination account is allowed
  *  to receive MPT. Return tecNO_AUTH if it doesn't

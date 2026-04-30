@@ -230,8 +230,8 @@ VaultCreate::doApply()
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    if (auto const err =
-            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, account_, ctx_.journal);
+    if (auto const err = authorizeMPToken(
+            view(), preFeeBalance_, mptIssuanceID, account_, ctx_.journal, lsfMPTVault);
         !isTesSuccess(err))
         return err;
 

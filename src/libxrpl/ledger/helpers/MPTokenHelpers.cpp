@@ -410,7 +410,8 @@ enforceMPTokenAuthorization(
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization
-    beast::Journal j)
+    beast::Journal j,
+    std::uint32_t flags)
 {
     auto const sleIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
@@ -491,7 +492,8 @@ enforceMPTokenAuthorization(
                 priorBalance,   // priorBalance
                 mptIssuanceID,  // mptIssuanceID
                 account,        // account
-                j);
+                j,
+                flags);
             !isTesSuccess(err))
             return err;
 

@@ -74,7 +74,8 @@ isVaultPseudoAccountFrozen(
         }
         if constexpr (std::is_same_v<T, SLE>)
         {
-            return mptShare[sfAccount];
+            MPTID const mptID = mptShare[sfMPTokenIssuanceID];
+            return getMPTIssuer(mptID);
         }
     }();
 
