@@ -98,7 +98,7 @@ rippleState(AccountID const& id0, AccountID const& id1, Currency const& currency
 inline Keylet
 rippleState(AccountID const& id, Issue const& issue) noexcept
 {
-    return line(id, issue.account, issue.currency);
+    return rippleState(id, issue.account, issue.currency);
 }
 /** @} */
 
