@@ -65,154 +65,88 @@ appendJsonValue(std::string& dest, T const& value)
     }
 }
 
-}  // namespace detail
+/**
+ * @brief Append a @c "key":value JSON field to @p dest.
+ *
+ * Inserts a comma separator when @p dest already contains fields.
+ * The value is formatted by @ref appendJsonValue.
+ */
+template <typename T>
+void
+appendJsonField(std::string& dest, std::string_view key, T const& value)
+{
+    if (!dest.empty())
+        dest += ',';
+    fmt::format_to(std::back_inserter(dest), "\"{}\":", key);
+    appendJsonValue(dest, value);
+}
 
 /**
- * @brief Builds a JSON-structured spdlog format pattern string.
+ * @brief Append a @c key=value plain-text field to @p dest.
  *
- * This class produces a pattern string suitable for passing to
- * @c spdlog::pattern_formatter. Each field maps a JSON key to an spdlog
- * pattern flag (e.g. @c %t for thread ID, @c %n for channel name).
+ * Inserts a space separator when @p dest already contains fields.
+ */
+template <typename T>
+void
+appendTextField(std::string& dest, std::string_view key, T const& value)
+{
+    if (!dest.empty())
+        dest += ' ';
+    if constexpr (HasToString<T>)
+    {
+        fmt::format_to(std::back_inserter(dest), "{}={}", key, to_string(value));
+    }
+    else
+    {
+        fmt::format_to(std::back_inserter(dest), "{}={}", key, value);
+    }
+}
+
+/** @brief Internal builder used by @ref buildJsonPattern.
  *
- * The pattern ends with @c %%v so that the log message (a partial JSON
- * fragment) is spliced in at the end.
- *
- * Composability is lightweight: construct from an existing pattern string
- * (e.g. obtained from another logger's pattern) and append more fields.
- * No map copying — just string concatenation.
- *
- * Common spdlog pattern flags:
- *  - @c %%v  — the log message text
- *  - @c %%t  — thread ID
- *  - @c %%n  — logger/channel name
- *  - @c %%l  — log level (e.g. "info", "warning")
- *  - @c %%Y-%%m-%%d %%H:%%M:%%S.%%e — date/time with milliseconds
- *  - @c %%s  — source file name
- *  - @c %%#  — source line number
- *  - @c %%P  — process ID
- *
- * Example usage:
- * @code
- *     // Build a fresh pattern
- *     JsonLoggingPatternBuilder builder;
- *     builder.add("timestamp", "%Y-%m-%d %H:%M:%S.%e");
- *     builder.add("channel", "%n");
- *     builder.add("level", "%l");
- *     std::string pattern = builder.build();
- *     // Produces: {"timestamp":"%Y-%m-%d %H:%M:%S.%e","channel":"%n","level":"%l" %v }
- *
- *     // Extend an existing pattern from another logger
- *     JsonLoggingPatternBuilder extended(pattern);
- *     extended.add("source", "%s:%#");
- *     std::string newPattern = extended.build();
- *     // Produces: {"timestamp":"%Y-%m-%d %H:%M:%S.%e","channel":"%n","level":"%l","source":"%s:%#"
- * %v }
- * @endcode
+ *  Not part of the public API — use @ref buildJsonPattern instead.
  */
 class JsonLoggingPatternBuilder
 {
-    // Accumulated "key":"value" fragments, comma-separated.
-    // e.g. "\"timestamp\":\"%Y-%m-%d\",\"channel\":\"%n\""
     std::string fields_;
 
     static constexpr std::string_view kSUFFIX = ", \"message\": %v }";
 
-    /**
-     * @brief Extract the fields portion from an existing pattern string.
-     *
-     * Strips the leading '{' and trailing ' %%v }' suffix, leaving just
-     * the comma-separated field fragments.
-     */
     static std::string
     extractFields(std::string_view pattern)
     {
-        // Strip leading '{'
         if (!pattern.empty() && pattern.front() == '{')
             pattern.remove_prefix(1);
-
-        // Strip trailing ' %v }'
         if (auto pos = pattern.rfind(kSUFFIX); pos != std::string_view::npos)
             pattern = pattern.substr(0, pos);
-
         return std::string(pattern);
     }
 
 public:
-    /** @brief Construct an empty builder. */
     JsonLoggingPatternBuilder() = default;
 
-    /**
-     * @brief Construct from an existing pattern string.
-     *
-     * Extracts the fields from the pattern so that new fields can be
-     * appended. This is a lightweight string copy — no map involved.
-     *
-     * @param existingPattern A pattern previously produced by build().
-     */
     explicit JsonLoggingPatternBuilder(std::string_view existingPattern)
         : fields_(extractFields(existingPattern))
     {
     }
 
-    /**
-     * @brief Add a field to the JSON pattern.
-     *
-     * The value is an spdlog pattern flag or any literal text that spdlog
-     * will expand at log time.
-     *
-     * @param key The JSON field name (e.g. "timestamp", "thread").
-     * @param value The spdlog pattern string (e.g. "%%Y-%%m-%%d", "%%t").
-     * @return Reference to this builder for chaining.
-     */
-    JsonLoggingPatternBuilder&
-    add(std::string_view key, std::string_view value)
-    {
-        if (!fields_.empty())
-            fields_ += ',';
-        fmt::format_to(std::back_inserter(fields_), "\"{}\":\"{}\"", key, value);
-        return *this;
-    }
-
-    /**
-     * @brief Add a typed field to the JSON pattern.
-     *
-     * Uses @ref detail::appendJsonValue to format the value as a JSON
-     * fragment (unquoted for numbers/bools, quoted for everything else).
-     *
-     * @tparam T The value type (bool, integral, floating-point, or streamable).
-     * @param key The JSON field name.
-     * @param value The value to embed.
-     * @return Reference to this builder for chaining.
-     */
+    /** @brief Add a field. Delegates to @ref appendJsonField. */
     template <typename T>
-        requires(!std::is_convertible_v<T, std::string_view>)
     JsonLoggingPatternBuilder&
     add(std::string_view key, T const& value)
     {
-        if (!fields_.empty())
-            fields_ += ',';
-        fmt::format_to(std::back_inserter(fields_), "\"{}\":", key);
-        detail::appendJsonValue(fields_, value);
+        appendJsonField(fields_, key, value);
         return *this;
     }
 
-    /**
-     * @brief Build the final spdlog-compatible pattern string.
-     *
-     * Produces a compact JSON object where each value contains the raw
-     * spdlog pattern flags, terminated with %%v for the message body:
-     * @code
-     *   {"level":"%l","channel":"%n" %v }
-     * @endcode
-     *
-     * @return The pattern string to pass to spdlog::pattern_formatter.
-     */
     [[nodiscard]] std::string
     build() const
     {
         return "{" + fields_ + std::string(kSUFFIX);
     }
 };
+
+}  // namespace detail
 
 namespace log {
 
@@ -266,5 +200,39 @@ param(std::string_view name, T&& value)
 }
 
 }  // namespace log
+
+/**
+ * @brief Build or extend a JSON log pattern from @ref log::Parameter objects.
+ *
+ * Each parameter's name becomes a JSON key and its value becomes the
+ * corresponding JSON value in the spdlog pattern string.  String-like
+ * values are treated as spdlog pattern flags (e.g. @c "%%n", @c "%%l");
+ * numeric and boolean values are embedded as literals.
+ *
+ * @code
+ *     // Build from scratch (empty existing pattern)
+ *     auto pattern = buildJsonPattern("",
+ *         log::param("channel", std::string_view("%n")),
+ *         log::param("level",   std::string_view("%l")));
+ *
+ *     // Extend an existing pattern with extra fields
+ *     auto extended = buildJsonPattern(pattern,
+ *         log::param("trace_id", traceId));
+ * @endcode
+ *
+ * @tparam Ts  Value types of the parameters.
+ * @param existingPattern  A pattern previously produced by build() or an
+ *                         empty string to start fresh.
+ * @param params  The parameters to add as JSON fields.
+ * @return The spdlog-compatible JSON pattern string.
+ */
+template <typename... Ts>
+[[nodiscard]] std::string
+buildJsonPattern(std::string_view existingPattern, log::Parameter<Ts> const&... params)
+{
+    detail::JsonLoggingPatternBuilder builder(existingPattern);
+    (builder.add(params.name(), params.value()), ...);
+    return builder.build();
+}
 
 }  // namespace xrpl

@@ -86,11 +86,12 @@ inline constexpr char const* kDEFAULT_LOG_FORMAT = "%Y-%b-%d %H:%M:%S.%f UTC %n:
 inline std::string
 defaultJsonLogFormat()
 {
-    return JsonLoggingPatternBuilder()
-        .add("timestamp", "%Y-%b-%d %H:%M:%S.%f UTC")
-        .add("channel", "%n")
-        .add("severity", "%K")
-        .build();
+    using sv = std::string_view;
+    return buildJsonPattern(
+        "",
+        log::param("timestamp", sv("%Y-%b-%d %H:%M:%S.%f UTC")),
+        log::param("channel", sv("%n")),
+        log::param("severity", sv("%K")));
 }
 
 struct LoggingConfiguration
@@ -113,6 +114,8 @@ struct LoggingConfiguration
 class Logger
 {
     std::shared_ptr<spdlog::logger> logger_;
+    std::string contextParams_;  // inherited parameter fragments (JSON or text)
+    bool jsonMode_ = false;      // captured at construction from LogServiceState
 
     friend class LogService;  // to expose the Pump interface
 
@@ -127,12 +130,18 @@ class Logger
         fmt::memory_buffer stream_;
         bool const enabled_;
         bool const jsonMode_;
-        std::string parameters_;  // accumulated JSON parameter fragments
+        std::string_view contextParams_;  // points into Logger's string (no copy)
+        std::string messageParams_;       // per-message params (JSON mode only)
 
     public:
         ~Pump();
 
-        Pump(spdlog::logger* logger, Severity sev, std::source_location const& loc, bool jsonMode);
+        Pump(
+            spdlog::logger* logger,
+            Severity sev,
+            std::source_location const& loc,
+            bool jsonMode,
+            std::string_view contextParams = {});
 
         Pump(Pump&&) = delete;
         Pump(Pump const&) = delete;
@@ -217,11 +226,7 @@ class Logger
 
             if (jsonMode_)
             {
-                // Also build up the parameters for the "values" object
-                if (!parameters_.empty())
-                    parameters_ += ',';
-                fmt::format_to(std::back_inserter(parameters_), "\"{}\":", p.name());
-                detail::appendJsonValue(parameters_, p.value());
+                detail::appendJsonField(messageParams_, p.name(), p.value());
             }
 
             return *this;
@@ -247,6 +252,27 @@ public:
      * @param channel The channel this logger will report into.
      */
     Logger(std::string_view const channel);
+
+    /**
+     * @brief Construct a child Logger that inherits context from a parent.
+     *
+     * The child uses a new channel and carries all of the parent's context
+     * parameters plus any additional parameters supplied here.  Every log
+     * line produced by the child will automatically include these
+     * parameters in the JSON @c values object.
+     *
+     * @tparam Ts Value types of the extra parameters.
+     * @param parent The parent Logger whose context is inherited.
+     * @param channel The channel name for this child logger.
+     * @param params Extra context parameters to attach.
+     */
+    template <typename... Ts>
+    Logger(Logger const& parent, std::string_view channel, log::Parameter<Ts> const&... params)
+        : Logger(channel)
+    {
+        contextParams_ = parent.contextParams_;
+        (appendContextParam(params), ...);
+    }
 
     Logger(Logger const&) = default;
     ~Logger();
@@ -314,6 +340,21 @@ public:
 
 private:
     Logger(std::shared_ptr<spdlog::logger> logger);
+
+    /** @brief Serialise a single parameter into contextParams_. */
+    template <typename T>
+    void
+    appendContextParam(log::Parameter<T> const& p)
+    {
+        if (jsonMode_)
+        {
+            detail::appendJsonField(contextParams_, p.name(), p.value());
+        }
+        else
+        {
+            detail::appendTextField(contextParams_, p.name(), p.value());
+        }
+    }
 };
 
 /**

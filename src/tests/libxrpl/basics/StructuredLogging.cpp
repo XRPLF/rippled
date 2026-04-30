@@ -61,55 +61,55 @@ TEST(AppendJsonValue, appends_to_existing)
     EXPECT_EQ(dest, "prefix:99");
 }
 
-// -- JsonLoggingPatternBuilder -----------------------------------------------
+// -- buildJsonPattern --------------------------------------------------------
 
-TEST(JsonLoggingPatternBuilder, empty_build)
+TEST(BuildJsonPattern, no_params)
 {
-    JsonLoggingPatternBuilder builder;
-    EXPECT_EQ(builder.build(), "{, \"message\": %v }");
+    auto const pattern = buildJsonPattern("");
+    EXPECT_EQ(pattern, "{, \"message\": %v }");
 }
 
-TEST(JsonLoggingPatternBuilder, single_string_field)
+TEST(BuildJsonPattern, single_string_field)
 {
-    JsonLoggingPatternBuilder builder;
-    builder.add("level", "%l");
-    EXPECT_EQ(builder.build(), "{\"level\":\"%l\", \"message\": %v }");
+    auto const pattern = buildJsonPattern("", log::param("level", std::string_view("%l")));
+    EXPECT_EQ(pattern, "{\"level\":\"%l\", \"message\": %v }");
 }
 
-TEST(JsonLoggingPatternBuilder, multiple_string_fields)
+TEST(BuildJsonPattern, multiple_string_fields)
 {
-    JsonLoggingPatternBuilder builder;
-    builder.add("level", "%l");
-    builder.add("channel", "%n");
-    EXPECT_EQ(builder.build(), "{\"level\":\"%l\",\"channel\":\"%n\", \"message\": %v }");
+    auto const pattern = buildJsonPattern(
+        "",
+        log::param("level", std::string_view("%l")),
+        log::param("channel", std::string_view("%n")));
+    EXPECT_EQ(pattern, "{\"level\":\"%l\",\"channel\":\"%n\", \"message\": %v }");
 }
 
-TEST(JsonLoggingPatternBuilder, typed_fields)
+TEST(BuildJsonPattern, typed_fields)
 {
-    JsonLoggingPatternBuilder builder;
-    builder.add("enabled", true);
-    builder.add("count", 5);
-    EXPECT_EQ(builder.build(), "{\"enabled\":true,\"count\":5, \"message\": %v }");
+    auto const pattern = buildJsonPattern("", log::param("enabled", true), log::param("count", 5));
+    EXPECT_EQ(pattern, "{\"enabled\":true,\"count\":5, \"message\": %v }");
 }
 
-TEST(JsonLoggingPatternBuilder, chaining)
+TEST(BuildJsonPattern, many_fields)
 {
-    JsonLoggingPatternBuilder builder;
-    builder.add("a", "1").add("b", "2").add("c", "3");
-    EXPECT_EQ(builder.build(), "{\"a\":\"1\",\"b\":\"2\",\"c\":\"3\", \"message\": %v }");
+    auto const pattern = buildJsonPattern(
+        "",
+        log::param("a", std::string_view("1")),
+        log::param("b", std::string_view("2")),
+        log::param("c", std::string_view("3")));
+    EXPECT_EQ(pattern, "{\"a\":\"1\",\"b\":\"2\",\"c\":\"3\", \"message\": %v }");
 }
 
-TEST(JsonLoggingPatternBuilder, from_existing_pattern)
+TEST(BuildJsonPattern, extends_existing_pattern)
 {
-    JsonLoggingPatternBuilder original;
-    original.add("level", "%l").add("channel", "%n");
-    auto const pattern = original.build();
+    auto const base = buildJsonPattern(
+        "",
+        log::param("level", std::string_view("%l")),
+        log::param("channel", std::string_view("%n")));
 
-    JsonLoggingPatternBuilder extended(pattern);
-    extended.add("source", "%s:%#");
+    auto const extended = buildJsonPattern(base, log::param("source", std::string_view("%s:%#")));
     EXPECT_EQ(
-        extended.build(),
-        "{\"level\":\"%l\",\"channel\":\"%n\",\"source\":\"%s:%#\", \"message\": %v }");
+        extended, "{\"level\":\"%l\",\"channel\":\"%n\",\"source\":\"%s:%#\", \"message\": %v }");
 }
 
 // -- log::Parameter / log::param ---------------------------------------------

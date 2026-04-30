@@ -530,7 +530,8 @@ LogServiceState::makeFormatter(std::string const& pattern)
     return createPatternFormatter(pattern);
 }
 
-Logger::Logger(std::string_view const channel) : logger_(LogServiceState::registerLogger(channel))
+Logger::Logger(std::string_view const channel)
+    : logger_(LogServiceState::registerLogger(channel)), jsonMode_(LogServiceState::jsonMode_)
 {
 }
 
@@ -554,12 +555,14 @@ Logger::Pump::Pump(
     spdlog::logger* logger,
     Severity sev,
     std::source_location const& loc,
-    bool jsonMode)
+    bool jsonMode,
+    std::string_view contextParams)
     : logger_(logger)
     , severity_(sev)
     , sourceLocation_(loc)
     , enabled_(logger_ != nullptr && logger_->should_log(toSpdlogLevel(sev)))
     , jsonMode_(jsonMode)
+    , contextParams_(contextParams)
 {
 }
 
@@ -583,11 +586,18 @@ Logger::Pump::~Pump()
             wrapped.append(stream_.data(), stream_.data() + stream_.size());
             wrapped.push_back('"');
 
-            if (!parameters_.empty())
+            bool const hasContext = !contextParams_.empty();
+            bool const hasMessage = !messageParams_.empty();
+            if (hasContext || hasMessage)
             {
                 static constexpr char valuesOpen[] = ", \"values\": {";
                 wrapped.append(valuesOpen, valuesOpen + sizeof(valuesOpen) - 1);
-                wrapped.append(parameters_.data(), parameters_.data() + parameters_.size());
+                wrapped.append(
+                    contextParams_.data(), contextParams_.data() + contextParams_.size());
+                if (hasContext && hasMessage)
+                    wrapped.push_back(',');
+                wrapped.append(
+                    messageParams_.data(), messageParams_.data() + messageParams_.size());
                 wrapped.push_back('}');
             }
 
@@ -598,10 +608,27 @@ Logger::Pump::~Pump()
         }
         else
         {
-            logger_->log(
-                sourceLocation,
-                toSpdlogLevel(severity_),
-                std::string_view{stream_.data(), stream_.size()});
+            if (!contextParams_.empty())
+            {
+                // Prepend [key=val ...] context to the message
+                fmt::memory_buffer buf;
+                buf.push_back('[');
+                buf.append(contextParams_.data(), contextParams_.data() + contextParams_.size());
+                static constexpr char close[] = "] ";
+                buf.append(close, close + 2);
+                buf.append(stream_.data(), stream_.data() + stream_.size());
+                logger_->log(
+                    sourceLocation,
+                    toSpdlogLevel(severity_),
+                    std::string_view{buf.data(), buf.size()});
+            }
+            else
+            {
+                logger_->log(
+                    sourceLocation,
+                    toSpdlogLevel(severity_),
+                    std::string_view{stream_.data(), stream_.size()});
+            }
         }
     }
 }
@@ -609,35 +636,36 @@ Logger::Pump::~Pump()
 Logger::Pump
 Logger::trace(std::source_location const& loc) const
 {
-    return {logger_.get(), Severity::TRC, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::TRC, loc, LogServiceState::jsonMode_, contextParams_};
 }
 Logger::Pump
 Logger::debug(std::source_location const& loc) const
 {
-    return {logger_.get(), Severity::DBG, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::DBG, loc, LogServiceState::jsonMode_, contextParams_};
 }
 Logger::Pump
 Logger::info(std::source_location const& loc) const
 {
-    return {logger_.get(), Severity::NFO, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::NFO, loc, LogServiceState::jsonMode_, contextParams_};
 }
 Logger::Pump
 Logger::warn(std::source_location const& loc) const
 {
-    return {logger_.get(), Severity::WRN, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::WRN, loc, LogServiceState::jsonMode_, contextParams_};
 }
 Logger::Pump
 Logger::error(std::source_location const& loc) const
 {
-    return {logger_.get(), Severity::ERR, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::ERR, loc, LogServiceState::jsonMode_, contextParams_};
 }
 Logger::Pump
 Logger::fatal(std::source_location const& loc) const
 {
-    return {logger_.get(), Severity::FTL, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::FTL, loc, LogServiceState::jsonMode_, contextParams_};
 }
 
-Logger::Logger(std::shared_ptr<spdlog::logger> logger) : logger_(std::move(logger))
+Logger::Logger(std::shared_ptr<spdlog::logger> logger)
+    : logger_(std::move(logger)), jsonMode_(LogServiceState::jsonMode_)
 {
 }
 
