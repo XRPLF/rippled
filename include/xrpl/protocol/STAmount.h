@@ -138,26 +138,26 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    int
+    [[nodiscard]] int
     exponent() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     integral() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     native() const noexcept;
 
     template <ValidIssueType TIss>
-    constexpr bool
+    [[nodiscard]] constexpr bool
     holds() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     negative() const noexcept;
 
-    std::uint64_t
+    [[nodiscard]] std::uint64_t
     mantissa() const noexcept;
 
-    Asset const&
+    [[nodiscard]] Asset const&
     asset() const;
 
     template <ValidIssueType TIss>
@@ -168,20 +168,20 @@ public:
     TIss&
     get();
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuer() const;
 
-    int
+    [[nodiscard]] int
     signum() const noexcept;
 
     /** Returns a zero value with the same issuer and currency. */
-    STAmount
+    [[nodiscard]] STAmount
     zeroed() const;
 
     void
     setJson(Json::Value&) const;
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     value() const noexcept;
 
     //--------------------------------------------------------------------------
@@ -232,31 +232,31 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getFullText() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    Json::Value getJson(JsonOptions = JsonOptions::none) const override;
+    [[nodiscard]] Json::Value getJson(JsonOptions = JsonOptions::none) const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
-    XRPAmount
+    [[nodiscard]] XRPAmount
     xrp() const;
-    IOUAmount
+    [[nodiscard]] IOUAmount
     iou() const;
-    MPTAmount
+    [[nodiscard]] MPTAmount
     mpt() const;
 
 private:
@@ -319,7 +319,7 @@ STAmount::STAmount(
     : STBase(name), mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
 {
     // mValue is uint64, but needs to fit in the range of int64
-    if (Number::getMantissaScale() == MantissaRange::small)
+    if (Number::getMantissaScale() == MantissaRange::mantissa_scale::small)
     {
         XRPL_ASSERT(
             mValue <= std::numeric_limits<std::int64_t>::max(),
@@ -462,7 +462,7 @@ STAmount::asset() const
 }
 
 template <ValidIssueType TIss>
-constexpr TIss const&
+[[nodiscard]] constexpr TIss const&
 STAmount::get() const
 {
     return mAsset.get<TIss>();

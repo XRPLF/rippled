@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -25,7 +26,6 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 #include <memory>
 #include <optional>
@@ -36,7 +36,7 @@ namespace xrpl {
 bool
 LoanBrokerCoverClawback::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
@@ -164,11 +164,11 @@ determineClawAmount(
 {
     auto const maxClawAmount = [&]() {
         // Always round the minimum required up
-        NumberRoundModeGuard const mg1(Number::upward);
+        NumberRoundModeGuard const mg1(Number::rounding_mode::upward);
         auto const minRequiredCover =
             tenthBipsOfValue(sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
         // The subtraction probably won't round, but round down if it does.
-        NumberRoundModeGuard const mg2(Number::downward);
+        NumberRoundModeGuard const mg2(Number::rounding_mode::downward);
         return sleBroker[sfCoverAvailable] - minRequiredCover;
     }();
     if (maxClawAmount <= beast::zero)
@@ -295,8 +295,12 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     // balance is actually there. It should always match `sfCoverAvailable`, so
     // if there isn't, this is an internal error.
     if (accountHolds(
-            ctx.view, brokerPseudoAccountID, vaultAsset, fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) <
-        clawAmount)
+            ctx.view,
+            brokerPseudoAccountID,
+            vaultAsset,
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            ctx.j) < clawAmount)
         return tecINTERNAL;  // tecINSUFFICIENT_FUNDS; LCOV_EXCL_LINE
 
     // Check if the vault asset issuer has the correct flags

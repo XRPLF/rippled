@@ -49,7 +49,7 @@ public:
     Status
     fetch(uint256 const&, std::shared_ptr<NodeObject>*) override
     {
-        return notFound;
+        return Status::notFound;
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
@@ -90,7 +90,7 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need */
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
@@ -112,7 +112,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "none";

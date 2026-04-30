@@ -22,7 +22,7 @@ public:
     PublicKey nodeId;
     std::string description = {};  // NOLINT(readability-redundant-member-init)
 
-    auto
+    [[nodiscard]] auto
     toJson() const -> Json::Value;
 
     template <typename Hasher>
@@ -67,7 +67,7 @@ public:
     bool
     contains(PublicKey const& nodeId)
     {
-        std::lock_guard const lock(this->mutex_);
+        std::scoped_lock const lock(this->mutex_);
         return table_.contains({.nodeId = nodeId, .description = {}});
     }
 

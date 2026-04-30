@@ -295,7 +295,7 @@ class Consensus
         MonitoredMode(ConsensusMode m) : mode_{m}
         {
         }
-        ConsensusMode
+        [[nodiscard]] ConsensusMode
         get() const
         {
             return mode_;
@@ -408,7 +408,7 @@ public:
         return prevLedgerID_;
     }
 
-    ConsensusPhase
+    [[nodiscard]] ConsensusPhase
     phase() const
     {
         return phase_;
@@ -421,7 +421,7 @@ public:
         @param full True if verbose response desired.
         @return     The Json state.
     */
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson(bool full) const;
 
 private:
@@ -500,7 +500,7 @@ private:
      *
      * @return Whether to pause to wait for lagging proposers.
      */
-    bool
+    [[nodiscard]] bool
     shouldPause(std::unique_ptr<std::stringstream> const& clog) const;
 
     // Close the open ledger and establish initial position.
@@ -529,7 +529,7 @@ private:
     leaveConsensus(std::unique_ptr<std::stringstream> const& clog);
 
     // The rounded or effective close time estimate from a proposer
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     asCloseTime(NetClock::time_point raw) const;
 
 private:
@@ -551,7 +551,7 @@ private:
 
     NetClock::duration closeResolution_ = ledgerDefaultTimeResolution;
 
-    ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::init;
+    ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::AvalancheState::init;
 
     // Time it took for the last consensus round to converge
     std::chrono::milliseconds prevRoundTime_{};
@@ -677,7 +677,7 @@ Consensus<Adaptor>::startRoundInternal(
     previousLedger_ = prevLedger;
     result_.reset();
     convergePercent_ = 0;
-    closeTimeAvalancheState_ = ConsensusParms::init;
+    closeTimeAvalancheState_ = ConsensusParms::AvalancheState::init;
     haveCloseTimeConsensus_ = false;
     openTime_.reset(clock_.now());
     currPeerPositions_.clear();

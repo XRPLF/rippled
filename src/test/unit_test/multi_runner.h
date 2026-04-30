@@ -59,6 +59,8 @@ struct results
     // pointers from different memory spaces do not co-mingle
     using run_time = std::pair<static_string, typename clock_type::duration>;
 
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { max_top = 10 };
 
     std::size_t suites = 0;
@@ -175,13 +177,13 @@ public:
     void
     print_results(S& s);
 
-    bool
+    [[nodiscard]] bool
     any_failed() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     tests() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     suites() const;
 
     void
@@ -214,13 +216,13 @@ public:
     multi_runner_parent();
     ~multi_runner_parent();
 
-    bool
+    [[nodiscard]] bool
     any_failed() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     tests() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     suites() const;
 
     void
@@ -254,10 +256,10 @@ public:
     multi_runner_child(std::size_t num_jobs, bool quiet, bool print_log);
     ~multi_runner_child() override;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     tests() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     suites() const;
 
     void

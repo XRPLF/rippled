@@ -70,7 +70,7 @@ isPowerOfTen(T value)
 struct MantissaRange
 {
     using rep = std::uint64_t;
-    enum mantissa_scale { small, large };
+    enum class mantissa_scale { small, large };
 
     explicit constexpr MantissaRange(mantissa_scale scale_)
         : min(getMin(scale_)), log(logTen(min).value_or(-1)), scale(scale_)
@@ -88,9 +88,9 @@ private:
     {
         switch (scale_)
         {
-            case small:
+            case mantissa_scale::small:
                 return 1'000'000'000'000'000ULL;
-            case large:
+            case mantissa_scale::large:
                 return 1'000'000'000'000'000'000ULL;
             default:
                 // Since this can never be called outside a non-constexpr
@@ -252,9 +252,9 @@ public:
     // Assume unsigned values are... unsigned. i.e. positive
     explicit Number(internalrep mantissa, int exponent, normalized);
 
-    constexpr rep
+    [[nodiscard]] constexpr rep
     mantissa() const noexcept;
-    constexpr int
+    [[nodiscard]] constexpr int
     exponent() const noexcept;
 
     constexpr Number
@@ -339,7 +339,7 @@ public:
     }
 
     /** Return the sign of the amount */
-    constexpr int
+    [[nodiscard]] constexpr int
     signum() const noexcept
     {
         if (negative_)
@@ -347,7 +347,7 @@ public:
         return (mantissa_ != 0u) ? 1 : 0;
     }
 
-    Number
+    [[nodiscard]] Number
     truncate() const noexcept;
 
     friend constexpr bool
@@ -384,7 +384,7 @@ public:
     root2(Number f);
 
     // Thread local rounding control.  Default is to_nearest
-    enum rounding_mode { to_nearest, towards_zero, downward, upward };
+    enum class rounding_mode { to_nearest, towards_zero, downward, upward };
     static rounding_mode
     getround();
     // Returns previously set mode
@@ -443,14 +443,14 @@ private:
     static thread_local rounding_mode mode_;
     // The available ranges for mantissa
 
-    constexpr static MantissaRange smallRange{MantissaRange::small};
+    constexpr static MantissaRange smallRange{MantissaRange::mantissa_scale::small};
     static_assert(isPowerOfTen(smallRange.min));
     static_assert(smallRange.min == 1'000'000'000'000'000LL);
     static_assert(smallRange.max == 9'999'999'999'999'999LL);
     static_assert(smallRange.log == 15);
     static_assert(smallRange.min < maxRep);
     static_assert(smallRange.max < maxRep);
-    constexpr static MantissaRange largeRange{MantissaRange::large};
+    constexpr static MantissaRange largeRange{MantissaRange::mantissa_scale::large};
     static_assert(isPowerOfTen(largeRange.min));
     static_assert(largeRange.min == 1'000'000'000'000'000'000ULL);
     static_assert(largeRange.max == internalrep(9'999'999'999'999'999'999ULL));
@@ -490,13 +490,13 @@ private:
         MantissaRange::rep const& minMantissa,
         MantissaRange::rep const& maxMantissa);
 
-    bool
+    [[nodiscard]] bool
     isnormal() const noexcept;
 
     // Copy the number, but modify the exponent by "exponentDelta". Because the
     // mantissa doesn't change, the result will be "mostly" normalized, but the
     // exponent could go out of range, so it will be checked.
-    Number
+    [[nodiscard]] Number
     shiftExponent(int exponentDelta) const;
 
     // Safely convert rep (int64) mantissa to internalrep (uint64). If the rep
@@ -759,9 +759,9 @@ to_string(MantissaRange::mantissa_scale const& scale)
 {
     switch (scale)
     {
-        case MantissaRange::small:
+        case MantissaRange::mantissa_scale::small:
             return "small";
-        case MantissaRange::large:
+        case MantissaRange::mantissa_scale::large:
             return "large";
         default:
             throw std::runtime_error("Bad scale");

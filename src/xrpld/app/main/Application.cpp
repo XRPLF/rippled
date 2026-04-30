@@ -180,7 +180,7 @@ private:
             }
         }
 
-        std::chrono::milliseconds
+        [[nodiscard]] std::chrono::milliseconds
         get() const
         {
             return lastSample_.load();
@@ -1885,7 +1885,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             }
         }
 
-        loadLedger->stateMap().flushDirty(hotACCOUNT_NODE);
+        loadLedger->stateMap().flushDirty(NodeObjectType::hotACCOUNT_NODE);
 
         XRPL_ASSERT(
             loadLedger->header().seq < XRP_LEDGER_EARLIEST_FEES || loadLedger->read(keylet::fees()),

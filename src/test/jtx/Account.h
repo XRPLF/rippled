@@ -52,26 +52,26 @@ public:
      * secret key is unavailable, such as for pseudo-accounts. */
     explicit Account(std::string name, AccountID const& id);
 
-    enum AcctStringType { base58Seed, other };
+    enum class AcctStringType { base58Seed, other };
     /** Create an account from a base58 seed string.  Throws on invalid seed. */
     Account(AcctStringType stringType, std::string base58SeedStr);
 
     /** Return the name */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
     /** Return the public key. */
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     pk() const
     {
         return pk_;
     }
 
     /** Return the secret key. */
-    SecretKey const&
+    [[nodiscard]] SecretKey const&
     sk() const
     {
         return sk_;
@@ -81,14 +81,14 @@ public:
 
         The Account ID is the uint160 hash of the public key.
     */
-    AccountID
+    [[nodiscard]] AccountID
     id() const
     {
         return id_;
     }
 
     /** Returns the human readable public key. */
-    std::string const&
+    [[nodiscard]] std::string const&
     human() const
     {
         return human_;

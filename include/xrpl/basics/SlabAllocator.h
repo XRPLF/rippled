@@ -92,7 +92,7 @@ class SlabAllocator
             std::uint8_t* ret = nullptr;  // NOLINT(misc-const-correctness)
 
             {
-                std::lock_guard const l(m_);
+                std::scoped_lock const l(m_);
 
                 ret = l_;
 
@@ -121,7 +121,7 @@ class SlabAllocator
         {
             XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
-            std::lock_guard const l(m_);
+            std::scoped_lock const l(m_);
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)
@@ -180,7 +180,7 @@ public:
     ~SlabAllocator() = default;
 
     /** Returns the size of the memory block this allocator returns. */
-    constexpr std::size_t
+    [[nodiscard]] constexpr std::size_t
     size() const noexcept
     {
         return itemSize_;

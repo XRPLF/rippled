@@ -37,7 +37,7 @@ make_reason(String const& reason, char const* file, int line)
 
 class Thread;
 
-enum abort_t { no_abort_on_fail, abort_on_fail };
+enum class abort_t { no_abort_on_fail, abort_on_fail };
 
 /** A testsuite class.
 
@@ -57,7 +57,7 @@ private:
     // in the event of a failure, if the option to stop is set.
     struct abort_exception : public std::exception
     {
-        char const*
+        [[nodiscard]] char const*
         what() const noexcept override
         {
             return "test suite aborted";
@@ -127,7 +127,7 @@ private:
             @param abort Determines if suite continues running after a failure.
         */
         void
-        operator()(std::string const& name, abort_t abort = no_abort_on_fail);
+        operator()(std::string const& name, abort_t abort = abort_t::no_abort_on_fail);
 
         scoped_testcase
         operator()(abort_t abort);
@@ -363,14 +363,14 @@ public:
 inline void
 suite::testcase_t::operator()(std::string const& name, abort_t abort)
 {
-    suite_.abort_ = abort == abort_on_fail;
+    suite_.abort_ = abort == abort_t::abort_on_fail;
     suite_.runner_->testcase(name);
 }
 
 inline suite::scoped_testcase
 suite::testcase_t::operator()(abort_t abort)
 {
-    suite_.abort_ = abort == abort_on_fail;
+    suite_.abort_ = abort == abort_t::abort_on_fail;
     return {suite_, ss_};
 }
 
