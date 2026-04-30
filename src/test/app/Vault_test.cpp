@@ -6207,11 +6207,85 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    // Symmetric to the deposit bug, but on the destination side: bob's trust
+    // line is parked at the 16-digit IOU mantissa edge. When alice withdraws
+    // 2 USD with Destination = bob, the vault pseudo-account loses 2 USD but
+    // bob's trust line silently canonicalizes from 10000000000000001 back to
+    // 10000000000000000 — gaining only 1. Pre-fixCleanup3_2_0 the withdrawal
+    // invariants fire (tecINVARIANT_FAILED). Post-amendment, withdrawFromVault
+    // detects the delta mismatch and returns tecPRECISION_LOSS before
+    // invariants run.
+    void
+    testBugAssociateAssetRoundingWithdraw()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+
+            // Bob's limit is well above the 16-digit edge so the trust-line
+            // room check (canWithdraw -> withdrawToDestExceedsLimit) passes
+            // and the actual IOU canonicalization on accountSend can fire.
+            STAmount const aliceLimit{usd.raw(), 1'000};
+            STAmount const bobLimit{usd.raw(), Number{2, 16}};
+            STAmount const bobFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, aliceLimit));
+            env(trust(bob, bobLimit));
+            env.close();
+
+            env(pay(issuer, alice, usd(1'000)));
+            env(pay(issuer, bob, bobFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(1'000)}));
+            env.close();
+
+            auto tx = vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(2)});
+            tx[sfDestination] = bob.human();
+            env(tx, ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: associateAsset rounding fires withdrawal invariant "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testable_amendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+
+        {
+            testcase(
+                "bug: associateAsset rounding caught by transactor "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testable_amendments(), tecPRECISION_LOSS);
+        }
+    }
+
 public:
     void
     run() override
     {
         testBugAssociateAssetRoundingDeposit();
+        testBugAssociateAssetRoundingWithdraw();
         testSequences();
         testPreflight();
         testCreateFailXRP();

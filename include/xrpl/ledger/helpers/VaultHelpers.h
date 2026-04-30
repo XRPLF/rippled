@@ -5,6 +5,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <memory>
 #include <optional>
@@ -12,6 +13,7 @@
 namespace xrpl {
 
 class ApplyView;
+class STTx;
 
 /** From the perspective of a vault, return the number of shares to give
     depositor when they offer a fixed amount of assets. Note, since shares are
@@ -111,6 +113,46 @@ depositToVault(
     std::shared_ptr<SLE> const& vault,
     AccountID const& depositor,
     STAmount const& assetsDeposited,
+    beast::Journal j);
+
+/** Apply the asset-side of a vault withdrawal.
+
+    Decrements the vault's asset accounting fields, transfers shares from the
+    depositor back to the vault pseudo-account (and removes their empty
+    MPToken if applicable), runs `associateAsset` on the vault SLE, then
+    transfers the requested assets from the vault pseudo-account to the
+    destination via `doWithdraw`. Post-amendment, verifies that the resulting
+    deltas match the requested amount and returns `tecPRECISION_LOSS` on
+    silent rounding mismatches before the withdrawal invariants would fire.
+
+    @param view The apply view.
+    @param tx The triggering transaction (forwarded to `doWithdraw` for
+        deposit-preauth and destination-tag checks).
+    @param vault The vault SLE (peeked, will be mutated).
+    @param depositor The account redeeming shares.
+    @param destination The account receiving the assets (may equal depositor).
+    @param preFeeBalance The pre-fee balance, forwarded to `doWithdraw` for
+        possible trust line / MPToken creation when destination == depositor.
+    @param assetsWithdrawn The amount of assets to be withdrawn.
+    @param sharesRedeemed The amount of shares to be burned in exchange.
+    @param j Journal for logging.
+
+    @return tesSUCCESS on success; tecINSUFFICIENT_FUNDS if the vault's
+            available balance is too low; tecPRECISION_LOSS if any ledger
+            field or trust-line balance changed by an amount different than
+            `assetsWithdrawn`; otherwise the result of the underlying
+            `accountSend`, `removeEmptyHolding`, or `doWithdraw`.
+*/
+[[nodiscard]] TER
+withdrawFromVault(
+    ApplyView& view,
+    STTx const& tx,
+    std::shared_ptr<SLE> const& vault,
+    AccountID const& depositor,
+    AccountID const& destination,
+    XRPAmount preFeeBalance,
+    STAmount const& assetsWithdrawn,
+    STAmount const& sharesRedeemed,
     beast::Journal j);
 
 }  // namespace xrpl

@@ -15,7 +15,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
-#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -233,66 +232,18 @@ VaultWithdraw::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
-    auto assetsAvailable = vault->at(sfAssetsAvailable);
-    auto assetsTotal = vault->at(sfAssetsTotal);
-    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
-    XRPL_ASSERT(
-        lossUnrealized <= (assetsTotal - assetsAvailable),
-        "xrpl::VaultWithdraw::doApply : loss and assets do balance");
-
-    // The vault must have enough assets on hand. The vault may hold assets
-    // that it has already pledged. That is why we look at AssetAvailable
-    // instead of the pseudo-account balance.
-    if (*assetsAvailable < assetsWithdrawn)
-    {
-        JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
-        return tecINSUFFICIENT_FUNDS;
-    }
-
-    assetsTotal -= assetsWithdrawn;
-    assetsAvailable -= assetsWithdrawn;
-    view().update(vault);
-
-    auto const& vaultAccount = vault->at(sfAccount);
-    // Transfer shares from depositor to vault.
-    if (auto const ter =
-            accountSend(view(), account_, vaultAccount, sharesRedeemed, j_, WaiveTransferFee::Yes);
-        !isTesSuccess(ter))
-        return ter;
-
-    // Try to remove MPToken for shares, if the account balance is zero. Vault
-    // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
-    // Keep MPToken if holder is the vault owner.
-    if (account_ != vault->at(sfOwner))
-    {
-        if (auto const ter = removeEmptyHolding(view(), account_, sharesRedeemed.asset(), j_);
-            isTesSuccess(ter))
-        {
-            JLOG(j_.debug())  //
-                << "VaultWithdraw: removed empty MPToken for vault shares"
-                << " MPTID=" << to_string(mptIssuanceID)  //
-                << " account=" << toBase58(account_);
-        }
-        else if (ter != tecHAS_OBLIGATIONS)
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.error())  //
-                << "VaultWithdraw: failed to remove MPToken for vault shares"
-                << " MPTID=" << to_string(mptIssuanceID)  //
-                << " account=" << toBase58(account_)      //
-                << " with result: " << transToken(ter);
-            return ter;
-            // LCOV_EXCL_STOP
-        }
-        // else quietly ignore, account balance is not zero
-    }
-
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
 
-    associateAsset(*vault, vaultAsset);
-
-    return doWithdraw(
-        view(), ctx_.tx, account_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
+    return withdrawFromVault(
+        view(),
+        ctx_.tx,
+        vault,
+        account_,
+        dstAcct,
+        preFeeBalance_,
+        assetsWithdrawn,
+        sharesRedeemed,
+        j_);
 }
 
 void
