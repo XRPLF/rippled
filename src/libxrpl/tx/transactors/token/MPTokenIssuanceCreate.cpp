@@ -111,8 +111,8 @@ MPTokenIssuanceCreate::create(
         !isPseudoAccount((acct)) ? getTxReserveSponsor(view, tx) : std::shared_ptr<SLE>();
     if (args.priorBalance)
     {
-        if (auto const ret =
-                checkInsufficientReserve(view, tx, acct, *(args.priorBalance), sponsor, 1, 0, journal);
+        if (auto const ret = checkInsufficientReserve(
+                view, tx, acct, *(args.priorBalance), sponsor, 1, 0, journal);
             !isTesSuccess(ret))
             return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
     }

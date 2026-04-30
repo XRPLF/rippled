@@ -53,9 +53,7 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
 }
 
 inline std::optional<AccountID>
-getLedgerEntryReserveSponsorAccountID(
-    SLE::const_ref sle,
-    SF_ACCOUNT const& field = sfSponsor)
+getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor)
 {
     if (sle->isFieldPresent(field))
         return sle->getAccountID(field);

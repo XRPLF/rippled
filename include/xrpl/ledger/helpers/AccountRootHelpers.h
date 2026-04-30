@@ -68,7 +68,7 @@ checkInsufficientReserve(
     STTx const& tx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
-    SLE::const_ref sponsorSle,  
+    SLE::const_ref sponsorSle,
     std::int32_t ownerCountDelta,
     std::int32_t accountCountDelta = 0,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
