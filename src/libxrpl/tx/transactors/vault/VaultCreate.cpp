@@ -174,7 +174,7 @@ VaultCreate::doApply()
         : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
 
     auto txFlags = tx.getFlags();
-    std::uint32_t mptFlags = 0;
+    std::uint32_t mptFlags = lsfMPTVault;
     if ((txFlags & tfVaultShareNonTransferable) == 0)
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
     if ((txFlags & tfVaultPrivate) != 0u)

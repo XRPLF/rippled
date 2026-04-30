@@ -71,8 +71,9 @@ bool
 isFrozen(ReadView const& view, AccountID const& account, SLE const& mptSLE, int depth)
 {
     MPTIssue const mptIssue{mptSLE[sfMPTokenIssuanceID]};
+    bool const isVaultShares = mptSLE.isFlag(lsfMPTVault);
     return isGlobalFrozen(view, mptIssue) || isIndividualFrozen(view, account, mptSLE) ||
-        isVaultPseudoAccountFrozen(view, account, mptSLE, depth);
+        (isVaultShares && isVaultPseudoAccountFrozen(view, account, mptSLE, depth));
 }
 
 [[nodiscard]] bool
