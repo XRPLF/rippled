@@ -118,6 +118,7 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
         case ltORACLE:
         case ltPERMISSIONED_DOMAIN:
         case ltVAULT:
+        case ltLOAN_BROKER:
             return sle->getAccountID(sfOwner);
         case ltCHECK:
         case ltDID:
@@ -134,6 +135,8 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
             return sle->getAccountID(sfAccount);
         case ltMPTOKEN_ISSUANCE:
             return sle->getAccountID(sfIssuer);
+        case ltLOAN:
+            return sle->getAccountID(sfBorrower);
         case ltSIGNER_LIST: {
             auto const signerList = view.read(keylet::signers(account));
             if (!signerList)
