@@ -493,7 +493,7 @@ parseLoanBroker(
     if (!seq)
         return Unexpected(seq.error());
 
-    return keylet::loanbroker(*id, *seq).key;
+    return keylet::loanBroker(*id, *seq).key;
 }
 
 static Expected<uint256, Json::Value>

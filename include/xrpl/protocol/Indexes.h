@@ -320,10 +320,10 @@ vault(uint256 const& vaultKey)
 }
 
 Keylet
-loanbroker(AccountID const& owner, std::uint32_t seq) noexcept;
+loanBroker(AccountID const& owner, std::uint32_t seq) noexcept;
 
 inline Keylet
-loanbroker(uint256 const& key)
+loanBroker(uint256 const& key)
 {
     return {ltLOAN_BROKER, key};
 }

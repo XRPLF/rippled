@@ -555,9 +555,9 @@ vault(AccountID const& owner, std::uint32_t seq) noexcept
 }
 
 Keylet
-loanbroker(AccountID const& owner, std::uint32_t seq) noexcept
+loanBroker(AccountID const& owner, std::uint32_t seq) noexcept
 {
-    return loanbroker(indexHash(LedgerNameSpace::LOAN_BROKER, owner, seq));
+    return loanBroker(indexHash(LedgerNameSpace::LOAN_BROKER, owner, seq));
 }
 
 Keylet

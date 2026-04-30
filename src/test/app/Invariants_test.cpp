@@ -2059,7 +2059,7 @@ class Invariants_test : public beast::unit_test::suite
         // Create Loan Broker
         using namespace loanBroker;
 
-        auto const loanBrokerKeylet = keylet::loanbroker(a.id(), env.seq(a));
+        auto const loanBrokerKeylet = keylet::loanBroker(a.id(), env.seq(a));
         // Create a Loan Broker with all default values.
         env(set(a, vaultID), fee(increment));
 

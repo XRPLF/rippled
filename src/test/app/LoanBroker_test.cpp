@@ -91,7 +91,7 @@ class LoanBroker_test : public beast::unit_test::suite
             using namespace loanBroker;
             // Can't create a loan broker regardless of whether the vault exists
             env(set(alice, keylet.key), ter(temDISABLED));
-            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
             // Other LoanBroker transactions are disabled, too.
             // 1. LoanBrokerCoverDeposit
             env(coverDeposit(alice, brokerKeylet.key, asset(1000)), ter(temDISABLED));
@@ -177,7 +177,7 @@ class LoanBroker_test : public beast::unit_test::suite
         static PrettyAsset const ghostIouAsset = nonExistent["GST"];
         PrettyAsset const vaultPseudoIouAsset = vault.pseudoAccount["PSD"];
 
-        auto const badKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const badKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, badVault.vaultID));
         env.close();
         auto const badBrokerPseudo = [&]() {
@@ -190,7 +190,7 @@ class LoanBroker_test : public beast::unit_test::suite
         }();
         PrettyAsset const badBrokerPseudoIouAsset = badBrokerPseudo["WAT"];
 
-        auto const keylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const keylet = keylet::loanBroker(alice.id(), env.seq(alice));
         {
             // Start with default values
             auto jtx = env.jt(set(alice, vault.vaultID));
@@ -733,7 +733,7 @@ class LoanBroker_test : public beast::unit_test::suite
                     // Modifications
 
                     // Update the fields
-                    auto const nextKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+                    auto const nextKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
 
                     // fields that can't be changed
                     // LoanBrokerID
@@ -889,7 +889,7 @@ class LoanBroker_test : public beast::unit_test::suite
         env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, vaultInfo.vaultID));
         env.close();
 
@@ -1228,7 +1228,7 @@ class LoanBroker_test : public beast::unit_test::suite
         env.close();
 
         // Predict LoanBroker key using alice's current sequence BEFORE submit
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
 
         // Create LoanBroker pointing to the vault
         env(loanBroker::set(alice, vaultKeylet.key));
@@ -1247,7 +1247,7 @@ class LoanBroker_test : public beast::unit_test::suite
         beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, jlog};
 
-        if (auto sleBroker = ac.view().peek(keylet::loanbroker(brokerKeylet.key)))
+        if (auto sleBroker = ac.view().peek(keylet::loanBroker(brokerKeylet.key)))
         {
             auto const vaultID = (*sleBroker)[sfVaultID];
             if (auto sleVault = ac.view().peek(keylet::vault(vaultID)))
@@ -1334,7 +1334,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 err);
         });
 
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         // Can create LoanBroker if the vault owner is not authorized
         forUnauthAuth([&](auto) { env(set(alice, vaultInfo.vaultID)); });
 
@@ -1410,7 +1410,7 @@ class LoanBroker_test : public beast::unit_test::suite
         env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, vaultInfo.vaultID));
         env.close();
 
@@ -1498,7 +1498,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 ter(err));
             env.close();
 
-            auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
+            auto const brokerKeylet = keylet::loanBroker(broker, env.seq(broker));
 
             env(loanBroker::set(broker, keylet.key));
             env.close();
@@ -1666,7 +1666,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env(vault.withdraw({.depositor = broker, .id = keylet.key, .amount = token(1'000)}));
 
             // Test LoanBroker withdraw
-            auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
+            auto const brokerKeylet = keylet::loanBroker(broker, env.seq(broker));
 
             env(loanBroker::set(broker, keylet.key));
             env.close();
@@ -1794,7 +1794,7 @@ class LoanBroker_test : public beast::unit_test::suite
             }
 
             // Test LoanBroker withdraw
-            auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
+            auto const brokerKeylet = keylet::loanBroker(broker, env.seq(broker));
 
             env(loanBroker::set(broker, keylet.key));
             env.close();

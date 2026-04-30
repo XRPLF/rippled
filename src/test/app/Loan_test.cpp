@@ -107,7 +107,7 @@ protected:
             Account const bob{"bob"};
             env.fund(XRP(10000), alice, bob);
 
-            auto const keylet = keylet::loanbroker(alice, env.seq(alice));
+            auto const keylet = keylet::loanBroker(alice, env.seq(alice));
 
             using namespace std::chrono_literals;
             using namespace loan;
@@ -190,7 +190,7 @@ protected:
         [[nodiscard]] Keylet
         brokerKeylet() const
         {
-            return keylet::loanbroker(brokerID);
+            return keylet::loanBroker(brokerID);
         }
         [[nodiscard]] Keylet
         vaultKeylet() const
@@ -347,7 +347,7 @@ protected:
             std::uint32_t ownerCount) const
         {
             using namespace jtx;
-            if (auto brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            if (auto brokerSle = env.le(keylet::loanBroker(broker.brokerID));
                 env.test.BEAST_EXPECT(brokerSle))
             {
                 TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
@@ -450,7 +450,7 @@ protected:
                     paymentRemaining,
                     1);
 
-                if (auto brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+                if (auto brokerSle = env.le(keylet::loanBroker(broker.brokerID));
                     env.test.BEAST_EXPECT(brokerSle))
                 {
                     if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
@@ -517,7 +517,7 @@ protected:
             BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
         }
 
-        auto const keylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        auto const keylet = keylet::loanBroker(lender.id(), env.seq(lender));
 
         using namespace loanBroker;
         env(set(lender, vaultKeylet.key, params.flags),
@@ -610,7 +610,7 @@ protected:
     bool
     canImpairLoan(jtx::Env const& env, BrokerInfo const& broker, LoanState const& state)
     {
-        if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+        if (auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
         {
             if (auto const vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
@@ -780,7 +780,7 @@ protected:
         BrokerInfo const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
         auto const pseudoAcctOpt = [&]() -> std::optional<Account> {
-            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
             auto const brokerPseudo = brokerSle->at(sfAccount);
@@ -791,7 +791,7 @@ protected:
         Account const& pseudoAcct = *pseudoAcctOpt;
 
         auto const loanKeyletOpt = [&]() -> std::optional<Keylet> {
-            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
 
@@ -1260,7 +1260,7 @@ protected:
             toEndOfLife)
     {
         auto const [keylet, loanSequence] = [&]() {
-            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
             {
                 // will be invalid
@@ -1349,7 +1349,7 @@ protected:
 
         auto const startDate = env.current()->header().parentCloseTime.time_since_epoch().count();
 
-        if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+        if (auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
         {
             BEAST_EXPECT(brokerSle->at(sfOwnerCount) == 1);
@@ -1529,7 +1529,7 @@ protected:
             borrowerStartingBalance.value() - adjustment);
         BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwnerCount);
 
-        if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+        if (auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
         {
             BEAST_EXPECT(brokerSle->at(sfOwnerCount) == 0);
@@ -1605,7 +1605,7 @@ protected:
         auto const loanSetFee = fee(env.current()->fees().base * 2);
 
         auto const pseudoAcct = [&]() {
-            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return Account{lender};
             auto const brokerPseudo = brokerSle->at(sfAccount);
@@ -1868,7 +1868,7 @@ protected:
         // XRP can not be frozen, but run through the loop anyway to test
         // the tecLIMIT_EXCEEDED case
         {
-            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return;
 
@@ -1992,7 +1992,7 @@ protected:
         // Finally! Create a loan
 
         auto coverAvailable = [&env, this](uint256 const& brokerID, Number const& expected) {
-            if (auto const brokerSle = env.le(keylet::loanbroker(brokerID));
+            if (auto const brokerSle = env.le(keylet::loanBroker(brokerID));
                 BEAST_EXPECT(brokerSle))
             {
                 auto const available = brokerSle->at(sfCoverAvailable);
@@ -2002,7 +2002,7 @@ protected:
             return Number{};
         };
         auto getDefaultInfo = [&env, this](LoanState const& state, BrokerInfo const& broker) {
-            if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            if (auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
                 BEAST_EXPECT(brokerSle))
             {
                 BEAST_EXPECT(
@@ -3520,7 +3520,7 @@ protected:
                 }
             }
 
-            if (auto brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            if (auto brokerSle = env.le(keylet::loanBroker(broker.brokerID));
                 BEAST_EXPECT(brokerSle))
             {
                 BEAST_EXPECT(brokerSle->at(sfOwnerCount) == 0);
@@ -3531,7 +3531,7 @@ protected:
                     lender, broker.brokerID, STAmount(broker.asset, coverAvailable)));
                 env.close();
 
-                brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+                brokerSle = env.le(keylet::loanBroker(broker.brokerID));
                 BEAST_EXPECT(brokerSle && brokerSle->at(sfCoverAvailable) == 0);
             }
             // Verify we can delete the loan broker
@@ -3763,7 +3763,7 @@ protected:
 
         BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
-        if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+        if (auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
         {
             BEAST_EXPECT(brokerSle->at(sfDebtMaximum) == 0);
@@ -3833,7 +3833,7 @@ protected:
         createJson["OverpaymentInterestRate"] = 1360;
         createJson["PaymentInterval"] = 727;
 
-        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
@@ -4176,7 +4176,7 @@ protected:
             Env env(*this);
 
             auto getCoverBalance = [&](BrokerInfo const& brokerInfo, auto const& accountField) {
-                if (auto const le = env.le(keylet::loanbroker(brokerInfo.brokerID));
+                if (auto const le = env.le(keylet::loanBroker(brokerInfo.brokerID));
                     BEAST_EXPECT(le))
                 {
                     auto const account = le->at(accountField);
@@ -4358,7 +4358,7 @@ protected:
         env.close();
 
         auto const pseudoBroker = [&]() -> std::optional<Account> {
-            if (auto brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
+            if (auto brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
                 BEAST_EXPECT(brokerSle))
             {
                 return Account{"pseudo", brokerSle->at(sfAccount)};
@@ -4588,7 +4588,7 @@ protected:
         createJson["PaymentTotal"] = "2891743748";
         createJson["PrincipalRequested"] = "8516.98";
 
-        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
 
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
         env(createJson, ter(temINVALID));
@@ -4649,7 +4649,7 @@ protected:
         createJson["PaymentTotal"] = 5678;
         createJson["PrincipalRequested"] = "9924.81";
 
-        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
@@ -4658,7 +4658,7 @@ protected:
         env.close();
 
         auto const pseudoAcct = [&]() {
-            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return Account{lender};
             auto const brokerPseudo = brokerSle->at(sfAccount);
@@ -4739,7 +4739,7 @@ protected:
         createJson["PaymentTotal"] = 1;
         createJson["PrincipalRequested"] = "0.000763058";
 
-        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
@@ -4803,7 +4803,7 @@ protected:
         createJson["PaymentTotal"] = 3239184;
         createJson["PrincipalRequested"] = "3959.37";
 
-        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
@@ -4882,7 +4882,7 @@ protected:
         createJson["PaymentTotal"] = 5678;
         createJson["PrincipalRequested"] = "9924.81";
 
-        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
@@ -4986,7 +4986,7 @@ protected:
         createJson["PaymentTotal"] = 5678;
         createJson["PrincipalRequested"] = "9924.81";
 
-        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
@@ -5151,7 +5151,7 @@ protected:
         }
         {
             // Start date when the ledger is closed will be larger
-            auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
             auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
             auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
@@ -5178,7 +5178,7 @@ protected:
         }
         {
             // Start date when the ledger is closed will be larger
-            auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
             auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
             auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
@@ -5226,7 +5226,7 @@ protected:
             if (!BEAST_EXPECT(total != 0))
                 return;
 
-            auto const brokerState = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerState = env.le(keylet::loanBroker(broker.brokerID));
             // Intentionally shadow the outer values
             auto const loanSequence = brokerState->at(sfLoanSequence);
             auto const keylet = keylet::loan(broker.brokerID, loanSequence);
@@ -5356,7 +5356,7 @@ protected:
         env(createTx);
         env.close();
 
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, vaultKeylet.key));
         env.close();
 
@@ -5450,7 +5450,7 @@ protected:
 
         auto const loanSetFee = fee(env.current()->fees().base * 2);
 
-        auto const brokerPreLoan = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerPreLoan = env.le(keylet::loanBroker(broker.brokerID));
         if (BEAST_EXPECT(brokerPreLoan); !brokerPreLoan.has_value())
             return;
 
@@ -5485,7 +5485,7 @@ protected:
         auto const overdueClose = tp{d{state1.nextPaymentDate + state1.paymentInterval}};
         env.close(overdueClose);
 
-        auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSle = env.le(loanKeylet);
         if (!BEAST_EXPECT(brokerSle && loanSle))
             return;
@@ -5616,7 +5616,7 @@ protected:
             env(createTx);
             env.close();
 
-            auto const brokerBefore = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerBefore = env.le(keylet::loanBroker(broker.brokerID));
             BEAST_EXPECT(brokerBefore);
             if (!brokerBefore)
                 return;
@@ -5633,7 +5633,7 @@ protected:
             env(coverClawback(issuer, 0), loanBrokerID(broker.brokerID));
             env.close();
 
-            auto const brokerAfter = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerAfter = env.le(keylet::loanBroker(broker.brokerID));
             BEAST_EXPECT(brokerAfter);
             if (!brokerAfter)
                 return;
@@ -5725,7 +5725,7 @@ protected:
             gracePeriod(grace),
             fee(loanSetFee));
 
-        auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
         BEAST_EXPECT(brokerSle);
         auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
         auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
@@ -5756,7 +5756,7 @@ protected:
         auto after = getCurrentState(env, broker, loanKeylet);
         auto const loanSle = env.le(loanKeylet);
         BEAST_EXPECT(loanSle);
-        auto const brokerSle2 = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerSle2 = env.le(keylet::loanBroker(broker.brokerID));
         BEAST_EXPECT(brokerSle2);
 
         auto const closePaymentFee = loanSle ? loanSle->at(sfClosePaymentFee) : Number{};
@@ -5912,7 +5912,7 @@ protected:
         auto broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
         auto const loanKeyletOpt = [&]() -> std::optional<Keylet> {
-            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
 
@@ -6183,7 +6183,7 @@ protected:
             txfee);
         env.close();
 
-        auto const brokerKeyLet = keylet::loanbroker(lender.id(), env.seq(lender));
+        auto const brokerKeyLet = keylet::loanBroker(lender.id(), env.seq(lender));
 
         env(loanBroker::set(lender, vaultKeyLet.key), txfee);
         env.close();
@@ -6257,7 +6257,7 @@ protected:
         env.close();
 
         // Verify DebtTotal is exactly 804
-        if (auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
+        if (auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
             BEAST_EXPECT(brokerSle))
         {
             log << *brokerSle << std::endl;
@@ -6278,7 +6278,7 @@ protected:
         env.close();
 
         // Validate CoverAvailable == 80 XRP and DebtTotal remains 804
-        if (auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
+        if (auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
             BEAST_EXPECT(brokerSle))
         {
             log << *brokerSle << std::endl;
@@ -6388,7 +6388,7 @@ protected:
                 txFee);
             env.close();
 
-            auto const brokerKeylet = keylet::loanbroker(broker.id(), env.seq(broker));
+            auto const brokerKeylet = keylet::loanBroker(broker.id(), env.seq(broker));
 
             env(loanBroker::set(broker, vaultKeylet.key), txFee);
             env.close();
@@ -6691,7 +6691,7 @@ protected:
         // Verify trustline is still deleted
         BEAST_EXPECT(env.le(brokerTrustline) == nullptr);
         // Verify the service fee went to the broker pseudo-account
-        if (auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
+        if (auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
             BEAST_EXPECT(brokerSle))
         {
             Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
@@ -6772,7 +6772,7 @@ protected:
         // Verify the MPT is still unauthorized.
         BEAST_EXPECT(env.le(brokerMpt) == nullptr);
         // Verify the service fee went to the broker pseudo-account
-        if (auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
+        if (auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
             BEAST_EXPECT(brokerSle))
         {
             Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
@@ -6875,7 +6875,7 @@ protected:
         // Verify broker is still not authorized
         env(pay(issuer, broker, MPT(1'000)), ter(tecNO_AUTH));
         // Verify the service fee went to the broker pseudo-account
-        if (auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
+        if (auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
             BEAST_EXPECT(brokerSle))
         {
             Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
@@ -7145,7 +7145,7 @@ protected:
         env.close();
 
         // Create a loan
-        auto const sleBroker = env.le(keylet::loanbroker(broker.brokerID));
+        auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return;
 

@@ -4191,7 +4191,7 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
 
             // Create a loan broker backed by this vault
-            auto const brokerKeylet = keylet::loanbroker(d.owner.id(), env.seq(d.owner));
+            auto const brokerKeylet = keylet::loanBroker(d.owner.id(), env.seq(d.owner));
             env(set(d.owner, d.keylet.key));
             env.close();
 
@@ -4705,7 +4705,7 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             auto const& sharesAvailable = vaultShareBalance(vaultKeylet);
-            auto const& brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+            auto const& brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
 
             env(set(owner, vaultKeylet.key));
             env.close();
@@ -5098,7 +5098,7 @@ class Vault_test : public beast::unit_test::suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5156,7 +5156,7 @@ class Vault_test : public beast::unit_test::suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5211,7 +5211,7 @@ class Vault_test : public beast::unit_test::suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5265,7 +5265,7 @@ class Vault_test : public beast::unit_test::suite
                     return;
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5313,7 +5313,7 @@ class Vault_test : public beast::unit_test::suite
                     return;
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5419,7 +5419,7 @@ class Vault_test : public beast::unit_test::suite
             PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
             // Create a loan broker backed by this vault
-            auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+            auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
             env(set(owner, vaultKeylet.key));
             env.close();
 

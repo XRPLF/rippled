@@ -135,7 +135,7 @@ ValidLoanBroker::finalize(
     for (auto const& [brokerID, broker] : brokers_)
     {
         auto const& after =
-            broker.brokerAfter ? broker.brokerAfter : view.read(keylet::loanbroker(brokerID));
+            broker.brokerAfter ? broker.brokerAfter : view.read(keylet::loanBroker(brokerID));
 
         if (!after)
         {
