@@ -9,12 +9,10 @@
 #include <cstdint>
 #include <limits>
 
-namespace xrpl::test::jtx {
-
 /** Directory operations. */
-namespace directory {
+namespace xrpl::test::jtx::directory {
 
-enum Error {
+enum class Error {
     DirectoryRootNotFound,
     DirectoryTooSmall,
     DirectoryPageDuplicate,
@@ -53,6 +51,4 @@ maximumPageIndex(Env const& env) -> std::uint64_t
     return dirNodeMaxPages - 1;
 }
 
-}  // namespace directory
-
-}  // namespace xrpl::test::jtx
+}  // namespace xrpl::test::jtx::directory

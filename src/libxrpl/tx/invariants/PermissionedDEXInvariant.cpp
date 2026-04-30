@@ -1,11 +1,20 @@
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -37,12 +46,23 @@ ValidPermissionedDEX::visitEntry(
             regularOffers_ = true;
         }
 
-        // if a hybrid offer is missing domain or additional book, there's
-        // something wrong
+        // pre-fixSecurity3_1_3: hybrid offer missing domain, missing
+        // sfAdditionalBooks, or sfAdditionalBooks has more than one entry
         if (after && after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() > 1))
+            badHybridsOld_ = true;
+
+        // post-fixSecurity3_1_3: same as above but also catches size == 0
+        if (after && after->isFlag(lsfHybrid) &&
+            (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
+             after->getFieldArray(sfAdditionalBooks).size() != 1))
             badHybrids_ = true;
+
+        // pre-fixCleanup3_2_0: track hybrid offers that were fully consumed
+        // (after is null), which were previously a crash or invariant failure
+        if (!after && sle->isFlag(lsfHybrid))
+            badHybridDeleted_ = true;
     }
 }
 
@@ -60,9 +80,18 @@ ValidPermissionedDEX::finalize(
 
     // For each offercreate transaction, check if
     // permissioned offers are valid
-    if (txType == ttOFFER_CREATE && badHybrids_)
+    bool const isMalformed = view.rules().enabled(fixSecurity3_1_3) ? badHybrids_ : badHybridsOld_;
+    if (txType == ttOFFER_CREATE && isMalformed)
     {
         JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
+        return false;
+    }
+
+    // pre-fixCleanup3_2_0: hybrid offer was fully consumed (deleted); before
+    // this fix, the invariant would crash or fail for such transactions
+    if (!view.rules().enabled(fixCleanup3_2_0) && badHybridDeleted_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: hybrid offer was fully consumed";
         return false;
     }
 

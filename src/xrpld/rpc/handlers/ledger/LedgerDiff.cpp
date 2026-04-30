@@ -1,5 +1,17 @@
+#include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/shamap/SHAMap.h>
+
+#include <grpcpp/support/status.h>
+#include <org/xrpl/rpc/v1/get_ledger_diff.pb.h>
+
+#include <limits>
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
@@ -36,7 +48,7 @@ doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& con
         std::dynamic_pointer_cast<Ledger const>(desiredLedgerRv);
     if (!desiredLedger)
     {
-        grpc::Status const errorStatus{grpc::StatusCode::NOT_FOUND, "base ledger not validated"};
+        grpc::Status const errorStatus{grpc::StatusCode::NOT_FOUND, "desired ledger not validated"};
         return {response, errorStatus};
     }
 

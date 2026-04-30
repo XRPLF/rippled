@@ -61,7 +61,7 @@ private:
     // minimum # of ledgers required for standalone mode.
     static std::uint32_t const minimumDeletionIntervalSA_ = 8;
     // minimum ledger to maintain online.
-    std::atomic<LedgerIndex> minimumOnline_{};
+    std::atomic<LedgerIndex> minimumOnline_;
 
     NodeStore::Scheduler& scheduler_;
     beast::Journal const journal_;
@@ -102,7 +102,7 @@ public:
     std::uint32_t
     clampFetchDepth(std::uint32_t fetch_depth) const override
     {
-        return deleteInterval_ ? std::min(fetch_depth, deleteInterval_) : fetch_depth;
+        return (deleteInterval_ != 0u) ? std::min(fetch_depth, deleteInterval_) : fetch_depth;
     }
 
     std::unique_ptr<NodeStore::Database>
@@ -170,7 +170,7 @@ private:
         for (auto const& key : cache.getKeys())
         {
             dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::synchronous, true);
-            if (!(++check % checkHealthInterval_) && healthWait() == stopping)
+            if (!(++check % checkHealthInterval_) && healthWait() == HealthResult::stopping)
                 return true;
         }
 
@@ -195,13 +195,13 @@ private:
     clearPrior(LedgerIndex lastRotated);
 
     /**
-     * This is a health check for online deletion that waits until rippled is
+     * This is a health check for online deletion that waits until xrpld is
      * stable before returning. It returns an indication of whether the server
      * is stopping.
      *
      * @return Whether the server is stopping.
      */
-    enum HealthResult { stopping, keepGoing };
+    enum class HealthResult { stopping, keepGoing };
     [[nodiscard]] HealthResult
     healthWait();
 
@@ -209,7 +209,7 @@ public:
     void
     start() override
     {
-        if (deleteInterval_)
+        if (deleteInterval_ != 0u)
             thread_ = std::thread(&SHAMapStoreImp::run, this);
     }
 

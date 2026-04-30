@@ -32,7 +32,7 @@ public:
     {
     }
 
-    time_point
+    [[nodiscard]] time_point
     now() const override
     {
         return now_;

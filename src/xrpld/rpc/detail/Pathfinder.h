@@ -1,10 +1,12 @@
 #pragma once
 
-#include <xrpld/rpc/detail/RippleLineCache.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/detail/AssetCache.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/core/LoadEvent.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
 
@@ -21,10 +23,10 @@ class Pathfinder : public CountedObject<Pathfinder>
 public:
     /** Construct a pathfinder without an issuer.*/
     Pathfinder(
-        std::shared_ptr<RippleLineCache> const& cache,
+        std::shared_ptr<AssetCache> const& cache,
         AccountID const& srcAccount,
         AccountID const& dstAccount,
-        Currency const& uSrcCurrency,
+        PathAsset const& uSrcPathAsset,
         std::optional<AccountID> const& uSrcIssuer,
         STAmount const& dstAmount,
         std::optional<STAmount> const& srcAmount,
@@ -58,7 +60,7 @@ public:
         AccountID const& srcIssuer,
         std::function<bool(void)> const& continueCallback = {});
 
-    enum NodeType {
+    enum class NodeType {
         nt_SOURCE,      // The source account: with an issuer account, if needed.
         nt_ACCOUNTS,    // Accounts that connect from this source/currency.
         nt_BOOKS,       // Order books that connect to this currency.
@@ -72,7 +74,7 @@ public:
 
     // PaymentType represents the types of the source and destination currencies
     // in a path request.
-    enum PaymentType {
+    enum class PaymentType {
         pt_XRP_to_XRP,
         pt_XRP_to_nonXRP,
         pt_nonXRP_to_XRP,
@@ -114,14 +116,14 @@ private:
     addPathsForType(PathType const& type, std::function<bool(void)> const& continueCallback);
 
     bool
-    issueMatchesOrigin(Issue const&);
+    issueMatchesOrigin(Asset const&);
 
     int
     getPathsOut(
-        Currency const& currency,
+        PathAsset const& pathAsset,
         AccountID const& account,
         LineDirection direction,
-        bool isDestCurrency,
+        bool isDestPathAsset,
         AccountID const& dest,
         std::function<bool(void)> const& continueCallback);
 
@@ -170,7 +172,7 @@ private:
     AccountID mDstAccount;
     AccountID mEffectiveDst;  // The account the paths need to end at
     STAmount mDstAmount;
-    Currency mSrcCurrency;
+    PathAsset mSrcPathAsset;
     std::optional<AccountID> mSrcIssuer;
     STAmount mSrcAmount;
     /** The amount remaining from mSrcAccount after the default liquidity has
@@ -181,14 +183,14 @@ private:
 
     std::shared_ptr<ReadView const> mLedger;
     std::unique_ptr<LoadEvent> m_loadEvent;
-    std::shared_ptr<RippleLineCache> mRLCache;
+    std::shared_ptr<AssetCache> mAssetCache;
 
     STPathElement mSource;
     STPathSet mCompletePaths;
     std::vector<PathRank> mPathRanks;
     std::map<PathType, STPathSet> mPaths;
 
-    hash_map<Issue, int> mPathsOutCountMap;
+    hash_map<Asset, int> mPathsOutCountMap;
 
     Application& app_;
     beast::Journal const j_;

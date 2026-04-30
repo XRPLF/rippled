@@ -1,14 +1,22 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+
+#include <xrpld/app/misc/detail/Work.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <condition_variable>
+#include <map>
 #include <memory>
+#include <mutex>
+#include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class DNS_test : public beast::unit_test::suite
 {
@@ -111,5 +119,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DNS, app, xrpl, 20);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

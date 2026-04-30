@@ -1,8 +1,22 @@
+#include <xrpld/shamap/NodeFamily.h>
+
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/CollectorManager.h>
 #include <xrpld/app/main/Tuning.h>
-#include <xrpld/shamap/NodeFamily.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/TreeNodeCache.h>
+
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <mutex>
 
 namespace xrpl {
 
@@ -39,12 +53,12 @@ void
 NodeFamily::reset()
 {
     {
-        std::lock_guard const lock(maxSeqMutex_);
+        std::scoped_lock const lock(maxSeqMutex_);
         maxSeq_ = 0;
     }
 
-    fbCache_->reset();
-    tnCache_->reset();
+    (*fbCache_).reset();
+    (*tnCache_).reset();
 }
 
 void

@@ -1,18 +1,27 @@
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/insight/NullCollector.h>
+#include <xrpl/beast/net/IPAddressV4.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
-#include <xrpl/resource/detail/Entry.h>
+#include <xrpl/resource/Disposition.h>
+#include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Logic.h>
+#include <xrpl/resource/detail/Tuning.h>
 
 #include <boost/utility/base_from_member.hpp>
 
+#include <chrono>
+#include <cstdint>
 #include <functional>
+#include <string>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 class ResourceManager_test : public beast::unit_test::suite
 {
@@ -105,7 +114,7 @@ public:
                     return;
                 }
 
-                if (c.charge(fee) == warn)
+                if (c.charge(fee) == Disposition::warn)
                 {
                     if (limited)
                     {
@@ -136,7 +145,7 @@ public:
                     return;
                 }
 
-                if (c.charge(fee) == drop)
+                if (c.charge(fee) == Disposition::drop)
                 {
                     // Disconnect abusive Consumer
                     BEAST_EXPECT(c.disconnect(j) == limited);
@@ -150,7 +159,7 @@ public:
         {
             Consumer const c(logic.newInboundEndpoint(addr));
             logic.periodicActivity();
-            if (c.disposition() != drop)
+            if (c.disposition() != Disposition::drop)
             {
                 if (limited)
                 {
@@ -176,7 +185,7 @@ public:
                 ++logic.clock();
                 logic.periodicActivity();
                 Consumer const c(logic.newInboundEndpoint(addr));
-                if (c.disposition() != drop)
+                if (c.disposition() != Disposition::drop)
                 {
                     readmitted = true;
                     break;
@@ -282,5 +291,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ResourceManager, resource, xrpl);
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

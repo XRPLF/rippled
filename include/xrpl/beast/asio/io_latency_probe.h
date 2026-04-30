@@ -49,7 +49,7 @@ public:
         return m_ios;
     }
 
-    boost::asio::io_context const&
+    [[nodiscard]] boost::asio::io_context const&
     get_io_context() const
     {
         return m_ios;
@@ -83,7 +83,7 @@ public:
     void
     sample_one(Handler&& handler)
     {
-        std::lock_guard const lock(m_mutex);
+        std::scoped_lock const lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
         boost::asio::post(
@@ -98,7 +98,7 @@ public:
     void
     sample(Handler&& handler)
     {
-        std::lock_guard const lock(m_mutex);
+        std::scoped_lock const lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
         boost::asio::post(
@@ -122,14 +122,14 @@ private:
     void
     addref()
     {
-        std::lock_guard const lock(m_mutex);
+        std::scoped_lock const lock(m_mutex);
         ++m_count;
     }
 
     void
     release()
     {
-        std::lock_guard const lock(m_mutex);
+        std::scoped_lock const lock(m_mutex);
         if (--m_count == 0)
             m_cond.notify_all();
     }
@@ -184,7 +184,7 @@ private:
         void
         operator()() const
         {
-            if (!m_probe)
+            if (m_probe == nullptr)
                 return;
             typename Clock::time_point const now(Clock::now());
             typename Clock::duration const elapsed(now - m_start);
@@ -192,7 +192,7 @@ private:
             m_handler(elapsed);
 
             {
-                std::lock_guard const lock(m_probe->m_mutex);
+                std::scoped_lock const lock(m_probe->m_mutex);
                 if (m_probe->m_cancel)
                     return;
             }
@@ -202,7 +202,7 @@ private:
                 // Calculate when we want to sample again, and
                 // adjust for the expected latency.
                 //
-                typename Clock::time_point const when(now + m_probe->m_period - 2 * elapsed);
+                typename Clock::time_point const when(now + m_probe->m_period - (2 * elapsed));
 
                 if (when <= now)
                 {
@@ -224,7 +224,7 @@ private:
         void
         operator()(boost::system::error_code const& ec)
         {
-            if (!m_probe)
+            if (m_probe == nullptr)
                 return;
             typename Clock::time_point const now(Clock::now());
             boost::asio::post(

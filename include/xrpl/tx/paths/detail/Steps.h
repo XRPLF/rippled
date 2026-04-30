@@ -2,11 +2,11 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/paths/detail/AmountSpec.h>
+#include <xrpl/tx/paths/detail/EitherAmount.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -21,7 +21,7 @@ class AMMContext;
 enum class DebtDirection { issues, redeems };
 enum class QualityDirection { in, out };
 enum class StrandDirection { forward, reverse };
-enum OfferCrossing { no = 0, yes = 1, sell = 2 };
+enum class OfferCrossing { no = 0, yes = 1, sell = 2 };
 
 inline bool
 redeems(DebtDirection dir)
@@ -44,6 +44,7 @@ issues(DebtDirection dir)
      BookStepIX is an IOU/XRP offer book
      BookStepXI is an XRP/IOU offer book
      XRPEndpointStep is the source or destination account for XRP
+     MPTEndpointStep is the source or destination account for MPT
 
    Amounts may be transformed through a step in either the forward or the
    reverse direction. In the forward direction, the function `fwd` is used to
@@ -106,21 +107,21 @@ public:
        Amount of currency computed coming into the Step the last time the
        step ran in reverse.
     */
-    virtual std::optional<EitherAmount>
+    [[nodiscard]] virtual std::optional<EitherAmount>
     cachedIn() const = 0;
 
     /**
        Amount of currency computed coming out of the Step the last time the
        step ran in reverse.
     */
-    virtual std::optional<EitherAmount>
+    [[nodiscard]] virtual std::optional<EitherAmount>
     cachedOut() const = 0;
 
     /**
        If this step is DirectStepI (IOU->IOU direct step), return the src
        account. This is needed for checkNoRipple.
     */
-    virtual std::optional<AccountID>
+    [[nodiscard]] virtual std::optional<AccountID>
     directStepSrcAcct() const
     {
         return std::nullopt;
@@ -128,7 +129,7 @@ public:
 
     // for debugging. Return the src and dst accounts for a direct step
     // For XRP endpoints, one of src or dst will be the root account
-    virtual std::optional<std::pair<AccountID, AccountID>>
+    [[nodiscard]] virtual std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const
     {
         return std::nullopt;
@@ -142,13 +143,13 @@ public:
        @param sb view with the strand's state of balances and offers
        @param dir reverse -> called from rev(); forward -> called from fwd().
     */
-    virtual DebtDirection
+    [[nodiscard]] virtual DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const = 0;
 
     /**
         If this step is a DirectStepI, return the quality in of the dst account.
     */
-    virtual std::uint32_t
+    [[nodiscard]] virtual std::uint32_t
     lineQualityIn(ReadView const&) const
     {
         return QUALITY_ONE;
@@ -167,7 +168,7 @@ public:
              rather than `qualityUpperBound`. It could still differ from the actual quality, but
              except for "dust" amounts, it should be a good estimate for the actual quality.
     */
-    virtual std::pair<std::optional<Quality>, DebtDirection>
+    [[nodiscard]] virtual std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const = 0;
 
     /** Get QualityFunction. Used in one path optimization where
@@ -177,7 +178,7 @@ public:
      * All steps, except for BookStep have the default
      * implementation.
      */
-    virtual std::pair<std::optional<QualityFunction>, DebtDirection>
+    [[nodiscard]] virtual std::pair<std::optional<QualityFunction>, DebtDirection>
     getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const;
 
     /** Return the number of offers consumed or partially consumed the last time
@@ -187,7 +188,7 @@ public:
         entire payment, it is only the number the last time it ran. Offers may
         be partially consumed multiple times during a payment.
      */
-    virtual std::uint32_t
+    [[nodiscard]] virtual std::uint32_t
     offersUsed() const
     {
         return 0;
@@ -196,7 +197,7 @@ public:
     /**
        If this step is a BookStep, return the book.
     */
-    virtual std::optional<Book>
+    [[nodiscard]] virtual std::optional<Book>
     bookStepBook() const
     {
         return std::nullopt;
@@ -205,7 +206,7 @@ public:
     /**
        Check if amount is zero
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     isZero(EitherAmount const& out) const = 0;
 
     /**
@@ -213,7 +214,7 @@ public:
        A strand that has additional liquidity may be marked inactive if a step
        has consumed too many offers.
      */
-    virtual bool
+    [[nodiscard]] virtual bool
     inactive() const
     {
         return false;
@@ -222,13 +223,13 @@ public:
     /**
        Return true if Out of lhs == Out of rhs.
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     equalOut(EitherAmount const& lhs, EitherAmount const& rhs) const = 0;
 
     /**
        Return true if In of lhs == In of rhs.
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     equalIn(EitherAmount const& lhs, EitherAmount const& rhs) const = 0;
 
     /**
@@ -277,20 +278,20 @@ public:
     }
 
 private:
-    virtual std::string
+    [[nodiscard]] virtual std::string
     logString() const = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     equal(Step const& rhs) const = 0;
 };
 
 inline std::pair<std::optional<QualityFunction>, DebtDirection>
 Step::getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const
 {
-    if (auto const res = qualityUpperBound(v, prevStepDir); res.first)
+    auto const res = qualityUpperBound(v, prevStepDir);
+    if (res.first)
         return {QualityFunction{*res.first, QualityFunction::CLOBLikeTag{}}, res.second};
-    else
-        return {std::nullopt, res.second};
+    return {std::nullopt, res.second};
 }
 
 /// @cond INTERNAL
@@ -316,8 +317,10 @@ operator==(Strand const& lhs, Strand const& rhs)
     if (lhs.size() != rhs.size())
         return false;
     for (size_t i = 0, e = lhs.size(); i != e; ++i)
+    {
         if (*lhs[i] != *rhs[i])
             return false;
+    }
     return true;
 }
 /// @endcond
@@ -339,8 +342,8 @@ std::pair<TER, STPath>
 normalizePath(
     AccountID const& src,
     AccountID const& dst,
-    Issue const& deliver,
-    std::optional<Issue> const& sendMaxIssue,
+    Asset const& deliver,
+    std::optional<Asset> const& sendMaxAsset,
     STPath const& path);
 
 /**
@@ -355,7 +358,7 @@ normalizePath(
                        optimization.  If, during direct offer crossing, the
                        quality of the tip of the book drops below this value,
                        then evaluating the strand can stop.
-   @param sendMaxIssue Optional asset to send.
+   @param sendMaxAsset Optional asset to send.
    @param path Liquidity sources to use for this strand of the payment. The path
                contains an ordered collection of the offer books to use and
                accounts to ripple through.
@@ -372,9 +375,9 @@ toStrand(
     ReadView const& sb,
     AccountID const& src,
     AccountID const& dst,
-    Issue const& deliver,
+    Asset const& deliver,
     std::optional<Quality> const& limitQuality,
-    std::optional<Issue> const& sendMaxIssue,
+    std::optional<Asset> const& sendMaxAsset,
     STPath const& path,
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
@@ -413,9 +416,9 @@ toStrands(
     ReadView const& sb,
     AccountID const& src,
     AccountID const& dst,
-    Issue const& deliver,
+    Asset const& deliver,
     std::optional<Quality> const& limitQuality,
-    std::optional<Issue> const& sendMax,
+    std::optional<Asset> const& sendMax,
     STPathSet const& paths,
     bool addDefaultPath,
     bool ownerPaysTransferFee,
@@ -425,11 +428,13 @@ toStrands(
     beast::Journal j);
 
 /// @cond INTERNAL
-template <class TIn, class TOut, class TDerived>
+template <StepAmount TIn, StepAmount TOut, class TDerived>
 struct StepImp : public Step
 {
+private:
     explicit StepImp() = default;
 
+public:
     std::pair<EitherAmount, EitherAmount>
     rev(PaymentSandbox& sb,
         ApplyView& afView,
@@ -452,23 +457,24 @@ struct StepImp : public Step
         return {EitherAmount(r.first), EitherAmount(r.second)};
     }
 
-    bool
+    [[nodiscard]] bool
     isZero(EitherAmount const& out) const override
     {
         return get<TOut>(out) == beast::zero;
     }
 
-    bool
+    [[nodiscard]] bool
     equalOut(EitherAmount const& lhs, EitherAmount const& rhs) const override
     {
         return get<TOut>(lhs) == get<TOut>(rhs);
     }
 
-    bool
+    [[nodiscard]] bool
     equalIn(EitherAmount const& lhs, EitherAmount const& rhs) const override
     {
         return get<TIn>(lhs) == get<TIn>(rhs);
     }
+    friend TDerived;
 };
 /// @endcond
 
@@ -493,8 +499,16 @@ public:
 // Check equal with tolerance
 bool
 checkNear(IOUAmount const& expected, IOUAmount const& actual);
-bool
-checkNear(XRPAmount const& expected, XRPAmount const& actual);
+inline bool
+checkNear(MPTAmount const& expected, MPTAmount const& actual)
+{
+    return expected == actual;
+}
+inline bool
+checkNear(XRPAmount const& expected, XRPAmount const& actual)
+{
+    return expected == actual;
+}
 /// @endcond
 
 /**
@@ -505,7 +519,7 @@ struct StrandContext
     ReadView const& view;                       ///< Current ReadView
     AccountID const strandSrc;                  ///< Strand source account
     AccountID const strandDst;                  ///< Strand destination account
-    Issue const strandDeliver;                  ///< Issue strand delivers
+    Asset const strandDeliver;                  ///< Asset strand delivers
     std::optional<Quality> const limitQuality;  ///< Worst accepted quality
     bool const isFirst;                         ///< true if Step is first in Strand
     bool const isLast = false;                  ///< true if Step is last in Strand
@@ -522,11 +536,11 @@ struct StrandContext
         at most twice: once as a src and once as a dst (hence the two element
        array). The strandSrc and strandDst will only show up once each.
     */
-    std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues;
+    std::array<boost::container::flat_set<Asset>, 2>& seenDirectAssets;
     /** A strand may not include an offer that output the same issue more
         than once
     */
-    boost::container::flat_set<Issue>& seenBookOuts;
+    boost::container::flat_set<Asset>& seenBookOuts;
     AMMContext& ammContext;
     std::optional<uint256> domainID;  // the domain the order book will use
     beast::Journal const j;
@@ -539,15 +553,15 @@ struct StrandContext
         // replicates the source or destination.
         AccountID const& strandSrc_,
         AccountID const& strandDst_,
-        Issue const& strandDeliver_,
+        Asset const& strandDeliver_,
         std::optional<Quality> const& limitQuality_,
         bool isLast_,
         bool ownerPaysTransferFee_,
         OfferCrossing offerCrossing_,
         bool isDefaultPath_,
-        std::array<boost::container::flat_set<Issue>, 2>&
-            seenDirectIssues_,                             ///< For detecting currency loops
-        boost::container::flat_set<Issue>& seenBookOuts_,  ///< For detecting book loops
+        std::array<boost::container::flat_set<Asset>, 2>&
+            seenDirectAssets_,                             ///< For detecting currency loops
+        boost::container::flat_set<Asset>& seenBookOuts_,  ///< For detecting book loops
         AMMContext& ammContext_,
         std::optional<uint256> const& domainID,
         beast::Journal j_);  ///< Journal for logging
@@ -564,6 +578,13 @@ directStepEqual(
     Currency const& currency);
 
 bool
+mptEndpointStepEqual(
+    Step const& step,
+    AccountID const& src,
+    AccountID const& dst,
+    MPTID const& mptid);
+
+bool
 xrpEndpointStepEqual(Step const& step, AccountID const& acc);
 
 bool
@@ -578,6 +599,13 @@ make_DirectStepI(
     Currency const& c);
 
 std::pair<TER, std::unique_ptr<Step>>
+make_MPTEndpointStep(
+    StrandContext const& ctx,
+    AccountID const& src,
+    AccountID const& dst,
+    MPTID const& a);
+
+std::pair<TER, std::unique_ptr<Step>>
 make_BookStepII(StrandContext const& ctx, Issue const& in, Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
@@ -589,9 +617,34 @@ make_BookStepXI(StrandContext const& ctx, Issue const& out);
 std::pair<TER, std::unique_ptr<Step>>
 make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc);
 
-template <class InAmt, class OutAmt>
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepMM(StrandContext const& ctx, MPTIssue const& in, MPTIssue const& out);
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepMX(StrandContext const& ctx, MPTIssue const& in);
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepXM(StrandContext const& ctx, MPTIssue const& out);
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepMI(StrandContext const& ctx, MPTIssue const& in, Issue const& out);
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepIM(StrandContext const& ctx, Issue const& in, MPTIssue const& out);
+
+template <StepAmount InAmt, StepAmount OutAmt>
 bool
-isDirectXrpToXrp(Strand const& strand);
+isDirectXrpToXrp(Strand const& strand)
+{
+    if constexpr (std::is_same_v<InAmt, XRPAmount> && std::is_same_v<OutAmt, XRPAmount>)
+    {
+        return strand.size() == 2;
+    }
+    else
+    {
+        return false;
+    }
+}
 /// @endcond
 
 }  // namespace xrpl

@@ -3,12 +3,8 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
 /** Deposit preauthorize operations */
-namespace deposit {
+namespace xrpl::test::jtx::deposit {
 
 /** Preauthorize for deposit.  Invoke as deposit::auth. */
 Json::Value
@@ -26,7 +22,7 @@ struct AuthorizeCredentials
     auto
     operator<=>(AuthorizeCredentials const&) const = default;
 
-    Json::Value
+    [[nodiscard]] Json::Value
     toJson() const
     {
         Json::Value jv;
@@ -36,7 +32,7 @@ struct AuthorizeCredentials
     }
 
     // "ledger_entry" uses a different naming convention
-    Json::Value
+    [[nodiscard]] Json::Value
     toLEJson() const
     {
         Json::Value jv;
@@ -52,9 +48,4 @@ authCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> c
 Json::Value
 unauthCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth);
 
-}  // namespace deposit
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::deposit

@@ -1,17 +1,23 @@
-#include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/core/PerfLog.h>
 #include <xrpl/core/detail/Workers.h>
+
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/core/LockFreeStack.h>
+#include <xrpl/core/PerfLog.h>
+
+#include <mutex>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
 Workers::Workers(
     Callback& callback,
     perf::PerfLog* perfLog,
-    std::string const& threadNames,
+    std::string threadNames,
     int numberOfThreads)
     : m_callback(callback)
     , perfLog_(perfLog)
-    , m_threadNames(threadNames)
+    , m_threadNames(std::move(threadNames))
     , m_semaphore(0)
     , m_activeCount(0)
     , m_pauseCount(0)
@@ -135,8 +141,8 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 
 //------------------------------------------------------------------------------
 
-Workers::Worker::Worker(Workers& workers, std::string const& threadName, int const instance)
-    : m_workers{workers}, threadName_{threadName}, instance_{instance}
+Workers::Worker::Worker(Workers& workers, std::string threadName, int const instance)
+    : m_workers{workers}, threadName_{std::move(threadName)}, instance_{instance}
 
 {
     thread_ = std::thread{&Workers::Worker::run, this};
@@ -145,7 +151,7 @@ Workers::Worker::Worker(Workers& workers, std::string const& threadName, int con
 Workers::Worker::~Worker()
 {
     {
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         ++wakeCount_;
         shouldExit_ = true;
     }
@@ -157,7 +163,7 @@ Workers::Worker::~Worker()
 void
 Workers::Worker::notify()
 {
-    std::lock_guard const lock{mutex_};
+    std::scoped_lock const lock{mutex_};
     ++wakeCount_;
     wakeup_.notify_one();
 }
@@ -173,7 +179,7 @@ Workers::Worker::run()
         //
         if (++m_workers.m_activeCount == 1)
         {
-            std::lock_guard const lk{m_workers.m_mut};
+            std::scoped_lock const lk{m_workers.m_mut};
             m_workers.m_allPaused = false;
         }
 
@@ -220,7 +226,7 @@ Workers::Worker::run()
             // the predicate evaluation and the actual sleep.
             if (--m_workers.m_runningTaskCount == 0)
             {
-                std::lock_guard const lk{m_workers.m_mut};
+                std::scoped_lock const lk{m_workers.m_mut};
                 m_workers.m_cv.notify_all();
             }
         }
@@ -236,7 +242,7 @@ Workers::Worker::run()
         //
         if (--m_workers.m_activeCount == 0)
         {
-            std::lock_guard const lk{m_workers.m_mut};
+            std::scoped_lock const lk{m_workers.m_mut};
             m_workers.m_allPaused = true;
             m_workers.m_cv.notify_all();
         }

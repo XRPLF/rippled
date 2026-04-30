@@ -2,34 +2,48 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/unit_test/thread.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <iterator>
-#include <limits>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <iomanip>
+#include <ios>
+#include <memory>
+#include <ostream>
 #include <random>
 #include <sstream>
-#include <stdexcept>
-#include <type_traits>
+#include <string>
 #include <utility>
+#include <vector>
 
 #ifndef NODESTORE_TIMING_DO_VERIFY
 #define NODESTORE_TIMING_DO_VERIFY 0
 #endif
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 std::unique_ptr<Backend>
 make_Backend(Section const& config, Scheduler& scheduler, beast::Journal journal)
@@ -63,6 +77,8 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
 class Sequence
 {
 private:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { minLedger = 1, maxLedger = 1000000, minSize = 250, maxSize = 1250 };
 
     beast::xor_shift_engine gen_;
@@ -121,6 +137,8 @@ public:
 class Timing_test : public beast::unit_test::suite
 {
 public:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // percent of fetches for missing nodes
         missingNodePercent = 20
@@ -211,7 +229,7 @@ public:
     parallel_for(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
+        std::vector<beast::unit_test::Thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), args...);
@@ -224,7 +242,7 @@ public:
     parallel_for_id(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
+        std::vector<beast::unit_test::Thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), id, args...);
@@ -490,7 +508,7 @@ public:
         backend->close();
     }
 
-    // Simulate a rippled workload:
+    // Simulate an xrpld workload:
     // Each thread randomly:
     //      inserts a new key
     //      fetches an old key
@@ -664,7 +682,7 @@ public:
     void
     run() override
     {
-        testcase("Timing", beast::unit_test::abort_on_fail);
+        testcase("Timing", beast::unit_test::abort_t::abort_on_fail);
 
         /*  Parameters:
 
@@ -714,5 +732,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, xrpl, 1);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

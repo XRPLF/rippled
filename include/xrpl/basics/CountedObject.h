@@ -19,7 +19,7 @@ public:
     using Entry = std::pair<std::string, int>;
     using List = std::vector<Entry>;
 
-    List
+    [[nodiscard]] List
     getCounts(int minimumThreshold) const;
 
 public:
@@ -59,19 +59,19 @@ public:
             return --count_;
         }
 
-        int
+        [[nodiscard]] int
         getCount() const noexcept
         {
             return count_.load();
         }
 
-        Counter*
+        [[nodiscard]] Counter*
         getNext() const noexcept
         {
             return next_;
         }
 
-        std::string const&
+        [[nodiscard]] std::string const&
         getName() const noexcept
         {
             return name_;
@@ -99,7 +99,7 @@ private:
     Derived classes have their instances counted automatically. This is used
     for reporting purposes.
 
-    @ingroup ripple_basics
+    @ingroup basics
 */
 template <class Object>
 class CountedObject
@@ -112,7 +112,6 @@ private:
         return c;
     }
 
-public:
     CountedObject() noexcept
     {
         getCounter().increment();
@@ -126,10 +125,13 @@ public:
     CountedObject&
     operator=(CountedObject const&) noexcept = default;
 
+public:
     ~CountedObject() noexcept
     {
         getCounter().decrement();
     }
+
+    friend Object;
 };
 
 }  // namespace xrpl

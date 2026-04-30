@@ -1,10 +1,29 @@
+#include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -83,7 +102,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
         // The two offers being brokered must be for the same asset:
-        if ((*bo)[sfAmount].issue() != (*so)[sfAmount].issue())
+        if ((*bo)[sfAmount].asset() != (*so)[sfAmount].asset())
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
         // The two offers may not form a loop.  A broker may not sell the
@@ -116,7 +135,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // cut, if any).
         if (auto const brokerFee = ctx.tx[~sfNFTokenBrokerFee])
         {
-            if (brokerFee->issue() != (*bo)[sfAmount].issue())
+            if (brokerFee->asset() != (*bo)[sfAmount].asset())
                 return tecNFTOKEN_BUY_SELL_MISMATCH;
 
             if (brokerFee >= (*bo)[sfAmount])
@@ -170,7 +189,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // own currency
         auto const needed = bo->at(sfAmount);
 
-        if (accountFunds(ctx.view, (*bo)[sfOwner], needed, fhZERO_IF_FROZEN, ctx.j) < needed)
+        if (accountFunds(
+                ctx.view, (*bo)[sfOwner], needed, FreezeHandling::fhZERO_IF_FROZEN, ctx.j) < needed)
             return tecINSUFFICIENT_FUNDS;
 
         // Check that the account accepting the buy offer (he's selling the NFT)
@@ -238,7 +258,9 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // mode, because then we are confirming that the broker can
             // cover what the buyer will pay, which doesn't make sense, causes
             // an unnecessary tec, and is also resolved with this amendment.
-            if (accountFunds(ctx.view, ctx.tx[sfAccount], needed, fhZERO_IF_FROZEN, ctx.j) < needed)
+            if (accountFunds(
+                    ctx.view, ctx.tx[sfAccount], needed, FreezeHandling::fhZERO_IF_FROZEN, ctx.j) <
+                needed)
                 return tecINSUFFICIENT_FUNDS;
         }
 
@@ -289,7 +311,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline) &&
             (nft::getFlags(tokenID) & nft::flagCreateTrustLines) == 0 &&
             nftMinter != amount.getIssuer() &&
-            !ctx.view.read(keylet::line(nftMinter, amount.issue())))
+            !ctx.view.read(keylet::line(nftMinter, amount.get<Issue>())))
             return tecNO_LINE;
 
         // Check that the issuer is allowed to receive IOUs.
@@ -326,9 +348,9 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
     // just confirm that the end state is OK.
     if (!isTesSuccess(result))
         return result;
-    if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (accountFunds(view(), from, amount, FreezeHandling::fhZERO_IF_FROZEN, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
-    if (accountFunds(view(), to, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (accountFunds(view(), to, amount, FreezeHandling::fhZERO_IF_FROZEN, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
     return tesSUCCESS;
 }
@@ -548,6 +570,25 @@ NFTokenAcceptOffer::doApply()
         return acceptOffer(so);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE
+}
+
+void
+NFTokenAcceptOffer::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+NFTokenAcceptOffer::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

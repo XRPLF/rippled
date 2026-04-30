@@ -1,14 +1,34 @@
+#include <xrpld/app/misc/Transaction.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/Transaction.h>
 #include <xrpld/rpc/CTID.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/core/HashRouter.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
-#include <xrpl/tx/apply.h>
+
+#include <boost/optional/optional.hpp>
+
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <variant>
 
 namespace xrpl {
 
@@ -28,7 +48,7 @@ Transaction::Transaction(
         return;
     }
 
-    mStatus = NEW;
+    mStatus = TransStatus::NEW;
 }
 
 //
@@ -58,22 +78,22 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
     switch (static_cast<TxnSql>(c))
     {
         case TxnSql::txnSqlNew:
-            return NEW;
+            return TransStatus::NEW;
         case TxnSql::txnSqlConflict:
-            return CONFLICTED;
+            return TransStatus::CONFLICTED;
         case TxnSql::txnSqlHeld:
-            return HELD;
+            return TransStatus::HELD;
         case TxnSql::txnSqlValidated:
-            return COMMITTED;
+            return TransStatus::COMMITTED;
         case TxnSql::txnSqlIncluded:
-            return INCLUDED;
+            return TransStatus::INCLUDED;
         default:
             XRPL_ASSERT(
                 c == TxnSql::txnSqlUnknown,
                 "xrpl::Transaction::sqlTransactionStatus : unknown transaction status");
     }
 
-    return INVALID;
+    return TransStatus::INVALID;
 }
 
 Transaction::pointer

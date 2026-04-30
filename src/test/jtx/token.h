@@ -8,11 +8,7 @@
 
 #include <initializer_list>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace token {
+namespace xrpl::test::jtx::token {
 
 /** Mint an NFToken. */
 Json::Value
@@ -214,9 +210,4 @@ clearMinter(jtx::Account const& account);
 Json::Value
 modify(jtx::Account const& account, uint256 const& nftokenID);
 
-}  // namespace token
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::token

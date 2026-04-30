@@ -12,10 +12,11 @@ namespace Json {
 class Object;
 }  // namespace Json
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 // Under what condition can we call this RPC?
+// Bitwise flags
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum Condition {
     NO_CONDITION = 0,
     NEEDS_NETWORK_CONNECTION = 1,
@@ -111,5 +112,4 @@ conditionMet(Condition condition_required, T& context)
     return rpcSUCCESS;
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

@@ -2,8 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * @brief Log manager for CaptureSinks. This class holds the stream
@@ -37,14 +36,14 @@ class CaptureLogs : public Logs
         void
         write(beast::severities::Severity level, std::string const& text) override
         {
-            std::lock_guard const lock(strmMutex_);
+            std::scoped_lock const lock(strmMutex_);
             strm_ << text;
         }
 
         void
         writeAlways(beast::severities::Severity level, std::string const& text) override
         {
-            std::lock_guard const lock(strmMutex_);
+            std::scoped_lock const lock(strmMutex_);
             strm_ << text;
         }
     };
@@ -66,5 +65,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

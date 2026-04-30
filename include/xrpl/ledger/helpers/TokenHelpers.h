@@ -21,15 +21,18 @@ namespace xrpl {
 //------------------------------------------------------------------------------
 
 /** Controls the treatment of frozen account balances */
-enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
+enum class FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
 
 /** Controls the treatment of unauthorized MPT balances */
-enum AuthHandling { ahIGNORE_AUTH, ahZERO_IF_UNAUTHORIZED };
+enum class AuthHandling { ahIGNORE_AUTH, ahZERO_IF_UNAUTHORIZED };
 
 /** Controls whether to include the account's full spendable balance */
-enum SpendableHandling { shSIMPLE_BALANCE, shFULL_BALANCE };
+enum class SpendableHandling { shSIMPLE_BALANCE, shFULL_BALANCE };
 
 enum class WaiveTransferFee : bool { No = false, Yes };
+
+/** Controls whether accountSend is allowed to overflow OutstandingAmount **/
+enum class AllowMPTOverflow : bool { No = false, Yes };
 
 /* Check if MPToken (for MPT) or trust line (for IOU) exists:
  * - StrongAuth - before checking if authorization is required
@@ -132,7 +135,7 @@ accountHolds(
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
     beast::Journal j,
-    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::shSIMPLE_BALANCE);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -141,7 +144,7 @@ accountHolds(
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
     beast::Journal j,
-    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::shSIMPLE_BALANCE);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -151,7 +154,7 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j,
-    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::shSIMPLE_BALANCE);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -161,7 +164,7 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j,
-    SpendableHandling includeFullBalance = shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::shSIMPLE_BALANCE);
 
 // Returns the amount an account can spend of the currency type saDefault, or
 // returns saDefault if this account is the issuer of the currency in
@@ -174,6 +177,16 @@ accountFunds(
     AccountID const& id,
     STAmount const& saDefault,
     FreezeHandling freezeHandling,
+    beast::Journal j);
+
+// Overload with AuthHandling to support IOU and MPT.
+[[nodiscard]] STAmount
+accountFunds(
+    ReadView const& view,
+    AccountID const& id,
+    STAmount const& saDefault,
+    FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal j);
 
 /** Returns the transfer fee as Rate based on the type of token
@@ -235,11 +248,11 @@ canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, Acc
 // --> bCheckIssuer : normally require issuer to be involved.
 // [[nodiscard]] // nodiscard commented out so DirectStep.cpp compiles.
 
-/** Calls static rippleCreditIOU if saAmount represents Issue.
- * Calls static rippleCreditMPT if saAmount represents MPTIssue.
+/** Calls static directSendNoFeeIOU if saAmount represents Issue.
+ * Calls static directSendNoFeeMPT if saAmount represents MPTIssue.
  */
 TER
-rippleCredit(
+directSendNoFee(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
@@ -257,7 +270,8 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
-    WaiveTransferFee waiveFee = WaiveTransferFee::No);
+    WaiveTransferFee waiveFee = WaiveTransferFee::No,
+    AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
 /** Like accountSend, except one account is sending multiple payments (with the

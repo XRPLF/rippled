@@ -108,11 +108,11 @@ struct ValidatorBlobInfo
     Trusted Validators List
     -----------------------
 
-    Rippled accepts ledger proposals and validations from trusted validator
+    Xrpld accepts ledger proposals and validations from trusted validator
     nodes. A ledger is considered fully-validated once the number of received
     trusted validations for a ledger meets or exceeds a quorum value.
 
-    This class manages the set of validation public keys the local rippled node
+    This class manages the set of validation public keys the local xrpld node
     trusts. The list of trusted keys is populated using the keys listed in the
     configuration file as well as lists signed by trusted publishers. The
     trusted publisher public keys are specified in the config.
@@ -121,9 +121,9 @@ struct ValidatorBlobInfo
 
     @li @c "blob": Base64-encoded JSON string containing a @c "sequence", @c
         "validFrom", @c "validUntil", and @c "validators" field. @c "validFrom"
-        contains the Ripple timestamp (seconds since January 1st, 2000 (00:00
+        contains the XRPL timestamp (seconds since January 1st, 2000 (00:00
         UTC)) for when the list becomes valid. @c "validUntil" contains the
-        Ripple timestamp for when the list expires. @c "validators" contains
+        XRPL timestamp for when the list expires. @c "validators" contains
         an array of objects with a @c "validation_public_key" and optional
         @c "manifest" field. @c "validation_public_key" should be the
         hex-encoded master public key. @c "manifest" should be the
@@ -207,7 +207,7 @@ class ValidatorList
     boost::filesystem::path const dataPath_;
     beast::Journal const j_;
     std::shared_mutex mutable mutex_;
-    using lock_guard = std::lock_guard<decltype(mutex_)>;
+    using scoped_lock = std::scoped_lock<decltype(mutex_)>;
     using shared_lock = std::shared_lock<decltype(mutex_)>;
 
     std::atomic<std::size_t> quorum_;
@@ -274,9 +274,9 @@ public:
         explicit PublisherListStats(ListDisposition d);
         PublisherListStats(ListDisposition d, PublicKey key, PublisherStatus stat, std::size_t seq);
 
-        ListDisposition
+        [[nodiscard]] ListDisposition
         bestDisposition() const;
-        ListDisposition
+        [[nodiscard]] ListDisposition
         worstDisposition() const;
         void
         mergeDispositions(PublisherListStats const& src);
@@ -759,7 +759,7 @@ private:
         std::uint32_t version,
         std::string siteUri,
         std::optional<uint256> const& hash,
-        lock_guard const&);
+        scoped_lock const&);
 
     // This function updates the keyListings_ counts for all the trusted
     // master keys
@@ -768,7 +768,7 @@ private:
         PublicKey const& pubKey,
         PublisherList const& current,
         std::vector<PublicKey> const& oldList,
-        lock_guard const&);
+        scoped_lock const&);
 
     static void
     buildBlobInfos(
@@ -804,7 +804,7 @@ private:
     /** Get the filename used for caching UNLs
      */
     boost::filesystem::path
-    getCacheFileName(lock_guard const&, PublicKey const& pubKey) const;
+    getCacheFileName(scoped_lock const&, PublicKey const& pubKey) const;
 
     /** Build a Json representation of the collection, suitable for
         writing to a cache file, or serving to a /vl/ query
@@ -836,7 +836,7 @@ private:
     /** Write a JSON UNL to a cache file
      */
     void
-    cacheValidatorFile(lock_guard const& lock, PublicKey const& pubKey) const;
+    cacheValidatorFile(scoped_lock const& lock, PublicKey const& pubKey) const;
 
     /** Check response for trusted valid published list
 
@@ -848,7 +848,7 @@ private:
     */
     std::pair<ListDisposition, std::optional<PublicKey>>
     verify(
-        lock_guard const&,
+        scoped_lock const&,
         Json::Value& list,
         Manifest manifest,
         std::string const& blob,
@@ -865,7 +865,7 @@ private:
         Calling public member function is expected to lock mutex
     */
     bool
-    removePublisherList(lock_guard const&, PublicKey const& publisherKey, PublisherStatus reason);
+    removePublisherList(scoped_lock const&, PublicKey const& publisherKey, PublisherStatus reason);
 
     /** Return quorum for trusted validator set
 

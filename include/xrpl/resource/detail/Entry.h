@@ -7,8 +7,7 @@
 #include <xrpl/resource/detail/Key.h>
 #include <xrpl/resource/detail/Tuning.h>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
@@ -22,11 +21,11 @@ struct Entry : public beast::List<Entry>::Node
        @param now Construction time of Entry.
     */
     explicit Entry(clock_type::time_point const now)
-        : refcount(0), local_balance(now), remote_balance(0), lastWarningTime(), whenExpires()
+        : refcount(0), local_balance(now), remote_balance(0)
     {
     }
 
-    std::string
+    [[nodiscard]] std::string
     to_string() const
     {
         return getFingerprint(key->address, publicKey);
@@ -37,10 +36,10 @@ struct Entry : public beast::List<Entry>::Node
      * resource limits applied--it is still possible for certain RPC commands
      * to be forbidden, but that depends on Role.
      */
-    bool
+    [[nodiscard]] bool
     isUnlimited() const
     {
-        return key->kind == kindUnlimited;
+        return key->kind == Kind::kindUnlimited;
     }
 
     // Balance including remote contributions
@@ -87,5 +86,4 @@ operator<<(std::ostream& os, Entry const& v)
     return os;
 }
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource
