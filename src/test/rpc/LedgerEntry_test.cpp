@@ -1477,7 +1477,7 @@ class LedgerEntry_test : public beast::unit_test::suite
 
         // positive test
         {
-            Keylet const keylet = keylet::fees();
+            Keylet const keylet = keylet::feeSettings();
             Json::Value jvParams;
             jvParams[jss::fee] = to_string(keylet.key);
             Json::Value const jrr =
@@ -2420,7 +2420,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         };
 
         test(jss::amendments, jss::Amendments, keylet::amendments(), true);
-        test(jss::fee, jss::FeeSettings, keylet::fees(), true);
+        test(jss::fee, jss::FeeSettings, keylet::feeSettings(), true);
         // There won't be an nunl
         test(jss::nunl, jss::NegativeUNL, keylet::negativeUNL(), false);
         // Can only get the short skip list this way

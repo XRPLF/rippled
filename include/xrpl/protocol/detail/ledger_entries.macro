@@ -292,7 +292,7 @@ LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
 
     \note This is a singleton: only one such object exists in the ledger.
 
-    \sa keylet::fees
+    \sa keylet::feeSettings
  */
 LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
     // Old version uses raw numbers

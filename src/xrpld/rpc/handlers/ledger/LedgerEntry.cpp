@@ -82,7 +82,7 @@ parseIndex(Json::Value const& params, Json::StaticString const fieldName, unsign
         if (index == jss::amendments.c_str())
             return keylet::amendments().key;
         if (index == jss::fee.c_str())
-            return keylet::fees().key;
+            return keylet::feeSettings().key;
         if (index == jss::nunl)
             return keylet::negativeUNL().key;
         if (index == jss::hashes)
@@ -434,7 +434,7 @@ parseEscrow(
     return keylet::escrow(*id, *seq).key;
 }
 
-auto const parseFeeSettings = fixed(keylet::fees());
+auto const parseFeeSettings = fixed(keylet::feeSettings());
 
 static Expected<uint256, Json::Value>
 parseFixed(

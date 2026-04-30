@@ -219,7 +219,7 @@ amendments() noexcept
 }
 
 Keylet const&
-fees() noexcept
+feeSettings() noexcept
 {
     static Keylet const ret{ltFEE_SETTINGS, indexHash(LedgerNameSpace::FEE_SETTINGS)};
     return ret;
