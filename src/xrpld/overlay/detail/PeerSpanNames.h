@@ -13,9 +13,7 @@
 
 #include <xrpl/telemetry/SpanNames.h>
 
-namespace xrpl {
-namespace telemetry {
-namespace peer_span {
+namespace xrpl::telemetry::peer_span {
 
 // ===== Span operation suffixes ===============================================
 
@@ -45,6 +43,4 @@ inline constexpr auto validationTrusted =
     join(join(xrplPeer, makeStr("validation")), makeStr("trusted"));
 }  // namespace attr
 
-}  // namespace peer_span
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry::peer_span
