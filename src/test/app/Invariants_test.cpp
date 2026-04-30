@@ -57,7 +57,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <string>
@@ -938,7 +937,7 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(A1, (*sle)[sfSequence] + 2));
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 STAmount const amt(mpt, -1);
                 sleNew->setFieldAmount(sfAmount, amt);
                 ac.view().insert(sleNew);
@@ -954,7 +953,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, -1);
                 ac.view().insert(sleNew);
@@ -970,7 +969,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfLockedAmount, -1);
                 ac.view().insert(sleNew);
@@ -986,7 +985,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 1);
                 sleNew->setFieldU64(sfLockedAmount, 10);
@@ -1003,7 +1002,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), A1));
                 sleNew->setFieldU64(sfMPTAmount, -1);
                 ac.view().insert(sleNew);
@@ -1019,7 +1018,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), A1));
                 sleNew->setFieldU64(sfLockedAmount, -1);
                 ac.view().insert(sleNew);
@@ -3972,7 +3971,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(sle->getFieldU32(sfSequence), A1)}};
+                MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), A1)};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 110);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
@@ -3989,7 +3988,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(sle->getFieldU32(sfSequence), A1)}};
+                MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), A1)};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 100);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
@@ -4060,7 +4059,7 @@ class Invariants_test : public beast::unit_test::suite
                     auto seq = sle->getFieldU32(sfSequence);
                     for (int i = 0; i < nTokens; ++i)
                     {
-                        MPTIssue const mpt{MPTIssue{makeMptID(seq + i, A1)}};
+                        MPTIssue const mpt{makeMptID(seq + i, A1)};
                         auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                         ac.view().insert(sleNew);
 
@@ -4117,45 +4116,62 @@ class Invariants_test : public beast::unit_test::suite
         std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
         std::initializer_list<TER> const passTers = {tesSUCCESS, tesSUCCESS};
 
+        // Insert two trust line SLEs in hash-sorted order, with the "bad"
+        // entry at the lower-sorting key so it is visited first by
+        // ApplyStateTable::visit(). The configurer callables receive the
+        // SLE and the Issue corresponding to that side's keylet currency.
+        auto const insertOrderedTrustLinePair = [](ApplyContext& ac,
+                                                   Account const& A1,
+                                                   Account const& A2,
+                                                   Account const& A3,
+                                                   auto const& badConfig,
+                                                   auto const& goodConfig) {
+            char const* const c1 = "USD";
+            char const* const c2 = "EUR";
+            auto const k1 = keylet::line(A1, A2, A1[c1].currency);
+            auto const k2 = keylet::line(A1, A3, A1[c2].currency);
+
+            bool const k1First = k1.key < k2.key;
+            auto const& badKey = k1First ? k1 : k2;
+            auto const& goodKey = k1First ? k2 : k1;
+            Issue const badIss{k1First ? A1[c1].currency : A1[c2].currency, A1.id()};
+            Issue const goodIss{k1First ? A1[c2].currency : A1[c1].currency, A1.id()};
+
+            auto const sleBad = std::make_shared<SLE>(badKey);
+            badConfig(*sleBad, badIss);
+            ac.view().insert(sleBad);
+
+            auto const sleGood = std::make_shared<SLE>(goodKey);
+            goodConfig(*sleGood, goodIss);
+            ac.view().insert(sleGood);
+        };
+
         // Regression: bad XRP trust line followed by a valid trust line.
-        // With the fix, the invariant catches the violation.
-        // Without the fix, the valid entry overwrites the flag to false.
-        // We use non-XRP keylet currencies so we can control the hash
-        // ordering (the invariant checks sfLowLimit/sfHighLimit issue,
-        // not the keylet currency).
+        // With the fix, the invariant catches the violation. Without it,
+        // the valid entry overwrites the flag to false. The keylet
+        // currencies are non-XRP (the invariant inspects sfLowLimit /
+        // sfHighLimit issue, not the keylet currency).
         testcase << "overwrite: NoXRPTrustLines" + std::string(fixEnabled ? " fix" : "");
         doInvariantCheck(
             Env(*this, features),
             fixEnabled ? std::vector<std::string>{{"an XRP trust line was created"}}
                        : std::vector<std::string>{},
-            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+            [&insertOrderedTrustLinePair](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Account const A3{"A3"};
-
-                // Compute ordering: assign "bad" (XRP issue) to the
-                // lower-sorting key and "good" to the higher-sorting key,
-                // so that the good entry is visited last.
-                char const* const c1 = "AAA";
-                char const* const c2 = "ZZZ";
-                auto const k1 = keylet::line(A1, A2, A1[c1].currency);
-                auto const k2 = keylet::line(A1, A3, A1[c2].currency);
-
-                bool const k1First = k1.key < k2.key;
-                auto const& bk = k1First ? k1 : k2;
-                auto const& gk = k1First ? k2 : k1;
-                char const* const bc = k1First ? c1 : c2;
-                char const* const gc = k1First ? c2 : c1;
-
-                // Bad entry: sfLowLimit has xrpIssue, making isXrp = true
-                auto const sleBad = std::make_shared<SLE>(bk);
-                sleBad->setFieldAmount(sfLowLimit, STAmount{xrpIssue(), 0});
-                sleBad->setFieldAmount(sfHighLimit, A1[bc](0));
-                ac.view().insert(sleBad);
-
-                // Good entry: proper non-XRP limits
-                auto const sleGood = std::make_shared<SLE>(gk);
-                sleGood->setFieldAmount(sfLowLimit, A1[gc](0));
-                sleGood->setFieldAmount(sfHighLimit, A1[gc](0));
-                ac.view().insert(sleGood);
+                insertOrderedTrustLinePair(
+                    ac,
+                    A1,
+                    A2,
+                    A3,
+                    [](SLE& sle, Issue const& iss) {
+                        // sfLowLimit has xrpIssue, making isXrp = true
+                        sle.setFieldAmount(sfLowLimit, STAmount{xrpIssue(), 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                    },
+                    [](SLE& sle, Issue const& iss) {
+                        sle.setFieldAmount(sfLowLimit, STAmount{iss, 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                    });
                 return true;
             },
             XRPAmount{},
@@ -4169,32 +4185,23 @@ class Invariants_test : public beast::unit_test::suite
             fixEnabled ? std::vector<std::string>{{"a trust line with deep freeze flag without "
                                                    "normal freeze was created"}}
                        : std::vector<std::string>{},
-            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+            [&insertOrderedTrustLinePair](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Account const A3{"A3"};
-
-                auto const key_A2_usd = keylet::line(A1, A2, A1["USD"].currency);
-                auto const key_A3_eur = keylet::line(A1, A3, A1["EUR"].currency);
-                auto const key_A3_usd = keylet::line(A1, A3, A1["USD"].currency);
-                auto const key_A2_eur = keylet::line(A1, A2, A1["EUR"].currency);
-
-                // Pick the pairing where bad sorts before good.
-                bool const useA2bad = key_A2_usd.key < key_A3_eur.key;
-                auto const badKey = useA2bad ? key_A2_usd : key_A3_usd;
-                auto const badCcy = A1["USD"].currency;
-                auto const goodKey = useA2bad ? key_A3_eur : key_A2_eur;
-                auto const goodCcy = A1["EUR"].currency;
-
-                auto const sleBad = std::make_shared<SLE>(badKey);
-                sleBad->setFieldAmount(sfLowLimit, STAmount(Issue(badCcy, A1.id()), 0));
-                sleBad->setFieldAmount(sfHighLimit, STAmount(Issue(badCcy, A1.id()), 0));
-                sleBad->setFieldU32(sfFlags, lsfLowDeepFreeze);
-                ac.view().insert(sleBad);
-
-                auto const sleGood = std::make_shared<SLE>(goodKey);
-                sleGood->setFieldAmount(sfLowLimit, STAmount(Issue(goodCcy, A1.id()), 0));
-                sleGood->setFieldAmount(sfHighLimit, STAmount(Issue(goodCcy, A1.id()), 0));
-                sleGood->setFieldU32(sfFlags, 0u);
-                ac.view().insert(sleGood);
+                insertOrderedTrustLinePair(
+                    ac,
+                    A1,
+                    A2,
+                    A3,
+                    [](SLE& sle, Issue const& iss) {
+                        sle.setFieldAmount(sfLowLimit, STAmount{iss, 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                        sle.setFieldU32(sfFlags, lsfLowDeepFreeze);
+                    },
+                    [](SLE& sle, Issue const& iss) {
+                        sle.setFieldAmount(sfLowLimit, STAmount{iss, 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                        sle.setFieldU32(sfFlags, 0u);
+                    });
                 return true;
             },
             XRPAmount{},
@@ -4216,7 +4223,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 // outstanding exceeds maxMPTokenAmount -> checkAmount sets bad_
                 sleNew->setFieldU64(sfOutstandingAmount, maxMPTokenAmount + 1);
