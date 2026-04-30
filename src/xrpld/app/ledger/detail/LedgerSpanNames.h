@@ -15,9 +15,7 @@
 
 #include <xrpl/telemetry/SpanNames.h>
 
-namespace xrpl {
-namespace telemetry {
-namespace ledger_span {
+namespace xrpl::telemetry::ledger_span {
 
 // ===== Span operation suffixes ===============================================
 
@@ -49,6 +47,4 @@ inline constexpr auto txFailed = join(xrplLedger, makeStr("tx_failed"));
 inline constexpr auto validations = join(xrplLedger, makeStr("validations"));
 }  // namespace attr
 
-}  // namespace ledger_span
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry::ledger_span

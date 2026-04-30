@@ -68,6 +68,7 @@
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1966,17 +1967,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             app_.getTimeKeeper().closeTime(),
             calcNodeID(app_.getValidatorManifests().getMasterKey(publicKey))});
 
-    // Create a receive span that links to the sender's trace context
-    // (if propagated). shared_ptr keeps it alive across the job boundary.
-    auto span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
-    span->setAttribute(telemetry::cons_span::attr::trusted, isTrusted);
-    span->setAttribute(telemetry::cons_span::attr::round, static_cast<int64_t>(set.proposeseq()));
+    auto consSpan = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
+    consSpan->setAttribute(telemetry::cons_span::attr::trusted, isTrusted);
+    consSpan->setAttribute(
+        telemetry::cons_span::attr::round, static_cast<int64_t>(set.proposeseq()));
 
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
         isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
         "checkPropose",
-        [weak, isTrusted, m, proposal, sp = std::move(span)]() {
+        [weak, isTrusted, m, proposal, sp = std::move(consSpan)]() {
             if (auto peer = weak.lock())
                 peer->checkPropose(isTrusted, m, proposal);
         });
@@ -2560,13 +2560,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
-        // Create a receive span that links to the sender's trace context
-        // (if propagated). shared_ptr keeps it alive across the job boundary.
-        auto span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
-        span->setAttribute(telemetry::cons_span::attr::trusted, isTrusted);
+        auto consSpan =
+            std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
+        consSpan->setAttribute(telemetry::cons_span::attr::trusted, isTrusted);
         if (val->isFieldPresent(sfLedgerSequence))
         {
-            span->setAttribute(
+            consSpan->setAttribute(
                 telemetry::cons_span::attr::ledgerSeq,
                 static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
         }
@@ -2583,7 +2582,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             app_.getJobQueue().addJob(
                 isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
                 name,
-                [weak, val, m, key, sp = std::move(span)]() {
+                [weak, val, m, key, sp = std::move(consSpan)]() {
                     if (auto peer = weak.lock())
                         peer->checkValidation(val, key, m);
                 });
