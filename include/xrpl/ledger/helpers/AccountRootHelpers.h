@@ -105,6 +105,26 @@ adjustOwnerCount(
         j);
 }
 
+void
+adjustOwnerCountObj(
+    ApplyView& view,
+    SLE::ref accountSle,
+    SLE::ref objectSle,
+    std::int32_t amount,
+    beast::Journal j);
+
+inline void
+adjustOwnerCountObj(
+    ApplyView& view,
+    AccountID const& account,
+    SLE::ref objectSle,
+    std::int32_t amount,
+    beast::Journal j)
+{
+    SLE::ref accountSle = view.peek(keylet::account(account));
+    return adjustOwnerCountObj(view, accountSle, objectSle, amount, j);
+}
+
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
  * the fee as fractions of 1 billion. For example, 1% transfer rate
  * is represented as 1,010,000,000.

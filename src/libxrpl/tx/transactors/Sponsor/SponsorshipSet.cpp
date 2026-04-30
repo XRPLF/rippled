@@ -202,8 +202,7 @@ SponsorshipSet::doApply()
         if (!sponsorObjSle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), sponsorObjSle);
-        adjustOwnerCount(ctx_.view(), sponsorAccSle, sponsor, -1, ctx_.journal);
+        adjustOwnerCountObj(ctx_.view(), sponsorAccSle, sponsorObjSle, -1, ctx_.journal);
 
         ctx_.view().dirRemove(
             keylet::ownerDir(sponsorAccountID),

@@ -68,8 +68,7 @@ PermissionedDomainDelete::doApply()
     XRPL_ASSERT(
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
         "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
-    auto const sponsor = getLedgerEntryReserveSponsor(view(), slePd);
-    adjustOwnerCount(view(), ownerSle, sponsor, -1, ctx_.journal);
+    adjustOwnerCountObj(view(), ownerSle, slePd, -1, ctx_.journal);
     view().erase(slePd);
 
     return tesSUCCESS;

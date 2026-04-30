@@ -181,17 +181,14 @@ LoanBrokerDelete::doApply()
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
         // LoanBroker object can be sponsored
-        auto const sponsor = getLedgerEntryReserveSponsor(view(), broker);
-        adjustOwnerCount(view(), owner, sponsor, -1, j_);
+        adjustOwnerCountObj(view(), owner, broker, -1, j_);
 
         // pseudo-account cannot be sponsored
         adjustOwnerCount(view(), owner, {}, -1, j_);
     }
 
     view().erase(brokerPseudoSLE);
-
     view().erase(broker);
-
     associateAsset(*broker, vaultAsset);
 
     return tesSUCCESS;

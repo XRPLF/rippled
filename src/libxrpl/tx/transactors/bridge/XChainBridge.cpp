@@ -726,11 +726,10 @@ finalizeClaimHelper(
                 return result;
             }
 
+            adjustOwnerCountObj(outerSb, sleOwner, sleClaimID, -1, j);
+
             // Remove the claim id from the ledger
             outerSb.erase(sleClaimID);
-
-            auto const sponsor = getLedgerEntryReserveSponsor(outerSb, sleClaimID);
-            adjustOwnerCount(outerSb, sleOwner, sponsor, -1, j);
         }
     }
 

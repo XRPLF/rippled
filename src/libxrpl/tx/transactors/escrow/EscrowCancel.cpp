@@ -212,9 +212,7 @@ EscrowCancel::doApply()
         }
     }
 
-    auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), slep);
-    adjustOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    adjustOwnerCountObj(ctx_.view(), sle, slep, -1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);

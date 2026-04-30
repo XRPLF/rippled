@@ -303,7 +303,7 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsorSle = getLedgerEntryReserveSponsor(psb, sleCheck);
+    auto const sponsorCheckSle = getLedgerEntryReserveSponsor(psb, sleCheck);
 
     // Preclaim already checked that source has at least the requested
     // funds.
@@ -333,7 +333,7 @@ CheckCash::doApply()
             // from src's directory, we allow them to send that additional
             // incremental reserve amount in the transfer.  Hence the -1
             // argument.
-            STAmount const srcLiquid{xrpLiquid(psb, srcId, sponsorSle ? 0 : -1, viewJ)};
+            STAmount const srcLiquid{xrpLiquid(psb, srcId, sponsorCheckSle ? 0 : -1, viewJ)};
 
             // Now, how much do they need in order to be successful?
             STAmount const xrpDeliver{
@@ -588,7 +588,7 @@ CheckCash::doApply()
 
     // If we succeeded, update the check owner's reserve.
 
-    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), sponsorSle, -1, viewJ);
+    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), sponsorCheckSle, -1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

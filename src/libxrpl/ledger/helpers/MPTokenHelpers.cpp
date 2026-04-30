@@ -180,8 +180,7 @@ authorizeMPToken(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            auto const sponsor = getLedgerEntryReserveSponsor(view, sleMpt);
-            adjustOwnerCount(view, sleAcct, sponsor, -1, journal);
+            adjustOwnerCountObj(view, sleAcct, sleMpt, -1, journal);
 
             view.erase(sleMpt);
             return tesSUCCESS;

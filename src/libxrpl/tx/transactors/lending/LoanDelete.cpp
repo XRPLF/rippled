@@ -130,8 +130,7 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    auto const sponsor = getLedgerEntryReserveSponsor(view, loanSle);
-    adjustOwnerCount(view, borrowerSle, sponsor, -1, j_);
+    adjustOwnerCountObj(view, borrowerSle, loanSle, -1, j_);
 
     // Delete the Loan object
     view.erase(loanSle);
