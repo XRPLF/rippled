@@ -67,16 +67,16 @@ public:
                 switch (rand_int(rng, 3))
                 {
                     case 0:
-                        return hotLEDGER;
+                        return NodeObjectType::hotLEDGER;
                     case 1:
-                        return hotACCOUNT_NODE;
+                        return NodeObjectType::hotACCOUNT_NODE;
                     case 2:
-                        return hotTRANSACTION_NODE;
+                        return NodeObjectType::hotTRANSACTION_NODE;
                     case 3:
-                        return hotUNKNOWN;
+                        return NodeObjectType::hotUNKNOWN;
                     default:
                         // will never happen, but make static analysis tool happy.
-                        return hotUNKNOWN;
+                        return NodeObjectType::hotUNKNOWN;
                 }
             }();
 
@@ -140,9 +140,9 @@ public:
 
             Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == ok);
+            BEAST_EXPECT(status == Status::ok);
 
-            if (status == ok)
+            if (status == Status::ok)
             {
                 BEAST_EXPECT(object != nullptr);
 
@@ -160,7 +160,7 @@ public:
 
             Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == notFound);
+            BEAST_EXPECT(status == Status::notFound);
         }
     }
 

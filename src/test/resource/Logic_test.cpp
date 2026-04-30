@@ -114,7 +114,7 @@ public:
                     return;
                 }
 
-                if (c.charge(fee) == warn)
+                if (c.charge(fee) == Disposition::warn)
                 {
                     if (limited)
                     {
@@ -145,7 +145,7 @@ public:
                     return;
                 }
 
-                if (c.charge(fee) == drop)
+                if (c.charge(fee) == Disposition::drop)
                 {
                     // Disconnect abusive Consumer
                     BEAST_EXPECT(c.disconnect(j) == limited);
@@ -159,7 +159,7 @@ public:
         {
             Consumer const c(logic.newInboundEndpoint(addr));
             logic.periodicActivity();
-            if (c.disposition() != drop)
+            if (c.disposition() != Disposition::drop)
             {
                 if (limited)
                 {
@@ -185,7 +185,7 @@ public:
                 ++logic.clock();
                 logic.periodicActivity();
                 Consumer const c(logic.newInboundEndpoint(addr));
-                if (c.disposition() != drop)
+                if (c.disposition() != Disposition::drop)
                 {
                     readmitted = true;
                     break;

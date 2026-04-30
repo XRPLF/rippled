@@ -56,7 +56,7 @@ public:
         packed_spinlock sl(locks_, index % 64);
 
         {
-            std::lock_guard const lock(sl);
+            std::scoped_lock const lock(sl);
 
             // The check against the first character of the encoding ensures
             // that we don't mishandle the case of the all-zero account:
@@ -69,7 +69,7 @@ public:
         XRPL_ASSERT(ret.size() <= 38, "xrpl::detail::AccountIdCache : maximum result size");
 
         {
-            std::lock_guard const lock(sl);
+            std::scoped_lock const lock(sl);
             cache_[index].id = id;
             std::strcpy(cache_[index].encoding, ret.c_str());
         }

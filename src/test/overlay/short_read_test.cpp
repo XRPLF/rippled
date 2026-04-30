@@ -118,14 +118,14 @@ private:
         void
         add(std::shared_ptr<Child> const& child)
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             list_.emplace(child.get(), child);
         }
 
         void
         remove(Child* child)
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             list_.erase(child);
             if (list_.empty())
                 cond_.notify_one();
@@ -136,7 +136,7 @@ private:
         {
             std::vector<std::shared_ptr<Child>> v;
             {
-                std::lock_guard const lock(mutex_);
+                std::scoped_lock const lock(mutex_);
                 v.reserve(list_.size());
                 if (closed_)
                     return;

@@ -479,8 +479,8 @@ template <class TDerived>
 std::pair<IOUAmount, DebtDirection>
 DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
-    auto const srcOwed =
-        toAmount<IOUAmount>(accountHolds(sb, src_, currency_, dst_, fhIGNORE_FREEZE, j_));
+    auto const srcOwed = toAmount<IOUAmount>(
+        accountHolds(sb, src_, currency_, dst_, FreezeHandling::fhIGNORE_FREEZE, j_));
 
     if (srcOwed.signum() > 0)
         return {srcOwed, DebtDirection::redeems};
@@ -496,7 +496,8 @@ DirectStepI<TDerived>::debtDirection(ReadView const& sb, StrandDirection dir) co
     if (dir == StrandDirection::forward && cache_)
         return cache_->srcDebtDir;
 
-    auto const srcOwed = accountHolds(sb, src_, currency_, dst_, fhIGNORE_FREEZE, j_);
+    auto const srcOwed =
+        accountHolds(sb, src_, currency_, dst_, FreezeHandling::fhIGNORE_FREEZE, j_);
     return srcOwed.signum() > 0 ? DebtDirection::redeems : DebtDirection::issues;
 }
 
@@ -930,7 +931,7 @@ make_DirectStepI(
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing != 0u)
+    if (ctx.offerCrossing != OfferCrossing::no)
     {
         auto offerCrossingStep = std::make_unique<DirectIOfferCrossingStep>(ctx, src, dst, c);
         ter = offerCrossingStep->check(ctx);

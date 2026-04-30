@@ -39,7 +39,7 @@ JobQueue::JobQueue(
     job_count = m_collector->make_gauge("job_count");
 
     {
-        std::lock_guard const lock(m_mutex);
+        std::scoped_lock const lock(m_mutex);
 
         for (auto const& x : JobTypes::instance())
         {
@@ -65,7 +65,7 @@ JobQueue::~JobQueue()
 void
 JobQueue::collect()
 {
-    std::lock_guard const lock(m_mutex);
+    std::scoped_lock const lock(m_mutex);
     job_count = m_jobSet.size();
 }
 
@@ -91,7 +91,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
         "requires no threads");
 
     {
-        std::lock_guard const lock(m_mutex);
+        std::scoped_lock const lock(m_mutex);
         auto result = m_jobSet.emplace(type, name, ++m_lastJob, data.load(), func);
         auto const& job = *result.first;
 
@@ -119,7 +119,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 int
 JobQueue::getJobCount(JobType t) const
 {
-    std::lock_guard const lock(m_mutex);
+    std::scoped_lock const lock(m_mutex);
 
     JobDataMap::const_iterator const c = m_jobData.find(t);
 
@@ -129,7 +129,7 @@ JobQueue::getJobCount(JobType t) const
 int
 JobQueue::getJobCountTotal(JobType t) const
 {
-    std::lock_guard const lock(m_mutex);
+    std::scoped_lock const lock(m_mutex);
 
     JobDataMap::const_iterator const c = m_jobData.find(t);
 
@@ -142,7 +142,7 @@ JobQueue::getJobCountGE(JobType t) const
     // return the number of jobs at this priority level or greater
     int ret = 0;
 
-    std::lock_guard const lock(m_mutex);
+    std::scoped_lock const lock(m_mutex);
 
     for (auto const& x : m_jobData)
     {
@@ -192,7 +192,7 @@ JobQueue::getJson(int c)
 
     Json::Value priorities = Json::arrayValue;
 
-    std::lock_guard const lock(m_mutex);
+    std::scoped_lock const lock(m_mutex);
 
     for (auto& x : m_jobData)
     {
@@ -349,7 +349,7 @@ JobQueue::processTask(int instance)
         {
             Job job;
             {
-                std::lock_guard const lock(m_mutex);
+                std::scoped_lock const lock(m_mutex);
                 getNextJob(job);
                 ++m_processCount;
             }
@@ -376,7 +376,7 @@ JobQueue::processTask(int instance)
     }
 
     {
-        std::lock_guard const lock(m_mutex);
+        std::scoped_lock const lock(m_mutex);
         // Job should be destroyed before stopping
         // otherwise destructors with side effects can access
         // parent objects that are already destroyed.

@@ -34,7 +34,7 @@ inline void
 JobQueue::Coro::yield() const
 {
     {
-        std::lock_guard lock(jq_.m_mutex);
+        std::scoped_lock lock(jq_.m_mutex);
         ++jq_.nSuspend_;
     }
     (*yield_)();
@@ -44,7 +44,7 @@ inline bool
 JobQueue::Coro::post()
 {
     {
-        std::lock_guard lk(mutex_run_);
+        std::scoped_lock lk(mutex_run_);
         running_ = true;
     }
 
@@ -55,7 +55,7 @@ JobQueue::Coro::post()
     }
 
     // The coroutine will not run.  Clean up running_.
-    std::lock_guard lk(mutex_run_);
+    std::scoped_lock lk(mutex_run_);
     running_ = false;
     cv_.notify_all();
     return false;
@@ -65,16 +65,16 @@ inline void
 JobQueue::Coro::resume()
 {
     {
-        std::lock_guard lk(mutex_run_);
+        std::scoped_lock lk(mutex_run_);
         running_ = true;
     }
     {
-        std::lock_guard lk(jq_.m_mutex);
+        std::scoped_lock lk(jq_.m_mutex);
         --jq_.nSuspend_;
     }
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
-    std::lock_guard lock(mutex_);
+    std::scoped_lock lock(mutex_);
     // A late resume() can arrive after the coroutine has already completed.
     // This is an expected (if rare) outcome of the race condition documented
     // in JobQueue.h:354-377 where post() schedules a resume job before the
@@ -89,7 +89,7 @@ JobQueue::Coro::resume()
     }
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
-    std::lock_guard lk(mutex_run_);
+    std::scoped_lock lk(mutex_run_);
     running_ = false;
     cv_.notify_all();
 }
@@ -113,7 +113,7 @@ JobQueue::Coro::expectEarlyExit()
         //
         // That said, since we're outside the Coro's stack, we need to
         // decrement the nSuspend that the Coro's call to yield caused.
-        std::lock_guard lock(jq_.m_mutex);
+        std::scoped_lock lock(jq_.m_mutex);
         --jq_.nSuspend_;
 #ifndef NDEBUG
         finished_ = true;

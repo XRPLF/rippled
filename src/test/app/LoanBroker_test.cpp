@@ -848,7 +848,7 @@ class LoanBroker_test : public beast::unit_test::suite
         BEAST_EXPECT(env.ownerCount(alice) == aliceOriginalCount);
     }
 
-    enum LoanBrokerTest { CoverClawback, CoverDeposit, CoverWithdraw, Delete, Set };
+    enum class LoanBrokerTest { CoverClawback, CoverDeposit, CoverWithdraw, Delete, Set };
 
     void
     testLoanBroker(
@@ -923,7 +923,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env(jv, txflags(tfFullyCanonicalSig), ter(temINVALID));
         };
 
-        if (brokerTest == CoverDeposit)
+        if (brokerTest == LoanBrokerTest::CoverDeposit)
         {
             // preflight: temINVALID (empty/zero broker id)
             testZeroBrokerID([&]() { return coverDeposit(alice, brokerKeylet.key, asset(10)); });
@@ -949,7 +949,7 @@ class LoanBroker_test : public beast::unit_test::suite
         }
         env.close();
 
-        if (brokerTest == CoverWithdraw)
+        if (brokerTest == LoanBrokerTest::CoverWithdraw)
         {
             // preflight: temINVALID (empty/zero broker id)
             testZeroBrokerID([&]() { return coverWithdraw(alice, brokerKeylet.key, asset(10)); });
@@ -1002,7 +1002,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 ter(tecPSEUDO_ACCOUNT));
         }
 
-        if (brokerTest == CoverClawback)
+        if (brokerTest == LoanBrokerTest::CoverClawback)
         {
             // preflight: temINVALID (empty/zero broker id)
             testZeroBrokerID([&]() {
@@ -1039,7 +1039,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env.close();
         }
 
-        if (brokerTest == Delete)
+        if (brokerTest == LoanBrokerTest::Delete)
         {
             Account const borrower{"borrower"};
             env.fund(XRP(1'000), borrower);
@@ -1071,7 +1071,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env(del(alice, brokerKeylet.key));
         }
 
-        if (brokerTest == Set)
+        if (brokerTest == LoanBrokerTest::Set)
         {
             // preflight: temINVALID (empty/zero broker id)
             testZeroBrokerID([&]() {
@@ -1139,7 +1139,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         // Issue:
         // AllowTrustLineClawback is not set or NoFreeze is set
-        testLoanBroker({}, CoverClawback);
+        testLoanBroker({}, LoanBrokerTest::CoverClawback);
 
         // MPTIssue:
         // MPTCanClawback is not set
@@ -1148,7 +1148,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 MPTTester const mpt({.env = env, .issuer = issuer, .holders = {alice}});
                 return mpt;
             },
-            CoverClawback);
+            LoanBrokerTest::CoverClawback);
     }
 
     void
@@ -1159,7 +1159,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         // preclaim:
         // tecWRONG_ASSET, tecINSUFFICIENT_FUNDS, frozen asset
-        testLoanBroker({}, CoverDeposit);
+        testLoanBroker({}, LoanBrokerTest::CoverDeposit);
     }
 
     void
@@ -1178,7 +1178,7 @@ class LoanBroker_test : public beast::unit_test::suite
             second+third tecINSUFFICIENT_FUNDS (can this happen)?
         doApply: tecPATH_DRY (can it happen, funds already checked?)
          */
-        testLoanBroker({}, CoverWithdraw);
+        testLoanBroker({}, LoanBrokerTest::CoverWithdraw);
     }
 
     void
@@ -1192,7 +1192,7 @@ class LoanBroker_test : public beast::unit_test::suite
             accountSend failure, removeEmptyHolding failure,
             all tecHAS_OBLIGATIONS (can any of these happen?)
         */
-        testLoanBroker({}, Delete);
+        testLoanBroker({}, LoanBrokerTest::Delete);
     }
 
     void
@@ -1208,7 +1208,7 @@ class LoanBroker_test : public beast::unit_test::suite
             addEmptyHolding failure
             can any of these happen?
         */
-        testLoanBroker({}, Set);
+        testLoanBroker({}, LoanBrokerTest::Set);
     }
 
     void
@@ -1586,7 +1586,7 @@ class LoanBroker_test : public beast::unit_test::suite
         Account const dest("destination");
         auto const token = issuer["IOU"];
 
-        enum TrustState {
+        enum class TrustState {
             RequireAuth,
             ZeroLimit,
             ReachedLimit,
@@ -1602,10 +1602,10 @@ class LoanBroker_test : public beast::unit_test::suite
             auto setTrustLine = [&](Account const& acct, TrustState state) {
                 switch (state)
                 {
-                    case RequireAuth:
+                    case TrustState::RequireAuth:
                         env(trust(issuer, token(0), acct, tfSetfAuth));
                         break;
-                    case ZeroLimit: {
+                    case TrustState::ZeroLimit: {
                         auto jv = trust(acct, token(0));
                         // set QualityIn so that the trustline is not
                         // auto-deleted
@@ -1613,19 +1613,19 @@ class LoanBroker_test : public beast::unit_test::suite
                         env(jv);
                     }
                     break;
-                    case ReachedLimit: {
+                    case TrustState::ReachedLimit: {
                         env(trust(acct, token(1'000)));
                         env(pay(issuer, acct, token(1'000)));
                         env.close();
                     }
                     break;
-                    case NearLimit: {
+                    case TrustState::NearLimit: {
                         env(trust(acct, token(1'000)));
                         env(pay(issuer, acct, token(950)));
                         env.close();
                     }
                     break;
-                    case NoTrustLine:
+                    case TrustState::NoTrustLine:
                         // don't create a trustline
                         break;
                     default:
@@ -1637,12 +1637,12 @@ class LoanBroker_test : public beast::unit_test::suite
             env.fund(XRP(1'000), issuer, broker, dest);
             env.close();
 
-            if (trustState == RequireAuth)
+            if (trustState == TrustState::RequireAuth)
             {
                 env(fset(issuer, asfRequireAuth));
                 env.close();
 
-                setTrustLine(broker, RequireAuth);
+                setTrustLine(broker, TrustState::RequireAuth);
             }
 
             setTrustLine(dest, trustState);
@@ -1684,7 +1684,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env.close();
 
             // Clearing RequireAuth shouldn't change the result
-            if (trustState == RequireAuth)
+            if (trustState == TrustState::RequireAuth)
             {
                 env(fclear(issuer, asfRequireAuth));
                 env.close();
@@ -1697,11 +1697,11 @@ class LoanBroker_test : public beast::unit_test::suite
             }
         };
 
-        test(RequireAuth);
-        test(ZeroLimit);
-        test(ReachedLimit);
-        test(NearLimit);
-        test(NoTrustLine);
+        test(TrustState::RequireAuth);
+        test(TrustState::ZeroLimit);
+        test(TrustState::ReachedLimit);
+        test(TrustState::NearLimit);
+        test(TrustState::NoTrustLine);
     }
 
     void
@@ -1712,24 +1712,24 @@ class LoanBroker_test : public beast::unit_test::suite
         Account const broker("issuer");
         Account const dest("destination");
 
-        enum MPTState {
+        enum class MPTState {
             RequireAuth,
             ReachedMAX,
             NoMPT,
         };
 
-        auto test = [&](MPTState MPTState) {
+        auto test = [&](MPTState mptState) {
             Env env(*this);
 
-            testcase << "RIPD-4274 MPT with state: " << static_cast<int>(MPTState);
+            testcase << "RIPD-4274 MPT with state: " << static_cast<int>(mptState);
 
             env.fund(XRP(1'000), issuer, broker, dest);
             env.close();
 
             auto const maybeToken = [&]() -> std::optional<MPT> {
-                switch (MPTState)
+                switch (mptState)
                 {
-                    case RequireAuth: {
+                    case MPTState::RequireAuth: {
                         auto tester = MPTTester(
                             {.env = env,
                              .issuer = issuer,
@@ -1743,7 +1743,7 @@ class LoanBroker_test : public beast::unit_test::suite
                             {.account = issuer, .holder = dest, .flags = tfMPTUnauthorize});
                         return tester;
                     }
-                    case ReachedMAX: {
+                    case MPTState::ReachedMAX: {
                         auto tester = MPTTester(
                             {.env = env,
                              .issuer = issuer,
@@ -1754,7 +1754,7 @@ class LoanBroker_test : public beast::unit_test::suite
                         BEAST_EXPECT(env.balance(issuer, tester) == tester(-4'000));
                         return tester;
                     }
-                    case NoMPT: {
+                    case MPTState::NoMPT: {
                         return MPTTester(
                             {.env = env,
                              .issuer = issuer,
@@ -1786,7 +1786,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 ter(std::ignore));
 
             // Shouldn't fail if at MaximumAmount since no new tokens are issued
-            TER const err = MPTState == ReachedMAX ? TER(tesSUCCESS) : tecNO_AUTH;
+            TER const err = mptState == MPTState::ReachedMAX ? TER(tesSUCCESS) : tecNO_AUTH;
             BEAST_EXPECT(env.ter() == err);
             env.close();
 
@@ -1812,9 +1812,9 @@ class LoanBroker_test : public beast::unit_test::suite
             env.close();
         };
 
-        test(RequireAuth);
-        test(ReachedMAX);
-        test(NoMPT);
+        test(MPTState::RequireAuth);
+        test(MPTState::ReachedMAX);
+        test(MPTState::NoMPT);
     }
 
     void

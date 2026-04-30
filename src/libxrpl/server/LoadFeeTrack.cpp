@@ -16,7 +16,7 @@ namespace xrpl {
 bool
 LoadFeeTrack::raiseLocalFee()
 {
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
 
     if (++raiseCount_ < 2)
         return false;
@@ -41,7 +41,7 @@ LoadFeeTrack::raiseLocalFee()
 bool
 LoadFeeTrack::lowerLocalFee()
 {
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
     std::uint32_t const origFee = localTxnLoadFee_;
     raiseCount_ = 0;
 

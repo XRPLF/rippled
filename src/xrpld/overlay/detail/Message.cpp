@@ -22,7 +22,8 @@ Message::Message(
     ::google::protobuf::Message const& message,
     protocol::MessageType type,
     std::optional<PublicKey> const& validator)
-    : category_(TrafficCount::categorize(message, type, false)), validatorKey_(validator)
+    : category_(static_cast<std::size_t>(TrafficCount::categorize(message, type, false)))
+    , validatorKey_(validator)
 {
     using namespace xrpl::compression;
 

@@ -7,6 +7,8 @@
 
 namespace xrpl {
 
+// Bitwise flag enum with existing operator overloads
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum ApplyFlags : std::uint32_t {
     tapNONE = 0x00,
 

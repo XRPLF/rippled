@@ -194,7 +194,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
     auto const& port = session.port();
 
     auto const c = [this, &port]() {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         return ++count_[port];
     }();
 
@@ -378,14 +378,14 @@ ServerHandler::onWSMessage(
 void
 ServerHandler::onClose(Session& session, boost::system::error_code const&)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     --count_[session.port()];
 }
 
 void
 ServerHandler::onStopped(Server&)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     stopped_ = true;
     condition_.notify_one();
 }

@@ -319,7 +319,7 @@ STAmount::STAmount(
     : STBase(name), mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
 {
     // mValue is uint64, but needs to fit in the range of int64
-    if (Number::getMantissaScale() == MantissaRange::small)
+    if (Number::getMantissaScale() == MantissaRange::mantissa_scale::small)
     {
         XRPL_ASSERT(
             mValue <= std::numeric_limits<std::int64_t>::max(),

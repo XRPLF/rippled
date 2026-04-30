@@ -49,7 +49,7 @@ public:
     Status
     fetch(uint256 const&, std::shared_ptr<NodeObject>*) override
     {
-        return notFound;
+        return Status::notFound;
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>

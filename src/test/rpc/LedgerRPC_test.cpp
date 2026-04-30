@@ -165,6 +165,23 @@ class LedgerRPC_test : public beast::unit_test::suite
             auto const ret = env.rpc("json", "ledger", "{ \"ledger_index\" : 1000000000000000 }");
             checkErrorValue(ret, "invalidParams", "Invalid parameters.");
         }
+
+        {
+            // test all boolean fields with non-boolean values
+            auto testBooleanField = [&](Json::StaticString const& field) {
+                Json::Value jvParams;
+                jvParams[field] = "blah";
+                auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "invalidParams", "Invalid parameters.");
+            };
+            testBooleanField(jss::full);
+            testBooleanField(jss::accounts);
+            testBooleanField(jss::transactions);
+            testBooleanField(jss::expand);
+            testBooleanField(jss::binary);
+            testBooleanField(jss::owner_funds);
+            testBooleanField(jss::queue);
+        }
     }
 
     void

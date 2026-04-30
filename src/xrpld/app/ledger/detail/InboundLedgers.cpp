@@ -284,7 +284,7 @@ public:
     std::size_t
     fetchRate() override
     {
-        std::lock_guard const lock(fetchRateMutex_);
+        std::scoped_lock const lock(fetchRateMutex_);
         return 60 * fetchRate_.value(m_clock.now());
     }
 
@@ -293,7 +293,7 @@ public:
     void
     onLedgerFetched() override
     {
-        std::lock_guard const lock(fetchRateMutex_);
+        std::scoped_lock const lock(fetchRateMutex_);
         fetchRate_.add(1, m_clock.now());
     }
 

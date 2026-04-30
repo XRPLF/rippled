@@ -75,7 +75,7 @@ jobs:
           enable_ccache: false
 
       - name: Print build environment
-        uses: ./.github/actions/print-env
+        uses: XRPLF/actions/print-env@8f811899319ef002e7a088c77c57d95aba602a97
 
       - name: Get number of processors
         uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf

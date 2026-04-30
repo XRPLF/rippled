@@ -140,7 +140,7 @@ protected:
         void
         signal()
         {
-            std::lock_guard const lk(mutex_);
+            std::scoped_lock const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }

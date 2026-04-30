@@ -35,7 +35,7 @@ namespace xrpl {
 class SeqProxy
 {
 public:
-    enum Type : std::uint8_t { seq = 0, ticket };
+    enum class Type : std::uint8_t { seq = 0, ticket };
 
 private:
     std::uint32_t value_;
@@ -67,13 +67,13 @@ public:
     [[nodiscard]] constexpr bool
     isSeq() const
     {
-        return type_ == seq;
+        return type_ == Type::seq;
     }
 
     [[nodiscard]] constexpr bool
     isTicket() const
     {
-        return type_ == ticket;
+        return type_ == Type::ticket;
     }
 
     // Occasionally it is convenient to be able to increase the value_

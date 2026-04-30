@@ -39,8 +39,22 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <vector>
+
+namespace xrpl {
+static std::ostream&
+operator<<(std::ostream& os, Pathfinder::NodeType t)
+{
+    return os << static_cast<int>(t);
+}
+static std::ostream&
+operator<<(std::ostream& os, Pathfinder::PaymentType t)
+{
+    return os << static_cast<int>(t);
+}
+}  // namespace xrpl
 
 /*
 
@@ -139,22 +153,22 @@ pathTypeToString(Pathfinder::PathType const& type)
     {
         switch (node)
         {
-            case Pathfinder::nt_SOURCE:
+            case Pathfinder::NodeType::nt_SOURCE:
                 ret.append("s");
                 break;
-            case Pathfinder::nt_ACCOUNTS:
+            case Pathfinder::NodeType::nt_ACCOUNTS:
                 ret.append("a");
                 break;
-            case Pathfinder::nt_BOOKS:
+            case Pathfinder::NodeType::nt_BOOKS:
                 ret.append("b");
                 break;
-            case Pathfinder::nt_XRP_BOOK:
+            case Pathfinder::NodeType::nt_XRP_BOOK:
                 ret.append("x");
                 break;
-            case Pathfinder::nt_DEST_BOOK:
+            case Pathfinder::NodeType::nt_DEST_BOOK:
                 ret.append("f");
                 break;
-            case Pathfinder::nt_DESTINATION:
+            case Pathfinder::NodeType::nt_DESTINATION:
                 ret.append("d");
                 break;
         }
@@ -310,36 +324,36 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
 
     // Now compute the payment type from the types of the source and destination
     // currencies.
-    PaymentType paymentType = pt_XRP_to_XRP;
+    PaymentType paymentType = PaymentType::pt_XRP_to_XRP;
     if (bSrcXrp && bDstXrp)
     {
         // XRP -> XRP
         JLOG(j_.debug()) << "XRP to XRP payment";
-        paymentType = pt_XRP_to_XRP;
+        paymentType = PaymentType::pt_XRP_to_XRP;
     }
     else if (bSrcXrp)
     {
         // XRP -> non-XRP
         JLOG(j_.debug()) << "XRP to non-XRP payment";
-        paymentType = pt_XRP_to_nonXRP;
+        paymentType = PaymentType::pt_XRP_to_nonXRP;
     }
     else if (bDstXrp)
     {
         // non-XRP -> XRP
         JLOG(j_.debug()) << "non-XRP to XRP payment";
-        paymentType = pt_nonXRP_to_XRP;
+        paymentType = PaymentType::pt_nonXRP_to_XRP;
     }
     else if (mSrcPathAsset == mDstAmount.asset())
     {
         // non-XRP -> non-XRP - Same currency
         JLOG(j_.debug()) << "non-XRP to non-XRP - same currency";
-        paymentType = pt_nonXRP_to_same;
+        paymentType = PaymentType::pt_nonXRP_to_same;
     }
     else
     {
         // non-XRP to non-XRP - Different currency
         JLOG(j_.debug()) << "non-XRP to non-XRP - cross currency";
-        paymentType = pt_nonXRP_to_nonXRP;
+        paymentType = PaymentType::pt_nonXRP_to_nonXRP;
     }
 
     // Now iterate over all paths for that paymentType.
@@ -888,29 +902,29 @@ Pathfinder::addPathsForType(
     auto nodeType = pathType.back();
     switch (nodeType)
     {
-        case nt_SOURCE:
+        case NodeType::nt_SOURCE:
             // Source must always be at the start, so pathsOut has to be empty.
             XRPL_ASSERT(pathsOut.empty(), "xrpl::Pathfinder::addPathsForType : empty paths");
             pathsOut.push_back(STPath());
             break;
 
-        case nt_ACCOUNTS:
+        case NodeType::nt_ACCOUNTS:
             addLinks(parentPaths, pathsOut, afADD_ACCOUNTS, continueCallback);
             break;
 
-        case nt_BOOKS:
+        case NodeType::nt_BOOKS:
             addLinks(parentPaths, pathsOut, afADD_BOOKS, continueCallback);
             break;
 
-        case nt_XRP_BOOK:
+        case NodeType::nt_XRP_BOOK:
             addLinks(parentPaths, pathsOut, afADD_BOOKS | afOB_XRP, continueCallback);
             break;
 
-        case nt_DEST_BOOK:
+        case NodeType::nt_DEST_BOOK:
             addLinks(parentPaths, pathsOut, afADD_BOOKS | afOB_LAST, continueCallback);
             break;
 
-        case nt_DESTINATION:
+        case NodeType::nt_DESTINATION:
             // FIXME: What if a different issuer was specified on the
             // destination amount?
             // TODO(tom): what does this even mean?  Should it be a JIRA?
@@ -1321,29 +1335,29 @@ makePath(char const* string)
         switch (*string++)
         {
             case 's':  // source
-                ret.push_back(Pathfinder::nt_SOURCE);
+                ret.push_back(Pathfinder::NodeType::nt_SOURCE);
                 break;
 
             case 'a':  // accounts
-                ret.push_back(Pathfinder::nt_ACCOUNTS);
+                ret.push_back(Pathfinder::NodeType::nt_ACCOUNTS);
                 break;
 
             case 'b':  // books
-                ret.push_back(Pathfinder::nt_BOOKS);
+                ret.push_back(Pathfinder::NodeType::nt_BOOKS);
                 break;
 
             case 'x':  // xrp book
-                ret.push_back(Pathfinder::nt_XRP_BOOK);
+                ret.push_back(Pathfinder::NodeType::nt_XRP_BOOK);
                 break;
 
             case 'f':  // book to final currency
-                ret.push_back(Pathfinder::nt_DEST_BOOK);
+                ret.push_back(Pathfinder::NodeType::nt_DEST_BOOK);
                 break;
 
             case 'd':
                 // Destination (with account, if required and not already
                 // present).
-                ret.push_back(Pathfinder::nt_DESTINATION);
+                ret.push_back(Pathfinder::NodeType::nt_DESTINATION);
                 break;
 
             case 0:
@@ -1376,11 +1390,11 @@ Pathfinder::initPathTable()
     // CAUTION: Do not include rules that build default paths
 
     mPathTable.clear();
-    fillPaths(pt_XRP_to_XRP, {});
+    fillPaths(PaymentType::pt_XRP_to_XRP, {});
     /* cspell: disable */
 
     fillPaths(
-        pt_XRP_to_nonXRP,
+        PaymentType::pt_XRP_to_nonXRP,
         {{1, "sfd"},    // source -> book -> gateway
          {3, "sfad"},   // source -> book -> account -> destination
          {5, "sfaad"},  // source -> book -> account -> account -> destination
@@ -1390,7 +1404,7 @@ Pathfinder::initPathTable()
          {10, "sbafad"}});
 
     fillPaths(
-        pt_nonXRP_to_XRP,
+        PaymentType::pt_nonXRP_to_XRP,
         {{1, "sxd"},   // gateway buys XRP
          {2, "saxd"},  // source -> gateway -> book(XRP) -> dest
          {6, "saaxd"},
@@ -1400,7 +1414,7 @@ Pathfinder::initPathTable()
 
     // non-XRP to non-XRP (same currency)
     fillPaths(
-        pt_nonXRP_to_same,
+        PaymentType::pt_nonXRP_to_same,
         {
             {1, "sad"},   // source -> gateway -> destination
             {1, "sfd"},   // source -> book -> destination
@@ -1419,7 +1433,7 @@ Pathfinder::initPathTable()
 
     // non-XRP to non-XRP (different currency)
     fillPaths(
-        pt_nonXRP_to_nonXRP,
+        PaymentType::pt_nonXRP_to_nonXRP,
         {
             {1, "sfad"},
             {1, "safd"},

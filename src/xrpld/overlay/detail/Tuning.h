@@ -4,6 +4,8 @@
 
 namespace xrpl::Tuning {
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     /** How many ledgers off a server can be and we will
         still consider it converged */

@@ -18,8 +18,8 @@ class SignerListSet : public Transactor
 {
 private:
     // Values determined during preCompute for use later.
-    enum Operation { unknown, set, destroy };
-    Operation do_{unknown};
+    enum class Operation { unknown, set, destroy };
+    Operation do_{Operation::unknown};
     std::uint32_t quorum_{0};
     std::vector<SignerEntries::SignerEntry> signers_;
 

@@ -288,7 +288,7 @@ public:
     void
     run() override
     {
-        testcase(beast::unit_test::abort_on_fail) << arg();
+        testcase(beast::unit_test::abort_t::abort_on_fail) << arg();
 
         using namespace nudb;
         using namespace nudb::detail;

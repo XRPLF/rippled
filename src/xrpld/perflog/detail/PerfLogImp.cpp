@@ -79,7 +79,7 @@ PerfLogImp::Counters::countersJson() const
     {
         Rpc value;
         {
-            std::lock_guard const lock(proc.second.mutex);
+            std::scoped_lock const lock(proc.second.mutex);
             if ((proc.second.value.started == 0u) && (proc.second.value.finished == 0u) &&
                 (proc.second.value.errored == 0u))
             {
@@ -117,7 +117,7 @@ PerfLogImp::Counters::countersJson() const
     {
         Jq value;
         {
-            std::lock_guard const lock(proc.second.mutex);
+            std::scoped_lock const lock(proc.second.mutex);
             if ((proc.second.value.queued == 0u) && (proc.second.value.started == 0u) &&
                 (proc.second.value.finished == 0u))
             {
@@ -166,7 +166,7 @@ PerfLogImp::Counters::currentJson() const
 
     Json::Value jobsArray(Json::arrayValue);
     auto const jobs = [this] {
-        std::lock_guard const lock(jobsMutex_);
+        std::scoped_lock const lock(jobsMutex_);
         return jobs_;
     }();
 
@@ -184,7 +184,7 @@ PerfLogImp::Counters::currentJson() const
     Json::Value methodsArray(Json::arrayValue);
     std::vector<MethodStart> methods;
     {
-        std::lock_guard const lock(methodsMutex_);
+        std::scoped_lock const lock(methodsMutex_);
         methods.reserve(methods_.size());
         for (auto const& m : methods_)
             methods.push_back(m.second);
@@ -280,7 +280,7 @@ PerfLogImp::report()
     Json::Value report(Json::objectValue);
     report[jss::time] = to_string(std::chrono::floor<microseconds>(present));
     {
-        std::lock_guard const lock{counters_.jobsMutex_};
+        std::scoped_lock const lock{counters_.jobsMutex_};
         report[jss::workers] = static_cast<unsigned int>(counters_.jobs_.size());
     }
     report[jss::hostid] = hostname_;
@@ -321,10 +321,10 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
     }
 
     {
-        std::lock_guard const lock(counter->second.mutex);
+        std::scoped_lock const lock(counter->second.mutex);
         ++counter->second.value.started;
     }
-    std::lock_guard const lock(counters_.methodsMutex_);
+    std::scoped_lock const lock(counters_.methodsMutex_);
     counters_.methods_[requestId] = {counter->first.c_str(), steady_clock::now()};
 }
 
@@ -341,7 +341,7 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
     }
     steady_time_point startTime;
     {
-        std::lock_guard const lock(counters_.methodsMutex_);
+        std::scoped_lock const lock(counters_.methodsMutex_);
         auto const e = counters_.methods_.find(requestId);
         if (e != counters_.methods_.end())
         {
@@ -355,7 +355,7 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
             // LCOV_EXCL_STOP
         }
     }
-    std::lock_guard const lock(counter->second.mutex);
+    std::scoped_lock const lock(counter->second.mutex);
     if (finish)
     {
         ++counter->second.value.finished;
@@ -379,7 +379,7 @@ PerfLogImp::jobQueue(JobType const type)
         return;
         // LCOV_EXCL_STOP
     }
-    std::lock_guard const lock(counter->second.mutex);
+    std::scoped_lock const lock(counter->second.mutex);
     ++counter->second.value.queued;
 }
 
@@ -400,11 +400,11 @@ PerfLogImp::jobStart(
     }
 
     {
-        std::lock_guard const lock(counter->second.mutex);
+        std::scoped_lock const lock(counter->second.mutex);
         ++counter->second.value.started;
         counter->second.value.queuedDuration += dur;
     }
-    std::lock_guard const lock(counters_.jobsMutex_);
+    std::scoped_lock const lock(counters_.jobsMutex_);
     if (instance >= 0 && instance < counters_.jobs_.size())
         counters_.jobs_[instance] = {type, startTime};
 }
@@ -422,11 +422,11 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
     }
 
     {
-        std::lock_guard const lock(counter->second.mutex);
+        std::scoped_lock const lock(counter->second.mutex);
         ++counter->second.value.finished;
         counter->second.value.runningDuration += dur;
     }
-    std::lock_guard const lock(counters_.jobsMutex_);
+    std::scoped_lock const lock(counters_.jobsMutex_);
     if (instance >= 0 && instance < counters_.jobs_.size())
         counters_.jobs_[instance] = {jtINVALID, steady_time_point()};
 }
@@ -434,7 +434,7 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
 void
 PerfLogImp::resizeJobs(int const resize)
 {
-    std::lock_guard const lock(counters_.jobsMutex_);
+    std::scoped_lock const lock(counters_.jobsMutex_);
     if (resize > counters_.jobs_.size())
         counters_.jobs_.resize(resize, {jtINVALID, steady_time_point()});
 }
@@ -445,7 +445,7 @@ PerfLogImp::rotate()
     if (setup_.perfLog.empty())
         return;
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     rotate_ = true;
     cond_.notify_one();
 }
@@ -463,7 +463,7 @@ PerfLogImp::stop()
     if (thread_.joinable())
     {
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             stop_ = true;
             cond_.notify_one();
         }

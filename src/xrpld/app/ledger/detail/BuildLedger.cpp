@@ -63,8 +63,8 @@ buildLedgerImpl(
         // Write the final version of all modified SHAMap
         // nodes to the node store to preserve the new LCL
 
-        int const asf = built->stateMap().flushDirty(hotACCOUNT_NODE);
-        int const tmf = built->txMap().flushDirty(hotTRANSACTION_NODE);
+        int const asf = built->stateMap().flushDirty(NodeObjectType::hotACCOUNT_NODE);
+        int const tmf = built->txMap().flushDirty(NodeObjectType::hotTRANSACTION_NODE);
         JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf << " transaction nodes";
     }
     built->unshare();

@@ -165,7 +165,7 @@ io_list::work::destroy()
         return;
     std::function<void(void)> f;
     {
-        std::lock_guard const lock(ios_->m_);
+        std::scoped_lock const lock(ios_->m_);
         ios_->map_.erase(this);
         if (--ios_->n_ == 0 && ios_->closed_)
         {
@@ -195,7 +195,7 @@ io_list::emplace(Args&&... args)
     auto sp = std::make_shared<T>(std::forward<Args>(args)...);
     decltype(sp) dead;
 
-    std::lock_guard const lock(m_);
+    std::scoped_lock const lock(m_);
     if (!closed_)
     {
         ++n_;

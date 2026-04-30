@@ -120,7 +120,7 @@ Logs::open(boost::filesystem::path const& pathToLogFile)
 beast::Journal::Sink&
 Logs::get(std::string const& name)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto const result = sinks_.emplace(name, makeSink(name, thresh_));
     return *result.first->second;
 }
@@ -146,7 +146,7 @@ Logs::threshold() const
 void
 Logs::threshold(beast::severities::Severity thresh)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     thresh_ = thresh;
     for (auto& sink : sinks_)
         sink.second->threshold(thresh);
@@ -156,7 +156,7 @@ std::vector<std::pair<std::string, std::string>>
 Logs::partition_severities() const
 {
     std::vector<std::pair<std::string, std::string>> list;
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     list.reserve(sinks_.size());
     for (auto const& [name, sink] : sinks_)
         list.emplace_back(name, toString(fromSeverity(sink->threshold())));
@@ -172,7 +172,7 @@ Logs::write(
 {
     std::string s;
     format(s, text, level, partition);
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     file_.writeln(s);
     if (!silent_)
         std::cerr << s << '\n';
@@ -184,7 +184,7 @@ Logs::write(
 std::string
 Logs::rotate()
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     bool const wasOpened = file_.closeAndReopen();
     if (wasOpened)
         return "The log file was closed and reopened.";
@@ -412,7 +412,7 @@ public:
     std::unique_ptr<beast::Journal::Sink>
     set(std::unique_ptr<beast::Journal::Sink> sink)
     {
-        std::lock_guard const _(m_);
+        std::scoped_lock const _(m_);
 
         using std::swap;
         swap(holder_, sink);
@@ -432,7 +432,7 @@ public:
     beast::Journal::Sink&
     get()
     {
-        std::lock_guard const _(m_);
+        std::scoped_lock const _(m_);
         return sink_.get();
     }
 };

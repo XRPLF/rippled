@@ -248,9 +248,11 @@ doSubscribe(RPC::JsonContext& context)
 
             if (j.isMember(jss::taker))
             {
+                if (!j[jss::taker].isString())
+                    return rpcError(rpcACT_MALFORMED);
                 takerID = parseBase58<AccountID>(j[jss::taker].asString());
                 if (!takerID)
-                    return rpcError(rpcBAD_ISSUER);
+                    return rpcError(rpcACT_MALFORMED);
             }
 
             if (j.isMember(jss::domain))

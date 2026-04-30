@@ -67,7 +67,7 @@ public:
     bool
     contains(PublicKey const& nodeId)
     {
-        std::lock_guard const lock(this->mutex_);
+        std::scoped_lock const lock(this->mutex_);
         return table_.contains({.nodeId = nodeId, .description = {}});
     }
 

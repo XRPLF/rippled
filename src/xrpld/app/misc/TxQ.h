@@ -344,7 +344,7 @@ private:
     SeqProxy
     nextQueuableSeqImpl(
         std::shared_ptr<SLE const> const& sleAccount,
-        std::lock_guard<std::mutex> const&) const;
+        std::scoped_lock<std::mutex> const&) const;
 
     /**
         Track and use the fee escalation metrics of the
@@ -701,7 +701,7 @@ private:
         OpenView& view,
         ApplyFlags flags,
         FeeMetrics::Snapshot const& metricsSnapshot,
-        std::lock_guard<std::mutex> const& lock);
+        std::scoped_lock<std::mutex> const& lock);
 
     // Helper function for TxQ::apply.  If a transaction's fee is high enough,
     // attempt to directly apply that transaction to the ledger.
@@ -785,7 +785,7 @@ private:
         std::shared_ptr<SLE const> const& sleAccount,
         AccountMap::iterator const&,
         std::optional<TxQAccount::TxMap::iterator> const&,
-        std::lock_guard<std::mutex> const& lock);
+        std::scoped_lock<std::mutex> const& lock);
 
     /// Erase and return the next entry in byFee_ (lower fee level)
     FeeMultiSet::iterator_type erase(FeeMultiSet::const_iterator_type);

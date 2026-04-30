@@ -105,7 +105,7 @@ public:
     void
     load()
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         bootcache_.load();
     }
 
@@ -118,7 +118,7 @@ public:
     void
     stop()
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         stopping_ = true;
         if (fetchSource_ != nullptr)
             fetchSource_->cancel();
@@ -133,7 +133,7 @@ public:
     void
     config(Config const& c)
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         config_ = c;
         counts_.onConfig(config_);
     }
@@ -141,7 +141,7 @@ public:
     Config
     config()
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         return config_;
     }
 
@@ -154,7 +154,7 @@ public:
     void
     addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses)
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         if (addresses.empty())
         {
@@ -196,7 +196,7 @@ public:
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         auto const iter(slots_.find(remoteAddress));
         if (iter == slots_.end())
         {
@@ -238,7 +238,7 @@ public:
         JLOG(m_journal.debug()) << beast::leftw(18) << "Logic accept" << remote_endpoint
                                 << " on local " << local_endpoint;
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         // Check for connection limit per address
         if (is_public(remote_endpoint))
@@ -286,7 +286,7 @@ public:
     {
         JLOG(m_journal.debug()) << beast::leftw(18) << "Logic connect " << remote_endpoint;
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         // Check for duplicate connection
         if (slots_.contains(remote_endpoint))
@@ -325,7 +325,7 @@ public:
 
         JLOG(journal.trace()) << "Logic connected on local " << local_endpoint;
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         // The object must exist in our table
         XRPL_ASSERT(
@@ -350,7 +350,7 @@ public:
 
         // Update counts
         counts_.remove(*slot);
-        slot->state(Slot::connected);
+        slot->state(Slot::State::connected);
         counts_.add(*slot);
         return true;
     }
@@ -364,7 +364,7 @@ public:
         JLOG(journal.debug()) << "Logic handshake " << slot->remote_endpoint() << " with "
                               << (reserved ? "reserved " : "") << "key " << key;
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         // The object must exist in our table
         XRPL_ASSERT(
@@ -372,7 +372,7 @@ public:
             "xrpl::PeerFinder::Logic::activate : valid slot input");
         // Must be accepted or connected
         XRPL_ASSERT(
-            slot->state() == Slot::accept || slot->state() == Slot::connected,
+            slot->state() == Slot::State::accept || slot->state() == Slot::State::connected,
             "xrpl::PeerFinder::Logic::activate : valid slot state");
 
         // Check for duplicate connection by key
@@ -437,7 +437,7 @@ public:
     std::vector<Endpoint>
     redirect(SlotImp::ptr const& slot)
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         RedirectHandouts h(slot);
         livecache_.hops.shuffle();
         handout(&h, (&h) + 1, livecache_.hops.begin(), livecache_.hops.end());
@@ -455,7 +455,7 @@ public:
     {
         std::vector<beast::IP::Endpoint> none;
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         // Count how many more outbound attempts to make
         //
@@ -561,7 +561,7 @@ public:
     {
         std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>> result;
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         clock_type::time_point const now = m_clock.now();
         if (m_whenBroadcast <= now)
@@ -574,7 +574,7 @@ public:
                 slots.reserve(slots_.size());
                 std::for_each(
                     slots_.cbegin(), slots_.cend(), [&slots](Slots::value_type const& value) {
-                        if (value.second->state() == Slot::active)
+                        if (value.second->state() == Slot::State::active)
                             slots.emplace_back(value.second);
                     });
                 std::shuffle(slots.begin(), slots.end(), default_prng());
@@ -640,7 +640,7 @@ public:
     void
     once_per_second()
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         // Expire the Livecache
         livecache_.expire();
@@ -738,7 +738,7 @@ public:
         JLOG(journal.trace()) << "Endpoints contained " << list.size()
                               << ((list.size() > 1) ? " entries" : " entry");
 
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         // The object must exist in our table
         XRPL_ASSERT(
@@ -747,7 +747,7 @@ public:
 
         // Must be handshaked!
         XRPL_ASSERT(
-            slot->state() == Slot::active,
+            slot->state() == Slot::State::active,
             "xrpl::PeerFinder::Logic::on_endpoints : valid slot state");
 
         clock_type::time_point const now(m_clock.now());
@@ -870,7 +870,7 @@ public:
     void
     on_closed(SlotImp::ptr const& slot)
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         remove(slot);
 
@@ -878,7 +878,7 @@ public:
         beast::Journal const journal{sink};
 
         // Mark fixed slot failure
-        if (slot->fixed() && !slot->inbound() && slot->state() != Slot::active)
+        if (slot->fixed() && !slot->inbound() && slot->state() != Slot::State::active)
         {
             auto iter(fixed_.find(slot->remote_endpoint()));
             if (iter == fixed_.end())
@@ -895,12 +895,12 @@ public:
         // Do state specific bookkeeping
         switch (slot->state())
         {
-            case Slot::accept:
+            case Slot::State::accept:
                 JLOG(journal.trace()) << "Logic accept failed";
                 break;
 
-            case Slot::connect:
-            case Slot::connected:
+            case Slot::State::connect:
+            case Slot::State::connected:
                 bootcache_.on_failure(slot->remote_endpoint());
                 // VFALCO TODO If the address exists in the ephemeral/live
                 //             endpoint livecache then we should mark the
@@ -909,11 +909,11 @@ public:
                 // avoid propagating the address.
                 break;
 
-            case Slot::active:
+            case Slot::State::active:
                 JLOG(journal.trace()) << "Logic close";
                 break;
 
-            case Slot::closing:
+            case Slot::State::closing:
                 JLOG(journal.trace()) << "Logic finished";
                 break;
 
@@ -930,7 +930,7 @@ public:
     void
     on_failure(SlotImp::ptr const& slot)
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         bootcache_.on_failure(slot->remote_endpoint());
     }
@@ -1023,7 +1023,7 @@ public:
     addBootcacheAddresses(IPAddresses const& list)
     {
         int count(0);
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
         for (auto const& addr : list)
         {
             if (bootcache_.insertStatic(addr))
@@ -1040,7 +1040,7 @@ public:
 
         {
             {
-                std::lock_guard const _(lock_);
+                std::scoped_lock const _(lock_);
                 if (stopping_)
                     return;
                 fetchSource_ = source;
@@ -1052,7 +1052,7 @@ public:
             source->fetch(results, m_journal);
 
             {
-                std::lock_guard const _(lock_);
+                std::scoped_lock const _(lock_);
                 if (stopping_)
                     return;
                 fetchSource_ = nullptr;
@@ -1123,7 +1123,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map)
     {
-        std::lock_guard const _(lock_);
+        std::scoped_lock const _(lock_);
 
         // VFALCO NOTE These ugly casts are needed because
         //             of how std::size_t is declared on some linuxes
@@ -1174,15 +1174,15 @@ public:
     {
         switch (state)
         {
-            case Slot::accept:
+            case Slot::State::accept:
                 return "accept";
-            case Slot::connect:
+            case Slot::State::connect:
                 return "connect";
-            case Slot::connected:
+            case Slot::State::connected:
                 return "connected";
-            case Slot::active:
+            case Slot::State::active:
                 return "active";
-            case Slot::closing:
+            case Slot::State::closing:
                 return "closing";
             default:
                 break;
@@ -1201,7 +1201,7 @@ Logic<Checker>::onRedirects(
     FwdIter last,
     boost::asio::ip::tcp::endpoint const& remote_address)
 {
-    std::lock_guard const _(lock_);
+    std::scoped_lock const _(lock_);
     std::size_t n = 0;
     for (; first != last && n < Tuning::maxRedirects; ++first, ++n)
         bootcache_.insert(beast::IPAddressConversion::from_asio(*first));

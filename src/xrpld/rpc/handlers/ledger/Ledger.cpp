@@ -8,6 +8,7 @@
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -42,28 +43,56 @@ Status
 LedgerHandler::check()
 {
     auto const& params = context_.params;
+
+    auto getBool = [&](Json::StaticString const& field) -> Expected<bool, Status> {
+        if (!params.isMember(field))
+        {
+            return false;
+        }
+        if (!params[field].isBool())
+        {
+            return Unexpected(rpcINVALID_PARAMS);
+        }
+
+        return params[field].asBool();
+    };
+
+    auto const full = getBool(jss::full);
+    auto const transactions = getBool(jss::transactions);
+    auto const accounts = getBool(jss::accounts);
+    auto const expand = getBool(jss::expand);
+    auto const binary = getBool(jss::binary);
+    auto const owner_funds = getBool(jss::owner_funds);
+    auto const queue = getBool(jss::queue);
+
+    if (!full.has_value())
+        return full.error();
+    if (!transactions.has_value())
+        return transactions.error();
+    if (!accounts.has_value())
+        return accounts.error();
+    if (!expand.has_value())
+        return expand.error();
+    if (!binary.has_value())
+        return binary.error();
+    if (!owner_funds.has_value())
+        return owner_funds.error();
+    if (!queue.has_value())
+        return queue.error();
+
+    options_ = (*full ? LedgerFill::full : 0) | (*expand ? LedgerFill::expand : 0) |
+        (*transactions ? LedgerFill::dumpTxrp : 0) | (*accounts ? LedgerFill::dumpState : 0) |
+        (*binary ? LedgerFill::binary : 0) | (*owner_funds ? LedgerFill::ownerFunds : 0) |
+        (*queue ? LedgerFill::dumpQueue : 0);
+
     bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
         params.isMember(jss::ledger_index);
     if (!needsLedger)
         return Status::OK;
-
     if (auto s = lookupLedger(ledger_, context_, result_))
         return s;
 
-    bool const full = params[jss::full].asBool();
-    bool const transactions = params[jss::transactions].asBool();
-    bool const accounts = params[jss::accounts].asBool();
-    bool const expand = params[jss::expand].asBool();
-    bool const binary = params[jss::binary].asBool();
-    bool const owner_funds = params[jss::owner_funds].asBool();
-    bool const queue = params[jss::queue].asBool();
-
-    options_ = (full ? LedgerFill::full : 0) | (expand ? LedgerFill::expand : 0) |
-        (transactions ? LedgerFill::dumpTxrp : 0) | (accounts ? LedgerFill::dumpState : 0) |
-        (binary ? LedgerFill::binary : 0) | (owner_funds ? LedgerFill::ownerFunds : 0) |
-        (queue ? LedgerFill::dumpQueue : 0);
-
-    if (full || accounts)
+    if (*full || *accounts)
     {
         // Until some sane way to get full ledgers has been implemented,
         // disallow retrieving all state nodes.
@@ -76,7 +105,8 @@ LedgerHandler::check()
         }
         context_.loadType = binary ? Resource::feeMediumBurdenRPC : Resource::feeHeavyBurdenRPC;
     }
-    if (queue)
+
+    if (*queue)
     {
         if (!ledger_ || !ledger_->open())
         {

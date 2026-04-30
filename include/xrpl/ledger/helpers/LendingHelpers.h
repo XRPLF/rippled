@@ -19,7 +19,7 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 inline Number
 roundPeriodicPayment(Asset const& asset, Number const& periodicPayment, std::int32_t scale)
 {
-    return roundToAsset(asset, periodicPayment, scale, Number::upward);
+    return roundToAsset(asset, periodicPayment, scale, Number::rounding_mode::upward);
 }
 
 /* Represents the breakdown of amounts to be paid and changes applied to the

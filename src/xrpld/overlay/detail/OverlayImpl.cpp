@@ -92,6 +92,8 @@
 namespace xrpl {
 
 namespace CrawlOptions {
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     Disabled = 0,
     Overlay = (1 << 0),
@@ -332,7 +334,7 @@ OverlayImpl::onHandoff(
             // As we are not on the strand, run() must be called
             // while holding the lock, otherwise new I/O can be
             // queued after a call to stop().
-            std::lock_guard<decltype(mutex_)> const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             {
                 auto const result = m_peers.emplace(peer->slot(), peer);
                 XRPL_ASSERT(result.second, "xrpl::OverlayImpl::onHandoff : peer is inserted");
@@ -455,7 +457,7 @@ OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
         app_.getJournal("Peer"),
         *this);
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     list_.emplace(p.get(), p);
     p->run();
 }
@@ -469,7 +471,7 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
     beast::WrappedSink sink{journal_.sink(), peer->prefix()};
     beast::Journal const journal{sink};
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     {
         auto const result = m_peers.emplace(peer->slot(), peer);
@@ -497,7 +499,7 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 void
 OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto const iter = m_peers.find(slot);
     XRPL_ASSERT(iter != m_peers.end(), "xrpl::OverlayImpl::remove : valid input");
     m_peers.erase(iter);
@@ -584,7 +586,7 @@ OverlayImpl::start()
             });
     }
     auto const timer = std::make_shared<Timer>(*this);
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     list_.emplace(timer.get(), timer);
     timer_ = timer;
     timer->async_wait();
@@ -637,7 +639,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 
     // Now track this peer
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         auto const result(ids_.emplace(
             std::piecewise_construct, std::make_tuple(peer->id()), std::make_tuple(peer)));
         XRPL_ASSERT(result.second, "xrpl::OverlayImpl::activate : peer ID is inserted");
@@ -653,7 +655,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 void
 OverlayImpl::onPeerDeactivate(Peer::id_t id)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     ids_.erase(id);
 }
 
@@ -732,7 +734,7 @@ OverlayImpl::reportOutboundTraffic(TrafficCount::category cat, int size)
 std::size_t
 OverlayImpl::size() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return ids_.size();
 }
 
@@ -1091,7 +1093,7 @@ OverlayImpl::getActivePeers(
     std::size_t& enabledInSkip) const
 {
     Overlay::PeerSequence ret;
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     active = ids_.size();
     disabled = enabledInSkip = 0;
@@ -1131,7 +1133,7 @@ OverlayImpl::checkTracking(std::uint32_t index)
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto const iter = ids_.find(id);
     if (iter != ids_.end())
         return iter->second.lock();
@@ -1143,7 +1145,7 @@ OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     // NOTE The purpose of peer is to delay the destruction of PeerImp
     std::shared_ptr<PeerImp> peer;
     for (auto const& e : ids_)
@@ -1204,7 +1206,7 @@ OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey cons
 std::shared_ptr<Message>
 OverlayImpl::getManifestsMessage()
 {
-    std::lock_guard const g(manifestLock_);
+    std::scoped_lock const g(manifestLock_);
 
     if (auto seq = app_.getValidatorManifests().sequence(); seq != manifestListSeq_)
     {
@@ -1323,7 +1325,7 @@ OverlayImpl::relay(
 void
 OverlayImpl::remove(Child& child)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     list_.erase(&child);
     if (list_.empty())
         cond_.notify_all();
@@ -1342,7 +1344,7 @@ OverlayImpl::stopChildren()
     // won't be called until vector<> children leaves scope.
     std::vector<std::shared_ptr<Child>> children;
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         if (!work_)
             return;
         work_ = std::nullopt;
@@ -1377,7 +1379,7 @@ OverlayImpl::sendEndpoints()
     {
         std::shared_ptr<PeerImp> peer;
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             auto const iter = m_peers.find(e.first);
             if (iter != m_peers.end())
                 peer = iter->second.lock();
@@ -1452,7 +1454,7 @@ OverlayImpl::updateSlotAndSquelch(
     for (auto id : peers)
     {
         slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
-            reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+            reportInboundTraffic(TrafficCount::category::squelch_ignored, 0);
         });
     }
 }
@@ -1481,7 +1483,7 @@ OverlayImpl::updateSlotAndSquelch(
     }
 
     slots_.updateSlotAndSquelch(key, validator, peer, type, [&]() {
-        reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+        reportInboundTraffic(TrafficCount::category::squelch_ignored, 0);
     });
 }
 

@@ -575,11 +575,7 @@ transactionPreProcessImpl(
 
     if (verify)
     {
-        if (!sle)
-        {
-            // XXX Ignore transactions for accounts not created.
-            return rpcError(rpcSRC_ACT_NOT_FOUND);
-        }
+        // sle validity is checked above
 
         JLOG(j.trace()) << "verify: " << toBase58(calcAccountID(pk)) << " : "
                         << toBase58(srcAddressID);
@@ -700,7 +696,7 @@ transactionConstructImpl(
     {
         std::string reason;
         tpTrans = std::make_shared<Transaction>(stTx, reason, app);
-        if (tpTrans->getStatus() != NEW)
+        if (tpTrans->getStatus() != TransStatus::NEW)
         {
             ret.first = RPC::make_error(rpcINTERNAL, "Unable to construct transaction: " + reason);
             return ret;

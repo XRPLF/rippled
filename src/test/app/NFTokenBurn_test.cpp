@@ -88,7 +88,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
     //
     // It uses the ledger RPC command to show the NFT pages in the ledger.
     // This parameter controls how noisy the output is.
-    enum Volume : bool {
+    enum class Volume : bool {
         quiet = false,
         noisy = true,
     };
@@ -123,7 +123,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
                     std::cout << tokenCount << " NFtokens in page "
                               << state[i][jss::index].asString() << std::endl;
 
-                    if (vol == noisy)
+                    if (vol == Volume::noisy)
                     {
                         std::cout << state[i].toStyledString() << std::endl;
                     }

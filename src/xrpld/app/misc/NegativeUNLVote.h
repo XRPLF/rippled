@@ -57,7 +57,7 @@ public:
      * A flag indicating whether a UNLModify Tx is to disable or to re-enable
      * a validator.
      */
-    enum NegativeUNLModify {
+    enum class NegativeUNLModify {
         ToDisable,  // UNLModify Tx is to disable a validator
         ToReEnable  // UNLModify Tx is to re-enable a validator
     };

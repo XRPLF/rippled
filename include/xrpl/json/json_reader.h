@@ -70,6 +70,8 @@ public:
     static constexpr unsigned nest_limit{25};
 
 private:
+    // 53 files, protocol-wide
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum TokenType {
         tokenEndOfStream = 0,
         tokenObjectBegin,

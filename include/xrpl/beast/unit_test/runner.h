@@ -231,7 +231,7 @@ template <class>
 void
 runner::testcase(std::string const& name)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     // Name may not be empty
     BOOST_ASSERT(default_ || !name.empty());
     // Forgot to call pass or fail
@@ -247,7 +247,7 @@ template <class>
 void
 runner::pass()
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     if (default_)
         testcase("");
     on_pass();
@@ -258,7 +258,7 @@ template <class>
 void
 runner::fail(std::string const& reason)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     if (default_)
         testcase("");
     on_fail(reason);
@@ -270,7 +270,7 @@ template <class>
 void
 runner::log(std::string const& s)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     if (default_)
         testcase("");
     on_log(s);

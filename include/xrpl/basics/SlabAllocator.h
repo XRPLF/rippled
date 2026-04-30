@@ -92,7 +92,7 @@ class SlabAllocator
             std::uint8_t* ret = nullptr;  // NOLINT(misc-const-correctness)
 
             {
-                std::lock_guard const l(m_);
+                std::scoped_lock const l(m_);
 
                 ret = l_;
 
@@ -121,7 +121,7 @@ class SlabAllocator
         {
             XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
-            std::lock_guard const l(m_);
+            std::scoped_lock const l(m_);
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)

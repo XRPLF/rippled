@@ -156,7 +156,8 @@ public:
             BEAST_EXPECTS(result == expected, ss.str());
         };
 
-        for (auto const mantissaSize : {MantissaRange::small, MantissaRange::large})
+        for (auto const mantissaSize :
+             {MantissaRange::mantissa_scale::small, MantissaRange::mantissa_scale::large})
         {
             NumberMantissaScaleGuard const mg(mantissaSize);
 

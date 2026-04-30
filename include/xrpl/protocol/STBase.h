@@ -18,6 +18,8 @@ struct JsonOptions
     using underlying_t = unsigned int;
     underlying_t value;
 
+    // Bitwise flags with operator~
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum values : underlying_t {
         // clang-format off
         none                        = 0b0000'0000,

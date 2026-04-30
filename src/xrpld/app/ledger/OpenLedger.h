@@ -169,7 +169,7 @@ private:
         ApplyFlags flags,
         beast::Journal j);
 
-    enum Result { success, failure, retry };
+    enum class Result { success, failure, retry };
 
     std::shared_ptr<OpenView>
     create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger);

@@ -164,8 +164,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 ctx.view,
                 sleCheck->at(sfAccount),
                 value,
-                fhZERO_IF_FROZEN,
-                ahZERO_IF_UNAUTHORIZED,
+                FreezeHandling::fhZERO_IF_FROZEN,
+                AuthHandling::ahZERO_IF_UNAUTHORIZED,
                 ctx.j)};
 
             // Note that src will have one reserve's worth of additional XRP

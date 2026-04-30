@@ -9,7 +9,7 @@
 namespace xrpl {
 
 /** The types of node objects. */
-enum NodeObjectType : std::uint32_t {
+enum class NodeObjectType : std::uint32_t {
     hotUNKNOWN = 0,
     hotLEDGER = 1,
     hotACCOUNT_NODE = 3,
