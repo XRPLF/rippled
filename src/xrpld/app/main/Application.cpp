@@ -78,9 +78,11 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/resource/Charge.h>
@@ -108,8 +110,6 @@
 #include <boost/system/detail/error_code.hpp>
 #include <boost/system/system_error.hpp>
 
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <date/date.h>
 
 #include <algorithm>

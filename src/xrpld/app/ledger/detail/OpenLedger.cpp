@@ -14,6 +14,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
@@ -23,7 +24,6 @@
 #include <xrpl/tx/apply.h>
 
 #include <boost/range/adaptor/transformed.hpp>
-#include <xrpl/protocol/SField.h>
 
 #include <xrpl.pb.h>
 

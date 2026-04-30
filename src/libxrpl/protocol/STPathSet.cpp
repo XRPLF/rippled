@@ -105,7 +105,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             if (hasIssuer)
                 issuer = sit.get160();
 
-            path.emplace_back(account, asset, issuer, hasCurrency);
+            path.emplace_back(account, asset, issuer, hasCurrency || hasMPT);
         }
     }
 }

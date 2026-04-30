@@ -1106,7 +1106,6 @@ directSendNoFeeMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
-            view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             if (view.rules().enabled(featureMPTokensV2))
             {
                 if ((*sle)[sfMPTAmount] > (std::numeric_limits<std::uint64_t>::max() - amt))
@@ -1114,6 +1113,7 @@ directSendNoFeeMPT(
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 }
             }
+            view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] += amt;
             view.update(sle);
         }

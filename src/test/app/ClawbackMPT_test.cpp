@@ -1,5 +1,4 @@
 
-#include <xrpl/protocol/Feature.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
@@ -9,11 +8,14 @@
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+
 #include <cstdint>
 
 namespace xrpl {
