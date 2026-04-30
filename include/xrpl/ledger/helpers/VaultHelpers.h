@@ -131,8 +131,10 @@ depositToVault(
     @param vault The vault SLE (peeked, will be mutated).
     @param depositor The account redeeming shares.
     @param destination The account receiving the assets (may equal depositor).
-    @param preFeeBalance The pre-fee balance, forwarded to `doWithdraw` for
-        possible trust line / MPToken creation when destination == depositor.
+    @param preFeeBalance The depositor's pre-fee XRP balance, forwarded to
+        `doWithdraw` and used by `addEmptyHolding` to verify the reserve when
+        destination == depositor and a new trust line / MPToken needs to be
+        created for the inbound assets.
     @param assetsWithdrawn The amount of assets to be withdrawn.
     @param sharesRedeemed The amount of shares to be burned in exchange.
     @param j Journal for logging.

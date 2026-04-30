@@ -126,6 +126,33 @@ sharesToAssetsWithdraw(
     return assets;
 }
 
+namespace {
+
+// Raw asset balance for delta verification. For XRP, accountHolds (regardless
+// of SpendableHandling) always returns balance-minus-reserve via xrpLiquid;
+// removing an empty MPToken during a vault deposit/withdrawal drops the
+// holder's owner count and frees one incremental-reserve, which would
+// otherwise inflate the post-balance reading and produce false delta
+// mismatches. Read sfBalance directly for XRP to dodge that. IOU / MPT trust
+// lines have no reserve concept, so accountHolds is fine there.
+[[nodiscard]] STAmount
+vaultAssetBalance(
+    ReadView const& view,
+    AccountID const& acct,
+    Asset const& vaultAsset,
+    beast::Journal j)
+{
+    if (vaultAsset.native())
+    {
+        auto const sle = view.read(keylet::account(acct));
+        return sle ? sle->getFieldAmount(sfBalance) : STAmount{vaultAsset};
+    }
+    return accountHolds(
+        view, acct, vaultAsset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j);
+}
+
+}  // namespace
+
 [[nodiscard]] TER
 depositToVault(
     ApplyView& view,
@@ -140,26 +167,8 @@ depositToVault(
     XRPL_ASSERT(
         assetsDeposited.asset() == vaultAsset, "xrpl::depositToVault : assets and vault match");
 
-    // Delta verification needs the raw asset balance, not the spendable
-    // amount. For XRP, accountHolds (and shFULL_BALANCE) always subtracts
-    // reserve via xrpLiquid; removing an empty MPToken during withdrawal
-    // drops owner count and frees up reserve, inflating the post-balance by
-    // one incremental-reserve. Read sfBalance directly for XRP to dodge
-    // that. IOU / MPT trust lines have no reserve concept, so accountHolds
-    // is fine for them.
-    auto const holds = [&](AccountID const& acct) -> STAmount {
-        if (vaultAsset.native())
-        {
-            auto const sle = view.read(keylet::account(acct));
-            return sle ? sle->getFieldAmount(sfBalance) : STAmount{vaultAsset};
-        }
-        return accountHolds(
-            view,
-            acct,
-            vaultAsset,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j);
+    auto const holds = [&](AccountID const& acct) {
+        return vaultAssetBalance(view, acct, vaultAsset, j);
     };
 
     // Pre-fixCleanup3_2_0 the helper performed no delta verification: silent
@@ -256,26 +265,8 @@ withdrawFromVault(
     XRPL_ASSERT(
         assetsWithdrawn.asset() == vaultAsset, "xrpl::withdrawFromVault : assets and vault match");
 
-    // Delta verification needs the raw asset balance, not the spendable
-    // amount. For XRP, accountHolds (and shFULL_BALANCE) always subtracts
-    // reserve via xrpLiquid; removing an empty MPToken during withdrawal
-    // drops owner count and frees up reserve, inflating the post-balance by
-    // one incremental-reserve. Read sfBalance directly for XRP to dodge
-    // that. IOU / MPT trust lines have no reserve concept, so accountHolds
-    // is fine for them.
-    auto const holds = [&](AccountID const& acct) -> STAmount {
-        if (vaultAsset.native())
-        {
-            auto const sle = view.read(keylet::account(acct));
-            return sle ? sle->getFieldAmount(sfBalance) : STAmount{vaultAsset};
-        }
-        return accountHolds(
-            view,
-            acct,
-            vaultAsset,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j);
+    auto const holds = [&](AccountID const& acct) {
+        return vaultAssetBalance(view, acct, vaultAsset, j);
     };
 
     // Pre-fixCleanup3_2_0 the helper performed no delta verification: silent
