@@ -450,10 +450,7 @@ ValidConfidentialMPToken::visitEntry(
 
         // sfIssuerEncryptedBalance, sfConfidentialBalanceInbox, and sfConfidentialBalanceSpending
         // must all exist or not exist same time.
-        if (hasHolderInbox != hasHolderSpending)
-            changes_[id].badConsistency = true;
-
-        if (hasHolderInbox != hasIssuerBalance)
+        if (hasHolderInbox != hasHolderSpending || hasHolderInbox != hasIssuerBalance)
             changes_[id].badConsistency = true;
 
         // Privacy flag consistency
@@ -599,8 +596,10 @@ ValidConfidentialMPToken::finalize(
             std::ranges::find(confidentialMPTTxTypes, tx.getTxnType()) !=
             confidentialMPTTxTypes.end())
         {
-            // Only Send and MergeInbox does not change coaDelta, so encrypted balances between
-            // holders must never modify sfOutstandingAmount.
+            // Among confidential MPT transactions, only ConfidentialMPTSend and
+            // ConfidentialMPTMergeInbox leave coaDelta unmodified. Therefore, if a confidential MPT
+            // transaction reaches here, it must be one of these two types, neither of which will
+            // modify sfOutstandingAmount
             if (checks.outstandingDelta != 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: OutstandingAmount changed "
