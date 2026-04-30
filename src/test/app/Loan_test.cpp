@@ -87,9 +87,7 @@ class Loan_test : public beast::unit_test::suite
 protected:
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
-    FeatureBitset const all{
-        jtx::testable_amendments() | featureMPTokensV1 | featureSingleAssetVault |
-        featureLendingProtocol};
+    FeatureBitset const all{jtx::testable_amendments()};
 
     std::string const iouCurrency{"IOU"};
 
