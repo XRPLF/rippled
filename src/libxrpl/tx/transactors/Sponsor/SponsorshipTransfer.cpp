@@ -411,7 +411,13 @@ SponsorshipTransfer::doApply()
 
     auto const setSponsorFieldU32 = [](auto const& sle, auto const& field, auto const& delta) {
         int32_t const newValue = static_cast<int32_t>(sle->getFieldU32(field)) + delta;
-        if (newValue <= 0)
+
+        if (newValue < 0)
+        {
+            UNREACHABLE("xrpl::SponsorshipTransfer::doApply : Invalid sponsor field value");
+            return;
+        }
+        else if (newValue == 0)
         {
             sle->makeFieldAbsent(field);
         }
