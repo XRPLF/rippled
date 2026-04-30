@@ -4306,8 +4306,10 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, A2.id()));
                 if (!sleToken)
                     return false;
-                // Inject fields correctly, but the Issuance was built without the privacy flag.
+                // Inject all three encrypted fields consistently (inbox+spending+issuer must be
+                // in sync or badConsistency fires first and masks requiresPrivacyFlag).
                 sleToken->setFieldVL(sfConfidentialBalanceInbox, Blob{0x00});
+                sleToken->setFieldVL(sfConfidentialBalanceSpending, Blob{0x00});
                 sleToken->setFieldVL(sfIssuerEncryptedBalance, Blob{0x00});
                 ac.view().update(sleToken);
                 return true;
@@ -4351,6 +4353,25 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // Send/MergeInbox must not change OutstandingAmount (coaDelta == 0)
+        doInvariantCheck(
+            {"Invariant failed: OutstandingAmount changed "
+             "by confidential transaction that should not "
+             "modify it for MPT"},
+            [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+                sleIssuance->setFieldU64(
+                    sfOutstandingAmount, sleIssuance->getFieldU64(sfOutstandingAmount) + 1);
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidential);
 

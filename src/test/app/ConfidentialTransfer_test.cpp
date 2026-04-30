@@ -3037,8 +3037,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 1000, .convertAmount = 60},
-             {.account = carol, .payAmount = 1000, .convertAmount = 50}}};
+            {{.account = bob, .payAmount = 1000, .convertAmount = 60}, {carol, 1000, 50}}};
         auto& mptAlice = confEnv.mpt;
 
         {
@@ -3110,8 +3109,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             ConfidentialEnv zeroEnv{
                 env2,
                 alice2,
-                {{.account = bob2, .payAmount = 100, .convertAmount = 0},
-                 {.account = carol2, .payAmount = 50, .convertAmount = 0}}};
+                {{.account = bob2, .payAmount = 100, .convertAmount = 0}, {carol2, 50, 0}}};
             auto& mptAlice2 = zeroEnv.mpt;
 
             // Trying to send any amount with 0 spending balance must fail:
@@ -6493,8 +6491,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 100},
-             {.account = carol, .payAmount = 50, .convertAmount = 50}}};
+            {{.account = bob, .payAmount = 100, .convertAmount = 100}, {carol, 50, 50}}};
         auto& mptAlice = confEnv.mpt;
 
         // Bob sends 10 to carol.  The send amount (10) and Bob's remaining balance
@@ -6642,8 +6639,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 60},
-                 {.account = carol, .payAmount = 50, .convertAmount = 30}}};
+                {{.account = bob, .payAmount = 100, .convertAmount = 60}, {carol, 50, 30}}};
             auto& mptAlice = confEnv.mpt;
 
             // sender's encrypted amount has an invalid coordinate
@@ -6722,8 +6718,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 60},
-                 {.account = carol, .payAmount = 50, .convertAmount = 30}}};
+                {{.account = bob, .payAmount = 100, .convertAmount = 60}, {carol, 50, 30}}};
             auto& mptAlice = confEnv.mpt;
 
             Buffer badProof(ecSendProofLength);
@@ -6749,8 +6744,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 60},
-                 {.account = carol, .payAmount = 50, .convertAmount = 30}}};
+                {{.account = bob, .payAmount = 100, .convertAmount = 60}, {carol, 50, 30}}};
             auto& mptAlice = confEnv.mpt;
 
             // getTrivialCiphertext() has both C1 and C2 as valid (but trivial)
@@ -6842,10 +6836,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
         ConfidentialEnv confEnv{
-            env,
-            alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 60},
-             {.account = carol, .payAmount = 50, .convertAmount = 30}}};
+            env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 60}, {carol, 50, 30}}};
         auto& mptAlice = confEnv.mpt;
 
         // The x-coordinate of the NIST P-256 generator point — a real,
@@ -7029,8 +7020,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 100},
-             {.account = carol, .payAmount = 50, .convertAmount = 50}}};
+            {{.account = bob, .payAmount = 100, .convertAmount = 100}, {carol, 50, 50}}};
         auto& mptAlice = confEnv.mpt;
 
         auto const bobSpendingBefore =
@@ -9053,8 +9043,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 1000, .convertAmount = 10},
-             {.account = carol, .payAmount = 1000, .convertAmount = 50}}};
+            {{.account = bob, .payAmount = 1000, .convertAmount = 10}, {carol, 1000, 50}}};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -9236,7 +9225,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             alice,
             {{.account = bob},
              {.account = carol, .payAmount = 1000, .convertAmount = 50},
-             {.account = dan, .payAmount = 1000, .convertAmount = 50}}};
+             {dan, 1000, 50}}};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
