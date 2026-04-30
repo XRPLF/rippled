@@ -149,7 +149,7 @@ static ticket_t const ticket{};
 
 /** A SignerList */
 Keylet
-signers(AccountID const& account) noexcept;
+signerList(AccountID const& account) noexcept;
 
 /** A Check */
 /** @{ */
@@ -376,7 +376,7 @@ struct keyletDesc
 std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
     {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
      {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
-     {.function = &keylet::signers, .expectedLEName = jss::SignerList, .includeInTests = true},
+     {.function = &keylet::signerList, .expectedLEName = jss::SignerList, .includeInTests = true},
      // It's normally impossible to create an item at nftpage_min, but
      // test it anyway, since the invariant checks for it.
      {.function = &keylet::nftpage_min, .expectedLEName = jss::NFTokenPage, .includeInTests = true},

@@ -815,7 +815,8 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
+    std::shared_ptr<STLedgerEntry const> const sleAccountSigners =
+        view.read(keylet::signerList(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {

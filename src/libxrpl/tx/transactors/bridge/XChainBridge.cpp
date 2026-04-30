@@ -759,7 +759,7 @@ getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journ
         return {r, q, tecINTERNAL};
     }
 
-    auto const sleS = view.read(keylet::signers(sleBridge[sfAccount]));
+    auto const sleS = view.read(keylet::signerList(sleBridge[sfAccount]));
     if (!sleS)
     {
         return {r, q, tecXCHAIN_NO_SIGNERS_LIST};

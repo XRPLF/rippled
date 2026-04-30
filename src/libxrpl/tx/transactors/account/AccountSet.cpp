@@ -382,7 +382,7 @@ AccountSet::doApply()
             return tecNEED_MASTER_KEY;
         }
 
-        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signers(account_))))
+        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signerList(account_))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;

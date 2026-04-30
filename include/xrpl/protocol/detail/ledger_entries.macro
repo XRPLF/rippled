@@ -96,7 +96,7 @@ LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
 
 /** A ledger object which contains a signer list for an account.
 
-    \sa keylet::signers
+    \sa keylet::signerList
  */
 // All fields are soeREQUIRED because there is always a SignerEntries.
 // If there are no SignerEntries the node is deleted.

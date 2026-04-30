@@ -215,7 +215,7 @@ public:
             BEAST_EXPECT(env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
             BEAST_EXPECT(env.closed()->exists(keylet::ticket(carol.id(), carolTicketSeq)));
-            BEAST_EXPECT(env.closed()->exists(keylet::signers(carol.id())));
+            BEAST_EXPECT(env.closed()->exists(keylet::signerList(carol.id())));
 
             // Delete carol's account even with stuff in her directory.  Show
             // that multisigning for the delete does not increase carol's fee.
@@ -229,7 +229,7 @@ public:
             BEAST_EXPECT(!env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
             BEAST_EXPECT(!env.closed()->exists(keylet::ticket(carol.id(), carolTicketSeq)));
-            BEAST_EXPECT(!env.closed()->exists(keylet::signers(carol.id())));
+            BEAST_EXPECT(!env.closed()->exists(keylet::signerList(carol.id())));
 
             // Verify that Carol's XRP, minus the fee, was transferred to becky.
             BEAST_EXPECT(env.balance(becky) == carolOldBalance + beckyOldBalance - acctDelFee);
