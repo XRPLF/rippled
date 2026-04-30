@@ -26,10 +26,7 @@ class sink;  // NOLINT(readability-identifier-naming)
 
 }  // namespace spdlog
 
-struct BenchmarkLoggingInitializer;
 class LoggerFixture;
-struct LogServiceInitTests;
-struct LogFileRotationTests;
 
 namespace xrpl {
 
@@ -366,9 +363,7 @@ private:
 class LogServiceState
 {
 protected:
-    friend struct ::LogServiceInitTests;
     friend class ::LoggerFixture;
-    friend struct ::LogFileRotationTests;
     friend class Logger;
 
     /**
