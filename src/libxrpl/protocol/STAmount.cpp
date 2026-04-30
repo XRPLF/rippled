@@ -386,7 +386,7 @@ operator+(STAmount const& v1, STAmount const& v2)
     if (v1.holds<MPTIssue>())
         return {v1.mAsset, v1.mpt().value() + v2.mpt().value()};
 
-    STAmount x{};
+    auto x = v1;
     x = v1.iou() + v2.iou();
     return x;
 }
@@ -837,7 +837,7 @@ STAmount::canonicalize()
         if (mAsset.holds<MPTIssue>() && mOffset > 18)
             Throw<std::runtime_error>("MPT amount out of range");
 
-        Number num(mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
+        Number num(mIsNegative, mValue, mOffset, Number::unchecked{});
         auto set = [&](auto const& val) {
             mIsNegative = val.value() < 0;
             mValue = mIsNegative ? -val.value() : val.value();
