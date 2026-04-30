@@ -73,9 +73,28 @@ enum class Severity {
  */
 inline constexpr char const* kDEFAULT_LOG_FORMAT = "%Y-%b-%d %H:%M:%S.%f UTC %n:%K %v";
 
+/**
+ * @brief Build the default JSON log format pattern.
+ *
+ * Contains the same fields as @ref kDEFAULT_LOG_FORMAT (timestamp, channel,
+ * severity) plus the trailing message placeholder:
+ * @code
+ *   {"timestamp":"2024-Jan-15 12:34:56.789123 UTC","channel":"General","severity":"NFO",
+ *    "message": "hello world" }
+ * @endcode
+ */
+inline std::string
+defaultJsonLogFormat()
+{
+    return JsonLoggingPatternBuilder()
+        .add("timestamp", "%Y-%b-%d %H:%M:%S.%f UTC")
+        .add("channel", "%n")
+        .add("severity", "%K")
+        .build();
+}
+
 struct LoggingConfiguration
 {
-    std::string format{kDEFAULT_LOG_FORMAT};
     bool enableConsole;
     std::optional<std::string> directory;
     bool isAsync;
@@ -379,6 +398,19 @@ protected:
     static std::unique_ptr<spdlog::formatter>
     makeFormatter(std::string const& pattern);
 
+    /**
+     * @brief Returns the active log format pattern.
+     *
+     * Automatically determined by the logging mode:
+     * text mode uses @ref kDEFAULT_LOG_FORMAT, JSON mode uses
+     * @ref defaultJsonLogFormat().
+     */
+    static std::string const&
+    format()
+    {
+        return format_;
+    }
+
 protected:
     static bool isAsync_;              // NOLINT(readability-identifier-naming)
     static Severity defaultSeverity_;  // NOLINT(readability-identifier-naming)
@@ -489,14 +521,13 @@ private:
      * @return A vector of sinks on success, error message on failure
      */
     [[nodiscard]] static Expected<std::vector<std::shared_ptr<spdlog::sinks::sink>>, std::string>
-    getSinks(LoggingConfiguration const& config);
+    getSinks(LoggingConfiguration const& config, std::string const& format);
 
     struct FileLoggingParams
     {
         std::string logDir;
     };
 
-    friend struct ::BenchmarkLoggingInitializer;
     friend class ::LoggerFixture;
 
     [[nodiscard]]

@@ -393,10 +393,8 @@ LogServiceState::registerLogger(std::string_view channel, std::optional<Severity
 }
 
 Expected<std::vector<spdlog::sink_ptr>, std::string>
-LogService::getSinks(LoggingConfiguration const& config)
+LogService::getSinks(LoggingConfiguration const& config, std::string const& format)
 {
-    std::string const format = config.format;
-
     std::vector<spdlog::sink_ptr> allSinks = createConsoleSinks(config.enableConsole, format);
 
     if (config.directory.has_value())
@@ -422,14 +420,16 @@ LogService::getSinks(LoggingConfiguration const& config)
 Expected<void, std::string>
 LogService::init(LoggingConfiguration const& config)
 {
-    auto const sinksMaybe = getSinks(config);
+    // Format is fully determined by the logging mode.
+    format_ = config.jsonMode ? defaultJsonLogFormat() : std::string(kDEFAULT_LOG_FORMAT);
+
+    auto const sinksMaybe = getSinks(config, format_);
     if (!sinksMaybe.has_value())
     {
         return Unexpected{sinksMaybe.error()};
     }
 
     logDir_ = config.directory;
-    format_ = config.format;
 
     LogServiceState::init(
         config.isAsync, config.defaultSeverity, std::move(sinksMaybe).value(), config.jsonMode);
@@ -537,14 +537,14 @@ Logger::Logger(std::string_view const channel) : logger_(LogServiceState::regist
 Logger::~Logger()
 {
     // One reference is held by logger_ and the other by spdlog registry
-    static constexpr size_t kLAST_LOGGER_REF_COUNT = 2;
+    static constexpr size_t LAST_LOGGER_REF_COUNT = 2;
 
     if (logger_ == nullptr)
     {
         return;
     }
 
-    if (logger_.use_count() == kLAST_LOGGER_REF_COUNT)
+    if (logger_.use_count() == LAST_LOGGER_REF_COUNT)
     {
         spdlog::drop(logger_->name());
     }
@@ -561,11 +561,6 @@ Logger::Pump::Pump(
     , enabled_(logger_ != nullptr && logger_->should_log(toSpdlogLevel(sev)))
     , jsonMode_(jsonMode)
 {
-    if (enabled_ && jsonMode_)
-    {
-        // Open the quoted message value
-        stream_.push_back('"');
-    }
 }
 
 Logger::Pump::~Pump()
@@ -575,29 +570,39 @@ Logger::Pump::~Pump()
         spdlog::source_loc const sourceLocation{
             sourceLocation_.file_name(), static_cast<int>(sourceLocation_.line()), nullptr};
 
-        if (jsonMode_)
-        {
-            // Close the quoted message value
-            stream_.push_back('"');
-
-            // Append the parameters object if any were captured
-            if (!parameters_.empty())
-            {
-                static constexpr char kVALUES_OPEN[] = ", \"values\": {";
-                stream_.append(kVALUES_OPEN, kVALUES_OPEN + sizeof(kVALUES_OPEN) - 1);
-                stream_.append(parameters_.data(), parameters_.data() + parameters_.size());
-                stream_.push_back('}');
-            }
-        }
-
-        // Apply legacy safeguards: truncate oversized messages and scrub secrets
+        // Apply legacy safeguards on the raw message BEFORE JSON wrapping.
+        // This lets scrubSecrets short-circuit (no '"' in typical messages).
         truncateMessage(stream_);
         scrubSecrets(stream_);
 
-        logger_->log(
-            sourceLocation,
-            toSpdlogLevel(severity_),
-            std::string_view{stream_.data(), stream_.size()});
+        if (jsonMode_)
+        {
+            // Wrap the scrubbed message: "<message>", plus optional values object
+            fmt::memory_buffer wrapped;
+            wrapped.push_back('"');
+            wrapped.append(stream_.data(), stream_.data() + stream_.size());
+            wrapped.push_back('"');
+
+            if (!parameters_.empty())
+            {
+                static constexpr char valuesOpen[] = ", \"values\": {";
+                wrapped.append(valuesOpen, valuesOpen + sizeof(valuesOpen) - 1);
+                wrapped.append(parameters_.data(), parameters_.data() + parameters_.size());
+                wrapped.push_back('}');
+            }
+
+            logger_->log(
+                sourceLocation,
+                toSpdlogLevel(severity_),
+                std::string_view{wrapped.data(), wrapped.size()});
+        }
+        else
+        {
+            logger_->log(
+                sourceLocation,
+                toSpdlogLevel(severity_),
+                std::string_view{stream_.data(), stream_.size()});
+        }
     }
 }
 

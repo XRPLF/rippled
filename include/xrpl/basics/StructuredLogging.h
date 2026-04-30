@@ -205,8 +205,7 @@ public:
      *   {"level":"%l","channel":"%n" %v }
      * @endcode
      *
-     * @return The pattern string to pass to spdlog::pattern_formatter or
-     *         LoggingConfiguration::format.
+     * @return The pattern string to pass to spdlog::pattern_formatter.
      */
     [[nodiscard]] std::string
     build() const

@@ -1,5 +1,6 @@
 #include <xrpl/basics/Logger.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -22,7 +23,6 @@ protected:
     initLogging(bool jsonMode, std::string const& pattern = "%v", Severity severity = Severity::TRC)
     {
         LoggingConfiguration config{
-            .format = pattern,
             .enableConsole = false,
             .directory = std::nullopt,
             .isAsync = false,
@@ -33,7 +33,8 @@ protected:
         ASSERT_TRUE(result);
 
         // Replace the (empty) sinks with our ostream sink so we can
-        // capture output in tests.
+        // capture output in tests.  The `pattern` parameter controls
+        // the test sink's formatter independently of LogService's format.
         auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(output_);
         sink->set_level(spdlog::level::trace);
         sink->set_formatter(LogServiceState::makeFormatter(pattern));
@@ -233,6 +234,22 @@ TEST_F(LoggerFixture, severity_codes_in_default_format)
         "Test:FTL f\n");
 }
 
+TEST_F(LoggerFixture, default_json_format)
+{
+    // JSON mode should produce a JSON object with timestamp, channel,
+    // severity and message fields.
+    initLogging(true, defaultJsonLogFormat());
+    Logger logger("General");
+    logger.info() << "hello world";
+    auto const line = output_.str();
+
+    std::regex const expected(
+        R"(\{"timestamp":"\d{4}-[A-Z][a-z]{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} UTC")"
+        R"(,"channel":"General","severity":"NFO")"
+        R"(, "message": "hello world" \}\n)");
+    EXPECT_TRUE(std::regex_match(line, expected)) << "got: " << line;
+}
+
 // -- Secret scrubbing ---------------------------------------------------------
 
 TEST_F(LoggerFixture, scrubs_seed)
@@ -260,6 +277,23 @@ TEST_F(LoggerFixture, scrubs_passphrase)
     EXPECT_EQ(output_.str(), "{\"passphrase\":\"**************\"}\n");
 }
 
+TEST_F(LoggerFixture, scrubs_seed_json_mode)
+{
+    initLogging(true);
+    Logger logger("ScrubJson");
+    logger.info() << R"({"seed":"sEdTM1uX8pu2do5XvTnutH6HsouMaM2"})";
+    // In JSON mode the message is wrapped in quotes, but scrubbing still works
+    EXPECT_EQ(output_.str(), "\"{\"seed\":\"*******************************\"}\"\n");
+}
+
+TEST_F(LoggerFixture, scrubs_master_key_json_mode)
+{
+    initLogging(true);
+    Logger logger("ScrubJson2");
+    logger.info() << R"({"master_key":"SOME_SECRET_VALUE"})";
+    EXPECT_EQ(output_.str(), "\"{\"master_key\":\"*****************\"}\"\n");
+}
+
 // -- Message truncation -------------------------------------------------------
 
 TEST_F(LoggerFixture, truncates_oversized_message)
@@ -274,5 +308,20 @@ TEST_F(LoggerFixture, truncates_oversized_message)
     // Expected: (kMAX - 3) 'x' chars + "..." + newline
     std::string expected(kMAX - 3, 'x');
     expected += "...\n";
+    EXPECT_EQ(output_.str(), expected);
+}
+
+TEST_F(LoggerFixture, truncates_oversized_message_json)
+{
+    initLogging(true);
+    Logger logger("Trunc");
+    static constexpr std::size_t kMAX = 12 * 1024;
+    std::string const bigMessage(13000, 'x');
+    logger.info() << bigMessage << log::param("key", std::string("value"));
+
+    // and the values object is preserved in full.
+    std::string expected = "\"";
+    expected += std::string(kMAX - 3, 'x');
+    expected += "...\", \"values\": {\"key\":\"value\"}\n";
     EXPECT_EQ(output_.str(), expected);
 }
