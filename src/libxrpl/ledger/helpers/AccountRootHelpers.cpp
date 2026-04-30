@@ -267,11 +267,10 @@ adjustOwnerCount(
             view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
 
         auto sponsorObjSle = view.peek(keylet::sponsor(sponsorID, accountID));
-        if (sponsorObjSle)
+        if (sponsorObjSle && adjustment > 0)
         {
             // update the pre-funded ReserveCount on Sponsorship ledger object
             // Reserve count moves opposite to adjustment: +adjustment => consume reserve (-),
-            // -adjustment => payback (+)
             adjustSponsorOwnerCountHlp(
                 view, sponsorObjSle, sfReserveCount, sponsorID, -adjustment, j, false);
         }
