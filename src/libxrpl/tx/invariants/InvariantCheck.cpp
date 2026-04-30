@@ -338,7 +338,7 @@ NoZeroEscrow::visitEntry(
 
     auto checkAmount = [this](std::int64_t amount) {
         if (amount > maxMPTokenAmount || amount < 0)
-            bad_ = true;
+            bad_ |= true;
     };
 
     bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
