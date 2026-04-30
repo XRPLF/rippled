@@ -288,7 +288,7 @@ Add to `xrpld.cfg`:
 [insight]
 server=statsd
 address=127.0.0.1:8125
-prefix=rippled
+prefix=xrpld
 ```
 
 The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and exports them to Prometheus alongside spanmetrics.
@@ -297,38 +297,38 @@ The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and e
 
 #### Gauges
 
-| Prometheus Metric                             | Source                    | Description                                                                |
-| --------------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
-| `rippled_LedgerMaster_Validated_Ledger_Age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
-| `rippled_LedgerMaster_Published_Ledger_Age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
-| `rippled_State_Accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
-| `rippled_State_Accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
-| `rippled_Peer_Finder_Active_Inbound_Peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
-| `rippled_Peer_Finder_Active_Outbound_Peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
-| `rippled_Overlay_Peer_Disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
-| `rippled_job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
-| `rippled_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
-| `rippled_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+| Prometheus Metric                           | Source                    | Description                                                                |
+| ------------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
+| `xrpld_LedgerMaster_Validated_Ledger_Age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
+| `xrpld_LedgerMaster_Published_Ledger_Age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
+| `xrpld_State_Accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
+| `xrpld_State_Accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
+| `xrpld_Peer_Finder_Active_Inbound_Peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
+| `xrpld_Peer_Finder_Active_Outbound_Peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
+| `xrpld_Overlay_Peer_Disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
+| `xrpld_job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
+| `xrpld_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
+| `xrpld_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
 
 #### Counters
 
-| Prometheus Metric                 | Source                | Description                    |
-| --------------------------------- | --------------------- | ------------------------------ |
-| `rippled_rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
-| `rippled_ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
-| `rippled_ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
-| `rippled_warn`                    | Logic.h:33            | Resource manager warning count |
-| `rippled_drop`                    | Logic.h:34            | Resource manager drop count    |
+| Prometheus Metric               | Source                | Description                    |
+| ------------------------------- | --------------------- | ------------------------------ |
+| `xrpld_rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
+| `xrpld_ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
+| `xrpld_ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
+| `xrpld_warn`                    | Logic.h:33            | Resource manager warning count |
+| `xrpld_drop`                    | Logic.h:34            | Resource manager drop count    |
 
 #### Histograms (from StatsD timers)
 
-| Prometheus Metric       | Source                | Description                    |
-| ----------------------- | --------------------- | ------------------------------ |
-| `rippled_rpc_time`      | ServerHandler.cpp:110 | RPC response time (ms)         |
-| `rippled_rpc_size`      | ServerHandler.cpp:109 | RPC response size (bytes)      |
-| `rippled_ios_latency`   | Application.cpp:438   | I/O service loop latency (ms)  |
-| `rippled_pathfind_fast` | PathRequests.h:23     | Fast pathfinding duration (ms) |
-| `rippled_pathfind_full` | PathRequests.h:24     | Full pathfinding duration (ms) |
+| Prometheus Metric     | Source                | Description                    |
+| --------------------- | --------------------- | ------------------------------ |
+| `xrpld_rpc_time`      | ServerHandler.cpp:110 | RPC response time (ms)         |
+| `xrpld_rpc_size`      | ServerHandler.cpp:109 | RPC response size (bytes)      |
+| `xrpld_ios_latency`   | Application.cpp:438   | I/O service loop latency (ms)  |
+| `xrpld_pathfind_fast` | PathRequests.h:23     | Fast pathfinding duration (ms) |
+| `xrpld_pathfind_full` | PathRequests.h:24     | Full pathfinding duration (ms) |
 
 ## Grafana Dashboards
 
@@ -401,52 +401,52 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ### Node Health -- StatsD (`xrpld-statsd-node-health`)
 
-| Panel                                  | Type       | PromQL                                                            | Labels Used |
-| -------------------------------------- | ---------- | ----------------------------------------------------------------- | ----------- |
-| Validated Ledger Age                   | stat       | `rippled_LedgerMaster_Validated_Ledger_Age`                       | —           |
-| Published Ledger Age                   | stat       | `rippled_LedgerMaster_Published_Ledger_Age`                       | —           |
-| Operating Mode Duration                | timeseries | `rippled_State_Accounting_*_duration`                             | —           |
-| Operating Mode Transitions             | timeseries | `rippled_State_Accounting_*_transitions`                          | —           |
-| I/O Latency                            | timeseries | `histogram_quantile(0.95, rippled_ios_latency_bucket)`            | —           |
-| Job Queue Depth                        | timeseries | `rippled_job_count`                                               | —           |
-| Ledger Fetch Rate                      | stat       | `rate(rippled_ledger_fetches[5m])`                                | —           |
-| Ledger History Mismatches              | stat       | `rate(rippled_ledger_history_mismatch[5m])`                       | —           |
-| Key Jobs Execution Time                | timeseries | `rippled_acceptLedger{quantile="$quantile"}` (+ 10 more key jobs) | `quantile`  |
-| Key Jobs Dequeue Wait Time             | timeseries | `rippled_acceptLedger_q{quantile="$quantile"}` (+ 10 more)        | `quantile`  |
-| FullBelowCache Size                    | timeseries | `rippled_Node_family_full_below_cache_size`                       | —           |
-| FullBelowCache Hit Rate                | gauge      | `rippled_Node_family_full_below_cache_hit_rate`                   | —           |
-| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                     | —           |
-| State Duration Rate (Full vs Tracking) | timeseries | `rate(rippled_State_Accounting_Full_duration[5m]) / 1000000`      | —           |
-| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"rippled_<all_jobs>", quantile="$quantile"}`          | `quantile`  |
-| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"rippled_<all_jobs>_q", quantile="$quantile"}`        | `quantile`  |
+| Panel                                  | Type       | PromQL                                                          | Labels Used |
+| -------------------------------------- | ---------- | --------------------------------------------------------------- | ----------- |
+| Validated Ledger Age                   | stat       | `xrpld_LedgerMaster_Validated_Ledger_Age`                       | —           |
+| Published Ledger Age                   | stat       | `xrpld_LedgerMaster_Published_Ledger_Age`                       | —           |
+| Operating Mode Duration                | timeseries | `xrpld_State_Accounting_*_duration`                             | —           |
+| Operating Mode Transitions             | timeseries | `xrpld_State_Accounting_*_transitions`                          | —           |
+| I/O Latency                            | timeseries | `histogram_quantile(0.95, xrpld_ios_latency_bucket)`            | —           |
+| Job Queue Depth                        | timeseries | `xrpld_job_count`                                               | —           |
+| Ledger Fetch Rate                      | stat       | `rate(xrpld_ledger_fetches[5m])`                                | —           |
+| Ledger History Mismatches              | stat       | `rate(xrpld_ledger_history_mismatch[5m])`                       | —           |
+| Key Jobs Execution Time                | timeseries | `xrpld_acceptLedger{quantile="$quantile"}` (+ 10 more key jobs) | `quantile`  |
+| Key Jobs Dequeue Wait Time             | timeseries | `xrpld_acceptLedger_q{quantile="$quantile"}` (+ 10 more)        | `quantile`  |
+| FullBelowCache Size                    | timeseries | `xrpld_Node_family_full_below_cache_size`                       | —           |
+| FullBelowCache Hit Rate                | gauge      | `xrpld_Node_family_full_below_cache_hit_rate`                   | —           |
+| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                   | —           |
+| State Duration Rate (Full vs Tracking) | timeseries | `rate(xrpld_State_Accounting_Full_duration[5m]) / 1000000`      | —           |
+| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"xrpld_<all_jobs>", quantile="$quantile"}`          | `quantile`  |
+| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"xrpld_<all_jobs>_q", quantile="$quantile"}`        | `quantile`  |
 
 ### Network Traffic -- StatsD (`xrpld-statsd-network`)
 
-| Panel                                | Type       | PromQL                                       | Labels Used |
-| ------------------------------------ | ---------- | -------------------------------------------- | ----------- |
-| Active Peers                         | timeseries | `rippled_Peer_Finder_Active_*_Peers`         | —           |
-| Peer Disconnects                     | timeseries | `rippled_Overlay_Peer_Disconnects`           | —           |
-| Total Network Bytes                  | timeseries | `rate(rippled_total_Bytes_In/Out[5m])`       | —           |
-| Total Network Messages               | timeseries | `rippled_total_Messages_In/Out`              | —           |
-| Transaction Traffic                  | timeseries | `rippled_transactions_Messages_In/Out`       | —           |
-| Proposal Traffic                     | timeseries | `rippled_proposals_Messages_In/Out`          | —           |
-| Validation Traffic                   | timeseries | `rippled_validations_Messages_In/Out`        | —           |
-| Traffic by Category                  | bargauge   | `topk(10, rippled_*_Bytes_In)`               | —           |
-| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(rippled_*_duplicate_Bytes_In/Out[5m])` | —           |
-| All Traffic Categories (Detail)      | timeseries | `topk(15, rate(rippled_*_Bytes_In[5m]))`     | —           |
+| Panel                                | Type       | PromQL                                     | Labels Used |
+| ------------------------------------ | ---------- | ------------------------------------------ | ----------- |
+| Active Peers                         | timeseries | `xrpld_Peer_Finder_Active_*_Peers`         | —           |
+| Peer Disconnects                     | timeseries | `xrpld_Overlay_Peer_Disconnects`           | —           |
+| Total Network Bytes                  | timeseries | `rate(xrpld_total_Bytes_In/Out[5m])`       | —           |
+| Total Network Messages               | timeseries | `xrpld_total_Messages_In/Out`              | —           |
+| Transaction Traffic                  | timeseries | `xrpld_transactions_Messages_In/Out`       | —           |
+| Proposal Traffic                     | timeseries | `xrpld_proposals_Messages_In/Out`          | —           |
+| Validation Traffic                   | timeseries | `xrpld_validations_Messages_In/Out`        | —           |
+| Traffic by Category                  | bargauge   | `topk(10, xrpld_*_Bytes_In)`               | —           |
+| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(xrpld_*_duplicate_Bytes_In/Out[5m])` | —           |
+| All Traffic Categories (Detail)      | timeseries | `topk(15, rate(xrpld_*_Bytes_In[5m]))`     | —           |
 
 ### RPC & Pathfinding -- StatsD (`xrpld-statsd-rpc`)
 
-| Panel                     | Type       | PromQL                                                   | Labels Used |
-| ------------------------- | ---------- | -------------------------------------------------------- | ----------- |
-| RPC Request Rate          | stat       | `rate(rippled_rpc_requests[5m])`                         | —           |
-| RPC Response Time         | timeseries | `histogram_quantile(0.95, rippled_rpc_time_bucket)`      | —           |
-| RPC Response Size         | timeseries | `histogram_quantile(0.95, rippled_rpc_size_bucket)`      | —           |
-| RPC Response Time Heatmap | heatmap    | `rippled_rpc_time_bucket`                                | —           |
-| Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, rippled_pathfind_fast_bucket)` | —           |
-| Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, rippled_pathfind_full_bucket)` | —           |
-| Resource Warnings Rate    | stat       | `rate(rippled_warn[5m])`                                 | —           |
-| Resource Drops Rate       | stat       | `rate(rippled_drop[5m])`                                 | —           |
+| Panel                     | Type       | PromQL                                                 | Labels Used |
+| ------------------------- | ---------- | ------------------------------------------------------ | ----------- |
+| RPC Request Rate          | stat       | `rate(xrpld_rpc_requests[5m])`                         | —           |
+| RPC Response Time         | timeseries | `histogram_quantile(0.95, xrpld_rpc_time_bucket)`      | —           |
+| RPC Response Size         | timeseries | `histogram_quantile(0.95, xrpld_rpc_size_bucket)`      | —           |
+| RPC Response Time Heatmap | heatmap    | `xrpld_rpc_time_bucket`                                | —           |
+| Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, xrpld_pathfind_fast_bucket)` | —           |
+| Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, xrpld_pathfind_full_bucket)` | —           |
+| Resource Warnings Rate    | stat       | `rate(xrpld_warn[5m])`                                 | —           |
+| Resource Drops Rate       | stat       | `rate(xrpld_drop[5m])`                                 | —           |
 
 ### Span → Metric → Dashboard Summary
 
