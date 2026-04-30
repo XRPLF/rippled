@@ -168,8 +168,7 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
-    adjustOwnerCount(view, sleOwner, sponsor, -1, j);
+    adjustOwnerCountObj(view, sleOwner, sle, -1, j);
 
     view.erase(sle);
 

@@ -281,11 +281,10 @@ OracleSet::doApply()
             // the sponsor decrease current sponsored owner count.
             // Otherwise, the sponsorship will be deleted.
 
-            auto const currentSponsorSle = getLedgerEntryReserveSponsor(ctx_.view(), sle);
             auto const newSponsorSle = getTxReserveSponsor(ctx_.view(), ctx_.tx);
 
             // decrease current sponsored owner count
-            adjustOwnerCount(ctx_.view(), accountSle, currentSponsorSle, -oldCount, ctx_.journal);
+            adjustOwnerCountObj(ctx_.view(), accountSle, sle, -oldCount, ctx_.journal);
             removeSponsorFromLedgerEntry(sle);
             // increase new owner count
             adjustOwnerCount(ctx_.view(), accountSle, newSponsorSle, newCount, ctx_.journal);
@@ -294,8 +293,7 @@ OracleSet::doApply()
         else if (adjust < 0)
         {
             // decrease owner count
-            auto const sponsorSle = getLedgerEntryReserveSponsor(ctx_.view(), sle);
-            adjustOwnerCount(ctx_.view(), accountSle, sponsorSle, adjust, ctx_.journal);
+            adjustOwnerCountObj(ctx_.view(), accountSle, sle, adjust, ctx_.journal);
         }
 
         ctx_.view().update(sle);

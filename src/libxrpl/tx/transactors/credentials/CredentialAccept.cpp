@@ -104,8 +104,7 @@ CredentialAccept::doApply()
 
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);
-    auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
-    auto const currentSponsor = getLedgerEntryReserveSponsor(view(), sleCred);
+    auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()    
 
     if (checkExpired(sleCred, view().header().parentCloseTime))
     {
@@ -118,7 +117,7 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    adjustOwnerCount(view(), sleIssuer, currentSponsor, -1, j_);
+    adjustOwnerCountObj(view(), sleIssuer, sleCred, -1, j_);
     removeSponsorFromLedgerEntry(sleCred);
     adjustOwnerCount(view(), sleSubject, newSponsor, 1, j_);
     addSponsorToLedgerEntry(sleCred, newSponsor);

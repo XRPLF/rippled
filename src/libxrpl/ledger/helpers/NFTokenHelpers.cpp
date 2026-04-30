@@ -451,6 +451,7 @@ removeToken(
     auto const prev = loadPage(curr, sfPreviousPageMin);
     auto const next = loadPage(curr, sfNextPageMin);
 
+    auto nullJ = beast::Journal{beast::Journal::getNullSink()};
     if (!arr.empty())
     {
         // The current page isn't empty. Update it and then try to consolidate
@@ -460,26 +461,10 @@ removeToken(
         view.update(curr);
 
         if (prev && mergePages(view, prev, curr))
-        {
-            auto const sponsor = getLedgerEntryReserveSponsor(view, prev);
-            adjustOwnerCount(
-                view,
-                view.peek(keylet::account(owner)),
-                sponsor,
-                -1,
-                beast::Journal{beast::Journal::getNullSink()});
-        }
+            adjustOwnerCountObj(view, owner, prev, -1, nullJ);
 
         if (next && mergePages(view, curr, next))
-        {
-            auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
-            adjustOwnerCount(
-                view,
-                view.peek(keylet::account(owner)),
-                sponsor,
-                -1,
-                beast::Journal{beast::Journal::getNullSink()});
-        }
+            adjustOwnerCountObj(view, owner, curr, -1, nullJ);
 
         return tesSUCCESS;
     }
@@ -513,13 +498,7 @@ removeToken(
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
-            auto const sponsor = getLedgerEntryReserveSponsor(view, prev);
-            adjustOwnerCount(
-                view,
-                view.peek(keylet::account(owner)),
-                sponsor,
-                -1,
-                beast::Journal{beast::Journal::getNullSink()});
+            adjustOwnerCountObj(view, owner, prev, -1, nullJ);
 
             view.update(curr);
             view.erase(prev);
@@ -555,13 +534,7 @@ removeToken(
         view.update(next);
     }
 
-    auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
-    adjustOwnerCount(
-        view,
-        view.peek(keylet::account(owner)),
-        sponsor,
-        -1,
-        beast::Journal{beast::Journal::getNullSink()});
+    adjustOwnerCountObj(view, owner, curr, -1, nullJ);
 
     view.erase(curr);
 
@@ -579,12 +552,7 @@ removeToken(
             view.peek(Keylet(ltNFTOKEN_PAGE, prev->key())),
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
     {
-        adjustOwnerCount(
-            view,
-            view.peek(keylet::account(owner)),
-            getLedgerEntryReserveSponsor(view, prev),
-            -1,
-            beast::Journal{beast::Journal::getNullSink()});
+        adjustOwnerCountObj(view, owner, prev, -1, nullJ);
     }
 
     return tesSUCCESS;
@@ -701,13 +669,7 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
             false))
         return false;
 
-    auto const sponsor = getLedgerEntryReserveSponsor(view, offer);
-    adjustOwnerCount(
-        view,
-        view.peek(keylet::account(owner)),
-        sponsor,
-        -1,
-        beast::Journal{beast::Journal::getNullSink()});
+    adjustOwnerCountObj(view, owner, offer, -1, beast::Journal{beast::Journal::getNullSink()});
 
     view.erase(offer);
     return true;

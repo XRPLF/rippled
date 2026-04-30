@@ -57,8 +57,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         }
     }
 
-    auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
-    adjustOwnerCount(view, view.peek(keylet::account(owner)), sponsor, -1, j);
+    adjustOwnerCountObj(view, owner, sle, -1, j);
 
     view.erase(sle);
 

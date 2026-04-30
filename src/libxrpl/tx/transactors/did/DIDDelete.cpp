@@ -57,9 +57,7 @@ DIDDelete::deleteSLE(
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
-    adjustOwnerCount(view, sleOwner, sponsor, -1, j);
-    view.update(sleOwner);
+    adjustOwnerCountObj(view, sleOwner, sle, -1, j);
 
     // Remove object from ledger
     view.erase(sle);

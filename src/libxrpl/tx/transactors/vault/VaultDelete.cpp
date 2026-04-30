@@ -207,8 +207,7 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    auto const vaultSponsor = getLedgerEntryReserveSponsor(view(), vault);
-    adjustOwnerCount(view(), owner, vaultSponsor, -2, j_);
+    adjustOwnerCountObj(view(), owner, vault, -2, j_);
 
     // Destroy the vault.
     view().erase(vault);

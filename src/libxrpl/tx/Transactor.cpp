@@ -757,8 +757,7 @@ Transactor::ticketDelete(
     }
 
     // Update the Ticket owner's reserve.
-    auto const sponsor = getLedgerEntryReserveSponsor(view, sleTicket);
-    adjustOwnerCount(view, sleAccount, sponsor, -1, j);
+    adjustOwnerCountObj(view, sleAccount, sleTicket, -1, j);
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);

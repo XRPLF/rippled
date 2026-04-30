@@ -216,9 +216,8 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsor = getLedgerEntryReserveSponsor(view, signers);
-    adjustOwnerCount(
-        view, view.peek(accountKeylet), sponsor, removeFromOwnerCount, registry.getJournal("View"));
+    adjustOwnerCountObj(
+        view, view.peek(accountKeylet), signers, removeFromOwnerCount, registry.getJournal("View"));
 
     view.erase(signers);
 

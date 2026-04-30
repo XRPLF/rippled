@@ -248,13 +248,19 @@ adjustOwnerCount(
     std::int32_t adjustment,
     beast::Journal j)
 {
-    if (!accountSle)
-        return;
+    XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCount : valid account sle");
+    auto const sleType = accountSle->getType();
+    bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
+                                      : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
+    XRPL_ASSERT(validType, "xrpl::adjustOwnerCount : valid account sle type");
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
 
     auto const accountID = accountSle->getAccountID(sfAccount);
     if (sponsorSle)
     {
+        XRPL_ASSERT(
+            sponsorSle->getType() == ltACCOUNT_ROOT,
+            "xrpl::adjustOwnerCount : valid sponsor sle type");
         auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
         adjustSponsorOwnerCountHlp(
@@ -272,6 +278,21 @@ adjustOwnerCount(
         }
     }
     adjustSponsorOwnerCountHlp(view, accountSle, sfOwnerCount, accountID, adjustment, j);
+}
+
+void
+adjustOwnerCountObj(
+    ApplyView& view,
+    SLE::ref accountSle,
+    SLE::ref objectSle,
+    std::int32_t amount,
+    beast::Journal j)
+{
+    XRPL_ASSERT(objectSle, "xrpl::adjustOwnerCount : valid object sle");
+    XRPL_ASSERT(
+        objectSle->getType() != ltACCOUNT_ROOT, "xrpl::adjustOwnerCount : valid object sle type");
+    SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
+    adjustOwnerCount(view, accountSle, sponsorSle, amount, j);
 }
 
 XRPAmount
