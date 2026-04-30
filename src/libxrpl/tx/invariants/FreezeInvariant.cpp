@@ -76,6 +76,7 @@ TransfersNotFrozen::finalize(
      *           view.rules().enabled(fixFreezeExploit);
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
+    bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_2_0);
 
     for (auto const& [issue, changes] : balanceChanges_)
     {
@@ -97,7 +98,7 @@ TransfersNotFrozen::finalize(
             continue;
         }
 
-        if (!validateIssuerChanges(issuerSle, changes, tx, j, enforce))
+        if (!validateIssuerChanges(issuerSle, changes, tx, j, enforce, fixOverrideFreeze))
         {
             return false;
         }
@@ -215,7 +216,8 @@ TransfersNotFrozen::validateIssuerChanges(
     IssuerChanges const& changes,
     STTx const& tx,
     beast::Journal const& j,
-    bool enforce)
+    bool enforce,
+    bool fixOverrideFreeze)
 {
     if (!issuer)
     {
@@ -241,7 +243,7 @@ TransfersNotFrozen::validateIssuerChanges(
         {
             bool const high = change.line->at(sfLowLimit).getIssuer() == issuer->at(sfAccount);
 
-            if (!validateFrozenState(change, high, tx, j, enforce, globalFreeze))
+            if (!validateFrozenState(change, high, tx, j, enforce, globalFreeze, fixOverrideFreeze))
             {
                 return false;
             }
@@ -257,7 +259,8 @@ TransfersNotFrozen::validateFrozenState(
     STTx const& tx,
     beast::Journal const& j,
     bool enforce,
-    bool globalFreeze)
+    bool globalFreeze,
+    bool fixOverrideFreeze)
 {
     bool const freeze =
         change.balanceChangeSign < 0 && change.line->isFlag(high ? lsfLowFreeze : lsfHighFreeze);
@@ -269,8 +272,11 @@ TransfersNotFrozen::validateFrozenState(
         return true;
     }
 
-    // AMMClawbacks are allowed to override all freeze rules
-    if (hasPrivilege(tx, overrideFreeze))
+    // Pre-fixCleanup3_2_0: the isAMMLine check incorrectly blocked clawback on
+    // individually-frozen or deep-frozen AMM trust lines.
+    // Post-fixCleanup3_2_0: AMMClawbacks are allowed to override all freeze types.
+    bool const isAMMLine = !fixOverrideFreeze && change.line->isFlag(lsfAMMNode);
+    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, overrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
