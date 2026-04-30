@@ -1089,7 +1089,10 @@ struct Credentials_test : public beast::unit_test::suite
         // Create PermissionedDomain
         env(pdomain::setTx(becky, {{issuer, credType}}));
         env.close();
-        auto const domain = pdomain::getObjects(becky, env).begin()->first;
+        auto const objects = pdomain::getObjects(becky, env);
+        if (!BEAST_EXPECT(!objects.empty()))
+            return;
+        auto const domain = objects.begin()->first;
 
         using namespace std::chrono_literals;
         env.close(50s);
