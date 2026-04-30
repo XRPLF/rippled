@@ -5129,11 +5129,12 @@ public:
         Account const bob("bob");
         Account const issuer("issuer");
         Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
 
         // LoanBrokerSet / LoanBrokerDelete
         {
             Env env{*this, testable_amendments()};
-            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
             env.close();
 
             PrettyAsset const asset{xrpIssue(), 1'000'000};
@@ -5167,14 +5168,41 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-            // LoanBrokerDelete
             auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice) - 1);
+
+            if (cosigning)
+            {
+                // transfer sponsor
+                env(sponsor::transfer(alice, tfSponsorshipReassign, brokerKeylet.key),
+                    sponsor::as(sponsor2, spfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor2));
+                env.close();
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::sponseeAcc(alice));
+                env.close();
+
+                // transfer sponsor
+                env(sponsor::transfer(alice, tfSponsorshipReassign, brokerKeylet.key),
+                    sponsor::as(sponsor2, spfSponsorReserve));
+                env.close();
+            }
+
+            BEAST_EXPECT(
+                ownerCount(env, alice) ==
+                5);  // LoanBroker, PseudoAccount(LB), (Vault, PseudoAccount(Vault), MPToken(Vault))
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+            // LoanBrokerDelete
             env(loanBroker::del(alice, brokerKeylet.key, 0));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 3);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
 
         // LoanBrokerConverDeposit/Withdraw/Clawback
@@ -5258,7 +5286,7 @@ public:
         // LoanSet
         {
             Env env{*this, testable_amendments()};
-            env.fund(XRP(1000000), alice, bob, issuer, sponsor);
+            env.fund(XRP(1000000), alice, bob, issuer, sponsor, sponsor2);
             env.close();
 
             MPTTester mptt{env, issuer, mptInitNoFund};
@@ -5345,6 +5373,36 @@ public:
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+
+            // before transfer
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            if (cosigning)
+            {
+                // transfer sponsor
+                env(sponsor::transfer(alice, tfSponsorshipReassign, loanKeylet.key),
+                    sponsor::as(sponsor2, spfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor2));
+                env.close();
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::sponseeAcc(alice));
+                env.close();
+
+                // transfer sponsor
+                env(sponsor::transfer(alice, tfSponsorshipReassign, loanKeylet.key),
+                    sponsor::as(sponsor2, spfSponsorReserve));
+                env.close();
+            }
+
+            // after transfer
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
             // LoanDelete
             env(loan::del(alice, loanKeylet.key),
