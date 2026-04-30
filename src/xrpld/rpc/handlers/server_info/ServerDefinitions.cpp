@@ -235,8 +235,8 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         innerObj[jss::isVLEncoded] =
             (type == STI_VL || type == STI_ACCOUNT || type == STI_VECTOR256);
         static_assert(
-            STI_VL == 7U && STI_ACCOUNT == 8U && STI_VECTOR256 == 15U,
-            "STI_VL, STI_ACCOUNT, STI_VECTOR256 must be 7, 8, 15 respectively");
+            STI_VL == 7U && STI_ACCOUNT == 8U && STI_VECTOR256 == 19U,
+            "STI_VL, STI_ACCOUNT, STI_VECTOR256 must be 7, 8, 19 respectively");
 
         // whether the field is included in serialization
         innerObj[jss::isSerialized] =
