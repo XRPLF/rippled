@@ -837,15 +837,19 @@ STAmount::canonicalize()
         if (mAsset.holds<MPTIssue>() && mOffset > 18)
             Throw<std::runtime_error>("MPT amount out of range");
 
-        Number num(mIsNegative, mValue, mOffset, Number::unchecked{});
+        Number const num(mIsNegative, mValue, mOffset, Number::unchecked{});
         auto set = [&](auto const& val) {
             mIsNegative = val.value() < 0;
             mValue = mIsNegative ? -val.value() : val.value();
         };
         if (native())
+        {
             set(XRPAmount{num});
+        }
         else
+        {
             set(MPTAmount{num});
+        }
         mOffset = 0;
 
         if (native() && mValue > cMaxNativeN)
