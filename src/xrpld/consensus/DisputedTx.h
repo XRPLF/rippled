@@ -60,20 +60,6 @@ public:
         return ourVote_;
     }
 
-    //! Number of peers voting to include the transaction.
-    [[nodiscard]] int
-    getYays() const
-    {
-        return yays_;
-    }
-
-    //! Number of peers voting to exclude the transaction.
-    [[nodiscard]] int
-    getNays() const
-    {
-        return nays_;
-    }
-
     //! Are we and our peers "stalled" where we probably won't change
     //! our vote?
     [[nodiscard]] bool
@@ -190,20 +176,6 @@ public:
     [[nodiscard]] Json::Value
     getJson() const;
 
-    //! Number of peers voting yes.
-    [[nodiscard]] int
-    getYays() const
-    {
-        return yays_;
-    }
-
-    //! Number of peers voting no.
-    [[nodiscard]] int
-    getNays() const
-    {
-        return nays_;
-    }
-
 private:
     int yays_{0};   //< Number of yes votes
     int nays_{0};   //< Number of no votes
@@ -213,7 +185,7 @@ private:
     //! The number of rounds we've gone without changing our vote
     std::size_t currentVoteCounter_ = 0;
     //! Which minimum acceptance percentage phase we are currently in
-    ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::init;
+    ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::AvalancheState::init;
     //! How long we have been in the current acceptance phase
     std::size_t avalancheCounter_ = 0;
     beast::Journal const j_;

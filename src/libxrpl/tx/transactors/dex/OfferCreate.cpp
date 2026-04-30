@@ -192,8 +192,13 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     // Allow unfunded MPT for issuer (OutstandingAmount >= MaximumAmount)
     if ((!saTakerGets.holds<MPTIssue>() || saTakerGets.getIssuer() != id) &&
-        accountFunds(ctx.view, id, saTakerGets, fhZERO_IF_FROZEN, ahZERO_IF_UNAUTHORIZED, viewJ) <=
-            beast::zero)
+        accountFunds(
+            ctx.view,
+            id,
+            saTakerGets,
+            FreezeHandling::fhZERO_IF_FROZEN,
+            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            viewJ) <= beast::zero)
     {
         JLOG(ctx.j.debug()) << "delay: Offers must be at least partially funded.";
         return tecUNFUNDED_OFFER;
@@ -338,7 +343,12 @@ OfferCreate::flowCross(
         // cause a user's available balance to go to 0 (by causing it to dip
         // below the reserve) so we check this case again.
         STAmount const inStartBalance = accountFunds(
-            psb, account_, takerAmount.in, fhZERO_IF_FROZEN, ahZERO_IF_UNAUTHORIZED, j_);
+            psb,
+            account_,
+            takerAmount.in,
+            FreezeHandling::fhZERO_IF_FROZEN,
+            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            j_);
         // Allow unfunded MPT issuer
         auto const disallowUnfunded =
             !inStartBalance.holds<MPTIssue>() || inStartBalance.getIssuer() != account_;
@@ -448,7 +458,12 @@ OfferCreate::flowCross(
         if (isTesSuccess(result.result()))
         {
             STAmount const takerInBalance = accountFunds(
-                psb, account_, takerAmount.in, fhZERO_IF_FROZEN, ahZERO_IF_UNAUTHORIZED, j_);
+                psb,
+                account_,
+                takerAmount.in,
+                FreezeHandling::fhZERO_IF_FROZEN,
+                AuthHandling::ahZERO_IF_UNAUTHORIZED,
+                j_);
 
             if (disallowUnfunded && takerInBalance <= beast::zero)
             {
