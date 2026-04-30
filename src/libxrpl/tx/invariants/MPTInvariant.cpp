@@ -448,10 +448,10 @@ ValidConfidentialMPToken::visitEntry(
 
         bool const hasAnyHolder = hasHolderInbox || hasHolderSpending;
 
-        if (hasAnyHolder != hasIssuerBalance)
-        {
+        // sfIssuerEncryptedBalance, sfConfidentialBalanceInbox, and sfConfidentialBalanceSpending
+        // must all exist or not exist same time.
+        if (hasHolderInbox != hasHolderSpending || hasHolderInbox != hasIssuerBalance)
             changes_[id].badConsistency = true;
-        }
 
         // Privacy flag consistency
         bool const hasEncrypted = hasAnyHolder || hasIssuerBalance;
@@ -588,6 +588,23 @@ ValidConfidentialMPToken::finalize(
             {
                 JLOG(j.fatal()) << "Invariant failed: Token conservation "
                                    "violation for MPT "
+                                << to_string(id);
+                return false;
+            }
+        }
+        else if (
+            std::ranges::find(confidentialMPTTxTypes, tx.getTxnType()) !=
+            confidentialMPTTxTypes.end())
+        {
+            // Among confidential MPT transactions, only ConfidentialMPTSend and
+            // ConfidentialMPTMergeInbox leave coaDelta unmodified. Therefore, if a confidential MPT
+            // transaction reaches here, it must be one of these two types, neither of which will
+            // modify sfOutstandingAmount
+            if (checks.outstandingDelta != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: OutstandingAmount changed "
+                                   "by confidential transaction that should not "
+                                   "modify it for MPT "
                                 << to_string(id);
                 return false;
             }
