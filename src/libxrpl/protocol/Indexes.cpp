@@ -382,7 +382,7 @@ payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexce
 }
 
 Keylet
-nftpage_min(AccountID const& owner)
+nftokenPage_min(AccountID const& owner)
 {
     std::array<std::uint8_t, 32> buf{};
     std::memcpy(buf.data(), owner.data(), owner.size());
@@ -390,7 +390,7 @@ nftpage_min(AccountID const& owner)
 }
 
 Keylet
-nftpage_max(AccountID const& owner)
+nftokenPage_max(AccountID const& owner)
 {
     uint256 id = nft::pageMask;
     std::memcpy(id.data(), owner.data(), owner.size());
@@ -398,9 +398,9 @@ nftpage_max(AccountID const& owner)
 }
 
 Keylet
-nftpage(Keylet const& k, uint256 const& token)
+nftokenPage(Keylet const& k, uint256 const& token)
 {
-    XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftpage : valid input type");
+    XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftokenPage : valid input type");
     return {ltNFTOKEN_PAGE, (k.key & ~nft::pageMask) + (token & nft::pageMask)};
 }
 

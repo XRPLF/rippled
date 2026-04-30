@@ -43,8 +43,8 @@ namespace xrpl::nft {
 static std::shared_ptr<SLE const>
 locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
 {
-    auto const first = keylet::nftpage(keylet::nftpage_min(owner), id);
-    auto const last = keylet::nftpage_max(owner);
+    auto const first = keylet::nftokenPage(keylet::nftokenPage_min(owner), id);
+    auto const last = keylet::nftokenPage_max(owner);
 
     // This NFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
@@ -56,8 +56,8 @@ locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
 static std::shared_ptr<SLE>
 locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
 {
-    auto const first = keylet::nftpage(keylet::nftpage_min(owner), id);
-    auto const last = keylet::nftpage_max(owner);
+    auto const first = keylet::nftokenPage(keylet::nftokenPage_min(owner), id);
+    auto const last = keylet::nftokenPage_max(owner);
 
     // This NFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
@@ -73,9 +73,9 @@ getPageForToken(
     uint256 const& id,
     std::function<void(ApplyView&, AccountID const&)> const& createCallback)
 {
-    auto const base = keylet::nftpage_min(owner);
-    auto const first = keylet::nftpage(base, id);
-    auto const last = keylet::nftpage_max(owner);
+    auto const base = keylet::nftokenPage_min(owner);
+    auto const first = keylet::nftokenPage(base, id);
+    auto const last = keylet::nftokenPage_max(owner);
 
     // This NFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
@@ -181,7 +181,7 @@ getPageForToken(
         ? narr[dirMaxTokensPerPage - 1].getFieldH256(sfNFTokenID).next()
         : carr[0].getFieldH256(sfNFTokenID);
 
-    auto np = std::make_shared<SLE>(keylet::nftpage(base, tokenIDForNewPage));
+    auto np = std::make_shared<SLE>(keylet::nftokenPage(base, tokenIDForNewPage));
     XRPL_ASSERT(np->key() > base.key, "xrpl::nft::getPageForToken : valid NFT page index");
     np->setFieldArray(sfNFTokens, narr);
     np->setFieldH256(sfNextPageMin, cp->key());
@@ -654,11 +654,11 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
 {
     bool didRepair = false;
 
-    auto const last = keylet::nftpage_max(owner);
+    auto const last = keylet::nftokenPage_max(owner);
 
     std::shared_ptr<SLE> page = view.peek(Keylet(
         ltNFTOKEN_PAGE,
-        view.succ(keylet::nftpage_min(owner).key, last.key.next()).value_or(last.key)));
+        view.succ(keylet::nftokenPage_min(owner).key, last.key.next()).value_or(last.key)));
 
     if (!page)
         return didRepair;

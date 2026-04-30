@@ -537,8 +537,8 @@ AccountRootsDeletedClean::finalize(
             // checked above as entries in directAccountKeylets. This uses
             // view.succ() to check for any NFT pages in between the two
             // endpoints.
-            Keylet const first = keylet::nftpage_min(accountID);
-            Keylet const last = keylet::nftpage_max(accountID);
+            Keylet const first = keylet::nftokenPage_min(accountID);
+            Keylet const last = keylet::nftokenPage_max(accountID);
 
             std::optional<uint256> key = view.succ(first.key, last.key.next());
 

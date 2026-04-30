@@ -74,8 +74,8 @@ doAccountNFTs(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::marker);
     }
 
-    auto const first = keylet::nftpage(keylet::nftpage_min(accountID), marker);
-    auto const last = keylet::nftpage_max(accountID);
+    auto const first = keylet::nftokenPage(keylet::nftokenPage_min(accountID), marker);
+    auto const last = keylet::nftokenPage_max(accountID);
 
     auto cp = ledger->read(
         Keylet(ltNFTOKEN_PAGE, ledger->succ(first.key, last.key.next()).value_or(last.key)));

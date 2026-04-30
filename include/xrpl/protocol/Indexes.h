@@ -221,14 +221,14 @@ payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexce
 /** @{ */
 /** A keylet for the owner's first possible NFT page. */
 Keylet
-nftpage_min(AccountID const& owner);
+nftokenPage_min(AccountID const& owner);
 
 /** A keylet for the owner's last possible NFT page. */
 Keylet
-nftpage_max(AccountID const& owner);
+nftokenPage_max(AccountID const& owner);
 
 Keylet
-nftpage(Keylet const& k, uint256 const& token);
+nftokenPage(Keylet const& k, uint256 const& token);
 /** @} */
 
 /** An offer from an account to buy or sell an NFT */
@@ -379,8 +379,12 @@ std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
      {.function = &keylet::signerList, .expectedLEName = jss::SignerList, .includeInTests = true},
      // It's normally impossible to create an item at nftpage_min, but
      // test it anyway, since the invariant checks for it.
-     {.function = &keylet::nftpage_min, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
-     {.function = &keylet::nftpage_max, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
+     {.function = &keylet::nftokenPage_min,
+      .expectedLEName = jss::NFTokenPage,
+      .includeInTests = true},
+     {.function = &keylet::nftokenPage_max,
+      .expectedLEName = jss::NFTokenPage,
+      .includeInTests = true},
      {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
 
 MPTID

@@ -1561,7 +1561,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env(token::mint(issuer, 0), txflags(tfTransferable));
         env.close();
 
-        auto const nftpage = keylet::nftpage_max(issuer);
+        auto const nftpage = keylet::nftokenPage_max(issuer);
         BEAST_EXPECT(env.le(nftpage) != nullptr);
 
         {

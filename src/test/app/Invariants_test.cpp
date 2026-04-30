@@ -1175,7 +1175,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"NFT page has invalid size"}},
             [&makeNFTokenIDs](Account const& A1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage_max(A1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(0));
 
                 ac.view().insert(nftPage);
@@ -1185,7 +1185,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"NFT page has invalid size"}},
             [&makeNFTokenIDs](Account const& A1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage_max(A1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(33));
 
                 ac.view().insert(nftPage);
@@ -1198,7 +1198,7 @@ class Invariants_test : public beast::unit_test::suite
                 STArray nfTokens = makeNFTokenIDs(2);
                 std::iter_swap(nfTokens.begin(), nfTokens.begin() + 1);
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage_max(A1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1211,7 +1211,7 @@ class Invariants_test : public beast::unit_test::suite
                 STArray nfTokens = makeNFTokenIDs(1);
                 nfTokens[0].setFieldVL(sfURI, Blob{});
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage_max(A1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1221,9 +1221,9 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& A1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage_max(A1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
-                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftpage_max(A1).key);
+                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftokenPage_max(A1).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1232,9 +1232,9 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage_max(A1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
-                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftpage_min(A2).key);
+                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftokenPage_min(A2).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1243,7 +1243,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& A1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage_max(A1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
                 nftPage->setFieldH256(sfNextPageMin, nftPage->key());
 
@@ -1255,10 +1255,10 @@ class Invariants_test : public beast::unit_test::suite
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& A1, Account const& A2, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(1);
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage(
-                    keylet::nftpage_max(A1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
+                    keylet::nftokenPage_max(A1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
-                nftPage->setFieldH256(sfNextPageMin, keylet::nftpage_max(A2).key);
+                nftPage->setFieldH256(sfNextPageMin, keylet::nftokenPage_max(A2).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1268,8 +1268,8 @@ class Invariants_test : public beast::unit_test::suite
             {{"NFT found in incorrect page"}},
             [&makeNFTokenIDs](Account const& A1, Account const&, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(2);
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage(
-                    keylet::nftpage_max(A1), (nfTokens[1].getFieldH256(sfNFTokenID))));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
+                    keylet::nftokenPage_max(A1), (nfTokens[1].getFieldH256(sfNFTokenID))));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);

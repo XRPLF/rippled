@@ -61,7 +61,7 @@ getAccountObjects(
         (!typeFilter.has_value() || typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
         dirIndex == beast::zero;
 
-    Keylet const firstNFTPage = keylet::nftpage_min(account);
+    Keylet const firstNFTPage = keylet::nftokenPage_min(account);
 
     // we need to check the marker to see if it is an NFTTokenPage index.
     if (iterateNFTPages && entryIndex != beast::zero)
@@ -85,7 +85,7 @@ getAccountObjects(
         Keylet const first =
             entryIndex == beast::zero ? firstNFTPage : Keylet{ltNFTOKEN_PAGE, entryIndex};
 
-        Keylet const last = keylet::nftpage_max(account);
+        Keylet const last = keylet::nftokenPage_max(account);
 
         // current key
         uint256 ck = ledger.succ(first.key, last.key.next()).value_or(last.key);
