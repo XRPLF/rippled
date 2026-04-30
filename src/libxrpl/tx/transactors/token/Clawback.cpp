@@ -138,8 +138,12 @@ preclaimHelper<Issue>(
     // the available balance of a trustline is prone to new changes (eg.
     // XLS-34). So we must use `accountHolds`.
     if (accountHolds(
-            ctx.view, holder, clawAmount.get<Issue>().currency, issuer, fhIGNORE_FREEZE, ctx.j) <=
-        beast::zero)
+            ctx.view,
+            holder,
+            clawAmount.get<Issue>().currency,
+            issuer,
+            FreezeHandling::fhIGNORE_FREEZE,
+            ctx.j) <= beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -169,8 +173,12 @@ preclaimHelper<MPTIssue>(
         return tecOBJECT_NOT_FOUND;
 
     if (accountHolds(
-            ctx.view, holder, clawAmount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) <=
-        beast::zero)
+            ctx.view,
+            holder,
+            clawAmount.get<MPTIssue>(),
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            ctx.j) <= beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -229,7 +237,7 @@ applyHelper<Issue>(ApplyContext& ctx)
         holder,
         clawAmount.get<Issue>().currency,
         clawAmount.getIssuer(),
-        fhIGNORE_FREEZE,
+        FreezeHandling::fhIGNORE_FREEZE,
         ctx.journal);
 
     return directSendNoFee(
@@ -249,8 +257,8 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ctx.view(),
         holder,
         clawAmount.get<MPTIssue>(),
-        fhIGNORE_FREEZE,
-        ahIGNORE_AUTH,
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         ctx.journal);
 
     return directSendNoFee(
