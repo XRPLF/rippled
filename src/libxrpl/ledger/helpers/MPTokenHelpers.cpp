@@ -41,7 +41,7 @@ namespace xrpl {
 bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 {
-    if (auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID())))
+    if (auto const sle = view.read(keylet::mptokenIssuance(mptIssue.getMptID())))
         return sle->isFlag(lsfMPTLocked);
     return false;
 }
@@ -92,7 +92,7 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
     // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
     // For example, if transfer fee is 50% then 10,000 * 50,000 = 500,000
     // which represents 50% of 1,000,000,000
-    if (auto const sle = view.read(keylet::mptIssuance(issuanceID));
+    if (auto const sle = view.read(keylet::mptokenIssuance(issuanceID));
         sle && sle->isFieldPresent(sfTransferFee))
     {
         auto const fee = sle->getFieldU16(sfTransferFee);
@@ -107,7 +107,7 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
 canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 {
     auto mptID = mptIssue.getMptID();
-    auto issuance = view.read(keylet::mptIssuance(mptID));
+    auto issuance = view.read(keylet::mptokenIssuance(mptID));
     if (!issuance)
     {
         return tecOBJECT_NOT_FOUND;
@@ -129,7 +129,7 @@ addEmptyHolding(
     beast::Journal journal)
 {
     auto const& mptID = mptIssue.getMptID();
-    auto const mpt = view.peek(keylet::mptIssuance(mptID));
+    auto const mpt = view.peek(keylet::mptokenIssuance(mptID));
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (mpt->isFlag(lsfMPTLocked))
@@ -201,7 +201,7 @@ authorizeMPToken(
             return tecINSUFFICIENT_RESERVE;
 
         // Defensive check before we attempt to create MPToken for the issuer
-        auto const mpt = view.read(keylet::mptIssuance(mptIssuanceID));
+        auto const mpt = view.read(keylet::mptokenIssuance(mptIssuanceID));
         if (!mpt || mpt->getAccountID(sfIssuer) == account)
         {
             // LCOV_EXCL_START
@@ -227,7 +227,7 @@ authorizeMPToken(
         return tesSUCCESS;
     }
 
-    auto const sleMptIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleMptIssuance = view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleMptIssuance)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -305,7 +305,7 @@ requireAuth(
     AuthType authType,
     int depth)
 {
-    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -397,7 +397,7 @@ enforceMPTokenAuthorization(
     XRPAmount const& priorBalance,  // for MPToken authorization
     beast::Journal j)
 {
-    auto const sleIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -496,7 +496,7 @@ canTransfer(
     AccountID const& from,
     AccountID const& to)
 {
-    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -515,7 +515,7 @@ canTrade(ReadView const& view, Asset const& asset)
     return asset.visit(
         [&](Issue const&) -> TER { return tesSUCCESS; },
         [&](MPTIssue const& mptIssue) -> TER {
-            auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
+            auto const sleIssuance = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
             if (!sleIssuance)
                 return tecOBJECT_NOT_FOUND;
             if (!sleIssuance->isFlag(lsfMPTCanTrade))
@@ -528,7 +528,7 @@ TER
 lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, beast::Journal j)
 {
     auto const mptIssue = amount.get<MPTIssue>();
-    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
     {  // LCOV_EXCL_START
@@ -633,7 +633,7 @@ unlockEscrowMPT(
 
     auto const& issuer = netAmount.getIssuer();
     auto const& mptIssue = netAmount.get<MPTIssue>();
-    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
     {  // LCOV_EXCL_START
@@ -817,7 +817,7 @@ checkCreateMPT(
     if (mptIssue.getIssuer() == holder)
         return tesSUCCESS;
 
-    auto const mptIssuanceID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const mptIssuanceID = keylet::mptokenIssuance(mptIssue.getMptID());
     auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
     if (!view.exists(mptokenID))
     {
@@ -853,7 +853,7 @@ availableMPTAmount(SLE const& sleIssuance)
 std::int64_t
 availableMPTAmount(ReadView const& view, MPTID const& mptID)
 {
-    auto const sle = view.read(keylet::mptIssuance(mptID));
+    auto const sle = view.read(keylet::mptokenIssuance(mptID));
     if (!sle)
         Throw<std::runtime_error>(transHuman(tecINTERNAL));
     return availableMPTAmount(*sle);
@@ -877,7 +877,7 @@ issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue)
 {
     STAmount amount{issue};
 
-    auto const sle = view.read(keylet::mptIssuance(issue));
+    auto const sle = view.read(keylet::mptokenIssuance(issue));
     if (!sle)
         return amount;
     auto const available = availableMPTAmount(*sle);
@@ -909,7 +909,7 @@ checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, Account
     if (!view.exists(keylet::account(issuer)))
         return tecNO_ISSUER;  // LCOV_EXCL_LINE
 
-    auto const issuanceKey = keylet::mptIssuance(issuanceID);
+    auto const issuanceKey = keylet::mptokenIssuance(issuanceID);
     auto const issuanceSle = view.read(issuanceKey);
     if (!issuanceSle)
         return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE

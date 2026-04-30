@@ -384,7 +384,7 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
 }))
 
 /** A ledger object which tracks MPTokenIssuance
-    \sa keylet::mptIssuance
+    \sa keylet::mptokenIssuance
  */
 LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfIssuer,                   soeREQUIRED},

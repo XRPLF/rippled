@@ -3344,7 +3344,7 @@ class MPToken_test : public beast::unit_test::suite
             // view may contain partial state and must be discarded.
             if (expectedOutstanding)
             {
-                auto const sle = av.peek(keylet::mptIssuance(mptt.issuanceID()));
+                auto const sle = av.peek(keylet::mptokenIssuance(mptt.issuanceID()));
                 if (!BEAST_EXPECT(sle))
                     return;
                 BEAST_EXPECTS(sle->getFieldU64(sfOutstandingAmount) == *expectedOutstanding, label);

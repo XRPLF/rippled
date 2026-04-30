@@ -208,7 +208,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto clawbackDisabled = [&](Asset const& asset) -> TER {
         return asset.visit(
             [&](MPTIssue const& issue) -> TER {
-                auto const sle = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
+                auto const sle = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
                 if (!sle)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 if (sle->isFlag(lsfMPTCanClawback))

@@ -79,7 +79,7 @@ doVaultInfo(RPC::JsonContext& context)
     auto const sleVault = lpLedger->read(keylet::vault(uNodeIndex));
     auto const sleIssuance = sleVault == nullptr  //
         ? nullptr
-        : lpLedger->read(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+        : lpLedger->read(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
     if (!sleVault || !sleIssuance)
     {
         jvResult[jss::error] = "entryNotFound";

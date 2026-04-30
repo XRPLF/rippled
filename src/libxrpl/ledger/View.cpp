@@ -65,7 +65,7 @@ isVaultPseudoAccountFrozen(
     if (depth >= maxAssetCheckDepth)
         return true;  // LCOV_EXCL_LINE
 
-    auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
+    auto const mptIssuance = view.read(keylet::mptokenIssuance(mptShare.getMptID()));
     if (mptIssuance == nullptr)
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 

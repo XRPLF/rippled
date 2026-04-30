@@ -320,7 +320,7 @@ ValidVault::finalize(
                 return e;
         }
 
-        auto const sleShares = view.read(keylet::mptIssuance(afterVault.shareMPTID));
+        auto const sleShares = view.read(keylet::mptokenIssuance(afterVault.shareMPTID));
 
         return sleShares ? std::optional<Shares>(Shares::make(*sleShares)) : std::nullopt;
     }();
@@ -491,7 +491,7 @@ ValidVault::finalize(
     auto const deltaShares = [&](AccountID const& id) -> std::optional<DeltaInfo> {
         auto const it = [&]() {
             if (id == afterVault.pseudoId)
-                return deltas_.find(keylet::mptIssuance(afterVault.shareMPTID).key);
+                return deltas_.find(keylet::mptokenIssuance(afterVault.shareMPTID).key);
             return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
         }();
 

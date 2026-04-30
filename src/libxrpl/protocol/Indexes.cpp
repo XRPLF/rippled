@@ -519,13 +519,13 @@ oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 }
 
 Keylet
-mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
+mptokenIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
 {
-    return mptIssuance(makeMptID(seq, issuer));
+    return mptokenIssuance(makeMptID(seq, issuer));
 }
 
 Keylet
-mptIssuance(MPTID const& issuanceID) noexcept
+mptokenIssuance(MPTID const& issuanceID) noexcept
 {
     return {ltMPTOKEN_ISSUANCE, indexHash(LedgerNameSpace::MPTOKEN_ISSUANCE, issuanceID)};
 }
@@ -533,7 +533,7 @@ mptIssuance(MPTID const& issuanceID) noexcept
 Keylet
 mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept
 {
-    return mptoken(mptIssuance(issuanceID).key, holder);
+    return mptoken(mptokenIssuance(issuanceID).key, holder);
 }
 
 Keylet

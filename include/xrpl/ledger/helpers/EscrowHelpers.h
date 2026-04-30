@@ -175,7 +175,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     bool const receiverIssuer = issuer == receiver;
 
     auto const mptID = amount.get<MPTIssue>().getMptID();
-    auto const issuanceKey = keylet::mptIssuance(mptID);
+    auto const issuanceKey = keylet::mptokenIssuance(mptID);
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && createAsset && !receiverIssuer)
     {
         if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};

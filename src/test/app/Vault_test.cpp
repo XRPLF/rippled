@@ -108,7 +108,7 @@ class Vault_test : public beast::unit_test::suite
                 {
                     BEAST_EXPECT(vault->at(sfScale) == 0);
                 }
-                auto const shares = env.le(keylet::mptIssuance(vault->at(sfShareMPTID)));
+                auto const shares = env.le(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
                 BEAST_EXPECT(shares != nullptr);
                 if (!asset.integral())
                 {
@@ -1688,7 +1688,7 @@ class Vault_test : public beast::unit_test::suite
             auto v = env.le(keylet);
             BEAST_EXPECT(v);
             MPTID const share = (*v)[sfShareMPTID];
-            auto issuance = env.le(keylet::mptIssuance(share));
+            auto issuance = env.le(keylet::mptokenIssuance(share));
             BEAST_EXPECT(issuance);
             Number const outstandingShares = issuance->at(sfOutstandingAmount);
             BEAST_EXPECT(outstandingShares == 100);
@@ -3288,7 +3288,7 @@ class Vault_test : public beast::unit_test::suite
             return {vault->at(sfAccount), vault->at(sfShareMPTID)};
         }();
         BEAST_EXPECT(env.le(keylet::account(vaultAccount)));
-        BEAST_EXPECT(env.le(keylet::mptIssuance(issuanceId)));
+        BEAST_EXPECT(env.le(keylet::mptokenIssuance(issuanceId)));
         PrettyAsset const shares{issuanceId};
 
         {
@@ -3442,7 +3442,7 @@ class Vault_test : public beast::unit_test::suite
                         auto vault = sb.peek(keylet::vault(keylet.key));
                         if (!BEAST_EXPECT(vault))
                             return false;
-                        auto shares = sb.peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
+                        auto shares = sb.peek(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
                         if (!BEAST_EXPECT(shares))
                             return false;
                         if (fn(*vault, *shares))
@@ -4666,7 +4666,7 @@ class Vault_test : public beast::unit_test::suite
             auto const sleVault = env.le(vaultKeylet);
             BEAST_EXPECT(sleVault != nullptr);
 
-            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
             BEAST_EXPECT(sleIssuance != nullptr);
 
             return sleIssuance->at(sfOutstandingAmount);

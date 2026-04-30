@@ -208,7 +208,7 @@ preclaimHelper<MPTIssue>(
     SLE const& sleIssuer,
     STAmount const& clawAmount)
 {
-    auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(clawAmount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;

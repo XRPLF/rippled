@@ -185,8 +185,8 @@ MPTTester::create(MPTCreate const& arg)
     if (!isTesSuccess(submit(arg, jv)))
     {
         // Verify issuance doesn't exist
-        env_.require(
-            requireAny([&]() -> bool { return env_.le(keylet::mptIssuance(*id_)) == nullptr; }));
+        env_.require(requireAny(
+            [&]() -> bool { return env_.le(keylet::mptokenIssuance(*id_)) == nullptr; }));
 
         id_.reset();
     }
@@ -495,7 +495,7 @@ MPTTester::forObject(
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
-    auto const key = holder_ ? keylet::mptoken(*id_, holder_->id()) : keylet::mptIssuance(*id_);
+    auto const key = holder_ ? keylet::mptoken(*id_, holder_->id()) : keylet::mptokenIssuance(*id_);
     if (auto const sle = env_.le(key))
         return cb(sle);
     return false;
@@ -660,7 +660,7 @@ MPTTester::getBalance(Account const& account) const
         Throw<std::runtime_error>("MPT has not been created");
     if (account == issuer_)
     {
-        if (auto const sle = env_.le(keylet::mptIssuance(*id_)))
+        if (auto const sle = env_.le(keylet::mptokenIssuance(*id_)))
             return sle->getFieldU64(sfOutstandingAmount);
     }
     else

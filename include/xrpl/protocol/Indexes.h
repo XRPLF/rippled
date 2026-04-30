@@ -287,13 +287,13 @@ credential(uint256 const& key) noexcept
 }
 
 Keylet
-mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
+mptokenIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
 
 Keylet
-mptIssuance(MPTID const& issuanceID) noexcept;
+mptokenIssuance(MPTID const& issuanceID) noexcept;
 
 inline Keylet
-mptIssuance(uint256 const& issuanceKey)
+mptokenIssuance(uint256 const& issuanceKey)
 {
     return {ltMPTOKEN_ISSUANCE, issuanceKey};
 }

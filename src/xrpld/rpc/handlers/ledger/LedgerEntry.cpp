@@ -555,7 +555,7 @@ parseMPTokenIssuance(
             "malformedMPTokenIssuance", fieldName, "Hash192");
     }
 
-    return keylet::mptIssuance(*mptIssuanceID).key;
+    return keylet::mptokenIssuance(*mptIssuanceID).key;
 }
 
 static Expected<uint256, Json::Value>

@@ -231,7 +231,7 @@ Env::balance(Account const& account, Asset const& asset) const
             if (account.id() == issuer)
             {
                 // Issuer balance
-                auto const sle = le(keylet::mptIssuance(id));
+                auto const sle = le(keylet::mptokenIssuance(id));
                 if (!sle)
                     return {STAmount(mptIssue, 0), account.name()};
 

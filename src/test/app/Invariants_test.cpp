@@ -960,7 +960,7 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, -1);
                 ac.view().insert(sleNew);
                 return true;
@@ -976,7 +976,7 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfLockedAmount, -1);
                 ac.view().insert(sleNew);
                 return true;
@@ -992,7 +992,7 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 1);
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);
@@ -2438,7 +2438,7 @@ class Invariants_test : public beast::unit_test::suite
                 return false;
 
             auto const mptIssuanceID = (*sleVault)[sfShareMPTID];
-            auto sleShares = ac.peek(keylet::mptIssuance(mptIssuanceID));
+            auto sleShares = ac.peek(keylet::mptokenIssuance(mptIssuanceID));
             if (!sleShares)
                 return false;
 
@@ -2740,7 +2740,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().erase(sleVault);
@@ -2765,7 +2765,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 // Note, such an "orphaned" update of MPT issuance attached to a
@@ -2855,7 +2855,7 @@ class Invariants_test : public beast::unit_test::suite
                 (*sleVault)[sfAssetsMaximum] = 200;
                 ac.view().update(sleVault);
 
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().erase(sleShares);
@@ -3051,7 +3051,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sleVault)
                     return false;
                 ac.view().update(sleVault);
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfOutstandingAmount] = 0;
@@ -3071,7 +3071,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfMaximumAmount] = 10;
@@ -3094,7 +3094,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfOutstandingAmount] = maxMPTokenAmount + 1;
@@ -3196,7 +3196,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().update(sleVault);
@@ -3248,7 +3248,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().update(sleVault);
@@ -3295,7 +3295,7 @@ class Invariants_test : public beast::unit_test::suite
                 ac.view().insert(sleAccount);
 
                 auto const sharesMptId = makeMptID(sequence, pseudoId);
-                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
                 auto sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(pseudoId), sharesKeylet, describeOwnerDir(pseudoId));
@@ -3353,7 +3353,7 @@ class Invariants_test : public beast::unit_test::suite
                 ac.view().insert(sleAccount);
 
                 auto const sharesMptId = makeMptID(sequence, pseudoId);
-                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
                 auto sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(pseudoId), sharesKeylet, describeOwnerDir(pseudoId));
@@ -3395,7 +3395,7 @@ class Invariants_test : public beast::unit_test::suite
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
 
                 auto const sharesMptId = makeMptID(sequence, A2.id());
-                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
                 auto sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(A2.id()), sharesKeylet, describeOwnerDir(A2.id()));
@@ -3978,7 +3978,7 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), A1)};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 110);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
                 ac.view().insert(sleNew);
@@ -3995,7 +3995,7 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), A1)};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 100);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
                 ac.view().insert(sleNew);
@@ -4039,7 +4039,7 @@ class Invariants_test : public beast::unit_test::suite
             });
         testPayment(
             "OutstandingAmount overflow", [&](MPTID const& id, ApplyContext& ac, Account const&) {
-                auto sle = ac.view().peek(keylet::mptIssuance(id));
+                auto sle = ac.view().peek(keylet::mptokenIssuance(id));
                 if (!sle)
                     return false;
                 sle->setFieldU64(sfOutstandingAmount, 101);
@@ -4066,7 +4066,8 @@ class Invariants_test : public beast::unit_test::suite
                     for (int i = 0; i < nTokens; ++i)
                     {
                         MPTIssue const mpt{makeMptID(seq + i, A1)};
-                        auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                        auto sleNew =
+                            std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                         ac.view().insert(sleNew);
 
                         sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), A2));
@@ -4230,7 +4231,7 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 // outstanding exceeds maxMPTokenAmount -> checkAmount sets bad_
                 sleNew->setFieldU64(sfOutstandingAmount, maxMPTokenAmount + 1);
                 // locked is valid and <= outstanding -> must NOT clear bad_

@@ -299,7 +299,7 @@ accountHolds(
     {
         // if the account is the issuer, and the issuance exists, their limit is
         // the issuance limit minus the outstanding value
-        auto const issuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
+        auto const issuance = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
 
         if (!issuance)
         {
@@ -336,7 +336,7 @@ accountHolds(
         }
         else if (zeroIfUnauthorized == AuthHandling::ahZERO_IF_UNAUTHORIZED)
         {
-            auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
+            auto const sleIssuance = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
 
             // if auth is enabled on the issuance and mpt is not authorized,
             // clear amount
@@ -1039,7 +1039,7 @@ directSendNoFeeMPT(
     beast::Journal j)
 {
     // Do not check MPT authorization here - it must have been checked earlier
-    auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
+    auto const mptID = keylet::mptokenIssuance(saAmount.get<MPTIssue>().getMptID());
     auto const& issuer = saAmount.getIssuer();
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
@@ -1124,7 +1124,7 @@ directSendNoLimitMPT(
     // Safe to get MPT since directSendNoLimitMPT is only called by accountSendMPT
     auto const& issuer = saAmount.getIssuer();
 
-    auto const sle = view.read(keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID()));
+    auto const sle = view.read(keylet::mptokenIssuance(saAmount.get<MPTIssue>().getMptID()));
     if (!sle)
         return tecOBJECT_NOT_FOUND;
 
@@ -1181,7 +1181,7 @@ directSendNoLimitMultiMPT(
 {
     auto const& issuer = mptIssue.getIssuer();
 
-    auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID()));
+    auto const sle = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
     if (!sle)
         return tecOBJECT_NOT_FOUND;
 
