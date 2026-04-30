@@ -4339,9 +4339,8 @@ private:
     testAmendment()
     {
         testcase("Amendment");
-        FeatureBitset const noAMM{testable_amendments() - featureAMM};
         using namespace jtx;
-        Env env{*this, noAMM};
+        Env env{*this, testable_amendments() - featureAMM};
         fund(env, gw, {alice}, {USD(1'000)}, Fund::All);
         AMM amm(env, alice, XRP(1'000), USD(1'000), ter(temDISABLED));
 
