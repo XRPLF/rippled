@@ -292,6 +292,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         }
 
         // check new sponsor have sufficient balance
+        // NOLINTNEXTLINE(readability-suspicious-call-argument)
         if (auto const ter = checkInsufficientReserve(
                 ctx.view,
                 ctx.tx,
@@ -343,6 +344,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         // In the case of removing an account sponsor, accSle should have no sfSponsor set
         // (AccountReserve = 0). However, by setting accountCountDelta = 1 here, we are able to
         // calculate the actual required Account Reserve.
+        // NOLINTNEXTLINE(readability-suspicious-call-argument)
         if (auto const ter = checkInsufficientReserve(
                 ctx.view,
                 ctx.tx,
