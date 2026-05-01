@@ -14,7 +14,6 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
-#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Keylet.h>
@@ -31,7 +30,6 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/protocol/digest.h>
 #include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
@@ -43,7 +41,6 @@
 #include <exception>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -493,14 +490,14 @@ void
 Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
     if (!stateMap_.delItem(sle->key()))
-        Throw<std::logic_error>("Ledger::rawErase: key not found");
+        LogicError("Ledger::rawErase: key not found");
 }
 
 void
 Ledger::rawErase(uint256 const& key)
 {
     if (!stateMap_.delItem(key))
-        Throw<std::logic_error>("Ledger::rawErase: key not found");
+        LogicError("Ledger::rawErase: key not found");
 }
 
 void
@@ -510,7 +507,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_.addGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle->key(), ss.slice())))
-        Throw<std::logic_error>("Ledger::rawInsert: key already exists");
+        LogicError("Ledger::rawInsert: key already exists");
 }
 
 void
@@ -520,7 +517,7 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_.updateGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle->key(), ss.slice())))
-        Throw<std::logic_error>("Ledger::rawReplace: key not found");
+        LogicError("Ledger::rawReplace: key not found");
 }
 
 void
@@ -536,27 +533,7 @@ Ledger::rawTxInsert(
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
     if (!txMap_.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(key, s.slice())))
-        Throw<std::logic_error>("duplicate_tx: " + to_string(key));
-}
-
-uint256
-Ledger::rawTxInsertWithHash(
-    uint256 const& key,
-    std::shared_ptr<Serializer const> const& txn,
-    std::shared_ptr<Serializer const> const& metaData)
-{
-    XRPL_ASSERT(metaData, "xrpl::Ledger::rawTxInsertWithHash : non-null metadata input");
-
-    // low-level - just add to table
-    Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
-    s.addVL(txn->peekData());
-    s.addVL(metaData->peekData());
-    auto item = make_shamapitem(key, s.slice());
-    auto hash = sha512Half(HashPrefix::txNode, item->slice(), item->key());
-    if (!txMap_.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, std::move(item)))
-        Throw<std::logic_error>("duplicate_tx: " + to_string(key));
-
-    return hash;
+        LogicError("duplicate_tx: " + to_string(key));
 }
 
 bool
