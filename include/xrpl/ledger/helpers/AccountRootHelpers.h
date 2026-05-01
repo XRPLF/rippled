@@ -122,7 +122,7 @@ adjustOwnerCountObj(
     beast::Journal j)
 {
     SLE::ref accountSle = view.peek(keylet::account(account));
-    return adjustOwnerCountObj(view, accountSle, objectSle, amount, j);
+    adjustOwnerCountObj(view, accountSle, objectSle, amount, j);
 }
 
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
