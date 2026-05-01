@@ -495,7 +495,7 @@ LoanSet::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::rounding_mode::upward);
         if (brokerSle->at(sfCoverAvailable) < tenthBipsOfValue(newDebtTotal, coverRateMinimum))
         {
             JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";

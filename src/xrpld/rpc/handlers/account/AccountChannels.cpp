@@ -95,7 +95,11 @@ doAccountChannels(RPC::JsonContext& context)
 
     std::string strDst;
     if (params.isMember(jss::destination_account))
+    {
+        if (!params[jss::destination_account].isString())
+            return RPC::invalid_field_error(jss::destination_account);
         strDst = params[jss::destination_account].asString();
+    }
 
     auto const raDstAccount = [&]() -> std::optional<AccountID> {
         return strDst.empty() ? std::nullopt : parseBase58<AccountID>(strDst);

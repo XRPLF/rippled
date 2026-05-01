@@ -169,7 +169,7 @@ ValidatorList::load(
         ")?"                 // end optional comment block
     );
 
-    std::lock_guard const lock{mutex_};
+    std::scoped_lock const lock{mutex_};
 
     JLOG(j_.debug()) << "Loading configured trusted validator list publisher keys";
 
@@ -289,7 +289,7 @@ ValidatorList::load(
 }
 
 boost::filesystem::path
-ValidatorList::getCacheFileName(ValidatorList::lock_guard const&, PublicKey const& pubKey) const
+ValidatorList::getCacheFileName(ValidatorList::scoped_lock const&, PublicKey const& pubKey) const
 {
     return dataPath_ / (filePrefix_ + strHex(pubKey));
 }
@@ -366,7 +366,7 @@ ValidatorList::buildFileData(
 }
 
 void
-ValidatorList::cacheValidatorFile(ValidatorList::lock_guard const& lock, PublicKey const& pubKey)
+ValidatorList::cacheValidatorFile(ValidatorList::scoped_lock const& lock, PublicKey const& pubKey)
     const
 {
     if (dataPath_.empty())
@@ -982,7 +982,7 @@ ValidatorList::applyLists(
         1)
         return PublisherListStats{ListDisposition::unsupported_version};
 
-    std::lock_guard const lock{mutex_};
+    std::scoped_lock const lock{mutex_};
 
     PublisherListStats result;
     for (auto const& blobInfo : blobs)
@@ -1052,7 +1052,7 @@ ValidatorList::updatePublisherList(
     PublicKey const& pubKey,
     PublisherList const& current,
     std::vector<PublicKey> const& oldList,
-    ValidatorList::lock_guard const&)
+    ValidatorList::scoped_lock const&)
 {
     // Update keyListings_ for added and removed keys
     std::vector<PublicKey> const& publisherList = current.list;
@@ -1121,7 +1121,7 @@ ValidatorList::applyList(
     std::uint32_t version,
     std::string siteUri,
     std::optional<uint256> const& hash,
-    ValidatorList::lock_guard const& lock)
+    ValidatorList::scoped_lock const& lock)
 {
     using namespace std::string_literals;
 
@@ -1286,7 +1286,7 @@ ValidatorList::loadLists()
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 
-    std::lock_guard const lock{mutex_};
+    std::scoped_lock const lock{mutex_};
 
     std::vector<std::string> sites;
     sites.reserve(publisherLists_.size());
@@ -1336,7 +1336,7 @@ ValidatorList::loadLists()
 // contain the default-constructed public keys
 std::pair<ListDisposition, std::optional<PublicKey>>
 ValidatorList::verify(
-    ValidatorList::lock_guard const& lock,
+    ValidatorList::scoped_lock const& lock,
     Json::Value& list,
     Manifest manifest,
     std::string const& blob,
@@ -1494,7 +1494,7 @@ ValidatorList::localPublicKey() const
 
 bool
 ValidatorList::removePublisherList(
-    ValidatorList::lock_guard const&,
+    ValidatorList::scoped_lock const&,
     PublicKey const& publisherKey,
     PublisherStatus reason)
 {
@@ -1901,7 +1901,7 @@ ValidatorList::updateTrusted(
     if (timeKeeper_.now() > closeTime + 30s)
         closeTime = timeKeeper_.now();
 
-    std::lock_guard const lock{mutex_};
+    std::scoped_lock const lock{mutex_};
 
     // Rotate pending and remove expired published lists
     bool good = true;
@@ -2095,7 +2095,7 @@ ValidatorList::getNegativeUNL() const
 void
 ValidatorList::setNegativeUNL(hash_set<PublicKey> const& negUnl)
 {
-    std::lock_guard const lock{mutex_};
+    std::scoped_lock const lock{mutex_};
     negativeUNL_ = negUnl;
 }
 

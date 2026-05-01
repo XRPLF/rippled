@@ -73,7 +73,7 @@ namespace xrpl::test {
 struct AMM_test : public jtx::AMMTest
 {
     // Use small Number mantissas for the life of this test.
-    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::small};
+    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::mantissa_scale::small};
 
 private:
     static FeatureBitset
@@ -101,7 +101,7 @@ private:
             {},
             0,
             {},
-            {testable_amendments() | featureSingleAssetVault});
+            {testable_amendments()});
 #endif
 
         // XRP to IOU, without featureSingleAssetVault
@@ -5790,7 +5790,7 @@ private:
         Env const env(*this, features, std::make_unique<CaptureLogs>(&logs));
         auto rules = env.current()->rules();
         CurrentTransactionRulesGuard const rg(rules);
-        NumberMantissaScaleGuard const sg(MantissaRange::small);
+        NumberMantissaScaleGuard const sg(MantissaRange::mantissa_scale::small);
 
         for (auto const& t : tests)
         {
@@ -6721,7 +6721,7 @@ private:
         };
 
         testCase("tecDUPLICATE", testable_amendments() - featureSingleAssetVault);
-        testCase("terADDRESS_COLLISION", testable_amendments() | featureSingleAssetVault);
+        testCase("terADDRESS_COLLISION", testable_amendments());
     }
 
     void
@@ -6780,8 +6780,9 @@ private:
     {
         auto const [amount, amount2, lptBalance] = amm.balances(GBP, EUR);
 
-        NumberMantissaScaleGuard const sg(MantissaRange::small);
-        NumberRoundModeGuard const g(env.enabled(fixAMMv1_3) ? Number::upward : Number::getround());
+        NumberMantissaScaleGuard const sg(MantissaRange::mantissa_scale::small);
+        NumberRoundModeGuard const g(
+            env.enabled(fixAMMv1_3) ? Number::rounding_mode::upward : Number::getround());
         auto const res = root2(amount * amount2);
 
         if (shouldFail)

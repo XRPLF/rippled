@@ -81,7 +81,8 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         // Delete. This check is purely defensive.
         auto const scale = getAssetsTotalScale(vault);
 
-        auto const rounded = roundToAsset(asset, debtTotal, scale, Number::towards_zero);
+        auto const rounded =
+            roundToAsset(asset, debtTotal, scale, Number::rounding_mode::towards_zero);
 
         if (rounded != beast::zero)
         {

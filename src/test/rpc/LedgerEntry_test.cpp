@@ -1199,7 +1199,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
-                "Invalid field 'authorized_credentials', not array.");
+                "Invalid field 'authorized_credentials', not array of objects.");
         }
 
         {
@@ -1217,7 +1217,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
-                "Invalid field 'authorized_credentials', not array.");
+                "Invalid field 'authorized_credentials', not array of objects.");
         }
 
         {

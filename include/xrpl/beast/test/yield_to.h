@@ -115,7 +115,7 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
         boost::context::fixedsize_stack(2 * 1024 * 1024),
         [&](yield_context yield) {
             f(yield);
-            std::lock_guard const lock{m_};
+            std::scoped_lock const lock{m_};
             if (--running_ == 0)
                 cv_.notify_all();
         },
