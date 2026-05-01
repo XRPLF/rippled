@@ -403,7 +403,7 @@ Door<Handler>::queryFdStats() const
         return std::nullopt;
     s.limit = static_cast<std::uint64_t>(rl.rlim_cur);
 #if BOOST_OS_LINUX
-    constexpr char const* kFdDir = "/proc/self/fd";
+    constexpr char const* kFD_DIR = "/proc/self/fd";
 #else
     constexpr char const* kFD_DIR = "/dev/fd";
 #endif
