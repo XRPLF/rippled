@@ -58,10 +58,9 @@ injectSLE(Json::Value& jv, SLE const& sle)
             Blob const b(hash.begin(), hash.end());
             std::string md5 = strHex(makeSlice(b));
             boost::to_lower(md5);
-            // VFALCO TODO Give a name and move this constant
-            //             to a more visible location. Also
-            //             shouldn't this be https?
-            jv[jss::urlgravatar] = str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
+            // VFALCO TODO Give a name to this constant and move it
+            //             to a more visible location.
+            jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
         }
     }
     else

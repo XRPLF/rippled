@@ -95,7 +95,7 @@ isPowerOfTen(T value)
 struct MantissaRange
 {
     using rep = std::uint64_t;
-    enum mantissa_scale { small, large };
+    enum class mantissa_scale { small, large };
 
     explicit constexpr MantissaRange(mantissa_scale scale_)
         : max(getMax(scale_)), internalMin(getInternalMin(scale_, min)), scale(scale_)
@@ -140,9 +140,9 @@ private:
     {
         switch (scale)
         {
-            case small:
+            case mantissa_scale::small:
                 return 9'999'999'999'999'999ULL;
-            case large:
+            case mantissa_scale::large:
                 return std::numeric_limits<std::int64_t>::max();
             default:
                 // Since this can never be called outside a non-constexpr
@@ -163,7 +163,7 @@ private:
     {
         switch (scale)
         {
-            case large:
+            case mantissa_scale::large:
                 return 1'000'000'000'000'000'000ULL;
             default:
                 if (isPowerOfTen(min))
@@ -480,7 +480,7 @@ public:
     power(Number const& f, unsigned n, unsigned d);
 
     // Thread local rounding control.  Default is to_nearest
-    enum rounding_mode { to_nearest, towards_zero, downward, upward };
+    enum class rounding_mode { to_nearest, towards_zero, downward, upward };
     static rounding_mode
     getround();
     // Returns previously set mode
@@ -539,13 +539,13 @@ private:
     static thread_local rounding_mode mode_;
     // The available ranges for mantissa
 
-    constexpr static MantissaRange smallRange{MantissaRange::small};
+    constexpr static MantissaRange smallRange{MantissaRange::mantissa_scale::small};
     static_assert(isPowerOfTen(smallRange.min));
     static_assert(smallRange.min == 1'000'000'000'000'000LL);
     static_assert(smallRange.max == 9'999'999'999'999'999LL);
     static_assert(smallRange.internalMin == smallRange.min);
     static_assert(smallRange.log == 15);
-    constexpr static MantissaRange largeRange{MantissaRange::large};
+    constexpr static MantissaRange largeRange{MantissaRange::mantissa_scale::large};
     static_assert(!isPowerOfTen(largeRange.min));
     static_assert(largeRange.min == 922'337'203'685'477'581ULL);
     static_assert(largeRange.max == internalrep(9'223'372'036'854'775'807ULL));
@@ -916,9 +916,9 @@ to_string(MantissaRange::mantissa_scale const& scale)
 {
     switch (scale)
     {
-        case MantissaRange::small:
+        case MantissaRange::mantissa_scale::small:
             return "small";
-        case MantissaRange::large:
+        case MantissaRange::mantissa_scale::large:
             return "large";
         default:
             throw std::runtime_error("Bad scale");
