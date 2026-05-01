@@ -143,7 +143,7 @@ void
 Database::stop()
 {
     {
-        std::lock_guard const lock(readLock_);
+        std::scoped_lock const lock(readLock_);
 
         if (!readStopping_.exchange(true, std::memory_order_relaxed))
         {
@@ -179,7 +179,7 @@ Database::asyncFetch(
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
-    std::lock_guard const lock(readLock_);
+    std::scoped_lock const lock(readLock_);
 
     if (!isStopping())
     {
