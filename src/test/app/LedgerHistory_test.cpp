@@ -90,7 +90,7 @@ public:
         {
             bool found = false;
             Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>("MISMATCH ", &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             uint256 const dummyTxHash{1};
             lh.builtLedger(genesis, dummyTxHash, {});
@@ -106,7 +106,7 @@ public:
                 *this,
                 envconfig(),
                 std::make_unique<CheckMessageLogs>("MISMATCH on close time", &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
             auto const ledgerB = makeLedger(genesis, env, lh, 40s);
@@ -125,7 +125,7 @@ public:
                 *this,
                 envconfig(),
                 std::make_unique<CheckMessageLogs>("MISMATCH on prior ledger", &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
             auto const ledgerB = makeLedger(genesis, env, lh, 40s);
@@ -147,7 +147,7 @@ public:
                                           : "MISMATCH on consensus transaction set";
             bool found = false;
             Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>(msg, &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
 
             Account const alice{"A1"};
             Account const bob{"A2"};

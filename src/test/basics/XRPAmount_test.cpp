@@ -234,7 +234,7 @@ public:
 
         {
             // Similar test as above, but for negative values
-            XRPAmount const big(kMIN_XRP);
+            XRPAmount big(kMIN_XRP);  // NOLINT TODO
             BEAST_EXPECT(big == mulRatio(big, kMAX_U_INT32, kMAX_U_INT32, true));
             // rounding mode shouldn't matter as the result is exact
             BEAST_EXPECT(big == mulRatio(big, kMAX_U_INT32, kMAX_U_INT32, false));

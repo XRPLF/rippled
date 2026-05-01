@@ -43,14 +43,16 @@ SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT> const& rhs)
 }
 
 template <class T>
-SharedIntrusive<T>::SharedIntrusive(SharedIntrusive&& rhs) : ptr_{rhs.unsafeExchange(nullptr)}
+SharedIntrusive<T>::SharedIntrusive(SharedIntrusive&& rhs)
+    : ptr_{std::move(rhs).unsafeExchange(nullptr)}
 {
 }
 
 template <class T>
 template <class TT>
     requires std::convertible_to<TT*, T*>
-SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT>&& rhs) : ptr_{rhs.unsafeExchange(nullptr)}
+SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT>&& rhs)
+    : ptr_{std::move(rhs).unsafeExchange(nullptr)}
 {
 }
 template <class T>
@@ -93,7 +95,7 @@ SharedIntrusive<T>::operator=(SharedIntrusive&& rhs)
     if (this == &rhs)
         return *this;
 
-    unsafeReleaseAndStore(rhs.unsafeExchange(nullptr));
+    unsafeReleaseAndStore(std::move(rhs).unsafeExchange(nullptr));
     return *this;
 }
 
@@ -105,7 +107,7 @@ SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)
 {
     static_assert(!std::is_same_v<T, TT>, "This overload should not be instantiated for T == TT");
 
-    unsafeReleaseAndStore(rhs.unsafeExchange(nullptr));
+    unsafeReleaseAndStore(std::move(rhs).unsafeExchange(nullptr));
     return *this;
 }
 
@@ -157,7 +159,7 @@ SharedIntrusive<T>::SharedIntrusive(StaticCastTagSharedIntrusive, SharedIntrusiv
 template <class T>
 template <class TT>
 SharedIntrusive<T>::SharedIntrusive(StaticCastTagSharedIntrusive, SharedIntrusive<TT>&& rhs)
-    : ptr_{static_cast<T*>(rhs.unsafeExchange(nullptr))}
+    : ptr_{static_cast<T*>(std::move(rhs).unsafeExchange(nullptr))}
 {
 }
 
@@ -186,7 +188,7 @@ SharedIntrusive<T>::SharedIntrusive(DynamicCastTagSharedIntrusive, SharedIntrusi
         if (!ptr_)
         {
             // need to set the pointer back or will leak
-            rhs.unsafeExchange(toSet);
+            std::move(rhs).unsafeExchange(toSet);
         }
     }
 }
@@ -421,7 +423,7 @@ SharedWeakUnion<T>::SharedWeakUnion(SharedIntrusive<TT>&& rhs)
     auto p = rhs.unsafeGetRawPtr();
     if (p)
         unsafeSetRawPtr(p, RefStrength::Strong);
-    rhs.unsafeSetRawPtr(nullptr);
+    std::move(rhs).unsafeSetRawPtr(nullptr);
 }
 
 template <class T>
@@ -474,7 +476,7 @@ SharedWeakUnion<T>::operator=(SharedIntrusive<TT>&& rhs)
 {
     unsafeReleaseNoStore();
     unsafeSetRawPtr(rhs.unsafeGetRawPtr(), RefStrength::Strong);
-    rhs.unsafeSetRawPtr(nullptr);
+    std::move(rhs).unsafeSetRawPtr(nullptr);
     return *this;
 }
 

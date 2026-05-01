@@ -40,7 +40,7 @@ public:
         std::string const& name,
         clock_type& clock,
         beast::Journal j,
-        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New(),
+        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
         std::size_t targetSize = DefaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
         : cache_(name, targetSize, expiration, clock, j, collector), gen_(1)

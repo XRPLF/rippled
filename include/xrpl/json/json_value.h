@@ -418,12 +418,12 @@ private:
 private:
     union ValueHolder
     {
-        Int int_;
-        UInt uint;
-        double real;
-        bool bool_;
-        char* string;
-        ObjectValues* map{nullptr};
+        Int intVal;
+        UInt uintVal;
+        double realVal;
+        bool boolVal;
+        char* stringVal;
+        ObjectValues* mapVal{nullptr};
     } value_;
     ValueType type_ : 8;
     int allocated_ : 1 {};  // Notes: if declared as bool, bitfield is useless.

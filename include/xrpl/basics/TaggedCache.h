@@ -55,7 +55,7 @@ public:
         clock_type::duration expiration,
         clock_type& clock,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New());
+        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make());
 
 public:
     /** Return the clock associated with the cache. */

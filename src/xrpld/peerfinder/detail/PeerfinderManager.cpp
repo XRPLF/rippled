@@ -108,7 +108,7 @@ public:
     void
     addFallbackStrings(std::string const& name, std::vector<std::string> const& strings) override
     {
-        logic_.addStaticSource(SourceStrings::New(name, strings));
+        logic_.addStaticSource(SourceStrings::make(name, strings));
     }
 
     void

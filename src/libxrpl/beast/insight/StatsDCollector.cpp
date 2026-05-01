@@ -723,7 +723,7 @@ StatsDMeterImpl::doProcess()
 //------------------------------------------------------------------------------
 
 std::shared_ptr<StatsDCollector>
-StatsDCollector::New(IP::Endpoint const& address, std::string const& prefix, Journal journal)
+StatsDCollector::make(IP::Endpoint const& address, std::string const& prefix, Journal journal)
 {
     return std::make_shared<detail::StatsDCollectorImp>(address, prefix, journal);
 }

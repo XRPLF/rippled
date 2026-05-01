@@ -50,7 +50,7 @@ private:
 //------------------------------------------------------------------------------
 
 std::shared_ptr<Source>
-SourceStrings::New(std::string const& name, Strings const& strings)
+SourceStrings::make(std::string const& name, Strings const& strings)
 {
     return std::make_shared<SourceStringsImp>(name, strings);
 }

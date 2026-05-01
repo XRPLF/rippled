@@ -393,7 +393,7 @@ public:
 //-----------------------------------------------------------------------------
 
 std::unique_ptr<ResolverAsio>
-ResolverAsio::New(boost::asio::io_context& ioContext, beast::Journal journal)
+ResolverAsio::make(boost::asio::io_context& ioContext, beast::Journal journal)
 {
     return std::make_unique<ResolverAsioImpl>(ioContext, journal);
 }

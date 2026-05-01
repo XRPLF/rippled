@@ -313,7 +313,6 @@ public:
         , timeKeeper_(std::move(timeKeeper))
         , instanceCookie_(1 + randInt(cryptoPrng(), std::numeric_limits<std::uint64_t>::max() - 1))
         , journal_(logs_->journal("Application"))
-
         // PerfLog must be started before any other threads are launched.
         , perfLog_(
               perf::makePerfLog(
@@ -321,12 +320,9 @@ public:
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
-
         , txMaster_(*this)
-
         , collectorManager_(
               makeCollectorManager(config_->section(SECTION_INSIGHT), logs_->journal("Collector")))
-
         , jobQueue_(
               std::make_unique<JobQueue>(
                   [](std::unique_ptr<Config> const& config) {
@@ -360,78 +356,61 @@ public:
                   logs_->journal("JobQueue"),
                   *logs_,
                   *perfLog_))
-
         , nodeStoreScheduler_(*jobQueue_)
-
         , shaMapStore_(makeSHAMapStore(*this, nodeStoreScheduler_, logs_->journal("SHAMapStore")))
-
         , tempNodeCache_(
               "NodeCache",
               16384,
               std::chrono::seconds{90},
               stopwatch(),
               logs_->journal("TaggedCache"))
-
         , cachedSLEs_(
               "Cached SLEs",
               0,
               std::chrono::minutes(1),
               stopwatch(),
               logs_->journal("CachedSLEs"))
-
         , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->NETWORK_ID))
-
         , validatorKeys_(*config_, journal_)
-
         , resourceManager_(
               Resource::makeManager(collectorManager_->collector(), logs_->journal("Resource")))
-
         , nodeStore_(shaMapStore_->makeNodeStore(
               config_->PREFETCH_WORKERS > 0 ? config_->PREFETCH_WORKERS : 4))
-
         , nodeFamily_(*this, *collectorManager_)
-
         , orderBookDB_(makeOrderBookDb(
               *this,
               {.pathSearchMax = config_->PATH_SEARCH_MAX, .standalone = config_->standalone()}))
-
         , pathRequestManager_(
               std::make_unique<PathRequestManager>(
                   *this,
                   logs_->journal("PathRequest"),
                   collectorManager_->collector()))
-
         , ledgerMaster_(
               std::make_unique<LedgerMaster>(
                   *this,
                   stopwatch(),
                   collectorManager_->collector(),
                   logs_->journal("LedgerMaster")))
-
         , ledgerCleaner_(makeLedgerCleaner(*this, logs_->journal("LedgerCleaner")))
 
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
         //
         , inboundLedgers_(makeInboundLedgers(*this, stopwatch(), collectorManager_->collector()))
-
         , inboundTransactions_(makeInboundTransactions(
               *this,
               collectorManager_->collector(),
               [this](std::shared_ptr<SHAMap> const& set, bool fromAcquire) {
                   gotTXSet(set, fromAcquire);
               }))
-
         , ledgerReplayer_(
               std::make_unique<LedgerReplayer>(*this, *inboundLedgers_, makePeerSetBuilder(*this)))
-
         , acceptedLedgerCache_(
               "AcceptedLedger",
               4,
               std::chrono::minutes{1},
               stopwatch(),
               logs_->journal("TaggedCache"))
-
         , networkOPs_(makeNetworkOPs(
               *this,
               stopwatch(),
@@ -444,16 +423,11 @@ public:
               getIoContext(),
               logs_->journal("NetworkOPs"),
               collectorManager_->collector()))
-
         , cluster_(std::make_unique<Cluster>(logs_->journal("Overlay")))
-
         , peerReservations_(
               std::make_unique<PeerReservationTable>(logs_->journal("PeerReservationTable")))
-
         , validatorManifests_(std::make_unique<ManifestCache>(logs_->journal("ManifestCache")))
-
         , publisherManifests_(std::make_unique<ManifestCache>(logs_->journal("ManifestCache")))
-
         , validators_(
               std::make_unique<ValidatorList>(
                   *validatorManifests_,
@@ -462,9 +436,7 @@ public:
                   config_->legacy("database_path"),
                   logs_->journal("ValidatorList"),
                   config_->VALIDATION_QUORUM))
-
         , validatorSites_(std::make_unique<ValidatorSite>(*this))
-
         , serverHandler_(makeServerHandler(
               *this,
               getIoContext(),
@@ -472,27 +444,16 @@ public:
               *networkOPs_,
               *resourceManager_,
               *collectorManager_))
-
         , feeTrack_(std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
-
         , hashRouter_(std::make_unique<HashRouter>(setupHashRouter(*config_), stopwatch()))
-
         , validations_(ValidationParms(), stopwatch(), *this, logs_->journal("Validations"))
-
         , loadManager_(makeLoadManager(*this, logs_->journal("LoadManager")))
-
         , txQ_(std::make_unique<TxQ>(setupTxQ(*config_), logs_->journal("TxQ")))
-
         , sweepTimer_(getIoContext())
-
         , entropyTimer_(getIoContext())
-
         , signals_(getIoContext())
-
         , checkSigs_(true)
-
-        , resolver_(ResolverAsio::New(getIoContext(), logs_->journal("Resolver")))
-
+        , resolver_(ResolverAsio::make(getIoContext(), logs_->journal("Resolver")))
         , io_latency_sampler_(
               collectorManager_->collector()->makeEvent("ios_latency"),
               logs_->journal("Application"),

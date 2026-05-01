@@ -143,7 +143,7 @@ public:
 //------------------------------------------------------------------------------
 
 std::shared_ptr<Collector>
-NullCollector::New()
+NullCollector::make()
 {
     return std::make_shared<detail::NullCollectorImp>();
 }

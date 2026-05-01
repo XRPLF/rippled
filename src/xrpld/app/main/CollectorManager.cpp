@@ -33,11 +33,11 @@ public:
                 beast::IP::Endpoint::fromString(get(params, "address")));
             std::string const& prefix(get(params, "prefix"));
 
-            collector_ = beast::insight::StatsDCollector::New(address, prefix, journal);
+            collector_ = beast::insight::StatsDCollector::make(address, prefix, journal);
         }
         else
         {
-            collector_ = beast::insight::NullCollector::New();
+            collector_ = beast::insight::NullCollector::make();
         }
 
         groups_ = beast::insight::makeGroups(collector_);

@@ -34,7 +34,7 @@ public:
 
     public:
         explicit TestLogic(beast::Journal journal)
-            : Logic(beast::insight::NullCollector::New(), member, journal)
+            : Logic(beast::insight::NullCollector::make(), member, journal)
         {
         }
 
