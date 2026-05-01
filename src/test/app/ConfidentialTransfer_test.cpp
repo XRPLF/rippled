@@ -282,8 +282,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
     // Helper that wraps the boilerplate setup: Env + MPT creation, funding, key
     // generation, and seeding each holder with a confidential balance.
-    // The caller supplies the issuer and any number of HolderInits — no
-    // account name or amount is hardcoded inside the helper.
+    // The caller supplies the issuer and any number of holders.
     struct ConfidentialEnv
     {
         // Per-holder configuration: the account, how much MPT to fund it
@@ -301,22 +300,30 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             test::jtx::Env& env,
             test::jtx::Account const& issuer,
             std::vector<HolderInit> const& holders,
-            std::uint32_t flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer)
-            : mpt{env, issuer, {.holders = extractAccounts(holders)}}
+            std::uint32_t flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer,
+            std::optional<test::jtx::Account> auditor = std::nullopt)
+            : mpt{env, issuer, {.holders = extractAccounts(holders), .auditor = auditor}}
         {
             mpt.create({.ownerCount = 1, .flags = flags});
 
             for (auto const& h : holders)
             {
                 mpt.authorize({.account = h.account});
+                if ((flags & tfMPTRequireAuth) != 0)
+                    mpt.authorize({.account = issuer, .holder = h.account});
                 mpt.pay(issuer, h.account, h.payAmount);
             }
 
             mpt.generateKeyPair(issuer);
             for (auto const& h : holders)
                 mpt.generateKeyPair(h.account);
+            if (auditor)
+                mpt.generateKeyPair(*auditor);
 
-            mpt.set({.account = issuer, .issuerPubKey = mpt.getPubKey(issuer)});
+            mpt.set(
+                {.account = issuer,
+                 .issuerPubKey = mpt.getPubKey(issuer),
+                 .auditorPubKey = auditor ? mpt.getPubKey(*auditor) : std::optional<Buffer>{}});
 
             for (auto const& h : holders)
             {
@@ -1789,33 +1796,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-        mptAlice.create({
-            .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-        });
-
-        mptAlice.authorize({
-            .account = bob,
-        });
-        mptAlice.pay(alice, bob, 100);
-
-        mptAlice.generateKeyPair(alice);
-
-        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-        mptAlice.generateKeyPair(bob);
-
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-            .holderPubKey = mptAlice.getPubKey(bob),
-        });
-
-        mptAlice.mergeInbox({
-            .account = bob,
-        });
+        ConfidentialEnv const confEnv{env, alice, {{bob, 100, 40}}};
     }
 
     void
@@ -2136,53 +2117,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const bob("bob");
         Account const carol("carol");
         Account const auditor("auditor");
-        MPTTester mptAlice(
+        ConfidentialEnv confEnv{
             env,
             alice,
-            {
-                .holders = {bob, carol},
-                .auditor = auditor,
-            });
-
-        mptAlice.create({
-            .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-        });
-
-        mptAlice.authorize({
-            .account = bob,
-        });
-        mptAlice.authorize({
-            .account = carol,
-        });
-
-        mptAlice.pay(alice, bob, 100);
-        mptAlice.pay(alice, carol, 50);
-
-        mptAlice.generateKeyPair(alice);
-        mptAlice.generateKeyPair(bob);
-        mptAlice.generateKeyPair(carol);
-        mptAlice.generateKeyPair(auditor);
-
-        mptAlice.set(
-            {.account = alice,
-             .issuerPubKey = mptAlice.getPubKey(alice),
-             .auditorPubKey = mptAlice.getPubKey(auditor)});
-
-        // Convert 60 out of 100
-        mptAlice.convert({.account = bob, .amt = 60, .holderPubKey = mptAlice.getPubKey(bob)});
-
-        // bob merge inbox
-        mptAlice.mergeInbox({
-            .account = bob,
-        });
-
-        mptAlice.convert({.account = carol, .amt = 20, .holderPubKey = mptAlice.getPubKey(carol)});
-
-        // carol merge inbox
-        mptAlice.mergeInbox({
-            .account = carol,
-        });
+            {{bob, 100, 60}, {carol, 50, 20}},
+            tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            auditor};
+        auto& mptAlice = confEnv.mpt;
 
         // bob sends 10 to carol
         mptAlice.send({
@@ -2836,53 +2777,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Account const alice("alice");
             Account const bob("bob");
             Account const carol("carol");
-            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
-
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.authorize({
-                .account = carol,
-            });
-
-            mptAlice.pay(alice, bob, 100);
-            mptAlice.pay(alice, carol, 50);
-
-            mptAlice.generateKeyPair(alice);
-            mptAlice.generateKeyPair(bob);
-            mptAlice.generateKeyPair(carol);
-
-            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-            // Convert 60 out of 100
-            mptAlice.convert({
-                .account = bob,
-                .amt = 60,
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .err = tesSUCCESS,
-            });
-
-            // bob merge inbox
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
-
-            mptAlice.convert({
-                .account = carol,
-                .amt = 20,
-                .holderPubKey = mptAlice.getPubKey(carol),
-                .err = tesSUCCESS,
-            });
-
-            // carol merge inbox
-            mptAlice.mergeInbox({
-                .account = carol,
-            });
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{bob, 100, 60}, {carol, 50, 20}},
+                tfMPTCanLock | tfMPTCanConfidentialAmount};
+            auto& mptAlice = confEnv.mpt;
 
             // bob sends 10 to carol
             mptAlice.send({
@@ -2899,50 +2799,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Account const alice("alice");
             Account const bob("bob");
             Account const carol("carol");
-            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
-
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer,
-            });
-
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.authorize({
-                .account = carol,
-            });
-
-            mptAlice.pay(alice, bob, 100);
-            mptAlice.pay(alice, carol, 50);
-
-            mptAlice.generateKeyPair(alice);
-            mptAlice.generateKeyPair(bob);
-            mptAlice.generateKeyPair(carol);
-
-            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-            mptAlice.convert({
-                .account = bob,
-                .amt = 60,
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .err = tesSUCCESS,
-            });
-
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
-
-            mptAlice.convert({
-                .account = carol,
-                .amt = 20,
-                .holderPubKey = mptAlice.getPubKey(carol),
-                .err = tesSUCCESS,
-            });
-
-            mptAlice.mergeInbox({
-                .account = carol,
-            });
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}, {carol, 50, 20}}};
+            auto& mptAlice = confEnv.mpt;
 
             mptAlice.send({
                 .account = bob,
@@ -3383,31 +3241,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.pay(alice, bob, 100);
-
-            mptAlice.generateKeyPair(alice);
-            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-            mptAlice.generateKeyPair(bob);
-
-            mptAlice.convert({
-                .account = bob,
-                .amt = 100,
-                .holderPubKey = mptAlice.getPubKey(bob),
-            });
-
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 100}}};
+            auto& mptAlice = confEnv.mpt;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -3514,33 +3349,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.pay(alice, bob, 100);
-
-            mptAlice.generateKeyPair(alice);
-
-            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-            mptAlice.generateKeyPair(bob);
-
-            mptAlice.convert({
-                .account = bob,
-                .amt = 40,
-                .holderPubKey = mptAlice.getPubKey(bob),
-            });
-
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
+            auto& mptAlice = confEnv.mpt;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -3558,32 +3368,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.pay(alice, bob, 2);
-
-            mptAlice.generateKeyPair(alice);
-            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-            mptAlice.generateKeyPair(bob);
-
-            mptAlice.convert({
-                .account = bob,
-                .amt = 2,
-                .holderPubKey = mptAlice.getPubKey(bob),
-            });
-
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
+            ConfidentialEnv confEnv{env, alice, {{bob, 2, 2}}};
+            auto& mptAlice = confEnv.mpt;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -3720,43 +3506,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const alice("alice");
         Account const bob("bob");
         Account const auditor("auditor");
-        MPTTester mptAlice(
+        ConfidentialEnv confEnv{
             env,
             alice,
-            {
-                .holders = {bob},
-                .auditor = auditor,
-            });
-
-        mptAlice.create({
-            .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-        });
-
-        mptAlice.authorize({
-            .account = bob,
-        });
-        mptAlice.pay(alice, bob, 100);
-
-        mptAlice.generateKeyPair(alice);
-        mptAlice.generateKeyPair(auditor);
-
-        mptAlice.set(
-            {.account = alice,
-             .issuerPubKey = mptAlice.getPubKey(alice),
-             .auditorPubKey = mptAlice.getPubKey(auditor)});
-
-        mptAlice.generateKeyPair(bob);
-
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-            .holderPubKey = mptAlice.getPubKey(bob),
-        });
-
-        mptAlice.mergeInbox({
-            .account = bob,
-        });
+            {{bob, 100, 40}},
+            tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            auditor};
+        auto& mptAlice = confEnv.mpt;
 
         mptAlice.convertBack({
             .account = bob,
@@ -3800,33 +3556,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.pay(alice, bob, 100);
-
-            mptAlice.generateKeyPair(alice);
-
-            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-            mptAlice.generateKeyPair(bob);
-
-            mptAlice.convert({
-                .account = bob,
-                .amt = 40,
-                .holderPubKey = mptAlice.getPubKey(bob),
-            });
-
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
+            auto& mptAlice = confEnv.mpt;
 
             mptAlice.convertBack({
                 .account = alice,
@@ -4175,26 +3906,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.pay(alice, bob, 100);
-
-            mptAlice.generateKeyPair(alice);
-            mptAlice.generateKeyPair(bob);
-
-            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-            mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}}};
+            auto& mptAlice = confEnv.mpt;
 
             // Holder encrypted amount is valid format but mathematically incorrect for this
             // convertBack
@@ -4221,27 +3934,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.pay(alice, bob, 100);
-
-            mptAlice.generateKeyPair(alice);
-            mptAlice.generateKeyPair(bob);
-            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-            // Bob converts funds to confidential so he has something to convert
-            // back
-            mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}}};
+            auto& mptAlice = confEnv.mpt;
 
             mptAlice.convertBack({
                 .account = bob,
@@ -4258,39 +3952,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Account const alice("alice");
             Account const bob("bob");
             Account const auditor("auditor");
-            MPTTester mptAlice(
+            ConfidentialEnv confEnv{
                 env,
                 alice,
-                {
-                    .holders = {bob},
-                    .auditor = auditor,
-                });
-
-            mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.pay(alice, bob, 100);
-
-            mptAlice.generateKeyPair(alice);
-            mptAlice.generateKeyPair(bob);
-            mptAlice.generateKeyPair(auditor);
-            mptAlice.set(
-                {.account = alice,
-                 .issuerPubKey = mptAlice.getPubKey(alice),
-                 .auditorPubKey = mptAlice.getPubKey(auditor)});
-
-            // Convert funds so Bob has a balance
-            mptAlice.convert({
-                .account = bob,
-                .amt = 50,
-                .holderPubKey = mptAlice.getPubKey(bob),
-            });
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
+                {{bob, 100, 50}},
+                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                auditor};
+            auto& mptAlice = confEnv.mpt;
 
             // ConvertBack WITHOUT auditorEncryptedAmt
             mptAlice.convertBack({
@@ -4339,39 +4007,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const dpIssuer("dpIssuer");
         char const credType[] = "KYC_VERIFIED";
 
-        // Common setup: create MPT with privacy, convert both carol and bob
-        auto setupMPT = [&](Env& env, MPTTester& mpt) {
-            mpt.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-            mpt.authorize({
-                .account = bob,
-            });
-            mpt.authorize({
-                .account = carol,
-            });
-            mpt.pay(alice, bob, 100);
-            mpt.pay(alice, carol, 100);
-
-            mpt.generateKeyPair(alice);
-            mpt.generateKeyPair(bob);
-            mpt.generateKeyPair(carol);
-            mpt.set({.account = alice, .issuerPubKey = mpt.getPubKey(alice)});
-
-            mpt.convert({.account = carol, .amt = 50, .holderPubKey = mpt.getPubKey(carol)});
-            mpt.convert({.account = bob, .amt = 50, .holderPubKey = mpt.getPubKey(bob)});
-            mpt.mergeInbox({
-                .account = carol,
-            });
-            mpt.mergeInbox({
-                .account = bob,
-            });
-
-            env(fset(bob, asfDepositAuth));
-            env.close();
-        };
-
         // Create and accept credential for an account
         auto createCredential = [&](Env& env, Account const& subject) -> std::string {
             env(credentials::create(subject, dpIssuer, credType));
@@ -4385,8 +4020,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // TEST 1: Direct Account Authorization
         {
             Env env(*this, features);
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupMPT(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
+            env(fset(bob, asfDepositAuth));
+            env.close();
 
             // Carol cannot send to Bob without authorization
             mpt.send({
@@ -4429,8 +4066,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             env.fund(XRP(50000), dpIssuer);
             env.close();
 
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupMPT(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
+            env(fset(bob, asfDepositAuth));
+            env.close();
 
             auto const credIdx = createCredential(env, carol);
 
@@ -4468,8 +4107,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             env.fund(XRP(50000), dpIssuer);
             env.close();
 
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupMPT(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
+            env(fset(bob, asfDepositAuth));
+            env.close();
 
             auto const credIdx = createCredential(env, carol);
 
@@ -4548,41 +4189,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const dpIssuer("dpIssuer");
         char const credType[] = "KYC";
 
-        // Common setup: create MPT with privacy, convert carol and bob to confidential
-        auto setupBasic = [&](Env& env, MPTTester& mpt) {
-            mpt.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-            mpt.authorize({
-                .account = bob,
-            });
-            mpt.authorize({
-                .account = carol,
-            });
-            mpt.pay(alice, bob, 100);
-            mpt.pay(alice, carol, 100);
-
-            mpt.generateKeyPair(alice);
-            mpt.generateKeyPair(bob);
-            mpt.generateKeyPair(carol);
-            mpt.set({.account = alice, .issuerPubKey = mpt.getPubKey(alice)});
-
-            mpt.convert({.account = carol, .amt = 50, .holderPubKey = mpt.getPubKey(carol)});
-            mpt.convert({.account = bob, .amt = 50, .holderPubKey = mpt.getPubKey(bob)});
-            mpt.mergeInbox({
-                .account = carol,
-            });
-            mpt.mergeInbox({
-                .account = bob,
-            });
-        };
-
         // TEST 1: Preflight - Empty Credentials Array
         {
             Env env(*this, features);
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             mpt.send({
                 .account = carol,
@@ -4596,8 +4207,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // TEST 2: Preflight - Credentials Array Too Large
         {
             Env env(*this, features);
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             std::vector<std::string> tooManyCredentials;
             tooManyCredentials.reserve(9);
@@ -4618,8 +4229,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env(*this, features);
             env.fund(XRP(50000), dpIssuer);
             env.close();
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             env(credentials::create(carol, dpIssuer, credType));
             env.close();
@@ -4641,8 +4252,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // TEST 4: Preclaim - Credential Doesn't Exist
         {
             Env env(*this, features);
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             std::string const fakeCredIdx = to_string(uint256(999));
             mpt.send({
@@ -4659,8 +4270,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env(*this, features);
             env.fund(XRP(50000), dpIssuer);
             env.close();
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             // Create credential for BOB (not carol)
             env(credentials::create(bob, dpIssuer, credType));
@@ -4685,8 +4296,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env(*this, features);
             env.fund(XRP(50000), dpIssuer);
             env.close();
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             // Create credential but DON'T accept it
             env(credentials::create(carol, dpIssuer, credType));
@@ -4701,6 +4312,28 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .amt = 10,
                 .credentials = {{credIdx}},
                 .err = tecBAD_CREDENTIALS,
+            });
+        }
+
+        // TEST 7: Preflight - sfCredentialIDs requires featureCredentials.
+        // Even with featureConfidentialTransfer enabled, supplying
+        // CredentialIDs while featureCredentials is disabled must be
+        // rejected in preflight via checkExtraFeatures.
+        {
+            Env env(*this, features - featureCredentials);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
+
+            auto constexpr credIdx =
+                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4";
+
+            mpt.send({
+                .account = carol,
+                .dest = bob,
+                .amt = 10,
+                .credentials = {{credIdx}},
+                .err = temDISABLED,
             });
         }
     }
@@ -5186,40 +4819,17 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             env(jv, ter(tecOBJECT_NOT_FOUND));
         }
 
-        // helper function to set up accounts to test lock and unauthorize
-        // cases. after set up, bob has confidential balance 60 in spending.
-        auto setupAccounts = [&](Env& env, Account const& alice, Account const& bob) -> MPTTester {
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-            mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanLock |
-                    tfMPTCanConfidentialAmount,
-            });
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.authorize({
-                .account = alice,
-                .holder = bob,
-            });
-            mptAlice.pay(alice, bob, 100);
-            mptAlice.generateKeyPair(alice);
-            mptAlice.generateKeyPair(bob);
-            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-            mptAlice.convert({.account = bob, .amt = 60, .holderPubKey = mptAlice.getPubKey(bob)});
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
-
-            return mptAlice;
-        };
+        // After setup, bob has confidential balance 60 in spending.
+        std::uint32_t const setupFlags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTRequireAuth |
+            tfMPTCanLock | tfMPTCanConfidentialAmount;
 
         // lock should not block clawback. lock bob individually
         {
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice = setupAccounts(env, alice, bob);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}}, setupFlags};
+            auto& mptAlice = confEnv.mpt;
             mptAlice.set({
                 .account = alice,
                 .holder = bob,
@@ -5239,7 +4849,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice = setupAccounts(env, alice, bob);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}}, setupFlags};
+            auto& mptAlice = confEnv.mpt;
             mptAlice.set({
                 .account = alice,
                 .flags = tfMPTLock,
@@ -5258,7 +4869,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice = setupAccounts(env, alice, bob);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}}, setupFlags};
+            auto& mptAlice = confEnv.mpt;
 
             // unauthorize bob
             mptAlice.authorize({
@@ -5280,7 +4892,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice = setupAccounts(env, alice, bob);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}}, setupFlags};
+            auto& mptAlice = confEnv.mpt;
 
             mptAlice.confidentialClaw({
                 .account = alice,
@@ -5721,34 +5334,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-        mptAlice.create({
-            .ownerCount = 1,
-            .holderCount = 0,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-        });
-
-        mptAlice.authorize({
-            .account = bob,
-        });
-        mptAlice.pay(alice, bob, 100);
-
-        mptAlice.generateKeyPair(alice);
-
-        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-        mptAlice.generateKeyPair(bob);
-
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-            .holderPubKey = mptAlice.getPubKey(bob),
-        });
-
-        mptAlice.mergeInbox({
-            .account = bob,
-        });
+        ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
+        auto& mptAlice = confEnv.mpt;
 
         // for ease of understanding, generate all the fields here instead of
         // autofilling
@@ -5965,34 +5552,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-        mptAlice.create({
-            .ownerCount = 1,
-            .holderCount = 0,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-        });
-
-        mptAlice.authorize({
-            .account = bob,
-        });
-        mptAlice.pay(alice, bob, 100);
-
-        mptAlice.generateKeyPair(alice);
-
-        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-        mptAlice.generateKeyPair(bob);
-
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-            .holderPubKey = mptAlice.getPubKey(bob),
-        });
-
-        mptAlice.mergeInbox({
-            .account = bob,
-        });
+        ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
+        auto& mptAlice = confEnv.mpt;
 
         // for ease of understanding, generate all the fields here instead of
         // autofilling
@@ -7078,32 +6639,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const bob("bob");
         Account const carol("carol");
         Account const auditor("auditor");
-        MPTTester mptAlice(env, alice, {.holders = {bob, carol}, .auditor = auditor});
-
-        mptAlice.create(
-            {.ownerCount = 1,
-             .flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer});
-
-        mptAlice.authorize({.account = bob});
-        mptAlice.authorize({.account = carol});
-        mptAlice.pay(alice, bob, 100);
-        mptAlice.pay(alice, carol, 50);
-
-        mptAlice.generateKeyPair(alice);
-        mptAlice.generateKeyPair(bob);
-        mptAlice.generateKeyPair(carol);
-        mptAlice.generateKeyPair(auditor);
-
-        mptAlice.set({
-            .account = alice,
-            .issuerPubKey = mptAlice.getPubKey(alice),
-            .auditorPubKey = mptAlice.getPubKey(auditor),
-        });
-
-        mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
-        mptAlice.mergeInbox({.account = bob});
-        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
-        mptAlice.mergeInbox({.account = carol});
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{bob, 100, 50}, {carol, 50, 50}},
+            tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer,
+            auditor};
+        auto& mptAlice = confEnv.mpt;
 
         // Send amount is 10.
         uint64_t const amt = 10;
@@ -7117,72 +6659,19 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // control case that confirms the test setup itself is sound, the bad proof
         // is actually from divergent randomness, not other causes.
         auto submitWithDivergentC1 = [&](std::optional<Participant> divergent) {
-            // Shared ElGamal randomness.
-            Buffer const bf = generateBlindingFactor();
+            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, amt, std::cref(auditor));
 
-            // Divergent ElGamal randomness.
-            Buffer const bfDivergent = generateBlindingFactor();
-
-            // All ciphertexts encrypt amt
-            // using shared bf. We'll re-encrypt one of these with bfDivergent below to create the
-            // C1 mismatch.
-            Buffer senderCt = mptAlice.encryptAmount(bob, amt, bf);
-            Buffer destCt = mptAlice.encryptAmount(carol, amt, bf);
-            Buffer issuerCt = mptAlice.encryptAmount(alice, amt, bf);
-            Buffer auditorCt = mptAlice.encryptAmount(auditor, amt, bf);
-
-            // Pedersen commitments that the proof binds to. The amount Pedersen commitment
-            // must reuse the shared ElGamal blinding factor bf.
-            Buffer const amountCommitment = mptAlice.getPedersenCommitment(amt, bf);
-            Buffer const balanceBf = generateBlindingFactor();
-
-            auto const spendingBalance =
-                mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-            auto const encSpendingBalance =
-                mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-            BEAST_EXPECT(spendingBalance.has_value());
-            BEAST_EXPECT(encSpendingBalance.has_value());
-
-            Buffer const balanceCommitment =
-                mptAlice.getPedersenCommitment(*spendingBalance, balanceBf);
-
-            auto const version = mptAlice.getMPTokenVersion(bob);
-            uint256 const contextHash =
-                getSendContextHash(bob, mptAlice.issuanceID(), env.seq(bob), carol, version);
-
-            auto const bobPub = mptAlice.getPubKey(bob);
-            auto const carolPub = mptAlice.getPubKey(carol);
-            auto const alicePub = mptAlice.getPubKey(alice);
-            auto const auditorPub = mptAlice.getPubKey(auditor);
-            BEAST_EXPECT(bobPub && carolPub && alicePub && auditorPub);
-
-            std::vector<ConfidentialRecipient> const recipients{
-                {.publicKey = *bobPub, .encryptedAmount = senderCt},
-                {.publicKey = *carolPub, .encryptedAmount = destCt},
-                {.publicKey = *alicePub, .encryptedAmount = issuerCt},
-                {.publicKey = *auditorPub, .encryptedAmount = auditorCt},
-            };
-
-            // Build the correct case without divergent C1 for comparison.
-            auto const proofOpt = mptAlice.getConfidentialSendProof(
-                bob,
-                amt,
-                recipients,
-                Slice(bf),
-                contextHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = amt,
-                 .encryptedAmt = senderCt,
-                 .blindingFactor = bf},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = *spendingBalance,
-                 .encryptedAmt = *encSpendingBalance,
-                 .blindingFactor = balanceBf});
+            auto const proofOpt = setup.generateProof(mptAlice, env, bob, carol);
             BEAST_EXPECT(proofOpt.has_value());
 
-            // Re-encrypt one participant's ciphertext with bfDivergent.
+            // Re-encrypt one participant's ciphertext with divergent randomness.
+            Buffer senderCt = setup.senderAmt;
+            Buffer destCt = setup.destAmt;
+            Buffer issuerCt = setup.issuerAmt;
+            Buffer auditorCt = *setup.auditorAmt;
             if (divergent)
             {
+                Buffer const bfDivergent = generateBlindingFactor();
                 switch (*divergent)
                 {
                     case Participant::Sender:
@@ -7200,7 +6689,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 }
             }
 
-            auto const spendingBefore = spendingBalance;
             TER const expectedErr = divergent ? TER{tecBAD_PROOF} : TER{tesSUCCESS};
 
             mptAlice.send({
@@ -7212,9 +6700,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .destEncryptedAmt = destCt,
                 .issuerEncryptedAmt = issuerCt,
                 .auditorEncryptedAmt = auditorCt,
-                .blindingFactor = bf,
-                .amountCommitment = amountCommitment,
-                .balanceCommitment = balanceCommitment,
+                .blindingFactor = setup.blindingFactor,
+                .amountCommitment = setup.amountCommitment,
+                .balanceCommitment = setup.balanceCommitment,
                 .err = expectedErr,
             });
 
@@ -7223,11 +6711,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
             if (divergent)
             {
-                BEAST_EXPECT(spendingAfter == spendingBefore);
+                BEAST_EXPECT(spendingAfter == setup.prevSpending);
             }
             else
             {
-                BEAST_EXPECT(spendingAfter == *spendingBefore - amt);
+                BEAST_EXPECT(spendingAfter == setup.prevSpending - amt);
             }
         };
 
@@ -7715,7 +7203,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                     mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 100);
             }
 
-            // Now Bob has 150, but triees to send two 100 in one batch.
+            // Now Bob has 150, but tries to send two 100 in one batch.
             // This fails because Bob doesn't have enough MPT balance.
             {
                 Env env2{*this, features};
@@ -8552,37 +8040,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const carol{"carol"};
         Account const dave{"dave"};
 
-        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+        ConfidentialEnv const confEnv{
+            env,
+            alice,
+            {{bob, 100, 50}, {carol, 100, 100}},
+            tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanConfidentialAmount};
+        auto& mptAlice = confEnv.mpt;
         env.fund(XRP(10000), dave);
         env.close();
-
-        mptAlice.create({
-            .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanConfidentialAmount,
-        });
-        mptAlice.authorize({.account = bob});
-        mptAlice.authorize({.account = carol});
-        mptAlice.pay(alice, bob, 100);
-        mptAlice.pay(alice, carol, 100);
-
-        mptAlice.generateKeyPair(alice);
-        mptAlice.generateKeyPair(bob);
-        mptAlice.generateKeyPair(carol);
-        mptAlice.set({.issuerPubKey = mptAlice.getPubKey(alice)});
-
-        mptAlice.convert({
-            .account = bob,
-            .amt = 50,
-            .holderPubKey = mptAlice.getPubKey(bob),
-        });
-        mptAlice.mergeInbox({.account = bob});
-
-        mptAlice.convert({
-            .account = carol,
-            .amt = 100,
-            .holderPubKey = mptAlice.getPubKey(carol),
-        });
-        mptAlice.mergeInbox({.account = carol});
 
         // Bob delegates Clawback permission to dave.
         env(delegate::set(bob, dave, {"ConfidentialMPTClawback"}));
