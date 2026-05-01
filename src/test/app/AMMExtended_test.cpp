@@ -68,7 +68,7 @@ namespace xrpl::test {
 struct AMMExtended_test : public jtx::AMMTest
 {
     // Use small Number mantissas for the life of this test.
-    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::small};
+    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::mantissa_scale::small};
 
 private:
     void

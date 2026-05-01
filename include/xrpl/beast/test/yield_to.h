@@ -43,8 +43,10 @@ public:
         : work_(boost::asio::make_work_guard(ios_))
     {
         threads_.reserve(concurrency);
-        while ((concurrency--) != 0u)
+        for (std::size_t i = 0; i < concurrency; ++i)
+        {
             threads_.emplace_back([&] { ios_.run(); });
+        }
     }
 
     ~enable_yield_to()
@@ -113,7 +115,7 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
         boost::context::fixedsize_stack(2 * 1024 * 1024),
         [&](yield_context yield) {
             f(yield);
-            std::lock_guard const lock{m_};
+            std::scoped_lock const lock{m_};
             if (--running_ == 0)
                 cv_.notify_all();
         },

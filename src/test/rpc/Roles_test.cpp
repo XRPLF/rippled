@@ -25,6 +25,7 @@ class Roles_test : public beast::unit_test::suite
     void
     testRoles()
     {
+        testcase("Roles");
         using namespace test::jtx;
 
         {
@@ -224,6 +225,21 @@ class Roles_test : public beast::unit_test::suite
             BEAST_EXPECT(rpcRes["role"] == "proxied");
             BEAST_EXPECT(rpcRes["ip"] == "::11:22:33:44:45.55.65.75");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
+
+            // Test: "for=" not at the beginning AND no trailing delimiter.
+            // This exercises the fix for the buffer over-read bug where
+            // the remaining length was incorrectly calculated.
+            headers["Forwarded"] = "by=203.0.113.43;for=1.2.3.4";
+            rpcRes = env.rpc(headers, "ping")["result"];
+            BEAST_EXPECT(rpcRes["role"] == "proxied");
+            BEAST_EXPECT(rpcRes["ip"] == "1.2.3.4");
+            BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
+
+            headers["Forwarded"] = "proto=https;by=proxy.example.com;for=5.6.7.8";
+            rpcRes = env.rpc(headers, "ping")["result"];
+            BEAST_EXPECT(rpcRes["role"] == "proxied");
+            BEAST_EXPECT(rpcRes["ip"] == "5.6.7.8");
+            BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
         }
 
         {
@@ -252,6 +268,7 @@ class Roles_test : public beast::unit_test::suite
     testInvalidIpAddresses()
     {
         using namespace test::jtx;
+        testcase("Invalid IP addresses");
 
         {
             Env env(*this);

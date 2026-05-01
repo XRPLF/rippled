@@ -185,7 +185,7 @@ private:
     //! The number of rounds we've gone without changing our vote
     std::size_t currentVoteCounter_ = 0;
     //! Which minimum acceptance percentage phase we are currently in
-    ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::init;
+    ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::AvalancheState::init;
     //! How long we have been in the current acceptance phase
     std::size_t avalancheCounter_ = 0;
     beast::Journal const j_;
