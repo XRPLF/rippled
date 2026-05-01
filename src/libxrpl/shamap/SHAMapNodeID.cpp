@@ -16,6 +16,8 @@ namespace xrpl {
 static uint256 const&
 depthMask(unsigned int depth)
 {
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { mask_size = 65 };
 
     struct masks_t

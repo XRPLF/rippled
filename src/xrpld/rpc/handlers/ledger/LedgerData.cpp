@@ -54,7 +54,13 @@ doLedgerData(RPC::JsonContext& context)
             return RPC::expected_field_error(jss::marker, "valid");
     }
 
-    bool const isBinary = params[jss::binary].asBool();
+    bool isBinary = false;
+    if (params.isMember(jss::binary))
+    {
+        if (!params[jss::binary].isBool())
+            return RPC::expected_field_error(jss::binary, "boolean");
+        isBinary = params[jss::binary].asBool();
+    }
 
     int limit = -1;
     if (params.isMember(jss::limit))

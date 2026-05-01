@@ -551,7 +551,7 @@ private:
 
     NetClock::duration closeResolution_ = ledgerDefaultTimeResolution;
 
-    ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::init;
+    ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::AvalancheState::init;
 
     // Time it took for the last consensus round to converge
     std::chrono::milliseconds prevRoundTime_{};
@@ -677,7 +677,7 @@ Consensus<Adaptor>::startRoundInternal(
     previousLedger_ = prevLedger;
     result_.reset();
     convergePercent_ = 0;
-    closeTimeAvalancheState_ = ConsensusParms::init;
+    closeTimeAvalancheState_ = ConsensusParms::AvalancheState::init;
     haveCloseTimeConsensus_ = false;
     openTime_.reset(clock_.now());
     currPeerPositions_.clear();

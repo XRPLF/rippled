@@ -229,19 +229,6 @@ public:
         std::shared_ptr<Serializer const> const& txn,
         std::shared_ptr<Serializer const> const& metaData) override;
 
-    // Insert the transaction, and return the hash of the SHAMap leaf node
-    // holding the transaction. The hash can be used to fetch the transaction
-    // directly, instead of traversing the SHAMap
-    // @param key transaction ID
-    // @param txn transaction
-    // @param metaData transaction metadata
-    // @return hash of SHAMap leaf node that holds the transaction
-    uint256
-    rawTxInsertWithHash(
-        uint256 const& key,
-        std::shared_ptr<Serializer const> const& txn,
-        std::shared_ptr<Serializer const> const& metaData);
-
     //--------------------------------------------------------------------------
 
     void

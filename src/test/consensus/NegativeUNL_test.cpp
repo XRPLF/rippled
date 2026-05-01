@@ -738,9 +738,9 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         PublicKey const toReEnableKey(derivePublicKey(KeyType::ed25519, randomSecretKey()));
         LedgerIndex const seq(1234);
         BEAST_EXPECT(countTx(txSet) == 0);
-        vote.addTx(seq, toDisableKey, NegativeUNLVote::ToDisable, txSet);
+        vote.addTx(seq, toDisableKey, NegativeUNLVote::NegativeUNLModify::ToDisable, txSet);
         BEAST_EXPECT(countTx(txSet) == 1);
-        vote.addTx(seq, toReEnableKey, NegativeUNLVote::ToReEnable, txSet);
+        vote.addTx(seq, toReEnableKey, NegativeUNLVote::NegativeUNLModify::ToReEnable, txSet);
         BEAST_EXPECT(countTx(txSet) == 2);
         // content of a tx is implicitly tested after applied to a ledger
         // in later test cases
