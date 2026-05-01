@@ -14,8 +14,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 
-#include <algorithm>
-
 namespace xrpl {
 
 // Internal form:
@@ -784,7 +782,9 @@ equalAtAssetScale(
     Number const& referenceB,
     Asset const& asset)
 {
-    int const minScale = std::max(scale(referenceA, asset), scale(referenceB, asset));
+    int const sa = scale(referenceA, asset);
+    int const sb = scale(referenceB, asset);
+    int const minScale = sa > sb ? sa : sb;
     return roundToAsset(asset, a, minScale) == roundToAsset(asset, b, minScale);
 }
 

@@ -1384,7 +1384,7 @@ accountSendExact(
 
     Asset const& asset = saAmount.asset();
     AccountID const issuer = asset.getIssuer();
-    if (asset.native() || (from == issuer && to == issuer))
+    if (asset.native() || asset.holds<MPTIssue>() || (from == issuer && to == issuer))
         return accountSend(view, from, to, saAmount, j, waiveFee, allowOverflow);
 
     auto const balanceOf = [&](AccountID const& acct) -> Number {
@@ -1404,20 +1404,20 @@ accountSendExact(
     Number const senderDelta = beforeFrom - afterFrom;
     Number const receiverDelta = afterTo - beforeTo;
 
-    bool conservative;
+    bool conserved;
     if (from == issuer)  // mint
-        conservative = equalAtAssetScale(receiverDelta, saAmount, saAmount, saAmount, asset);
+        conserved = equalAtAssetScale(receiverDelta, saAmount, saAmount, saAmount, asset);
     else if (to == issuer)  // destroy
-        conservative = equalAtAssetScale(senderDelta, saAmount, saAmount, saAmount, asset);
+        conserved = equalAtAssetScale(senderDelta, saAmount, saAmount, saAmount, asset);
     else  // two-sided
-        conservative = equalAtAssetScale(
+        conserved = equalAtAssetScale(
             senderDelta,
             receiverDelta,
             firstNonzero(beforeFrom, afterFrom),
             firstNonzero(beforeTo, afterTo),
             asset);
 
-    if (!conservative)
+    if (!conserved)
     {
         JLOG(j.error()) << "accountSendExact: value not conserved at asset precision"
                         << " from=" << to_string(from) << " to=" << to_string(to)

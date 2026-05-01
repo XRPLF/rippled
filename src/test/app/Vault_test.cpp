@@ -7180,6 +7180,74 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    // VaultWithdraw with sub-ULP asset-denominated amount at the
+    // vault's coarsest scale. Vault parked at 10^16 (scale 1, ULP=10);
+    // alice withdraws 5 USD asset-denominated. accountSendExact's
+    // two-sided check tolerates 5 vs 5 at scale 1 (both round to 0);
+    // the helper-level SLE cross-check tolerates the same way.
+    // VaultInvariant catches the rounded-to-zero rail delta at
+    // finalize.
+    //
+    // Post-amendment: VaultWithdraw::preclaim's sub-ULP guard rejects
+    // proactively. Anchors testWithdrawReflectsUnrealizedLoss-style
+    // cases as still passing (legitimate share withdrawals at
+    // moderate magnitudes are not affected by this guard).
+    void
+    testBugSubUlpVaultWithdraw()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const aliceLimit{usd.raw(), Number{2, 16}};
+            STAmount const aliceFund{usd.raw(), Number{1, 16}};
+
+            env(trust(alice, aliceLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            // Park sfAssetsTotal = sfAssetsAvailable = 10^16 (scale 1).
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            // Withdraw 5 USD asset-denominated. Sub-ULP at vault's
+            // coarsest scale (scale 1, ULP=10).
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(5)}),
+                ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultWithdraw at 10^16 sub-ULP fires invariant "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testable_amendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw::preclaim catches sub-ULP withdrawal "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testable_amendments(), tecPRECISION_LOSS);
+        }
+    }
+
     // VaultDeposit by issuer with the vault parked at the IOU 16-digit
     // edge (9.999e15). Issuer mints 2 more USD; the vault trust line
     // goes 9.999e15 → 10^16, gaining 1 unit instead of 2 (canonicalization).
@@ -7941,6 +8009,7 @@ public:
         testBugSleDeltaCheckTotalEdgeWithLoan();
         testBugLoanSetOriginationFeeAtEdge();
         testBugAssociateAssetRoundingWithdrawSelfDest();
+        testBugSubUlpVaultWithdraw();
         testBugIssuerVaultDepositAtEdge();
         testBugIssuerCoverDepositAtEdge();
         testBugIssuerCoverWithdrawAtEdge();

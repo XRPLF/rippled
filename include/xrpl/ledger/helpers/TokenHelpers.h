@@ -308,8 +308,9 @@ accountSend(
  *     `scale(amount)`.
  *
  * Skips verification entirely (falls through to plain `accountSend`)
- * pre-amendment, for native (XRP/MPT integer-exact in drops/mantissa),
- * and for the degenerate `from == issuer && to == issuer` case.
+ * pre-amendment, for integer-exact assets (XRP and MPT, where any
+ * conservation check would degenerate to integer equality), and for the
+ * degenerate `from == issuer && to == issuer` case.
  */
 [[nodiscard]] TER
 accountSendExact(
