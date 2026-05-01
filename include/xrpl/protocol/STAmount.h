@@ -784,8 +784,10 @@ equalAtAssetScale(
 {
     int const sa = scale(referenceA, asset);
     int const sb = scale(referenceB, asset);
-    int const minScale = sa > sb ? sa : sb;
-    return roundToAsset(asset, a, minScale) == roundToAsset(asset, b, minScale);
+    // Coarser grid = larger exponent. Quantize both operands to the
+    // coarser of the two reference grids before comparing.
+    int const coarserScale = sa > sb ? sa : sb;
+    return roundToAsset(asset, a, coarserScale) == roundToAsset(asset, b, coarserScale);
 }
 
 }  // namespace xrpl
