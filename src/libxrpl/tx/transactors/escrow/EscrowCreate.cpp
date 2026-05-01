@@ -228,8 +228,8 @@ escrowCreatePreclaimHelper<Issue>(
     if (isFrozen(ctx.view, dest, issue))
         return tecFROZEN;
 
-    STAmount const spendableAmount =
-        accountHolds(ctx.view, account, issue.currency, issuer, fhIGNORE_FREEZE, ctx.j);
+    STAmount const spendableAmount = accountHolds(
+        ctx.view, account, issue.currency, issuer, FreezeHandling::fhIGNORE_FREEZE, ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)
@@ -305,7 +305,12 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return ter;
 
     STAmount const spendableAmount = accountHolds(
-        ctx.view, account, amount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j);
+        ctx.view,
+        account,
+        amount.get<MPTIssue>(),
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
+        ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)

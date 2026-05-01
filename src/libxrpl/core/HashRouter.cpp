@@ -34,7 +34,7 @@ HashRouter::emplace(uint256 const& key) -> std::pair<Entry&, bool>
 void
 HashRouter::addSuppression(uint256 const& key)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     emplace(key);
 }
@@ -48,7 +48,7 @@ HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer)
 std::pair<bool, std::optional<Stopwatch::time_point>>
 HashRouter::addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto result = emplace(key);
     result.first.addPeer(peer);
@@ -58,7 +58,7 @@ HashRouter::addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer)
 bool
 HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer, HashRouterFlags& flags)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto [s, created] = emplace(key);
     s.addPeer(peer);
@@ -73,7 +73,7 @@ HashRouter::shouldProcess(
     HashRouterFlags& flags,
     std::chrono::seconds tx_interval)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto result = emplace(key);
     auto& s = result.first;
@@ -85,7 +85,7 @@ HashRouter::shouldProcess(
 HashRouterFlags
 HashRouter::getFlags(uint256 const& key)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     return emplace(key).first.getFlags();
 }
@@ -95,7 +95,7 @@ HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
 {
     XRPL_ASSERT(static_cast<bool>(flags), "xrpl::HashRouter::setFlags : valid input");
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto& s = emplace(key).first;
 
@@ -109,7 +109,7 @@ HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
 auto
 HashRouter::shouldRelay(uint256 const& key) -> std::optional<std::set<PeerShortID>>
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto& s = emplace(key).first;
 

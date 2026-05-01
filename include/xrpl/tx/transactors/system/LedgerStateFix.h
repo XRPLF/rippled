@@ -7,7 +7,7 @@ namespace xrpl {
 class LedgerStateFix : public Transactor
 {
 public:
-    enum FixType : std::uint16_t {
+    enum class FixType : std::uint16_t {
         nfTokenPageLink = 1,
     };
 
