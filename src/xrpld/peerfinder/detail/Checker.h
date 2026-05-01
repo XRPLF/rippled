@@ -110,7 +110,8 @@ template <class Handler>
 Checker<Protocol>::AsyncOp<Handler>::AsyncOp(
     Checker& owner,
     boost::asio::io_context& ioContext,
-    Handler&& handler)
+    Handler&&
+        handler)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved) -- forwarded in init
     : checker(owner), socket(ioContext), handler(std::forward<Handler>(handler))
 {
 }

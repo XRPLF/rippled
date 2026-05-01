@@ -4000,16 +4000,16 @@ private:
         ChainStateTrack b;
     };
 
-    enum SmState {
-        StInitial,
-        StClaimIdCreated,
-        StAttesting,
-        StAttested,
-        StCompleted,
-        StClosed,
+    enum class SmState {
+        Initial,
+        ClaimIdCreated,
+        Attesting,
+        Attested,
+        Completed,
+        Closed,
     };
 
-    enum ActFlags { AfA2b = 1 << 0 };
+    enum class ActFlags { A2b = 1 << 0 };
 
     // --------------------------------------------------
     template <class T>
@@ -4145,7 +4145,7 @@ private:
                 st.spend(dstDoor(), reward, numAttestors);
                 st.transfer(dstDoor(), cr_.to, cr_.amt);
                 st.env.env.memoize(cr_.to);
-                sm_state_ = StCompleted;
+                sm_state_ = SmState::Completed;
             };
 
             counters.create_callbacks[cr_.claim_id - 1] = std::move(completeCb);
@@ -4156,12 +4156,12 @@ private:
         {
             switch (sm_state_)
             {
-                case StInitial:
+                case SmState::Initial:
                     cr_.claim_id = issueAccountCreate();
-                    sm_state_ = StAttesting;
+                    sm_state_ = SmState::Attesting;
                     break;
 
-                case StAttesting:
+                case SmState::Attesting:
                     attest(time, rnd);
                     break;
 
@@ -4169,14 +4169,14 @@ private:
                     assert(0);
                     break;
 
-                case StCompleted:
+                case SmState::Completed:
                     break;  // will get this once
             }
             return sm_state_;
         }
 
     private:
-        SmState sm_state_{StInitial};
+        SmState sm_state_{SmState::Initial};
         AccountCreate cr_;
     };
 
@@ -4305,35 +4305,36 @@ private:
         {
             switch (sm_state_)
             {
-                case StInitial:
+                case SmState::Initial:
                     xfer_.claim_id = createClaimId();
-                    sm_state_ = StClaimIdCreated;
+                    sm_state_ = SmState::ClaimIdCreated;
                     break;
 
-                case StClaimIdCreated:
+                case SmState::ClaimIdCreated:
                     commit();
-                    sm_state_ = StAttesting;
+                    sm_state_ = SmState::Attesting;
                     break;
 
-                case StAttesting:
+                case SmState::Attesting:
                     if (attest(time, rnd))
                     {
-                        sm_state_ = xfer_.with_claim == WithClaim::Yes ? StAttested : StCompleted;
+                        sm_state_ = xfer_.with_claim == WithClaim::Yes ? SmState::Attested
+                                                                       : SmState::Completed;
                     }
                     else
                     {
-                        sm_state_ = StAttesting;
+                        sm_state_ = SmState::Attesting;
                     }
                     break;
 
-                case StAttested:
+                case SmState::Attested:
                     assert(xfer_.with_claim == WithClaim::Yes);
                     claim();
-                    sm_state_ = StCompleted;
+                    sm_state_ = SmState::Completed;
                     break;
 
                 default:
-                case StCompleted:
+                case SmState::Completed:
                     assert(0);  // should have been removed
                     break;
             }
@@ -4342,7 +4343,7 @@ private:
 
     private:
         Transfer xfer_;
-        SmState sm_state_{StInitial};
+        SmState sm_state_{SmState::Initial};
     };
 
     // --------------------------------------------------
@@ -4389,7 +4390,7 @@ public:
                     return sm.advance(time, rnd);
                 };
                 auto& [t, sm] = *it;
-                if (t <= time && std::visit(vis, sm) == StCompleted)
+                if (t <= time && std::visit(vis, sm) == SmState::Completed)
                 {
                     it = sm_.erase(it);
                 }

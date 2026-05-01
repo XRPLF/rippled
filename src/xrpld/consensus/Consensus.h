@@ -551,7 +551,7 @@ private:
 
     NetClock::duration closeResolution_ = kLEDGER_DEFAULT_TIME_RESOLUTION;
 
-    ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::Init;
+    ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::AvalancheState::Init;
 
     // Time it took for the last consensus round to converge
     std::chrono::milliseconds prevRoundTime_{};
@@ -677,7 +677,7 @@ Consensus<Adaptor>::startRoundInternal(
     previousLedger_ = prevLedger;
     result_.reset();
     convergePercent_ = 0;
-    closeTimeAvalancheState_ = ConsensusParms::Init;
+    closeTimeAvalancheState_ = ConsensusParms::AvalancheState::Init;
     haveCloseTimeConsensus_ = false;
     openTime_.reset(clock_.now());
     currPeerPositions_.clear();

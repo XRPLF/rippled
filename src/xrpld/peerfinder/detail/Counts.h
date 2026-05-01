@@ -35,7 +35,7 @@ public:
     {
         // Must be handshaked and in the right state
         XRPL_ASSERT(
-            s.state() == Slot::Connected || s.state() == Slot::Accept,
+            s.state() == Slot::State::Connected || s.state() == Slot::State::Accept,
             "xrpl::PeerFinder::Counts::can_activate : valid input state");
 
         if (s.fixed() || s.reserved())
@@ -242,13 +242,13 @@ private:
 
         switch (s.state())
         {
-            case Slot::Accept:
+            case Slot::State::Accept:
                 XRPL_ASSERT(s.inbound(), "xrpl::PeerFinder::Counts::adjust : input is inbound");
                 acceptCount_ += n;
                 break;
 
-            case Slot::Connect:
-            case Slot::Connected:
+            case Slot::State::Connect:
+            case Slot::State::Connected:
                 XRPL_ASSERT(
                     !s.inbound(),
                     "xrpl::PeerFinder::Counts::adjust : input is not "
@@ -256,7 +256,7 @@ private:
                 attempts_ += n;
                 break;
 
-            case Slot::Active:
+            case Slot::State::Active:
                 if (s.fixed())
                     fixed_active_ += n;
                 if (!s.fixed() && !s.reserved())
@@ -273,7 +273,7 @@ private:
                 active_ += n;
                 break;
 
-            case Slot::Closing:
+            case Slot::State::Closing:
                 closingCount_ += n;
                 break;
 

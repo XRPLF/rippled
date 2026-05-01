@@ -46,7 +46,7 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
     // the list.  A zero quorum means we're destroying the list.
     auto const quorum = tx[sfSignerQuorum];
     std::vector<SignerEntries::SignerEntry> sign;
-    Operation op = Unknown;
+    Operation op = Operation::Unknown;
 
     bool const hasSignerEntries(tx.isFieldPresent(sfSignerEntries));
     if ((quorum != 0u) && hasSignerEntries)
@@ -60,11 +60,11 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
 
         // Save deserialized list for later.
         sign = std::move(*signers);
-        op = Set;
+        op = Operation::Set;
     }
     else if ((quorum == 0) && !hasSignerEntries)
     {
-        op = Destroy;
+        op = Operation::Destroy;
     }
 
     return std::make_tuple(tesSUCCESS, quorum, sign, op);
@@ -85,14 +85,14 @@ SignerListSet::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(std::get<0>(result)))
         return std::get<0>(result);
 
-    if (std::get<3>(result) == Unknown)
+    if (std::get<3>(result) == Operation::Unknown)
     {
         // Neither a set nor a destroy.  Malformed.
         JLOG(ctx.j.trace()) << "Malformed transaction: Invalid signer set list format.";
         return temMALFORMED;
     }
 
-    if (std::get<3>(result) == Set)
+    if (std::get<3>(result) == Operation::Set)
     {
         // Validate our settings.
         auto const account = ctx.tx.getAccountID(sfAccount);
@@ -113,10 +113,10 @@ SignerListSet::doApply()
     // Perform the operation preCompute() decided on.
     switch (do_)
     {
-        case Set:
+        case Operation::Set:
             return replaceSignerList();
 
-        case Destroy:
+        case Operation::Destroy:
             return destroySignerList();
 
         default:
@@ -137,7 +137,7 @@ SignerListSet::preCompute()
         isTesSuccess(std::get<0>(result)),
         "xrpl::SignerListSet::preCompute : result is tesSUCCESS");
     XRPL_ASSERT(
-        std::get<3>(result) != Unknown,
+        std::get<3>(result) != Operation::Unknown,
         "xrpl::SignerListSet::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);

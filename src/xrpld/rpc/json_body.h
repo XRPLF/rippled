@@ -54,7 +54,7 @@ struct JsonBody
         }
     };
 
-    class writer
+    class writer  // NOLINT(readability-identifier-naming) -- Boost.Beast body concept name
     {
         std::string body_string_;
 

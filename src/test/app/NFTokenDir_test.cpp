@@ -42,7 +42,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
     //
     // It uses the ledger RPC command to show the NFT pages in the ledger.
     // This parameter controls how noisy the output is.
-    enum Volume : bool {
+    enum class Volume : bool {
         Quiet = false,
         Noisy = true,
     };
@@ -77,7 +77,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
                     std::cout << tokenCount << " NFtokens in page "
                               << state[i][jss::index].asString() << std::endl;
 
-                    if (vol == Noisy)
+                    if (vol == Volume::Noisy)
                     {
                         std::cout << state[i].toStyledString() << std::endl;
                     }

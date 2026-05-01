@@ -331,7 +331,7 @@ public:
 
         // The object must exist in our table
         XRPL_ASSERT(
-            slots.find(slot->remoteEndpoint()) != slots.end(),
+            slots.contains(slot->remoteEndpoint()),
             "xrpl::PeerFinder::Logic::onConnected : valid slot input");
         // Assign the local endpoint now that it's known
         slot->localEndpoint(localEndpoint);
@@ -352,7 +352,7 @@ public:
 
         // Update counts
         counts_.remove(*slot);
-        slot->state(Slot::Connected);
+        slot->state(Slot::State::Connected);
         counts_.add(*slot);
         return true;
     }
@@ -370,11 +370,11 @@ public:
 
         // The object must exist in our table
         XRPL_ASSERT(
-            slots.find(slot->remoteEndpoint()) != slots.end(),
+            slots.contains(slot->remoteEndpoint()),
             "xrpl::PeerFinder::Logic::activate : valid slot input");
         // Must be accepted or connected
         XRPL_ASSERT(
-            slot->state() == Slot::Accept || slot->state() == Slot::Connected,
+            slot->state() == Slot::State::Accept || slot->state() == Slot::State::Connected,
             "xrpl::PeerFinder::Logic::activate : valid slot state");
 
         // Check for duplicate connection by key
@@ -575,7 +575,7 @@ public:
                 activeSlots.reserve(slots.size());
                 std::for_each(
                     slots.cbegin(), slots.cend(), [&activeSlots](Slots::value_type const& value) {
-                        if (value.second->state() == Slot::Active)
+                        if (value.second->state() == Slot::State::Active)
                             activeSlots.emplace_back(value.second);
                     });
                 std::shuffle(activeSlots.begin(), activeSlots.end(), defaultPrng());
@@ -744,12 +744,12 @@ public:
 
         // The object must exist in our table
         XRPL_ASSERT(
-            slots.find(slot->remoteEndpoint()) != slots.end(),
+            slots.contains(slot->remoteEndpoint()),
             "xrpl::PeerFinder::Logic::on_endpoints : valid slot input");
 
         // Must be handshaked!
         XRPL_ASSERT(
-            slot->state() == Slot::Active,
+            slot->state() == Slot::State::Active,
             "xrpl::PeerFinder::Logic::on_endpoints : valid slot state");
 
         clock_type::time_point const now(clock.now());
@@ -880,7 +880,7 @@ public:
         beast::Journal const journal{sink};
 
         // Mark fixed slot failure
-        if (slot->fixed() && !slot->inbound() && slot->state() != Slot::Active)
+        if (slot->fixed() && !slot->inbound() && slot->state() != Slot::State::Active)
         {
             auto iter(fixed_.find(slot->remoteEndpoint()));
             if (iter == fixed_.end())
@@ -897,12 +897,12 @@ public:
         // Do state specific bookkeeping
         switch (slot->state())
         {
-            case Slot::Accept:
+            case Slot::State::Accept:
                 JLOG(journal.trace()) << "Logic accept failed";
                 break;
 
-            case Slot::Connect:
-            case Slot::Connected:
+            case Slot::State::Connect:
+            case Slot::State::Connected:
                 bootcache.onFailure(slot->remoteEndpoint());
                 // VFALCO TODO If the address exists in the ephemeral/live
                 //             endpoint livecache then we should mark the
@@ -911,11 +911,11 @@ public:
                 // avoid propagating the address.
                 break;
 
-            case Slot::Active:
+            case Slot::State::Active:
                 JLOG(journal.trace()) << "Logic close";
                 break;
 
-            case Slot::Closing:
+            case Slot::State::Closing:
                 JLOG(journal.trace()) << "Logic finished";
                 break;
 
@@ -1176,15 +1176,15 @@ public:
     {
         switch (state)
         {
-            case Slot::Accept:
+            case Slot::State::Accept:
                 return "accept";
-            case Slot::Connect:
+            case Slot::State::Connect:
                 return "connect";
-            case Slot::Connected:
+            case Slot::State::Connected:
                 return "connected";
-            case Slot::Active:
+            case Slot::State::Active:
                 return "active";
-            case Slot::Closing:
+            case Slot::State::Closing:
                 return "closing";
             default:
                 break;

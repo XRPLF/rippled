@@ -66,7 +66,7 @@ struct MultiApiJson
             a[key] = v;
     }
 
-    // Intentionally not using class enum here, MultivarJson is scope enough
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class) -- MultivarJson is scope enough
     enum IsMemberResult : int { None = 0, Some, All };
 
     [[nodiscard]] IsMemberResult

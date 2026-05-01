@@ -13,7 +13,7 @@ class Slot
 public:
     using ptr = std::shared_ptr<Slot>;
 
-    enum State { Accept, Connect, Connected, Active, Closing };
+    enum class State { Accept, Connect, Connected, Active, Closing };
 
     virtual ~Slot() = 0;
 

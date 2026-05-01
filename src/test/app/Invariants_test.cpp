@@ -4125,21 +4125,21 @@ class Invariants_test : public beast::unit_test::Suite
         // ApplyStateTable::visit(). The configurer callables receive the
         // SLE and the Issue corresponding to that side's keylet currency.
         auto const insertOrderedTrustLinePair = [](ApplyContext& ac,
-                                                   Account const& A1,
-                                                   Account const& A2,
-                                                   Account const& A3,
+                                                   Account const& a1,
+                                                   Account const& a2,
+                                                   Account const& a3,
                                                    auto const& badConfig,
                                                    auto const& goodConfig) {
             char const* const c1 = "USD";
             char const* const c2 = "EUR";
-            auto const k1 = keylet::line(A1, A2, A1[c1].currency);
-            auto const k2 = keylet::line(A1, A3, A1[c2].currency);
+            auto const k1 = keylet::line(a1, a2, a1[c1].currency);
+            auto const k2 = keylet::line(a1, a3, a1[c2].currency);
 
             bool const k1First = k1.key < k2.key;
             auto const& badKey = k1First ? k1 : k2;
             auto const& goodKey = k1First ? k2 : k1;
-            Issue const badIss{k1First ? A1[c1].currency : A1[c2].currency, A1.id()};
-            Issue const goodIss{k1First ? A1[c2].currency : A1[c1].currency, A1.id()};
+            Issue const badIss{k1First ? a1[c1].currency : a1[c2].currency, a1.id()};
+            Issue const goodIss{k1First ? a1[c2].currency : a1[c1].currency, a1.id()};
 
             auto const sleBad = std::make_shared<SLE>(badKey);
             badConfig(*sleBad, badIss);
@@ -4160,13 +4160,13 @@ class Invariants_test : public beast::unit_test::Suite
             Env(*this, features),
             fixEnabled ? std::vector<std::string>{{"an XRP trust line was created"}}
                        : std::vector<std::string>{},
-            [&insertOrderedTrustLinePair](Account const& A1, Account const& A2, ApplyContext& ac) {
-                Account const A3{"A3"};
+            [&insertOrderedTrustLinePair](Account const& a1, Account const& a2, ApplyContext& ac) {
+                Account const a3{"A3"};
                 insertOrderedTrustLinePair(
                     ac,
-                    A1,
-                    A2,
-                    A3,
+                    a1,
+                    a2,
+                    a3,
                     [](SLE& sle, Issue const& iss) {
                         // sfLowLimit has xrpIssue, making isXrp = true
                         sle.setFieldAmount(sfLowLimit, STAmount{xrpIssue(), 0});

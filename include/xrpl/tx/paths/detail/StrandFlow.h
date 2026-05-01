@@ -246,7 +246,8 @@ flow(
             // Re-executing the strand will change the cached values
             PaymentSandbox checkSB(&baseView);
             PaymentSandbox checkAfView(&baseView);
-            EitherAmount stepIn(*strand[0]->cachedIn());
+            EitherAmount stepIn(
+                *strand[0]->cachedIn());  // NOLINT(bugprone-unchecked-optional-access)
             for (auto i = 0; i < s; ++i)
             {
                 bool valid = false;

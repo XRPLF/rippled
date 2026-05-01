@@ -6,7 +6,7 @@ namespace xrpl {
 
 /// Coroutine stack size (1.5 MB). Increased from 1 MB because
 /// ASAN-instrumented deep call stacks exceeded the original limit.
-constexpr std::size_t coroStackSize = 1536 * 1024;
+constexpr std::size_t kCORO_STACK_SIZE = 1536 * 1024;
 
 template <class F>
 JobQueue::Coro::Coro(CoroCreateT, JobQueue& jq, JobType type, std::string name, F&& f)
@@ -14,10 +14,9 @@ JobQueue::Coro::Coro(CoroCreateT, JobQueue& jq, JobType type, std::string name, 
     , type_(type)
     , name_(std::move(name))
     , coro_(
-          boost::context::protected_fixedsize_stack(coroStackSize),
-          [this,
-           fn = std::forward<F>(f)](boost::coroutines2::coroutine<void>::push_type& do_yield) {
-              yield_ = &do_yield;
+          boost::context::protected_fixedsize_stack(kCORO_STACK_SIZE),
+          [this, fn = std::forward<F>(f)](boost::coroutines2::coroutine<void>::push_type& doYield) {
+              yield_ = &doYield;
               yield();
               fn(shared_from_this());
 #ifndef NDEBUG

@@ -456,7 +456,7 @@ private:
         bool ssl;
 
         Lambda(int id, TrustedPublisherServer& self, socket_type&& sock, bool ssl)
-            : id(id), self(self), sock(std::move(sock)), work(sock.get_executor()), ssl(ssl)
+            : id(id), self(self), sock(std::move(sock)), work(this->sock.get_executor()), ssl(ssl)
         {
         }
 

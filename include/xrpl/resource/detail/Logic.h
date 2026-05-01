@@ -95,8 +95,8 @@ public:
             std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
-                std::make_tuple(KindInbound, address.atPort(0)),  // Key
-                std::make_tuple(clock_.now()));                   // Entry
+                std::make_tuple(Kind::Inbound, address.atPort(0)),  // Key
+                std::make_tuple(clock_.now()));                     // Entry
 
             entry = &resultIt->second;
             entry->key = &resultIt->first;
@@ -125,8 +125,8 @@ public:
             std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
-                std::make_tuple(KindOutbound, address),  // Key
-                std::make_tuple(clock_.now()));          // Entry
+                std::make_tuple(Kind::Outbound, address),  // Key
+                std::make_tuple(clock_.now()));            // Entry
 
             entry = &resultIt->second;
             entry->key = &resultIt->first;
@@ -158,8 +158,8 @@ public:
             std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
-                std::make_tuple(KindUnlimited, address.atPort(1)),  // Key
-                std::make_tuple(clock_.now()));                     // Entry
+                std::make_tuple(Kind::Unlimited, address.atPort(1)),  // Key
+                std::make_tuple(clock_.now()));                       // Entry
 
             entry = &resultIt->second;
             entry->key = &resultIt->first;
@@ -399,13 +399,13 @@ public:
 
             switch (entry.key->kind)
             {
-                case KindInbound:
+                case Kind::Inbound:
                     inbound_.erase(inbound_.iteratorTo(entry));
                     break;
-                case KindOutbound:
+                case Kind::Outbound:
                     outbound_.erase(outbound_.iteratorTo(entry));
                     break;
-                case KindUnlimited:
+                case Kind::Unlimited:
                     admin_.erase(admin_.iteratorTo(entry));
                     break;
                 default:

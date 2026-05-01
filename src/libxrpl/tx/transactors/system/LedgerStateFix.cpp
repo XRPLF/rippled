@@ -44,7 +44,7 @@ LedgerStateFix::calculateBaseFee(ReadView const& view, STTx const& tx)
 TER
 LedgerStateFix::preclaim(PreclaimContext const& ctx)
 {
-    if (ctx.tx[sfLedgerFixType] == FixType::NfTokenPageLink)
+    if (static_cast<FixType>(ctx.tx[sfLedgerFixType]) == FixType::NfTokenPageLink)
     {
         AccountID const owner{ctx.tx[sfOwner]};
         if (!ctx.view.read(keylet::account(owner)))
@@ -60,7 +60,7 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
 TER
 LedgerStateFix::doApply()
 {
-    if (ctx_.tx[sfLedgerFixType] == FixType::NfTokenPageLink)
+    if (static_cast<FixType>(ctx_.tx[sfLedgerFixType]) == FixType::NfTokenPageLink)
     {
         if (!nft::repairNFTokenDirectoryLinks(view(), ctx_.tx[sfOwner]))
             return tecFAILED_PROCESSING;

@@ -93,7 +93,7 @@ private:
         {
             f();
         }
-        catch (Suite::AbortException const&)
+        catch (Suite::AbortException const&)  // NOLINT(bugprone-empty-catch)
         {
         }
         catch (std::exception const& e)

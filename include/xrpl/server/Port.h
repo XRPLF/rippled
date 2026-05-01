@@ -16,7 +16,7 @@
 #include <string>
 
 namespace boost::asio::ssl {
-class context;
+class context;  // NOLINT(readability-identifier-naming) -- external library name
 }  // namespace boost::asio::ssl
 
 namespace xrpl {

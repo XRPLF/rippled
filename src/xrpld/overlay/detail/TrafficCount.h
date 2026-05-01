@@ -29,6 +29,7 @@ namespace xrpl {
 class TrafficCount
 {
 public:
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class) -- 73 usages across 5 files
     enum Category : std::size_t;
 
     class TrafficStats
@@ -63,6 +64,7 @@ public:
     // If you add entries to this enum, you need to update the initialization
     // of the arrays at the bottom of this file which map array numbers to
     // human-readable, monitoring-tool friendly names.
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class) -- 73 usages across 5 files
     enum Category : std::size_t {
         Base,  // basic peer overhead, must be first
 
