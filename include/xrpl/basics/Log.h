@@ -15,6 +15,7 @@
 namespace xrpl {
 
 // DEPRECATED use beast::severities::Severity instead
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LogSeverity {
     lsINVALID = -1,  // used to indicate an invalid severity
     lsTRACE = 0,     // Very low-level progress information, details inside
@@ -207,6 +208,8 @@ public:
     fromString(std::string const& s);
 
 private:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // Maximum line length for log messages.
         // If the message exceeds this length it will be truncated with

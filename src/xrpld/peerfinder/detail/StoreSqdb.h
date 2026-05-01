@@ -15,6 +15,8 @@ private:
     soci::session m_sqlDb;
 
 public:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // This determines the on-database format of the data
         currentSchemaVersion = 4

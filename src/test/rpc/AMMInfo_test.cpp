@@ -37,13 +37,13 @@ public:
         using namespace jtx;
 
         Account const bogie("bogie");
-        enum TestAccount { None, Alice, Bogie };
+        enum class TestAccount { None, Alice, Bogie };
         auto accountId = [&](AMM const& ammAlice, TestAccount v) -> std::optional<AccountID> {
-            if (v == Alice)
+            if (v == TestAccount::Alice)
             {
                 return ammAlice.ammAccount();
             }
-            if (v == Bogie)
+            if (v == TestAccount::Bogie)
             {
                 return bogie;
             }
@@ -67,12 +67,12 @@ public:
 
         std::vector<std::tuple<std::optional<Issue>, std::optional<Issue>, TestAccount, bool>> const
             invalidParams = {
-                {xrpIssue(), std::nullopt, None, false},
-                {std::nullopt, USD, None, false},
-                {xrpIssue(), std::nullopt, Alice, false},
-                {std::nullopt, USD, Alice, false},
-                {xrpIssue(), USD, Alice, false},
-                {std::nullopt, std::nullopt, None, true}};
+                {xrpIssue(), std::nullopt, TestAccount::None, false},
+                {std::nullopt, USD, TestAccount::None, false},
+                {xrpIssue(), std::nullopt, TestAccount::Alice, false},
+                {std::nullopt, USD, TestAccount::Alice, false},
+                {xrpIssue(), USD, TestAccount::Alice, false},
+                {std::nullopt, std::nullopt, TestAccount::None, true}};
 
         // Invalid parameters
         testAMM([&](AMM& ammAlice, Env&) {
@@ -129,12 +129,12 @@ public:
 
         std::vector<std::tuple<std::optional<Issue>, std::optional<Issue>, TestAccount, bool>> const
             invalidParamsBadAccount = {
-                {xrpIssue(), std::nullopt, None, false},
-                {std::nullopt, USD, None, false},
-                {xrpIssue(), std::nullopt, Bogie, false},
-                {std::nullopt, USD, Bogie, false},
-                {xrpIssue(), USD, Bogie, false},
-                {std::nullopt, std::nullopt, None, true}};
+                {xrpIssue(), std::nullopt, TestAccount::None, false},
+                {std::nullopt, USD, TestAccount::None, false},
+                {xrpIssue(), std::nullopt, TestAccount::Bogie, false},
+                {std::nullopt, USD, TestAccount::Bogie, false},
+                {xrpIssue(), USD, TestAccount::Bogie, false},
+                {std::nullopt, std::nullopt, TestAccount::None, true}};
 
         // Invalid parameters *and* invalid AMM account, default API version
         testAMM([&](AMM& ammAlice, Env&) {
@@ -165,8 +165,8 @@ public:
                     3);
                 BEAST_EXPECT(
                     jv[jss::error_message] ==
-                    (acct == Bogie ? std::string("Account malformed.")
-                                   : std::string("Invalid parameters.")));
+                    (acct == TestAccount::Bogie ? std::string("Account malformed.")
+                                                : std::string("Invalid parameters.")));
             }
         });
     }

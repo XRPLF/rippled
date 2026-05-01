@@ -130,7 +130,7 @@ ValidatorSite::~ValidatorSite()
 }
 
 bool
-ValidatorSite::missingSite(std::lock_guard<std::mutex> const& lock_sites)
+ValidatorSite::missingSite(std::scoped_lock<std::mutex> const& lock_sites)
 {
     auto const sites = app_.getValidators().loadLists();
     return sites.empty() || load(sites, lock_sites);
@@ -141,7 +141,7 @@ ValidatorSite::load(std::vector<std::string> const& siteURIs)
 {
     JLOG(j_.debug()) << "Loading configured validator list sites";
 
-    std::lock_guard const lock{sites_mutex_};
+    std::scoped_lock const lock{sites_mutex_};
 
     return load(siteURIs, lock);
 }
@@ -149,7 +149,7 @@ ValidatorSite::load(std::vector<std::string> const& siteURIs)
 bool
 ValidatorSite::load(
     std::vector<std::string> const& siteURIs,
-    std::lock_guard<std::mutex> const& lock_sites)
+    std::scoped_lock<std::mutex> const& lock_sites)
 {
     // If no sites are provided, act as if a site failed to load.
     if (siteURIs.empty())
@@ -182,8 +182,8 @@ ValidatorSite::load(
 void
 ValidatorSite::start()
 {
-    std::lock_guard const l0{sites_mutex_};
-    std::lock_guard const l1{state_mutex_};
+    std::scoped_lock const l0{sites_mutex_};
+    std::scoped_lock const l1{state_mutex_};
     if (timer_.expiry() == clock_type::time_point{})
         setTimer(l0, l1);
 }
@@ -223,8 +223,8 @@ ValidatorSite::stop()
 
 void
 ValidatorSite::setTimer(
-    std::lock_guard<std::mutex> const& site_lock,
-    std::lock_guard<std::mutex> const& state_lock)
+    std::scoped_lock<std::mutex> const& site_lock,
+    std::scoped_lock<std::mutex> const& state_lock)
 {
     if (!sites_.empty() &&  //
         std::ranges::all_of(
@@ -254,13 +254,13 @@ void
 ValidatorSite::makeRequest(
     std::shared_ptr<Site::Resource> resource,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex> const& sites_lock)
+    std::scoped_lock<std::mutex> const& sites_lock)
 {
     fetching_ = true;
     sites_[siteIdx].activeResource = resource;
     std::shared_ptr<detail::Work> sp;
     auto timeoutCancel = [this]() {
-        std::lock_guard const lock_state{state_mutex_};
+        std::scoped_lock const lock_state{state_mutex_};
         // docs indicate cancel_one() can throw, but this
         // should be reconsidered if it changes to noexcept
         try
@@ -326,7 +326,7 @@ ValidatorSite::makeRequest(
     sp->run();
     // start a timer for the request, which shouldn't take more
     // than requestTimeout_ to complete
-    std::lock_guard const lock_state{state_mutex_};
+    std::scoped_lock const lock_state{state_mutex_};
     timer_.expires_after(requestTimeout_);
     timer_.async_wait([this, siteIdx](boost::system::error_code const& ec) {
         this->onRequestTimeout(siteIdx, ec);
@@ -340,7 +340,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
         return;
 
     {
-        std::lock_guard const lock_site{sites_mutex_};
+        std::scoped_lock const lock_site{sites_mutex_};
         // In some circumstances, both this function and the response
         // handler (onSiteFetch or onTextFetch) can get queued and
         // processed. In all observed cases, the response handler
@@ -360,7 +360,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
                 Site::Status{clock_type::now(), ListDisposition::invalid, "timeout"});
     }
 
-    std::lock_guard const lock_state{state_mutex_};
+    std::scoped_lock const lock_state{state_mutex_};
     if (auto sp = work_.lock())
         sp->cancel();
 }
@@ -379,7 +379,7 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
 
     try
     {
-        std::lock_guard const lock{sites_mutex_};
+        std::scoped_lock const lock{sites_mutex_};
         sites_[siteIdx].nextRefresh = clock_type::now() + sites_[siteIdx].refreshInterval;
         sites_[siteIdx].redirCount = 0;
         // the WorkSSL client ctor can throw if SSL init fails
@@ -400,7 +400,7 @@ void
 ValidatorSite::parseJsonResponse(
     std::string const& res,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex> const& sites_lock)
+    std::scoped_lock<std::mutex> const& sites_lock)
 {
     Json::Value const body = [&res, siteIdx, this]() {
         Json::Reader r;
@@ -518,7 +518,7 @@ std::shared_ptr<ValidatorSite::Site::Resource>
 ValidatorSite::processRedirect(
     detail::response_type const& res,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex> const& sites_lock)
+    std::scoped_lock<std::mutex> const& sites_lock)
 {
     using namespace boost::beast::http;
     std::shared_ptr<Site::Resource> newLocation;
@@ -562,7 +562,7 @@ ValidatorSite::onSiteFetch(
     detail::response_type const& res,
     std::size_t siteIdx)
 {
-    std::lock_guard lock_sites{sites_mutex_};
+    std::scoped_lock lock_sites{sites_mutex_};
     {
         if (endpoint != endpoint_type{})
             sites_[siteIdx].lastRequestEndpoint = endpoint;
@@ -634,7 +634,7 @@ ValidatorSite::onSiteFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::lock_guard const lock_state{state_mutex_};
+    std::scoped_lock const lock_state{state_mutex_};
     fetching_ = false;
     if (!stopping_)
         setTimer(lock_sites, lock_state);
@@ -647,7 +647,7 @@ ValidatorSite::onTextFetch(
     std::string const& res,
     std::size_t siteIdx)
 {
-    std::lock_guard const lock_sites{sites_mutex_};
+    std::scoped_lock const lock_sites{sites_mutex_};
     {
         try
         {
@@ -674,7 +674,7 @@ ValidatorSite::onTextFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::lock_guard const lock_state{state_mutex_};
+    std::scoped_lock const lock_state{state_mutex_};
     fetching_ = false;
     if (!stopping_)
         setTimer(lock_sites, lock_state);
@@ -690,7 +690,7 @@ ValidatorSite::getJson() const
     Json::Value jrr(Json::objectValue);
     Json::Value& jSites = (jrr[jss::validator_sites] = Json::arrayValue);
     {
-        std::lock_guard const lock{sites_mutex_};
+        std::scoped_lock const lock{sites_mutex_};
         for (Site const& site : sites_)
         {
             Json::Value& v = jSites.append(Json::objectValue);
