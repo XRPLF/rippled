@@ -4316,7 +4316,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
             auto& mpt = confEnv.mpt;
 
-            std::string const credIdx =
+            auto constexpr credIdx =
                 "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
                 "E4";
 
