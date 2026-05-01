@@ -231,7 +231,7 @@ template <typename... Ts>
 [[nodiscard]] std::string
 buildJsonPattern(std::string_view existingPattern, log::Parameter<Ts> const&... params)
 {
-    detail::JsonLoggingPatternBuilder builder(existingPattern);
+    detail::JsonLoggingPatternBuilder const builder(existingPattern);
     (builder.add(params.name(), params.value()), ...);
     return builder.build();
 }

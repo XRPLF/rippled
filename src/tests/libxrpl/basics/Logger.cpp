@@ -13,15 +13,20 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <unistd.h>
+
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 using namespace xrpl;
 
@@ -111,7 +116,7 @@ protected:
 
     /// Install two sinks: one with NonCriticalFormatter, one critical-only.
     /// Returns {non-critical output, critical output}.
-    std::pair<std::ostringstream*, std::ostringstream*>
+    static std::pair<std::ostringstream*, std::ostringstream*>
     installSplitSinks(std::ostringstream& ncOut, std::ostringstream& critOut)
     {
         auto ncSink = std::make_shared<spdlog::sinks::ostream_sink_mt>(ncOut);
@@ -129,7 +134,7 @@ protected:
     }
 
     /// Install a single sink wrapped with NonCriticalFormatter.
-    void
+    static void
     installNonCriticalSink(std::ostringstream& out)
     {
         auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(out);
