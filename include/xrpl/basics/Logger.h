@@ -217,12 +217,13 @@ class Logger
                 }
                 else
                 {
-                    fmt::format_to(fmt::appender(stream_), "{}", p.value());
+                    fmt::format_to(fmt::appender(stream_), "{}", std::move(p.value()));
                 }
 
                 if (jsonMode_)
                 {
-                    detail::appendJsonField(messageParams_, p.name(), std::move(p).value());
+                    detail::appendJsonField(
+                        messageParams_, std::move(p.name()), std::move(p.value()));
                 }
             }
 

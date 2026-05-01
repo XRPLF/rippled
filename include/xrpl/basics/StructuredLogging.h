@@ -185,6 +185,13 @@ public:
     }
 
     /** @brief Get the parameter value. */
+    [[nodiscard]] T&
+    value() &
+    {
+        return value_;
+    }
+
+    /** @brief Get the parameter value. */
     [[nodiscard]] T&&
     value() &&
     {
