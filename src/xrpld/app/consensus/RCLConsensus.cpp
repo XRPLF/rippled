@@ -905,7 +905,7 @@ RCLConsensus::getJson(bool full) const
 {
     Json::Value ret;
     {
-        std::lock_guard const _{mutex_};
+        std::scoped_lock const _{mutex_};
         ret = consensus_.getJson(full);
     }
     ret["validating"] = adaptor_.validating();
@@ -919,7 +919,7 @@ RCLConsensus::timerEntry(
 {
     try
     {
-        std::lock_guard const _{mutex_};
+        std::scoped_lock const _{mutex_};
         consensus_.timerEntry(now, clog);
     }
     catch (SHAMapMissingNode const& mn)
@@ -938,7 +938,7 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
 {
     try
     {
-        std::lock_guard const _{mutex_};
+        std::scoped_lock const _{mutex_};
         consensus_.gotTxSet(now, txSet);
     }
     catch (SHAMapMissingNode const& mn)
@@ -956,14 +956,14 @@ RCLConsensus::simulate(
     NetClock::time_point const& now,
     std::optional<std::chrono::milliseconds> consensusDelay)
 {
-    std::lock_guard const _{mutex_};
+    std::scoped_lock const _{mutex_};
     consensus_.simulate(now, consensusDelay);
 }
 
 bool
 RCLConsensus::peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal)
 {
-    std::lock_guard const _{mutex_};
+    std::scoped_lock const _{mutex_};
     return consensus_.peerProposal(now, newProposal);
 }
 
@@ -1062,7 +1062,7 @@ RCLConsensus::startRound(
     hash_set<NodeID> const& nowTrusted,
     std::unique_ptr<std::stringstream> const& clog)
 {
-    std::lock_guard const _{mutex_};
+    std::scoped_lock const _{mutex_};
     consensus_.startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr, nowTrusted), clog);
 }

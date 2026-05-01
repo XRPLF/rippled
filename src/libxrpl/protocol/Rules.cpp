@@ -40,7 +40,9 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // the value is needed. That could get expensive fast.
     bool const enableLargeNumbers =
         !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
-    Number::setMantissaScale(enableLargeNumbers ? MantissaRange::large : MantissaRange::small);
+    Number::setMantissaScale(
+        enableLargeNumbers ? MantissaRange::mantissa_scale::large
+                           : MantissaRange::mantissa_scale::small);
 
     *getCurrentTransactionRulesRef() = std::move(r);
 }
@@ -139,10 +141,18 @@ Rules::operator!=(Rules const& other) const
 }
 
 bool
-isFeatureEnabled(uint256 const& feature)
+isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
 {
     auto const& rules = getCurrentTransactionRules();
-    return rules && rules->enabled(feature);
+    if (!rules)
+        return resultIfNoRules;
+    return rules->enabled(feature);
+}
+
+bool
+isFeatureEnabled(uint256 const& feature)
+{
+    return isFeatureEnabled(feature, false);
 }
 
 }  // namespace xrpl

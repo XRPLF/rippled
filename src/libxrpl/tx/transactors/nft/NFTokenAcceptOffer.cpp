@@ -68,15 +68,12 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
             {
-                // Before fixExpiredNFTokenOfferRemoval amendment, expired
-                // offers caused tecEXPIRED in preclaim, leaving them on ledger
-                // forever. After the amendment, we allow expired offers to
-                // reach doApply() where they get deleted and tecEXPIRED is
-                // returned.
-                if (!ctx.view.rules().enabled(fixExpiredNFTokenOfferRemoval))
+                // Before fixSecurity3_1_3 amendment, expired offers caused tecEXPIRED in preclaim,
+                // leaving them on ledger forever. After the amendment, we allow expired offers to
+                // reach doApply() where they get deleted and tecEXPIRED is returned.
+                if (!ctx.view.rules().enabled(fixSecurity3_1_3))
                     return {nullptr, tecEXPIRED};
-                // Amendment enabled: return the expired offer to be handled in
-                // doApply
+                // Amendment enabled: return the expired offer to be handled in doApply.
             }
 
             if ((*offerSLE)[sfAmount].negative())
@@ -189,7 +186,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // own currency
         auto const needed = bo->at(sfAmount);
 
-        if (accountFunds(ctx.view, (*bo)[sfOwner], needed, fhZERO_IF_FROZEN, ctx.j) < needed)
+        if (accountFunds(
+                ctx.view, (*bo)[sfOwner], needed, FreezeHandling::fhZERO_IF_FROZEN, ctx.j) < needed)
             return tecINSUFFICIENT_FUNDS;
 
         // Check that the account accepting the buy offer (he's selling the NFT)
@@ -257,7 +255,9 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // mode, because then we are confirming that the broker can
             // cover what the buyer will pay, which doesn't make sense, causes
             // an unnecessary tec, and is also resolved with this amendment.
-            if (accountFunds(ctx.view, ctx.tx[sfAccount], needed, fhZERO_IF_FROZEN, ctx.j) < needed)
+            if (accountFunds(
+                    ctx.view, ctx.tx[sfAccount], needed, FreezeHandling::fhZERO_IF_FROZEN, ctx.j) <
+                needed)
                 return tecINSUFFICIENT_FUNDS;
         }
 
@@ -345,9 +345,9 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
     // just confirm that the end state is OK.
     if (!isTesSuccess(result))
         return result;
-    if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (accountFunds(view(), from, amount, FreezeHandling::fhZERO_IF_FROZEN, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
-    if (accountFunds(view(), to, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (accountFunds(view(), to, amount, FreezeHandling::fhZERO_IF_FROZEN, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
     return tesSUCCESS;
 }
@@ -450,10 +450,9 @@ NFTokenAcceptOffer::doApply()
     auto bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
     auto so = loadToken(ctx_.tx[~sfNFTokenSellOffer]);
 
-    // With fixExpiredNFTokenOfferRemoval amendment, check for expired offers
-    // and delete them, returning tecEXPIRED. This ensures expired offers
-    // are properly cleaned up from the ledger.
-    if (view().rules().enabled(fixExpiredNFTokenOfferRemoval))
+    // With fixSecurity3_1_3 amendment, check for expired offers and delete them, returning
+    // tecEXPIRED. This ensures expired offers are properly cleaned up from the ledger.
+    if (view().rules().enabled(fixSecurity3_1_3))
     {
         bool foundExpired = false;
 

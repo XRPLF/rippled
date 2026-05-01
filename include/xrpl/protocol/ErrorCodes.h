@@ -17,6 +17,8 @@ namespace xrpl {
 //
 // Please only append to this table. Do not "fill-in" gaps and do not re-use
 // or repurpose error code values.
+// Protocol-wide, 50+ files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum error_code_i {
     // -1 represents codes not listed in this enumeration
     rpcUNKNOWN = -1,
@@ -148,6 +150,8 @@ enum error_code_i {
 
     These values need to remain stable.
 */
+// Protocol-wide, 50+ files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum warning_code_i {
     warnRPC_UNSUPPORTED_MAJORITY = 1001,
     warnRPC_AMENDMENT_BLOCKED = 1002,

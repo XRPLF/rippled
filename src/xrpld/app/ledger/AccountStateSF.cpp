@@ -19,7 +19,8 @@ AccountStateSF::gotNode(
     Blob&& nodeData,
     SHAMapNodeType) const
 {
-    db_.store(hotACCOUNT_NODE, std::move(nodeData), nodeHash.as_uint256(), ledgerSeq);
+    db_.store(
+        NodeObjectType::hotACCOUNT_NODE, std::move(nodeData), nodeHash.as_uint256(), ledgerSeq);
 }
 
 std::optional<Blob>

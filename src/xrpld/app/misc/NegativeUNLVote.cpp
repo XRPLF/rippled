@@ -93,7 +93,7 @@ NegativeUNLVote::doVoting(
             auto n = choose(prevLedger->header().hash, candidates.toDisableCandidates);
             XRPL_ASSERT(
                 nidToKeyMap.contains(n), "xrpl::NegativeUNLVote::doVoting : found node to disable");
-            addTx(seq, nidToKeyMap.at(n), ToDisable, initialSet);
+            addTx(seq, nidToKeyMap.at(n), NegativeUNLModify::ToDisable, initialSet);
         }
 
         if (!candidates.toReEnableCandidates.empty())
@@ -101,7 +101,7 @@ NegativeUNLVote::doVoting(
             auto n = choose(prevLedger->header().hash, candidates.toReEnableCandidates);
             XRPL_ASSERT(
                 nidToKeyMap.contains(n), "xrpl::NegativeUNLVote::doVoting : found node to enable");
-            addTx(seq, nidToKeyMap.at(n), ToReEnable, initialSet);
+            addTx(seq, nidToKeyMap.at(n), NegativeUNLModify::ToReEnable, initialSet);
         }
     }
 }
@@ -114,7 +114,7 @@ NegativeUNLVote::addTx(
     std::shared_ptr<SHAMap> const& initialSet)
 {
     STTx const negUnlTx(ttUNL_MODIFY, [&](auto& obj) {
-        obj.setFieldU8(sfUNLModifyDisabling, modify == ToDisable ? 1 : 0);
+        obj.setFieldU8(sfUNLModifyDisabling, modify == NegativeUNLModify::ToDisable ? 1 : 0);
         obj.setFieldU32(sfLedgerSequence, seq);
         obj.setFieldVL(sfUNLModifyValidator, vp.slice());
     });
@@ -132,7 +132,8 @@ NegativeUNLVote::addTx(
         JLOG(j_.debug()) << "N-UNL: ledger seq=" << seq
                          << ", add a ttUNL_MODIFY Tx with txID: " << negUnlTx.getTransactionID()
                          << ", the validator to "
-                         << (modify == ToDisable ? "disable: " : "re-enable: ") << vp;
+                         << (modify == NegativeUNLModify::ToDisable ? "disable: " : "re-enable: ")
+                         << vp;
     }
 }
 
@@ -308,7 +309,7 @@ NegativeUNLVote::findAllCandidates(
 void
 NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     for (auto const& n : nowTrusted)
     {
         if (!newValidators_.contains(n))
@@ -322,7 +323,7 @@ NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrust
 void
 NegativeUNLVote::purgeNewValidators(LedgerIndex seq)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto i = newValidators_.begin();
     while (i != newValidators_.end())
     {
