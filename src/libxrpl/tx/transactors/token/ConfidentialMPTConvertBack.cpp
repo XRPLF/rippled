@@ -48,6 +48,15 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+XRPAmount
+ConfidentialMPTConvertBack::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
+    // We charge 9 extra base fees so the total is
+    // 10 * baseFee + (signerCount * baseFee).
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * 9;
+}
+
 /**
  * Verifies the cryptographic proofs for a ConvertBack transaction.
  *

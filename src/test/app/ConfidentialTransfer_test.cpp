@@ -6733,6 +6733,125 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         submitWithDivergentC1(Participant::Auditor);
     }
 
+    void
+    testConfidentialMPTBaseFee(FeatureBitset features)
+    {
+        testcase("test confidential transactions fee");
+        using namespace test::jtx;
+
+        auto setup =
+            [&](MPTTester& mpt, Account const& alice, Account const& bob, Account const& carol) {
+                mpt.create({
+                    .ownerCount = 1,
+                    .flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer |
+                        tfMPTCanClawback,
+                });
+                mpt.authorize({.account = bob});
+                mpt.authorize({.account = carol});
+                mpt.pay(alice, bob, 100);
+                mpt.pay(alice, carol, 50);
+                mpt.generateKeyPair(alice);
+                mpt.generateKeyPair(bob);
+                mpt.generateKeyPair(carol);
+                mpt.set({.account = alice, .issuerPubKey = mpt.getPubKey(alice)});
+            };
+
+        // test expected base fee for confidential transactions
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob"), carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            setup(mptAlice, alice, bob, carol);
+
+            auto const baseFee = env.current()->fees().base;
+            auto const expectedFee = baseFee * 10;
+
+            // lambda function to submit confidential transaction and check fee charged to the
+            // account
+            auto checkFee = [&](Account const& acct, auto&& submitFn) {
+                auto const before = env.balance(acct);
+                submitFn();
+                auto const after = env.balance(acct);
+                BEAST_EXPECT(before - after == expectedFee);
+            };
+
+            checkFee(bob, [&]() {
+                mptAlice.convert(
+                    {.account = bob,
+                     .amt = 50,
+                     .holderPubKey = mptAlice.getPubKey(bob),
+                     .fee = expectedFee});
+            });
+            checkFee(carol, [&]() {
+                mptAlice.convert(
+                    {.account = carol,
+                     .amt = 10,
+                     .holderPubKey = mptAlice.getPubKey(carol),
+                     .fee = expectedFee});
+            });
+            checkFee(bob, [&]() { mptAlice.mergeInbox({.account = bob, .fee = expectedFee}); });
+            checkFee(carol, [&]() { mptAlice.mergeInbox({.account = carol, .fee = expectedFee}); });
+            checkFee(bob, [&]() {
+                mptAlice.send({.account = bob, .dest = carol, .amt = 5, .fee = expectedFee});
+            });
+            checkFee(bob, [&]() {
+                mptAlice.convertBack({.account = bob, .amt = 5, .fee = expectedFee});
+            });
+            checkFee(alice, [&]() {
+                mptAlice.confidentialClaw(
+                    {.account = alice, .holder = carol, .amt = 15, .fee = expectedFee});
+            });
+        }
+
+        // test insufficient fee for confidential transactions
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob"), carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            setup(mptAlice, alice, bob, carol);
+            auto const baseFee = env.current()->fees().base;
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 1,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .fee = baseFee * 10 - 1,
+                 .err = telINSUF_FEE_P});
+            mptAlice.mergeInbox({.account = bob, .fee = baseFee, .err = telINSUF_FEE_P});
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 1,
+                 .fee = baseFee * 9,
+                 .err = telINSUF_FEE_P});
+            mptAlice.convertBack({.account = bob, .amt = 1, .fee = baseFee, .err = telINSUF_FEE_P});
+            mptAlice.confidentialClaw(
+                {.account = alice,
+                 .holder = carol,
+                 .amt = 1,
+                 .fee = baseFee,
+                 .err = telINSUF_FEE_P});
+        }
+
+        // test excessive fee for confidential transactions
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob"), carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            setup(mptAlice, alice, bob, carol);
+
+            auto const baseFee = env.current()->fees().base;
+            auto const highFee = baseFee * 20;
+            auto const bobBefore = env.balance(bob);
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 1,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .fee = highFee});
+            BEAST_EXPECT(env.balance(bob) == bobBefore - highFee);
+        }
+    }
+
     // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
     // Convert, MergeInbox, Send, ConvertBack) using tickets instead of regular account
     // sequence numbers.
@@ -7082,7 +7201,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
             // 3 signers, Bob, Carol, Dave
-            auto const batchFee = batch::calcBatchFee(env, 1, 3);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 3);
 
             auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 100}, bobSeq + 1);
             auto const jv2 = mpt.mergeInboxJV({.account = carol});
@@ -7119,7 +7238,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             // tfAllOrNothing — rejects the whole batch as 2nd txn proof is incorrect
             {
                 auto const bobSeq = env.seq(bob);
-                auto const batchFee = batch::calcBatchFee(env, 0, 2);
+                auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
 
                 auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
                 auto const jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
@@ -7140,7 +7259,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             // If we change batch mode to be tfIndependent — txn 1 applies, inner 2 fails.
             {
                 auto const bobSeq = env.seq(bob);
-                auto const batchFee = batch::calcBatchFee(env, 0, 2);
+                auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
 
                 auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
                 auto const jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
@@ -7176,7 +7295,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
 
             {
                 auto const bobSeq = env.seq(bob);
-                auto const batchFee = batch::calcBatchFee(env, 0, 2);
+                auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
 
                 // jv1 is built against the current ledger state (spending=200).
                 auto const jv1 =
@@ -7215,7 +7334,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
                 setupBatchEnv(mpt2, alice2, bob2, carol2, dave2, 150, 0);
 
                 auto const bobSeq = env2.seq(bob2);
-                auto const batchFee = batch::calcBatchFee(env2, 0, 2);
+                auto const batchFee = batch::calcConfidentialBatchFee(env2, 0, 2);
 
                 auto const jv1 =
                     mpt2.sendJV({.account = bob2, .dest = carol2, .amt = 100}, bobSeq + 1);
@@ -7261,7 +7380,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         {
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
 
             auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
             auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
@@ -7300,7 +7419,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         {
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
 
             // Both proofs fail range check (amount > balance)
             auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
@@ -7323,7 +7442,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         {
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
 
             auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
             auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
@@ -7363,7 +7482,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         {
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
 
             auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
             auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
@@ -7383,7 +7502,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         {
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
-            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
 
             auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
             auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
@@ -7424,7 +7543,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         {
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
-            auto const batchFee = batch::calcBatchFee(env, 1, 3);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 3);
 
             auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
 
@@ -7482,7 +7601,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             mpt.pay(alice, bob, 50);
 
             auto const bobSeq = env.seq(bob);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
 
             // jv1: convert 50 regular MPT into confidential inbox
             auto const jv1 = mpt.convertJV({.account = bob, .amt = 50}, bobSeq + 1);
@@ -7523,7 +7642,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             mpt.pay(alice, bob, 50);
 
             auto const bobSeq = env.seq(bob);
-            auto const batchFee = batch::calcBatchFee(env, 0, 3);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 3);
 
             auto const jv1 = mpt.convertJV({.account = bob, .amt = 50}, bobSeq + 1);
             auto const jv2 = mpt.mergeInboxJV({.account = bob});
@@ -7586,7 +7705,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             auto const carolSeq = env.seq(carol);
             auto const daveSeq = env.seq(dave);
             // 2 extra signers (carol, dave), 4 inner txns
-            auto const batchFee = batch::calcBatchFee(env, 2, 4);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 2, 4);
 
             // jv1: bob sends 30 to carol
             auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 30}, bobSeq + 1);
@@ -7633,7 +7752,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
 
             auto const bobSeq = env.seq(bob);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
 
             // jv1: bob sends 30 to carol (spending 100->70, version V->V+1)
             auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 30}, bobSeq + 1);
@@ -7679,7 +7798,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
 
             auto const bobSeq = env.seq(bob);
             // 0 extra signers: all inner txns are from bob;
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
 
             // When the outer uses a ticket (seq=0), inner txns start from bobSeq, bobSeq+1.
             // jv2 must use chain state predicted after jv1 since both sends are from bob.
@@ -7721,7 +7840,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             env.close();
 
             auto const bobSeq = env.seq(bob);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
 
             // jv1: proof bound to ticketSeq1.
             auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 40}, ticketSeq1);
@@ -7758,7 +7877,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             env.close();
 
             auto const bobSeq = env.seq(bob);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
 
             // Proof intentionally built with account seq (bobSeq+1) instead of ticketSeq.
             auto const badJV = mpt.sendJV({.account = bob, .dest = carol, .amt = 40}, bobSeq + 1);
@@ -9767,6 +9886,9 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
 
         // Crafted-proof Tests
         testSendSharedRandomnessViolation(features);
+
+        // Fee Tests
+        testConfidentialMPTBaseFee(features);
 
         // Ticket Tests
         testWithTickets(features);

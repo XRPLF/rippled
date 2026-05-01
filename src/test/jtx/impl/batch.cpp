@@ -37,6 +37,16 @@ calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t con
     return ((numSigners + 2) * feeDrops) + feeDrops * txns;
 }
 
+XRPAmount
+calcConfidentialBatchFee(
+    test::jtx::Env const& env,
+    uint32_t const& numSigners,
+    uint32_t const& txns)
+{
+    XRPAmount const feeDrops = env.current()->fees().base;
+    return ((numSigners + 2) * feeDrops) + feeDrops * 10 * txns;
+}
+
 // Batch.
 json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags)

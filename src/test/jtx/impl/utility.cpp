@@ -57,7 +57,22 @@ fillFee(json::Value& jv, ReadView const& view)
 {
     if (jv.isMember(jss::Fee))
         return;
-    jv[jss::Fee] = to_string(view.fees().base);
+
+    auto const base = view.fees().base;
+
+    // For confidential transactions, the fee higher because confidential
+    // transaction processing is more expensive.
+    auto const txType = jv[jss::TransactionType].asString();
+    if (txType == jss::ConfidentialMPTConvert || txType == jss::ConfidentialMPTConvertBack ||
+        txType == jss::ConfidentialMPTSend || txType == jss::ConfidentialMPTMergeInbox ||
+        txType == jss::ConfidentialMPTClawback)
+    {
+        jv[jss::Fee] = to_string(base * 10);
+    }
+    else
+    {
+        jv[jss::Fee] = to_string(base);
+    }
 }
 
 void
