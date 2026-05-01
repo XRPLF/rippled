@@ -39,7 +39,7 @@ class TransactionEntry_test : public beast::unit_test::suite
         {
             // no params
             auto const result = env.client().invoke("transaction_entry", {})[jss::result];
-            BEAST_EXPECT(result[jss::error] == "fieldNotFoundTransaction");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
         }
 
@@ -56,7 +56,7 @@ class TransactionEntry_test : public beast::unit_test::suite
             params[jss::ledger] = "current";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
+            BEAST_EXPECT(result[jss::error] == "notImpl");
             BEAST_EXPECT(result[jss::status] == "error");
         }
 
@@ -65,8 +65,7 @@ class TransactionEntry_test : public beast::unit_test::suite
             params[jss::ledger] = "closed";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(!result[jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::error] == "malformedRequest");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
         }
 
@@ -127,8 +126,7 @@ class TransactionEntry_test : public beast::unit_test::suite
         {
             // Valid structure, but transaction not found.
             Json::Value const result{env.rpc("transaction_entry", txHash, "closed")};
-            BEAST_EXPECT(!result[jss::result][jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::result][jss::error] == "transactionNotFound");
+            BEAST_EXPECT(result[jss::result][jss::error] == "txnNotFound");
             BEAST_EXPECT(result[jss::result][jss::status] == "error");
         }
     }

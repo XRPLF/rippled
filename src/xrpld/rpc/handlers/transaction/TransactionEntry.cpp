@@ -8,6 +8,8 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/RPCErr.h>
 
 #include <memory>
 
@@ -31,14 +33,14 @@ doTransactionEntry(RPC::JsonContext& context)
 
     if (!context.params.isMember(jss::tx_hash))
     {
-        jvResult[jss::error] = "fieldNotFoundTransaction";
+        return RPC::missing_field_error(jss::tx_hash);
     }
     else if (jvResult.get(jss::ledger_hash, Json::nullValue).isNull())
     {
         // We don't work on ledger current.
 
         // XXX We don't support any transaction yet.
-        jvResult[jss::error] = "notYetImplemented";
+        return rpcError(rpcNOT_IMPL);
     }
     else
     {
@@ -47,14 +49,13 @@ doTransactionEntry(RPC::JsonContext& context)
         // routine, returning success or failure.
         if (!uTransID.parseHex(context.params[jss::tx_hash].asString()))
         {
-            jvResult[jss::error] = "malformedRequest";
-            return jvResult;
+            return rpcError(rpcINVALID_PARAMS);
         }
 
         auto [sttx, stobj] = lpLedger->txRead(uTransID);
         if (!sttx)
         {
-            jvResult[jss::error] = "transactionNotFound";
+            return rpcError(rpcTXN_NOT_FOUND);
         }
         else
         {
