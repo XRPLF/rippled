@@ -6975,7 +6975,6 @@ class Vault_test : public beast::unit_test::suite
             // outstanding-debt accounting; sfAssetsTotal increases only by
             // the (small) interestDue. After this, sfAssetsTotal is at or
             // very close to 9.999e15 while sfAssetsAvailable is well below.
-            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
             {
                 using namespace loan;
                 env(set(borrower, brokerKeylet.key, Number{1, 15}),
@@ -7083,7 +7082,6 @@ class Vault_test : public beast::unit_test::suite
             // magnitude). Then 2 USD origination fee to alice: alice's
             // trust line at 9.999e15 canonicalizes the inflow, gaining 1
             // not 2.
-            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
             {
                 using namespace loan;
                 env(set(borrower, brokerKeylet.key, Number{100}),
