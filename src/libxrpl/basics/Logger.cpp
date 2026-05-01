@@ -552,7 +552,7 @@ Logger::~Logger()
 
     if (logger_ == nullptr)
     {
-        return;
+        return;  // LCOV_EXCL_LINE
     }
 
     if (logger_.use_count() == LAST_LOGGER_REF_COUNT)

@@ -114,6 +114,20 @@ protected:
         return LogServiceState::registerLogger(channel, severity);
     }
 
+    /// Whether the LogService has any sinks (friend access).
+    static bool
+    hasSinks()
+    {
+        return LogServiceState::hasSinks();
+    }
+
+    /// Reset the LogService (friend access).
+    static void
+    resetService()
+    {
+        LogServiceState::reset();
+    }
+
     /// Install two sinks: one with NonCriticalFormatter, one critical-only.
     /// Returns {non-critical output, critical output}.
     static std::pair<std::ostringstream*, std::ostringstream*>
@@ -564,6 +578,46 @@ TEST_F(LoggerFixture, sync_mode_creates_sync_logger)
     ASSERT_NE(spdlogger, nullptr);
     EXPECT_EQ(dynamic_cast<spdlog::async_logger*>(spdlogger.get()), nullptr)
         << "Logger should be a sync logger when isAsync=false";
+}
+
+// -- Double initialisation guard ----------------------------------------------
+
+TEST_F(LoggerFixture, double_init_throws)
+{
+    initLogging(false);
+
+    // Second init should throw because LogServiceState is already initialized
+    LoggingConfiguration const config{};
+    EXPECT_THROW(LogService::init(config), std::logic_error);
+}
+
+TEST_F(LoggerFixture, reset_before_init_throws)
+{
+    // reset() without prior init should throw
+    EXPECT_THROW(resetService(), std::logic_error);
+}
+
+TEST_F(LoggerFixture, has_sinks_after_init)
+{
+    EXPECT_FALSE(hasSinks()) << "No sinks before init";
+
+    initLogging(false);
+    EXPECT_TRUE(hasSinks()) << "Should have sinks after init";
+}
+
+TEST_F(LoggerFixture, has_no_sinks_after_reset)
+{
+    initLogging(false);
+    EXPECT_TRUE(hasSinks());
+
+    resetService();
+    EXPECT_FALSE(hasSinks()) << "Sinks should be cleared after reset";
+}
+
+TEST_F(LoggerFixture, register_logger_before_init_throws)
+{
+    // registerLogger without prior init should throw
+    EXPECT_THROW(registerLogger("Uninitialized"), std::logic_error);
 }
 
 // -- registerLogger re-registration -------------------------------------------

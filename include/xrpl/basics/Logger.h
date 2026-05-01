@@ -207,23 +207,23 @@ class Logger
         [[maybe_unused]] Pump&
         operator<<(xrpl::log::Parameter<T>&& p)
         {
-            if (!enabled_)
-                return *this;
+            if (enabled_)
+            {
+                // Append the raw string representation to the output buffer
+                if constexpr (detail::HasToString<T>)
+                {
+                    auto const s = to_string(p.value());
+                    stream_.append(s.data(), s.data() + s.size());
+                }
+                else
+                {
+                    fmt::format_to(fmt::appender(stream_), "{}", p.value());
+                }
 
-            // Append the raw string representation to the output buffer
-            if constexpr (detail::HasToString<T>)
-            {
-                auto const s = to_string(p.value());
-                stream_.append(s.data(), s.data() + s.size());
-            }
-            else
-            {
-                fmt::format_to(fmt::appender(stream_), "{}", p.value());
-            }
-
-            if (jsonMode_)
-            {
-                detail::appendJsonField(messageParams_, p.name(), std::move(p).value());
+                if (jsonMode_)
+                {
+                    detail::appendJsonField(messageParams_, p.name(), std::move(p).value());
+                }
             }
 
             return *this;
