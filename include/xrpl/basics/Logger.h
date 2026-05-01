@@ -37,11 +37,11 @@ namespace xrpl {
  * Note: Currently this introduces potential shadowing (unlikely).
  */
 #ifndef COVERAGE_ENABLED
-#define LOG(x)                                 \
-    if (auto xrpl_pump__ = x; not xrpl_pump__) \
-    {                                          \
-    }                                          \
-    else                                       \
+#define LOG(x)                              \
+    if (auto xrpl_pump__ = x; !xrpl_pump__) \
+    {                                       \
+    }                                       \
+    else                                    \
         xrpl_pump__
 #else
 #define LOG(x) x
@@ -433,6 +433,19 @@ protected:
      */
     static std::unique_ptr<spdlog::formatter>
     makeFormatter(std::string const& pattern);
+
+    /**
+     * @brief Creates a formatter that suppresses critical-level messages.
+     *
+     * Wraps the given formatter so that only messages below critical severity
+     * are formatted.  Critical messages produce no output through this
+     * formatter (they are routed to a separate stderr sink instead).
+     *
+     * @param wrappedFormatter The underlying formatter to delegate to
+     * @return A unique_ptr to the NonCriticalFormatter
+     */
+    static std::unique_ptr<spdlog::formatter>
+    makeNonCriticalFormatter(std::unique_ptr<spdlog::formatter> wrappedFormatter);
 
     /**
      * @brief Returns the active log format pattern.

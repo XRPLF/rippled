@@ -60,7 +60,7 @@ toSpdlogLevel(Severity sev)
         case Severity::FTL:
             return spdlog::level::critical;
     }
-    return spdlog::level::info;
+    return spdlog::level::info;  // LCOV_EXCL_LINE
 }
 
 std::string_view
@@ -336,13 +336,13 @@ LogServiceState::initialized()
 bool
 LogServiceState::hasSinks()
 {
-    return not sinks_.empty();
+    return !sinks_.empty();
 }
 
 void
 LogServiceState::reset()
 {
-    if (not initialized())
+    if (!initialized())
     {
         throw std::logic_error("LogService is not initialized");
     }
@@ -358,7 +358,7 @@ LogServiceState::reset()
 std::shared_ptr<spdlog::logger>
 LogServiceState::registerLogger(std::string_view channel, std::optional<Severity> severity)
 {
-    if (not initialized_)
+    if (!initialized_)
     {
         throw std::logic_error("LogService is not initialized");
     }
@@ -404,9 +404,9 @@ LogService::getSinks(LoggingConfiguration const& config, std::string const& form
     if (config.directory.has_value())
     {
         std::filesystem::path const dirPath{config.directory.value()};
-        if (not std::filesystem::exists(dirPath))
+        if (!std::filesystem::exists(dirPath))
         {
-            if (std::error_code error; not std::filesystem::create_directories(dirPath, error))
+            if (std::error_code error; !std::filesystem::create_directories(dirPath, error))
             {
                 return Unexpected{fmt::format(
                     "Couldn't create logs directory '{}': {}", dirPath.string(), error.message())};
@@ -532,6 +532,12 @@ std::unique_ptr<spdlog::formatter>
 LogServiceState::makeFormatter(std::string const& pattern)
 {
     return createPatternFormatter(pattern);
+}
+
+std::unique_ptr<spdlog::formatter>
+LogServiceState::makeNonCriticalFormatter(std::unique_ptr<spdlog::formatter> wrappedFormatter)
+{
+    return std::make_unique<NonCriticalFormatter>(std::move(wrappedFormatter));
 }
 
 Logger::Logger(std::string_view const channel)
