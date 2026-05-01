@@ -78,8 +78,10 @@ PKG_RELEASE=1
 docker run --rm \
   -v "$(pwd):/src" \
   -w /src \
+  -e PKG_VERSION="$VERSION" \
+  -e PKG_RELEASE="$PKG_RELEASE" \
   "$IMAGE" \
-  ./package/build_pkg.sh . build "$VERSION" "$PKG_RELEASE"
+  ./package/build_pkg.sh
 
 # Output:
 #   build/debbuild/*.deb         (DEB + dbgsym .ddeb)
@@ -111,12 +113,21 @@ message.
 
 ## How `build_pkg.sh` works
 
-`build_pkg.sh <src_dir> <build_dir> [version] [pkg_release]` stages
-all files and invokes the platform build tool. It resolves `src_dir` and
-`build_dir` to absolute paths, then calls `stage_common()` to copy the binary,
-config files, and shared support files into the staging area. The package
-format is taken from the `PKG_TYPE` env var if set; otherwise it is inferred
-from the available package manager (`apt-get` -> deb, `dnf`/`yum` -> rpm).
+`build_pkg.sh` takes no arguments — it is configured entirely via environment
+variables (all optional):
+
+| Var                 | Default                       | Purpose                             |
+| ------------------- | ----------------------------- | ----------------------------------- |
+| `SRC_DIR`           | `$PWD`                        | repo root                           |
+| `BUILD_DIR`         | `$PWD/build`                  | directory holding pre-built `xrpld` |
+| `PKG_VERSION`       | parsed from `xrpld --version` | version string, e.g. `3.2.0-b1`     |
+| `PKG_RELEASE`       | `1`                           | package release number              |
+| `PKG_TYPE`          | inferred from package manager | `deb` or `rpm`                      |
+| `SOURCE_DATE_EPOCH` | latest git commit ctime       | reproducibility timestamp           |
+
+It resolves `SRC_DIR` and `BUILD_DIR` to absolute paths, then calls
+`stage_common()` to copy the binary, config files, and shared support files
+into the staging area, and invokes the platform build tool.
 
 ### RPM
 

@@ -17,12 +17,20 @@ endif()
 
 find_program(RPMBUILD_EXECUTABLE rpmbuild)
 find_program(DPKG_BUILDPACKAGE_EXECUTABLE dpkg-buildpackage)
+
+set(package_env
+    SRC_DIR=${CMAKE_SOURCE_DIR}
+    BUILD_DIR=${CMAKE_BINARY_DIR}
+    PKG_VERSION=${xrpld_version}
+    PKG_RELEASE=${pkg_release}
+)
+
 if(RPMBUILD_EXECUTABLE OR DPKG_BUILDPACKAGE_EXECUTABLE)
     add_custom_target(
         package
         COMMAND
-            ${CMAKE_SOURCE_DIR}/package/build_pkg.sh ${CMAKE_SOURCE_DIR}
-            ${CMAKE_BINARY_DIR} "${xrpld_version}" ${pkg_release}
+            ${CMAKE_COMMAND} -E env ${package_env}
+            ${CMAKE_SOURCE_DIR}/package/build_pkg.sh
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         DEPENDS xrpld
         COMMENT "Building Linux package (deb/rpm inferred from host tooling)"

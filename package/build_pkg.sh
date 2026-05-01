@@ -3,19 +3,18 @@ set -euo pipefail
 
 # Build an RPM or Debian package from a pre-built xrpld binary.
 #
-# Usage: build_pkg.sh <src_dir> <build_dir> [version] [pkg_release]
-#   src_dir     : path to repository root
-#   build_dir   : directory containing the pre-built xrpld binary
-#   version     : package version string (e.g. 3.2.0-b1)
-#   pkg_release : package release number (default: 1)
-#
-# The package format is taken from the PKG_TYPE env var if set; otherwise it
-# is inferred from the available package manager (apt-get -> deb, dnf/yum -> rpm).
+# Configuration is read entirely from environment variables:
+#   SRC_DIR           : repo root (default: $PWD)
+#   BUILD_DIR         : directory containing pre-built xrpld (default: $PWD/build)
+#   PKG_VERSION       : version string, e.g. 3.2.0-b1 (default: parsed from xrpld --version)
+#   PKG_RELEASE       : package release number (default: 1)
+#   PKG_TYPE          : deb | rpm (default: inferred from package manager)
+#   SOURCE_DATE_EPOCH : reproducibility timestamp (default: latest git commit ctime)
 
-SRC_DIR="$(cd "${1:?src_dir required}" && pwd)"
-BUILD_DIR="$(cd "${2:?build_dir required}" && pwd)"
-VERSION="${3:-$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3}')}"
-PKG_RELEASE="${4:-1}"
+SRC_DIR="$(cd "${SRC_DIR:-${PWD}}" && pwd)"
+BUILD_DIR="$(cd "${BUILD_DIR:-${PWD}/build}" && pwd)"
+VERSION="${PKG_VERSION:-$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3}')}"
+PKG_RELEASE="${PKG_RELEASE:-1}"
 
 if [[ -z "${PKG_TYPE:-}" ]]; then
     if command -v apt-get >/dev/null 2>&1; then
