@@ -273,23 +273,43 @@ accountSend(
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
     AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 
-/** Like accountSend, but verifies that sender loss and receiver gain agree
- * at the asset's precision. For IOU transfers, canonicalization at the
- * 16-digit mantissa edge can silently destroy precision when the two
- * trust lines sit at different magnitudes: the sender's balance loses
- * more than the receiver's balance gains, with the difference returning
- * to the issuer's free liability pool. Transactors whose accounting
- * depends on exact value transfer (vault deposit/withdraw, loan
- * disbursement, broker cover ops) should use this entrypoint.
+/** Like `accountSend`, but verifies that the IOU transfer conserves
+ * value at the asset's precision and returns `tecPRECISION_LOSS` if it
+ * does not. Transactors whose accounting depends on exact value transfer
+ * (vault deposit/withdraw, loan disbursement, broker cover ops) should
+ * use this entrypoint.
  *
- * On success, sender and receiver deltas are compared after both have
- * been quantized to the coarser of the two trust lines' STAmount scales
- * via `roundToAsset` — the same conservation idiom `VaultInvariant` uses
- * at finalize time. Sub-grid canonicalization noise on a side is
- * admitted; a delta mismatch of ≥ 1 ULP at the coarser endpoint returns
- * `tecPRECISION_LOSS`. The check is skipped when either side is the
- * asset's issuer (no counterparty trust line to round) or when the asset
- * is native — XRP/MPT canonicalization is integer-exact.
+ * The bug class being caught: when two trust lines sit at sufficiently
+ * different magnitudes, IOU canonicalization on each side rounds to a
+ * different precision floor, and the sender's balance loses more than
+ * the receiver's gains (or vice versa). Pre-`fixCleanup3_2_0` this is
+ * silent at the helper level and either slips past invariants or fires
+ * `tecINVARIANT_FAILED` at finalize time.
+ *
+ * Verification has three shapes depending on which sides have a real
+ * counterparty trust line:
+ *
+ *   - Both sides non-issuer (the common case): the two trust lines
+ *     round independently. Compare `senderDelta` to `receiverDelta`,
+ *     anchored at the coarser of the two pre-state scales — the same
+ *     `roundToAsset`-then-equality idiom `VaultInvariant` uses at
+ *     finalize time. Sub-grid canonicalization noise is admitted; a
+ *     delta mismatch of ≥ 1 ULP at the coarser endpoint is rejected.
+ *
+ *   - Sender is the asset issuer (mint): only the receiver's trust
+ *     line rounds. Compare `receiverDelta` to the canonicalized amount
+ *     at `scale(amount)`. The user's request is at STAmount precision
+ *     (16-digit canonical) and there is no second rail to compensate
+ *     for sub-rail-ULP truncation; any discrepancy at the receiver's
+ *     grid from the requested amount is a real over- or under-mint.
+ *
+ *   - Receiver is the asset issuer (destroy): symmetric — only the
+ *     sender's trust line rounds. Compare `senderDelta` to amount at
+ *     `scale(amount)`.
+ *
+ * Skips verification entirely (falls through to plain `accountSend`)
+ * pre-amendment, for native (XRP/MPT integer-exact in drops/mantissa),
+ * and for the degenerate `from == issuer && to == issuer` case.
  */
 [[nodiscard]] TER
 accountSendExact(

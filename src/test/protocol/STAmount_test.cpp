@@ -1206,6 +1206,80 @@ public:
     //--------------------------------------------------------------------------
 
     void
+    testEqualAtAssetScale()
+    {
+        testcase("equalAtAssetScale");
+
+        Asset const xrp{xrpIssue()};
+        Asset const usd{Issue{Currency{1}, AccountID(0x4985601)}};
+        Asset const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+
+        // Native (XRP): scale = 0 always, ULP = 1 drop. Predicate
+        // degenerates to integer equality.
+        {
+            Number const ref{1'000'000};
+            BEAST_EXPECT((equalAtAssetScale(Number{5}, Number{5}, ref, ref, xrp)));
+            BEAST_EXPECT((!equalAtAssetScale(Number{5}, Number{4}, ref, ref, xrp)));
+        }
+
+        // MPT: scale = 0 always, integer equality.
+        {
+            Number const ref{1'000'000};
+            BEAST_EXPECT((equalAtAssetScale(Number{5}, Number{5}, ref, ref, mpt)));
+            BEAST_EXPECT((!equalAtAssetScale(Number{5}, Number{4}, ref, ref, mpt)));
+        }
+
+        // IOU same-magnitude with sub-grid noise (must accept). This is
+        // the false-positive case from the precision-loss fix: sender at
+        // ~10^6 (scale -9), receiver at ~10^3 (scale -12). minScale = -9.
+        // Both deltas round to 4999.50990099 at scale -9.
+        {
+            Number const refSender{1'009'901};
+            Number const refReceiver{4999};
+            Number const senderDelta{499'950'990'099, -8};        // 4999.50990099
+            Number const receiverDelta{49'995'099'009'901, -10};  // 4999.5099009901
+            BEAST_EXPECT(
+                (equalAtAssetScale(senderDelta, receiverDelta, refSender, refReceiver, usd)));
+        }
+
+        // IOU boundary-crossing 1-ULP (must reject). The bug class:
+        // depositor at low magnitude (Bob, scale -12) loses 2; vault at
+        // 16-digit edge (scale 0) gains 1. minScale = 0, so deltas round
+        // to 2 vs 1.
+        {
+            Number const refBob{1'000};
+            Number const refVault{9'999'999'999'999'999LL};
+            BEAST_EXPECT((!equalAtAssetScale(Number{2}, Number{1}, refBob, refVault, usd)));
+        }
+
+        // IOU same-magnitude with above-ULP discrepancy (must reject).
+        {
+            Number const ref{1'000};
+            BEAST_EXPECT((!equalAtAssetScale(Number{5}, Number{1}, ref, ref, usd)));
+        }
+
+        // Operand swap is symmetric (== is symmetric).
+        {
+            Number const refBob{1'000};
+            Number const refVault{9'999'999'999'999'999LL};
+            BEAST_EXPECT(
+                equalAtAssetScale(Number{2}, Number{1}, refBob, refVault, usd) ==
+                equalAtAssetScale(Number{1}, Number{2}, refBob, refVault, usd));
+        }
+
+        // Reference swap is symmetric (max() is symmetric).
+        {
+            Number const refBob{1'000};
+            Number const refVault{9'999'999'999'999'999LL};
+            BEAST_EXPECT(
+                equalAtAssetScale(Number{2}, Number{1}, refBob, refVault, usd) ==
+                equalAtAssetScale(Number{2}, Number{1}, refVault, refBob, usd));
+        }
+    }
+
+    //--------------------------------------------------------------------------
+
+    void
     run() override
     {
         testSetValue();
@@ -1223,6 +1297,7 @@ public:
         testCanSubtractXRP();
         testCanSubtractIOU();
         testCanSubtractMPT();
+        testEqualAtAssetScale();
     }
 };
 

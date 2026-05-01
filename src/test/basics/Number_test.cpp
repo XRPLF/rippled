@@ -1204,6 +1204,40 @@ public:
     }
 
     void
+    test_firstNonzero()
+    {
+        testcase << "test_firstNonzero " << to_string(Number::getMantissaScale());
+
+        Number const zero;
+        Number const one{1};
+        Number const ten{10};
+        Number const negOne{-1};
+
+        // Primary nonzero: returned regardless of fallback.
+        BEAST_EXPECT((firstNonzero(one, ten) == one));
+        BEAST_EXPECT((firstNonzero(one, zero) == one));
+        BEAST_EXPECT((firstNonzero(negOne, ten) == negOne));
+
+        // Primary zero: falls back to second.
+        BEAST_EXPECT((firstNonzero(zero, ten) == ten));
+        BEAST_EXPECT((firstNonzero(zero, negOne) == negOne));
+
+        // Both zero: returns zero (the fallback, equivalent to the primary).
+        BEAST_EXPECT((firstNonzero(zero, zero) == zero));
+
+        // Primary zero with non-canonical exponent: signum-based check still
+        // identifies it as zero and falls back. This is the load-bearing
+        // discriminator for using signum() over operator==. STAmount stores
+        // zero IOU with a sentinel exponent (-100), and conversions /
+        // arithmetic can leave a Number with mantissa=0 but a non-default
+        // exponent; firstNonzero must treat such values as zero.
+        Number const nonCanonicalZero{false, std::uint64_t{0}, 5, Number::unchecked{}};
+        BEAST_EXPECT(nonCanonicalZero.signum() == 0);
+        BEAST_EXPECT(nonCanonicalZero != zero);  // representations differ
+        BEAST_EXPECT((firstNonzero(nonCanonicalZero, ten) == ten));
+    }
+
+    void
     testToString()
     {
         auto const scale = Number::getMantissaScale();
@@ -1570,6 +1604,7 @@ public:
             testConversions();
             test_to_integer();
             test_squelch();
+            test_firstNonzero();
             test_relationals();
             test_stream();
             test_inc_dec();

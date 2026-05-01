@@ -130,6 +130,27 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             SpendableHandling::shFULL_BALANCE) < assets)
         return tecINSUFFICIENT_FUNDS;
 
+    // Post-fixCleanup3_2_0: reject deposits whose amount is sub-ULP at
+    // the vault's coarsest accounting rail. Such deposits get silently
+    // rounded away by associateAsset on the coarser SLE field, the
+    // helper-level cross-check tolerates the rounding (both deltas
+    // collapse to the same coarse bucket), and only VaultInvariant's
+    // "deposit must observably increase vault balance" assertion
+    // catches it at finalize as tecINVARIANT_FAILED. Surface it here as
+    // tecPRECISION_LOSS instead.
+    if (ctx.view.rules().enabled(fixCleanup3_2_0))
+    {
+        int const coarsestScale = std::max(
+            scale(vault->at(sfAssetsTotal), vaultAsset),
+            scale(vault->at(sfAssetsAvailable), vaultAsset));
+        if (roundToAsset(vaultAsset, assets, coarsestScale).signum() == 0)
+        {
+            JLOG(ctx.j.warn()) << "VaultDeposit: amount " << assets.getFullText()
+                               << " is sub-ULP at vault coarsest scale " << coarsestScale;
+            return tecPRECISION_LOSS;
+        }
+    }
+
     return tesSUCCESS;
 }
 

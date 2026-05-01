@@ -141,6 +141,27 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
         return ret;
 
+    // Post-fixCleanup3_2_0: reject withdrawals whose amount is sub-ULP at
+    // the vault's coarsest accounting rail. Same rationale as the
+    // symmetric check in VaultDeposit::preclaim — surface the precision
+    // loss here as tecPRECISION_LOSS instead of letting VaultInvariant
+    // catch it at finalize as tecINVARIANT_FAILED. Only applied when the
+    // amount is in vault assets; for share-denominated withdrawals the
+    // assets-equivalent is computed in doApply and that path is checked
+    // by the helper.
+    if (ctx.view.rules().enabled(fixCleanup3_2_0) && amount.asset() == vaultAsset)
+    {
+        int const coarsestScale = std::max(
+            scale(vault->at(sfAssetsTotal), vaultAsset),
+            scale(vault->at(sfAssetsAvailable), vaultAsset));
+        if (roundToAsset(vaultAsset, amount, coarsestScale).signum() == 0)
+        {
+            JLOG(ctx.j.warn()) << "VaultWithdraw: amount " << amount.getFullText()
+                               << " is sub-ULP at vault coarsest scale " << coarsestScale;
+            return tecPRECISION_LOSS;
+        }
+    }
+
     return tesSUCCESS;
 }
 

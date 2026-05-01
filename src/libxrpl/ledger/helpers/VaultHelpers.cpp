@@ -190,14 +190,19 @@ depositToVault(
     // be silently rounded inside roundToAsset on sfAssetsTotal, leaving
     // total understated relative to the vault's actual receipt.
     //
-    // We use the same quantize-then-equal idiom as VaultInvariant (see
-    // makeDelta/computeCoarsestScale/roundToAsset there): both deltas are
-    // quantized to the coarser of the two fields' pre-state STAmount
-    // scales, then strict-equality compared. Comparing against
-    // assetsDeposited is intentionally avoided — the input may carry more
-    // precision than either field can hold, in which case identical
-    // rounding on both sides conserves value despite a sub-grid mismatch
-    // from the input.
+    // Defense-in-depth quantize-then-equal at the coarser of the two
+    // fields' pre-state scales (matching VaultInvariant's idiom). Both
+    // fields receive `+= assetsDeposited` in Number arithmetic; the
+    // tolerance admits sub-coarser-side-ULP canonicalization noise
+    // accumulated from prior operations.
+    //
+    // Note: this check does NOT fire on the sfAssetsTotal-at-edge /
+    // sfAssetsAvailable-below-edge bug class (small deposit pushes
+    // sfAssetsTotal past 10^16 while sfAssetsAvailable gains cleanly).
+    // At the comparison scale, both deltas round to the same coarse
+    // bucket and the equality holds; VaultInvariant's "deposit must
+    // observably increase vault balance" assertion catches that case at
+    // finalize time. See testBugSleDeltaCheckTotalEdgeWithLoan.
     Number const afterAssetsTotal = *vault->at(sfAssetsTotal);
     Number const afterAssetsAvailable = *vault->at(sfAssetsAvailable);
     Number const totalDelta = afterAssetsTotal - beforeAssetsTotal;
@@ -256,7 +261,7 @@ withdrawFromVault(
     // The vault must have enough assets on hand. The vault may hold assets
     // that it has already pledged. That is why we look at AssetAvailable
     // instead of the pseudo-account balance.
-    if (beforeAssetsAvailable < Number{assetsWithdrawn})
+    if (beforeAssetsAvailable < assetsWithdrawn)
     {
         JLOG(j.debug()) << "withdrawFromVault: vault doesn't hold enough assets";
         return tecINSUFFICIENT_FUNDS;
@@ -315,13 +320,13 @@ withdrawFromVault(
     // accountSendExact above; this remaining check covers SLE-field
     // rounding by associateAsset on the vault's STNumber accounting.
     //
-    // Same shape as the deposit-side check: both deltas are quantized via
-    // roundToAsset to the coarser of the two fields' pre-state STAmount
-    // scales and compared with strict equality. The bug case is when
-    // sfAssetsTotal sits at a different magnitude from sfAssetsAvailable
-    // (loans outstanding) — a withdrawal that fits on sfAssetsAvailable
-    // can still be rounded inside roundToAsset on sfAssetsTotal, leaving
-    // total overstated relative to what the vault actually paid out.
+    // Same shape as the deposit-side check (defense-in-depth at the
+    // coarser pre-state scale). Subtraction from already-canonicalized
+    // 16-digit STAmount values is generally clean through the mantissa
+    // edge (precision improves on the way down), so this check rarely
+    // fires; symmetry with the deposit helper is preserved so future
+    // changes (non-zero sfScale, multi-asset operations) don't
+    // introduce a silent leak.
     Number const afterAssetsTotal = *vault->at(sfAssetsTotal);
     Number const afterAssetsAvailable = *vault->at(sfAssetsAvailable);
     Number const totalDelta = beforeAssetsTotal - afterAssetsTotal;
