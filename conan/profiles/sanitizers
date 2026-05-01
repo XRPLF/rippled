@@ -1,5 +1,6 @@
 include(default)
 {% set compiler, version, compiler_exe = detect_api.detect_default_compiler() %}
+{% set arch = detect_api.detect_arch() %}
 {% set sanitizers = os.getenv("SANITIZERS") %}
 
 [conf]
@@ -13,12 +14,16 @@ include(default)
 
             {% if "address" in sanitizers %}
                 {% set _ = sanitizer_list.append("address") %}
-                {% set model_code = "-mcmodel=large" %}
+                {% if arch == "x86_64" %}
+                    {% set model_code = "-mcmodel=large" %}
+                {% endif %}
                 {% set _ = defines.append("BOOST_USE_ASAN")%}
                 {% set _ = defines.append("BOOST_USE_UCONTEXT")%}
             {% elif "thread" in sanitizers %}
                 {% set _ = sanitizer_list.append("thread") %}
-                {% set model_code = "-mcmodel=medium" %}
+                {% if arch == "x86_64" %}
+                    {% set model_code = "-mcmodel=medium" %}
+                {% endif %}
                 {% set _ = extra_cxxflags.append("-Wno-tsan") %}
                 {% set _ = defines.append("BOOST_USE_TSAN")%}
                 {% set _ = defines.append("BOOST_USE_UCONTEXT")%}

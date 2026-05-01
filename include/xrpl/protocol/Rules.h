@@ -8,6 +8,21 @@
 
 namespace xrpl {
 
+/** Check whether a feature is enabled in the current ledger rules
+ *
+ * @param feature The feature to be tested.
+ * @param resultIfNoRules What to return if called from outside a Transactor context.
+ */
+bool
+isFeatureEnabled(uint256 const& feature, bool resultIfNoRules);
+
+/** Check whether a feature is enabled in the current ledger rules
+ *
+ * @param feature The feature to be tested.
+ *
+ * Returns false if no global Rules object is available. i.e. Outside of
+ * a Transactor context
+ */
 bool
 isFeatureEnabled(uint256 const& feature);
 
