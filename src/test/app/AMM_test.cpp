@@ -101,7 +101,7 @@ private:
             {},
             0,
             {},
-            {testableAmendments() | featureSingleAssetVault});
+            {testableAmendments()});
 #endif
 
         // XRP to IOU, without featureSingleAssetVault
@@ -6740,7 +6740,7 @@ private:
         };
 
         testCase("tecDUPLICATE", testableAmendments() - featureSingleAssetVault);
-        testCase("terADDRESS_COLLISION", testableAmendments() | featureSingleAssetVault);
+        testCase("terADDRESS_COLLISION", testableAmendments());
     }
 
     void

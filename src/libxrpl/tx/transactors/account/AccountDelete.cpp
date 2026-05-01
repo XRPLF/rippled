@@ -179,12 +179,12 @@ TER
 removeDelegateFromLedger(
     ServiceRegistry&,
     ApplyView& view,
-    AccountID const& account,
-    uint256 const& delIndex,
+    AccountID const&,
+    uint256 const&,
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return DelegateSet::deleteDelegate(view, sleDel, account, j);
+    return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
 // Return nullptr if the LedgerEntryType represents an obligation that can't

@@ -91,6 +91,30 @@ public:
     }
 
     /**
+     * @brief Get sfDestinationNode (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getDestinationNode() const
+    {
+        if (hasDestinationNode())
+            return this->sle_->at(sfDestinationNode);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDestinationNode is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDestinationNode() const
+    {
+        return this->sle_->isFieldPresent(sfDestinationNode);
+    }
+
+    /**
      * @brief Get sfPreviousTxnID (soeREQUIRED)
      * @return The field value.
      */
@@ -200,6 +224,17 @@ public:
     setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
     {
         object_[sfOwnerNode] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDestinationNode (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    DelegateBuilder&
+    setDestinationNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    {
+        object_[sfDestinationNode] = value;
         return *this;
     }
 

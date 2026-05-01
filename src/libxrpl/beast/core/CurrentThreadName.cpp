@@ -81,12 +81,9 @@ setCurrentThreadNameImpl(std::string_view name)
 {
     // truncate and set the thread name.
     char boundedName[maxThreadNameLength + 1];
-    std::snprintf(
-        boundedName,
-        sizeof(boundedName),
-        "%.*s",
-        static_cast<int>(maxThreadNameLength),
-        name.data());  // NOLINT(bugprone-suspicious-stringview-data-usage)
+    auto const boundedSize = name.size() < maxThreadNameLength ? name.size() : maxThreadNameLength;
+    name.copy(boundedName, boundedSize);
+    boundedName[boundedSize] = '\0';
 
     pthread_setname_np(pthread_self(), boundedName);
 

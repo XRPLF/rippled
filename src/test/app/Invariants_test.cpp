@@ -32,6 +32,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
@@ -93,8 +94,7 @@ class Invariants_test : public beast::unit_test::Suite
     static FeatureBitset
     defaultAmendments()
     {
-        return xrpl::test::jtx::testableAmendments() | featureInvariantsV1_1 |
-            featureSingleAssetVault;
+        return xrpl::test::jtx::testableAmendments() | featureInvariantsV1_1 | fixSecurity3_1_3;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -179,6 +179,10 @@ class Invariants_test : public beast::unit_test::Suite
         test::StreamSink sink{beast::severities::KWarning};
         beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+
+        // Invariants normally run in the Transaction's "apply" (operator()) context, and can always
+        // access global Rules.
+        CurrentTransactionRulesGuard const rg(ov.rules());
 
         BEAST_EXPECT(precheck(a1, a2, ac));
 
@@ -937,7 +941,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(a1, (*sle)[sfSequence] + 2));
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 STAmount const amt(mpt, -1);
                 sleNew->setFieldAmount(sfAmount, amt);
                 ac.view().insert(sleNew);
@@ -953,7 +957,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, -1);
                 ac.view().insert(sleNew);
@@ -969,7 +973,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfLockedAmount, -1);
                 ac.view().insert(sleNew);
@@ -985,7 +989,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 1);
                 sleNew->setFieldU64(sfLockedAmount, 10);
@@ -1002,7 +1006,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a1));
                 sleNew->setFieldU64(sfMPTAmount, -1);
                 ac.view().insert(sleNew);
@@ -1018,7 +1022,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a1));
                 sleNew->setFieldU64(sfLockedAmount, -1);
                 ac.view().insert(sleNew);
@@ -3971,7 +3975,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(sle->getFieldU32(sfSequence), a1)}};
+                MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), a1)};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 110);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
@@ -3988,7 +3992,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(sle->getFieldU32(sfSequence), a1)}};
+                MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), a1)};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 100);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
@@ -4059,7 +4063,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto seq = sle->getFieldU32(sfSequence);
                     for (int i = 0; i < nTokens; ++i)
                     {
-                        MPTIssue const mpt{MPTIssue{makeMptID(seq + i, a1)}};
+                        MPTIssue const mpt{makeMptID(seq + i, a1)};
                         auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                         ac.view().insert(sleNew);
 
@@ -4102,6 +4106,139 @@ class Invariants_test : public beast::unit_test::Suite
                     return true;
                 });
         }
+    }
+
+    // Test the invariant overwrite fix for both pre- and post-amendment
+    // behavior. With the fix enabled, |= accumulates violations across
+    // entries so a later valid entry cannot clear an earlier violation.
+    // Without the fix, = assignment means the last-visited entry wins.
+    void
+    testInvariantOverwrite(FeatureBitset features)
+    {
+        using namespace test::jtx;
+        bool const fixEnabled = features[fixSecurity3_1_3];
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+        std::initializer_list<TER> const passTers = {tesSUCCESS, tesSUCCESS};
+
+        // Insert two trust line SLEs in hash-sorted order, with the "bad"
+        // entry at the lower-sorting key so it is visited first by
+        // ApplyStateTable::visit(). The configurer callables receive the
+        // SLE and the Issue corresponding to that side's keylet currency.
+        auto const insertOrderedTrustLinePair = [](ApplyContext& ac,
+                                                   Account const& A1,
+                                                   Account const& A2,
+                                                   Account const& A3,
+                                                   auto const& badConfig,
+                                                   auto const& goodConfig) {
+            char const* const c1 = "USD";
+            char const* const c2 = "EUR";
+            auto const k1 = keylet::line(A1, A2, A1[c1].currency);
+            auto const k2 = keylet::line(A1, A3, A1[c2].currency);
+
+            bool const k1First = k1.key < k2.key;
+            auto const& badKey = k1First ? k1 : k2;
+            auto const& goodKey = k1First ? k2 : k1;
+            Issue const badIss{k1First ? A1[c1].currency : A1[c2].currency, A1.id()};
+            Issue const goodIss{k1First ? A1[c2].currency : A1[c1].currency, A1.id()};
+
+            auto const sleBad = std::make_shared<SLE>(badKey);
+            badConfig(*sleBad, badIss);
+            ac.view().insert(sleBad);
+
+            auto const sleGood = std::make_shared<SLE>(goodKey);
+            goodConfig(*sleGood, goodIss);
+            ac.view().insert(sleGood);
+        };
+
+        // Regression: bad XRP trust line followed by a valid trust line.
+        // With the fix, the invariant catches the violation. Without it,
+        // the valid entry overwrites the flag to false. The keylet
+        // currencies are non-XRP (the invariant inspects sfLowLimit /
+        // sfHighLimit issue, not the keylet currency).
+        testcase << "overwrite: NoXRPTrustLines" + std::string(fixEnabled ? " fix" : "");
+        doInvariantCheck(
+            Env(*this, features),
+            fixEnabled ? std::vector<std::string>{{"an XRP trust line was created"}}
+                       : std::vector<std::string>{},
+            [&insertOrderedTrustLinePair](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Account const A3{"A3"};
+                insertOrderedTrustLinePair(
+                    ac,
+                    A1,
+                    A2,
+                    A3,
+                    [](SLE& sle, Issue const& iss) {
+                        // sfLowLimit has xrpIssue, making isXrp = true
+                        sle.setFieldAmount(sfLowLimit, STAmount{xrpIssue(), 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                    },
+                    [](SLE& sle, Issue const& iss) {
+                        sle.setFieldAmount(sfLowLimit, STAmount{iss, 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                    });
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            fixEnabled ? failTers : passTers);
+
+        // Regression: bad deep-freeze trust line followed by a valid one.
+        testcase << "overwrite: NoDeepFreeze" + std::string(fixEnabled ? " fix" : "");
+        doInvariantCheck(
+            Env(*this, features),
+            fixEnabled ? std::vector<std::string>{{"a trust line with deep freeze flag without "
+                                                   "normal freeze was created"}}
+                       : std::vector<std::string>{},
+            [&insertOrderedTrustLinePair](Account const& a1, Account const& a2, ApplyContext& ac) {
+                Account const a3{"A3"};
+                insertOrderedTrustLinePair(
+                    ac,
+                    a1,
+                    a2,
+                    a3,
+                    [](SLE& sle, Issue const& iss) {
+                        sle.setFieldAmount(sfLowLimit, STAmount{iss, 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                        sle.setFieldU32(sfFlags, lsfLowDeepFreeze);
+                    },
+                    [](SLE& sle, Issue const& iss) {
+                        sle.setFieldAmount(sfLowLimit, STAmount{iss, 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                        sle.setFieldU32(sfFlags, 0u);
+                    });
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            fixEnabled ? failTers : passTers);
+
+        // Regression: MPT OutstandingAmount exceeds max, but locked <=
+        // outstanding. Plain assignment would overwrite bad_ = true.
+        // With the fix, NoZeroEscrow catches it.
+        // Without the fix, NoZeroEscrow passes but ValidMPTIssuance
+        // still fires ("a MPT issuance was created").
+        testcase << "overwrite: NoZeroEscrow MPT" + std::string(fixEnabled ? " fix" : "");
+        doInvariantCheck(
+            Env(*this, features),
+            fixEnabled ? std::vector<std::string>{{"escrow specifies invalid amount"}}
+                       : std::vector<std::string>{{"a MPT issuance was created"}},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
+                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                // outstanding exceeds kMAX_MP_TOKEN_AMOUNT -> checkAmount sets bad_
+                sleNew->setFieldU64(sfOutstandingAmount, kMAX_MP_TOKEN_AMOUNT + 1);
+                // locked is valid and <= outstanding -> must NOT clear bad_
+                sleNew->setFieldU64(sfLockedAmount, 10);
+                ac.view().insert(sleNew);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            failTers);
     }
 
     void
@@ -4256,6 +4393,8 @@ public:
         testValidLoanBroker();
         testVault();
         testMPT();
+        testInvariantOverwrite(defaultAmendments());
+        testInvariantOverwrite(defaultAmendments() - fixSecurity3_1_3);
         testVaultComputeCoarsestScale();
     }
 };

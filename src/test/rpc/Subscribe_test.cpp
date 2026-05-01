@@ -214,16 +214,12 @@ public:
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]["NewFields"]
-                         [jss::Account]  //
-                    == Account("alice").human() &&
-                    jv[jss::transaction][jss::TransactionType]  //
-                    == jss::Payment &&
-                    jv[jss::transaction][jss::DeliverMax]  //
-                    == std::to_string(10000000000 + baseFee) &&
-                    jv[jss::transaction][jss::Fee]  //
-                    == std::to_string(baseFee) &&
-                    jv[jss::transaction][jss::Sequence]  //
-                    == 1;
+                         [jss::Account] == Account("alice").human() &&
+                    jv[jss::transaction][jss::TransactionType] == jss::Payment &&
+                    jv[jss::transaction][jss::DeliverMax] ==
+                    std::to_string(10000000000 + baseFee) &&
+                    jv[jss::transaction][jss::Fee] == std::to_string(baseFee) &&
+                    jv[jss::transaction][jss::Sequence] == 1;
             }));
 
             // Check stream update for accountset transaction
@@ -579,7 +575,7 @@ public:
         auto wsc = makeWSClient(env.app().config());
 
         {
-            auto jr = env.rpc("json", method, "{}")[jss::result];
+            auto const jr = env.rpc("json", method, "{}")[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
@@ -589,7 +585,7 @@ public:
             jv[jss::url] = "not-a-url";
             jv[jss::username] = "admin";
             jv[jss::password] = "password";
-            auto jr = env.rpc("json", method, to_string(jv))[jss::result];
+            auto const jr = env.rpc("json", method, to_string(jv))[jss::result];
             if (subscribe)
             {
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
@@ -602,7 +598,7 @@ public:
         {
             json::Value jv;
             jv[jss::url] = "ftp://scheme.not.supported.tld";
-            auto jr = env.rpc("json", method, to_string(jv))[jss::result];
+            auto const jr = env.rpc("json", method, to_string(jv))[jss::result];
             if (subscribe)
             {
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
@@ -614,7 +610,7 @@ public:
             Env envNonadmin{*this, singleThreadIo(noAdmin(envconfig()))};
             json::Value jv;
             jv[jss::url] = "no-url";
-            auto jr = envNonadmin.rpc("json", method, to_string(jv))[jss::result];
+            auto const jr = envNonadmin.rpc("json", method, to_string(jv))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "noPermission");
             BEAST_EXPECT(jr[jss::error_message] == "You don't have permission for this command.");
         }
@@ -634,7 +630,7 @@ public:
             {
                 json::Value jv;
                 jv[f] = nonArray;
-                auto jr = wsc->invoke(method, jv)[jss::result];
+                auto const jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
                 BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
             }
@@ -642,7 +638,7 @@ public:
             {
                 json::Value jv;
                 jv[f] = json::ArrayValue;
-                auto jr = wsc->invoke(method, jv)[jss::result];
+                auto const jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECT(jr[jss::error] == "actMalformed");
                 BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
             }
@@ -652,7 +648,7 @@ public:
         {
             json::Value jv;
             jv[jss::books] = nonArray;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
@@ -661,7 +657,7 @@ public:
             json::Value jv;
             jv[jss::books] = json::ArrayValue;
             jv[jss::books][0u] = 1;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
@@ -672,7 +668,8 @@ public:
             jv[jss::books][0u] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_gets] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays] = json::ObjectValue;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
+
             BEAST_EXPECT(jr[jss::error] == "srcCurMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Source currency is malformed.");
         }
@@ -684,7 +681,7 @@ public:
             jv[jss::books][0u][jss::taker_gets] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "ZZZZ";
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcCurMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Source currency is malformed.");
         }
@@ -697,7 +694,7 @@ public:
             jv[jss::books][0u][jss::taker_pays] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_pays][jss::issuer] = 1;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcIsrMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Source issuer is malformed.");
         }
@@ -710,7 +707,7 @@ public:
             jv[jss::books][0u][jss::taker_pays] = json::ObjectValue;
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_pays][jss::issuer] = Account{"gateway"}.human() + "DEAD";
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcIsrMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Source issuer is malformed.");
         }
@@ -722,9 +719,8 @@ public:
             jv[jss::books][0u][jss::taker_pays] =
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
             jv[jss::books][0u][jss::taker_gets] = json::ObjectValue;
-            auto jr = wsc->invoke(method, jv)[jss::result];
-            // NOTE: this error is slightly incongruous with the
-            // equivalent source currency error
+            auto const jr = wsc->invoke(method, jv)[jss::result];
+            // NOTE: this error is slightly incongruous with the equivalent source currency error
             BEAST_EXPECT(jr[jss::error] == "dstAmtMalformed");
             BEAST_EXPECT(
                 jr[jss::error_message] == "Destination amount/currency/issuer is malformed.");
@@ -737,7 +733,7 @@ public:
             jv[jss::books][0u][jss::taker_pays] =
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "ZZZZ";
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             // NOTE: this error is slightly incongruous with the
             // equivalent source currency error
             BEAST_EXPECT(jr[jss::error] == "dstAmtMalformed");
@@ -753,7 +749,7 @@ public:
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = 1;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "dstIsrMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Destination issuer is malformed.");
         }
@@ -766,7 +762,7 @@ public:
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = Account{"gateway"}.human() + "DEAD";
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "dstIsrMalformed");
             BEAST_EXPECT(jr[jss::error_message] == "Destination issuer is malformed.");
         }
@@ -779,7 +775,7 @@ public:
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
             jv[jss::books][0u][jss::taker_gets] =
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "badMarket");
             BEAST_EXPECT(jr[jss::error_message] == "No such market.");
         }
@@ -788,7 +784,7 @@ public:
         {
             json::Value jv;
             jv[jss::streams] = nonArray;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
@@ -797,7 +793,7 @@ public:
             json::Value jv;
             jv[jss::streams] = json::ArrayValue;
             jv[jss::streams][0u] = 1;
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "malformedStream");
             BEAST_EXPECT(jr[jss::error_message] == "Stream malformed.");
         }
@@ -806,9 +802,54 @@ public:
             json::Value jv;
             jv[jss::streams] = json::ArrayValue;
             jv[jss::streams][0u] = "not_a_stream";
-            auto jr = wsc->invoke(method, jv)[jss::result];
+            auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "malformedStream");
             BEAST_EXPECT(jr[jss::error_message] == "Stream malformed.");
+        }
+
+        if (subscribe)
+        {
+            // invalid taker - not a string
+            {
+                json::Value jv;
+                jv[jss::books] = json::ArrayValue;
+                jv[jss::books][0u] = json::ObjectValue;
+                jv[jss::books][0u][jss::taker_pays] =
+                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                jv[jss::books][0u][jss::taker_gets][jss::currency] = "XRP";
+                jv[jss::books][0u][jss::taker] = 1;
+                auto const jr = wsc->invoke(method, jv)[jss::result];
+                BEAST_EXPECTS(jr[jss::error] == "actMalformed", jr.toStyledString());
+                BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
+            }
+
+            // invalid taker - malformed account string
+            {
+                json::Value jv;
+                jv[jss::books] = json::ArrayValue;
+                jv[jss::books][0u] = json::ObjectValue;
+                jv[jss::books][0u][jss::taker_pays] =
+                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                jv[jss::books][0u][jss::taker_gets][jss::currency] = "XRP";
+                jv[jss::books][0u][jss::taker] = "not_an_account";
+                auto const jr = wsc->invoke(method, jv)[jss::result];
+                BEAST_EXPECTS(jr[jss::error] == "actMalformed", jr.toStyledString());
+                BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
+            }
+
+            // invalid taker - account string with extra characters
+            {
+                json::Value jv;
+                jv[jss::books] = json::ArrayValue;
+                jv[jss::books][0u] = json::ObjectValue;
+                jv[jss::books][0u][jss::taker_pays] =
+                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                jv[jss::books][0u][jss::taker_gets][jss::currency] = "XRP";
+                jv[jss::books][0u][jss::taker] = Account{"alice"}.human() + "DEAD";
+                auto const jr = wsc->invoke(method, jv)[jss::result];
+                BEAST_EXPECTS(jr[jss::error] == "actMalformed", jr.toStyledString());
+                BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
+            }
         }
     }
 
