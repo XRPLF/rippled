@@ -5,7 +5,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -83,7 +82,7 @@ DelegateSet::doApply()
         if (permissions.empty())
         {
             // if permissions array is empty, delete the ledger object.
-            return deleteDelegate(view(), sle, account_, j_);
+            return deleteDelegate(view(), sle, j_);
         }
 
         sle->setFieldArray(sfPermissions, permissions);
@@ -106,6 +105,8 @@ DelegateSet::doApply()
     sle->setAccountID(sfAuthorize, authAccount);
 
     sle->setFieldArray(sfPermissions, permissions);
+
+    // Add to delegating account's owner directory
     auto const page =
         ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
 
@@ -113,6 +114,17 @@ DelegateSet::doApply()
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     (*sle)[sfOwnerNode] = *page;
+
+    // Add to authorized account's owner directory so the object can be found
+    // and cleaned up when the authorized account is deleted.
+    auto const destPage = ctx_.view().dirInsert(
+        keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
+
+    if (!destPage)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    (*sle)[sfDestinationNode] = *destPage;
+
     ctx_.view().insert(sle);
     adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
 
@@ -120,16 +132,16 @@ DelegateSet::doApply()
 }
 
 TER
-DelegateSet::deleteDelegate(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    AccountID const& account,
-    beast::Journal j)
+DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), false))
+    auto const delegator = (*sle)[sfAccount];
+    auto const delegatee = (*sle)[sfAuthorize];
+
+    // Remove from delegating account's owner directory
+    if (!view.dirRemove(keylet::ownerDir(delegator), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Delegate from owner.";
@@ -137,7 +149,20 @@ DelegateSet::deleteDelegate(
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(account));
+    // Remove from authorized account's owner directory, if present
+    if (auto const optPage = (*sle)[~sfDestinationNode])
+    {
+        if (!view.dirRemove(keylet::ownerDir(delegatee), *optPage, sle->key(), false))
+        {
+            // LCOV_EXCL_START
+            JLOG(j.fatal()) << "Unable to delete Delegate from authorized account.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    // Only the delegating account's owner count was incremented on creation
+    auto const sleOwner = view.peek(keylet::account(delegator));
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

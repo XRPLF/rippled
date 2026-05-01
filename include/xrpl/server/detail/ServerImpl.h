@@ -62,6 +62,8 @@ class ServerImpl : public Server
 private:
     using clock_type = std::chrono::system_clock;
 
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { historySize = 100 };
 
     Handler& handler_;
