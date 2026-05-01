@@ -203,7 +203,7 @@ STTx::getSeqProxy() const
         return SeqProxy::sequence(seq);
     }
 
-    return SeqProxy{SeqProxy::Ticket, *ticketSeq};
+    return SeqProxy{SeqProxy::Type::Ticket, *ticketSeq};
 }
 
 std::uint32_t
@@ -366,7 +366,7 @@ STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) con
 {
     Serializer s;
     add(s);
-    return getMetaSQL(s, inLedger, TxnSql::TxnSqlValidated, escapedMetaData);
+    return getMetaSQL(s, inLedger, TxnSql::Validated, escapedMetaData);
 }
 
 // VFALCO This could be a free function elsewhere

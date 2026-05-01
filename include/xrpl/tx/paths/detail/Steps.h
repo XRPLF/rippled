@@ -21,7 +21,7 @@ class AMMContext;
 enum class DebtDirection { Issues, Redeems };
 enum class QualityDirection { In, Out };
 enum class StrandDirection { Forward, Reverse };
-enum OfferCrossing { No = 0, Yes = 1, Sell = 2 };
+enum class OfferCrossing { No = 0, Yes = 1, Sell = 2 };
 
 inline bool
 redeems(DebtDirection dir)

@@ -740,8 +740,7 @@ flow(
             JLOG(j.trace()) << "All strands dry.";
         }
 
-        best.reset();  // view in best must be destroyed before modifying base
-                       // view
+        best.reset();  // view in best must be destroyed before modifying base view
         if (!ofrsToRm.empty())
         {
             setUnion(ofrsToRmOnFail, ofrsToRm);
@@ -779,33 +778,33 @@ flow(
     {
         if (actualOut > outReq)
         {
-            // Rounding in the payment engine is causing this assert to
-            // sometimes fire with "dust" amounts. This is causing issues when
-            // running debug builds of xrpld. While this issue still needs to
-            // be resolved, the assert is causing more harm than good at this
-            // point.
+            // Rounding in the payment engine is causing this assert to sometimes fire with "dust"
+            // amounts. This is causing issues when running debug builds of xrpld.
+            // While this issue still needs to be resolved, the assert is causing more harm than
+            // good at this point.
             // UNREACHABLE("xrpl::flow : rounding error");
 
             return {tefEXCEPTION, std::move(ofrsToRmOnFail)};
         }
         if (!partialPayment)
         {
-            // If we're offerCrossing a !partialPayment, then we're
-            // handling tfFillOrKill.
+            // If we're offerCrossing a !partialPayment, then we're handling tfFillOrKill.
             // Pre-fixFillOrKill amendment:
             //   That case is handled below; not here.
             // fixFillOrKill amendment:
-            //   That case is handled here if tfSell is also not set; i.e,
-            //   case 1.
-            if (!offerCrossing || (fillOrKillEnabled && offerCrossing != OfferCrossing::Sell))
+            //   That case is handled here if tfSell is also not set; i.e, case 1.
+            if (offerCrossing == OfferCrossing::No ||
+                (fillOrKillEnabled && offerCrossing != OfferCrossing::Sell))
+            {
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
+            }
         }
         else if (actualOut == beast::kZERO)
         {
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing &&
+    if (offerCrossing != OfferCrossing::No &&
         (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::Sell)))
     {
         // If we're offer crossing and partialPayment is *not* true, then

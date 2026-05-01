@@ -252,7 +252,7 @@ accountHolds(
         return {xrpLiquid(view, account, 0, j)};
     }
 
-    bool const returnSpendable = (includeFullBalance == ShFullBalance);
+    bool const returnSpendable = (includeFullBalance == SpendableHandling::FullBalance);
     if (returnSpendable && account == issuer)
     {
         // If the account is the issuer, then their limit is effectively
@@ -290,7 +290,7 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
-    bool const returnSpendable = (includeFullBalance == ShFullBalance);
+    bool const returnSpendable = (includeFullBalance == SpendableHandling::FullBalance);
     STAmount amount{mptIssue};
     auto const& issuer = mptIssue.getIssuer();
     bool const mptokensV2 = view.rules().enabled(featureMPTokensV2);
@@ -401,7 +401,13 @@ accountFunds(
         [&](Issue const&) { return accountFunds(view, id, saDefault, freezeHandling, j); },
         [&](MPTIssue const&) {
             return accountHolds(
-                view, id, saDefault.asset(), freezeHandling, authHandling, j, ShFullBalance);
+                view,
+                id,
+                saDefault.asset(),
+                freezeHandling,
+                authHandling,
+                j,
+                SpendableHandling::FullBalance);
         });
 }
 

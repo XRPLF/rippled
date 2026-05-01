@@ -23,8 +23,8 @@ enum SOEStyle {
 };
 
 // Part of a Python-parsed DSL (transactions.macro); bare enumerator names required by the parser
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 /** Amount fields that can support MPT */
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
 //------------------------------------------------------------------------------

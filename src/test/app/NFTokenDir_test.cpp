@@ -190,7 +190,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             for (std::string_view const seed : seeds)
             {
                 Account const& account =
-                    accounts.emplace_back(Account::Base58Seed, std::string(seed));
+                    accounts.emplace_back(Account::AcctStringType::Base58Seed, std::string(seed));
                 env.fund(XRP(10000), account);
 
                 // Do not close the ledger inside the loop.  If accounts are
@@ -394,7 +394,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             for (std::string_view const seed : seeds)
             {
                 Account const& account =
-                    accounts.emplace_back(Account::Base58Seed, std::string(seed));
+                    accounts.emplace_back(Account::AcctStringType::Base58Seed, std::string(seed));
                 env.fund(XRP(10000), account);
 
                 // Do not close the ledger inside the loop.  If accounts are
@@ -624,7 +624,8 @@ class NFTokenDir_test : public beast::unit_test::Suite
         accounts.reserve(kSEEDS.size());
         for (std::string_view const seed : kSEEDS)
         {
-            Account const& account = accounts.emplace_back(Account::Base58Seed, std::string(seed));
+            Account const& account =
+                accounts.emplace_back(Account::AcctStringType::Base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
             // Do not close the ledger inside the loop.  If accounts are
@@ -787,7 +788,8 @@ class NFTokenDir_test : public beast::unit_test::Suite
         accounts.reserve(kSEEDS.size());
         for (std::string_view const seed : kSEEDS)
         {
-            Account const& account = accounts.emplace_back(Account::Base58Seed, std::string(seed));
+            Account const& account =
+                accounts.emplace_back(Account::AcctStringType::Base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
             // Do not close the ledger inside the loop.  If accounts are

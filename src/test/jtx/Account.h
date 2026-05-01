@@ -52,7 +52,7 @@ public:
      * secret key is unavailable, such as for pseudo-accounts. */
     explicit Account(std::string name, AccountID const& id);
 
-    enum AcctStringType { Base58Seed, Other };
+    enum class AcctStringType { Base58Seed, Other };
     /** Create an account from a base58 seed string.  Throws on invalid seed. */
     Account(AcctStringType stringType, std::string base58SeedStr);
 

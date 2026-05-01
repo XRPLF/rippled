@@ -60,13 +60,13 @@ public:
         AccountID const& srcIssuer,
         std::function<bool(void)> const& continueCallback = {});
 
-    enum NodeType {
-        NtSource,      // The source account: with an issuer account, if needed.
-        NtAccounts,    // Accounts that connect from this source/currency.
-        NtBooks,       // Order books that connect to this currency.
-        NtXrpBook,     // The order book from this currency to XRP.
-        NtDestBook,    // The order book to the destination currency/issuer.
-        NtDestination  // The destination account only.
+    enum class NodeType {
+        Source,      // The source account: with an issuer account, if needed.
+        Accounts,    // Accounts that connect from this source/currency.
+        Books,       // Order books that connect to this currency.
+        XrpBook,     // The order book from this currency to XRP.
+        DestBook,    // The order book to the destination currency/issuer.
+        Destination  // The destination account only.
     };
 
     // The PathType is a list of the NodeTypes for a path.
@@ -74,12 +74,12 @@ public:
 
     // PaymentType represents the types of the source and destination currencies
     // in a path request.
-    enum PaymentType {
-        PtXrpToXrp,
-        PtXrpToNonXrp,
-        PtNonXrpToXrp,
-        PtNonXrpToSame,   // Destination currency is the same as source.
-        PtNonXrpToNonXrp  // Destination currency is NOT the same as source.
+    enum class PaymentType {
+        XrpToXrp,
+        XrpToNonXrp,
+        NonXrpToXrp,
+        NonXrpToSame,   // Destination currency is the same as source.
+        NonXrpToNonXrp  // Destination currency is NOT the same as source.
     };
 
     struct PathRank

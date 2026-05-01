@@ -22,7 +22,7 @@ enum {
 };
 
 /** Return codes from Backend operations. */
-enum Status {
+enum class Status {
     Ok = 0,
     NotFound = 1,
     DataCorrupt = 2,

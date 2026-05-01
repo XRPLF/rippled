@@ -140,9 +140,9 @@ public:
 
             Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == Ok);
+            BEAST_EXPECT(status == Status::Ok);
 
-            if (status == Ok)
+            if (status == Status::Ok)
             {
                 BEAST_EXPECT(object != nullptr);
 
@@ -160,7 +160,7 @@ public:
 
             Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == NotFound);
+            BEAST_EXPECT(status == Status::NotFound);
         }
     }
 

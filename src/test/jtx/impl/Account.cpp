@@ -50,7 +50,7 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
 
     auto const keys = [stringType, &name, type]() {
         // Special handling for base58Seeds.
-        if (stringType == Base58Seed)
+        if (stringType == AcctStringType::Base58Seed)
         {
             std::optional<Seed> const seed = parseBase58<Seed>(name);
             if (!seed.has_value())
@@ -68,12 +68,15 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
 }
 
 Account::Account(std::string name, KeyType type)
-    : Account(fromCache(Account::Other, std::move(name), type))
+    : Account(fromCache(Account::AcctStringType::Other, std::move(name), type))
 {
 }
 
 Account::Account(AcctStringType stringType, std::string base58SeedStr)
-    : Account(fromCache(Account::Base58Seed, std::move(base58SeedStr), KeyType::Secp256k1))
+    : Account(fromCache(
+          Account::AcctStringType::Base58Seed,
+          std::move(base58SeedStr),
+          KeyType::Secp256k1))
 {
 }
 

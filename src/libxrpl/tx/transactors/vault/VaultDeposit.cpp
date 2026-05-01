@@ -128,7 +128,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             FreezeHandling::FhZeroIfFrozen,
             AuthHandling::AhZeroIfUnauthorized,
             ctx.j,
-            SpendableHandling::ShFullBalance) < assets)
+            SpendableHandling::FullBalance) < assets)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;

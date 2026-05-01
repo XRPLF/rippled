@@ -27,7 +27,7 @@ enum FreezeHandling { FhIgnoreFreeze, FhZeroIfFrozen };
 enum AuthHandling { AhIgnoreAuth, AhZeroIfUnauthorized };
 
 /** Controls whether to include the account's full spendable balance */
-enum SpendableHandling { ShSimpleBalance, ShFullBalance };
+enum class SpendableHandling { SimpleBalance, FullBalance };
 
 enum class WaiveTransferFee : bool { No = false, Yes };
 
@@ -135,7 +135,7 @@ accountHolds(
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
     beast::Journal j,
-    SpendableHandling includeFullBalance = ShSimpleBalance);
+    SpendableHandling includeFullBalance = SpendableHandling::SimpleBalance);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -144,7 +144,7 @@ accountHolds(
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
     beast::Journal j,
-    SpendableHandling includeFullBalance = ShSimpleBalance);
+    SpendableHandling includeFullBalance = SpendableHandling::SimpleBalance);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -154,7 +154,7 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j,
-    SpendableHandling includeFullBalance = ShSimpleBalance);
+    SpendableHandling includeFullBalance = SpendableHandling::SimpleBalance);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -164,7 +164,7 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j,
-    SpendableHandling includeFullBalance = ShSimpleBalance);
+    SpendableHandling includeFullBalance = SpendableHandling::SimpleBalance);
 
 // Returns the amount an account can spend of the currency type saDefault, or
 // returns saDefault if this account is the issuer of the currency in

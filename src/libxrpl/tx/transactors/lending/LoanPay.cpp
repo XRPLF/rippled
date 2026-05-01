@@ -245,7 +245,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
             FhZeroIfFrozen,
             AhZeroIfUnauthorized,
             ctx.j,
-            SpendableHandling::ShFullBalance);
+            SpendableHandling::FullBalance);
         balance < amount)
     {
         JLOG(ctx.j.warn()) << "Payment amount too large. Amount: " << to_string(amount.getJson())
@@ -510,7 +510,7 @@ LoanPay::doApply()
 
 #if !NDEBUG
     auto const accountBalanceBefore = accountHolds(
-        view, account_, asset, FhIgnoreFreeze, AhIgnoreAuth, j_, SpendableHandling::ShFullBalance);
+        view, account_, asset, FhIgnoreFreeze, AhIgnoreAuth, j_, SpendableHandling::FullBalance);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
@@ -520,17 +520,16 @@ LoanPay::doApply()
               FhIgnoreFreeze,
               AhIgnoreAuth,
               j_,
-              SpendableHandling::ShFullBalance);
-    auto const brokerBalanceBefore = account_ == brokerPayee
-        ? STAmount{asset, 0}
-        : accountHolds(
-              view,
-              brokerPayee,
-              asset,
-              FhIgnoreFreeze,
-              AhIgnoreAuth,
-              j_,
-              SpendableHandling::ShFullBalance);
+              SpendableHandling::FullBalance);
+    auto const brokerBalanceBefore = account_ == brokerPayee ? STAmount{asset, 0}
+                                                             : accountHolds(
+                                                                   view,
+                                                                   brokerPayee,
+                                                                   asset,
+                                                                   FhIgnoreFreeze,
+                                                                   AhIgnoreAuth,
+                                                                   j_,
+                                                                   SpendableHandling::FullBalance);
 #endif
 
     if (totalPaidToVaultRounded != beast::kZERO)
@@ -581,7 +580,7 @@ LoanPay::doApply()
         "vault pseudo balance agrees after");
 
     auto const accountBalanceAfter = accountHolds(
-        view, account_, asset, FhIgnoreFreeze, AhIgnoreAuth, j_, SpendableHandling::ShFullBalance);
+        view, account_, asset, FhIgnoreFreeze, AhIgnoreAuth, j_, SpendableHandling::FullBalance);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
@@ -591,7 +590,7 @@ LoanPay::doApply()
               FhIgnoreFreeze,
               AhIgnoreAuth,
               j_,
-              SpendableHandling::ShFullBalance);
+              SpendableHandling::FullBalance);
     auto const brokerBalanceAfter = account_ == brokerPayee ? STAmount{asset, 0}
                                                             : accountHolds(
                                                                   view,
@@ -600,7 +599,7 @@ LoanPay::doApply()
                                                                   FhIgnoreFreeze,
                                                                   AhIgnoreAuth,
                                                                   j_,
-                                                                  SpendableHandling::ShFullBalance);
+                                                                  SpendableHandling::FullBalance);
 
     XRPL_ASSERT_PARTS(
         accountBalanceBefore + vaultBalanceBefore + brokerBalanceBefore ==

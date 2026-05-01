@@ -9,6 +9,8 @@
 namespace xrpl {
 
 /** The types of node objects. */
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class) -- 24 bare usages across 12 files in different
+// subsystems
 enum NodeObjectType : std::uint32_t {
     HotUnknown = 0,
     HotLedger = 1,
