@@ -205,8 +205,7 @@ class Logger
          */
         template <typename T>
         [[maybe_unused]] Pump&
-        // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-        operator<<(xrpl::log::Parameter<T>&& p)
+        operator<<(xrpl::log::Parameter<T> p)
         {
             if (enabled_)
             {
@@ -223,8 +222,7 @@ class Logger
 
                 if (jsonMode_)
                 {
-                    detail::appendJsonField(
-                        messageParams_, std::move(p.name()), std::move(p.value()));
+                    detail::appendJsonField(messageParams_, p.name(), p.value());
                 }
             }
 
