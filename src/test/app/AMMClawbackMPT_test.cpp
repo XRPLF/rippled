@@ -98,8 +98,8 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
 
             // can not perform regular claw from amm pool
             {
-                Issue const usd(usd.currency, amm.ammAccount());
-                auto amount = amountFromString(usd, "10");
+                Issue const ammUsd(usd.currency, amm.ammAccount());
+                auto amount = amountFromString(ammUsd, "10");
                 auto const err =
                     feature[featureSingleAssetVault] ? tecPSEUDO_ACCOUNT : tecAMM_ACCOUNT;
                 env(claw(gw, amount), Ter(err));
