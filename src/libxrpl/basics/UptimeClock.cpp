@@ -10,7 +10,7 @@ namespace xrpl {
 std::atomic<UptimeClock::rep> UptimeClock::kNOW{0};  // seconds since start
 std::atomic<bool> UptimeClock::kSTOP{false};         // stop update thread
 
-// On rippled shutdown, cancel and wait for the update thread
+// On xrpld shutdown, cancel and wait for the update thread
 UptimeClock::UpdateThread::~UpdateThread()
 {
     if (joinable())
