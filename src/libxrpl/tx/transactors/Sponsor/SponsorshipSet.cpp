@@ -287,6 +287,7 @@ SponsorshipSet::doApply()
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*newSle)[sfSponseeNode] = *sponseePage;
 
+        // NOLINTNEXTLINE(readability-suspicious-call-argument)
         adjustOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, ctx_.journal);
         addSponsorToLedgerEntry(newSle, reserveSponsorAccSle);
 

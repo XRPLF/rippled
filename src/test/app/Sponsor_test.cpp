@@ -2535,7 +2535,8 @@ public:
                 }
             }
 
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == maxDeletableAMMTrustLines * 2 + 10);
+            BEAST_EXPECT(
+                sponsoringOwnerCount(env, sponsor) == ((maxDeletableAMMTrustLines * 2) + 10));
 
             // The trustlines are partially deleted.
             amm.withdrawAll(gw);
