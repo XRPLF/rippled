@@ -94,9 +94,9 @@ defaultJsonLogFormat()
 struct LoggingConfiguration
 {
     bool enableConsole{};
-    std::optional<std::string> directory;
+    std::optional<std::string> directory{std::nullopt};
     bool isAsync{};
-    Severity defaultSeverity;
+    Severity defaultSeverity{Severity::DBG};
     bool jsonMode{false};
 };
 
@@ -223,7 +223,7 @@ class Logger
 
             if (jsonMode_)
             {
-                detail::appendJsonField(messageParams_, p.name(), p.value());
+                detail::appendJsonField(messageParams_, p.name(), std::move(p).value());
             }
 
             return *this;

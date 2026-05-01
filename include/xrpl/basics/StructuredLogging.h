@@ -179,9 +179,16 @@ public:
 
     /** @brief Get the parameter value. */
     [[nodiscard]] T const&
-    value() const
+    value() const&
     {
         return value_;
+    }
+
+    /** @brief Get the parameter value. */
+    [[nodiscard]] T&&
+    value() &&
+    {
+        return std::move(value_);
     }
 };
 
@@ -231,6 +238,7 @@ template <typename... Ts>
 [[nodiscard]] std::string
 buildJsonPattern(std::string_view existingPattern, log::Parameter<Ts> const&... params)
 {
+    // NOLINTNEXTLINE(misc-const-correctness)
     detail::JsonLoggingPatternBuilder builder(existingPattern);
     (builder.add(params.name(), params.value()), ...);
     return builder.build();
