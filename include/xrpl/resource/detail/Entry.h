@@ -39,7 +39,7 @@ struct Entry : public beast::List<Entry>::Node
     [[nodiscard]] bool
     isUnlimited() const
     {
-        return key->kind == kindUnlimited;
+        return key->kind == Kind::kindUnlimited;
     }
 
     // Balance including remote contributions
