@@ -29,15 +29,15 @@ TEST(SignerListTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     SignerListBuilder builder{
-        ownerNodeValue,
-        signerQuorumValue,
-        signerEntriesValue,
-        signerListIDValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
     builder.setOwner(ownerValue);
+    builder.setOwnerNode(ownerNodeValue);
+    builder.setSignerQuorum(signerQuorumValue);
+    builder.setSignerEntries(signerEntriesValue);
+    builder.setSignerListID(signerListIDValue);
+    builder.setPreviousTxnID(previousTxnIDValue);
+    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -49,47 +49,59 @@ TEST(SignerListTests, BuilderSettersRoundTrip)
     EXPECT_TRUE(entry.validate());
 
     {
-        auto const& expected = ownerNodeValue;
-        auto const actual = entry.getOwnerNode();
-        expectEqualField(expected, actual, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = signerQuorumValue;
-        auto const actual = entry.getSignerQuorum();
-        expectEqualField(expected, actual, "sfSignerQuorum");
-    }
-
-    {
-        auto const& expected = signerEntriesValue;
-        auto const actual = entry.getSignerEntries();
-        expectEqualField(expected, actual, "sfSignerEntries");
-    }
-
-    {
-        auto const& expected = signerListIDValue;
-        auto const actual = entry.getSignerListID();
-        expectEqualField(expected, actual, "sfSignerListID");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-        auto const actual = entry.getPreviousTxnID();
-        expectEqualField(expected, actual, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-        auto const actual = entry.getPreviousTxnLgrSeq();
-        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
-    }
-
-    {
         auto const& expected = ownerValue;
         auto const actualOpt = entry.getOwner();
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfOwner");
         EXPECT_TRUE(entry.hasOwner());
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+        auto const actualOpt = entry.getOwnerNode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfOwnerNode");
+        EXPECT_TRUE(entry.hasOwnerNode());
+    }
+
+    {
+        auto const& expected = signerQuorumValue;
+        auto const actualOpt = entry.getSignerQuorum();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSignerQuorum");
+        EXPECT_TRUE(entry.hasSignerQuorum());
+    }
+
+    {
+        auto const& expected = signerEntriesValue;
+        auto const actualOpt = entry.getSignerEntries();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSignerEntries");
+        EXPECT_TRUE(entry.hasSignerEntries());
+    }
+
+    {
+        auto const& expected = signerListIDValue;
+        auto const actualOpt = entry.getSignerListID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSignerListID");
+        EXPECT_TRUE(entry.hasSignerListID());
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+        auto const actualOpt = entry.getPreviousTxnID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
+        EXPECT_TRUE(entry.hasPreviousTxnID());
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+        auto const actualOpt = entry.getPreviousTxnLgrSeq();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
+        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -133,66 +145,6 @@ TEST(SignerListTests, BuilderFromSleRoundTrip)
     EXPECT_TRUE(entryFromSle.validate());
 
     {
-        auto const& expected = ownerNodeValue;
-
-        auto const fromSle = entryFromSle.getOwnerNode();
-        auto const fromBuilder = entryFromBuilder.getOwnerNode();
-
-        expectEqualField(expected, fromSle, "sfOwnerNode");
-        expectEqualField(expected, fromBuilder, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = signerQuorumValue;
-
-        auto const fromSle = entryFromSle.getSignerQuorum();
-        auto const fromBuilder = entryFromBuilder.getSignerQuorum();
-
-        expectEqualField(expected, fromSle, "sfSignerQuorum");
-        expectEqualField(expected, fromBuilder, "sfSignerQuorum");
-    }
-
-    {
-        auto const& expected = signerEntriesValue;
-
-        auto const fromSle = entryFromSle.getSignerEntries();
-        auto const fromBuilder = entryFromBuilder.getSignerEntries();
-
-        expectEqualField(expected, fromSle, "sfSignerEntries");
-        expectEqualField(expected, fromBuilder, "sfSignerEntries");
-    }
-
-    {
-        auto const& expected = signerListIDValue;
-
-        auto const fromSle = entryFromSle.getSignerListID();
-        auto const fromBuilder = entryFromBuilder.getSignerListID();
-
-        expectEqualField(expected, fromSle, "sfSignerListID");
-        expectEqualField(expected, fromBuilder, "sfSignerListID");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-
-        auto const fromSle = entryFromSle.getPreviousTxnID();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
-
-        expectEqualField(expected, fromSle, "sfPreviousTxnID");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-
-        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
-
-        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
-    }
-
-    {
         auto const& expected = ownerValue;
 
         auto const fromSleOpt = entryFromSle.getOwner();
@@ -203,6 +155,84 @@ TEST(SignerListTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfOwner");
         expectEqualField(expected, *fromBuilderOpt, "sfOwner");
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+
+        auto const fromSleOpt = entryFromSle.getOwnerNode();
+        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
+        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
+    }
+
+    {
+        auto const& expected = signerQuorumValue;
+
+        auto const fromSleOpt = entryFromSle.getSignerQuorum();
+        auto const fromBuilderOpt = entryFromBuilder.getSignerQuorum();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSignerQuorum");
+        expectEqualField(expected, *fromBuilderOpt, "sfSignerQuorum");
+    }
+
+    {
+        auto const& expected = signerEntriesValue;
+
+        auto const fromSleOpt = entryFromSle.getSignerEntries();
+        auto const fromBuilderOpt = entryFromBuilder.getSignerEntries();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSignerEntries");
+        expectEqualField(expected, *fromBuilderOpt, "sfSignerEntries");
+    }
+
+    {
+        auto const& expected = signerListIDValue;
+
+        auto const fromSleOpt = entryFromSle.getSignerListID();
+        auto const fromBuilderOpt = entryFromBuilder.getSignerListID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSignerListID");
+        expectEqualField(expected, *fromBuilderOpt, "sfSignerListID");
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+
+        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+
+        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -250,20 +280,8 @@ TEST(SignerListTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
-    auto const ownerNodeValue = canonical_UINT64();
-    auto const signerQuorumValue = canonical_UINT32();
-    auto const signerEntriesValue = canonical_ARRAY();
-    auto const signerListIDValue = canonical_UINT32();
-    auto const previousTxnIDValue = canonical_UINT256();
-    auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     SignerListBuilder builder{
-        ownerNodeValue,
-        signerQuorumValue,
-        signerEntriesValue,
-        signerListIDValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
     auto const entry = builder.build(index);
@@ -271,5 +289,17 @@ TEST(SignerListTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(entry.hasOwner());
     EXPECT_FALSE(entry.getOwner().has_value());
+    EXPECT_FALSE(entry.hasOwnerNode());
+    EXPECT_FALSE(entry.getOwnerNode().has_value());
+    EXPECT_FALSE(entry.hasSignerQuorum());
+    EXPECT_FALSE(entry.getSignerQuorum().has_value());
+    EXPECT_FALSE(entry.hasSignerEntries());
+    EXPECT_FALSE(entry.getSignerEntries().has_value());
+    EXPECT_FALSE(entry.hasSignerListID());
+    EXPECT_FALSE(entry.getSignerListID().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnID());
+    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
+    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
 }

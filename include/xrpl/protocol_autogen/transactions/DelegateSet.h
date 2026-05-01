@@ -19,9 +19,9 @@ class DelegateSetBuilder;
  * @brief Transaction: DelegateSet
  *
  * Type: ttDELEGATE_SET (64)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featurePermissionDelegationV1_1
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use DelegateSetBuilder to construct new transactions.
@@ -48,25 +48,53 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAuthorize (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfAuthorize (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getAuthorize() const
     {
-        return this->tx_->at(sfAuthorize);
+        if (hasAuthorize())
+        {
+            return this->tx_->at(sfAuthorize);
+        }
+        return std::nullopt;
     }
+
     /**
-     * @brief Get sfPermissions (soeREQUIRED)
-     * @note This is an untyped field.
-     * @return The field value.
+     * @brief Check if sfAuthorize is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    STArray const&
+    bool
+    hasAuthorize() const
+    {
+        return this->tx_->isFieldPresent(sfAuthorize);
+    }
+    /**
+     * @brief Get sfPermissions (SoeRequired)
+     * @note This is an untyped field.
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    std::optional<std::reference_wrapper<STArray const>>
     getPermissions() const
     {
-        return this->tx_->getFieldArray(sfPermissions);
+        if (this->tx_->isFieldPresent(sfPermissions))
+            return this->tx_->getFieldArray(sfPermissions);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPermissions is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPermissions() const
+    {
+        return this->tx_->isFieldPresent(sfPermissions);
     }
 };
 
@@ -83,19 +111,15 @@ public:
     /**
      * @brief Construct a new DelegateSetBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param authorize The sfAuthorize field value.
-     * @param permissions The sfPermissions field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     DelegateSetBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize,                     STArray const& permissions,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<DelegateSetBuilder>(ttDELEGATE_SET, account, sequence, fee)
     {
-        setAuthorize(authorize);
-        setPermissions(permissions);
     }
 
     /**
@@ -115,7 +139,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfAuthorize (soeREQUIRED)
+     * @brief Set sfAuthorize (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateSetBuilder&
@@ -126,7 +150,7 @@ public:
     }
 
     /**
-     * @brief Set sfPermissions (soeREQUIRED)
+     * @brief Set sfPermissions (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateSetBuilder&

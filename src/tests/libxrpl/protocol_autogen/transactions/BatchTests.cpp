@@ -21,7 +21,7 @@ TEST(TransactionsBatchTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testBatch"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testBatch"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,12 +34,12 @@ TEST(TransactionsBatchTests, BuilderSettersRoundTrip)
 
     BatchBuilder builder{
         accountValue,
-        rawTransactionsValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setRawTransactions(rawTransactionsValue);
     builder.setBatchSigners(batchSignersValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -57,13 +57,15 @@ TEST(TransactionsBatchTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = rawTransactionsValue;
-        auto const actual = tx.getRawTransactions();
-        expectEqualField(expected, actual, "sfRawTransactions");
+        auto const actualOpt = tx.getRawTransactions();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRawTransactions should be present";
+        expectEqualField(expected, *actualOpt, "sfRawTransactions");
+        EXPECT_TRUE(tx.hasRawTransactions());
     }
 
-    // Verify optional fields
     {
         auto const& expected = batchSignersValue;
         auto const actualOpt = tx.getBatchSigners();
@@ -80,7 +82,7 @@ TEST(TransactionsBatchTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testBatchFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testBatchFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -94,11 +96,11 @@ TEST(TransactionsBatchTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     BatchBuilder initialBuilder{
         accountValue,
-        rawTransactionsValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setRawTransactions(rawTransactionsValue);
     initialBuilder.setBatchSigners(batchSignersValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -117,13 +119,14 @@ TEST(TransactionsBatchTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = rawTransactionsValue;
-        auto const actual = rebuiltTx.getRawTransactions();
-        expectEqualField(expected, actual, "sfRawTransactions");
+        auto const actualOpt = rebuiltTx.getRawTransactions();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRawTransactions should be present";
+        expectEqualField(expected, *actualOpt, "sfRawTransactions");
     }
 
-    // Verify optional fields
     {
         auto const& expected = batchSignersValue;
         auto const actualOpt = rebuiltTx.getBatchSigners();
@@ -138,7 +141,7 @@ TEST(TransactionsBatchTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -152,7 +155,7 @@ TEST(TransactionsBatchTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -166,7 +169,7 @@ TEST(TransactionsBatchTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testBatchNullopt"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testBatchNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -174,11 +177,9 @@ TEST(TransactionsBatchTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
-    auto const rawTransactionsValue = canonical_ARRAY();
 
     BatchBuilder builder{
         accountValue,
-        rawTransactionsValue,
         sequenceValue,
         feeValue
     };
@@ -188,6 +189,8 @@ TEST(TransactionsBatchTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasRawTransactions());
+    EXPECT_FALSE(tx.getRawTransactions().has_value());
     EXPECT_FALSE(tx.hasBatchSigners());
     EXPECT_FALSE(tx.getBatchSigners().has_value());
 }

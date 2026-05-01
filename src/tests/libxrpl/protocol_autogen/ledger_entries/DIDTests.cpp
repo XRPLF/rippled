@@ -29,15 +29,15 @@ TEST(DIDTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     DIDBuilder builder{
-        accountValue,
-        ownerNodeValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
+    builder.setAccount(accountValue);
     builder.setDIDDocument(dIDDocumentValue);
     builder.setURI(uRIValue);
     builder.setData(dataValue);
+    builder.setOwnerNode(ownerNodeValue);
+    builder.setPreviousTxnID(previousTxnIDValue);
+    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -50,26 +50,10 @@ TEST(DIDTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = accountValue;
-        auto const actual = entry.getAccount();
-        expectEqualField(expected, actual, "sfAccount");
-    }
-
-    {
-        auto const& expected = ownerNodeValue;
-        auto const actual = entry.getOwnerNode();
-        expectEqualField(expected, actual, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-        auto const actual = entry.getPreviousTxnID();
-        expectEqualField(expected, actual, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-        auto const actual = entry.getPreviousTxnLgrSeq();
-        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
+        auto const actualOpt = entry.getAccount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccount");
+        EXPECT_TRUE(entry.hasAccount());
     }
 
     {
@@ -94,6 +78,30 @@ TEST(DIDTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfData");
         EXPECT_TRUE(entry.hasData());
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+        auto const actualOpt = entry.getOwnerNode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfOwnerNode");
+        EXPECT_TRUE(entry.hasOwnerNode());
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+        auto const actualOpt = entry.getPreviousTxnID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
+        EXPECT_TRUE(entry.hasPreviousTxnID());
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+        auto const actualOpt = entry.getPreviousTxnLgrSeq();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
+        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -139,41 +147,14 @@ TEST(DIDTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = accountValue;
 
-        auto const fromSle = entryFromSle.getAccount();
-        auto const fromBuilder = entryFromBuilder.getAccount();
+        auto const fromSleOpt = entryFromSle.getAccount();
+        auto const fromBuilderOpt = entryFromBuilder.getAccount();
 
-        expectEqualField(expected, fromSle, "sfAccount");
-        expectEqualField(expected, fromBuilder, "sfAccount");
-    }
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
 
-    {
-        auto const& expected = ownerNodeValue;
-
-        auto const fromSle = entryFromSle.getOwnerNode();
-        auto const fromBuilder = entryFromBuilder.getOwnerNode();
-
-        expectEqualField(expected, fromSle, "sfOwnerNode");
-        expectEqualField(expected, fromBuilder, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-
-        auto const fromSle = entryFromSle.getPreviousTxnID();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
-
-        expectEqualField(expected, fromSle, "sfPreviousTxnID");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-
-        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
-
-        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, *fromSleOpt, "sfAccount");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccount");
     }
 
     {
@@ -213,6 +194,45 @@ TEST(DIDTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfData");
         expectEqualField(expected, *fromBuilderOpt, "sfData");
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+
+        auto const fromSleOpt = entryFromSle.getOwnerNode();
+        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
+        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+
+        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+
+        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -260,26 +280,26 @@ TEST(DIDTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
-    auto const accountValue = canonical_ACCOUNT();
-    auto const ownerNodeValue = canonical_UINT64();
-    auto const previousTxnIDValue = canonical_UINT256();
-    auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     DIDBuilder builder{
-        accountValue,
-        ownerNodeValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasAccount());
+    EXPECT_FALSE(entry.getAccount().has_value());
     EXPECT_FALSE(entry.hasDIDDocument());
     EXPECT_FALSE(entry.getDIDDocument().has_value());
     EXPECT_FALSE(entry.hasURI());
     EXPECT_FALSE(entry.getURI().has_value());
     EXPECT_FALSE(entry.hasData());
     EXPECT_FALSE(entry.getData().has_value());
+    EXPECT_FALSE(entry.hasOwnerNode());
+    EXPECT_FALSE(entry.getOwnerNode().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnID());
+    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
+    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
 }

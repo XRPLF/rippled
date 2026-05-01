@@ -19,9 +19,9 @@ class MPTokenAuthorizeBuilder;
  * @brief Transaction: MPTokenAuthorize
  *
  * Type: ttMPTOKEN_AUTHORIZE (57)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureMPTokensV1
- * Privileges: mustAuthorizeMPT
+ * Privileges: MustAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MPTokenAuthorizeBuilder to construct new transactions.
@@ -48,18 +48,33 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfMPTokenIssuanceID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT192::type::value_type
+    protocol_autogen::Optional<SF_UINT192::type::value_type>
     getMPTokenIssuanceID() const
     {
-        return this->tx_->at(sfMPTokenIssuanceID);
+        if (hasMPTokenIssuanceID())
+        {
+            return this->tx_->at(sfMPTokenIssuanceID);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfHolder (soeOPTIONAL)
+     * @brief Check if sfMPTokenIssuanceID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasMPTokenIssuanceID() const
+    {
+        return this->tx_->isFieldPresent(sfMPTokenIssuanceID);
+    }
+
+    /**
+     * @brief Get sfHolder (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -98,17 +113,15 @@ public:
     /**
      * @brief Construct a new MPTokenAuthorizeBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param mPTokenIssuanceID The sfMPTokenIssuanceID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     MPTokenAuthorizeBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<MPTokenAuthorizeBuilder>(ttMPTOKEN_AUTHORIZE, account, sequence, fee)
     {
-        setMPTokenIssuanceID(mPTokenIssuanceID);
     }
 
     /**
@@ -128,7 +141,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenAuthorizeBuilder&
@@ -139,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolder (soeOPTIONAL)
+     * @brief Set sfHolder (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenAuthorizeBuilder&

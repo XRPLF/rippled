@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::transactions {
 
@@ -19,9 +19,9 @@ class EscrowCancelBuilder;
  * @brief Transaction: EscrowCancel
  *
  * Type: ttESCROW_CANCEL (4)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use EscrowCancelBuilder to construct new transactions.
@@ -35,7 +35,8 @@ public:
      * @brief Construct a EscrowCancel transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit EscrowCancel(std::shared_ptr<STTx const> tx) : TransactionBase(std::move(tx))
+    explicit EscrowCancel(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
         if (tx_->getTxnType() != txType)
@@ -47,25 +48,55 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfOwner (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getOwner() const
     {
-        return this->tx_->at(sfOwner);
+        if (hasOwner())
+        {
+            return this->tx_->at(sfOwner);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOfferSequence (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOwner is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasOwner() const
+    {
+        return this->tx_->isFieldPresent(sfOwner);
+    }
+
+    /**
+     * @brief Get sfOfferSequence (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getOfferSequence() const
     {
-        return this->tx_->at(sfOfferSequence);
+        if (hasOfferSequence())
+        {
+            return this->tx_->at(sfOfferSequence);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfOfferSequence is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasOfferSequence() const
+    {
+        return this->tx_->isFieldPresent(sfOfferSequence);
     }
 };
 
@@ -82,21 +113,15 @@ public:
     /**
      * @brief Construct a new EscrowCancelBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param owner The sfOwner field value.
-     * @param offerSequence The sfOfferSequence field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    EscrowCancelBuilder(
-        SF_ACCOUNT::type::value_type account,
-        std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,
-        std::decay_t<typename SF_UINT32::type::value_type> const& offerSequence,
-        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
+    EscrowCancelBuilder(SF_ACCOUNT::type::value_type account,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
         : TransactionBuilderBase<EscrowCancelBuilder>(ttESCROW_CANCEL, account, sequence, fee)
     {
-        setOwner(owner);
-        setOfferSequence(offerSequence);
     }
 
     /**
@@ -116,7 +141,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowCancelBuilder&
@@ -127,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Set sfOfferSequence (soeREQUIRED)
+     * @brief Set sfOfferSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowCancelBuilder&

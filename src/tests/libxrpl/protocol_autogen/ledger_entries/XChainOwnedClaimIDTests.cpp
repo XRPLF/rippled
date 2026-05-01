@@ -31,17 +31,17 @@ TEST(XChainOwnedClaimIDTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     XChainOwnedClaimIDBuilder builder{
-        accountValue,
-        xChainBridgeValue,
-        xChainClaimIDValue,
-        otherChainSourceValue,
-        xChainClaimAttestationsValue,
-        signatureRewardValue,
-        ownerNodeValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
+    builder.setAccount(accountValue);
+    builder.setXChainBridge(xChainBridgeValue);
+    builder.setXChainClaimID(xChainClaimIDValue);
+    builder.setOtherChainSource(otherChainSourceValue);
+    builder.setXChainClaimAttestations(xChainClaimAttestationsValue);
+    builder.setSignatureReward(signatureRewardValue);
+    builder.setOwnerNode(ownerNodeValue);
+    builder.setPreviousTxnID(previousTxnIDValue);
+    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -54,56 +54,74 @@ TEST(XChainOwnedClaimIDTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = accountValue;
-        auto const actual = entry.getAccount();
-        expectEqualField(expected, actual, "sfAccount");
+        auto const actualOpt = entry.getAccount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccount");
+        EXPECT_TRUE(entry.hasAccount());
     }
 
     {
         auto const& expected = xChainBridgeValue;
-        auto const actual = entry.getXChainBridge();
-        expectEqualField(expected, actual, "sfXChainBridge");
+        auto const actualOpt = entry.getXChainBridge();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfXChainBridge");
+        EXPECT_TRUE(entry.hasXChainBridge());
     }
 
     {
         auto const& expected = xChainClaimIDValue;
-        auto const actual = entry.getXChainClaimID();
-        expectEqualField(expected, actual, "sfXChainClaimID");
+        auto const actualOpt = entry.getXChainClaimID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfXChainClaimID");
+        EXPECT_TRUE(entry.hasXChainClaimID());
     }
 
     {
         auto const& expected = otherChainSourceValue;
-        auto const actual = entry.getOtherChainSource();
-        expectEqualField(expected, actual, "sfOtherChainSource");
+        auto const actualOpt = entry.getOtherChainSource();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfOtherChainSource");
+        EXPECT_TRUE(entry.hasOtherChainSource());
     }
 
     {
         auto const& expected = xChainClaimAttestationsValue;
-        auto const actual = entry.getXChainClaimAttestations();
-        expectEqualField(expected, actual, "sfXChainClaimAttestations");
+        auto const actualOpt = entry.getXChainClaimAttestations();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfXChainClaimAttestations");
+        EXPECT_TRUE(entry.hasXChainClaimAttestations());
     }
 
     {
         auto const& expected = signatureRewardValue;
-        auto const actual = entry.getSignatureReward();
-        expectEqualField(expected, actual, "sfSignatureReward");
+        auto const actualOpt = entry.getSignatureReward();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSignatureReward");
+        EXPECT_TRUE(entry.hasSignatureReward());
     }
 
     {
         auto const& expected = ownerNodeValue;
-        auto const actual = entry.getOwnerNode();
-        expectEqualField(expected, actual, "sfOwnerNode");
+        auto const actualOpt = entry.getOwnerNode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfOwnerNode");
+        EXPECT_TRUE(entry.hasOwnerNode());
     }
 
     {
         auto const& expected = previousTxnIDValue;
-        auto const actual = entry.getPreviousTxnID();
-        expectEqualField(expected, actual, "sfPreviousTxnID");
+        auto const actualOpt = entry.getPreviousTxnID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
+        EXPECT_TRUE(entry.hasPreviousTxnID());
     }
 
     {
         auto const& expected = previousTxnLgrSeqValue;
-        auto const actual = entry.getPreviousTxnLgrSeq();
-        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
+        auto const actualOpt = entry.getPreviousTxnLgrSeq();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
+        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -153,91 +171,118 @@ TEST(XChainOwnedClaimIDTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = accountValue;
 
-        auto const fromSle = entryFromSle.getAccount();
-        auto const fromBuilder = entryFromBuilder.getAccount();
+        auto const fromSleOpt = entryFromSle.getAccount();
+        auto const fromBuilderOpt = entryFromBuilder.getAccount();
 
-        expectEqualField(expected, fromSle, "sfAccount");
-        expectEqualField(expected, fromBuilder, "sfAccount");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAccount");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccount");
     }
 
     {
         auto const& expected = xChainBridgeValue;
 
-        auto const fromSle = entryFromSle.getXChainBridge();
-        auto const fromBuilder = entryFromBuilder.getXChainBridge();
+        auto const fromSleOpt = entryFromSle.getXChainBridge();
+        auto const fromBuilderOpt = entryFromBuilder.getXChainBridge();
 
-        expectEqualField(expected, fromSle, "sfXChainBridge");
-        expectEqualField(expected, fromBuilder, "sfXChainBridge");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfXChainBridge");
+        expectEqualField(expected, *fromBuilderOpt, "sfXChainBridge");
     }
 
     {
         auto const& expected = xChainClaimIDValue;
 
-        auto const fromSle = entryFromSle.getXChainClaimID();
-        auto const fromBuilder = entryFromBuilder.getXChainClaimID();
+        auto const fromSleOpt = entryFromSle.getXChainClaimID();
+        auto const fromBuilderOpt = entryFromBuilder.getXChainClaimID();
 
-        expectEqualField(expected, fromSle, "sfXChainClaimID");
-        expectEqualField(expected, fromBuilder, "sfXChainClaimID");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfXChainClaimID");
+        expectEqualField(expected, *fromBuilderOpt, "sfXChainClaimID");
     }
 
     {
         auto const& expected = otherChainSourceValue;
 
-        auto const fromSle = entryFromSle.getOtherChainSource();
-        auto const fromBuilder = entryFromBuilder.getOtherChainSource();
+        auto const fromSleOpt = entryFromSle.getOtherChainSource();
+        auto const fromBuilderOpt = entryFromBuilder.getOtherChainSource();
 
-        expectEqualField(expected, fromSle, "sfOtherChainSource");
-        expectEqualField(expected, fromBuilder, "sfOtherChainSource");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfOtherChainSource");
+        expectEqualField(expected, *fromBuilderOpt, "sfOtherChainSource");
     }
 
     {
         auto const& expected = xChainClaimAttestationsValue;
 
-        auto const fromSle = entryFromSle.getXChainClaimAttestations();
-        auto const fromBuilder = entryFromBuilder.getXChainClaimAttestations();
+        auto const fromSleOpt = entryFromSle.getXChainClaimAttestations();
+        auto const fromBuilderOpt = entryFromBuilder.getXChainClaimAttestations();
 
-        expectEqualField(expected, fromSle, "sfXChainClaimAttestations");
-        expectEqualField(expected, fromBuilder, "sfXChainClaimAttestations");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfXChainClaimAttestations");
+        expectEqualField(expected, *fromBuilderOpt, "sfXChainClaimAttestations");
     }
 
     {
         auto const& expected = signatureRewardValue;
 
-        auto const fromSle = entryFromSle.getSignatureReward();
-        auto const fromBuilder = entryFromBuilder.getSignatureReward();
+        auto const fromSleOpt = entryFromSle.getSignatureReward();
+        auto const fromBuilderOpt = entryFromBuilder.getSignatureReward();
 
-        expectEqualField(expected, fromSle, "sfSignatureReward");
-        expectEqualField(expected, fromBuilder, "sfSignatureReward");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSignatureReward");
+        expectEqualField(expected, *fromBuilderOpt, "sfSignatureReward");
     }
 
     {
         auto const& expected = ownerNodeValue;
 
-        auto const fromSle = entryFromSle.getOwnerNode();
-        auto const fromBuilder = entryFromBuilder.getOwnerNode();
+        auto const fromSleOpt = entryFromSle.getOwnerNode();
+        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
 
-        expectEqualField(expected, fromSle, "sfOwnerNode");
-        expectEqualField(expected, fromBuilder, "sfOwnerNode");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
+        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
     }
 
     {
         auto const& expected = previousTxnIDValue;
 
-        auto const fromSle = entryFromSle.getPreviousTxnID();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
+        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
 
-        expectEqualField(expected, fromSle, "sfPreviousTxnID");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
     }
 
     {
         auto const& expected = previousTxnLgrSeqValue;
 
-        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
+        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
 
-        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -280,4 +325,35 @@ TEST(XChainOwnedClaimIDTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(XChainOwnedClaimIDBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(XChainOwnedClaimIDTests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+
+    XChainOwnedClaimIDBuilder builder{
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasAccount());
+    EXPECT_FALSE(entry.getAccount().has_value());
+    EXPECT_FALSE(entry.hasXChainBridge());
+    EXPECT_FALSE(entry.getXChainBridge().has_value());
+    EXPECT_FALSE(entry.hasXChainClaimID());
+    EXPECT_FALSE(entry.getXChainClaimID().has_value());
+    EXPECT_FALSE(entry.hasOtherChainSource());
+    EXPECT_FALSE(entry.getOtherChainSource().has_value());
+    EXPECT_FALSE(entry.hasXChainClaimAttestations());
+    EXPECT_FALSE(entry.getXChainClaimAttestations().has_value());
+    EXPECT_FALSE(entry.hasSignatureReward());
+    EXPECT_FALSE(entry.getSignatureReward().has_value());
+    EXPECT_FALSE(entry.hasOwnerNode());
+    EXPECT_FALSE(entry.getOwnerNode().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnID());
+    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
+    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
+}
 }

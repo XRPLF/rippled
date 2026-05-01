@@ -21,7 +21,7 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowCreate"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -38,13 +38,13 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
 
     EscrowCreateBuilder builder{
         accountValue,
-        destinationValue,
-        amountValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setDestination(destinationValue);
+    builder.setAmount(amountValue);
     builder.setCondition(conditionValue);
     builder.setCancelAfter(cancelAfterValue);
     builder.setFinishAfter(finishAfterValue);
@@ -65,19 +65,23 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actual = tx.getDestination();
-        expectEqualField(expected, actual, "sfDestination");
+        auto const actualOpt = tx.getDestination();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
+        expectEqualField(expected, *actualOpt, "sfDestination");
+        EXPECT_TRUE(tx.hasDestination());
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = tx.getAmount();
-        expectEqualField(expected, actual, "sfAmount");
+        auto const actualOpt = tx.getAmount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
+        expectEqualField(expected, *actualOpt, "sfAmount");
+        EXPECT_TRUE(tx.hasAmount());
     }
 
-    // Verify optional fields
     {
         auto const& expected = conditionValue;
         auto const actualOpt = tx.getCondition();
@@ -118,7 +122,7 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowCreateFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -136,12 +140,12 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     EscrowCreateBuilder initialBuilder{
         accountValue,
-        destinationValue,
-        amountValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setDestination(destinationValue);
+    initialBuilder.setAmount(amountValue);
     initialBuilder.setCondition(conditionValue);
     initialBuilder.setCancelAfter(cancelAfterValue);
     initialBuilder.setFinishAfter(finishAfterValue);
@@ -163,19 +167,21 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actual = rebuiltTx.getDestination();
-        expectEqualField(expected, actual, "sfDestination");
+        auto const actualOpt = rebuiltTx.getDestination();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
+        expectEqualField(expected, *actualOpt, "sfDestination");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = rebuiltTx.getAmount();
-        expectEqualField(expected, actual, "sfAmount");
+        auto const actualOpt = rebuiltTx.getAmount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
+        expectEqualField(expected, *actualOpt, "sfAmount");
     }
 
-    // Verify optional fields
     {
         auto const& expected = conditionValue;
         auto const actualOpt = rebuiltTx.getCondition();
@@ -211,7 +217,7 @@ TEST(TransactionsEscrowCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -225,7 +231,7 @@ TEST(TransactionsEscrowCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -239,7 +245,7 @@ TEST(TransactionsEscrowCreateTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowCreateNullopt"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowCreateNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -247,13 +253,9 @@ TEST(TransactionsEscrowCreateTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
-    auto const destinationValue = canonical_ACCOUNT();
-    auto const amountValue = canonical_AMOUNT();
 
     EscrowCreateBuilder builder{
         accountValue,
-        destinationValue,
-        amountValue,
         sequenceValue,
         feeValue
     };
@@ -263,6 +265,10 @@ TEST(TransactionsEscrowCreateTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasDestination());
+    EXPECT_FALSE(tx.getDestination().has_value());
+    EXPECT_FALSE(tx.hasAmount());
+    EXPECT_FALSE(tx.getAmount().has_value());
     EXPECT_FALSE(tx.hasCondition());
     EXPECT_FALSE(tx.getCondition().has_value());
     EXPECT_FALSE(tx.hasCancelAfter());

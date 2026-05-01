@@ -46,18 +46,31 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfOwner (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getOwner() const
     {
-        return this->sle_->at(sfOwner);
+        if (hasOwner())
+            return this->sle_->at(sfOwner);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOracleDocumentID (soeOPTIONAL)
+     * @brief Check if sfOwner is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasOwner() const
+    {
+        return this->sle_->isFieldPresent(sfOwner);
+    }
+
+    /**
+     * @brief Get sfOracleDocumentID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -81,52 +94,104 @@ public:
     }
 
     /**
-     * @brief Get sfProvider (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfProvider (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    protocol_autogen::Optional<SF_VL::type::value_type>
     getProvider() const
     {
-        return this->sle_->at(sfProvider);
+        if (hasProvider())
+            return this->sle_->at(sfProvider);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPriceDataSeries (soeREQUIRED)
-     * @note This is an untyped field (unknown).
-     * @return The field value.
+     * @brief Check if sfProvider is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    STArray const&
+    bool
+    hasProvider() const
+    {
+        return this->sle_->isFieldPresent(sfProvider);
+    }
+
+    /**
+     * @brief Get sfPriceDataSeries (SoeRequired)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    std::optional<std::reference_wrapper<STArray const>>
     getPriceDataSeries() const
     {
-        return this->sle_->getFieldArray(sfPriceDataSeries);
+        if (this->sle_->isFieldPresent(sfPriceDataSeries))
+            return this->sle_->getFieldArray(sfPriceDataSeries);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAssetClass (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPriceDataSeries is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    bool
+    hasPriceDataSeries() const
+    {
+        return this->sle_->isFieldPresent(sfPriceDataSeries);
+    }
+
+    /**
+     * @brief Get sfAssetClass (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
     getAssetClass() const
     {
-        return this->sle_->at(sfAssetClass);
+        if (hasAssetClass())
+            return this->sle_->at(sfAssetClass);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfLastUpdateTime (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAssetClass is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
-    getLastUpdateTime() const
+    bool
+    hasAssetClass() const
     {
-        return this->sle_->at(sfLastUpdateTime);
+        return this->sle_->isFieldPresent(sfAssetClass);
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfLastUpdateTime (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getLastUpdateTime() const
+    {
+        if (hasLastUpdateTime())
+            return this->sle_->at(sfLastUpdateTime);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLastUpdateTime is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLastUpdateTime() const
+    {
+        return this->sle_->isFieldPresent(sfLastUpdateTime);
+    }
+
+    /**
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -150,36 +215,75 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfOwnerNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getOwnerNode() const
     {
-        return this->sle_->at(sfOwnerNode);
+        if (hasOwnerNode())
+            return this->sle_->at(sfOwnerNode);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOwnerNode is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    bool
+    hasOwnerNode() const
+    {
+        return this->sle_->isFieldPresent(sfOwnerNode);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnID);
+        if (hasPreviousTxnID())
+            return this->sle_->at(sfPreviousTxnID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasPreviousTxnID() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnID);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getPreviousTxnLgrSeq() const
     {
-        return this->sle_->at(sfPreviousTxnLgrSeq);
+        if (hasPreviousTxnLgrSeq())
+            return this->sle_->at(sfPreviousTxnLgrSeq);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPreviousTxnLgrSeq() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -195,26 +299,10 @@ class OracleBuilder : public LedgerEntryBuilderBase<OracleBuilder>
 public:
     /**
      * @brief Construct a new OracleBuilder with required fields.
-     * @param owner The sfOwner field value.
-     * @param provider The sfProvider field value.
-     * @param priceDataSeries The sfPriceDataSeries field value.
-     * @param assetClass The sfAssetClass field value.
-     * @param lastUpdateTime The sfLastUpdateTime field value.
-     * @param ownerNode The sfOwnerNode field value.
-     * @param previousTxnID The sfPreviousTxnID field value.
-     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    OracleBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_VL::type::value_type> const& provider,STArray const& priceDataSeries,std::decay_t<typename SF_VL::type::value_type> const& assetClass,std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    OracleBuilder()
         : LedgerEntryBuilderBase<OracleBuilder>(ltORACLE)
     {
-        setOwner(owner);
-        setProvider(provider);
-        setPriceDataSeries(priceDataSeries);
-        setAssetClass(assetClass);
-        setLastUpdateTime(lastUpdateTime);
-        setOwnerNode(ownerNode);
-        setPreviousTxnID(previousTxnID);
-        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**
@@ -234,7 +322,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -245,7 +333,7 @@ public:
     }
 
     /**
-     * @brief Set sfOracleDocumentID (soeOPTIONAL)
+     * @brief Set sfOracleDocumentID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -256,7 +344,7 @@ public:
     }
 
     /**
-     * @brief Set sfProvider (soeREQUIRED)
+     * @brief Set sfProvider (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -267,7 +355,7 @@ public:
     }
 
     /**
-     * @brief Set sfPriceDataSeries (soeREQUIRED)
+     * @brief Set sfPriceDataSeries (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -278,7 +366,7 @@ public:
     }
 
     /**
-     * @brief Set sfAssetClass (soeREQUIRED)
+     * @brief Set sfAssetClass (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -289,7 +377,7 @@ public:
     }
 
     /**
-     * @brief Set sfLastUpdateTime (soeREQUIRED)
+     * @brief Set sfLastUpdateTime (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -300,7 +388,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -311,7 +399,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -322,7 +410,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
@@ -333,7 +421,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&

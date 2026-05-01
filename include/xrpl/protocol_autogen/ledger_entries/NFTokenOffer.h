@@ -46,62 +46,127 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfOwner (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getOwner() const
     {
-        return this->sle_->at(sfOwner);
+        if (hasOwner())
+            return this->sle_->at(sfOwner);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfNFTokenID (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOwner is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    bool
+    hasOwner() const
+    {
+        return this->sle_->isFieldPresent(sfOwner);
+    }
+
+    /**
+     * @brief Get sfNFTokenID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getNFTokenID() const
     {
-        return this->sle_->at(sfNFTokenID);
+        if (hasNFTokenID())
+            return this->sle_->at(sfNFTokenID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfNFTokenID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    bool
+    hasNFTokenID() const
+    {
+        return this->sle_->isFieldPresent(sfNFTokenID);
+    }
+
+    /**
+     * @brief Get sfAmount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getAmount() const
     {
-        return this->sle_->at(sfAmount);
+        if (hasAmount())
+            return this->sle_->at(sfAmount);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasAmount() const
+    {
+        return this->sle_->isFieldPresent(sfAmount);
+    }
+
+    /**
+     * @brief Get sfOwnerNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getOwnerNode() const
     {
-        return this->sle_->at(sfOwnerNode);
+        if (hasOwnerNode())
+            return this->sle_->at(sfOwnerNode);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfNFTokenOfferNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOwnerNode is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
-    getNFTokenOfferNode() const
+    bool
+    hasOwnerNode() const
     {
-        return this->sle_->at(sfNFTokenOfferNode);
+        return this->sle_->isFieldPresent(sfOwnerNode);
     }
 
     /**
-     * @brief Get sfDestination (soeOPTIONAL)
+     * @brief Get sfNFTokenOfferNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getNFTokenOfferNode() const
+    {
+        if (hasNFTokenOfferNode())
+            return this->sle_->at(sfNFTokenOfferNode);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfNFTokenOfferNode is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasNFTokenOfferNode() const
+    {
+        return this->sle_->isFieldPresent(sfNFTokenOfferNode);
+    }
+
+    /**
+     * @brief Get sfDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -125,7 +190,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -149,25 +214,51 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfPreviousTxnID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnID);
+        if (hasPreviousTxnID())
+            return this->sle_->at(sfPreviousTxnID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasPreviousTxnID() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnID);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getPreviousTxnLgrSeq() const
     {
-        return this->sle_->at(sfPreviousTxnLgrSeq);
+        if (hasPreviousTxnLgrSeq())
+            return this->sle_->at(sfPreviousTxnLgrSeq);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPreviousTxnLgrSeq() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -183,24 +274,10 @@ class NFTokenOfferBuilder : public LedgerEntryBuilderBase<NFTokenOfferBuilder>
 public:
     /**
      * @brief Construct a new NFTokenOfferBuilder with required fields.
-     * @param owner The sfOwner field value.
-     * @param nFTokenID The sfNFTokenID field value.
-     * @param amount The sfAmount field value.
-     * @param ownerNode The sfOwnerNode field value.
-     * @param nFTokenOfferNode The sfNFTokenOfferNode field value.
-     * @param previousTxnID The sfPreviousTxnID field value.
-     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    NFTokenOfferBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& nFTokenOfferNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    NFTokenOfferBuilder()
         : LedgerEntryBuilderBase<NFTokenOfferBuilder>(ltNFTOKEN_OFFER)
     {
-        setOwner(owner);
-        setNFTokenID(nFTokenID);
-        setAmount(amount);
-        setOwnerNode(ownerNode);
-        setNFTokenOfferNode(nFTokenOfferNode);
-        setPreviousTxnID(previousTxnID);
-        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**
@@ -220,7 +297,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -231,7 +308,7 @@ public:
     }
 
     /**
-     * @brief Set sfNFTokenID (soeREQUIRED)
+     * @brief Set sfNFTokenID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -242,7 +319,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -253,7 +330,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -264,7 +341,7 @@ public:
     }
 
     /**
-     * @brief Set sfNFTokenOfferNode (soeREQUIRED)
+     * @brief Set sfNFTokenOfferNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -275,7 +352,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -286,7 +363,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -297,7 +374,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -308,7 +385,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&

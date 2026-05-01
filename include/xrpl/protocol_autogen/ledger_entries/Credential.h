@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
 #include <xrpl/protocol_autogen/LedgerEntryBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::ledger_entries {
 
@@ -33,7 +33,8 @@ public:
      * @brief Construct a Credential ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Credential(std::shared_ptr<SLE const> sle) : LedgerEntryBase(std::move(sle))
+    explicit Credential(std::shared_ptr<SLE const> sle)
+        : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
         if (sle_->getType() != entryType)
@@ -45,40 +46,79 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfSubject (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfSubject (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getSubject() const
     {
-        return this->sle_->at(sfSubject);
+        if (hasSubject())
+            return this->sle_->at(sfSubject);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfIssuer (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfSubject is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    bool
+    hasSubject() const
+    {
+        return this->sle_->isFieldPresent(sfSubject);
+    }
+
+    /**
+     * @brief Get sfIssuer (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getIssuer() const
     {
-        return this->sle_->at(sfIssuer);
+        if (hasIssuer())
+            return this->sle_->at(sfIssuer);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfCredentialType (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfIssuer is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
-    getCredentialType() const
+    bool
+    hasIssuer() const
     {
-        return this->sle_->at(sfCredentialType);
+        return this->sle_->isFieldPresent(sfIssuer);
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfCredentialType (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getCredentialType() const
+    {
+        if (hasCredentialType())
+            return this->sle_->at(sfCredentialType);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCredentialType is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCredentialType() const
+    {
+        return this->sle_->isFieldPresent(sfCredentialType);
+    }
+
+    /**
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -102,7 +142,7 @@ public:
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -126,18 +166,31 @@ public:
     }
 
     /**
-     * @brief Get sfIssuerNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfIssuerNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getIssuerNode() const
     {
-        return this->sle_->at(sfIssuerNode);
+        if (hasIssuerNode())
+            return this->sle_->at(sfIssuerNode);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfSubjectNode (soeOPTIONAL)
+     * @brief Check if sfIssuerNode is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasIssuerNode() const
+    {
+        return this->sle_->isFieldPresent(sfIssuerNode);
+    }
+
+    /**
+     * @brief Get sfSubjectNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -161,25 +214,51 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfPreviousTxnID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnID);
+        if (hasPreviousTxnID())
+            return this->sle_->at(sfPreviousTxnID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasPreviousTxnID() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnID);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getPreviousTxnLgrSeq() const
     {
-        return this->sle_->at(sfPreviousTxnLgrSeq);
+        if (hasPreviousTxnLgrSeq())
+            return this->sle_->at(sfPreviousTxnLgrSeq);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPreviousTxnLgrSeq() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -195,28 +274,10 @@ class CredentialBuilder : public LedgerEntryBuilderBase<CredentialBuilder>
 public:
     /**
      * @brief Construct a new CredentialBuilder with required fields.
-     * @param subject The sfSubject field value.
-     * @param issuer The sfIssuer field value.
-     * @param credentialType The sfCredentialType field value.
-     * @param issuerNode The sfIssuerNode field value.
-     * @param previousTxnID The sfPreviousTxnID field value.
-     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    CredentialBuilder(
-        std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,
-        std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,
-        std::decay_t<typename SF_VL::type::value_type> const& credentialType,
-        std::decay_t<typename SF_UINT64::type::value_type> const& issuerNode,
-        std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,
-        std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    CredentialBuilder()
         : LedgerEntryBuilderBase<CredentialBuilder>(ltCREDENTIAL)
     {
-        setSubject(subject);
-        setIssuer(issuer);
-        setCredentialType(credentialType);
-        setIssuerNode(issuerNode);
-        setPreviousTxnID(previousTxnID);
-        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**
@@ -236,7 +297,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfSubject (soeREQUIRED)
+     * @brief Set sfSubject (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -247,7 +308,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuer (soeREQUIRED)
+     * @brief Set sfIssuer (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -258,7 +319,7 @@ public:
     }
 
     /**
-     * @brief Set sfCredentialType (soeREQUIRED)
+     * @brief Set sfCredentialType (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -269,7 +330,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -280,7 +341,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -291,7 +352,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuerNode (soeREQUIRED)
+     * @brief Set sfIssuerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -302,7 +363,7 @@ public:
     }
 
     /**
-     * @brief Set sfSubjectNode (soeOPTIONAL)
+     * @brief Set sfSubjectNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -313,7 +374,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -324,7 +385,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&

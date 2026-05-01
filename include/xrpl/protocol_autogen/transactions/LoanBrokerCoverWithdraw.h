@@ -19,9 +19,9 @@ class LoanBrokerCoverWithdrawBuilder;
  * @brief Transaction: LoanBrokerCoverWithdraw
  *
  * Type: ttLOAN_BROKER_COVER_WITHDRAW (77)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: mayAuthorizeMPT
+ * Privileges: MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanBrokerCoverWithdrawBuilder to construct new transactions.
@@ -48,30 +48,59 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLoanBrokerID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfLoanBrokerID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getLoanBrokerID() const
     {
-        return this->tx_->at(sfLoanBrokerID);
+        if (hasLoanBrokerID())
+        {
+            return this->tx_->at(sfLoanBrokerID);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Check if sfLoanBrokerID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
-    getAmount() const
+    bool
+    hasLoanBrokerID() const
     {
-        return this->tx_->at(sfAmount);
+        return this->tx_->isFieldPresent(sfLoanBrokerID);
     }
 
     /**
-     * @brief Get sfDestination (soeOPTIONAL)
+     * @brief Get sfAmount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getAmount() const
+    {
+        if (hasAmount())
+        {
+            return this->tx_->at(sfAmount);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmount() const
+    {
+        return this->tx_->isFieldPresent(sfAmount);
+    }
+
+    /**
+     * @brief Get sfDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -97,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -136,19 +165,15 @@ public:
     /**
      * @brief Construct a new LoanBrokerCoverWithdrawBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param loanBrokerID The sfLoanBrokerID field value.
-     * @param amount The sfAmount field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     LoanBrokerCoverWithdrawBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<LoanBrokerCoverWithdrawBuilder>(ttLOAN_BROKER_COVER_WITHDRAW, account, sequence, fee)
     {
-        setLoanBrokerID(loanBrokerID);
-        setAmount(amount);
     }
 
     /**
@@ -168,7 +193,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLoanBrokerID (soeREQUIRED)
+     * @brief Set sfLoanBrokerID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverWithdrawBuilder&
@@ -179,8 +204,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverWithdrawBuilder&
@@ -191,7 +215,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverWithdrawBuilder&
@@ -202,7 +226,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverWithdrawBuilder&

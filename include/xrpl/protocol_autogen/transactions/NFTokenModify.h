@@ -19,9 +19,9 @@ class NFTokenModifyBuilder;
  * @brief Transaction: NFTokenModify
  *
  * Type: ttNFTOKEN_MODIFY (61)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureDynamicNFT
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenModifyBuilder to construct new transactions.
@@ -48,18 +48,33 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfNFTokenID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfNFTokenID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getNFTokenID() const
     {
-        return this->tx_->at(sfNFTokenID);
+        if (hasNFTokenID())
+        {
+            return this->tx_->at(sfNFTokenID);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOwner (soeOPTIONAL)
+     * @brief Check if sfNFTokenID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasNFTokenID() const
+    {
+        return this->tx_->isFieldPresent(sfNFTokenID);
+    }
+
+    /**
+     * @brief Get sfOwner (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -124,17 +139,15 @@ public:
     /**
      * @brief Construct a new NFTokenModifyBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param nFTokenID The sfNFTokenID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     NFTokenModifyBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenModifyBuilder>(ttNFTOKEN_MODIFY, account, sequence, fee)
     {
-        setNFTokenID(nFTokenID);
     }
 
     /**
@@ -154,7 +167,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfNFTokenID (soeREQUIRED)
+     * @brief Set sfNFTokenID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenModifyBuilder&
@@ -165,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenModifyBuilder&
@@ -176,7 +189,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenModifyBuilder&

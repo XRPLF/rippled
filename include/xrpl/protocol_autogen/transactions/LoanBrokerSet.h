@@ -19,9 +19,9 @@ class LoanBrokerSetBuilder;
  * @brief Transaction: LoanBrokerSet
  *
  * Type: ttLOAN_BROKER_SET (74)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: createPseudoAcct | mayAuthorizeMPT
+ * Privileges: CreatePseudoAcct | MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanBrokerSetBuilder to construct new transactions.
@@ -48,18 +48,33 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfVaultID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfVaultID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getVaultID() const
     {
-        return this->tx_->at(sfVaultID);
+        if (hasVaultID())
+        {
+            return this->tx_->at(sfVaultID);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfLoanBrokerID (soeOPTIONAL)
+     * @brief Check if sfVaultID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasVaultID() const
+    {
+        return this->tx_->isFieldPresent(sfVaultID);
+    }
+
+    /**
+     * @brief Get sfLoanBrokerID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfData (soeOPTIONAL)
+     * @brief Get sfData (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -111,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfManagementFeeRate (soeOPTIONAL)
+     * @brief Get sfManagementFeeRate (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -137,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfDebtMaximum (soeOPTIONAL)
+     * @brief Get sfDebtMaximum (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -163,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Get sfCoverRateMinimum (soeOPTIONAL)
+     * @brief Get sfCoverRateMinimum (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -189,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Get sfCoverRateLiquidation (soeOPTIONAL)
+     * @brief Get sfCoverRateLiquidation (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -228,17 +243,15 @@ public:
     /**
      * @brief Construct a new LoanBrokerSetBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param vaultID The sfVaultID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     LoanBrokerSetBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<LoanBrokerSetBuilder>(ttLOAN_BROKER_SET, account, sequence, fee)
     {
-        setVaultID(vaultID);
     }
 
     /**
@@ -258,7 +271,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -269,7 +282,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanBrokerID (soeOPTIONAL)
+     * @brief Set sfLoanBrokerID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -280,7 +293,7 @@ public:
     }
 
     /**
-     * @brief Set sfData (soeOPTIONAL)
+     * @brief Set sfData (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -291,7 +304,7 @@ public:
     }
 
     /**
-     * @brief Set sfManagementFeeRate (soeOPTIONAL)
+     * @brief Set sfManagementFeeRate (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -302,7 +315,7 @@ public:
     }
 
     /**
-     * @brief Set sfDebtMaximum (soeOPTIONAL)
+     * @brief Set sfDebtMaximum (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -313,7 +326,7 @@ public:
     }
 
     /**
-     * @brief Set sfCoverRateMinimum (soeOPTIONAL)
+     * @brief Set sfCoverRateMinimum (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&
@@ -324,7 +337,7 @@ public:
     }
 
     /**
-     * @brief Set sfCoverRateLiquidation (soeOPTIONAL)
+     * @brief Set sfCoverRateLiquidation (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerSetBuilder&

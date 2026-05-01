@@ -19,9 +19,9 @@ class SignerListSetBuilder;
  * @brief Transaction: SignerListSet
  *
  * Type: ttSIGNER_LIST_SET (12)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use SignerListSetBuilder to construct new transactions.
@@ -48,17 +48,32 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfSignerQuorum (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfSignerQuorum (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getSignerQuorum() const
     {
-        return this->tx_->at(sfSignerQuorum);
+        if (hasSignerQuorum())
+        {
+            return this->tx_->at(sfSignerQuorum);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSignerQuorum is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSignerQuorum() const
+    {
+        return this->tx_->isFieldPresent(sfSignerQuorum);
     }
     /**
-     * @brief Get sfSignerEntries (soeOPTIONAL)
+     * @brief Get sfSignerEntries (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -96,17 +111,15 @@ public:
     /**
      * @brief Construct a new SignerListSetBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param signerQuorum The sfSignerQuorum field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     SignerListSetBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& signerQuorum,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<SignerListSetBuilder>(ttSIGNER_LIST_SET, account, sequence, fee)
     {
-        setSignerQuorum(signerQuorum);
     }
 
     /**
@@ -126,7 +139,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfSignerQuorum (soeREQUIRED)
+     * @brief Set sfSignerQuorum (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SignerListSetBuilder&
@@ -137,7 +150,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignerEntries (soeOPTIONAL)
+     * @brief Set sfSignerEntries (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SignerListSetBuilder&

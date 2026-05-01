@@ -46,106 +46,223 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfAccount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getAccount() const
     {
-        return this->sle_->at(sfAccount);
+        if (hasAccount())
+            return this->sle_->at(sfAccount);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfSequence (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAccount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasAccount() const
+    {
+        return this->sle_->isFieldPresent(sfAccount);
+    }
+
+    /**
+     * @brief Get sfSequence (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getSequence() const
     {
-        return this->sle_->at(sfSequence);
+        if (hasSequence())
+            return this->sle_->at(sfSequence);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfTakerPays (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfSequence is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    bool
+    hasSequence() const
+    {
+        return this->sle_->isFieldPresent(sfSequence);
+    }
+
+    /**
+     * @brief Get sfTakerPays (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getTakerPays() const
     {
-        return this->sle_->at(sfTakerPays);
+        if (hasTakerPays())
+            return this->sle_->at(sfTakerPays);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfTakerGets (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfTakerPays is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    bool
+    hasTakerPays() const
+    {
+        return this->sle_->isFieldPresent(sfTakerPays);
+    }
+
+    /**
+     * @brief Get sfTakerGets (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getTakerGets() const
     {
-        return this->sle_->at(sfTakerGets);
+        if (hasTakerGets())
+            return this->sle_->at(sfTakerGets);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfBookDirectory (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfTakerGets is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    bool
+    hasTakerGets() const
+    {
+        return this->sle_->isFieldPresent(sfTakerGets);
+    }
+
+    /**
+     * @brief Get sfBookDirectory (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getBookDirectory() const
     {
-        return this->sle_->at(sfBookDirectory);
+        if (hasBookDirectory())
+            return this->sle_->at(sfBookDirectory);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfBookNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfBookDirectory is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasBookDirectory() const
+    {
+        return this->sle_->isFieldPresent(sfBookDirectory);
+    }
+
+    /**
+     * @brief Get sfBookNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getBookNode() const
     {
-        return this->sle_->at(sfBookNode);
+        if (hasBookNode())
+            return this->sle_->at(sfBookNode);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfBookNode is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasBookNode() const
+    {
+        return this->sle_->isFieldPresent(sfBookNode);
+    }
+
+    /**
+     * @brief Get sfOwnerNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getOwnerNode() const
     {
-        return this->sle_->at(sfOwnerNode);
+        if (hasOwnerNode())
+            return this->sle_->at(sfOwnerNode);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOwnerNode is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    bool
+    hasOwnerNode() const
+    {
+        return this->sle_->isFieldPresent(sfOwnerNode);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnID);
+        if (hasPreviousTxnID())
+            return this->sle_->at(sfPreviousTxnID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
-    getPreviousTxnLgrSeq() const
+    bool
+    hasPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnLgrSeq);
+        return this->sle_->isFieldPresent(sfPreviousTxnID);
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getPreviousTxnLgrSeq() const
+    {
+        if (hasPreviousTxnLgrSeq())
+            return this->sle_->at(sfPreviousTxnLgrSeq);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPreviousTxnLgrSeq() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+    }
+
+    /**
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -169,7 +286,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -193,7 +310,7 @@ public:
     }
 
     /**
-     * @brief Get sfAdditionalBooks (soeOPTIONAL)
+     * @brief Get sfAdditionalBooks (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -230,28 +347,10 @@ class OfferBuilder : public LedgerEntryBuilderBase<OfferBuilder>
 public:
     /**
      * @brief Construct a new OfferBuilder with required fields.
-     * @param account The sfAccount field value.
-     * @param sequence The sfSequence field value.
-     * @param takerPays The sfTakerPays field value.
-     * @param takerGets The sfTakerGets field value.
-     * @param bookDirectory The sfBookDirectory field value.
-     * @param bookNode The sfBookNode field value.
-     * @param ownerNode The sfOwnerNode field value.
-     * @param previousTxnID The sfPreviousTxnID field value.
-     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    OfferBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,std::decay_t<typename SF_UINT256::type::value_type> const& bookDirectory,std::decay_t<typename SF_UINT64::type::value_type> const& bookNode,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    OfferBuilder()
         : LedgerEntryBuilderBase<OfferBuilder>(ltOFFER)
     {
-        setAccount(account);
-        setSequence(sequence);
-        setTakerPays(takerPays);
-        setTakerGets(takerGets);
-        setBookDirectory(bookDirectory);
-        setBookNode(bookNode);
-        setOwnerNode(ownerNode);
-        setPreviousTxnID(previousTxnID);
-        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**
@@ -271,7 +370,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -282,7 +381,7 @@ public:
     }
 
     /**
-     * @brief Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -293,7 +392,7 @@ public:
     }
 
     /**
-     * @brief Set sfTakerPays (soeREQUIRED)
+     * @brief Set sfTakerPays (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -304,7 +403,7 @@ public:
     }
 
     /**
-     * @brief Set sfTakerGets (soeREQUIRED)
+     * @brief Set sfTakerGets (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -315,7 +414,7 @@ public:
     }
 
     /**
-     * @brief Set sfBookDirectory (soeREQUIRED)
+     * @brief Set sfBookDirectory (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -326,7 +425,7 @@ public:
     }
 
     /**
-     * @brief Set sfBookNode (soeREQUIRED)
+     * @brief Set sfBookNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -337,7 +436,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -348,7 +447,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -359,7 +458,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -370,7 +469,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -381,7 +480,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -392,7 +491,7 @@ public:
     }
 
     /**
-     * @brief Set sfAdditionalBooks (soeOPTIONAL)
+     * @brief Set sfAdditionalBooks (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&

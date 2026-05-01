@@ -19,9 +19,9 @@ class VaultDepositBuilder;
  * @brief Transaction: VaultDeposit
  *
  * Type: ttVAULT_DEPOSIT (68)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: mayAuthorizeMPT | mustModifyVault
+ * Privileges: MayAuthorizeMpt | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultDepositBuilder to construct new transactions.
@@ -48,26 +48,55 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfVaultID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfVaultID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getVaultID() const
     {
-        return this->tx_->at(sfVaultID);
+        if (hasVaultID())
+        {
+            return this->tx_->at(sfVaultID);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Check if sfVaultID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    bool
+    hasVaultID() const
+    {
+        return this->tx_->isFieldPresent(sfVaultID);
+    }
+
+    /**
+     * @brief Get sfAmount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getAmount() const
     {
-        return this->tx_->at(sfAmount);
+        if (hasAmount())
+        {
+            return this->tx_->at(sfAmount);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmount() const
+    {
+        return this->tx_->isFieldPresent(sfAmount);
     }
 };
 
@@ -84,19 +113,15 @@ public:
     /**
      * @brief Construct a new VaultDepositBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param vaultID The sfVaultID field value.
-     * @param amount The sfAmount field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     VaultDepositBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<VaultDepositBuilder>(ttVAULT_DEPOSIT, account, sequence, fee)
     {
-        setVaultID(vaultID);
-        setAmount(amount);
     }
 
     /**
@@ -116,7 +141,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultDepositBuilder&
@@ -127,8 +152,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultDepositBuilder&

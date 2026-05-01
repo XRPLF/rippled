@@ -21,7 +21,7 @@ TEST(TransactionsAMMCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMCreate"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -35,14 +35,14 @@ TEST(TransactionsAMMCreateTests, BuilderSettersRoundTrip)
 
     AMMCreateBuilder builder{
         accountValue,
-        amountValue,
-        amount2Value,
-        tradingFeeValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setAmount(amountValue);
+    builder.setAmount2(amount2Value);
+    builder.setTradingFee(tradingFeeValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -59,25 +59,31 @@ TEST(TransactionsAMMCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = amountValue;
-        auto const actual = tx.getAmount();
-        expectEqualField(expected, actual, "sfAmount");
+        auto const actualOpt = tx.getAmount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
+        expectEqualField(expected, *actualOpt, "sfAmount");
+        EXPECT_TRUE(tx.hasAmount());
     }
 
     {
         auto const& expected = amount2Value;
-        auto const actual = tx.getAmount2();
-        expectEqualField(expected, actual, "sfAmount2");
+        auto const actualOpt = tx.getAmount2();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount2 should be present";
+        expectEqualField(expected, *actualOpt, "sfAmount2");
+        EXPECT_TRUE(tx.hasAmount2());
     }
 
     {
         auto const& expected = tradingFeeValue;
-        auto const actual = tx.getTradingFee();
-        expectEqualField(expected, actual, "sfTradingFee");
+        auto const actualOpt = tx.getTradingFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTradingFee should be present";
+        expectEqualField(expected, *actualOpt, "sfTradingFee");
+        EXPECT_TRUE(tx.hasTradingFee());
     }
 
-    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -86,7 +92,7 @@ TEST(TransactionsAMMCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMCreateFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -101,13 +107,13 @@ TEST(TransactionsAMMCreateTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     AMMCreateBuilder initialBuilder{
         accountValue,
-        amountValue,
-        amount2Value,
-        tradingFeeValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setAmount(amountValue);
+    initialBuilder.setAmount2(amount2Value);
+    initialBuilder.setTradingFee(tradingFeeValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -125,25 +131,28 @@ TEST(TransactionsAMMCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = amountValue;
-        auto const actual = rebuiltTx.getAmount();
-        expectEqualField(expected, actual, "sfAmount");
+        auto const actualOpt = rebuiltTx.getAmount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
+        expectEqualField(expected, *actualOpt, "sfAmount");
     }
 
     {
         auto const& expected = amount2Value;
-        auto const actual = rebuiltTx.getAmount2();
-        expectEqualField(expected, actual, "sfAmount2");
+        auto const actualOpt = rebuiltTx.getAmount2();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount2 should be present";
+        expectEqualField(expected, *actualOpt, "sfAmount2");
     }
 
     {
         auto const& expected = tradingFeeValue;
-        auto const actual = rebuiltTx.getTradingFee();
-        expectEqualField(expected, actual, "sfTradingFee");
+        auto const actualOpt = rebuiltTx.getTradingFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTradingFee should be present";
+        expectEqualField(expected, *actualOpt, "sfTradingFee");
     }
 
-    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -151,7 +160,7 @@ TEST(TransactionsAMMCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -165,7 +174,7 @@ TEST(TransactionsAMMCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -174,5 +183,37 @@ TEST(TransactionsAMMCreateTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(AMMCreateBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsAMMCreateTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMCreateNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+
+    AMMCreateBuilder builder{
+        accountValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasAmount());
+    EXPECT_FALSE(tx.getAmount().has_value());
+    EXPECT_FALSE(tx.hasAmount2());
+    EXPECT_FALSE(tx.getAmount2().has_value());
+    EXPECT_FALSE(tx.hasTradingFee());
+    EXPECT_FALSE(tx.getTradingFee().has_value());
+}
 
 }

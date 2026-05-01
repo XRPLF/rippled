@@ -19,9 +19,9 @@ class PaymentChannelClaimBuilder;
  * @brief Transaction: PaymentChannelClaim
  *
  * Type: ttPAYCHAN_CLAIM (15)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PaymentChannelClaimBuilder to construct new transactions.
@@ -48,18 +48,33 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfChannel (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfChannel (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getChannel() const
     {
-        return this->tx_->at(sfChannel);
+        if (hasChannel())
+        {
+            return this->tx_->at(sfChannel);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
+     * @brief Check if sfChannel is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasChannel() const
+    {
+        return this->tx_->isFieldPresent(sfChannel);
+    }
+
+    /**
+     * @brief Get sfAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfBalance (soeOPTIONAL)
+     * @brief Get sfBalance (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -111,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfSignature (soeOPTIONAL)
+     * @brief Get sfSignature (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -137,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfPublicKey (soeOPTIONAL)
+     * @brief Get sfPublicKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -163,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Get sfCredentialIDs (soeOPTIONAL)
+     * @brief Get sfCredentialIDs (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -202,17 +217,15 @@ public:
     /**
      * @brief Construct a new PaymentChannelClaimBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param channel The sfChannel field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     PaymentChannelClaimBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& channel,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<PaymentChannelClaimBuilder>(ttPAYCHAN_CLAIM, account, sequence, fee)
     {
-        setChannel(channel);
     }
 
     /**
@@ -232,7 +245,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfChannel (soeREQUIRED)
+     * @brief Set sfChannel (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -243,7 +256,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -254,7 +267,7 @@ public:
     }
 
     /**
-     * @brief Set sfBalance (soeOPTIONAL)
+     * @brief Set sfBalance (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -265,7 +278,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignature (soeOPTIONAL)
+     * @brief Set sfSignature (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -276,7 +289,7 @@ public:
     }
 
     /**
-     * @brief Set sfPublicKey (soeOPTIONAL)
+     * @brief Set sfPublicKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
@@ -287,7 +300,7 @@ public:
     }
 
     /**
-     * @brief Set sfCredentialIDs (soeOPTIONAL)
+     * @brief Set sfCredentialIDs (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&

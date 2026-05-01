@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
 #include <xrpl/protocol_autogen/LedgerEntryBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::ledger_entries {
 
@@ -33,7 +33,8 @@ public:
      * @brief Construct a LedgerHashes ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit LedgerHashes(std::shared_ptr<SLE const> sle) : LedgerEntryBase(std::move(sle))
+    explicit LedgerHashes(std::shared_ptr<SLE const> sle)
+        : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
         if (sle_->getType() != entryType)
@@ -45,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfFirstLedgerSequence (soeOPTIONAL)
+     * @brief Get sfFirstLedgerSequence (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -69,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfLastLedgerSequence (soeOPTIONAL)
+     * @brief Get sfLastLedgerSequence (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -93,14 +94,27 @@ public:
     }
 
     /**
-     * @brief Get sfHashes (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfHashes (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_VECTOR256::type::value_type
+    protocol_autogen::Optional<SF_VECTOR256::type::value_type>
     getHashes() const
     {
-        return this->sle_->at(sfHashes);
+        if (hasHashes())
+            return this->sle_->at(sfHashes);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfHashes is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasHashes() const
+    {
+        return this->sle_->isFieldPresent(sfHashes);
     }
 };
 
@@ -116,12 +130,10 @@ class LedgerHashesBuilder : public LedgerEntryBuilderBase<LedgerHashesBuilder>
 public:
     /**
      * @brief Construct a new LedgerHashesBuilder with required fields.
-     * @param hashes The sfHashes field value.
      */
-    LedgerHashesBuilder(std::decay_t<typename SF_VECTOR256::type::value_type> const& hashes)
+    LedgerHashesBuilder()
         : LedgerEntryBuilderBase<LedgerHashesBuilder>(ltLEDGER_HASHES)
     {
-        setHashes(hashes);
     }
 
     /**
@@ -141,7 +153,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfFirstLedgerSequence (soeOPTIONAL)
+     * @brief Set sfFirstLedgerSequence (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&
@@ -152,7 +164,7 @@ public:
     }
 
     /**
-     * @brief Set sfLastLedgerSequence (soeOPTIONAL)
+     * @brief Set sfLastLedgerSequence (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&
@@ -163,7 +175,7 @@ public:
     }
 
     /**
-     * @brief Set sfHashes (soeREQUIRED)
+     * @brief Set sfHashes (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&

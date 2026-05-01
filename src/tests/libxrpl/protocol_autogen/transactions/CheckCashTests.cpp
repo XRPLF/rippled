@@ -21,7 +21,7 @@ TEST(TransactionsCheckCashTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCash"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCash"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -35,12 +35,12 @@ TEST(TransactionsCheckCashTests, BuilderSettersRoundTrip)
 
     CheckCashBuilder builder{
         accountValue,
-        checkIDValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setCheckID(checkIDValue);
     builder.setAmount(amountValue);
     builder.setDeliverMin(deliverMinValue);
 
@@ -59,13 +59,15 @@ TEST(TransactionsCheckCashTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = checkIDValue;
-        auto const actual = tx.getCheckID();
-        expectEqualField(expected, actual, "sfCheckID");
+        auto const actualOpt = tx.getCheckID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCheckID should be present";
+        expectEqualField(expected, *actualOpt, "sfCheckID");
+        EXPECT_TRUE(tx.hasCheckID());
     }
 
-    // Verify optional fields
     {
         auto const& expected = amountValue;
         auto const actualOpt = tx.getAmount();
@@ -90,7 +92,7 @@ TEST(TransactionsCheckCashTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCashFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCashFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -105,11 +107,11 @@ TEST(TransactionsCheckCashTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     CheckCashBuilder initialBuilder{
         accountValue,
-        checkIDValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setCheckID(checkIDValue);
     initialBuilder.setAmount(amountValue);
     initialBuilder.setDeliverMin(deliverMinValue);
 
@@ -129,13 +131,14 @@ TEST(TransactionsCheckCashTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = checkIDValue;
-        auto const actual = rebuiltTx.getCheckID();
-        expectEqualField(expected, actual, "sfCheckID");
+        auto const actualOpt = rebuiltTx.getCheckID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCheckID should be present";
+        expectEqualField(expected, *actualOpt, "sfCheckID");
     }
 
-    // Verify optional fields
     {
         auto const& expected = amountValue;
         auto const actualOpt = rebuiltTx.getAmount();
@@ -157,7 +160,7 @@ TEST(TransactionsCheckCashTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -171,7 +174,7 @@ TEST(TransactionsCheckCashTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -185,7 +188,7 @@ TEST(TransactionsCheckCashTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCashNullopt"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCashNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -193,11 +196,9 @@ TEST(TransactionsCheckCashTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
-    auto const checkIDValue = canonical_UINT256();
 
     CheckCashBuilder builder{
         accountValue,
-        checkIDValue,
         sequenceValue,
         feeValue
     };
@@ -207,6 +208,8 @@ TEST(TransactionsCheckCashTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasCheckID());
+    EXPECT_FALSE(tx.getCheckID().has_value());
     EXPECT_FALSE(tx.hasAmount());
     EXPECT_FALSE(tx.getAmount().has_value());
     EXPECT_FALSE(tx.hasDeliverMin());

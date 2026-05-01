@@ -27,13 +27,13 @@ TEST(NFTokenPageTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     NFTokenPageBuilder builder{
-        nFTokensValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
     builder.setPreviousPageMin(previousPageMinValue);
     builder.setNextPageMin(nextPageMinValue);
+    builder.setNFTokens(nFTokensValue);
+    builder.setPreviousTxnID(previousTxnIDValue);
+    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -43,24 +43,6 @@ TEST(NFTokenPageTests, BuilderSettersRoundTrip)
     auto const entry = builder.build(index);
 
     EXPECT_TRUE(entry.validate());
-
-    {
-        auto const& expected = nFTokensValue;
-        auto const actual = entry.getNFTokens();
-        expectEqualField(expected, actual, "sfNFTokens");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-        auto const actual = entry.getPreviousTxnID();
-        expectEqualField(expected, actual, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-        auto const actual = entry.getPreviousTxnLgrSeq();
-        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
-    }
 
     {
         auto const& expected = previousPageMinValue;
@@ -76,6 +58,30 @@ TEST(NFTokenPageTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfNextPageMin");
         EXPECT_TRUE(entry.hasNextPageMin());
+    }
+
+    {
+        auto const& expected = nFTokensValue;
+        auto const actualOpt = entry.getNFTokens();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfNFTokens");
+        EXPECT_TRUE(entry.hasNFTokens());
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+        auto const actualOpt = entry.getPreviousTxnID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
+        EXPECT_TRUE(entry.hasPreviousTxnID());
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+        auto const actualOpt = entry.getPreviousTxnLgrSeq();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
+        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -115,36 +121,6 @@ TEST(NFTokenPageTests, BuilderFromSleRoundTrip)
     EXPECT_TRUE(entryFromSle.validate());
 
     {
-        auto const& expected = nFTokensValue;
-
-        auto const fromSle = entryFromSle.getNFTokens();
-        auto const fromBuilder = entryFromBuilder.getNFTokens();
-
-        expectEqualField(expected, fromSle, "sfNFTokens");
-        expectEqualField(expected, fromBuilder, "sfNFTokens");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-
-        auto const fromSle = entryFromSle.getPreviousTxnID();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
-
-        expectEqualField(expected, fromSle, "sfPreviousTxnID");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-
-        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
-
-        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
-    }
-
-    {
         auto const& expected = previousPageMinValue;
 
         auto const fromSleOpt = entryFromSle.getPreviousPageMin();
@@ -168,6 +144,45 @@ TEST(NFTokenPageTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfNextPageMin");
         expectEqualField(expected, *fromBuilderOpt, "sfNextPageMin");
+    }
+
+    {
+        auto const& expected = nFTokensValue;
+
+        auto const fromSleOpt = entryFromSle.getNFTokens();
+        auto const fromBuilderOpt = entryFromBuilder.getNFTokens();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfNFTokens");
+        expectEqualField(expected, *fromBuilderOpt, "sfNFTokens");
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+
+        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+
+        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -215,14 +230,8 @@ TEST(NFTokenPageTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
-    auto const nFTokensValue = canonical_ARRAY();
-    auto const previousTxnIDValue = canonical_UINT256();
-    auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     NFTokenPageBuilder builder{
-        nFTokensValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
     auto const entry = builder.build(index);
@@ -232,5 +241,11 @@ TEST(NFTokenPageTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getPreviousPageMin().has_value());
     EXPECT_FALSE(entry.hasNextPageMin());
     EXPECT_FALSE(entry.getNextPageMin().has_value());
+    EXPECT_FALSE(entry.hasNFTokens());
+    EXPECT_FALSE(entry.getNFTokens().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnID());
+    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
+    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
 }

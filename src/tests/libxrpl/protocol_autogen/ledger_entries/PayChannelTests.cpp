@@ -37,22 +37,22 @@ TEST(PayChannelTests, BuilderSettersRoundTrip)
     auto const destinationNodeValue = canonical_UINT64();
 
     PayChannelBuilder builder{
-        accountValue,
-        destinationValue,
-        amountValue,
-        balanceValue,
-        publicKeyValue,
-        settleDelayValue,
-        ownerNodeValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
+    builder.setAccount(accountValue);
+    builder.setDestination(destinationValue);
     builder.setSequence(sequenceValue);
+    builder.setAmount(amountValue);
+    builder.setBalance(balanceValue);
+    builder.setPublicKey(publicKeyValue);
+    builder.setSettleDelay(settleDelayValue);
     builder.setExpiration(expirationValue);
     builder.setCancelAfter(cancelAfterValue);
     builder.setSourceTag(sourceTagValue);
     builder.setDestinationTag(destinationTagValue);
+    builder.setOwnerNode(ownerNodeValue);
+    builder.setPreviousTxnID(previousTxnIDValue);
+    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
     builder.setDestinationNode(destinationNodeValue);
 
     builder.setLedgerIndex(index);
@@ -66,56 +66,18 @@ TEST(PayChannelTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = accountValue;
-        auto const actual = entry.getAccount();
-        expectEqualField(expected, actual, "sfAccount");
+        auto const actualOpt = entry.getAccount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccount");
+        EXPECT_TRUE(entry.hasAccount());
     }
 
     {
         auto const& expected = destinationValue;
-        auto const actual = entry.getDestination();
-        expectEqualField(expected, actual, "sfDestination");
-    }
-
-    {
-        auto const& expected = amountValue;
-        auto const actual = entry.getAmount();
-        expectEqualField(expected, actual, "sfAmount");
-    }
-
-    {
-        auto const& expected = balanceValue;
-        auto const actual = entry.getBalance();
-        expectEqualField(expected, actual, "sfBalance");
-    }
-
-    {
-        auto const& expected = publicKeyValue;
-        auto const actual = entry.getPublicKey();
-        expectEqualField(expected, actual, "sfPublicKey");
-    }
-
-    {
-        auto const& expected = settleDelayValue;
-        auto const actual = entry.getSettleDelay();
-        expectEqualField(expected, actual, "sfSettleDelay");
-    }
-
-    {
-        auto const& expected = ownerNodeValue;
-        auto const actual = entry.getOwnerNode();
-        expectEqualField(expected, actual, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-        auto const actual = entry.getPreviousTxnID();
-        expectEqualField(expected, actual, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-        auto const actual = entry.getPreviousTxnLgrSeq();
-        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
+        auto const actualOpt = entry.getDestination();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDestination");
+        EXPECT_TRUE(entry.hasDestination());
     }
 
     {
@@ -124,6 +86,38 @@ TEST(PayChannelTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfSequence");
         EXPECT_TRUE(entry.hasSequence());
+    }
+
+    {
+        auto const& expected = amountValue;
+        auto const actualOpt = entry.getAmount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAmount");
+        EXPECT_TRUE(entry.hasAmount());
+    }
+
+    {
+        auto const& expected = balanceValue;
+        auto const actualOpt = entry.getBalance();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfBalance");
+        EXPECT_TRUE(entry.hasBalance());
+    }
+
+    {
+        auto const& expected = publicKeyValue;
+        auto const actualOpt = entry.getPublicKey();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPublicKey");
+        EXPECT_TRUE(entry.hasPublicKey());
+    }
+
+    {
+        auto const& expected = settleDelayValue;
+        auto const actualOpt = entry.getSettleDelay();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSettleDelay");
+        EXPECT_TRUE(entry.hasSettleDelay());
     }
 
     {
@@ -156,6 +150,30 @@ TEST(PayChannelTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfDestinationTag");
         EXPECT_TRUE(entry.hasDestinationTag());
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+        auto const actualOpt = entry.getOwnerNode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfOwnerNode");
+        EXPECT_TRUE(entry.hasOwnerNode());
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+        auto const actualOpt = entry.getPreviousTxnID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
+        EXPECT_TRUE(entry.hasPreviousTxnID());
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+        auto const actualOpt = entry.getPreviousTxnLgrSeq();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
+        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
     }
 
     {
@@ -225,91 +243,27 @@ TEST(PayChannelTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = accountValue;
 
-        auto const fromSle = entryFromSle.getAccount();
-        auto const fromBuilder = entryFromBuilder.getAccount();
+        auto const fromSleOpt = entryFromSle.getAccount();
+        auto const fromBuilderOpt = entryFromBuilder.getAccount();
 
-        expectEqualField(expected, fromSle, "sfAccount");
-        expectEqualField(expected, fromBuilder, "sfAccount");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAccount");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccount");
     }
 
     {
         auto const& expected = destinationValue;
 
-        auto const fromSle = entryFromSle.getDestination();
-        auto const fromBuilder = entryFromBuilder.getDestination();
+        auto const fromSleOpt = entryFromSle.getDestination();
+        auto const fromBuilderOpt = entryFromBuilder.getDestination();
 
-        expectEqualField(expected, fromSle, "sfDestination");
-        expectEqualField(expected, fromBuilder, "sfDestination");
-    }
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
 
-    {
-        auto const& expected = amountValue;
-
-        auto const fromSle = entryFromSle.getAmount();
-        auto const fromBuilder = entryFromBuilder.getAmount();
-
-        expectEqualField(expected, fromSle, "sfAmount");
-        expectEqualField(expected, fromBuilder, "sfAmount");
-    }
-
-    {
-        auto const& expected = balanceValue;
-
-        auto const fromSle = entryFromSle.getBalance();
-        auto const fromBuilder = entryFromBuilder.getBalance();
-
-        expectEqualField(expected, fromSle, "sfBalance");
-        expectEqualField(expected, fromBuilder, "sfBalance");
-    }
-
-    {
-        auto const& expected = publicKeyValue;
-
-        auto const fromSle = entryFromSle.getPublicKey();
-        auto const fromBuilder = entryFromBuilder.getPublicKey();
-
-        expectEqualField(expected, fromSle, "sfPublicKey");
-        expectEqualField(expected, fromBuilder, "sfPublicKey");
-    }
-
-    {
-        auto const& expected = settleDelayValue;
-
-        auto const fromSle = entryFromSle.getSettleDelay();
-        auto const fromBuilder = entryFromBuilder.getSettleDelay();
-
-        expectEqualField(expected, fromSle, "sfSettleDelay");
-        expectEqualField(expected, fromBuilder, "sfSettleDelay");
-    }
-
-    {
-        auto const& expected = ownerNodeValue;
-
-        auto const fromSle = entryFromSle.getOwnerNode();
-        auto const fromBuilder = entryFromBuilder.getOwnerNode();
-
-        expectEqualField(expected, fromSle, "sfOwnerNode");
-        expectEqualField(expected, fromBuilder, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-
-        auto const fromSle = entryFromSle.getPreviousTxnID();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
-
-        expectEqualField(expected, fromSle, "sfPreviousTxnID");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-
-        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
-
-        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, *fromSleOpt, "sfDestination");
+        expectEqualField(expected, *fromBuilderOpt, "sfDestination");
     }
 
     {
@@ -323,6 +277,58 @@ TEST(PayChannelTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfSequence");
         expectEqualField(expected, *fromBuilderOpt, "sfSequence");
+    }
+
+    {
+        auto const& expected = amountValue;
+
+        auto const fromSleOpt = entryFromSle.getAmount();
+        auto const fromBuilderOpt = entryFromBuilder.getAmount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAmount");
+        expectEqualField(expected, *fromBuilderOpt, "sfAmount");
+    }
+
+    {
+        auto const& expected = balanceValue;
+
+        auto const fromSleOpt = entryFromSle.getBalance();
+        auto const fromBuilderOpt = entryFromBuilder.getBalance();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfBalance");
+        expectEqualField(expected, *fromBuilderOpt, "sfBalance");
+    }
+
+    {
+        auto const& expected = publicKeyValue;
+
+        auto const fromSleOpt = entryFromSle.getPublicKey();
+        auto const fromBuilderOpt = entryFromBuilder.getPublicKey();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPublicKey");
+        expectEqualField(expected, *fromBuilderOpt, "sfPublicKey");
+    }
+
+    {
+        auto const& expected = settleDelayValue;
+
+        auto const fromSleOpt = entryFromSle.getSettleDelay();
+        auto const fromBuilderOpt = entryFromBuilder.getSettleDelay();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSettleDelay");
+        expectEqualField(expected, *fromBuilderOpt, "sfSettleDelay");
     }
 
     {
@@ -375,6 +381,45 @@ TEST(PayChannelTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfDestinationTag");
         expectEqualField(expected, *fromBuilderOpt, "sfDestinationTag");
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+
+        auto const fromSleOpt = entryFromSle.getOwnerNode();
+        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
+        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+
+        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+
+        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
     }
 
     {
@@ -435,33 +480,27 @@ TEST(PayChannelTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
-    auto const accountValue = canonical_ACCOUNT();
-    auto const destinationValue = canonical_ACCOUNT();
-    auto const amountValue = canonical_AMOUNT();
-    auto const balanceValue = canonical_AMOUNT();
-    auto const publicKeyValue = canonical_VL();
-    auto const settleDelayValue = canonical_UINT32();
-    auto const ownerNodeValue = canonical_UINT64();
-    auto const previousTxnIDValue = canonical_UINT256();
-    auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     PayChannelBuilder builder{
-        accountValue,
-        destinationValue,
-        amountValue,
-        balanceValue,
-        publicKeyValue,
-        settleDelayValue,
-        ownerNodeValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasAccount());
+    EXPECT_FALSE(entry.getAccount().has_value());
+    EXPECT_FALSE(entry.hasDestination());
+    EXPECT_FALSE(entry.getDestination().has_value());
     EXPECT_FALSE(entry.hasSequence());
     EXPECT_FALSE(entry.getSequence().has_value());
+    EXPECT_FALSE(entry.hasAmount());
+    EXPECT_FALSE(entry.getAmount().has_value());
+    EXPECT_FALSE(entry.hasBalance());
+    EXPECT_FALSE(entry.getBalance().has_value());
+    EXPECT_FALSE(entry.hasPublicKey());
+    EXPECT_FALSE(entry.getPublicKey().has_value());
+    EXPECT_FALSE(entry.hasSettleDelay());
+    EXPECT_FALSE(entry.getSettleDelay().has_value());
     EXPECT_FALSE(entry.hasExpiration());
     EXPECT_FALSE(entry.getExpiration().has_value());
     EXPECT_FALSE(entry.hasCancelAfter());
@@ -470,6 +509,12 @@ TEST(PayChannelTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getSourceTag().has_value());
     EXPECT_FALSE(entry.hasDestinationTag());
     EXPECT_FALSE(entry.getDestinationTag().has_value());
+    EXPECT_FALSE(entry.hasOwnerNode());
+    EXPECT_FALSE(entry.getOwnerNode().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnID());
+    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
+    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
     EXPECT_FALSE(entry.hasDestinationNode());
     EXPECT_FALSE(entry.getDestinationNode().has_value());
 }

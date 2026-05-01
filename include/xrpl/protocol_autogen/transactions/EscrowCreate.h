@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::transactions {
 
@@ -19,9 +19,9 @@ class EscrowCreateBuilder;
  * @brief Transaction: EscrowCreate
  *
  * Type: ttESCROW_CREATE (1)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use EscrowCreateBuilder to construct new transactions.
@@ -35,7 +35,8 @@ public:
      * @brief Construct a EscrowCreate transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit EscrowCreate(std::shared_ptr<STTx const> tx) : TransactionBase(std::move(tx))
+    explicit EscrowCreate(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
         if (tx_->getTxnType() != txType)
@@ -47,30 +48,59 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfDestination (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getDestination() const
     {
-        return this->tx_->at(sfDestination);
+        if (hasDestination())
+        {
+            return this->tx_->at(sfDestination);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Check if sfDestination is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
-    getAmount() const
+    bool
+    hasDestination() const
     {
-        return this->tx_->at(sfAmount);
+        return this->tx_->isFieldPresent(sfDestination);
     }
 
     /**
-     * @brief Get sfCondition (soeOPTIONAL)
+     * @brief Get sfAmount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getAmount() const
+    {
+        if (hasAmount())
+        {
+            return this->tx_->at(sfAmount);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmount() const
+    {
+        return this->tx_->isFieldPresent(sfAmount);
+    }
+
+    /**
+     * @brief Get sfCondition (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -96,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfCancelAfter (soeOPTIONAL)
+     * @brief Get sfCancelAfter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -122,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfFinishAfter (soeOPTIONAL)
+     * @brief Get sfFinishAfter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -148,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -187,21 +217,15 @@ public:
     /**
      * @brief Construct a new EscrowCreateBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param destination The sfDestination field value.
-     * @param amount The sfAmount field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    EscrowCreateBuilder(
-        SF_ACCOUNT::type::value_type account,
-        std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,
-        std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,
-        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
+    EscrowCreateBuilder(SF_ACCOUNT::type::value_type account,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
         : TransactionBuilderBase<EscrowCreateBuilder>(ttESCROW_CREATE, account, sequence, fee)
     {
-        setDestination(destination);
-        setAmount(amount);
     }
 
     /**
@@ -221,7 +245,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
@@ -232,8 +256,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
@@ -244,7 +267,7 @@ public:
     }
 
     /**
-     * @brief Set sfCondition (soeOPTIONAL)
+     * @brief Set sfCondition (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
@@ -255,7 +278,7 @@ public:
     }
 
     /**
-     * @brief Set sfCancelAfter (soeOPTIONAL)
+     * @brief Set sfCancelAfter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
@@ -266,7 +289,7 @@ public:
     }
 
     /**
-     * @brief Set sfFinishAfter (soeOPTIONAL)
+     * @brief Set sfFinishAfter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
@@ -277,7 +300,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&

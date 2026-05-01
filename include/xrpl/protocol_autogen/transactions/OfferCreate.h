@@ -19,9 +19,9 @@ class OfferCreateBuilder;
  * @brief Transaction: OfferCreate
  *
  * Type: ttOFFER_CREATE (7)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: mayCreateMPT
+ * Privileges: MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use OfferCreateBuilder to construct new transactions.
@@ -48,31 +48,59 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfTakerPays (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Get sfTakerPays (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getTakerPays() const
     {
-        return this->tx_->at(sfTakerPays);
+        if (hasTakerPays())
+        {
+            return this->tx_->at(sfTakerPays);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfTakerGets (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Check if sfTakerPays is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
-    getTakerGets() const
+    bool
+    hasTakerPays() const
     {
-        return this->tx_->at(sfTakerGets);
+        return this->tx_->isFieldPresent(sfTakerPays);
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfTakerGets (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getTakerGets() const
+    {
+        if (hasTakerGets())
+        {
+            return this->tx_->at(sfTakerGets);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTakerGets is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTakerGets() const
+    {
+        return this->tx_->isFieldPresent(sfTakerGets);
+    }
+
+    /**
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -98,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfOfferSequence (soeOPTIONAL)
+     * @brief Get sfOfferSequence (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -124,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -163,19 +191,15 @@ public:
     /**
      * @brief Construct a new OfferCreateBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param takerPays The sfTakerPays field value.
-     * @param takerGets The sfTakerGets field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     OfferCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<OfferCreateBuilder>(ttOFFER_CREATE, account, sequence, fee)
     {
-        setTakerPays(takerPays);
-        setTakerGets(takerGets);
     }
 
     /**
@@ -195,8 +219,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfTakerPays (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfTakerPays (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -207,8 +230,7 @@ public:
     }
 
     /**
-     * @brief Set sfTakerGets (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfTakerGets (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -219,7 +241,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -230,7 +252,7 @@ public:
     }
 
     /**
-     * @brief Set sfOfferSequence (soeOPTIONAL)
+     * @brief Set sfOfferSequence (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -241,7 +263,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&

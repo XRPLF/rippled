@@ -37,22 +37,22 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const scaleValue = canonical_UINT8();
 
     VaultBuilder builder{
-        previousTxnIDValue,
-        previousTxnLgrSeqValue,
-        sequenceValue,
-        ownerNodeValue,
-        ownerValue,
-        accountValue,
-        assetValue,
-        shareMPTIDValue,
-        withdrawalPolicyValue
     };
 
+    builder.setPreviousTxnID(previousTxnIDValue);
+    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
+    builder.setSequence(sequenceValue);
+    builder.setOwnerNode(ownerNodeValue);
+    builder.setOwner(ownerValue);
+    builder.setAccount(accountValue);
     builder.setData(dataValue);
+    builder.setAsset(assetValue);
     builder.setAssetsTotal(assetsTotalValue);
     builder.setAssetsAvailable(assetsAvailableValue);
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setLossUnrealized(lossUnrealizedValue);
+    builder.setShareMPTID(shareMPTIDValue);
+    builder.setWithdrawalPolicy(withdrawalPolicyValue);
     builder.setScale(scaleValue);
 
     builder.setLedgerIndex(index);
@@ -66,56 +66,50 @@ TEST(VaultTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = previousTxnIDValue;
-        auto const actual = entry.getPreviousTxnID();
-        expectEqualField(expected, actual, "sfPreviousTxnID");
+        auto const actualOpt = entry.getPreviousTxnID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
+        EXPECT_TRUE(entry.hasPreviousTxnID());
     }
 
     {
         auto const& expected = previousTxnLgrSeqValue;
-        auto const actual = entry.getPreviousTxnLgrSeq();
-        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
+        auto const actualOpt = entry.getPreviousTxnLgrSeq();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
+        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
     }
 
     {
         auto const& expected = sequenceValue;
-        auto const actual = entry.getSequence();
-        expectEqualField(expected, actual, "sfSequence");
+        auto const actualOpt = entry.getSequence();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSequence");
+        EXPECT_TRUE(entry.hasSequence());
     }
 
     {
         auto const& expected = ownerNodeValue;
-        auto const actual = entry.getOwnerNode();
-        expectEqualField(expected, actual, "sfOwnerNode");
+        auto const actualOpt = entry.getOwnerNode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfOwnerNode");
+        EXPECT_TRUE(entry.hasOwnerNode());
     }
 
     {
         auto const& expected = ownerValue;
-        auto const actual = entry.getOwner();
-        expectEqualField(expected, actual, "sfOwner");
+        auto const actualOpt = entry.getOwner();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfOwner");
+        EXPECT_TRUE(entry.hasOwner());
     }
 
     {
         auto const& expected = accountValue;
-        auto const actual = entry.getAccount();
-        expectEqualField(expected, actual, "sfAccount");
-    }
-
-    {
-        auto const& expected = assetValue;
-        auto const actual = entry.getAsset();
-        expectEqualField(expected, actual, "sfAsset");
-    }
-
-    {
-        auto const& expected = shareMPTIDValue;
-        auto const actual = entry.getShareMPTID();
-        expectEqualField(expected, actual, "sfShareMPTID");
-    }
-
-    {
-        auto const& expected = withdrawalPolicyValue;
-        auto const actual = entry.getWithdrawalPolicy();
-        expectEqualField(expected, actual, "sfWithdrawalPolicy");
+        auto const actualOpt = entry.getAccount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccount");
+        EXPECT_TRUE(entry.hasAccount());
     }
 
     {
@@ -124,6 +118,14 @@ TEST(VaultTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfData");
         EXPECT_TRUE(entry.hasData());
+    }
+
+    {
+        auto const& expected = assetValue;
+        auto const actualOpt = entry.getAsset();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAsset");
+        EXPECT_TRUE(entry.hasAsset());
     }
 
     {
@@ -156,6 +158,22 @@ TEST(VaultTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfLossUnrealized");
         EXPECT_TRUE(entry.hasLossUnrealized());
+    }
+
+    {
+        auto const& expected = shareMPTIDValue;
+        auto const actualOpt = entry.getShareMPTID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfShareMPTID");
+        EXPECT_TRUE(entry.hasShareMPTID());
+    }
+
+    {
+        auto const& expected = withdrawalPolicyValue;
+        auto const actualOpt = entry.getWithdrawalPolicy();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfWithdrawalPolicy");
+        EXPECT_TRUE(entry.hasWithdrawalPolicy());
     }
 
     {
@@ -225,91 +243,79 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = previousTxnIDValue;
 
-        auto const fromSle = entryFromSle.getPreviousTxnID();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
+        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
 
-        expectEqualField(expected, fromSle, "sfPreviousTxnID");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
     }
 
     {
         auto const& expected = previousTxnLgrSeqValue;
 
-        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
+        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
 
-        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
     }
 
     {
         auto const& expected = sequenceValue;
 
-        auto const fromSle = entryFromSle.getSequence();
-        auto const fromBuilder = entryFromBuilder.getSequence();
+        auto const fromSleOpt = entryFromSle.getSequence();
+        auto const fromBuilderOpt = entryFromBuilder.getSequence();
 
-        expectEqualField(expected, fromSle, "sfSequence");
-        expectEqualField(expected, fromBuilder, "sfSequence");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSequence");
+        expectEqualField(expected, *fromBuilderOpt, "sfSequence");
     }
 
     {
         auto const& expected = ownerNodeValue;
 
-        auto const fromSle = entryFromSle.getOwnerNode();
-        auto const fromBuilder = entryFromBuilder.getOwnerNode();
+        auto const fromSleOpt = entryFromSle.getOwnerNode();
+        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
 
-        expectEqualField(expected, fromSle, "sfOwnerNode");
-        expectEqualField(expected, fromBuilder, "sfOwnerNode");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
+        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
     }
 
     {
         auto const& expected = ownerValue;
 
-        auto const fromSle = entryFromSle.getOwner();
-        auto const fromBuilder = entryFromBuilder.getOwner();
+        auto const fromSleOpt = entryFromSle.getOwner();
+        auto const fromBuilderOpt = entryFromBuilder.getOwner();
 
-        expectEqualField(expected, fromSle, "sfOwner");
-        expectEqualField(expected, fromBuilder, "sfOwner");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfOwner");
+        expectEqualField(expected, *fromBuilderOpt, "sfOwner");
     }
 
     {
         auto const& expected = accountValue;
 
-        auto const fromSle = entryFromSle.getAccount();
-        auto const fromBuilder = entryFromBuilder.getAccount();
+        auto const fromSleOpt = entryFromSle.getAccount();
+        auto const fromBuilderOpt = entryFromBuilder.getAccount();
 
-        expectEqualField(expected, fromSle, "sfAccount");
-        expectEqualField(expected, fromBuilder, "sfAccount");
-    }
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
 
-    {
-        auto const& expected = assetValue;
-
-        auto const fromSle = entryFromSle.getAsset();
-        auto const fromBuilder = entryFromBuilder.getAsset();
-
-        expectEqualField(expected, fromSle, "sfAsset");
-        expectEqualField(expected, fromBuilder, "sfAsset");
-    }
-
-    {
-        auto const& expected = shareMPTIDValue;
-
-        auto const fromSle = entryFromSle.getShareMPTID();
-        auto const fromBuilder = entryFromBuilder.getShareMPTID();
-
-        expectEqualField(expected, fromSle, "sfShareMPTID");
-        expectEqualField(expected, fromBuilder, "sfShareMPTID");
-    }
-
-    {
-        auto const& expected = withdrawalPolicyValue;
-
-        auto const fromSle = entryFromSle.getWithdrawalPolicy();
-        auto const fromBuilder = entryFromBuilder.getWithdrawalPolicy();
-
-        expectEqualField(expected, fromSle, "sfWithdrawalPolicy");
-        expectEqualField(expected, fromBuilder, "sfWithdrawalPolicy");
+        expectEqualField(expected, *fromSleOpt, "sfAccount");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccount");
     }
 
     {
@@ -323,6 +329,19 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfData");
         expectEqualField(expected, *fromBuilderOpt, "sfData");
+    }
+
+    {
+        auto const& expected = assetValue;
+
+        auto const fromSleOpt = entryFromSle.getAsset();
+        auto const fromBuilderOpt = entryFromBuilder.getAsset();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAsset");
+        expectEqualField(expected, *fromBuilderOpt, "sfAsset");
     }
 
     {
@@ -375,6 +394,32 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfLossUnrealized");
         expectEqualField(expected, *fromBuilderOpt, "sfLossUnrealized");
+    }
+
+    {
+        auto const& expected = shareMPTIDValue;
+
+        auto const fromSleOpt = entryFromSle.getShareMPTID();
+        auto const fromBuilderOpt = entryFromBuilder.getShareMPTID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfShareMPTID");
+        expectEqualField(expected, *fromBuilderOpt, "sfShareMPTID");
+    }
+
+    {
+        auto const& expected = withdrawalPolicyValue;
+
+        auto const fromSleOpt = entryFromSle.getWithdrawalPolicy();
+        auto const fromBuilderOpt = entryFromBuilder.getWithdrawalPolicy();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfWithdrawalPolicy");
+        expectEqualField(expected, *fromBuilderOpt, "sfWithdrawalPolicy");
     }
 
     {
@@ -435,33 +480,29 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
-    auto const previousTxnIDValue = canonical_UINT256();
-    auto const previousTxnLgrSeqValue = canonical_UINT32();
-    auto const sequenceValue = canonical_UINT32();
-    auto const ownerNodeValue = canonical_UINT64();
-    auto const ownerValue = canonical_ACCOUNT();
-    auto const accountValue = canonical_ACCOUNT();
-    auto const assetValue = canonical_ISSUE();
-    auto const shareMPTIDValue = canonical_UINT192();
-    auto const withdrawalPolicyValue = canonical_UINT8();
 
     VaultBuilder builder{
-        previousTxnIDValue,
-        previousTxnLgrSeqValue,
-        sequenceValue,
-        ownerNodeValue,
-        ownerValue,
-        accountValue,
-        assetValue,
-        shareMPTIDValue,
-        withdrawalPolicyValue
     };
 
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasPreviousTxnID());
+    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
+    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
+    EXPECT_FALSE(entry.hasSequence());
+    EXPECT_FALSE(entry.getSequence().has_value());
+    EXPECT_FALSE(entry.hasOwnerNode());
+    EXPECT_FALSE(entry.getOwnerNode().has_value());
+    EXPECT_FALSE(entry.hasOwner());
+    EXPECT_FALSE(entry.getOwner().has_value());
+    EXPECT_FALSE(entry.hasAccount());
+    EXPECT_FALSE(entry.getAccount().has_value());
     EXPECT_FALSE(entry.hasData());
     EXPECT_FALSE(entry.getData().has_value());
+    EXPECT_FALSE(entry.hasAsset());
+    EXPECT_FALSE(entry.getAsset().has_value());
     EXPECT_FALSE(entry.hasAssetsTotal());
     EXPECT_FALSE(entry.getAssetsTotal().has_value());
     EXPECT_FALSE(entry.hasAssetsAvailable());
@@ -470,6 +511,10 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAssetsMaximum().has_value());
     EXPECT_FALSE(entry.hasLossUnrealized());
     EXPECT_FALSE(entry.getLossUnrealized().has_value());
+    EXPECT_FALSE(entry.hasShareMPTID());
+    EXPECT_FALSE(entry.getShareMPTID().has_value());
+    EXPECT_FALSE(entry.hasWithdrawalPolicy());
+    EXPECT_FALSE(entry.getWithdrawalPolicy().has_value());
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
 }

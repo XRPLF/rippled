@@ -19,9 +19,9 @@ class CheckCreateBuilder;
  * @brief Transaction: CheckCreate
  *
  * Type: ttCHECK_CREATE (16)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CheckCreateBuilder to construct new transactions.
@@ -48,30 +48,59 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfDestination (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getDestination() const
     {
-        return this->tx_->at(sfDestination);
+        if (hasDestination())
+        {
+            return this->tx_->at(sfDestination);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfSendMax (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Check if sfDestination is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
-    getSendMax() const
+    bool
+    hasDestination() const
     {
-        return this->tx_->at(sfSendMax);
+        return this->tx_->isFieldPresent(sfDestination);
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfSendMax (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getSendMax() const
+    {
+        if (hasSendMax())
+        {
+            return this->tx_->at(sfSendMax);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSendMax is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSendMax() const
+    {
+        return this->tx_->isFieldPresent(sfSendMax);
+    }
+
+    /**
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -97,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -123,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfInvoiceID (soeOPTIONAL)
+     * @brief Get sfInvoiceID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -162,19 +191,15 @@ public:
     /**
      * @brief Construct a new CheckCreateBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param destination The sfDestination field value.
-     * @param sendMax The sfSendMax field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     CheckCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& sendMax,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<CheckCreateBuilder>(ttCHECK_CREATE, account, sequence, fee)
     {
-        setDestination(destination);
-        setSendMax(sendMax);
     }
 
     /**
@@ -194,7 +219,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
@@ -205,8 +230,7 @@ public:
     }
 
     /**
-     * @brief Set sfSendMax (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfSendMax (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
@@ -217,7 +241,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
@@ -228,7 +252,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
@@ -239,7 +263,7 @@ public:
     }
 
     /**
-     * @brief Set sfInvoiceID (soeOPTIONAL)
+     * @brief Set sfInvoiceID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&

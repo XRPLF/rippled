@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::transactions {
 
@@ -19,9 +19,9 @@ class XChainCommitBuilder;
  * @brief Transaction: XChainCommit
  *
  * Type: ttXCHAIN_COMMIT (42)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainCommitBuilder to construct new transactions.
@@ -35,7 +35,8 @@ public:
      * @brief Construct a XChainCommit transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit XChainCommit(std::shared_ptr<STTx const> tx) : TransactionBase(std::move(tx))
+    explicit XChainCommit(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
         if (tx_->getTxnType() != txType)
@@ -47,40 +48,85 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfXChainBridge (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfXChainBridge (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_XCHAIN_BRIDGE::type::value_type
+    protocol_autogen::Optional<SF_XCHAIN_BRIDGE::type::value_type>
     getXChainBridge() const
     {
-        return this->tx_->at(sfXChainBridge);
+        if (hasXChainBridge())
+        {
+            return this->tx_->at(sfXChainBridge);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfXChainClaimID (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfXChainBridge is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasXChainBridge() const
+    {
+        return this->tx_->isFieldPresent(sfXChainBridge);
+    }
+
+    /**
+     * @brief Get sfXChainClaimID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getXChainClaimID() const
     {
-        return this->tx_->at(sfXChainClaimID);
+        if (hasXChainClaimID())
+        {
+            return this->tx_->at(sfXChainClaimID);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfXChainClaimID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
-    getAmount() const
+    bool
+    hasXChainClaimID() const
     {
-        return this->tx_->at(sfAmount);
+        return this->tx_->isFieldPresent(sfXChainClaimID);
     }
 
     /**
-     * @brief Get sfOtherChainDestination (soeOPTIONAL)
+     * @brief Get sfAmount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getAmount() const
+    {
+        if (hasAmount())
+        {
+            return this->tx_->at(sfAmount);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmount() const
+    {
+        return this->tx_->isFieldPresent(sfAmount);
+    }
+
+    /**
+     * @brief Get sfOtherChainDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -119,24 +165,15 @@ public:
     /**
      * @brief Construct a new XChainCommitBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param xChainBridge The sfXChainBridge field value.
-     * @param xChainClaimID The sfXChainClaimID field value.
-     * @param amount The sfAmount field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    XChainCommitBuilder(
-        SF_ACCOUNT::type::value_type account,
-        std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,
-        std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,
-        std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,
-        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
+    XChainCommitBuilder(SF_ACCOUNT::type::value_type account,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
         : TransactionBuilderBase<XChainCommitBuilder>(ttXCHAIN_COMMIT, account, sequence, fee)
     {
-        setXChainBridge(xChainBridge);
-        setXChainClaimID(xChainClaimID);
-        setAmount(amount);
     }
 
     /**
@@ -156,7 +193,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainCommitBuilder&
@@ -167,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainClaimID (soeREQUIRED)
+     * @brief Set sfXChainClaimID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainCommitBuilder&
@@ -178,7 +215,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainCommitBuilder&
@@ -189,7 +226,7 @@ public:
     }
 
     /**
-     * @brief Set sfOtherChainDestination (soeOPTIONAL)
+     * @brief Set sfOtherChainDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     XChainCommitBuilder&

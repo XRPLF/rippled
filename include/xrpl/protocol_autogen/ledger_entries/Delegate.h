@@ -46,52 +46,104 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfAccount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getAccount() const
     {
-        return this->sle_->at(sfAccount);
+        if (hasAccount())
+            return this->sle_->at(sfAccount);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAuthorize (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAccount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    bool
+    hasAccount() const
+    {
+        return this->sle_->isFieldPresent(sfAccount);
+    }
+
+    /**
+     * @brief Get sfAuthorize (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getAuthorize() const
     {
-        return this->sle_->at(sfAuthorize);
+        if (hasAuthorize())
+            return this->sle_->at(sfAuthorize);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPermissions (soeREQUIRED)
-     * @note This is an untyped field (unknown).
-     * @return The field value.
+     * @brief Check if sfAuthorize is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    STArray const&
+    bool
+    hasAuthorize() const
+    {
+        return this->sle_->isFieldPresent(sfAuthorize);
+    }
+
+    /**
+     * @brief Get sfPermissions (SoeRequired)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    std::optional<std::reference_wrapper<STArray const>>
     getPermissions() const
     {
-        return this->sle_->getFieldArray(sfPermissions);
+        if (this->sle_->isFieldPresent(sfPermissions))
+            return this->sle_->getFieldArray(sfPermissions);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPermissions is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
-    getOwnerNode() const
+    bool
+    hasPermissions() const
     {
-        return this->sle_->at(sfOwnerNode);
+        return this->sle_->isFieldPresent(sfPermissions);
     }
 
     /**
-     * @brief Get sfDestinationNode (soeOPTIONAL)
+     * @brief Get sfOwnerNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getOwnerNode() const
+    {
+        if (hasOwnerNode())
+            return this->sle_->at(sfOwnerNode);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfOwnerNode is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasOwnerNode() const
+    {
+        return this->sle_->isFieldPresent(sfOwnerNode);
+    }
+
+    /**
+     * @brief Get sfDestinationNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -115,25 +167,51 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfPreviousTxnID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnID);
+        if (hasPreviousTxnID())
+            return this->sle_->at(sfPreviousTxnID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasPreviousTxnID() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnID);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getPreviousTxnLgrSeq() const
     {
-        return this->sle_->at(sfPreviousTxnLgrSeq);
+        if (hasPreviousTxnLgrSeq())
+            return this->sle_->at(sfPreviousTxnLgrSeq);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPreviousTxnLgrSeq() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -149,22 +227,10 @@ class DelegateBuilder : public LedgerEntryBuilderBase<DelegateBuilder>
 public:
     /**
      * @brief Construct a new DelegateBuilder with required fields.
-     * @param account The sfAccount field value.
-     * @param authorize The sfAuthorize field value.
-     * @param permissions The sfPermissions field value.
-     * @param ownerNode The sfOwnerNode field value.
-     * @param previousTxnID The sfPreviousTxnID field value.
-     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    DelegateBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize,STArray const& permissions,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    DelegateBuilder()
         : LedgerEntryBuilderBase<DelegateBuilder>(ltDELEGATE)
     {
-        setAccount(account);
-        setAuthorize(authorize);
-        setPermissions(permissions);
-        setOwnerNode(ownerNode);
-        setPreviousTxnID(previousTxnID);
-        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**
@@ -184,7 +250,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -195,7 +261,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuthorize (soeREQUIRED)
+     * @brief Set sfAuthorize (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -206,7 +272,7 @@ public:
     }
 
     /**
-     * @brief Set sfPermissions (soeREQUIRED)
+     * @brief Set sfPermissions (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -217,7 +283,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -228,7 +294,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationNode (soeOPTIONAL)
+     * @brief Set sfDestinationNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -239,7 +305,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -250,7 +316,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&

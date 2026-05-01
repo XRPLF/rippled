@@ -21,7 +21,7 @@ TEST(TransactionsCheckCancelTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCancel"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCancel"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -33,12 +33,12 @@ TEST(TransactionsCheckCancelTests, BuilderSettersRoundTrip)
 
     CheckCancelBuilder builder{
         accountValue,
-        checkIDValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setCheckID(checkIDValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -55,13 +55,15 @@ TEST(TransactionsCheckCancelTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = checkIDValue;
-        auto const actual = tx.getCheckID();
-        expectEqualField(expected, actual, "sfCheckID");
+        auto const actualOpt = tx.getCheckID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCheckID should be present";
+        expectEqualField(expected, *actualOpt, "sfCheckID");
+        EXPECT_TRUE(tx.hasCheckID());
     }
 
-    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -70,7 +72,7 @@ TEST(TransactionsCheckCancelTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCancelFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCancelFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -83,11 +85,11 @@ TEST(TransactionsCheckCancelTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     CheckCancelBuilder initialBuilder{
         accountValue,
-        checkIDValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setCheckID(checkIDValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -105,13 +107,14 @@ TEST(TransactionsCheckCancelTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = checkIDValue;
-        auto const actual = rebuiltTx.getCheckID();
-        expectEqualField(expected, actual, "sfCheckID");
+        auto const actualOpt = rebuiltTx.getCheckID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCheckID should be present";
+        expectEqualField(expected, *actualOpt, "sfCheckID");
     }
 
-    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -119,7 +122,7 @@ TEST(TransactionsCheckCancelTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -133,7 +136,7 @@ TEST(TransactionsCheckCancelTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -142,5 +145,33 @@ TEST(TransactionsCheckCancelTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(CheckCancelBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsCheckCancelTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCancelNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+
+    CheckCancelBuilder builder{
+        accountValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasCheckID());
+    EXPECT_FALSE(tx.getCheckID().has_value());
+}
 
 }

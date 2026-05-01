@@ -19,9 +19,9 @@ class VaultClawbackBuilder;
  * @brief Transaction: VaultClawback
  *
  * Type: ttVAULT_CLAWBACK (70)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: mayDeleteMPT | mustModifyVault
+ * Privileges: MayDeleteMpt | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultClawbackBuilder to construct new transactions.
@@ -48,30 +48,59 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfVaultID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfVaultID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getVaultID() const
     {
-        return this->tx_->at(sfVaultID);
+        if (hasVaultID())
+        {
+            return this->tx_->at(sfVaultID);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfHolder (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfVaultID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
-    getHolder() const
+    bool
+    hasVaultID() const
     {
-        return this->tx_->at(sfHolder);
+        return this->tx_->isFieldPresent(sfVaultID);
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfHolder (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getHolder() const
+    {
+        if (hasHolder())
+        {
+            return this->tx_->at(sfHolder);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfHolder is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasHolder() const
+    {
+        return this->tx_->isFieldPresent(sfHolder);
+    }
+
+    /**
+     * @brief Get sfAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -110,19 +139,15 @@ public:
     /**
      * @brief Construct a new VaultClawbackBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param vaultID The sfVaultID field value.
-     * @param holder The sfHolder field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     VaultClawbackBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<VaultClawbackBuilder>(ttVAULT_CLAWBACK, account, sequence, fee)
     {
-        setVaultID(vaultID);
-        setHolder(holder);
     }
 
     /**
@@ -142,7 +167,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultClawbackBuilder&
@@ -153,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolder (soeREQUIRED)
+     * @brief Set sfHolder (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultClawbackBuilder&
@@ -164,8 +189,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultClawbackBuilder&

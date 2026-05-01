@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::transactions {
 
@@ -19,9 +19,9 @@ class LoanBrokerCoverClawbackBuilder;
  * @brief Transaction: LoanBrokerCoverClawback
  *
  * Type: ttLOAN_BROKER_COVER_CLAWBACK (78)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanBrokerCoverClawbackBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLoanBrokerID (soeOPTIONAL)
+     * @brief Get sfLoanBrokerID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,8 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -117,15 +116,11 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    LoanBrokerCoverClawbackBuilder(
-        SF_ACCOUNT::type::value_type account,
-        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
-        : TransactionBuilderBase<LoanBrokerCoverClawbackBuilder>(
-              ttLOAN_BROKER_COVER_CLAWBACK,
-              account,
-              sequence,
-              fee)
+    LoanBrokerCoverClawbackBuilder(SF_ACCOUNT::type::value_type account,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<LoanBrokerCoverClawbackBuilder>(ttLOAN_BROKER_COVER_CLAWBACK, account, sequence, fee)
     {
     }
 
@@ -146,7 +141,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLoanBrokerID (soeOPTIONAL)
+     * @brief Set sfLoanBrokerID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverClawbackBuilder&
@@ -157,8 +152,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverClawbackBuilder&

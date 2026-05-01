@@ -19,9 +19,9 @@ class AccountDeleteBuilder;
  * @brief Transaction: AccountDelete
  *
  * Type: ttACCOUNT_DELETE (21)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: mustDeleteAcct
+ * Privileges: MustDeleteAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AccountDeleteBuilder to construct new transactions.
@@ -48,18 +48,33 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfDestination (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getDestination() const
     {
-        return this->tx_->at(sfDestination);
+        if (hasDestination())
+        {
+            return this->tx_->at(sfDestination);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Check if sfDestination is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDestination() const
+    {
+        return this->tx_->isFieldPresent(sfDestination);
+    }
+
+    /**
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfCredentialIDs (soeOPTIONAL)
+     * @brief Get sfCredentialIDs (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -124,17 +139,15 @@ public:
     /**
      * @brief Construct a new AccountDeleteBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param destination The sfDestination field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     AccountDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<AccountDeleteBuilder>(ttACCOUNT_DELETE, account, sequence, fee)
     {
-        setDestination(destination);
     }
 
     /**
@@ -154,7 +167,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountDeleteBuilder&
@@ -165,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountDeleteBuilder&
@@ -176,7 +189,7 @@ public:
     }
 
     /**
-     * @brief Set sfCredentialIDs (soeOPTIONAL)
+     * @brief Set sfCredentialIDs (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountDeleteBuilder&

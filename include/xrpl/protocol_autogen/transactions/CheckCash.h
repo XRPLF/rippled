@@ -19,9 +19,9 @@ class CheckCashBuilder;
  * @brief Transaction: CheckCash
  *
  * Type: ttCHECK_CASH (17)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: mayCreateMPT
+ * Privileges: MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CheckCashBuilder to construct new transactions.
@@ -48,19 +48,33 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfCheckID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfCheckID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getCheckID() const
     {
-        return this->tx_->at(sfCheckID);
+        if (hasCheckID())
+        {
+            return this->tx_->at(sfCheckID);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Check if sfCheckID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCheckID() const
+    {
+        return this->tx_->isFieldPresent(sfCheckID);
+    }
+
+    /**
+     * @brief Get sfAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -86,8 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfDeliverMin (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfDeliverMin (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -126,17 +139,15 @@ public:
     /**
      * @brief Construct a new CheckCashBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param checkID The sfCheckID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     CheckCashBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& checkID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<CheckCashBuilder>(ttCHECK_CASH, account, sequence, fee)
     {
-        setCheckID(checkID);
     }
 
     /**
@@ -156,7 +167,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfCheckID (soeREQUIRED)
+     * @brief Set sfCheckID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&
@@ -167,8 +178,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&
@@ -179,8 +189,7 @@ public:
     }
 
     /**
-     * @brief Set sfDeliverMin (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfDeliverMin (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&

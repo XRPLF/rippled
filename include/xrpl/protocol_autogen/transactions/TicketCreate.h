@@ -19,9 +19,9 @@ class TicketCreateBuilder;
  * @brief Transaction: TicketCreate
  *
  * Type: ttTICKET_CREATE (10)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use TicketCreateBuilder to construct new transactions.
@@ -48,14 +48,29 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfTicketCount (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfTicketCount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getTicketCount() const
     {
-        return this->tx_->at(sfTicketCount);
+        if (hasTicketCount())
+        {
+            return this->tx_->at(sfTicketCount);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTicketCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTicketCount() const
+    {
+        return this->tx_->isFieldPresent(sfTicketCount);
     }
 };
 
@@ -72,17 +87,15 @@ public:
     /**
      * @brief Construct a new TicketCreateBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param ticketCount The sfTicketCount field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     TicketCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& ticketCount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<TicketCreateBuilder>(ttTICKET_CREATE, account, sequence, fee)
     {
-        setTicketCount(ticketCount);
     }
 
     /**
@@ -102,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfTicketCount (soeREQUIRED)
+     * @brief Set sfTicketCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     TicketCreateBuilder&

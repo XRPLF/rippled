@@ -21,7 +21,7 @@ TEST(TransactionsDelegateSetTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testDelegateSet"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testDelegateSet"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,13 +34,13 @@ TEST(TransactionsDelegateSetTests, BuilderSettersRoundTrip)
 
     DelegateSetBuilder builder{
         accountValue,
-        authorizeValue,
-        permissionsValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setAuthorize(authorizeValue);
+    builder.setPermissions(permissionsValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -57,19 +57,23 @@ TEST(TransactionsDelegateSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = authorizeValue;
-        auto const actual = tx.getAuthorize();
-        expectEqualField(expected, actual, "sfAuthorize");
+        auto const actualOpt = tx.getAuthorize();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuthorize should be present";
+        expectEqualField(expected, *actualOpt, "sfAuthorize");
+        EXPECT_TRUE(tx.hasAuthorize());
     }
 
     {
         auto const& expected = permissionsValue;
-        auto const actual = tx.getPermissions();
-        expectEqualField(expected, actual, "sfPermissions");
+        auto const actualOpt = tx.getPermissions();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPermissions should be present";
+        expectEqualField(expected, *actualOpt, "sfPermissions");
+        EXPECT_TRUE(tx.hasPermissions());
     }
 
-    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -78,7 +82,7 @@ TEST(TransactionsDelegateSetTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testDelegateSetFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testDelegateSetFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -92,12 +96,12 @@ TEST(TransactionsDelegateSetTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     DelegateSetBuilder initialBuilder{
         accountValue,
-        authorizeValue,
-        permissionsValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setAuthorize(authorizeValue);
+    initialBuilder.setPermissions(permissionsValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -115,19 +119,21 @@ TEST(TransactionsDelegateSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = authorizeValue;
-        auto const actual = rebuiltTx.getAuthorize();
-        expectEqualField(expected, actual, "sfAuthorize");
+        auto const actualOpt = rebuiltTx.getAuthorize();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuthorize should be present";
+        expectEqualField(expected, *actualOpt, "sfAuthorize");
     }
 
     {
         auto const& expected = permissionsValue;
-        auto const actual = rebuiltTx.getPermissions();
-        expectEqualField(expected, actual, "sfPermissions");
+        auto const actualOpt = rebuiltTx.getPermissions();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPermissions should be present";
+        expectEqualField(expected, *actualOpt, "sfPermissions");
     }
 
-    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -135,7 +141,7 @@ TEST(TransactionsDelegateSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -149,7 +155,7 @@ TEST(TransactionsDelegateSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -158,5 +164,35 @@ TEST(TransactionsDelegateSetTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(DelegateSetBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsDelegateSetTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testDelegateSetNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+
+    DelegateSetBuilder builder{
+        accountValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasAuthorize());
+    EXPECT_FALSE(tx.getAuthorize().has_value());
+    EXPECT_FALSE(tx.hasPermissions());
+    EXPECT_FALSE(tx.getPermissions().has_value());
+}
 
 }

@@ -21,7 +21,7 @@ TEST(TransactionsAMMBidTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMBid"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMBid"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -37,13 +37,13 @@ TEST(TransactionsAMMBidTests, BuilderSettersRoundTrip)
 
     AMMBidBuilder builder{
         accountValue,
-        assetValue,
-        asset2Value,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setAsset(assetValue);
+    builder.setAsset2(asset2Value);
     builder.setBidMin(bidMinValue);
     builder.setBidMax(bidMaxValue);
     builder.setAuthAccounts(authAccountsValue);
@@ -63,19 +63,23 @@ TEST(TransactionsAMMBidTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = assetValue;
-        auto const actual = tx.getAsset();
-        expectEqualField(expected, actual, "sfAsset");
+        auto const actualOpt = tx.getAsset();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAsset should be present";
+        expectEqualField(expected, *actualOpt, "sfAsset");
+        EXPECT_TRUE(tx.hasAsset());
     }
 
     {
         auto const& expected = asset2Value;
-        auto const actual = tx.getAsset2();
-        expectEqualField(expected, actual, "sfAsset2");
+        auto const actualOpt = tx.getAsset2();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAsset2 should be present";
+        expectEqualField(expected, *actualOpt, "sfAsset2");
+        EXPECT_TRUE(tx.hasAsset2());
     }
 
-    // Verify optional fields
     {
         auto const& expected = bidMinValue;
         auto const actualOpt = tx.getBidMin();
@@ -108,7 +112,7 @@ TEST(TransactionsAMMBidTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMBidFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMBidFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -125,12 +129,12 @@ TEST(TransactionsAMMBidTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     AMMBidBuilder initialBuilder{
         accountValue,
-        assetValue,
-        asset2Value,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setAsset(assetValue);
+    initialBuilder.setAsset2(asset2Value);
     initialBuilder.setBidMin(bidMinValue);
     initialBuilder.setBidMax(bidMaxValue);
     initialBuilder.setAuthAccounts(authAccountsValue);
@@ -151,19 +155,21 @@ TEST(TransactionsAMMBidTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = assetValue;
-        auto const actual = rebuiltTx.getAsset();
-        expectEqualField(expected, actual, "sfAsset");
+        auto const actualOpt = rebuiltTx.getAsset();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAsset should be present";
+        expectEqualField(expected, *actualOpt, "sfAsset");
     }
 
     {
         auto const& expected = asset2Value;
-        auto const actual = rebuiltTx.getAsset2();
-        expectEqualField(expected, actual, "sfAsset2");
+        auto const actualOpt = rebuiltTx.getAsset2();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAsset2 should be present";
+        expectEqualField(expected, *actualOpt, "sfAsset2");
     }
 
-    // Verify optional fields
     {
         auto const& expected = bidMinValue;
         auto const actualOpt = rebuiltTx.getBidMin();
@@ -192,7 +198,7 @@ TEST(TransactionsAMMBidTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -206,7 +212,7 @@ TEST(TransactionsAMMBidTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -220,7 +226,7 @@ TEST(TransactionsAMMBidTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMBidNullopt"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMBidNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -228,13 +234,9 @@ TEST(TransactionsAMMBidTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
-    auto const assetValue = canonical_ISSUE();
-    auto const asset2Value = canonical_ISSUE();
 
     AMMBidBuilder builder{
         accountValue,
-        assetValue,
-        asset2Value,
         sequenceValue,
         feeValue
     };
@@ -244,6 +246,10 @@ TEST(TransactionsAMMBidTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasAsset());
+    EXPECT_FALSE(tx.getAsset().has_value());
+    EXPECT_FALSE(tx.hasAsset2());
+    EXPECT_FALSE(tx.getAsset2().has_value());
     EXPECT_FALSE(tx.hasBidMin());
     EXPECT_FALSE(tx.getBidMin().has_value());
     EXPECT_FALSE(tx.hasBidMax());

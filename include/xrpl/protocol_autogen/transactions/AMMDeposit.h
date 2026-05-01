@@ -19,9 +19,9 @@ class AMMDepositBuilder;
  * @brief Transaction: AMMDeposit
  *
  * Type: ttAMM_DEPOSIT (36)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureAMM
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMDepositBuilder to construct new transactions.
@@ -48,32 +48,59 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Get sfAsset (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    protocol_autogen::Optional<SF_ISSUE::type::value_type>
     getAsset() const
     {
-        return this->tx_->at(sfAsset);
+        if (hasAsset())
+        {
+            return this->tx_->at(sfAsset);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAsset2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Check if sfAsset is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
-    getAsset2() const
+    bool
+    hasAsset() const
     {
-        return this->tx_->at(sfAsset2);
+        return this->tx_->isFieldPresent(sfAsset);
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfAsset2 (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ISSUE::type::value_type>
+    getAsset2() const
+    {
+        if (hasAsset2())
+        {
+            return this->tx_->at(sfAsset2);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAsset2 is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAsset2() const
+    {
+        return this->tx_->isFieldPresent(sfAsset2);
+    }
+
+    /**
+     * @brief Get sfAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -99,8 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount2 (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfAmount2 (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -126,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfEPrice (soeOPTIONAL)
+     * @brief Get sfEPrice (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -152,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Get sfLPTokenOut (soeOPTIONAL)
+     * @brief Get sfLPTokenOut (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -178,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Get sfTradingFee (soeOPTIONAL)
+     * @brief Get sfTradingFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -217,19 +243,15 @@ public:
     /**
      * @brief Construct a new AMMDepositBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param asset The sfAsset field value.
-     * @param asset2 The sfAsset2 field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     AMMDepositBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<AMMDepositBuilder>(ttAMM_DEPOSIT, account, sequence, fee)
     {
-        setAsset(asset);
-        setAsset2(asset2);
     }
 
     /**
@@ -249,8 +271,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAsset (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
@@ -261,8 +282,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAsset2 (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
@@ -273,8 +293,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
@@ -285,8 +304,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount2 (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount2 (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
@@ -297,7 +315,7 @@ public:
     }
 
     /**
-     * @brief Set sfEPrice (soeOPTIONAL)
+     * @brief Set sfEPrice (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
@@ -308,7 +326,7 @@ public:
     }
 
     /**
-     * @brief Set sfLPTokenOut (soeOPTIONAL)
+     * @brief Set sfLPTokenOut (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
@@ -319,7 +337,7 @@ public:
     }
 
     /**
-     * @brief Set sfTradingFee (soeOPTIONAL)
+     * @brief Set sfTradingFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&

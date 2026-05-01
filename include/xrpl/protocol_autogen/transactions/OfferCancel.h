@@ -19,9 +19,9 @@ class OfferCancelBuilder;
  * @brief Transaction: OfferCancel
  *
  * Type: ttOFFER_CANCEL (8)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use OfferCancelBuilder to construct new transactions.
@@ -48,14 +48,29 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfOfferSequence (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfOfferSequence (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getOfferSequence() const
     {
-        return this->tx_->at(sfOfferSequence);
+        if (hasOfferSequence())
+        {
+            return this->tx_->at(sfOfferSequence);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfOfferSequence is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasOfferSequence() const
+    {
+        return this->tx_->isFieldPresent(sfOfferSequence);
     }
 };
 
@@ -72,17 +87,15 @@ public:
     /**
      * @brief Construct a new OfferCancelBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param offerSequence The sfOfferSequence field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     OfferCancelBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& offerSequence,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<OfferCancelBuilder>(ttOFFER_CANCEL, account, sequence, fee)
     {
-        setOfferSequence(offerSequence);
     }
 
     /**
@@ -102,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfOfferSequence (soeREQUIRED)
+     * @brief Set sfOfferSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferCancelBuilder&

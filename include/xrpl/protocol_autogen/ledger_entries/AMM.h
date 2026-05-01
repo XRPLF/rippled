@@ -46,18 +46,31 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfAccount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getAccount() const
     {
-        return this->sle_->at(sfAccount);
+        if (hasAccount())
+            return this->sle_->at(sfAccount);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfTradingFee (soeDEFAULT)
+     * @brief Check if sfAccount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAccount() const
+    {
+        return this->sle_->isFieldPresent(sfAccount);
+    }
+
+    /**
+     * @brief Get sfTradingFee (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -81,7 +94,7 @@ public:
     }
 
     /**
-     * @brief Get sfVoteSlots (soeOPTIONAL)
+     * @brief Get sfVoteSlots (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -106,7 +119,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuctionSlot (soeOPTIONAL)
+     * @brief Get sfAuctionSlot (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -131,51 +144,103 @@ public:
     }
 
     /**
-     * @brief Get sfLPTokenBalance (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfLPTokenBalance (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getLPTokenBalance() const
     {
-        return this->sle_->at(sfLPTokenBalance);
+        if (hasLPTokenBalance())
+            return this->sle_->at(sfLPTokenBalance);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfLPTokenBalance is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    bool
+    hasLPTokenBalance() const
+    {
+        return this->sle_->isFieldPresent(sfLPTokenBalance);
+    }
+
+    /**
+     * @brief Get sfAsset (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ISSUE::type::value_type>
     getAsset() const
     {
-        return this->sle_->at(sfAsset);
+        if (hasAsset())
+            return this->sle_->at(sfAsset);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAsset2 (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAsset is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    bool
+    hasAsset() const
+    {
+        return this->sle_->isFieldPresent(sfAsset);
+    }
+
+    /**
+     * @brief Get sfAsset2 (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ISSUE::type::value_type>
     getAsset2() const
     {
-        return this->sle_->at(sfAsset2);
+        if (hasAsset2())
+            return this->sle_->at(sfAsset2);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAsset2 is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
-    getOwnerNode() const
+    bool
+    hasAsset2() const
     {
-        return this->sle_->at(sfOwnerNode);
+        return this->sle_->isFieldPresent(sfAsset2);
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeOPTIONAL)
+     * @brief Get sfOwnerNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getOwnerNode() const
+    {
+        if (hasOwnerNode())
+            return this->sle_->at(sfOwnerNode);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfOwnerNode is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasOwnerNode() const
+    {
+        return this->sle_->isFieldPresent(sfOwnerNode);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -199,7 +264,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -235,20 +300,10 @@ class AMMBuilder : public LedgerEntryBuilderBase<AMMBuilder>
 public:
     /**
      * @brief Construct a new AMMBuilder with required fields.
-     * @param account The sfAccount field value.
-     * @param lPTokenBalance The sfLPTokenBalance field value.
-     * @param asset The sfAsset field value.
-     * @param asset2 The sfAsset2 field value.
-     * @param ownerNode The sfOwnerNode field value.
      */
-    AMMBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_AMOUNT::type::value_type> const& lPTokenBalance,std::decay_t<typename SF_ISSUE::type::value_type> const& asset,std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
+    AMMBuilder()
         : LedgerEntryBuilderBase<AMMBuilder>(ltAMM)
     {
-        setAccount(account);
-        setLPTokenBalance(lPTokenBalance);
-        setAsset(asset);
-        setAsset2(asset2);
-        setOwnerNode(ownerNode);
     }
 
     /**
@@ -268,7 +323,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -279,7 +334,7 @@ public:
     }
 
     /**
-     * @brief Set sfTradingFee (soeDEFAULT)
+     * @brief Set sfTradingFee (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -290,7 +345,7 @@ public:
     }
 
     /**
-     * @brief Set sfVoteSlots (soeOPTIONAL)
+     * @brief Set sfVoteSlots (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -301,7 +356,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuctionSlot (soeOPTIONAL)
+     * @brief Set sfAuctionSlot (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -312,7 +367,7 @@ public:
     }
 
     /**
-     * @brief Set sfLPTokenBalance (soeREQUIRED)
+     * @brief Set sfLPTokenBalance (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -323,7 +378,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -334,7 +389,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -345,7 +400,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -356,7 +411,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeOPTIONAL)
+     * @brief Set sfPreviousTxnID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -367,7 +422,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Set sfPreviousTxnLgrSeq (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&

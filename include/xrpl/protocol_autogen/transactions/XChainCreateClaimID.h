@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::transactions {
 
@@ -19,9 +19,9 @@ class XChainCreateClaimIDBuilder;
  * @brief Transaction: XChainCreateClaimID
  *
  * Type: ttXCHAIN_CREATE_CLAIM_ID (41)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainCreateClaimIDBuilder to construct new transactions.
@@ -35,7 +35,8 @@ public:
      * @brief Construct a XChainCreateClaimID transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit XChainCreateClaimID(std::shared_ptr<STTx const> tx) : TransactionBase(std::move(tx))
+    explicit XChainCreateClaimID(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
         if (tx_->getTxnType() != txType)
@@ -47,36 +48,81 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfXChainBridge (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfXChainBridge (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_XCHAIN_BRIDGE::type::value_type
+    protocol_autogen::Optional<SF_XCHAIN_BRIDGE::type::value_type>
     getXChainBridge() const
     {
-        return this->tx_->at(sfXChainBridge);
+        if (hasXChainBridge())
+        {
+            return this->tx_->at(sfXChainBridge);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfSignatureReward (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfXChainBridge is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    bool
+    hasXChainBridge() const
+    {
+        return this->tx_->isFieldPresent(sfXChainBridge);
+    }
+
+    /**
+     * @brief Get sfSignatureReward (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getSignatureReward() const
     {
-        return this->tx_->at(sfSignatureReward);
+        if (hasSignatureReward())
+        {
+            return this->tx_->at(sfSignatureReward);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOtherChainSource (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfSignatureReward is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    bool
+    hasSignatureReward() const
+    {
+        return this->tx_->isFieldPresent(sfSignatureReward);
+    }
+
+    /**
+     * @brief Get sfOtherChainSource (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getOtherChainSource() const
     {
-        return this->tx_->at(sfOtherChainSource);
+        if (hasOtherChainSource())
+        {
+            return this->tx_->at(sfOtherChainSource);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfOtherChainSource is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasOtherChainSource() const
+    {
+        return this->tx_->isFieldPresent(sfOtherChainSource);
     }
 };
 
@@ -93,28 +139,15 @@ public:
     /**
      * @brief Construct a new XChainCreateClaimIDBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param xChainBridge The sfXChainBridge field value.
-     * @param signatureReward The sfSignatureReward field value.
-     * @param otherChainSource The sfOtherChainSource field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    XChainCreateClaimIDBuilder(
-        SF_ACCOUNT::type::value_type account,
-        std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,
-        std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,
-        std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,
-        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
-        : TransactionBuilderBase<XChainCreateClaimIDBuilder>(
-              ttXCHAIN_CREATE_CLAIM_ID,
-              account,
-              sequence,
-              fee)
+    XChainCreateClaimIDBuilder(SF_ACCOUNT::type::value_type account,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<XChainCreateClaimIDBuilder>(ttXCHAIN_CREATE_CLAIM_ID, account, sequence, fee)
     {
-        setXChainBridge(xChainBridge);
-        setSignatureReward(signatureReward);
-        setOtherChainSource(otherChainSource);
     }
 
     /**
@@ -134,7 +167,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainCreateClaimIDBuilder&
@@ -145,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignatureReward (soeREQUIRED)
+     * @brief Set sfSignatureReward (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainCreateClaimIDBuilder&
@@ -156,7 +189,7 @@ public:
     }
 
     /**
-     * @brief Set sfOtherChainSource (soeREQUIRED)
+     * @brief Set sfOtherChainSource (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainCreateClaimIDBuilder&

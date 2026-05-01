@@ -19,9 +19,9 @@ class NFTokenCreateOfferBuilder;
  * @brief Transaction: NFTokenCreateOffer
  *
  * Type: ttNFTOKEN_CREATE_OFFER (27)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenCreateOfferBuilder to construct new transactions.
@@ -48,29 +48,59 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfNFTokenID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfNFTokenID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getNFTokenID() const
     {
-        return this->tx_->at(sfNFTokenID);
+        if (hasNFTokenID())
+        {
+            return this->tx_->at(sfNFTokenID);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfNFTokenID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
-    getAmount() const
+    bool
+    hasNFTokenID() const
     {
-        return this->tx_->at(sfAmount);
+        return this->tx_->isFieldPresent(sfNFTokenID);
     }
 
     /**
-     * @brief Get sfDestination (soeOPTIONAL)
+     * @brief Get sfAmount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getAmount() const
+    {
+        if (hasAmount())
+        {
+            return this->tx_->at(sfAmount);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmount() const
+    {
+        return this->tx_->isFieldPresent(sfAmount);
+    }
+
+    /**
+     * @brief Get sfDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -96,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -122,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -161,19 +191,15 @@ public:
     /**
      * @brief Construct a new NFTokenCreateOfferBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param nFTokenID The sfNFTokenID field value.
-     * @param amount The sfAmount field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     NFTokenCreateOfferBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenCreateOfferBuilder>(ttNFTOKEN_CREATE_OFFER, account, sequence, fee)
     {
-        setNFTokenID(nFTokenID);
-        setAmount(amount);
     }
 
     /**
@@ -193,7 +219,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfNFTokenID (soeREQUIRED)
+     * @brief Set sfNFTokenID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
@@ -204,7 +230,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
@@ -215,7 +241,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
@@ -226,7 +252,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
@@ -237,7 +263,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&

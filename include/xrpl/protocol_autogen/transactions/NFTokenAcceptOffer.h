@@ -19,9 +19,9 @@ class NFTokenAcceptOfferBuilder;
  * @brief Transaction: NFTokenAcceptOffer
  *
  * Type: ttNFTOKEN_ACCEPT_OFFER (29)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenAcceptOfferBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfNFTokenBuyOffer (soeOPTIONAL)
+     * @brief Get sfNFTokenBuyOffer (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfNFTokenSellOffer (soeOPTIONAL)
+     * @brief Get sfNFTokenSellOffer (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -100,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfNFTokenBrokerFee (soeOPTIONAL)
+     * @brief Get sfNFTokenBrokerFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -167,7 +167,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfNFTokenBuyOffer (soeOPTIONAL)
+     * @brief Set sfNFTokenBuyOffer (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenAcceptOfferBuilder&
@@ -178,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Set sfNFTokenSellOffer (soeOPTIONAL)
+     * @brief Set sfNFTokenSellOffer (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenAcceptOfferBuilder&
@@ -189,7 +189,7 @@ public:
     }
 
     /**
-     * @brief Set sfNFTokenBrokerFee (soeOPTIONAL)
+     * @brief Set sfNFTokenBrokerFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenAcceptOfferBuilder&

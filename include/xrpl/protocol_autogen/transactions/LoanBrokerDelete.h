@@ -19,9 +19,9 @@ class LoanBrokerDeleteBuilder;
  * @brief Transaction: LoanBrokerDelete
  *
  * Type: ttLOAN_BROKER_DELETE (75)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: mustDeleteAcct | mayAuthorizeMPT
+ * Privileges: MustDeleteAcct | MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanBrokerDeleteBuilder to construct new transactions.
@@ -48,14 +48,29 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLoanBrokerID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfLoanBrokerID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getLoanBrokerID() const
     {
-        return this->tx_->at(sfLoanBrokerID);
+        if (hasLoanBrokerID())
+        {
+            return this->tx_->at(sfLoanBrokerID);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLoanBrokerID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLoanBrokerID() const
+    {
+        return this->tx_->isFieldPresent(sfLoanBrokerID);
     }
 };
 
@@ -72,17 +87,15 @@ public:
     /**
      * @brief Construct a new LoanBrokerDeleteBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param loanBrokerID The sfLoanBrokerID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     LoanBrokerDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<LoanBrokerDeleteBuilder>(ttLOAN_BROKER_DELETE, account, sequence, fee)
     {
-        setLoanBrokerID(loanBrokerID);
     }
 
     /**
@@ -102,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLoanBrokerID (soeREQUIRED)
+     * @brief Set sfLoanBrokerID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerDeleteBuilder&

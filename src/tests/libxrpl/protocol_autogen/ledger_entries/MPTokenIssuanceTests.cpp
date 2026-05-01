@@ -35,19 +35,19 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const mutableFlagsValue = canonical_UINT32();
 
     MPTokenIssuanceBuilder builder{
-        issuerValue,
-        sequenceValue,
-        ownerNodeValue,
-        outstandingAmountValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
+    builder.setIssuer(issuerValue);
+    builder.setSequence(sequenceValue);
     builder.setTransferFee(transferFeeValue);
+    builder.setOwnerNode(ownerNodeValue);
     builder.setAssetScale(assetScaleValue);
     builder.setMaximumAmount(maximumAmountValue);
+    builder.setOutstandingAmount(outstandingAmountValue);
     builder.setLockedAmount(lockedAmountValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
+    builder.setPreviousTxnID(previousTxnIDValue);
+    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
     builder.setDomainID(domainIDValue);
     builder.setMutableFlags(mutableFlagsValue);
 
@@ -62,38 +62,18 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = issuerValue;
-        auto const actual = entry.getIssuer();
-        expectEqualField(expected, actual, "sfIssuer");
+        auto const actualOpt = entry.getIssuer();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfIssuer");
+        EXPECT_TRUE(entry.hasIssuer());
     }
 
     {
         auto const& expected = sequenceValue;
-        auto const actual = entry.getSequence();
-        expectEqualField(expected, actual, "sfSequence");
-    }
-
-    {
-        auto const& expected = ownerNodeValue;
-        auto const actual = entry.getOwnerNode();
-        expectEqualField(expected, actual, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = outstandingAmountValue;
-        auto const actual = entry.getOutstandingAmount();
-        expectEqualField(expected, actual, "sfOutstandingAmount");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-        auto const actual = entry.getPreviousTxnID();
-        expectEqualField(expected, actual, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-        auto const actual = entry.getPreviousTxnLgrSeq();
-        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
+        auto const actualOpt = entry.getSequence();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSequence");
+        EXPECT_TRUE(entry.hasSequence());
     }
 
     {
@@ -102,6 +82,14 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfTransferFee");
         EXPECT_TRUE(entry.hasTransferFee());
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+        auto const actualOpt = entry.getOwnerNode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfOwnerNode");
+        EXPECT_TRUE(entry.hasOwnerNode());
     }
 
     {
@@ -121,6 +109,14 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = outstandingAmountValue;
+        auto const actualOpt = entry.getOutstandingAmount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfOutstandingAmount");
+        EXPECT_TRUE(entry.hasOutstandingAmount());
+    }
+
+    {
         auto const& expected = lockedAmountValue;
         auto const actualOpt = entry.getLockedAmount();
         ASSERT_TRUE(actualOpt.has_value());
@@ -134,6 +130,22 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfMPTokenMetadata");
         EXPECT_TRUE(entry.hasMPTokenMetadata());
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+        auto const actualOpt = entry.getPreviousTxnID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
+        EXPECT_TRUE(entry.hasPreviousTxnID());
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+        auto const actualOpt = entry.getPreviousTxnLgrSeq();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
+        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
     }
 
     {
@@ -207,61 +219,27 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = issuerValue;
 
-        auto const fromSle = entryFromSle.getIssuer();
-        auto const fromBuilder = entryFromBuilder.getIssuer();
+        auto const fromSleOpt = entryFromSle.getIssuer();
+        auto const fromBuilderOpt = entryFromBuilder.getIssuer();
 
-        expectEqualField(expected, fromSle, "sfIssuer");
-        expectEqualField(expected, fromBuilder, "sfIssuer");
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfIssuer");
+        expectEqualField(expected, *fromBuilderOpt, "sfIssuer");
     }
 
     {
         auto const& expected = sequenceValue;
 
-        auto const fromSle = entryFromSle.getSequence();
-        auto const fromBuilder = entryFromBuilder.getSequence();
+        auto const fromSleOpt = entryFromSle.getSequence();
+        auto const fromBuilderOpt = entryFromBuilder.getSequence();
 
-        expectEqualField(expected, fromSle, "sfSequence");
-        expectEqualField(expected, fromBuilder, "sfSequence");
-    }
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
 
-    {
-        auto const& expected = ownerNodeValue;
-
-        auto const fromSle = entryFromSle.getOwnerNode();
-        auto const fromBuilder = entryFromBuilder.getOwnerNode();
-
-        expectEqualField(expected, fromSle, "sfOwnerNode");
-        expectEqualField(expected, fromBuilder, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = outstandingAmountValue;
-
-        auto const fromSle = entryFromSle.getOutstandingAmount();
-        auto const fromBuilder = entryFromBuilder.getOutstandingAmount();
-
-        expectEqualField(expected, fromSle, "sfOutstandingAmount");
-        expectEqualField(expected, fromBuilder, "sfOutstandingAmount");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-
-        auto const fromSle = entryFromSle.getPreviousTxnID();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
-
-        expectEqualField(expected, fromSle, "sfPreviousTxnID");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-
-        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
-
-        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, *fromSleOpt, "sfSequence");
+        expectEqualField(expected, *fromBuilderOpt, "sfSequence");
     }
 
     {
@@ -275,6 +253,19 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfTransferFee");
         expectEqualField(expected, *fromBuilderOpt, "sfTransferFee");
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+
+        auto const fromSleOpt = entryFromSle.getOwnerNode();
+        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
+        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
     }
 
     {
@@ -304,6 +295,19 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = outstandingAmountValue;
+
+        auto const fromSleOpt = entryFromSle.getOutstandingAmount();
+        auto const fromBuilderOpt = entryFromBuilder.getOutstandingAmount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfOutstandingAmount");
+        expectEqualField(expected, *fromBuilderOpt, "sfOutstandingAmount");
+    }
+
+    {
         auto const& expected = lockedAmountValue;
 
         auto const fromSleOpt = entryFromSle.getLockedAmount();
@@ -327,6 +331,32 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfMPTokenMetadata");
         expectEqualField(expected, *fromBuilderOpt, "sfMPTokenMetadata");
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+
+        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+
+        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
     }
 
     {
@@ -400,35 +430,35 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
-    auto const issuerValue = canonical_ACCOUNT();
-    auto const sequenceValue = canonical_UINT32();
-    auto const ownerNodeValue = canonical_UINT64();
-    auto const outstandingAmountValue = canonical_UINT64();
-    auto const previousTxnIDValue = canonical_UINT256();
-    auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     MPTokenIssuanceBuilder builder{
-        issuerValue,
-        sequenceValue,
-        ownerNodeValue,
-        outstandingAmountValue,
-        previousTxnIDValue,
-        previousTxnLgrSeqValue
     };
 
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasIssuer());
+    EXPECT_FALSE(entry.getIssuer().has_value());
+    EXPECT_FALSE(entry.hasSequence());
+    EXPECT_FALSE(entry.getSequence().has_value());
     EXPECT_FALSE(entry.hasTransferFee());
     EXPECT_FALSE(entry.getTransferFee().has_value());
+    EXPECT_FALSE(entry.hasOwnerNode());
+    EXPECT_FALSE(entry.getOwnerNode().has_value());
     EXPECT_FALSE(entry.hasAssetScale());
     EXPECT_FALSE(entry.getAssetScale().has_value());
     EXPECT_FALSE(entry.hasMaximumAmount());
     EXPECT_FALSE(entry.getMaximumAmount().has_value());
+    EXPECT_FALSE(entry.hasOutstandingAmount());
+    EXPECT_FALSE(entry.getOutstandingAmount().has_value());
     EXPECT_FALSE(entry.hasLockedAmount());
     EXPECT_FALSE(entry.getLockedAmount().has_value());
     EXPECT_FALSE(entry.hasMPTokenMetadata());
     EXPECT_FALSE(entry.getMPTokenMetadata().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnID());
+    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
+    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
+    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
     EXPECT_FALSE(entry.hasDomainID());
     EXPECT_FALSE(entry.getDomainID().has_value());
     EXPECT_FALSE(entry.hasMutableFlags());

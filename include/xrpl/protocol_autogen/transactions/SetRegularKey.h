@@ -19,9 +19,9 @@ class SetRegularKeyBuilder;
  * @brief Transaction: SetRegularKey
  *
  * Type: ttREGULAR_KEY_SET (5)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use SetRegularKeyBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfRegularKey (soeOPTIONAL)
+     * @brief Get sfRegularKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -115,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfRegularKey (soeOPTIONAL)
+     * @brief Set sfRegularKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetRegularKeyBuilder&

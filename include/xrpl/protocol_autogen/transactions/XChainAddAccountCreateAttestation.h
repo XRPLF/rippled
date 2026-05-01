@@ -19,9 +19,9 @@ class XChainAddAccountCreateAttestationBuilder;
  * @brief Transaction: XChainAddAccountCreateAttestation
  *
  * Type: ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION (46)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: createAcct
+ * Privileges: CreateAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainAddAccountCreateAttestationBuilder to construct new transactions.
@@ -48,124 +48,289 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfXChainBridge (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfXChainBridge (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_XCHAIN_BRIDGE::type::value_type
+    protocol_autogen::Optional<SF_XCHAIN_BRIDGE::type::value_type>
     getXChainBridge() const
     {
-        return this->tx_->at(sfXChainBridge);
+        if (hasXChainBridge())
+        {
+            return this->tx_->at(sfXChainBridge);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAttestationSignerAccount (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfXChainBridge is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    bool
+    hasXChainBridge() const
+    {
+        return this->tx_->isFieldPresent(sfXChainBridge);
+    }
+
+    /**
+     * @brief Get sfAttestationSignerAccount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getAttestationSignerAccount() const
     {
-        return this->tx_->at(sfAttestationSignerAccount);
+        if (hasAttestationSignerAccount())
+        {
+            return this->tx_->at(sfAttestationSignerAccount);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPublicKey (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAttestationSignerAccount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    bool
+    hasAttestationSignerAccount() const
+    {
+        return this->tx_->isFieldPresent(sfAttestationSignerAccount);
+    }
+
+    /**
+     * @brief Get sfPublicKey (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
     getPublicKey() const
     {
-        return this->tx_->at(sfPublicKey);
+        if (hasPublicKey())
+        {
+            return this->tx_->at(sfPublicKey);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfSignature (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPublicKey is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    bool
+    hasPublicKey() const
+    {
+        return this->tx_->isFieldPresent(sfPublicKey);
+    }
+
+    /**
+     * @brief Get sfSignature (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
     getSignature() const
     {
-        return this->tx_->at(sfSignature);
+        if (hasSignature())
+        {
+            return this->tx_->at(sfSignature);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOtherChainSource (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfSignature is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    bool
+    hasSignature() const
+    {
+        return this->tx_->isFieldPresent(sfSignature);
+    }
+
+    /**
+     * @brief Get sfOtherChainSource (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getOtherChainSource() const
     {
-        return this->tx_->at(sfOtherChainSource);
+        if (hasOtherChainSource())
+        {
+            return this->tx_->at(sfOtherChainSource);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOtherChainSource is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    bool
+    hasOtherChainSource() const
+    {
+        return this->tx_->isFieldPresent(sfOtherChainSource);
+    }
+
+    /**
+     * @brief Get sfAmount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getAmount() const
     {
-        return this->tx_->at(sfAmount);
+        if (hasAmount())
+        {
+            return this->tx_->at(sfAmount);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAttestationRewardAccount (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    bool
+    hasAmount() const
+    {
+        return this->tx_->isFieldPresent(sfAmount);
+    }
+
+    /**
+     * @brief Get sfAttestationRewardAccount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getAttestationRewardAccount() const
     {
-        return this->tx_->at(sfAttestationRewardAccount);
+        if (hasAttestationRewardAccount())
+        {
+            return this->tx_->at(sfAttestationRewardAccount);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfWasLockingChainSend (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAttestationRewardAccount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT8::type::value_type
+    bool
+    hasAttestationRewardAccount() const
+    {
+        return this->tx_->isFieldPresent(sfAttestationRewardAccount);
+    }
+
+    /**
+     * @brief Get sfWasLockingChainSend (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
     getWasLockingChainSend() const
     {
-        return this->tx_->at(sfWasLockingChainSend);
+        if (hasWasLockingChainSend())
+        {
+            return this->tx_->at(sfWasLockingChainSend);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfXChainAccountCreateCount (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfWasLockingChainSend is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasWasLockingChainSend() const
+    {
+        return this->tx_->isFieldPresent(sfWasLockingChainSend);
+    }
+
+    /**
+     * @brief Get sfXChainAccountCreateCount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getXChainAccountCreateCount() const
     {
-        return this->tx_->at(sfXChainAccountCreateCount);
+        if (hasXChainAccountCreateCount())
+        {
+            return this->tx_->at(sfXChainAccountCreateCount);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfXChainAccountCreateCount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    bool
+    hasXChainAccountCreateCount() const
+    {
+        return this->tx_->isFieldPresent(sfXChainAccountCreateCount);
+    }
+
+    /**
+     * @brief Get sfDestination (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getDestination() const
     {
-        return this->tx_->at(sfDestination);
+        if (hasDestination())
+        {
+            return this->tx_->at(sfDestination);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfSignatureReward (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfDestination is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    bool
+    hasDestination() const
+    {
+        return this->tx_->isFieldPresent(sfDestination);
+    }
+
+    /**
+     * @brief Get sfSignatureReward (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getSignatureReward() const
     {
-        return this->tx_->at(sfSignatureReward);
+        if (hasSignatureReward())
+        {
+            return this->tx_->at(sfSignatureReward);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSignatureReward is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSignatureReward() const
+    {
+        return this->tx_->isFieldPresent(sfSignatureReward);
     }
 };
 
@@ -182,37 +347,15 @@ public:
     /**
      * @brief Construct a new XChainAddAccountCreateAttestationBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param xChainBridge The sfXChainBridge field value.
-     * @param attestationSignerAccount The sfAttestationSignerAccount field value.
-     * @param publicKey The sfPublicKey field value.
-     * @param signature The sfSignature field value.
-     * @param otherChainSource The sfOtherChainSource field value.
-     * @param amount The sfAmount field value.
-     * @param attestationRewardAccount The sfAttestationRewardAccount field value.
-     * @param wasLockingChainSend The sfWasLockingChainSend field value.
-     * @param xChainAccountCreateCount The sfXChainAccountCreateCount field value.
-     * @param destination The sfDestination field value.
-     * @param signatureReward The sfSignatureReward field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     XChainAddAccountCreateAttestationBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& attestationSignerAccount,                     std::decay_t<typename SF_VL::type::value_type> const& publicKey,                     std::decay_t<typename SF_VL::type::value_type> const& signature,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& attestationRewardAccount,                     std::decay_t<typename SF_UINT8::type::value_type> const& wasLockingChainSend,                     std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<XChainAddAccountCreateAttestationBuilder>(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, account, sequence, fee)
     {
-        setXChainBridge(xChainBridge);
-        setAttestationSignerAccount(attestationSignerAccount);
-        setPublicKey(publicKey);
-        setSignature(signature);
-        setOtherChainSource(otherChainSource);
-        setAmount(amount);
-        setAttestationRewardAccount(attestationRewardAccount);
-        setWasLockingChainSend(wasLockingChainSend);
-        setXChainAccountCreateCount(xChainAccountCreateCount);
-        setDestination(destination);
-        setSignatureReward(signatureReward);
     }
 
     /**
@@ -232,7 +375,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&
@@ -243,7 +386,7 @@ public:
     }
 
     /**
-     * @brief Set sfAttestationSignerAccount (soeREQUIRED)
+     * @brief Set sfAttestationSignerAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&
@@ -254,7 +397,7 @@ public:
     }
 
     /**
-     * @brief Set sfPublicKey (soeREQUIRED)
+     * @brief Set sfPublicKey (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&
@@ -265,7 +408,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignature (soeREQUIRED)
+     * @brief Set sfSignature (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&
@@ -276,7 +419,7 @@ public:
     }
 
     /**
-     * @brief Set sfOtherChainSource (soeREQUIRED)
+     * @brief Set sfOtherChainSource (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&
@@ -287,7 +430,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&
@@ -298,7 +441,7 @@ public:
     }
 
     /**
-     * @brief Set sfAttestationRewardAccount (soeREQUIRED)
+     * @brief Set sfAttestationRewardAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&
@@ -309,7 +452,7 @@ public:
     }
 
     /**
-     * @brief Set sfWasLockingChainSend (soeREQUIRED)
+     * @brief Set sfWasLockingChainSend (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&
@@ -320,7 +463,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainAccountCreateCount (soeREQUIRED)
+     * @brief Set sfXChainAccountCreateCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&
@@ -331,7 +474,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&
@@ -342,7 +485,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignatureReward (soeREQUIRED)
+     * @brief Set sfSignatureReward (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddAccountCreateAttestationBuilder&

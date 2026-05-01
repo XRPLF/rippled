@@ -19,9 +19,9 @@ class AMMVoteBuilder;
  * @brief Transaction: AMMVote
  *
  * Type: ttAMM_VOTE (38)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureAMM
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMVoteBuilder to construct new transactions.
@@ -48,38 +48,81 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Get sfAsset (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    protocol_autogen::Optional<SF_ISSUE::type::value_type>
     getAsset() const
     {
-        return this->tx_->at(sfAsset);
+        if (hasAsset())
+        {
+            return this->tx_->at(sfAsset);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAsset2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Check if sfAsset is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    bool
+    hasAsset() const
+    {
+        return this->tx_->isFieldPresent(sfAsset);
+    }
+
+    /**
+     * @brief Get sfAsset2 (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ISSUE::type::value_type>
     getAsset2() const
     {
-        return this->tx_->at(sfAsset2);
+        if (hasAsset2())
+        {
+            return this->tx_->at(sfAsset2);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfTradingFee (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAsset2 is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT16::type::value_type
+    bool
+    hasAsset2() const
+    {
+        return this->tx_->isFieldPresent(sfAsset2);
+    }
+
+    /**
+     * @brief Get sfTradingFee (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT16::type::value_type>
     getTradingFee() const
     {
-        return this->tx_->at(sfTradingFee);
+        if (hasTradingFee())
+        {
+            return this->tx_->at(sfTradingFee);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTradingFee is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTradingFee() const
+    {
+        return this->tx_->isFieldPresent(sfTradingFee);
     }
 };
 
@@ -96,21 +139,15 @@ public:
     /**
      * @brief Construct a new AMMVoteBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param asset The sfAsset field value.
-     * @param asset2 The sfAsset2 field value.
-     * @param tradingFee The sfTradingFee field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     AMMVoteBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                     std::decay_t<typename SF_UINT16::type::value_type> const& tradingFee,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<AMMVoteBuilder>(ttAMM_VOTE, account, sequence, fee)
     {
-        setAsset(asset);
-        setAsset2(asset2);
-        setTradingFee(tradingFee);
     }
 
     /**
@@ -130,8 +167,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAsset (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&
@@ -142,8 +178,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAsset2 (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&
@@ -154,7 +189,7 @@ public:
     }
 
     /**
-     * @brief Set sfTradingFee (soeREQUIRED)
+     * @brief Set sfTradingFee (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&

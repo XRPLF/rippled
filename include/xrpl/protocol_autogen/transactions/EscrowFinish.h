@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::transactions {
 
@@ -19,9 +19,9 @@ class EscrowFinishBuilder;
  * @brief Transaction: EscrowFinish
  *
  * Type: ttESCROW_FINISH (2)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use EscrowFinishBuilder to construct new transactions.
@@ -35,7 +35,8 @@ public:
      * @brief Construct a EscrowFinish transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit EscrowFinish(std::shared_ptr<STTx const> tx) : TransactionBase(std::move(tx))
+    explicit EscrowFinish(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
         if (tx_->getTxnType() != txType)
@@ -47,29 +48,59 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfOwner (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getOwner() const
     {
-        return this->tx_->at(sfOwner);
+        if (hasOwner())
+        {
+            return this->tx_->at(sfOwner);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOfferSequence (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOwner is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
-    getOfferSequence() const
+    bool
+    hasOwner() const
     {
-        return this->tx_->at(sfOfferSequence);
+        return this->tx_->isFieldPresent(sfOwner);
     }
 
     /**
-     * @brief Get sfFulfillment (soeOPTIONAL)
+     * @brief Get sfOfferSequence (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getOfferSequence() const
+    {
+        if (hasOfferSequence())
+        {
+            return this->tx_->at(sfOfferSequence);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfOfferSequence is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasOfferSequence() const
+    {
+        return this->tx_->isFieldPresent(sfOfferSequence);
+    }
+
+    /**
+     * @brief Get sfFulfillment (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -95,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfCondition (soeOPTIONAL)
+     * @brief Get sfCondition (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -121,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfCredentialIDs (soeOPTIONAL)
+     * @brief Get sfCredentialIDs (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -160,21 +191,15 @@ public:
     /**
      * @brief Construct a new EscrowFinishBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param owner The sfOwner field value.
-     * @param offerSequence The sfOfferSequence field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    EscrowFinishBuilder(
-        SF_ACCOUNT::type::value_type account,
-        std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,
-        std::decay_t<typename SF_UINT32::type::value_type> const& offerSequence,
-        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
+    EscrowFinishBuilder(SF_ACCOUNT::type::value_type account,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
         : TransactionBuilderBase<EscrowFinishBuilder>(ttESCROW_FINISH, account, sequence, fee)
     {
-        setOwner(owner);
-        setOfferSequence(offerSequence);
     }
 
     /**
@@ -194,7 +219,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
@@ -205,7 +230,7 @@ public:
     }
 
     /**
-     * @brief Set sfOfferSequence (soeREQUIRED)
+     * @brief Set sfOfferSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
@@ -216,7 +241,7 @@ public:
     }
 
     /**
-     * @brief Set sfFulfillment (soeOPTIONAL)
+     * @brief Set sfFulfillment (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
@@ -227,7 +252,7 @@ public:
     }
 
     /**
-     * @brief Set sfCondition (soeOPTIONAL)
+     * @brief Set sfCondition (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
@@ -238,7 +263,7 @@ public:
     }
 
     /**
-     * @brief Set sfCredentialIDs (soeOPTIONAL)
+     * @brief Set sfCredentialIDs (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&

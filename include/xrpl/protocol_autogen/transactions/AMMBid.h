@@ -19,9 +19,9 @@ class AMMBidBuilder;
  * @brief Transaction: AMMBid
  *
  * Type: ttAMM_BID (39)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureAMM
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMBidBuilder to construct new transactions.
@@ -48,31 +48,59 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Get sfAsset (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    protocol_autogen::Optional<SF_ISSUE::type::value_type>
     getAsset() const
     {
-        return this->tx_->at(sfAsset);
+        if (hasAsset())
+        {
+            return this->tx_->at(sfAsset);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAsset2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Check if sfAsset is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
-    getAsset2() const
+    bool
+    hasAsset() const
     {
-        return this->tx_->at(sfAsset2);
+        return this->tx_->isFieldPresent(sfAsset);
     }
 
     /**
-     * @brief Get sfBidMin (soeOPTIONAL)
+     * @brief Get sfAsset2 (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ISSUE::type::value_type>
+    getAsset2() const
+    {
+        if (hasAsset2())
+        {
+            return this->tx_->at(sfAsset2);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAsset2 is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAsset2() const
+    {
+        return this->tx_->isFieldPresent(sfAsset2);
+    }
+
+    /**
+     * @brief Get sfBidMin (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -98,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfBidMax (soeOPTIONAL)
+     * @brief Get sfBidMax (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -123,7 +151,7 @@ public:
         return this->tx_->isFieldPresent(sfBidMax);
     }
     /**
-     * @brief Get sfAuthAccounts (soeOPTIONAL)
+     * @brief Get sfAuthAccounts (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -161,19 +189,15 @@ public:
     /**
      * @brief Construct a new AMMBidBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param asset The sfAsset field value.
-     * @param asset2 The sfAsset2 field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     AMMBidBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<AMMBidBuilder>(ttAMM_BID, account, sequence, fee)
     {
-        setAsset(asset);
-        setAsset2(asset2);
     }
 
     /**
@@ -193,8 +217,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAsset (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -205,8 +228,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAsset2 (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -217,7 +239,7 @@ public:
     }
 
     /**
-     * @brief Set sfBidMin (soeOPTIONAL)
+     * @brief Set sfBidMin (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -228,7 +250,7 @@ public:
     }
 
     /**
-     * @brief Set sfBidMax (soeOPTIONAL)
+     * @brief Set sfBidMax (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -239,7 +261,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuthAccounts (soeOPTIONAL)
+     * @brief Set sfAuthAccounts (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&

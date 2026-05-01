@@ -46,70 +46,148 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfOwner (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getOwner() const
     {
-        return this->sle_->at(sfOwner);
+        if (hasOwner())
+            return this->sle_->at(sfOwner);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfSequence (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOwner is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasOwner() const
+    {
+        return this->sle_->isFieldPresent(sfOwner);
+    }
+
+    /**
+     * @brief Get sfSequence (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getSequence() const
     {
-        return this->sle_->at(sfSequence);
+        if (hasSequence())
+            return this->sle_->at(sfSequence);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAcceptedCredentials (soeREQUIRED)
-     * @note This is an untyped field (unknown).
-     * @return The field value.
+     * @brief Check if sfSequence is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    STArray const&
+    bool
+    hasSequence() const
+    {
+        return this->sle_->isFieldPresent(sfSequence);
+    }
+
+    /**
+     * @brief Get sfAcceptedCredentials (SoeRequired)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    std::optional<std::reference_wrapper<STArray const>>
     getAcceptedCredentials() const
     {
-        return this->sle_->getFieldArray(sfAcceptedCredentials);
+        if (this->sle_->isFieldPresent(sfAcceptedCredentials))
+            return this->sle_->getFieldArray(sfAcceptedCredentials);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAcceptedCredentials is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasAcceptedCredentials() const
+    {
+        return this->sle_->isFieldPresent(sfAcceptedCredentials);
+    }
+
+    /**
+     * @brief Get sfOwnerNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getOwnerNode() const
     {
-        return this->sle_->at(sfOwnerNode);
+        if (hasOwnerNode())
+            return this->sle_->at(sfOwnerNode);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOwnerNode is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    bool
+    hasOwnerNode() const
+    {
+        return this->sle_->isFieldPresent(sfOwnerNode);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnID);
+        if (hasPreviousTxnID())
+            return this->sle_->at(sfPreviousTxnID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasPreviousTxnID() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnID);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getPreviousTxnLgrSeq() const
     {
-        return this->sle_->at(sfPreviousTxnLgrSeq);
+        if (hasPreviousTxnLgrSeq())
+            return this->sle_->at(sfPreviousTxnLgrSeq);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPreviousTxnLgrSeq() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -125,22 +203,10 @@ class PermissionedDomainBuilder : public LedgerEntryBuilderBase<PermissionedDoma
 public:
     /**
      * @brief Construct a new PermissionedDomainBuilder with required fields.
-     * @param owner The sfOwner field value.
-     * @param sequence The sfSequence field value.
-     * @param acceptedCredentials The sfAcceptedCredentials field value.
-     * @param ownerNode The sfOwnerNode field value.
-     * @param previousTxnID The sfPreviousTxnID field value.
-     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    PermissionedDomainBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,STArray const& acceptedCredentials,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    PermissionedDomainBuilder()
         : LedgerEntryBuilderBase<PermissionedDomainBuilder>(ltPERMISSIONED_DOMAIN)
     {
-        setOwner(owner);
-        setSequence(sequence);
-        setAcceptedCredentials(acceptedCredentials);
-        setOwnerNode(ownerNode);
-        setPreviousTxnID(previousTxnID);
-        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**
@@ -160,7 +226,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -171,7 +237,7 @@ public:
     }
 
     /**
-     * @brief Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -182,7 +248,7 @@ public:
     }
 
     /**
-     * @brief Set sfAcceptedCredentials (soeREQUIRED)
+     * @brief Set sfAcceptedCredentials (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -193,7 +259,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -204,7 +270,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&
@@ -215,7 +281,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainBuilder&

@@ -19,9 +19,9 @@ class PermissionedDomainSetBuilder;
  * @brief Transaction: PermissionedDomainSet
  *
  * Type: ttPERMISSIONED_DOMAIN_SET (62)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featurePermissionedDomains
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PermissionedDomainSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -73,15 +73,28 @@ public:
         return this->tx_->isFieldPresent(sfDomainID);
     }
     /**
-     * @brief Get sfAcceptedCredentials (soeREQUIRED)
+     * @brief Get sfAcceptedCredentials (SoeRequired)
      * @note This is an untyped field.
-     * @return The field value.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    STArray const&
+    std::optional<std::reference_wrapper<STArray const>>
     getAcceptedCredentials() const
     {
-        return this->tx_->getFieldArray(sfAcceptedCredentials);
+        if (this->tx_->isFieldPresent(sfAcceptedCredentials))
+            return this->tx_->getFieldArray(sfAcceptedCredentials);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAcceptedCredentials is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAcceptedCredentials() const
+    {
+        return this->tx_->isFieldPresent(sfAcceptedCredentials);
     }
 };
 
@@ -98,17 +111,15 @@ public:
     /**
      * @brief Construct a new PermissionedDomainSetBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param acceptedCredentials The sfAcceptedCredentials field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     PermissionedDomainSetBuilder(SF_ACCOUNT::type::value_type account,
-                     STArray const& acceptedCredentials,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<PermissionedDomainSetBuilder>(ttPERMISSIONED_DOMAIN_SET, account, sequence, fee)
     {
-        setAcceptedCredentials(acceptedCredentials);
     }
 
     /**
@@ -128,7 +139,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainSetBuilder&
@@ -139,7 +150,7 @@ public:
     }
 
     /**
-     * @brief Set sfAcceptedCredentials (soeREQUIRED)
+     * @brief Set sfAcceptedCredentials (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainSetBuilder&

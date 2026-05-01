@@ -21,7 +21,7 @@ TEST(TransactionsVaultDepositTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultDeposit"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultDeposit"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,13 +34,13 @@ TEST(TransactionsVaultDepositTests, BuilderSettersRoundTrip)
 
     VaultDepositBuilder builder{
         accountValue,
-        vaultIDValue,
-        amountValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setVaultID(vaultIDValue);
+    builder.setAmount(amountValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -57,19 +57,23 @@ TEST(TransactionsVaultDepositTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = vaultIDValue;
-        auto const actual = tx.getVaultID();
-        expectEqualField(expected, actual, "sfVaultID");
+        auto const actualOpt = tx.getVaultID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
+        expectEqualField(expected, *actualOpt, "sfVaultID");
+        EXPECT_TRUE(tx.hasVaultID());
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = tx.getAmount();
-        expectEqualField(expected, actual, "sfAmount");
+        auto const actualOpt = tx.getAmount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
+        expectEqualField(expected, *actualOpt, "sfAmount");
+        EXPECT_TRUE(tx.hasAmount());
     }
 
-    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -78,7 +82,7 @@ TEST(TransactionsVaultDepositTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultDepositFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultDepositFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -92,12 +96,12 @@ TEST(TransactionsVaultDepositTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     VaultDepositBuilder initialBuilder{
         accountValue,
-        vaultIDValue,
-        amountValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setVaultID(vaultIDValue);
+    initialBuilder.setAmount(amountValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -115,19 +119,21 @@ TEST(TransactionsVaultDepositTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = vaultIDValue;
-        auto const actual = rebuiltTx.getVaultID();
-        expectEqualField(expected, actual, "sfVaultID");
+        auto const actualOpt = rebuiltTx.getVaultID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
+        expectEqualField(expected, *actualOpt, "sfVaultID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = rebuiltTx.getAmount();
-        expectEqualField(expected, actual, "sfAmount");
+        auto const actualOpt = rebuiltTx.getAmount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
+        expectEqualField(expected, *actualOpt, "sfAmount");
     }
 
-    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -135,7 +141,7 @@ TEST(TransactionsVaultDepositTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -149,7 +155,7 @@ TEST(TransactionsVaultDepositTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -158,5 +164,35 @@ TEST(TransactionsVaultDepositTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(VaultDepositBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsVaultDepositTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultDepositNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+
+    VaultDepositBuilder builder{
+        accountValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasVaultID());
+    EXPECT_FALSE(tx.getVaultID().has_value());
+    EXPECT_FALSE(tx.hasAmount());
+    EXPECT_FALSE(tx.getAmount().has_value());
+}
 
 }

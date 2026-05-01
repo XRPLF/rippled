@@ -19,9 +19,9 @@ class EnableAmendmentBuilder;
  * @brief Transaction: EnableAmendment
  *
  * Type: ttAMENDMENT (100)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use EnableAmendmentBuilder to construct new transactions.
@@ -48,25 +48,55 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLedgerSequence (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfLedgerSequence (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getLedgerSequence() const
     {
-        return this->tx_->at(sfLedgerSequence);
+        if (hasLedgerSequence())
+        {
+            return this->tx_->at(sfLedgerSequence);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmendment (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfLedgerSequence is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    bool
+    hasLedgerSequence() const
+    {
+        return this->tx_->isFieldPresent(sfLedgerSequence);
+    }
+
+    /**
+     * @brief Get sfAmendment (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getAmendment() const
     {
-        return this->tx_->at(sfAmendment);
+        if (hasAmendment())
+        {
+            return this->tx_->at(sfAmendment);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmendment is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmendment() const
+    {
+        return this->tx_->isFieldPresent(sfAmendment);
     }
 };
 
@@ -83,19 +113,15 @@ public:
     /**
      * @brief Construct a new EnableAmendmentBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param ledgerSequence The sfLedgerSequence field value.
-     * @param amendment The sfAmendment field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     EnableAmendmentBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence,                     std::decay_t<typename SF_UINT256::type::value_type> const& amendment,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<EnableAmendmentBuilder>(ttAMENDMENT, account, sequence, fee)
     {
-        setLedgerSequence(ledgerSequence);
-        setAmendment(amendment);
     }
 
     /**
@@ -115,7 +141,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLedgerSequence (soeREQUIRED)
+     * @brief Set sfLedgerSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EnableAmendmentBuilder&
@@ -126,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmendment (soeREQUIRED)
+     * @brief Set sfAmendment (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EnableAmendmentBuilder&

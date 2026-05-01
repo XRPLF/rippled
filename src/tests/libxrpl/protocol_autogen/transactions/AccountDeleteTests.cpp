@@ -21,7 +21,7 @@ TEST(TransactionsAccountDeleteTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testAccountDelete"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testAccountDelete"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -35,12 +35,12 @@ TEST(TransactionsAccountDeleteTests, BuilderSettersRoundTrip)
 
     AccountDeleteBuilder builder{
         accountValue,
-        destinationValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setDestination(destinationValue);
     builder.setDestinationTag(destinationTagValue);
     builder.setCredentialIDs(credentialIDsValue);
 
@@ -59,13 +59,15 @@ TEST(TransactionsAccountDeleteTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actual = tx.getDestination();
-        expectEqualField(expected, actual, "sfDestination");
+        auto const actualOpt = tx.getDestination();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
+        expectEqualField(expected, *actualOpt, "sfDestination");
+        EXPECT_TRUE(tx.hasDestination());
     }
 
-    // Verify optional fields
     {
         auto const& expected = destinationTagValue;
         auto const actualOpt = tx.getDestinationTag();
@@ -90,7 +92,7 @@ TEST(TransactionsAccountDeleteTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testAccountDeleteFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testAccountDeleteFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -105,11 +107,11 @@ TEST(TransactionsAccountDeleteTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     AccountDeleteBuilder initialBuilder{
         accountValue,
-        destinationValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setDestination(destinationValue);
     initialBuilder.setDestinationTag(destinationTagValue);
     initialBuilder.setCredentialIDs(credentialIDsValue);
 
@@ -129,13 +131,14 @@ TEST(TransactionsAccountDeleteTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actual = rebuiltTx.getDestination();
-        expectEqualField(expected, actual, "sfDestination");
+        auto const actualOpt = rebuiltTx.getDestination();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
+        expectEqualField(expected, *actualOpt, "sfDestination");
     }
 
-    // Verify optional fields
     {
         auto const& expected = destinationTagValue;
         auto const actualOpt = rebuiltTx.getDestinationTag();
@@ -157,7 +160,7 @@ TEST(TransactionsAccountDeleteTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -171,7 +174,7 @@ TEST(TransactionsAccountDeleteTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -185,7 +188,7 @@ TEST(TransactionsAccountDeleteTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testAccountDeleteNullopt"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testAccountDeleteNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -193,11 +196,9 @@ TEST(TransactionsAccountDeleteTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
-    auto const destinationValue = canonical_ACCOUNT();
 
     AccountDeleteBuilder builder{
         accountValue,
-        destinationValue,
         sequenceValue,
         feeValue
     };
@@ -207,6 +208,8 @@ TEST(TransactionsAccountDeleteTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasDestination());
+    EXPECT_FALSE(tx.getDestination().has_value());
     EXPECT_FALSE(tx.hasDestinationTag());
     EXPECT_FALSE(tx.getDestinationTag().has_value());
     EXPECT_FALSE(tx.hasCredentialIDs());

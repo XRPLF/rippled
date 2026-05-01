@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/LedgerEntryBase.h>
 #include <xrpl/protocol_autogen/LedgerEntryBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::ledger_entries {
 
@@ -33,7 +33,8 @@ public:
      * @brief Construct a FeeSettings ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit FeeSettings(std::shared_ptr<SLE const> sle) : LedgerEntryBase(std::move(sle))
+    explicit FeeSettings(std::shared_ptr<SLE const> sle)
+        : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
         if (sle_->getType() != entryType)
@@ -45,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfBaseFee (soeOPTIONAL)
+     * @brief Get sfBaseFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -69,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfReferenceFeeUnits (soeOPTIONAL)
+     * @brief Get sfReferenceFeeUnits (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -93,7 +94,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveBase (soeOPTIONAL)
+     * @brief Get sfReserveBase (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -117,7 +118,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveIncrement (soeOPTIONAL)
+     * @brief Get sfReserveIncrement (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -141,7 +142,7 @@ public:
     }
 
     /**
-     * @brief Get sfBaseFeeDrops (soeOPTIONAL)
+     * @brief Get sfBaseFeeDrops (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -165,7 +166,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveBaseDrops (soeOPTIONAL)
+     * @brief Get sfReserveBaseDrops (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -189,7 +190,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveIncrementDrops (soeOPTIONAL)
+     * @brief Get sfReserveIncrementDrops (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -213,7 +214,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeOPTIONAL)
+     * @brief Get sfPreviousTxnID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -237,7 +238,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -274,7 +275,8 @@ public:
     /**
      * @brief Construct a new FeeSettingsBuilder with required fields.
      */
-    FeeSettingsBuilder() : LedgerEntryBuilderBase<FeeSettingsBuilder>(ltFEE_SETTINGS)
+    FeeSettingsBuilder()
+        : LedgerEntryBuilderBase<FeeSettingsBuilder>(ltFEE_SETTINGS)
     {
     }
 
@@ -295,7 +297,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfBaseFee (soeOPTIONAL)
+     * @brief Set sfBaseFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
@@ -306,7 +308,7 @@ public:
     }
 
     /**
-     * @brief Set sfReferenceFeeUnits (soeOPTIONAL)
+     * @brief Set sfReferenceFeeUnits (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
@@ -317,7 +319,7 @@ public:
     }
 
     /**
-     * @brief Set sfReserveBase (soeOPTIONAL)
+     * @brief Set sfReserveBase (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
@@ -328,7 +330,7 @@ public:
     }
 
     /**
-     * @brief Set sfReserveIncrement (soeOPTIONAL)
+     * @brief Set sfReserveIncrement (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
@@ -339,7 +341,7 @@ public:
     }
 
     /**
-     * @brief Set sfBaseFeeDrops (soeOPTIONAL)
+     * @brief Set sfBaseFeeDrops (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
@@ -350,7 +352,7 @@ public:
     }
 
     /**
-     * @brief Set sfReserveBaseDrops (soeOPTIONAL)
+     * @brief Set sfReserveBaseDrops (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
@@ -361,7 +363,7 @@ public:
     }
 
     /**
-     * @brief Set sfReserveIncrementDrops (soeOPTIONAL)
+     * @brief Set sfReserveIncrementDrops (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
@@ -372,7 +374,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeOPTIONAL)
+     * @brief Set sfPreviousTxnID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&
@@ -383,7 +385,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Set sfPreviousTxnLgrSeq (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     FeeSettingsBuilder&

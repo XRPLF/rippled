@@ -19,9 +19,9 @@ class PaymentChannelCreateBuilder;
  * @brief Transaction: PaymentChannelCreate
  *
  * Type: ttPAYCHAN_CREATE (13)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PaymentChannelCreateBuilder to construct new transactions.
@@ -48,51 +48,111 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfDestination (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getDestination() const
     {
-        return this->tx_->at(sfDestination);
+        if (hasDestination())
+        {
+            return this->tx_->at(sfDestination);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfDestination is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    bool
+    hasDestination() const
+    {
+        return this->tx_->isFieldPresent(sfDestination);
+    }
+
+    /**
+     * @brief Get sfAmount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getAmount() const
     {
-        return this->tx_->at(sfAmount);
+        if (hasAmount())
+        {
+            return this->tx_->at(sfAmount);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfSettleDelay (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasAmount() const
+    {
+        return this->tx_->isFieldPresent(sfAmount);
+    }
+
+    /**
+     * @brief Get sfSettleDelay (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getSettleDelay() const
     {
-        return this->tx_->at(sfSettleDelay);
+        if (hasSettleDelay())
+        {
+            return this->tx_->at(sfSettleDelay);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPublicKey (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfSettleDelay is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
-    getPublicKey() const
+    bool
+    hasSettleDelay() const
     {
-        return this->tx_->at(sfPublicKey);
+        return this->tx_->isFieldPresent(sfSettleDelay);
     }
 
     /**
-     * @brief Get sfCancelAfter (soeOPTIONAL)
+     * @brief Get sfPublicKey (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getPublicKey() const
+    {
+        if (hasPublicKey())
+        {
+            return this->tx_->at(sfPublicKey);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPublicKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPublicKey() const
+    {
+        return this->tx_->isFieldPresent(sfPublicKey);
+    }
+
+    /**
+     * @brief Get sfCancelAfter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -118,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -157,23 +217,15 @@ public:
     /**
      * @brief Construct a new PaymentChannelCreateBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param destination The sfDestination field value.
-     * @param amount The sfAmount field value.
-     * @param settleDelay The sfSettleDelay field value.
-     * @param publicKey The sfPublicKey field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     PaymentChannelCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_UINT32::type::value_type> const& settleDelay,                     std::decay_t<typename SF_VL::type::value_type> const& publicKey,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<PaymentChannelCreateBuilder>(ttPAYCHAN_CREATE, account, sequence, fee)
     {
-        setDestination(destination);
-        setAmount(amount);
-        setSettleDelay(settleDelay);
-        setPublicKey(publicKey);
     }
 
     /**
@@ -193,7 +245,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -204,7 +256,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -215,7 +267,7 @@ public:
     }
 
     /**
-     * @brief Set sfSettleDelay (soeREQUIRED)
+     * @brief Set sfSettleDelay (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -226,7 +278,7 @@ public:
     }
 
     /**
-     * @brief Set sfPublicKey (soeREQUIRED)
+     * @brief Set sfPublicKey (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -237,7 +289,7 @@ public:
     }
 
     /**
-     * @brief Set sfCancelAfter (soeOPTIONAL)
+     * @brief Set sfCancelAfter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -248,7 +300,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&

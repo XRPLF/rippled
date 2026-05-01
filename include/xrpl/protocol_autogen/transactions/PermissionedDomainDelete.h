@@ -19,9 +19,9 @@ class PermissionedDomainDeleteBuilder;
  * @brief Transaction: PermissionedDomainDelete
  *
  * Type: ttPERMISSIONED_DOMAIN_DELETE (63)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featurePermissionedDomains
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PermissionedDomainDeleteBuilder to construct new transactions.
@@ -48,14 +48,29 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDomainID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfDomainID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getDomainID() const
     {
-        return this->tx_->at(sfDomainID);
+        if (hasDomainID())
+        {
+            return this->tx_->at(sfDomainID);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDomainID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDomainID() const
+    {
+        return this->tx_->isFieldPresent(sfDomainID);
     }
 };
 
@@ -72,17 +87,15 @@ public:
     /**
      * @brief Construct a new PermissionedDomainDeleteBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param domainID The sfDomainID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     PermissionedDomainDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& domainID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<PermissionedDomainDeleteBuilder>(ttPERMISSIONED_DOMAIN_DELETE, account, sequence, fee)
     {
-        setDomainID(domainID);
     }
 
     /**
@@ -102,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDomainID (soeREQUIRED)
+     * @brief Set sfDomainID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainDeleteBuilder&

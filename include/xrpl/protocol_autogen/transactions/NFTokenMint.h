@@ -19,9 +19,9 @@ class NFTokenMintBuilder;
  * @brief Transaction: NFTokenMint
  *
  * Type: ttNFTOKEN_MINT (25)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: changeNFTCounts
+ * Privileges: ChangeNftCounts
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenMintBuilder to construct new transactions.
@@ -48,18 +48,33 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfNFTokenTaxon (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfNFTokenTaxon (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getNFTokenTaxon() const
     {
-        return this->tx_->at(sfNFTokenTaxon);
+        if (hasNFTokenTaxon())
+        {
+            return this->tx_->at(sfNFTokenTaxon);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfTransferFee (soeOPTIONAL)
+     * @brief Check if sfNFTokenTaxon is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasNFTokenTaxon() const
+    {
+        return this->tx_->isFieldPresent(sfNFTokenTaxon);
+    }
+
+    /**
+     * @brief Get sfTransferFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfIssuer (soeOPTIONAL)
+     * @brief Get sfIssuer (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -111,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -137,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
+     * @brief Get sfAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -163,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestination (soeOPTIONAL)
+     * @brief Get sfDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -189,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -228,17 +243,15 @@ public:
     /**
      * @brief Construct a new NFTokenMintBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param nFTokenTaxon The sfNFTokenTaxon field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     NFTokenMintBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& nFTokenTaxon,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenMintBuilder>(ttNFTOKEN_MINT, account, sequence, fee)
     {
-        setNFTokenTaxon(nFTokenTaxon);
     }
 
     /**
@@ -258,7 +271,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfNFTokenTaxon (soeREQUIRED)
+     * @brief Set sfNFTokenTaxon (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -269,7 +282,7 @@ public:
     }
 
     /**
-     * @brief Set sfTransferFee (soeOPTIONAL)
+     * @brief Set sfTransferFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -280,7 +293,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuer (soeOPTIONAL)
+     * @brief Set sfIssuer (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -291,7 +304,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -302,7 +315,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -313,7 +326,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -324,7 +337,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&

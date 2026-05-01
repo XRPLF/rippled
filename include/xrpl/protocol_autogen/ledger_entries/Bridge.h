@@ -46,29 +46,55 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfAccount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getAccount() const
     {
-        return this->sle_->at(sfAccount);
+        if (hasAccount())
+            return this->sle_->at(sfAccount);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfSignatureReward (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfAccount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
-    getSignatureReward() const
+    bool
+    hasAccount() const
     {
-        return this->sle_->at(sfSignatureReward);
+        return this->sle_->isFieldPresent(sfAccount);
     }
 
     /**
-     * @brief Get sfMinAccountCreateAmount (soeOPTIONAL)
+     * @brief Get sfSignatureReward (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getSignatureReward() const
+    {
+        if (hasSignatureReward())
+            return this->sle_->at(sfSignatureReward);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSignatureReward is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSignatureReward() const
+    {
+        return this->sle_->isFieldPresent(sfSignatureReward);
+    }
+
+    /**
+     * @brief Get sfMinAccountCreateAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -92,80 +118,171 @@ public:
     }
 
     /**
-     * @brief Get sfXChainBridge (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfXChainBridge (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_XCHAIN_BRIDGE::type::value_type
+    protocol_autogen::Optional<SF_XCHAIN_BRIDGE::type::value_type>
     getXChainBridge() const
     {
-        return this->sle_->at(sfXChainBridge);
+        if (hasXChainBridge())
+            return this->sle_->at(sfXChainBridge);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfXChainClaimID (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfXChainBridge is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasXChainBridge() const
+    {
+        return this->sle_->isFieldPresent(sfXChainBridge);
+    }
+
+    /**
+     * @brief Get sfXChainClaimID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getXChainClaimID() const
     {
-        return this->sle_->at(sfXChainClaimID);
+        if (hasXChainClaimID())
+            return this->sle_->at(sfXChainClaimID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfXChainAccountCreateCount (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfXChainClaimID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasXChainClaimID() const
+    {
+        return this->sle_->isFieldPresent(sfXChainClaimID);
+    }
+
+    /**
+     * @brief Get sfXChainAccountCreateCount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getXChainAccountCreateCount() const
     {
-        return this->sle_->at(sfXChainAccountCreateCount);
+        if (hasXChainAccountCreateCount())
+            return this->sle_->at(sfXChainAccountCreateCount);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfXChainAccountClaimCount (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfXChainAccountCreateCount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasXChainAccountCreateCount() const
+    {
+        return this->sle_->isFieldPresent(sfXChainAccountCreateCount);
+    }
+
+    /**
+     * @brief Get sfXChainAccountClaimCount (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getXChainAccountClaimCount() const
     {
-        return this->sle_->at(sfXChainAccountClaimCount);
+        if (hasXChainAccountClaimCount())
+            return this->sle_->at(sfXChainAccountClaimCount);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfXChainAccountClaimCount is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasXChainAccountClaimCount() const
+    {
+        return this->sle_->isFieldPresent(sfXChainAccountClaimCount);
+    }
+
+    /**
+     * @brief Get sfOwnerNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getOwnerNode() const
     {
-        return this->sle_->at(sfOwnerNode);
+        if (hasOwnerNode())
+            return this->sle_->at(sfOwnerNode);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOwnerNode is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    bool
+    hasOwnerNode() const
+    {
+        return this->sle_->isFieldPresent(sfOwnerNode);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnID);
+        if (hasPreviousTxnID())
+            return this->sle_->at(sfPreviousTxnID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasPreviousTxnID() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnID);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getPreviousTxnLgrSeq() const
     {
-        return this->sle_->at(sfPreviousTxnLgrSeq);
+        if (hasPreviousTxnLgrSeq())
+            return this->sle_->at(sfPreviousTxnLgrSeq);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPreviousTxnLgrSeq() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -181,28 +298,10 @@ class BridgeBuilder : public LedgerEntryBuilderBase<BridgeBuilder>
 public:
     /**
      * @brief Construct a new BridgeBuilder with required fields.
-     * @param account The sfAccount field value.
-     * @param signatureReward The sfSignatureReward field value.
-     * @param xChainBridge The sfXChainBridge field value.
-     * @param xChainClaimID The sfXChainClaimID field value.
-     * @param xChainAccountCreateCount The sfXChainAccountCreateCount field value.
-     * @param xChainAccountClaimCount The sfXChainAccountClaimCount field value.
-     * @param ownerNode The sfOwnerNode field value.
-     * @param previousTxnID The sfPreviousTxnID field value.
-     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    BridgeBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount,std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountClaimCount,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    BridgeBuilder()
         : LedgerEntryBuilderBase<BridgeBuilder>(ltBRIDGE)
     {
-        setAccount(account);
-        setSignatureReward(signatureReward);
-        setXChainBridge(xChainBridge);
-        setXChainClaimID(xChainClaimID);
-        setXChainAccountCreateCount(xChainAccountCreateCount);
-        setXChainAccountClaimCount(xChainAccountClaimCount);
-        setOwnerNode(ownerNode);
-        setPreviousTxnID(previousTxnID);
-        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**
@@ -222,7 +321,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -233,7 +332,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignatureReward (soeREQUIRED)
+     * @brief Set sfSignatureReward (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -244,7 +343,7 @@ public:
     }
 
     /**
-     * @brief Set sfMinAccountCreateAmount (soeOPTIONAL)
+     * @brief Set sfMinAccountCreateAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -255,7 +354,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -266,7 +365,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainClaimID (soeREQUIRED)
+     * @brief Set sfXChainClaimID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -277,7 +376,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainAccountCreateCount (soeREQUIRED)
+     * @brief Set sfXChainAccountCreateCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -288,7 +387,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainAccountClaimCount (soeREQUIRED)
+     * @brief Set sfXChainAccountClaimCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -299,7 +398,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -310,7 +409,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -321,7 +420,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&

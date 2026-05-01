@@ -19,9 +19,9 @@ class MPTokenIssuanceDestroyBuilder;
  * @brief Transaction: MPTokenIssuanceDestroy
  *
  * Type: ttMPTOKEN_ISSUANCE_DESTROY (55)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureMPTokensV1
- * Privileges: destroyMPTIssuance
+ * Privileges: DestroyMptIssuance
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MPTokenIssuanceDestroyBuilder to construct new transactions.
@@ -48,14 +48,29 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfMPTokenIssuanceID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT192::type::value_type
+    protocol_autogen::Optional<SF_UINT192::type::value_type>
     getMPTokenIssuanceID() const
     {
-        return this->tx_->at(sfMPTokenIssuanceID);
+        if (hasMPTokenIssuanceID())
+        {
+            return this->tx_->at(sfMPTokenIssuanceID);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfMPTokenIssuanceID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasMPTokenIssuanceID() const
+    {
+        return this->tx_->isFieldPresent(sfMPTokenIssuanceID);
     }
 };
 
@@ -72,17 +87,15 @@ public:
     /**
      * @brief Construct a new MPTokenIssuanceDestroyBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param mPTokenIssuanceID The sfMPTokenIssuanceID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     MPTokenIssuanceDestroyBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<MPTokenIssuanceDestroyBuilder>(ttMPTOKEN_ISSUANCE_DESTROY, account, sequence, fee)
     {
-        setMPTokenIssuanceID(mPTokenIssuanceID);
     }
 
     /**
@@ -102,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceDestroyBuilder&

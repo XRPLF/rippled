@@ -21,7 +21,7 @@ TEST(TransactionsUNLModifyTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testUNLModify"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testUNLModify"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -35,14 +35,14 @@ TEST(TransactionsUNLModifyTests, BuilderSettersRoundTrip)
 
     UNLModifyBuilder builder{
         accountValue,
-        uNLModifyDisablingValue,
-        ledgerSequenceValue,
-        uNLModifyValidatorValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setUNLModifyDisabling(uNLModifyDisablingValue);
+    builder.setLedgerSequence(ledgerSequenceValue);
+    builder.setUNLModifyValidator(uNLModifyValidatorValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -59,25 +59,31 @@ TEST(TransactionsUNLModifyTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = uNLModifyDisablingValue;
-        auto const actual = tx.getUNLModifyDisabling();
-        expectEqualField(expected, actual, "sfUNLModifyDisabling");
+        auto const actualOpt = tx.getUNLModifyDisabling();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfUNLModifyDisabling should be present";
+        expectEqualField(expected, *actualOpt, "sfUNLModifyDisabling");
+        EXPECT_TRUE(tx.hasUNLModifyDisabling());
     }
 
     {
         auto const& expected = ledgerSequenceValue;
-        auto const actual = tx.getLedgerSequence();
-        expectEqualField(expected, actual, "sfLedgerSequence");
+        auto const actualOpt = tx.getLedgerSequence();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLedgerSequence should be present";
+        expectEqualField(expected, *actualOpt, "sfLedgerSequence");
+        EXPECT_TRUE(tx.hasLedgerSequence());
     }
 
     {
         auto const& expected = uNLModifyValidatorValue;
-        auto const actual = tx.getUNLModifyValidator();
-        expectEqualField(expected, actual, "sfUNLModifyValidator");
+        auto const actualOpt = tx.getUNLModifyValidator();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfUNLModifyValidator should be present";
+        expectEqualField(expected, *actualOpt, "sfUNLModifyValidator");
+        EXPECT_TRUE(tx.hasUNLModifyValidator());
     }
 
-    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -86,7 +92,7 @@ TEST(TransactionsUNLModifyTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testUNLModifyFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testUNLModifyFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -101,13 +107,13 @@ TEST(TransactionsUNLModifyTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     UNLModifyBuilder initialBuilder{
         accountValue,
-        uNLModifyDisablingValue,
-        ledgerSequenceValue,
-        uNLModifyValidatorValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setUNLModifyDisabling(uNLModifyDisablingValue);
+    initialBuilder.setLedgerSequence(ledgerSequenceValue);
+    initialBuilder.setUNLModifyValidator(uNLModifyValidatorValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -125,25 +131,28 @@ TEST(TransactionsUNLModifyTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = uNLModifyDisablingValue;
-        auto const actual = rebuiltTx.getUNLModifyDisabling();
-        expectEqualField(expected, actual, "sfUNLModifyDisabling");
+        auto const actualOpt = rebuiltTx.getUNLModifyDisabling();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfUNLModifyDisabling should be present";
+        expectEqualField(expected, *actualOpt, "sfUNLModifyDisabling");
     }
 
     {
         auto const& expected = ledgerSequenceValue;
-        auto const actual = rebuiltTx.getLedgerSequence();
-        expectEqualField(expected, actual, "sfLedgerSequence");
+        auto const actualOpt = rebuiltTx.getLedgerSequence();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLedgerSequence should be present";
+        expectEqualField(expected, *actualOpt, "sfLedgerSequence");
     }
 
     {
         auto const& expected = uNLModifyValidatorValue;
-        auto const actual = rebuiltTx.getUNLModifyValidator();
-        expectEqualField(expected, actual, "sfUNLModifyValidator");
+        auto const actualOpt = rebuiltTx.getUNLModifyValidator();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfUNLModifyValidator should be present";
+        expectEqualField(expected, *actualOpt, "sfUNLModifyValidator");
     }
 
-    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -151,7 +160,7 @@ TEST(TransactionsUNLModifyTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -165,7 +174,7 @@ TEST(TransactionsUNLModifyTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -174,5 +183,37 @@ TEST(TransactionsUNLModifyTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(UNLModifyBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsUNLModifyTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testUNLModifyNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+
+    UNLModifyBuilder builder{
+        accountValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasUNLModifyDisabling());
+    EXPECT_FALSE(tx.getUNLModifyDisabling().has_value());
+    EXPECT_FALSE(tx.hasLedgerSequence());
+    EXPECT_FALSE(tx.getLedgerSequence().has_value());
+    EXPECT_FALSE(tx.hasUNLModifyValidator());
+    EXPECT_FALSE(tx.getUNLModifyValidator().has_value());
+}
 
 }

@@ -19,9 +19,9 @@ class BatchBuilder;
  * @brief Transaction: Batch
  *
  * Type: ttBATCH (71)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureBatch
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use BatchBuilder to construct new transactions.
@@ -47,18 +47,31 @@ public:
 
     // Transaction-specific field getters
     /**
-     * @brief Get sfRawTransactions (soeREQUIRED)
+     * @brief Get sfRawTransactions (SoeRequired)
      * @note This is an untyped field.
-     * @return The field value.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    STArray const&
+    std::optional<std::reference_wrapper<STArray const>>
     getRawTransactions() const
     {
-        return this->tx_->getFieldArray(sfRawTransactions);
+        if (this->tx_->isFieldPresent(sfRawTransactions))
+            return this->tx_->getFieldArray(sfRawTransactions);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRawTransactions is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRawTransactions() const
+    {
+        return this->tx_->isFieldPresent(sfRawTransactions);
     }
     /**
-     * @brief Get sfBatchSigners (soeOPTIONAL)
+     * @brief Get sfBatchSigners (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -96,17 +109,15 @@ public:
     /**
      * @brief Construct a new BatchBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param rawTransactions The sfRawTransactions field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     BatchBuilder(SF_ACCOUNT::type::value_type account,
-                     STArray const& rawTransactions,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<BatchBuilder>(ttBATCH, account, sequence, fee)
     {
-        setRawTransactions(rawTransactions);
     }
 
     /**
@@ -126,7 +137,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfRawTransactions (soeREQUIRED)
+     * @brief Set sfRawTransactions (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BatchBuilder&
@@ -137,7 +148,7 @@ public:
     }
 
     /**
-     * @brief Set sfBatchSigners (soeOPTIONAL)
+     * @brief Set sfBatchSigners (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     BatchBuilder&

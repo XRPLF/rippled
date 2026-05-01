@@ -19,9 +19,9 @@ class AMMClawbackBuilder;
  * @brief Transaction: AMMClawback
  *
  * Type: ttAMM_CLAWBACK (31)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureAMMClawback
- * Privileges: mayDeleteAcct | overrideFreeze | mayAuthorizeMPT
+ * Privileges: MayDeleteAcct | OverrideFreeze | MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMClawbackBuilder to construct new transactions.
@@ -48,43 +48,85 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfHolder (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfHolder (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getHolder() const
     {
-        return this->tx_->at(sfHolder);
+        if (hasHolder())
+        {
+            return this->tx_->at(sfHolder);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Check if sfHolder is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    bool
+    hasHolder() const
+    {
+        return this->tx_->isFieldPresent(sfHolder);
+    }
+
+    /**
+     * @brief Get sfAsset (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ISSUE::type::value_type>
     getAsset() const
     {
-        return this->tx_->at(sfAsset);
+        if (hasAsset())
+        {
+            return this->tx_->at(sfAsset);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAsset2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
-     * @return The field value.
+     * @brief Check if sfAsset is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
-    getAsset2() const
+    bool
+    hasAsset() const
     {
-        return this->tx_->at(sfAsset2);
+        return this->tx_->isFieldPresent(sfAsset);
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Get sfAsset2 (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ISSUE::type::value_type>
+    getAsset2() const
+    {
+        if (hasAsset2())
+        {
+            return this->tx_->at(sfAsset2);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAsset2 is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAsset2() const
+    {
+        return this->tx_->isFieldPresent(sfAsset2);
+    }
+
+    /**
+     * @brief Get sfAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -123,21 +165,15 @@ public:
     /**
      * @brief Construct a new AMMClawbackBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param holder The sfHolder field value.
-     * @param asset The sfAsset field value.
-     * @param asset2 The sfAsset2 field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     AMMClawbackBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<AMMClawbackBuilder>(ttAMM_CLAWBACK, account, sequence, fee)
     {
-        setHolder(holder);
-        setAsset(asset);
-        setAsset2(asset2);
     }
 
     /**
@@ -157,7 +193,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfHolder (soeREQUIRED)
+     * @brief Set sfHolder (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMClawbackBuilder&
@@ -168,8 +204,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAsset (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMClawbackBuilder&
@@ -180,8 +215,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAsset2 (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMClawbackBuilder&
@@ -192,8 +226,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @brief Set sfAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMClawbackBuilder&

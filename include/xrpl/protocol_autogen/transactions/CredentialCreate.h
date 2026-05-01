@@ -19,9 +19,9 @@ class CredentialCreateBuilder;
  * @brief Transaction: CredentialCreate
  *
  * Type: ttCREDENTIAL_CREATE (58)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureCredentials
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CredentialCreateBuilder to construct new transactions.
@@ -48,29 +48,59 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfSubject (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfSubject (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
     getSubject() const
     {
-        return this->tx_->at(sfSubject);
+        if (hasSubject())
+        {
+            return this->tx_->at(sfSubject);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfCredentialType (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfSubject is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
-    getCredentialType() const
+    bool
+    hasSubject() const
     {
-        return this->tx_->at(sfCredentialType);
+        return this->tx_->isFieldPresent(sfSubject);
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfCredentialType (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getCredentialType() const
+    {
+        if (hasCredentialType())
+        {
+            return this->tx_->at(sfCredentialType);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCredentialType is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCredentialType() const
+    {
+        return this->tx_->isFieldPresent(sfCredentialType);
+    }
+
+    /**
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -96,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -135,19 +165,15 @@ public:
     /**
      * @brief Construct a new CredentialCreateBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param subject The sfSubject field value.
-     * @param credentialType The sfCredentialType field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     CredentialCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,                     std::decay_t<typename SF_VL::type::value_type> const& credentialType,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<CredentialCreateBuilder>(ttCREDENTIAL_CREATE, account, sequence, fee)
     {
-        setSubject(subject);
-        setCredentialType(credentialType);
     }
 
     /**
@@ -167,7 +193,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfSubject (soeREQUIRED)
+     * @brief Set sfSubject (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
@@ -178,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Set sfCredentialType (soeREQUIRED)
+     * @brief Set sfCredentialType (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
@@ -189,7 +215,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&
@@ -200,7 +226,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CredentialCreateBuilder&

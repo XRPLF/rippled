@@ -21,7 +21,7 @@ TEST(TransactionsOfferCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testOfferCreate"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testOfferCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -37,13 +37,13 @@ TEST(TransactionsOfferCreateTests, BuilderSettersRoundTrip)
 
     OfferCreateBuilder builder{
         accountValue,
-        takerPaysValue,
-        takerGetsValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setTakerPays(takerPaysValue);
+    builder.setTakerGets(takerGetsValue);
     builder.setExpiration(expirationValue);
     builder.setOfferSequence(offerSequenceValue);
     builder.setDomainID(domainIDValue);
@@ -63,19 +63,23 @@ TEST(TransactionsOfferCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = takerPaysValue;
-        auto const actual = tx.getTakerPays();
-        expectEqualField(expected, actual, "sfTakerPays");
+        auto const actualOpt = tx.getTakerPays();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTakerPays should be present";
+        expectEqualField(expected, *actualOpt, "sfTakerPays");
+        EXPECT_TRUE(tx.hasTakerPays());
     }
 
     {
         auto const& expected = takerGetsValue;
-        auto const actual = tx.getTakerGets();
-        expectEqualField(expected, actual, "sfTakerGets");
+        auto const actualOpt = tx.getTakerGets();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTakerGets should be present";
+        expectEqualField(expected, *actualOpt, "sfTakerGets");
+        EXPECT_TRUE(tx.hasTakerGets());
     }
 
-    // Verify optional fields
     {
         auto const& expected = expirationValue;
         auto const actualOpt = tx.getExpiration();
@@ -108,7 +112,7 @@ TEST(TransactionsOfferCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testOfferCreateFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testOfferCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -125,12 +129,12 @@ TEST(TransactionsOfferCreateTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     OfferCreateBuilder initialBuilder{
         accountValue,
-        takerPaysValue,
-        takerGetsValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setTakerPays(takerPaysValue);
+    initialBuilder.setTakerGets(takerGetsValue);
     initialBuilder.setExpiration(expirationValue);
     initialBuilder.setOfferSequence(offerSequenceValue);
     initialBuilder.setDomainID(domainIDValue);
@@ -151,19 +155,21 @@ TEST(TransactionsOfferCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = takerPaysValue;
-        auto const actual = rebuiltTx.getTakerPays();
-        expectEqualField(expected, actual, "sfTakerPays");
+        auto const actualOpt = rebuiltTx.getTakerPays();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTakerPays should be present";
+        expectEqualField(expected, *actualOpt, "sfTakerPays");
     }
 
     {
         auto const& expected = takerGetsValue;
-        auto const actual = rebuiltTx.getTakerGets();
-        expectEqualField(expected, actual, "sfTakerGets");
+        auto const actualOpt = rebuiltTx.getTakerGets();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTakerGets should be present";
+        expectEqualField(expected, *actualOpt, "sfTakerGets");
     }
 
-    // Verify optional fields
     {
         auto const& expected = expirationValue;
         auto const actualOpt = rebuiltTx.getExpiration();
@@ -192,7 +198,7 @@ TEST(TransactionsOfferCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -206,7 +212,7 @@ TEST(TransactionsOfferCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -220,7 +226,7 @@ TEST(TransactionsOfferCreateTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testOfferCreateNullopt"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testOfferCreateNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -228,13 +234,9 @@ TEST(TransactionsOfferCreateTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
-    auto const takerPaysValue = canonical_AMOUNT();
-    auto const takerGetsValue = canonical_AMOUNT();
 
     OfferCreateBuilder builder{
         accountValue,
-        takerPaysValue,
-        takerGetsValue,
         sequenceValue,
         feeValue
     };
@@ -244,6 +246,10 @@ TEST(TransactionsOfferCreateTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasTakerPays());
+    EXPECT_FALSE(tx.getTakerPays().has_value());
+    EXPECT_FALSE(tx.hasTakerGets());
+    EXPECT_FALSE(tx.getTakerGets().has_value());
     EXPECT_FALSE(tx.hasExpiration());
     EXPECT_FALSE(tx.getExpiration().has_value());
     EXPECT_FALSE(tx.hasOfferSequence());

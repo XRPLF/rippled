@@ -21,7 +21,7 @@ TEST(TransactionsCredentialAcceptTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testCredentialAccept"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCredentialAccept"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,13 +34,13 @@ TEST(TransactionsCredentialAcceptTests, BuilderSettersRoundTrip)
 
     CredentialAcceptBuilder builder{
         accountValue,
-        issuerValue,
-        credentialTypeValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setIssuer(issuerValue);
+    builder.setCredentialType(credentialTypeValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -57,19 +57,23 @@ TEST(TransactionsCredentialAcceptTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = issuerValue;
-        auto const actual = tx.getIssuer();
-        expectEqualField(expected, actual, "sfIssuer");
+        auto const actualOpt = tx.getIssuer();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfIssuer should be present";
+        expectEqualField(expected, *actualOpt, "sfIssuer");
+        EXPECT_TRUE(tx.hasIssuer());
     }
 
     {
         auto const& expected = credentialTypeValue;
-        auto const actual = tx.getCredentialType();
-        expectEqualField(expected, actual, "sfCredentialType");
+        auto const actualOpt = tx.getCredentialType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialType should be present";
+        expectEqualField(expected, *actualOpt, "sfCredentialType");
+        EXPECT_TRUE(tx.hasCredentialType());
     }
 
-    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -78,7 +82,7 @@ TEST(TransactionsCredentialAcceptTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testCredentialAcceptFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCredentialAcceptFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -92,12 +96,12 @@ TEST(TransactionsCredentialAcceptTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     CredentialAcceptBuilder initialBuilder{
         accountValue,
-        issuerValue,
-        credentialTypeValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setIssuer(issuerValue);
+    initialBuilder.setCredentialType(credentialTypeValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -115,19 +119,21 @@ TEST(TransactionsCredentialAcceptTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = issuerValue;
-        auto const actual = rebuiltTx.getIssuer();
-        expectEqualField(expected, actual, "sfIssuer");
+        auto const actualOpt = rebuiltTx.getIssuer();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfIssuer should be present";
+        expectEqualField(expected, *actualOpt, "sfIssuer");
     }
 
     {
         auto const& expected = credentialTypeValue;
-        auto const actual = rebuiltTx.getCredentialType();
-        expectEqualField(expected, actual, "sfCredentialType");
+        auto const actualOpt = rebuiltTx.getCredentialType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialType should be present";
+        expectEqualField(expected, *actualOpt, "sfCredentialType");
     }
 
-    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -135,7 +141,7 @@ TEST(TransactionsCredentialAcceptTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -149,7 +155,7 @@ TEST(TransactionsCredentialAcceptTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -158,5 +164,35 @@ TEST(TransactionsCredentialAcceptTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(CredentialAcceptBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsCredentialAcceptTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCredentialAcceptNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+
+    CredentialAcceptBuilder builder{
+        accountValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasIssuer());
+    EXPECT_FALSE(tx.getIssuer().has_value());
+    EXPECT_FALSE(tx.hasCredentialType());
+    EXPECT_FALSE(tx.getCredentialType().has_value());
+}
 
 }

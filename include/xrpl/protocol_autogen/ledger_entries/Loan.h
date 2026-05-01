@@ -46,84 +46,175 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfPreviousTxnID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnID);
+        if (hasPreviousTxnID())
+            return this->sle_->at(sfPreviousTxnID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasPreviousTxnID() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnID);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getPreviousTxnLgrSeq() const
     {
-        return this->sle_->at(sfPreviousTxnLgrSeq);
+        if (hasPreviousTxnLgrSeq())
+            return this->sle_->at(sfPreviousTxnLgrSeq);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasPreviousTxnLgrSeq() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+    }
+
+    /**
+     * @brief Get sfOwnerNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getOwnerNode() const
     {
-        return this->sle_->at(sfOwnerNode);
+        if (hasOwnerNode())
+            return this->sle_->at(sfOwnerNode);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfLoanBrokerNode (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfOwnerNode is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    bool
+    hasOwnerNode() const
+    {
+        return this->sle_->isFieldPresent(sfOwnerNode);
+    }
+
+    /**
+     * @brief Get sfLoanBrokerNode (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
     getLoanBrokerNode() const
     {
-        return this->sle_->at(sfLoanBrokerNode);
+        if (hasLoanBrokerNode())
+            return this->sle_->at(sfLoanBrokerNode);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfLoanBrokerID (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfLoanBrokerNode is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    bool
+    hasLoanBrokerNode() const
+    {
+        return this->sle_->isFieldPresent(sfLoanBrokerNode);
+    }
+
+    /**
+     * @brief Get sfLoanBrokerID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getLoanBrokerID() const
     {
-        return this->sle_->at(sfLoanBrokerID);
+        if (hasLoanBrokerID())
+            return this->sle_->at(sfLoanBrokerID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfLoanSequence (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfLoanBrokerID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasLoanBrokerID() const
+    {
+        return this->sle_->isFieldPresent(sfLoanBrokerID);
+    }
+
+    /**
+     * @brief Get sfLoanSequence (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getLoanSequence() const
     {
-        return this->sle_->at(sfLoanSequence);
+        if (hasLoanSequence())
+            return this->sle_->at(sfLoanSequence);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfBorrower (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfLoanSequence is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
-    getBorrower() const
+    bool
+    hasLoanSequence() const
     {
-        return this->sle_->at(sfBorrower);
+        return this->sle_->isFieldPresent(sfLoanSequence);
     }
 
     /**
-     * @brief Get sfLoanOriginationFee (soeDEFAULT)
+     * @brief Get sfBorrower (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getBorrower() const
+    {
+        if (hasBorrower())
+            return this->sle_->at(sfBorrower);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBorrower is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBorrower() const
+    {
+        return this->sle_->isFieldPresent(sfBorrower);
+    }
+
+    /**
+     * @brief Get sfLoanOriginationFee (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -147,7 +238,7 @@ public:
     }
 
     /**
-     * @brief Get sfLoanServiceFee (soeDEFAULT)
+     * @brief Get sfLoanServiceFee (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -171,7 +262,7 @@ public:
     }
 
     /**
-     * @brief Get sfLatePaymentFee (soeDEFAULT)
+     * @brief Get sfLatePaymentFee (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -195,7 +286,7 @@ public:
     }
 
     /**
-     * @brief Get sfClosePaymentFee (soeDEFAULT)
+     * @brief Get sfClosePaymentFee (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -219,7 +310,7 @@ public:
     }
 
     /**
-     * @brief Get sfOverpaymentFee (soeDEFAULT)
+     * @brief Get sfOverpaymentFee (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -243,7 +334,7 @@ public:
     }
 
     /**
-     * @brief Get sfInterestRate (soeDEFAULT)
+     * @brief Get sfInterestRate (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -267,7 +358,7 @@ public:
     }
 
     /**
-     * @brief Get sfLateInterestRate (soeDEFAULT)
+     * @brief Get sfLateInterestRate (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -291,7 +382,7 @@ public:
     }
 
     /**
-     * @brief Get sfCloseInterestRate (soeDEFAULT)
+     * @brief Get sfCloseInterestRate (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -315,7 +406,7 @@ public:
     }
 
     /**
-     * @brief Get sfOverpaymentInterestRate (soeDEFAULT)
+     * @brief Get sfOverpaymentInterestRate (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -339,29 +430,55 @@ public:
     }
 
     /**
-     * @brief Get sfStartDate (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfStartDate (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getStartDate() const
     {
-        return this->sle_->at(sfStartDate);
+        if (hasStartDate())
+            return this->sle_->at(sfStartDate);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPaymentInterval (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfStartDate is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
-    getPaymentInterval() const
+    bool
+    hasStartDate() const
     {
-        return this->sle_->at(sfPaymentInterval);
+        return this->sle_->isFieldPresent(sfStartDate);
     }
 
     /**
-     * @brief Get sfGracePeriod (soeDEFAULT)
+     * @brief Get sfPaymentInterval (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getPaymentInterval() const
+    {
+        if (hasPaymentInterval())
+            return this->sle_->at(sfPaymentInterval);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPaymentInterval is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPaymentInterval() const
+    {
+        return this->sle_->isFieldPresent(sfPaymentInterval);
+    }
+
+    /**
+     * @brief Get sfGracePeriod (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -385,7 +502,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousPaymentDueDate (soeDEFAULT)
+     * @brief Get sfPreviousPaymentDueDate (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -409,7 +526,7 @@ public:
     }
 
     /**
-     * @brief Get sfNextPaymentDueDate (soeDEFAULT)
+     * @brief Get sfNextPaymentDueDate (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -433,7 +550,7 @@ public:
     }
 
     /**
-     * @brief Get sfPaymentRemaining (soeDEFAULT)
+     * @brief Get sfPaymentRemaining (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -457,18 +574,31 @@ public:
     }
 
     /**
-     * @brief Get sfPeriodicPayment (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfPeriodicPayment (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_NUMBER::type::value_type
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
     getPeriodicPayment() const
     {
-        return this->sle_->at(sfPeriodicPayment);
+        if (hasPeriodicPayment())
+            return this->sle_->at(sfPeriodicPayment);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPrincipalOutstanding (soeDEFAULT)
+     * @brief Check if sfPeriodicPayment is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPeriodicPayment() const
+    {
+        return this->sle_->isFieldPresent(sfPeriodicPayment);
+    }
+
+    /**
+     * @brief Get sfPrincipalOutstanding (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -492,7 +622,7 @@ public:
     }
 
     /**
-     * @brief Get sfTotalValueOutstanding (soeDEFAULT)
+     * @brief Get sfTotalValueOutstanding (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -516,7 +646,7 @@ public:
     }
 
     /**
-     * @brief Get sfManagementFeeOutstanding (soeDEFAULT)
+     * @brief Get sfManagementFeeOutstanding (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -540,7 +670,7 @@ public:
     }
 
     /**
-     * @brief Get sfLoanScale (soeDEFAULT)
+     * @brief Get sfLoanScale (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -576,30 +706,10 @@ class LoanBuilder : public LedgerEntryBuilderBase<LoanBuilder>
 public:
     /**
      * @brief Construct a new LoanBuilder with required fields.
-     * @param previousTxnID The sfPreviousTxnID field value.
-     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
-     * @param ownerNode The sfOwnerNode field value.
-     * @param loanBrokerNode The sfLoanBrokerNode field value.
-     * @param loanBrokerID The sfLoanBrokerID field value.
-     * @param loanSequence The sfLoanSequence field value.
-     * @param borrower The sfBorrower field value.
-     * @param startDate The sfStartDate field value.
-     * @param paymentInterval The sfPaymentInterval field value.
-     * @param periodicPayment The sfPeriodicPayment field value.
      */
-    LoanBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& loanBrokerNode,std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,std::decay_t<typename SF_UINT32::type::value_type> const& loanSequence,std::decay_t<typename SF_ACCOUNT::type::value_type> const& borrower,std::decay_t<typename SF_UINT32::type::value_type> const& startDate,std::decay_t<typename SF_UINT32::type::value_type> const& paymentInterval,std::decay_t<typename SF_NUMBER::type::value_type> const& periodicPayment)
+    LoanBuilder()
         : LedgerEntryBuilderBase<LoanBuilder>(ltLOAN)
     {
-        setPreviousTxnID(previousTxnID);
-        setPreviousTxnLgrSeq(previousTxnLgrSeq);
-        setOwnerNode(ownerNode);
-        setLoanBrokerNode(loanBrokerNode);
-        setLoanBrokerID(loanBrokerID);
-        setLoanSequence(loanSequence);
-        setBorrower(borrower);
-        setStartDate(startDate);
-        setPaymentInterval(paymentInterval);
-        setPeriodicPayment(periodicPayment);
     }
 
     /**
@@ -619,7 +729,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -630,7 +740,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -641,7 +751,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -652,7 +762,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanBrokerNode (soeREQUIRED)
+     * @brief Set sfLoanBrokerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -663,7 +773,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanBrokerID (soeREQUIRED)
+     * @brief Set sfLoanBrokerID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -674,7 +784,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanSequence (soeREQUIRED)
+     * @brief Set sfLoanSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -685,7 +795,7 @@ public:
     }
 
     /**
-     * @brief Set sfBorrower (soeREQUIRED)
+     * @brief Set sfBorrower (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -696,7 +806,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanOriginationFee (soeDEFAULT)
+     * @brief Set sfLoanOriginationFee (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -707,7 +817,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanServiceFee (soeDEFAULT)
+     * @brief Set sfLoanServiceFee (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -718,7 +828,7 @@ public:
     }
 
     /**
-     * @brief Set sfLatePaymentFee (soeDEFAULT)
+     * @brief Set sfLatePaymentFee (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -729,7 +839,7 @@ public:
     }
 
     /**
-     * @brief Set sfClosePaymentFee (soeDEFAULT)
+     * @brief Set sfClosePaymentFee (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -740,7 +850,7 @@ public:
     }
 
     /**
-     * @brief Set sfOverpaymentFee (soeDEFAULT)
+     * @brief Set sfOverpaymentFee (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -751,7 +861,7 @@ public:
     }
 
     /**
-     * @brief Set sfInterestRate (soeDEFAULT)
+     * @brief Set sfInterestRate (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -762,7 +872,7 @@ public:
     }
 
     /**
-     * @brief Set sfLateInterestRate (soeDEFAULT)
+     * @brief Set sfLateInterestRate (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -773,7 +883,7 @@ public:
     }
 
     /**
-     * @brief Set sfCloseInterestRate (soeDEFAULT)
+     * @brief Set sfCloseInterestRate (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -784,7 +894,7 @@ public:
     }
 
     /**
-     * @brief Set sfOverpaymentInterestRate (soeDEFAULT)
+     * @brief Set sfOverpaymentInterestRate (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -795,7 +905,7 @@ public:
     }
 
     /**
-     * @brief Set sfStartDate (soeREQUIRED)
+     * @brief Set sfStartDate (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -806,7 +916,7 @@ public:
     }
 
     /**
-     * @brief Set sfPaymentInterval (soeREQUIRED)
+     * @brief Set sfPaymentInterval (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -817,7 +927,7 @@ public:
     }
 
     /**
-     * @brief Set sfGracePeriod (soeDEFAULT)
+     * @brief Set sfGracePeriod (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -828,7 +938,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousPaymentDueDate (soeDEFAULT)
+     * @brief Set sfPreviousPaymentDueDate (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -839,7 +949,7 @@ public:
     }
 
     /**
-     * @brief Set sfNextPaymentDueDate (soeDEFAULT)
+     * @brief Set sfNextPaymentDueDate (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -850,7 +960,7 @@ public:
     }
 
     /**
-     * @brief Set sfPaymentRemaining (soeDEFAULT)
+     * @brief Set sfPaymentRemaining (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -861,7 +971,7 @@ public:
     }
 
     /**
-     * @brief Set sfPeriodicPayment (soeREQUIRED)
+     * @brief Set sfPeriodicPayment (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -872,7 +982,7 @@ public:
     }
 
     /**
-     * @brief Set sfPrincipalOutstanding (soeDEFAULT)
+     * @brief Set sfPrincipalOutstanding (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -883,7 +993,7 @@ public:
     }
 
     /**
-     * @brief Set sfTotalValueOutstanding (soeDEFAULT)
+     * @brief Set sfTotalValueOutstanding (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -894,7 +1004,7 @@ public:
     }
 
     /**
-     * @brief Set sfManagementFeeOutstanding (soeDEFAULT)
+     * @brief Set sfManagementFeeOutstanding (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&
@@ -905,7 +1015,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanScale (soeDEFAULT)
+     * @brief Set sfLoanScale (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     LoanBuilder&

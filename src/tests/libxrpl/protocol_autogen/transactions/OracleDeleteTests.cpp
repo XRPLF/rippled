@@ -21,7 +21,7 @@ TEST(TransactionsOracleDeleteTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testOracleDelete"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testOracleDelete"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -33,12 +33,12 @@ TEST(TransactionsOracleDeleteTests, BuilderSettersRoundTrip)
 
     OracleDeleteBuilder builder{
         accountValue,
-        oracleDocumentIDValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setOracleDocumentID(oracleDocumentIDValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -55,13 +55,15 @@ TEST(TransactionsOracleDeleteTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = oracleDocumentIDValue;
-        auto const actual = tx.getOracleDocumentID();
-        expectEqualField(expected, actual, "sfOracleDocumentID");
+        auto const actualOpt = tx.getOracleDocumentID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOracleDocumentID should be present";
+        expectEqualField(expected, *actualOpt, "sfOracleDocumentID");
+        EXPECT_TRUE(tx.hasOracleDocumentID());
     }
 
-    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -70,7 +72,7 @@ TEST(TransactionsOracleDeleteTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testOracleDeleteFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testOracleDeleteFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -83,11 +85,11 @@ TEST(TransactionsOracleDeleteTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     OracleDeleteBuilder initialBuilder{
         accountValue,
-        oracleDocumentIDValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setOracleDocumentID(oracleDocumentIDValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -105,13 +107,14 @@ TEST(TransactionsOracleDeleteTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = oracleDocumentIDValue;
-        auto const actual = rebuiltTx.getOracleDocumentID();
-        expectEqualField(expected, actual, "sfOracleDocumentID");
+        auto const actualOpt = rebuiltTx.getOracleDocumentID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOracleDocumentID should be present";
+        expectEqualField(expected, *actualOpt, "sfOracleDocumentID");
     }
 
-    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -119,7 +122,7 @@ TEST(TransactionsOracleDeleteTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -133,7 +136,7 @@ TEST(TransactionsOracleDeleteTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -142,5 +145,33 @@ TEST(TransactionsOracleDeleteTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(OracleDeleteBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsOracleDeleteTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testOracleDeleteNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+
+    OracleDeleteBuilder builder{
+        accountValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasOracleDocumentID());
+    EXPECT_FALSE(tx.getOracleDocumentID().has_value());
+}
 
 }

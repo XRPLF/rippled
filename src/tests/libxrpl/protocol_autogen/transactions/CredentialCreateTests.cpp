@@ -21,7 +21,7 @@ TEST(TransactionsCredentialCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testCredentialCreate"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCredentialCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -36,13 +36,13 @@ TEST(TransactionsCredentialCreateTests, BuilderSettersRoundTrip)
 
     CredentialCreateBuilder builder{
         accountValue,
-        subjectValue,
-        credentialTypeValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setSubject(subjectValue);
+    builder.setCredentialType(credentialTypeValue);
     builder.setExpiration(expirationValue);
     builder.setURI(uRIValue);
 
@@ -61,19 +61,23 @@ TEST(TransactionsCredentialCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = subjectValue;
-        auto const actual = tx.getSubject();
-        expectEqualField(expected, actual, "sfSubject");
+        auto const actualOpt = tx.getSubject();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubject should be present";
+        expectEqualField(expected, *actualOpt, "sfSubject");
+        EXPECT_TRUE(tx.hasSubject());
     }
 
     {
         auto const& expected = credentialTypeValue;
-        auto const actual = tx.getCredentialType();
-        expectEqualField(expected, actual, "sfCredentialType");
+        auto const actualOpt = tx.getCredentialType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialType should be present";
+        expectEqualField(expected, *actualOpt, "sfCredentialType");
+        EXPECT_TRUE(tx.hasCredentialType());
     }
 
-    // Verify optional fields
     {
         auto const& expected = expirationValue;
         auto const actualOpt = tx.getExpiration();
@@ -98,7 +102,7 @@ TEST(TransactionsCredentialCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testCredentialCreateFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCredentialCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -114,12 +118,12 @@ TEST(TransactionsCredentialCreateTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     CredentialCreateBuilder initialBuilder{
         accountValue,
-        subjectValue,
-        credentialTypeValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setSubject(subjectValue);
+    initialBuilder.setCredentialType(credentialTypeValue);
     initialBuilder.setExpiration(expirationValue);
     initialBuilder.setURI(uRIValue);
 
@@ -139,19 +143,21 @@ TEST(TransactionsCredentialCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = subjectValue;
-        auto const actual = rebuiltTx.getSubject();
-        expectEqualField(expected, actual, "sfSubject");
+        auto const actualOpt = rebuiltTx.getSubject();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubject should be present";
+        expectEqualField(expected, *actualOpt, "sfSubject");
     }
 
     {
         auto const& expected = credentialTypeValue;
-        auto const actual = rebuiltTx.getCredentialType();
-        expectEqualField(expected, actual, "sfCredentialType");
+        auto const actualOpt = rebuiltTx.getCredentialType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialType should be present";
+        expectEqualField(expected, *actualOpt, "sfCredentialType");
     }
 
-    // Verify optional fields
     {
         auto const& expected = expirationValue;
         auto const actualOpt = rebuiltTx.getExpiration();
@@ -173,7 +179,7 @@ TEST(TransactionsCredentialCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -187,7 +193,7 @@ TEST(TransactionsCredentialCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -201,7 +207,7 @@ TEST(TransactionsCredentialCreateTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testCredentialCreateNullopt"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testCredentialCreateNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -209,13 +215,9 @@ TEST(TransactionsCredentialCreateTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
-    auto const subjectValue = canonical_ACCOUNT();
-    auto const credentialTypeValue = canonical_VL();
 
     CredentialCreateBuilder builder{
         accountValue,
-        subjectValue,
-        credentialTypeValue,
         sequenceValue,
         feeValue
     };
@@ -225,6 +227,10 @@ TEST(TransactionsCredentialCreateTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasSubject());
+    EXPECT_FALSE(tx.getSubject().has_value());
+    EXPECT_FALSE(tx.hasCredentialType());
+    EXPECT_FALSE(tx.getCredentialType().has_value());
     EXPECT_FALSE(tx.hasExpiration());
     EXPECT_FALSE(tx.getExpiration().has_value());
     EXPECT_FALSE(tx.hasURI());

@@ -25,11 +25,11 @@ TEST(LedgerHashesTests, BuilderSettersRoundTrip)
     auto const hashesValue = canonical_VECTOR256();
 
     LedgerHashesBuilder builder{
-        hashesValue
     };
 
     builder.setFirstLedgerSequence(firstLedgerSequenceValue);
     builder.setLastLedgerSequence(lastLedgerSequenceValue);
+    builder.setHashes(hashesValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -39,12 +39,6 @@ TEST(LedgerHashesTests, BuilderSettersRoundTrip)
     auto const entry = builder.build(index);
 
     EXPECT_TRUE(entry.validate());
-
-    {
-        auto const& expected = hashesValue;
-        auto const actual = entry.getHashes();
-        expectEqualField(expected, actual, "sfHashes");
-    }
 
     {
         auto const& expected = firstLedgerSequenceValue;
@@ -60,6 +54,14 @@ TEST(LedgerHashesTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfLastLedgerSequence");
         EXPECT_TRUE(entry.hasLastLedgerSequence());
+    }
+
+    {
+        auto const& expected = hashesValue;
+        auto const actualOpt = entry.getHashes();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfHashes");
+        EXPECT_TRUE(entry.hasHashes());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -95,16 +97,6 @@ TEST(LedgerHashesTests, BuilderFromSleRoundTrip)
     EXPECT_TRUE(entryFromSle.validate());
 
     {
-        auto const& expected = hashesValue;
-
-        auto const fromSle = entryFromSle.getHashes();
-        auto const fromBuilder = entryFromBuilder.getHashes();
-
-        expectEqualField(expected, fromSle, "sfHashes");
-        expectEqualField(expected, fromBuilder, "sfHashes");
-    }
-
-    {
         auto const& expected = firstLedgerSequenceValue;
 
         auto const fromSleOpt = entryFromSle.getFirstLedgerSequence();
@@ -128,6 +120,19 @@ TEST(LedgerHashesTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfLastLedgerSequence");
         expectEqualField(expected, *fromBuilderOpt, "sfLastLedgerSequence");
+    }
+
+    {
+        auto const& expected = hashesValue;
+
+        auto const fromSleOpt = entryFromSle.getHashes();
+        auto const fromBuilderOpt = entryFromBuilder.getHashes();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfHashes");
+        expectEqualField(expected, *fromBuilderOpt, "sfHashes");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -175,10 +180,8 @@ TEST(LedgerHashesTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
-    auto const hashesValue = canonical_VECTOR256();
 
     LedgerHashesBuilder builder{
-        hashesValue
     };
 
     auto const entry = builder.build(index);
@@ -188,5 +191,7 @@ TEST(LedgerHashesTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getFirstLedgerSequence().has_value());
     EXPECT_FALSE(entry.hasLastLedgerSequence());
     EXPECT_FALSE(entry.getLastLedgerSequence().has_value());
+    EXPECT_FALSE(entry.hasHashes());
+    EXPECT_FALSE(entry.getHashes().has_value());
 }
 }

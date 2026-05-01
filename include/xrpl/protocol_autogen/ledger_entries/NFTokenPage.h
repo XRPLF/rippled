@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfPreviousPageMin (soeOPTIONAL)
+     * @brief Get sfPreviousPageMin (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfNextPageMin (soeOPTIONAL)
+     * @brief Get sfNextPageMin (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -94,37 +94,76 @@ public:
     }
 
     /**
-     * @brief Get sfNFTokens (soeREQUIRED)
+     * @brief Get sfNFTokens (SoeRequired)
      * @note This is an untyped field (unknown).
-     * @return The field value.
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    STArray const&
+    std::optional<std::reference_wrapper<STArray const>>
     getNFTokens() const
     {
-        return this->sle_->getFieldArray(sfNFTokens);
+        if (this->sle_->isFieldPresent(sfNFTokens))
+            return this->sle_->getFieldArray(sfNFTokens);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfNFTokens is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    bool
+    hasNFTokens() const
+    {
+        return this->sle_->isFieldPresent(sfNFTokens);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnID);
+        if (hasPreviousTxnID())
+            return this->sle_->at(sfPreviousTxnID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasPreviousTxnID() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnID);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getPreviousTxnLgrSeq() const
     {
-        return this->sle_->at(sfPreviousTxnLgrSeq);
+        if (hasPreviousTxnLgrSeq())
+            return this->sle_->at(sfPreviousTxnLgrSeq);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPreviousTxnLgrSeq() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -140,16 +179,10 @@ class NFTokenPageBuilder : public LedgerEntryBuilderBase<NFTokenPageBuilder>
 public:
     /**
      * @brief Construct a new NFTokenPageBuilder with required fields.
-     * @param nFTokens The sfNFTokens field value.
-     * @param previousTxnID The sfPreviousTxnID field value.
-     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    NFTokenPageBuilder(STArray const& nFTokens,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    NFTokenPageBuilder()
         : LedgerEntryBuilderBase<NFTokenPageBuilder>(ltNFTOKEN_PAGE)
     {
-        setNFTokens(nFTokens);
-        setPreviousTxnID(previousTxnID);
-        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**
@@ -169,7 +202,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfPreviousPageMin (soeOPTIONAL)
+     * @brief Set sfPreviousPageMin (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
@@ -180,7 +213,7 @@ public:
     }
 
     /**
-     * @brief Set sfNextPageMin (soeOPTIONAL)
+     * @brief Set sfNextPageMin (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
@@ -191,7 +224,7 @@ public:
     }
 
     /**
-     * @brief Set sfNFTokens (soeREQUIRED)
+     * @brief Set sfNFTokens (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
@@ -202,7 +235,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&
@@ -213,7 +246,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenPageBuilder&

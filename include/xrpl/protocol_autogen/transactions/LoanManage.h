@@ -19,9 +19,9 @@ class LoanManageBuilder;
  * @brief Transaction: LoanManage
  *
  * Type: ttLOAN_MANAGE (82)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: mayModifyVault
+ * Privileges: MayModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanManageBuilder to construct new transactions.
@@ -48,14 +48,29 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLoanID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfLoanID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getLoanID() const
     {
-        return this->tx_->at(sfLoanID);
+        if (hasLoanID())
+        {
+            return this->tx_->at(sfLoanID);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLoanID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLoanID() const
+    {
+        return this->tx_->isFieldPresent(sfLoanID);
     }
 };
 
@@ -72,17 +87,15 @@ public:
     /**
      * @brief Construct a new LoanManageBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param loanID The sfLoanID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     LoanManageBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& loanID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<LoanManageBuilder>(ttLOAN_MANAGE, account, sequence, fee)
     {
-        setLoanID(loanID);
     }
 
     /**
@@ -102,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLoanID (soeREQUIRED)
+     * @brief Set sfLoanID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanManageBuilder&

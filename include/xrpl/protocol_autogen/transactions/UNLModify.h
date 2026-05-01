@@ -19,9 +19,9 @@ class UNLModifyBuilder;
  * @brief Transaction: UNLModify
  *
  * Type: ttUNL_MODIFY (102)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use UNLModifyBuilder to construct new transactions.
@@ -48,36 +48,81 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfUNLModifyDisabling (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfUNLModifyDisabling (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT8::type::value_type
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
     getUNLModifyDisabling() const
     {
-        return this->tx_->at(sfUNLModifyDisabling);
+        if (hasUNLModifyDisabling())
+        {
+            return this->tx_->at(sfUNLModifyDisabling);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfLedgerSequence (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfUNLModifyDisabling is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    bool
+    hasUNLModifyDisabling() const
+    {
+        return this->tx_->isFieldPresent(sfUNLModifyDisabling);
+    }
+
+    /**
+     * @brief Get sfLedgerSequence (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
     getLedgerSequence() const
     {
-        return this->tx_->at(sfLedgerSequence);
+        if (hasLedgerSequence())
+        {
+            return this->tx_->at(sfLedgerSequence);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfUNLModifyValidator (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfLedgerSequence is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    bool
+    hasLedgerSequence() const
+    {
+        return this->tx_->isFieldPresent(sfLedgerSequence);
+    }
+
+    /**
+     * @brief Get sfUNLModifyValidator (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
     getUNLModifyValidator() const
     {
-        return this->tx_->at(sfUNLModifyValidator);
+        if (hasUNLModifyValidator())
+        {
+            return this->tx_->at(sfUNLModifyValidator);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfUNLModifyValidator is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasUNLModifyValidator() const
+    {
+        return this->tx_->isFieldPresent(sfUNLModifyValidator);
     }
 };
 
@@ -94,21 +139,15 @@ public:
     /**
      * @brief Construct a new UNLModifyBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param uNLModifyDisabling The sfUNLModifyDisabling field value.
-     * @param ledgerSequence The sfLedgerSequence field value.
-     * @param uNLModifyValidator The sfUNLModifyValidator field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     UNLModifyBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT8::type::value_type> const& uNLModifyDisabling,                     std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence,                     std::decay_t<typename SF_VL::type::value_type> const& uNLModifyValidator,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<UNLModifyBuilder>(ttUNL_MODIFY, account, sequence, fee)
     {
-        setUNLModifyDisabling(uNLModifyDisabling);
-        setLedgerSequence(ledgerSequence);
-        setUNLModifyValidator(uNLModifyValidator);
     }
 
     /**
@@ -128,7 +167,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfUNLModifyDisabling (soeREQUIRED)
+     * @brief Set sfUNLModifyDisabling (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&
@@ -139,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Set sfLedgerSequence (soeREQUIRED)
+     * @brief Set sfLedgerSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&
@@ -150,7 +189,7 @@ public:
     }
 
     /**
-     * @brief Set sfUNLModifyValidator (soeREQUIRED)
+     * @brief Set sfUNLModifyValidator (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&

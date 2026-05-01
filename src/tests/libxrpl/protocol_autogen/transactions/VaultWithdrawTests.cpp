@@ -21,7 +21,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultWithdraw"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultWithdraw"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -36,13 +36,13 @@ TEST(TransactionsVaultWithdrawTests, BuilderSettersRoundTrip)
 
     VaultWithdrawBuilder builder{
         accountValue,
-        vaultIDValue,
-        amountValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setVaultID(vaultIDValue);
+    builder.setAmount(amountValue);
     builder.setDestination(destinationValue);
     builder.setDestinationTag(destinationTagValue);
 
@@ -61,19 +61,23 @@ TEST(TransactionsVaultWithdrawTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = vaultIDValue;
-        auto const actual = tx.getVaultID();
-        expectEqualField(expected, actual, "sfVaultID");
+        auto const actualOpt = tx.getVaultID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
+        expectEqualField(expected, *actualOpt, "sfVaultID");
+        EXPECT_TRUE(tx.hasVaultID());
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = tx.getAmount();
-        expectEqualField(expected, actual, "sfAmount");
+        auto const actualOpt = tx.getAmount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
+        expectEqualField(expected, *actualOpt, "sfAmount");
+        EXPECT_TRUE(tx.hasAmount());
     }
 
-    // Verify optional fields
     {
         auto const& expected = destinationValue;
         auto const actualOpt = tx.getDestination();
@@ -98,7 +102,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultWithdrawFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultWithdrawFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -114,12 +118,12 @@ TEST(TransactionsVaultWithdrawTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     VaultWithdrawBuilder initialBuilder{
         accountValue,
-        vaultIDValue,
-        amountValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setVaultID(vaultIDValue);
+    initialBuilder.setAmount(amountValue);
     initialBuilder.setDestination(destinationValue);
     initialBuilder.setDestinationTag(destinationTagValue);
 
@@ -139,19 +143,21 @@ TEST(TransactionsVaultWithdrawTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = vaultIDValue;
-        auto const actual = rebuiltTx.getVaultID();
-        expectEqualField(expected, actual, "sfVaultID");
+        auto const actualOpt = rebuiltTx.getVaultID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
+        expectEqualField(expected, *actualOpt, "sfVaultID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actual = rebuiltTx.getAmount();
-        expectEqualField(expected, actual, "sfAmount");
+        auto const actualOpt = rebuiltTx.getAmount();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
+        expectEqualField(expected, *actualOpt, "sfAmount");
     }
 
-    // Verify optional fields
     {
         auto const& expected = destinationValue;
         auto const actualOpt = rebuiltTx.getDestination();
@@ -173,7 +179,7 @@ TEST(TransactionsVaultWithdrawTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -187,7 +193,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -201,7 +207,7 @@ TEST(TransactionsVaultWithdrawTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultWithdrawNullopt"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultWithdrawNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -209,13 +215,9 @@ TEST(TransactionsVaultWithdrawTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
-    auto const vaultIDValue = canonical_UINT256();
-    auto const amountValue = canonical_AMOUNT();
 
     VaultWithdrawBuilder builder{
         accountValue,
-        vaultIDValue,
-        amountValue,
         sequenceValue,
         feeValue
     };
@@ -225,6 +227,10 @@ TEST(TransactionsVaultWithdrawTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasVaultID());
+    EXPECT_FALSE(tx.getVaultID().has_value());
+    EXPECT_FALSE(tx.hasAmount());
+    EXPECT_FALSE(tx.getAmount().has_value());
     EXPECT_FALSE(tx.hasDestination());
     EXPECT_FALSE(tx.getDestination().has_value());
     EXPECT_FALSE(tx.hasDestinationTag());

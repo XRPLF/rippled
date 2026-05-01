@@ -19,9 +19,9 @@ class VaultSetBuilder;
  * @brief Transaction: VaultSet
  *
  * Type: ttVAULT_SET (66)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: mustModifyVault
+ * Privileges: MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultSetBuilder to construct new transactions.
@@ -48,18 +48,33 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfVaultID (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfVaultID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getVaultID() const
     {
-        return this->tx_->at(sfVaultID);
+        if (hasVaultID())
+        {
+            return this->tx_->at(sfVaultID);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfAssetsMaximum (soeOPTIONAL)
+     * @brief Check if sfVaultID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasVaultID() const
+    {
+        return this->tx_->isFieldPresent(sfVaultID);
+    }
+
+    /**
+     * @brief Get sfAssetsMaximum (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -111,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfData (soeOPTIONAL)
+     * @brief Get sfData (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -150,17 +165,15 @@ public:
     /**
      * @brief Construct a new VaultSetBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param vaultID The sfVaultID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     VaultSetBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<VaultSetBuilder>(ttVAULT_SET, account, sequence, fee)
     {
-        setVaultID(vaultID);
     }
 
     /**
@@ -180,7 +193,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&
@@ -191,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Set sfAssetsMaximum (soeOPTIONAL)
+     * @brief Set sfAssetsMaximum (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&
@@ -202,7 +215,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&
@@ -213,7 +226,7 @@ public:
     }
 
     /**
-     * @brief Set sfData (soeOPTIONAL)
+     * @brief Set sfData (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&

@@ -46,62 +46,127 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfBalance (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfBalance (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getBalance() const
     {
-        return this->sle_->at(sfBalance);
+        if (hasBalance())
+            return this->sle_->at(sfBalance);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfLowLimit (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfBalance is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    bool
+    hasBalance() const
+    {
+        return this->sle_->isFieldPresent(sfBalance);
+    }
+
+    /**
+     * @brief Get sfLowLimit (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getLowLimit() const
     {
-        return this->sle_->at(sfLowLimit);
+        if (hasLowLimit())
+            return this->sle_->at(sfLowLimit);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfHighLimit (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfLowLimit is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    bool
+    hasLowLimit() const
+    {
+        return this->sle_->isFieldPresent(sfLowLimit);
+    }
+
+    /**
+     * @brief Get sfHighLimit (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
     getHighLimit() const
     {
-        return this->sle_->at(sfHighLimit);
+        if (hasHighLimit())
+            return this->sle_->at(sfHighLimit);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfHighLimit is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    bool
+    hasHighLimit() const
+    {
+        return this->sle_->isFieldPresent(sfHighLimit);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnID (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
     getPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnID);
+        if (hasPreviousTxnID())
+            return this->sle_->at(sfPreviousTxnID);
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
-     * @return The field value.
+     * @brief Check if sfPreviousTxnID is present.
+     * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
-    getPreviousTxnLgrSeq() const
+    bool
+    hasPreviousTxnID() const
     {
-        return this->sle_->at(sfPreviousTxnLgrSeq);
+        return this->sle_->isFieldPresent(sfPreviousTxnID);
     }
 
     /**
-     * @brief Get sfLowNode (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getPreviousTxnLgrSeq() const
+    {
+        if (hasPreviousTxnLgrSeq())
+            return this->sle_->at(sfPreviousTxnLgrSeq);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPreviousTxnLgrSeq is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPreviousTxnLgrSeq() const
+    {
+        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+    }
+
+    /**
+     * @brief Get sfLowNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -125,7 +190,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowQualityIn (soeOPTIONAL)
+     * @brief Get sfLowQualityIn (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -149,7 +214,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowQualityOut (soeOPTIONAL)
+     * @brief Get sfLowQualityOut (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -173,7 +238,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighNode (soeOPTIONAL)
+     * @brief Get sfHighNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -197,7 +262,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighQualityIn (soeOPTIONAL)
+     * @brief Get sfHighQualityIn (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -221,7 +286,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighQualityOut (soeOPTIONAL)
+     * @brief Get sfHighQualityOut (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -257,20 +322,10 @@ class RippleStateBuilder : public LedgerEntryBuilderBase<RippleStateBuilder>
 public:
     /**
      * @brief Construct a new RippleStateBuilder with required fields.
-     * @param balance The sfBalance field value.
-     * @param lowLimit The sfLowLimit field value.
-     * @param highLimit The sfHighLimit field value.
-     * @param previousTxnID The sfPreviousTxnID field value.
-     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    RippleStateBuilder(std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,std::decay_t<typename SF_AMOUNT::type::value_type> const& lowLimit,std::decay_t<typename SF_AMOUNT::type::value_type> const& highLimit,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    RippleStateBuilder()
         : LedgerEntryBuilderBase<RippleStateBuilder>(ltRIPPLE_STATE)
     {
-        setBalance(balance);
-        setLowLimit(lowLimit);
-        setHighLimit(highLimit);
-        setPreviousTxnID(previousTxnID);
-        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**
@@ -290,7 +345,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfBalance (soeREQUIRED)
+     * @brief Set sfBalance (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -301,7 +356,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowLimit (soeREQUIRED)
+     * @brief Set sfLowLimit (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -312,7 +367,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighLimit (soeREQUIRED)
+     * @brief Set sfHighLimit (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -323,7 +378,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -334,7 +389,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -345,7 +400,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowNode (soeOPTIONAL)
+     * @brief Set sfLowNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -356,7 +411,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowQualityIn (soeOPTIONAL)
+     * @brief Set sfLowQualityIn (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -367,7 +422,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowQualityOut (soeOPTIONAL)
+     * @brief Set sfLowQualityOut (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -378,7 +433,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighNode (soeOPTIONAL)
+     * @brief Set sfHighNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -389,7 +444,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighQualityIn (soeOPTIONAL)
+     * @brief Set sfHighQualityIn (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -400,7 +455,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighQualityOut (soeOPTIONAL)
+     * @brief Set sfHighQualityOut (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&

@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::transactions {
 
@@ -19,9 +19,9 @@ class LedgerStateFixBuilder;
  * @brief Transaction: LedgerStateFix
  *
  * Type: ttLEDGER_STATE_FIX (53)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: fixNFTokenPageLinks
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LedgerStateFixBuilder to construct new transactions.
@@ -35,7 +35,8 @@ public:
      * @brief Construct a LedgerStateFix transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit LedgerStateFix(std::shared_ptr<STTx const> tx) : TransactionBase(std::move(tx))
+    explicit LedgerStateFix(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
         if (tx_->getTxnType() != txType)
@@ -47,18 +48,33 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLedgerFixType (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfLedgerFixType (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_UINT16::type::value_type
+    protocol_autogen::Optional<SF_UINT16::type::value_type>
     getLedgerFixType() const
     {
-        return this->tx_->at(sfLedgerFixType);
+        if (hasLedgerFixType())
+        {
+            return this->tx_->at(sfLedgerFixType);
+        }
+        return std::nullopt;
     }
 
     /**
-     * @brief Get sfOwner (soeOPTIONAL)
+     * @brief Check if sfLedgerFixType is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLedgerFixType() const
+    {
+        return this->tx_->isFieldPresent(sfLedgerFixType);
+    }
+
+    /**
+     * @brief Get sfOwner (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -97,18 +113,15 @@ public:
     /**
      * @brief Construct a new LedgerStateFixBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param ledgerFixType The sfLedgerFixType field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    LedgerStateFixBuilder(
-        SF_ACCOUNT::type::value_type account,
-        std::decay_t<typename SF_UINT16::type::value_type> const& ledgerFixType,
-        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
+    LedgerStateFixBuilder(SF_ACCOUNT::type::value_type account,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
         : TransactionBuilderBase<LedgerStateFixBuilder>(ttLEDGER_STATE_FIX, account, sequence, fee)
     {
-        setLedgerFixType(ledgerFixType);
     }
 
     /**
@@ -128,7 +141,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLedgerFixType (soeREQUIRED)
+     * @brief Set sfLedgerFixType (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LedgerStateFixBuilder&
@@ -139,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LedgerStateFixBuilder&

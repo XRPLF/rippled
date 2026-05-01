@@ -38,8 +38,6 @@ TEST(DirectoryNodeTests, BuilderSettersRoundTrip)
     auto const domainIDValue = canonical_UINT256();
 
     DirectoryNodeBuilder builder{
-        indexesValue,
-        rootIndexValue
     };
 
     builder.setOwner(ownerValue);
@@ -50,6 +48,8 @@ TEST(DirectoryNodeTests, BuilderSettersRoundTrip)
     builder.setTakerGetsIssuer(takerGetsIssuerValue);
     builder.setTakerGetsMPT(takerGetsMPTValue);
     builder.setExchangeRate(exchangeRateValue);
+    builder.setIndexes(indexesValue);
+    builder.setRootIndex(rootIndexValue);
     builder.setIndexNext(indexNextValue);
     builder.setIndexPrevious(indexPreviousValue);
     builder.setNFTokenID(nFTokenIDValue);
@@ -65,18 +65,6 @@ TEST(DirectoryNodeTests, BuilderSettersRoundTrip)
     auto const entry = builder.build(index);
 
     EXPECT_TRUE(entry.validate());
-
-    {
-        auto const& expected = indexesValue;
-        auto const actual = entry.getIndexes();
-        expectEqualField(expected, actual, "sfIndexes");
-    }
-
-    {
-        auto const& expected = rootIndexValue;
-        auto const actual = entry.getRootIndex();
-        expectEqualField(expected, actual, "sfRootIndex");
-    }
 
     {
         auto const& expected = ownerValue;
@@ -140,6 +128,22 @@ TEST(DirectoryNodeTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfExchangeRate");
         EXPECT_TRUE(entry.hasExchangeRate());
+    }
+
+    {
+        auto const& expected = indexesValue;
+        auto const actualOpt = entry.getIndexes();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfIndexes");
+        EXPECT_TRUE(entry.hasIndexes());
+    }
+
+    {
+        auto const& expected = rootIndexValue;
+        auto const actualOpt = entry.getRootIndex();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfRootIndex");
+        EXPECT_TRUE(entry.hasRootIndex());
     }
 
     {
@@ -249,26 +253,6 @@ TEST(DirectoryNodeTests, BuilderFromSleRoundTrip)
     EXPECT_TRUE(entryFromSle.validate());
 
     {
-        auto const& expected = indexesValue;
-
-        auto const fromSle = entryFromSle.getIndexes();
-        auto const fromBuilder = entryFromBuilder.getIndexes();
-
-        expectEqualField(expected, fromSle, "sfIndexes");
-        expectEqualField(expected, fromBuilder, "sfIndexes");
-    }
-
-    {
-        auto const& expected = rootIndexValue;
-
-        auto const fromSle = entryFromSle.getRootIndex();
-        auto const fromBuilder = entryFromBuilder.getRootIndex();
-
-        expectEqualField(expected, fromSle, "sfRootIndex");
-        expectEqualField(expected, fromBuilder, "sfRootIndex");
-    }
-
-    {
         auto const& expected = ownerValue;
 
         auto const fromSleOpt = entryFromSle.getOwner();
@@ -370,6 +354,32 @@ TEST(DirectoryNodeTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfExchangeRate");
         expectEqualField(expected, *fromBuilderOpt, "sfExchangeRate");
+    }
+
+    {
+        auto const& expected = indexesValue;
+
+        auto const fromSleOpt = entryFromSle.getIndexes();
+        auto const fromBuilderOpt = entryFromBuilder.getIndexes();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfIndexes");
+        expectEqualField(expected, *fromBuilderOpt, "sfIndexes");
+    }
+
+    {
+        auto const& expected = rootIndexValue;
+
+        auto const fromSleOpt = entryFromSle.getRootIndex();
+        auto const fromBuilderOpt = entryFromBuilder.getRootIndex();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfRootIndex");
+        expectEqualField(expected, *fromBuilderOpt, "sfRootIndex");
     }
 
     {
@@ -495,12 +505,8 @@ TEST(DirectoryNodeTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
-    auto const indexesValue = canonical_VECTOR256();
-    auto const rootIndexValue = canonical_UINT256();
 
     DirectoryNodeBuilder builder{
-        indexesValue,
-        rootIndexValue
     };
 
     auto const entry = builder.build(index);
@@ -522,6 +528,10 @@ TEST(DirectoryNodeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getTakerGetsMPT().has_value());
     EXPECT_FALSE(entry.hasExchangeRate());
     EXPECT_FALSE(entry.getExchangeRate().has_value());
+    EXPECT_FALSE(entry.hasIndexes());
+    EXPECT_FALSE(entry.getIndexes().has_value());
+    EXPECT_FALSE(entry.hasRootIndex());
+    EXPECT_FALSE(entry.getRootIndex().has_value());
     EXPECT_FALSE(entry.hasIndexNext());
     EXPECT_FALSE(entry.getIndexNext().has_value());
     EXPECT_FALSE(entry.hasIndexPrevious());

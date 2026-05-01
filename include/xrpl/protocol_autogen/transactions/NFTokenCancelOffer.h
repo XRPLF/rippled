@@ -19,9 +19,9 @@ class NFTokenCancelOfferBuilder;
  * @brief Transaction: NFTokenCancelOffer
  *
  * Type: ttNFTOKEN_CANCEL_OFFER (28)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenCancelOfferBuilder to construct new transactions.
@@ -48,14 +48,29 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfNFTokenOffers (soeREQUIRED)
-     * @return The field value.
+     * @brief Get sfNFTokenOffers (SoeRequired)
+     * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    SF_VECTOR256::type::value_type
+    protocol_autogen::Optional<SF_VECTOR256::type::value_type>
     getNFTokenOffers() const
     {
-        return this->tx_->at(sfNFTokenOffers);
+        if (hasNFTokenOffers())
+        {
+            return this->tx_->at(sfNFTokenOffers);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfNFTokenOffers is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasNFTokenOffers() const
+    {
+        return this->tx_->isFieldPresent(sfNFTokenOffers);
     }
 };
 
@@ -72,17 +87,15 @@ public:
     /**
      * @brief Construct a new NFTokenCancelOfferBuilder with required fields.
      * @param account The account initiating the transaction.
-     * @param nFTokenOffers The sfNFTokenOffers field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     NFTokenCancelOfferBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_VECTOR256::type::value_type> const& nFTokenOffers,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenCancelOfferBuilder>(ttNFTOKEN_CANCEL_OFFER, account, sequence, fee)
     {
-        setNFTokenOffers(nFTokenOffers);
     }
 
     /**
@@ -102,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfNFTokenOffers (soeREQUIRED)
+     * @brief Set sfNFTokenOffers (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCancelOfferBuilder&

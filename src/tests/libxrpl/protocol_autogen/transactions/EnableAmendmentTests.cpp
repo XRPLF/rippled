@@ -21,7 +21,7 @@ TEST(TransactionsEnableAmendmentTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testEnableAmendment"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testEnableAmendment"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,13 +34,13 @@ TEST(TransactionsEnableAmendmentTests, BuilderSettersRoundTrip)
 
     EnableAmendmentBuilder builder{
         accountValue,
-        ledgerSequenceValue,
-        amendmentValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
+    builder.setLedgerSequence(ledgerSequenceValue);
+    builder.setAmendment(amendmentValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -57,19 +57,23 @@ TEST(TransactionsEnableAmendmentTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = ledgerSequenceValue;
-        auto const actual = tx.getLedgerSequence();
-        expectEqualField(expected, actual, "sfLedgerSequence");
+        auto const actualOpt = tx.getLedgerSequence();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLedgerSequence should be present";
+        expectEqualField(expected, *actualOpt, "sfLedgerSequence");
+        EXPECT_TRUE(tx.hasLedgerSequence());
     }
 
     {
         auto const& expected = amendmentValue;
-        auto const actual = tx.getAmendment();
-        expectEqualField(expected, actual, "sfAmendment");
+        auto const actualOpt = tx.getAmendment();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmendment should be present";
+        expectEqualField(expected, *actualOpt, "sfAmendment");
+        EXPECT_TRUE(tx.hasAmendment());
     }
 
-    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -78,7 +82,7 @@ TEST(TransactionsEnableAmendmentTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testEnableAmendmentFromTx"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testEnableAmendmentFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -92,12 +96,12 @@ TEST(TransactionsEnableAmendmentTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     EnableAmendmentBuilder initialBuilder{
         accountValue,
-        ledgerSequenceValue,
-        amendmentValue,
         sequenceValue,
         feeValue
     };
 
+    initialBuilder.setLedgerSequence(ledgerSequenceValue);
+    initialBuilder.setAmendment(amendmentValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -115,19 +119,21 @@ TEST(TransactionsEnableAmendmentTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    // Verify optional fields
     {
         auto const& expected = ledgerSequenceValue;
-        auto const actual = rebuiltTx.getLedgerSequence();
-        expectEqualField(expected, actual, "sfLedgerSequence");
+        auto const actualOpt = rebuiltTx.getLedgerSequence();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLedgerSequence should be present";
+        expectEqualField(expected, *actualOpt, "sfLedgerSequence");
     }
 
     {
         auto const& expected = amendmentValue;
-        auto const actual = rebuiltTx.getAmendment();
-        expectEqualField(expected, actual, "sfAmendment");
+        auto const actualOpt = rebuiltTx.getAmendment();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmendment should be present";
+        expectEqualField(expected, *actualOpt, "sfAmendment");
     }
 
-    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -135,7 +141,7 @@ TEST(TransactionsEnableAmendmentTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -149,7 +155,7 @@ TEST(TransactionsEnableAmendmentTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -158,5 +164,35 @@ TEST(TransactionsEnableAmendmentTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(EnableAmendmentBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsEnableAmendmentTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testEnableAmendmentNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+
+    EnableAmendmentBuilder builder{
+        accountValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasLedgerSequence());
+    EXPECT_FALSE(tx.getLedgerSequence().has_value());
+    EXPECT_FALSE(tx.hasAmendment());
+    EXPECT_FALSE(tx.getAmendment().has_value());
+}
 
 }
