@@ -29,6 +29,8 @@ namespace xrpl {
 
     @ingroup protocol
 */
+// Protocol-critical, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LedgerEntryType : std::uint16_t {
 
 #pragma push_macro("LEDGER_ENTRY")
@@ -214,6 +216,8 @@ enum LedgerEntryType : std::uint16_t {
 #define TO_VALUE(name, value) name = (value),
 #define NULL_NAME(name, values) values
 #define NULL_OUTPUT(name, value)
+// Bitwise flag enum
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LedgerSpecificFlags : std::uint32_t { XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT) };
 
 // Create getter functions for each set of flags using Meyer's singleton pattern.

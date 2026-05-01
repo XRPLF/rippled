@@ -203,7 +203,7 @@ STTx::getSeqProxy() const
         return SeqProxy::sequence(seq);
     }
 
-    return SeqProxy{SeqProxy::ticket, *ticketSeq};
+    return SeqProxy{SeqProxy::Type::ticket, *ticketSeq};
 }
 
 std::uint32_t
