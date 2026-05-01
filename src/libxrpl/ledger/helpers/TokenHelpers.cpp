@@ -1,6 +1,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -1404,18 +1405,24 @@ accountSendExact(
     Number const senderDelta = beforeFrom - afterFrom;
     Number const receiverDelta = afterTo - beforeTo;
 
-    bool conserved;
+    bool conserved = false;
     if (from == issuer)  // mint
+    {
         conserved = equalAtAssetScale(receiverDelta, saAmount, saAmount, saAmount, asset);
+    }
     else if (to == issuer)  // destroy
+    {
         conserved = equalAtAssetScale(senderDelta, saAmount, saAmount, saAmount, asset);
+    }
     else  // two-sided
+    {
         conserved = equalAtAssetScale(
             senderDelta,
             receiverDelta,
             firstNonzero(beforeFrom, afterFrom),
             firstNonzero(beforeTo, afterTo),
             asset);
+    }
 
     if (!conserved)
     {
