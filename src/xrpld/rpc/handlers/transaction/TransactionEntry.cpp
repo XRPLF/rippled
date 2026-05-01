@@ -31,14 +31,14 @@ doTransactionEntry(RPC::JsonContext& context)
 
     if (!context.params.isMember(jss::tx_hash))
     {
-        jvResult[jss::error] = "fieldNotFoundTransaction";
+        jvResult[jss::error] = RPC::missing_field_error("tx_hash");
     }
     else if (jvResult.get(jss::ledger_hash, Json::nullValue).isNull())
     {
         // We don't work on ledger current.
 
         // XXX We don't support any transaction yet.
-        jvResult[jss::error] = "notYetImplemented";
+        jvResult[jss::error] = RPC::make_error(rpcNOT_IMPL);
     }
     else
     {
@@ -47,14 +47,14 @@ doTransactionEntry(RPC::JsonContext& context)
         // routine, returning success or failure.
         if (!uTransID.parseHex(context.params[jss::tx_hash].asString()))
         {
-            jvResult[jss::error] = "malformedRequest";
+            jvResult[jss::error] = RPC::make_param_error("tx_hash");
             return jvResult;
         }
 
         auto [sttx, stobj] = lpLedger->txRead(uTransID);
         if (!sttx)
         {
-            jvResult[jss::error] = "transactionNotFound";
+            jvResult[jss::error] = RPC::make_error(rpcTXN_NOT_FOUND);
         }
         else
         {
