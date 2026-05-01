@@ -160,6 +160,25 @@ protected:
         LogServiceState::replaceSinks({sink});
     }
 
+    /// Install a single sink with a custom formatter.
+    static void
+    installSinkWithFormatter(std::ostringstream& out, std::unique_ptr<spdlog::formatter> fmt)
+    {
+        auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(out);
+        sink->set_level(spdlog::level::trace);
+        sink->set_formatter(std::move(fmt));
+        LogServiceState::replaceSinks({sink});
+    }
+
+    /// Clone a NonCriticalFormatter (friend access to makeNonCriticalFormatter).
+    static std::unique_ptr<spdlog::formatter>
+    cloneNonCriticalFormatter()
+    {
+        auto original = LogServiceState::makeNonCriticalFormatter(
+            LogServiceState::makeFormatter(LogServiceState::format()));
+        return original->clone();
+    }
+
     void
     TearDown() override
     {
@@ -410,6 +429,13 @@ TEST_F(LoggerFixture, non_critical_formatter_all_non_critical_levels)
     logger.fatal() << "f";
     EXPECT_EQ(out.find("FTL"), std::string::npos)
         << "FTL should not appear in NonCriticalFormatter output: " << out;
+}
+
+TEST_F(LoggerFixture, non_critical_formatter_clone_succeeds)
+{
+    initLogging(false);
+    auto cloned = cloneNonCriticalFormatter();
+    EXPECT_NE(cloned, nullptr);
 }
 
 TEST_F(LoggerFixture, console_enabled_creates_stdout_and_stderr_sinks)
