@@ -49,26 +49,13 @@ public:
     /**
      * @brief Get sfRawTransactions (SoeRequired)
      * @note This is an untyped field.
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    std::optional<std::reference_wrapper<STArray const>>
+    STArray const&
     getRawTransactions() const
     {
-        if (this->tx_->isFieldPresent(sfRawTransactions))
-            return this->tx_->getFieldArray(sfRawTransactions);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfRawTransactions is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasRawTransactions() const
-    {
-        return this->tx_->isFieldPresent(sfRawTransactions);
+        return this->tx_->getFieldArray(sfRawTransactions);
     }
     /**
      * @brief Get sfBatchSigners (SoeOptional)
@@ -109,15 +96,17 @@ public:
     /**
      * @brief Construct a new BatchBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param rawTransactions The sfRawTransactions field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     BatchBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     STArray const& rawTransactions,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<BatchBuilder>(ttBATCH, account, sequence, fee)
     {
+        setRawTransactions(rawTransactions);
     }
 
     /**

@@ -96,74 +96,35 @@ public:
     /**
      * @brief Get sfNFTokens (SoeRequired)
      * @note This is an untyped field (unknown).
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    std::optional<std::reference_wrapper<STArray const>>
+    STArray const&
     getNFTokens() const
     {
-        if (this->sle_->isFieldPresent(sfNFTokens))
-            return this->sle_->getFieldArray(sfNFTokens);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfNFTokens is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasNFTokens() const
-    {
-        return this->sle_->isFieldPresent(sfNFTokens);
+        return this->sle_->getFieldArray(sfNFTokens);
     }
 
     /**
      * @brief Get sfPreviousTxnID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getPreviousTxnID() const
     {
-        if (hasPreviousTxnID())
-            return this->sle_->at(sfPreviousTxnID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnID() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnID);
+        return this->sle_->at(sfPreviousTxnID);
     }
 
     /**
      * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousTxnLgrSeq() const
     {
-        if (hasPreviousTxnLgrSeq())
-            return this->sle_->at(sfPreviousTxnLgrSeq);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnLgrSeq is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnLgrSeq() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+        return this->sle_->at(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -179,10 +140,16 @@ class NFTokenPageBuilder : public LedgerEntryBuilderBase<NFTokenPageBuilder>
 public:
     /**
      * @brief Construct a new NFTokenPageBuilder with required fields.
+     * @param nFTokens The sfNFTokens field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    NFTokenPageBuilder()
+    NFTokenPageBuilder(STArray const& nFTokens,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<NFTokenPageBuilder>(ltNFTOKEN_PAGE)
     {
+        setNFTokens(nFTokens);
+        setPreviousTxnID(previousTxnID);
+        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**

@@ -47,218 +47,101 @@ public:
 
     /**
      * @brief Get sfAccount (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getAccount() const
     {
-        if (hasAccount())
-            return this->sle_->at(sfAccount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAccount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAccount() const
-    {
-        return this->sle_->isFieldPresent(sfAccount);
+        return this->sle_->at(sfAccount);
     }
 
     /**
      * @brief Get sfSequence (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getSequence() const
     {
-        if (hasSequence())
-            return this->sle_->at(sfSequence);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSequence is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSequence() const
-    {
-        return this->sle_->isFieldPresent(sfSequence);
+        return this->sle_->at(sfSequence);
     }
 
     /**
      * @brief Get sfTakerPays (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getTakerPays() const
     {
-        if (hasTakerPays())
-            return this->sle_->at(sfTakerPays);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfTakerPays is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasTakerPays() const
-    {
-        return this->sle_->isFieldPresent(sfTakerPays);
+        return this->sle_->at(sfTakerPays);
     }
 
     /**
      * @brief Get sfTakerGets (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getTakerGets() const
     {
-        if (hasTakerGets())
-            return this->sle_->at(sfTakerGets);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfTakerGets is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasTakerGets() const
-    {
-        return this->sle_->isFieldPresent(sfTakerGets);
+        return this->sle_->at(sfTakerGets);
     }
 
     /**
      * @brief Get sfBookDirectory (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getBookDirectory() const
     {
-        if (hasBookDirectory())
-            return this->sle_->at(sfBookDirectory);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfBookDirectory is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasBookDirectory() const
-    {
-        return this->sle_->isFieldPresent(sfBookDirectory);
+        return this->sle_->at(sfBookDirectory);
     }
 
     /**
      * @brief Get sfBookNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getBookNode() const
     {
-        if (hasBookNode())
-            return this->sle_->at(sfBookNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfBookNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasBookNode() const
-    {
-        return this->sle_->isFieldPresent(sfBookNode);
+        return this->sle_->at(sfBookNode);
     }
 
     /**
      * @brief Get sfOwnerNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getOwnerNode() const
     {
-        if (hasOwnerNode())
-            return this->sle_->at(sfOwnerNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwnerNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwnerNode() const
-    {
-        return this->sle_->isFieldPresent(sfOwnerNode);
+        return this->sle_->at(sfOwnerNode);
     }
 
     /**
      * @brief Get sfPreviousTxnID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getPreviousTxnID() const
     {
-        if (hasPreviousTxnID())
-            return this->sle_->at(sfPreviousTxnID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnID() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnID);
+        return this->sle_->at(sfPreviousTxnID);
     }
 
     /**
      * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousTxnLgrSeq() const
     {
-        if (hasPreviousTxnLgrSeq())
-            return this->sle_->at(sfPreviousTxnLgrSeq);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnLgrSeq is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnLgrSeq() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+        return this->sle_->at(sfPreviousTxnLgrSeq);
     }
 
     /**
@@ -347,10 +230,28 @@ class OfferBuilder : public LedgerEntryBuilderBase<OfferBuilder>
 public:
     /**
      * @brief Construct a new OfferBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param sequence The sfSequence field value.
+     * @param takerPays The sfTakerPays field value.
+     * @param takerGets The sfTakerGets field value.
+     * @param bookDirectory The sfBookDirectory field value.
+     * @param bookNode The sfBookNode field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    OfferBuilder()
+    OfferBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,std::decay_t<typename SF_UINT256::type::value_type> const& bookDirectory,std::decay_t<typename SF_UINT64::type::value_type> const& bookNode,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<OfferBuilder>(ltOFFER)
     {
+        setAccount(account);
+        setSequence(sequence);
+        setTakerPays(takerPays);
+        setTakerGets(takerGets);
+        setBookDirectory(bookDirectory);
+        setBookNode(bookNode);
+        setOwnerNode(ownerNode);
+        setPreviousTxnID(previousTxnID);
+        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**

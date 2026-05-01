@@ -21,7 +21,7 @@ TEST(TransactionsAMMDepositTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMDeposit"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMDeposit"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -39,13 +39,13 @@ TEST(TransactionsAMMDepositTests, BuilderSettersRoundTrip)
 
     AMMDepositBuilder builder{
         accountValue,
+        assetValue,
+        asset2Value,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setAsset(assetValue);
-    builder.setAsset2(asset2Value);
     builder.setAmount(amountValue);
     builder.setAmount2(amount2Value);
     builder.setEPrice(ePriceValue);
@@ -67,23 +67,19 @@ TEST(TransactionsAMMDepositTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = assetValue;
-        auto const actualOpt = tx.getAsset();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAsset should be present";
-        expectEqualField(expected, *actualOpt, "sfAsset");
-        EXPECT_TRUE(tx.hasAsset());
+        auto const actual = tx.getAsset();
+        expectEqualField(expected, actual, "sfAsset");
     }
 
     {
         auto const& expected = asset2Value;
-        auto const actualOpt = tx.getAsset2();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAsset2 should be present";
-        expectEqualField(expected, *actualOpt, "sfAsset2");
-        EXPECT_TRUE(tx.hasAsset2());
+        auto const actual = tx.getAsset2();
+        expectEqualField(expected, actual, "sfAsset2");
     }
 
+    // Verify optional fields
     {
         auto const& expected = amountValue;
         auto const actualOpt = tx.getAmount();
@@ -132,7 +128,7 @@ TEST(TransactionsAMMDepositTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMDepositFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMDepositFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -151,12 +147,12 @@ TEST(TransactionsAMMDepositTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     AMMDepositBuilder initialBuilder{
         accountValue,
+        assetValue,
+        asset2Value,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setAsset(assetValue);
-    initialBuilder.setAsset2(asset2Value);
     initialBuilder.setAmount(amountValue);
     initialBuilder.setAmount2(amount2Value);
     initialBuilder.setEPrice(ePriceValue);
@@ -179,21 +175,19 @@ TEST(TransactionsAMMDepositTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = assetValue;
-        auto const actualOpt = rebuiltTx.getAsset();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAsset should be present";
-        expectEqualField(expected, *actualOpt, "sfAsset");
+        auto const actual = rebuiltTx.getAsset();
+        expectEqualField(expected, actual, "sfAsset");
     }
 
     {
         auto const& expected = asset2Value;
-        auto const actualOpt = rebuiltTx.getAsset2();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAsset2 should be present";
-        expectEqualField(expected, *actualOpt, "sfAsset2");
+        auto const actual = rebuiltTx.getAsset2();
+        expectEqualField(expected, actual, "sfAsset2");
     }
 
+    // Verify optional fields
     {
         auto const& expected = amountValue;
         auto const actualOpt = rebuiltTx.getAmount();
@@ -236,7 +230,7 @@ TEST(TransactionsAMMDepositTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -250,7 +244,7 @@ TEST(TransactionsAMMDepositTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -264,7 +258,7 @@ TEST(TransactionsAMMDepositTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMDepositNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMDepositNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -272,9 +266,13 @@ TEST(TransactionsAMMDepositTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const assetValue = canonical_ISSUE();
+    auto const asset2Value = canonical_ISSUE();
 
     AMMDepositBuilder builder{
         accountValue,
+        assetValue,
+        asset2Value,
         sequenceValue,
         feeValue
     };
@@ -284,10 +282,6 @@ TEST(TransactionsAMMDepositTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasAsset());
-    EXPECT_FALSE(tx.getAsset().has_value());
-    EXPECT_FALSE(tx.hasAsset2());
-    EXPECT_FALSE(tx.getAsset2().has_value());
     EXPECT_FALSE(tx.hasAmount());
     EXPECT_FALSE(tx.getAmount().has_value());
     EXPECT_FALSE(tx.hasAmount2());

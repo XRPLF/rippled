@@ -49,80 +49,35 @@ public:
 
     /**
      * @brief Get sfAmount (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getAmount() const
     {
-        if (hasAmount())
-        {
-            return this->tx_->at(sfAmount);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAmount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAmount() const
-    {
-        return this->tx_->isFieldPresent(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 
     /**
      * @brief Get sfAmount2 (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getAmount2() const
     {
-        if (hasAmount2())
-        {
-            return this->tx_->at(sfAmount2);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAmount2 is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAmount2() const
-    {
-        return this->tx_->isFieldPresent(sfAmount2);
+        return this->tx_->at(sfAmount2);
     }
 
     /**
      * @brief Get sfTradingFee (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    SF_UINT16::type::value_type
     getTradingFee() const
     {
-        if (hasTradingFee())
-        {
-            return this->tx_->at(sfTradingFee);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfTradingFee is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasTradingFee() const
-    {
-        return this->tx_->isFieldPresent(sfTradingFee);
+        return this->tx_->at(sfTradingFee);
     }
 };
 
@@ -139,15 +94,21 @@ public:
     /**
      * @brief Construct a new AMMCreateBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param amount The sfAmount field value.
+     * @param amount2 The sfAmount2 field value.
+     * @param tradingFee The sfTradingFee field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     AMMCreateBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount2,                     std::decay_t<typename SF_UINT16::type::value_type> const& tradingFee,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<AMMCreateBuilder>(ttAMM_CREATE, account, sequence, fee)
     {
+        setAmount(amount);
+        setAmount2(amount2);
+        setTradingFee(tradingFee);
     }
 
     /**

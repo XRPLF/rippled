@@ -47,219 +47,102 @@ public:
 
     /**
      * @brief Get sfAccount (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getAccount() const
     {
-        if (hasAccount())
-            return this->sle_->at(sfAccount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAccount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAccount() const
-    {
-        return this->sle_->isFieldPresent(sfAccount);
+        return this->sle_->at(sfAccount);
     }
 
     /**
      * @brief Get sfXChainBridge (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_XCHAIN_BRIDGE::type::value_type>
+    SF_XCHAIN_BRIDGE::type::value_type
     getXChainBridge() const
     {
-        if (hasXChainBridge())
-            return this->sle_->at(sfXChainBridge);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfXChainBridge is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasXChainBridge() const
-    {
-        return this->sle_->isFieldPresent(sfXChainBridge);
+        return this->sle_->at(sfXChainBridge);
     }
 
     /**
      * @brief Get sfXChainClaimID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getXChainClaimID() const
     {
-        if (hasXChainClaimID())
-            return this->sle_->at(sfXChainClaimID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfXChainClaimID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasXChainClaimID() const
-    {
-        return this->sle_->isFieldPresent(sfXChainClaimID);
+        return this->sle_->at(sfXChainClaimID);
     }
 
     /**
      * @brief Get sfOtherChainSource (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getOtherChainSource() const
     {
-        if (hasOtherChainSource())
-            return this->sle_->at(sfOtherChainSource);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOtherChainSource is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOtherChainSource() const
-    {
-        return this->sle_->isFieldPresent(sfOtherChainSource);
+        return this->sle_->at(sfOtherChainSource);
     }
 
     /**
      * @brief Get sfXChainClaimAttestations (SoeRequired)
      * @note This is an untyped field (unknown).
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    std::optional<std::reference_wrapper<STArray const>>
+    STArray const&
     getXChainClaimAttestations() const
     {
-        if (this->sle_->isFieldPresent(sfXChainClaimAttestations))
-            return this->sle_->getFieldArray(sfXChainClaimAttestations);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfXChainClaimAttestations is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasXChainClaimAttestations() const
-    {
-        return this->sle_->isFieldPresent(sfXChainClaimAttestations);
+        return this->sle_->getFieldArray(sfXChainClaimAttestations);
     }
 
     /**
      * @brief Get sfSignatureReward (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getSignatureReward() const
     {
-        if (hasSignatureReward())
-            return this->sle_->at(sfSignatureReward);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSignatureReward is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSignatureReward() const
-    {
-        return this->sle_->isFieldPresent(sfSignatureReward);
+        return this->sle_->at(sfSignatureReward);
     }
 
     /**
      * @brief Get sfOwnerNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getOwnerNode() const
     {
-        if (hasOwnerNode())
-            return this->sle_->at(sfOwnerNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwnerNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwnerNode() const
-    {
-        return this->sle_->isFieldPresent(sfOwnerNode);
+        return this->sle_->at(sfOwnerNode);
     }
 
     /**
      * @brief Get sfPreviousTxnID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getPreviousTxnID() const
     {
-        if (hasPreviousTxnID())
-            return this->sle_->at(sfPreviousTxnID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnID() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnID);
+        return this->sle_->at(sfPreviousTxnID);
     }
 
     /**
      * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousTxnLgrSeq() const
     {
-        if (hasPreviousTxnLgrSeq())
-            return this->sle_->at(sfPreviousTxnLgrSeq);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnLgrSeq is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnLgrSeq() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+        return this->sle_->at(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -275,10 +158,28 @@ class XChainOwnedClaimIDBuilder : public LedgerEntryBuilderBase<XChainOwnedClaim
 public:
     /**
      * @brief Construct a new XChainOwnedClaimIDBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param xChainClaimID The sfXChainClaimID field value.
+     * @param otherChainSource The sfOtherChainSource field value.
+     * @param xChainClaimAttestations The sfXChainClaimAttestations field value.
+     * @param signatureReward The sfSignatureReward field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    XChainOwnedClaimIDBuilder()
+    XChainOwnedClaimIDBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,STArray const& xChainClaimAttestations,std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<XChainOwnedClaimIDBuilder>(ltXCHAIN_OWNED_CLAIM_ID)
     {
+        setAccount(account);
+        setXChainBridge(xChainBridge);
+        setXChainClaimID(xChainClaimID);
+        setOtherChainSource(otherChainSource);
+        setXChainClaimAttestations(xChainClaimAttestations);
+        setSignatureReward(signatureReward);
+        setOwnerNode(ownerNode);
+        setPreviousTxnID(previousTxnID);
+        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**

@@ -21,7 +21,7 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPermissionedDomainSet"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPermissionedDomainSet"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,13 +34,13 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderSettersRoundTrip)
 
     PermissionedDomainSetBuilder builder{
         accountValue,
+        acceptedCredentialsValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
     builder.setDomainID(domainIDValue);
-    builder.setAcceptedCredentials(acceptedCredentialsValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -57,6 +57,12 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    {
+        auto const& expected = acceptedCredentialsValue;
+        auto const actual = tx.getAcceptedCredentials();
+        expectEqualField(expected, actual, "sfAcceptedCredentials");
+    }
+
     // Verify optional fields
     {
         auto const& expected = domainIDValue;
@@ -64,14 +70,6 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
         EXPECT_TRUE(tx.hasDomainID());
-    }
-
-    {
-        auto const& expected = acceptedCredentialsValue;
-        auto const actualOpt = tx.getAcceptedCredentials();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAcceptedCredentials should be present";
-        expectEqualField(expected, *actualOpt, "sfAcceptedCredentials");
-        EXPECT_TRUE(tx.hasAcceptedCredentials());
     }
 
 }
@@ -82,7 +80,7 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPermissionedDomainSetFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPermissionedDomainSetFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -96,12 +94,12 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     PermissionedDomainSetBuilder initialBuilder{
         accountValue,
+        acceptedCredentialsValue,
         sequenceValue,
         feeValue
     };
 
     initialBuilder.setDomainID(domainIDValue);
-    initialBuilder.setAcceptedCredentials(acceptedCredentialsValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -119,19 +117,18 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    {
+        auto const& expected = acceptedCredentialsValue;
+        auto const actual = rebuiltTx.getAcceptedCredentials();
+        expectEqualField(expected, actual, "sfAcceptedCredentials");
+    }
+
     // Verify optional fields
     {
         auto const& expected = domainIDValue;
         auto const actualOpt = rebuiltTx.getDomainID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
-    }
-
-    {
-        auto const& expected = acceptedCredentialsValue;
-        auto const actualOpt = rebuiltTx.getAcceptedCredentials();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAcceptedCredentials should be present";
-        expectEqualField(expected, *actualOpt, "sfAcceptedCredentials");
     }
 
 }
@@ -141,7 +138,7 @@ TEST(TransactionsPermissionedDomainSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -155,7 +152,7 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -169,7 +166,7 @@ TEST(TransactionsPermissionedDomainSetTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPermissionedDomainSetNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPermissionedDomainSetNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -177,9 +174,11 @@ TEST(TransactionsPermissionedDomainSetTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const acceptedCredentialsValue = canonical_ARRAY();
 
     PermissionedDomainSetBuilder builder{
         accountValue,
+        acceptedCredentialsValue,
         sequenceValue,
         feeValue
     };
@@ -191,8 +190,6 @@ TEST(TransactionsPermissionedDomainSetTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(tx.hasDomainID());
     EXPECT_FALSE(tx.getDomainID().has_value());
-    EXPECT_FALSE(tx.hasAcceptedCredentials());
-    EXPECT_FALSE(tx.getAcceptedCredentials().has_value());
 }
 
 }

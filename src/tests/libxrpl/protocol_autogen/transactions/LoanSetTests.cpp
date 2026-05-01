@@ -21,7 +21,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanSet"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanSet"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -49,12 +49,13 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
 
     LoanSetBuilder builder{
         accountValue,
+        loanBrokerIDValue,
+        principalRequestedValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setLoanBrokerID(loanBrokerIDValue);
     builder.setData(dataValue);
     builder.setCounterparty(counterpartyValue);
     builder.setCounterpartySignature(counterpartySignatureValue);
@@ -67,7 +68,6 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     builder.setLateInterestRate(lateInterestRateValue);
     builder.setCloseInterestRate(closeInterestRateValue);
     builder.setOverpaymentInterestRate(overpaymentInterestRateValue);
-    builder.setPrincipalRequested(principalRequestedValue);
     builder.setPaymentTotal(paymentTotalValue);
     builder.setPaymentInterval(paymentIntervalValue);
     builder.setGracePeriod(gracePeriodValue);
@@ -87,15 +87,19 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = tx.getLoanBrokerID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanBrokerID should be present";
-        expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
-        EXPECT_TRUE(tx.hasLoanBrokerID());
+        auto const actual = tx.getLoanBrokerID();
+        expectEqualField(expected, actual, "sfLoanBrokerID");
     }
 
+    {
+        auto const& expected = principalRequestedValue;
+        auto const actual = tx.getPrincipalRequested();
+        expectEqualField(expected, actual, "sfPrincipalRequested");
+    }
+
+    // Verify optional fields
     {
         auto const& expected = dataValue;
         auto const actualOpt = tx.getData();
@@ -193,14 +197,6 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = principalRequestedValue;
-        auto const actualOpt = tx.getPrincipalRequested();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPrincipalRequested should be present";
-        expectEqualField(expected, *actualOpt, "sfPrincipalRequested");
-        EXPECT_TRUE(tx.hasPrincipalRequested());
-    }
-
-    {
         auto const& expected = paymentTotalValue;
         auto const actualOpt = tx.getPaymentTotal();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPaymentTotal should be present";
@@ -232,7 +228,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanSetFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanSetFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -261,11 +257,12 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     LoanSetBuilder initialBuilder{
         accountValue,
+        loanBrokerIDValue,
+        principalRequestedValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setLoanBrokerID(loanBrokerIDValue);
     initialBuilder.setData(dataValue);
     initialBuilder.setCounterparty(counterpartyValue);
     initialBuilder.setCounterpartySignature(counterpartySignatureValue);
@@ -278,7 +275,6 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setLateInterestRate(lateInterestRateValue);
     initialBuilder.setCloseInterestRate(closeInterestRateValue);
     initialBuilder.setOverpaymentInterestRate(overpaymentInterestRateValue);
-    initialBuilder.setPrincipalRequested(principalRequestedValue);
     initialBuilder.setPaymentTotal(paymentTotalValue);
     initialBuilder.setPaymentInterval(paymentIntervalValue);
     initialBuilder.setGracePeriod(gracePeriodValue);
@@ -299,14 +295,19 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = rebuiltTx.getLoanBrokerID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanBrokerID should be present";
-        expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
+        auto const actual = rebuiltTx.getLoanBrokerID();
+        expectEqualField(expected, actual, "sfLoanBrokerID");
     }
 
+    {
+        auto const& expected = principalRequestedValue;
+        auto const actual = rebuiltTx.getPrincipalRequested();
+        expectEqualField(expected, actual, "sfPrincipalRequested");
+    }
+
+    // Verify optional fields
     {
         auto const& expected = dataValue;
         auto const actualOpt = rebuiltTx.getData();
@@ -392,13 +393,6 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = principalRequestedValue;
-        auto const actualOpt = rebuiltTx.getPrincipalRequested();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPrincipalRequested should be present";
-        expectEqualField(expected, *actualOpt, "sfPrincipalRequested");
-    }
-
-    {
         auto const& expected = paymentTotalValue;
         auto const actualOpt = rebuiltTx.getPaymentTotal();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPaymentTotal should be present";
@@ -426,7 +420,7 @@ TEST(TransactionsLoanSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -440,7 +434,7 @@ TEST(TransactionsLoanSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -454,7 +448,7 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanSetNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanSetNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -462,9 +456,13 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const loanBrokerIDValue = canonical_UINT256();
+    auto const principalRequestedValue = canonical_NUMBER();
 
     LoanSetBuilder builder{
         accountValue,
+        loanBrokerIDValue,
+        principalRequestedValue,
         sequenceValue,
         feeValue
     };
@@ -474,8 +472,6 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasLoanBrokerID());
-    EXPECT_FALSE(tx.getLoanBrokerID().has_value());
     EXPECT_FALSE(tx.hasData());
     EXPECT_FALSE(tx.getData().has_value());
     EXPECT_FALSE(tx.hasCounterparty());
@@ -500,8 +496,6 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCloseInterestRate().has_value());
     EXPECT_FALSE(tx.hasOverpaymentInterestRate());
     EXPECT_FALSE(tx.getOverpaymentInterestRate().has_value());
-    EXPECT_FALSE(tx.hasPrincipalRequested());
-    EXPECT_FALSE(tx.getPrincipalRequested().has_value());
     EXPECT_FALSE(tx.hasPaymentTotal());
     EXPECT_FALSE(tx.getPaymentTotal().has_value());
     EXPECT_FALSE(tx.hasPaymentInterval());

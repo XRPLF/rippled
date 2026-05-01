@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfDestination (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getDestination() const
     {
-        if (hasDestination())
-        {
-            return this->tx_->at(sfDestination);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfDestination is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasDestination() const
-    {
-        return this->tx_->isFieldPresent(sfDestination);
+        return this->tx_->at(sfDestination);
     }
 
     /**
@@ -139,15 +124,17 @@ public:
     /**
      * @brief Construct a new AccountDeleteBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param destination The sfDestination field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     AccountDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<AccountDeleteBuilder>(ttACCOUNT_DELETE, account, sequence, fee)
     {
+        setDestination(destination);
     }
 
     /**

@@ -32,18 +32,18 @@ TEST(OracleTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     OracleBuilder builder{
+        ownerValue,
+        providerValue,
+        priceDataSeriesValue,
+        assetClassValue,
+        lastUpdateTimeValue,
+        ownerNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
     };
 
-    builder.setOwner(ownerValue);
     builder.setOracleDocumentID(oracleDocumentIDValue);
-    builder.setProvider(providerValue);
-    builder.setPriceDataSeries(priceDataSeriesValue);
-    builder.setAssetClass(assetClassValue);
-    builder.setLastUpdateTime(lastUpdateTimeValue);
     builder.setURI(uRIValue);
-    builder.setOwnerNode(ownerNodeValue);
-    builder.setPreviousTxnID(previousTxnIDValue);
-    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -56,10 +56,50 @@ TEST(OracleTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = entry.getOwner();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfOwner");
-        EXPECT_TRUE(entry.hasOwner());
+        auto const actual = entry.getOwner();
+        expectEqualField(expected, actual, "sfOwner");
+    }
+
+    {
+        auto const& expected = providerValue;
+        auto const actual = entry.getProvider();
+        expectEqualField(expected, actual, "sfProvider");
+    }
+
+    {
+        auto const& expected = priceDataSeriesValue;
+        auto const actual = entry.getPriceDataSeries();
+        expectEqualField(expected, actual, "sfPriceDataSeries");
+    }
+
+    {
+        auto const& expected = assetClassValue;
+        auto const actual = entry.getAssetClass();
+        expectEqualField(expected, actual, "sfAssetClass");
+    }
+
+    {
+        auto const& expected = lastUpdateTimeValue;
+        auto const actual = entry.getLastUpdateTime();
+        expectEqualField(expected, actual, "sfLastUpdateTime");
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+        auto const actual = entry.getOwnerNode();
+        expectEqualField(expected, actual, "sfOwnerNode");
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+        auto const actual = entry.getPreviousTxnID();
+        expectEqualField(expected, actual, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+        auto const actual = entry.getPreviousTxnLgrSeq();
+        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
     }
 
     {
@@ -71,67 +111,11 @@ TEST(OracleTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = providerValue;
-        auto const actualOpt = entry.getProvider();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfProvider");
-        EXPECT_TRUE(entry.hasProvider());
-    }
-
-    {
-        auto const& expected = priceDataSeriesValue;
-        auto const actualOpt = entry.getPriceDataSeries();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPriceDataSeries");
-        EXPECT_TRUE(entry.hasPriceDataSeries());
-    }
-
-    {
-        auto const& expected = assetClassValue;
-        auto const actualOpt = entry.getAssetClass();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAssetClass");
-        EXPECT_TRUE(entry.hasAssetClass());
-    }
-
-    {
-        auto const& expected = lastUpdateTimeValue;
-        auto const actualOpt = entry.getLastUpdateTime();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLastUpdateTime");
-        EXPECT_TRUE(entry.hasLastUpdateTime());
-    }
-
-    {
         auto const& expected = uRIValue;
         auto const actualOpt = entry.getURI();
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfURI");
         EXPECT_TRUE(entry.hasURI());
-    }
-
-    {
-        auto const& expected = ownerNodeValue;
-        auto const actualOpt = entry.getOwnerNode();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfOwnerNode");
-        EXPECT_TRUE(entry.hasOwnerNode());
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-        auto const actualOpt = entry.getPreviousTxnID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
-        EXPECT_TRUE(entry.hasPreviousTxnID());
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-        auto const actualOpt = entry.getPreviousTxnLgrSeq();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
-        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -183,14 +167,81 @@ TEST(OracleTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = ownerValue;
 
-        auto const fromSleOpt = entryFromSle.getOwner();
-        auto const fromBuilderOpt = entryFromBuilder.getOwner();
+        auto const fromSle = entryFromSle.getOwner();
+        auto const fromBuilder = entryFromBuilder.getOwner();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
+        expectEqualField(expected, fromSle, "sfOwner");
+        expectEqualField(expected, fromBuilder, "sfOwner");
+    }
 
-        expectEqualField(expected, *fromSleOpt, "sfOwner");
-        expectEqualField(expected, *fromBuilderOpt, "sfOwner");
+    {
+        auto const& expected = providerValue;
+
+        auto const fromSle = entryFromSle.getProvider();
+        auto const fromBuilder = entryFromBuilder.getProvider();
+
+        expectEqualField(expected, fromSle, "sfProvider");
+        expectEqualField(expected, fromBuilder, "sfProvider");
+    }
+
+    {
+        auto const& expected = priceDataSeriesValue;
+
+        auto const fromSle = entryFromSle.getPriceDataSeries();
+        auto const fromBuilder = entryFromBuilder.getPriceDataSeries();
+
+        expectEqualField(expected, fromSle, "sfPriceDataSeries");
+        expectEqualField(expected, fromBuilder, "sfPriceDataSeries");
+    }
+
+    {
+        auto const& expected = assetClassValue;
+
+        auto const fromSle = entryFromSle.getAssetClass();
+        auto const fromBuilder = entryFromBuilder.getAssetClass();
+
+        expectEqualField(expected, fromSle, "sfAssetClass");
+        expectEqualField(expected, fromBuilder, "sfAssetClass");
+    }
+
+    {
+        auto const& expected = lastUpdateTimeValue;
+
+        auto const fromSle = entryFromSle.getLastUpdateTime();
+        auto const fromBuilder = entryFromBuilder.getLastUpdateTime();
+
+        expectEqualField(expected, fromSle, "sfLastUpdateTime");
+        expectEqualField(expected, fromBuilder, "sfLastUpdateTime");
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+
+        auto const fromSle = entryFromSle.getOwnerNode();
+        auto const fromBuilder = entryFromBuilder.getOwnerNode();
+
+        expectEqualField(expected, fromSle, "sfOwnerNode");
+        expectEqualField(expected, fromBuilder, "sfOwnerNode");
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+
+        auto const fromSle = entryFromSle.getPreviousTxnID();
+        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
+
+        expectEqualField(expected, fromSle, "sfPreviousTxnID");
+        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+
+        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
+
+        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
     }
 
     {
@@ -207,58 +258,6 @@ TEST(OracleTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = providerValue;
-
-        auto const fromSleOpt = entryFromSle.getProvider();
-        auto const fromBuilderOpt = entryFromBuilder.getProvider();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfProvider");
-        expectEqualField(expected, *fromBuilderOpt, "sfProvider");
-    }
-
-    {
-        auto const& expected = priceDataSeriesValue;
-
-        auto const fromSleOpt = entryFromSle.getPriceDataSeries();
-        auto const fromBuilderOpt = entryFromBuilder.getPriceDataSeries();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPriceDataSeries");
-        expectEqualField(expected, *fromBuilderOpt, "sfPriceDataSeries");
-    }
-
-    {
-        auto const& expected = assetClassValue;
-
-        auto const fromSleOpt = entryFromSle.getAssetClass();
-        auto const fromBuilderOpt = entryFromBuilder.getAssetClass();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfAssetClass");
-        expectEqualField(expected, *fromBuilderOpt, "sfAssetClass");
-    }
-
-    {
-        auto const& expected = lastUpdateTimeValue;
-
-        auto const fromSleOpt = entryFromSle.getLastUpdateTime();
-        auto const fromBuilderOpt = entryFromBuilder.getLastUpdateTime();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLastUpdateTime");
-        expectEqualField(expected, *fromBuilderOpt, "sfLastUpdateTime");
-    }
-
-    {
         auto const& expected = uRIValue;
 
         auto const fromSleOpt = entryFromSle.getURI();
@@ -269,45 +268,6 @@ TEST(OracleTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfURI");
         expectEqualField(expected, *fromBuilderOpt, "sfURI");
-    }
-
-    {
-        auto const& expected = ownerNodeValue;
-
-        auto const fromSleOpt = entryFromSle.getOwnerNode();
-        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
-        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-
-        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-
-        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -355,32 +315,32 @@ TEST(OracleTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
+    auto const ownerValue = canonical_ACCOUNT();
+    auto const providerValue = canonical_VL();
+    auto const priceDataSeriesValue = canonical_ARRAY();
+    auto const assetClassValue = canonical_VL();
+    auto const lastUpdateTimeValue = canonical_UINT32();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     OracleBuilder builder{
+        ownerValue,
+        providerValue,
+        priceDataSeriesValue,
+        assetClassValue,
+        lastUpdateTimeValue,
+        ownerNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
     };
 
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasOwner());
-    EXPECT_FALSE(entry.getOwner().has_value());
     EXPECT_FALSE(entry.hasOracleDocumentID());
     EXPECT_FALSE(entry.getOracleDocumentID().has_value());
-    EXPECT_FALSE(entry.hasProvider());
-    EXPECT_FALSE(entry.getProvider().has_value());
-    EXPECT_FALSE(entry.hasPriceDataSeries());
-    EXPECT_FALSE(entry.getPriceDataSeries().has_value());
-    EXPECT_FALSE(entry.hasAssetClass());
-    EXPECT_FALSE(entry.getAssetClass().has_value());
-    EXPECT_FALSE(entry.hasLastUpdateTime());
-    EXPECT_FALSE(entry.getLastUpdateTime().has_value());
     EXPECT_FALSE(entry.hasURI());
     EXPECT_FALSE(entry.getURI().has_value());
-    EXPECT_FALSE(entry.hasOwnerNode());
-    EXPECT_FALSE(entry.getOwnerNode().has_value());
-    EXPECT_FALSE(entry.hasPreviousTxnID());
-    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
-    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
-    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
 }

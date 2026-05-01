@@ -47,170 +47,79 @@ public:
 
     /**
      * @brief Get sfPreviousTxnID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getPreviousTxnID() const
     {
-        if (hasPreviousTxnID())
-            return this->sle_->at(sfPreviousTxnID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnID() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnID);
+        return this->sle_->at(sfPreviousTxnID);
     }
 
     /**
      * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousTxnLgrSeq() const
     {
-        if (hasPreviousTxnLgrSeq())
-            return this->sle_->at(sfPreviousTxnLgrSeq);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnLgrSeq is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnLgrSeq() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+        return this->sle_->at(sfPreviousTxnLgrSeq);
     }
 
     /**
      * @brief Get sfOwnerNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getOwnerNode() const
     {
-        if (hasOwnerNode())
-            return this->sle_->at(sfOwnerNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwnerNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwnerNode() const
-    {
-        return this->sle_->isFieldPresent(sfOwnerNode);
+        return this->sle_->at(sfOwnerNode);
     }
 
     /**
      * @brief Get sfLoanBrokerNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getLoanBrokerNode() const
     {
-        if (hasLoanBrokerNode())
-            return this->sle_->at(sfLoanBrokerNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanBrokerNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanBrokerNode() const
-    {
-        return this->sle_->isFieldPresent(sfLoanBrokerNode);
+        return this->sle_->at(sfLoanBrokerNode);
     }
 
     /**
      * @brief Get sfLoanBrokerID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getLoanBrokerID() const
     {
-        if (hasLoanBrokerID())
-            return this->sle_->at(sfLoanBrokerID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanBrokerID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanBrokerID() const
-    {
-        return this->sle_->isFieldPresent(sfLoanBrokerID);
+        return this->sle_->at(sfLoanBrokerID);
     }
 
     /**
      * @brief Get sfLoanSequence (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getLoanSequence() const
     {
-        if (hasLoanSequence())
-            return this->sle_->at(sfLoanSequence);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanSequence is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanSequence() const
-    {
-        return this->sle_->isFieldPresent(sfLoanSequence);
+        return this->sle_->at(sfLoanSequence);
     }
 
     /**
      * @brief Get sfBorrower (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getBorrower() const
     {
-        if (hasBorrower())
-            return this->sle_->at(sfBorrower);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfBorrower is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasBorrower() const
-    {
-        return this->sle_->isFieldPresent(sfBorrower);
+        return this->sle_->at(sfBorrower);
     }
 
     /**
@@ -431,50 +340,24 @@ public:
 
     /**
      * @brief Get sfStartDate (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getStartDate() const
     {
-        if (hasStartDate())
-            return this->sle_->at(sfStartDate);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfStartDate is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasStartDate() const
-    {
-        return this->sle_->isFieldPresent(sfStartDate);
+        return this->sle_->at(sfStartDate);
     }
 
     /**
      * @brief Get sfPaymentInterval (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPaymentInterval() const
     {
-        if (hasPaymentInterval())
-            return this->sle_->at(sfPaymentInterval);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPaymentInterval is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPaymentInterval() const
-    {
-        return this->sle_->isFieldPresent(sfPaymentInterval);
+        return this->sle_->at(sfPaymentInterval);
     }
 
     /**
@@ -575,26 +458,13 @@ public:
 
     /**
      * @brief Get sfPeriodicPayment (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getPeriodicPayment() const
     {
-        if (hasPeriodicPayment())
-            return this->sle_->at(sfPeriodicPayment);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPeriodicPayment is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPeriodicPayment() const
-    {
-        return this->sle_->isFieldPresent(sfPeriodicPayment);
+        return this->sle_->at(sfPeriodicPayment);
     }
 
     /**
@@ -706,10 +576,30 @@ class LoanBuilder : public LedgerEntryBuilderBase<LoanBuilder>
 public:
     /**
      * @brief Construct a new LoanBuilder with required fields.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param loanBrokerNode The sfLoanBrokerNode field value.
+     * @param loanBrokerID The sfLoanBrokerID field value.
+     * @param loanSequence The sfLoanSequence field value.
+     * @param borrower The sfBorrower field value.
+     * @param startDate The sfStartDate field value.
+     * @param paymentInterval The sfPaymentInterval field value.
+     * @param periodicPayment The sfPeriodicPayment field value.
      */
-    LoanBuilder()
+    LoanBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& loanBrokerNode,std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,std::decay_t<typename SF_UINT32::type::value_type> const& loanSequence,std::decay_t<typename SF_ACCOUNT::type::value_type> const& borrower,std::decay_t<typename SF_UINT32::type::value_type> const& startDate,std::decay_t<typename SF_UINT32::type::value_type> const& paymentInterval,std::decay_t<typename SF_NUMBER::type::value_type> const& periodicPayment)
         : LedgerEntryBuilderBase<LoanBuilder>(ltLOAN)
     {
+        setPreviousTxnID(previousTxnID);
+        setPreviousTxnLgrSeq(previousTxnLgrSeq);
+        setOwnerNode(ownerNode);
+        setLoanBrokerNode(loanBrokerNode);
+        setLoanBrokerID(loanBrokerID);
+        setLoanSequence(loanSequence);
+        setBorrower(borrower);
+        setStartDate(startDate);
+        setPaymentInterval(paymentInterval);
+        setPeriodicPayment(periodicPayment);
     }
 
     /**

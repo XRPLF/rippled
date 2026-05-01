@@ -49,54 +49,24 @@ public:
 
     /**
      * @brief Get sfLedgerSequence (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getLedgerSequence() const
     {
-        if (hasLedgerSequence())
-        {
-            return this->tx_->at(sfLedgerSequence);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLedgerSequence is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLedgerSequence() const
-    {
-        return this->tx_->isFieldPresent(sfLedgerSequence);
+        return this->tx_->at(sfLedgerSequence);
     }
 
     /**
      * @brief Get sfAmendment (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getAmendment() const
     {
-        if (hasAmendment())
-        {
-            return this->tx_->at(sfAmendment);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAmendment is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAmendment() const
-    {
-        return this->tx_->isFieldPresent(sfAmendment);
+        return this->tx_->at(sfAmendment);
     }
 };
 
@@ -113,15 +83,19 @@ public:
     /**
      * @brief Construct a new EnableAmendmentBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param ledgerSequence The sfLedgerSequence field value.
+     * @param amendment The sfAmendment field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     EnableAmendmentBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence,                     std::decay_t<typename SF_UINT256::type::value_type> const& amendment,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<EnableAmendmentBuilder>(ttAMENDMENT, account, sequence, fee)
     {
+        setLedgerSequence(ledgerSequence);
+        setAmendment(amendment);
     }
 
     /**

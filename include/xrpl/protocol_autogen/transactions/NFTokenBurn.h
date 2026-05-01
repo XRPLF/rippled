@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfNFTokenID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getNFTokenID() const
     {
-        if (hasNFTokenID())
-        {
-            return this->tx_->at(sfNFTokenID);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfNFTokenID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasNFTokenID() const
-    {
-        return this->tx_->isFieldPresent(sfNFTokenID);
+        return this->tx_->at(sfNFTokenID);
     }
 
     /**
@@ -113,15 +98,17 @@ public:
     /**
      * @brief Construct a new NFTokenBurnBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param nFTokenID The sfNFTokenID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     NFTokenBurnBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenBurnBuilder>(ttNFTOKEN_BURN, account, sequence, fee)
     {
+        setNFTokenID(nFTokenID);
     }
 
     /**

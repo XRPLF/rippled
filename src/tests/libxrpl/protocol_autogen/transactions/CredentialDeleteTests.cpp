@@ -21,7 +21,7 @@ TEST(TransactionsCredentialDeleteTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testCredentialDelete"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testCredentialDelete"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -35,6 +35,7 @@ TEST(TransactionsCredentialDeleteTests, BuilderSettersRoundTrip)
 
     CredentialDeleteBuilder builder{
         accountValue,
+        credentialTypeValue,
         sequenceValue,
         feeValue
     };
@@ -42,7 +43,6 @@ TEST(TransactionsCredentialDeleteTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setSubject(subjectValue);
     builder.setIssuer(issuerValue);
-    builder.setCredentialType(credentialTypeValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -59,6 +59,12 @@ TEST(TransactionsCredentialDeleteTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
+    {
+        auto const& expected = credentialTypeValue;
+        auto const actual = tx.getCredentialType();
+        expectEqualField(expected, actual, "sfCredentialType");
+    }
+
     // Verify optional fields
     {
         auto const& expected = subjectValue;
@@ -76,14 +82,6 @@ TEST(TransactionsCredentialDeleteTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasIssuer());
     }
 
-    {
-        auto const& expected = credentialTypeValue;
-        auto const actualOpt = tx.getCredentialType();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialType should be present";
-        expectEqualField(expected, *actualOpt, "sfCredentialType");
-        EXPECT_TRUE(tx.hasCredentialType());
-    }
-
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -92,7 +90,7 @@ TEST(TransactionsCredentialDeleteTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testCredentialDeleteFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testCredentialDeleteFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -107,13 +105,13 @@ TEST(TransactionsCredentialDeleteTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     CredentialDeleteBuilder initialBuilder{
         accountValue,
+        credentialTypeValue,
         sequenceValue,
         feeValue
     };
 
     initialBuilder.setSubject(subjectValue);
     initialBuilder.setIssuer(issuerValue);
-    initialBuilder.setCredentialType(credentialTypeValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -131,6 +129,12 @@ TEST(TransactionsCredentialDeleteTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
+    {
+        auto const& expected = credentialTypeValue;
+        auto const actual = rebuiltTx.getCredentialType();
+        expectEqualField(expected, actual, "sfCredentialType");
+    }
+
     // Verify optional fields
     {
         auto const& expected = subjectValue;
@@ -146,13 +150,6 @@ TEST(TransactionsCredentialDeleteTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfIssuer");
     }
 
-    {
-        auto const& expected = credentialTypeValue;
-        auto const actualOpt = rebuiltTx.getCredentialType();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialType should be present";
-        expectEqualField(expected, *actualOpt, "sfCredentialType");
-    }
-
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -160,7 +157,7 @@ TEST(TransactionsCredentialDeleteTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -174,7 +171,7 @@ TEST(TransactionsCredentialDeleteTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -188,7 +185,7 @@ TEST(TransactionsCredentialDeleteTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testCredentialDeleteNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testCredentialDeleteNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -196,9 +193,11 @@ TEST(TransactionsCredentialDeleteTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const credentialTypeValue = canonical_VL();
 
     CredentialDeleteBuilder builder{
         accountValue,
+        credentialTypeValue,
         sequenceValue,
         feeValue
     };
@@ -212,8 +211,6 @@ TEST(TransactionsCredentialDeleteTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getSubject().has_value());
     EXPECT_FALSE(tx.hasIssuer());
     EXPECT_FALSE(tx.getIssuer().has_value());
-    EXPECT_FALSE(tx.hasCredentialType());
-    EXPECT_FALSE(tx.getCredentialType().has_value());
 }
 
 }

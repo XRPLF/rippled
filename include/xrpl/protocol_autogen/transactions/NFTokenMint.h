@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfNFTokenTaxon (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getNFTokenTaxon() const
     {
-        if (hasNFTokenTaxon())
-        {
-            return this->tx_->at(sfNFTokenTaxon);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfNFTokenTaxon is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasNFTokenTaxon() const
-    {
-        return this->tx_->isFieldPresent(sfNFTokenTaxon);
+        return this->tx_->at(sfNFTokenTaxon);
     }
 
     /**
@@ -243,15 +228,17 @@ public:
     /**
      * @brief Construct a new NFTokenMintBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param nFTokenTaxon The sfNFTokenTaxon field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     NFTokenMintBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT32::type::value_type> const& nFTokenTaxon,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenMintBuilder>(ttNFTOKEN_MINT, account, sequence, fee)
     {
+        setNFTokenTaxon(nFTokenTaxon);
     }
 
     /**

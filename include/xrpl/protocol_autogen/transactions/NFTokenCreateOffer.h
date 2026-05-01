@@ -49,54 +49,24 @@ public:
 
     /**
      * @brief Get sfNFTokenID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getNFTokenID() const
     {
-        if (hasNFTokenID())
-        {
-            return this->tx_->at(sfNFTokenID);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfNFTokenID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasNFTokenID() const
-    {
-        return this->tx_->isFieldPresent(sfNFTokenID);
+        return this->tx_->at(sfNFTokenID);
     }
 
     /**
      * @brief Get sfAmount (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getAmount() const
     {
-        if (hasAmount())
-        {
-            return this->tx_->at(sfAmount);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAmount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAmount() const
-    {
-        return this->tx_->isFieldPresent(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 
     /**
@@ -191,15 +161,19 @@ public:
     /**
      * @brief Construct a new NFTokenCreateOfferBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param nFTokenID The sfNFTokenID field value.
+     * @param amount The sfAmount field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     NFTokenCreateOfferBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenCreateOfferBuilder>(ttNFTOKEN_CREATE_OFFER, account, sequence, fee)
     {
+        setNFTokenID(nFTokenID);
+        setAmount(amount);
     }
 
     /**

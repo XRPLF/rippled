@@ -47,146 +47,68 @@ public:
 
     /**
      * @brief Get sfPreviousTxnID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getPreviousTxnID() const
     {
-        if (hasPreviousTxnID())
-            return this->sle_->at(sfPreviousTxnID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnID() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnID);
+        return this->sle_->at(sfPreviousTxnID);
     }
 
     /**
      * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousTxnLgrSeq() const
     {
-        if (hasPreviousTxnLgrSeq())
-            return this->sle_->at(sfPreviousTxnLgrSeq);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnLgrSeq is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnLgrSeq() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+        return this->sle_->at(sfPreviousTxnLgrSeq);
     }
 
     /**
      * @brief Get sfSequence (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getSequence() const
     {
-        if (hasSequence())
-            return this->sle_->at(sfSequence);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSequence is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSequence() const
-    {
-        return this->sle_->isFieldPresent(sfSequence);
+        return this->sle_->at(sfSequence);
     }
 
     /**
      * @brief Get sfOwnerNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getOwnerNode() const
     {
-        if (hasOwnerNode())
-            return this->sle_->at(sfOwnerNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwnerNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwnerNode() const
-    {
-        return this->sle_->isFieldPresent(sfOwnerNode);
+        return this->sle_->at(sfOwnerNode);
     }
 
     /**
      * @brief Get sfOwner (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getOwner() const
     {
-        if (hasOwner())
-            return this->sle_->at(sfOwner);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwner is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwner() const
-    {
-        return this->sle_->isFieldPresent(sfOwner);
+        return this->sle_->at(sfOwner);
     }
 
     /**
      * @brief Get sfAccount (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getAccount() const
     {
-        if (hasAccount())
-            return this->sle_->at(sfAccount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAccount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAccount() const
-    {
-        return this->sle_->isFieldPresent(sfAccount);
+        return this->sle_->at(sfAccount);
     }
 
     /**
@@ -215,26 +137,13 @@ public:
 
     /**
      * @brief Get sfAsset (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ISSUE::type::value_type>
+    SF_ISSUE::type::value_type
     getAsset() const
     {
-        if (hasAsset())
-            return this->sle_->at(sfAsset);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAsset is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAsset() const
-    {
-        return this->sle_->isFieldPresent(sfAsset);
+        return this->sle_->at(sfAsset);
     }
 
     /**
@@ -335,50 +244,24 @@ public:
 
     /**
      * @brief Get sfShareMPTID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT192::type::value_type>
+    SF_UINT192::type::value_type
     getShareMPTID() const
     {
-        if (hasShareMPTID())
-            return this->sle_->at(sfShareMPTID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfShareMPTID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasShareMPTID() const
-    {
-        return this->sle_->isFieldPresent(sfShareMPTID);
+        return this->sle_->at(sfShareMPTID);
     }
 
     /**
      * @brief Get sfWithdrawalPolicy (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    SF_UINT8::type::value_type
     getWithdrawalPolicy() const
     {
-        if (hasWithdrawalPolicy())
-            return this->sle_->at(sfWithdrawalPolicy);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfWithdrawalPolicy is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasWithdrawalPolicy() const
-    {
-        return this->sle_->isFieldPresent(sfWithdrawalPolicy);
+        return this->sle_->at(sfWithdrawalPolicy);
     }
 
     /**
@@ -418,10 +301,28 @@ class VaultBuilder : public LedgerEntryBuilderBase<VaultBuilder>
 public:
     /**
      * @brief Construct a new VaultBuilder with required fields.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     * @param sequence The sfSequence field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param owner The sfOwner field value.
+     * @param account The sfAccount field value.
+     * @param asset The sfAsset field value.
+     * @param shareMPTID The sfShareMPTID field value.
+     * @param withdrawalPolicy The sfWithdrawalPolicy field value.
      */
-    VaultBuilder()
+    VaultBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ISSUE::type::value_type> const& asset,std::decay_t<typename SF_UINT192::type::value_type> const& shareMPTID,std::decay_t<typename SF_UINT8::type::value_type> const& withdrawalPolicy)
         : LedgerEntryBuilderBase<VaultBuilder>(ltVAULT)
     {
+        setPreviousTxnID(previousTxnID);
+        setPreviousTxnLgrSeq(previousTxnLgrSeq);
+        setSequence(sequence);
+        setOwnerNode(ownerNode);
+        setOwner(owner);
+        setAccount(account);
+        setAsset(asset);
+        setShareMPTID(shareMPTID);
+        setWithdrawalPolicy(withdrawalPolicy);
     }
 
     /**

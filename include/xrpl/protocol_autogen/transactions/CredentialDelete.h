@@ -101,28 +101,13 @@ public:
 
     /**
      * @brief Get sfCredentialType (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    SF_VL::type::value_type
     getCredentialType() const
     {
-        if (hasCredentialType())
-        {
-            return this->tx_->at(sfCredentialType);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfCredentialType is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasCredentialType() const
-    {
-        return this->tx_->isFieldPresent(sfCredentialType);
+        return this->tx_->at(sfCredentialType);
     }
 };
 
@@ -139,15 +124,17 @@ public:
     /**
      * @brief Construct a new CredentialDeleteBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param credentialType The sfCredentialType field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     CredentialDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_VL::type::value_type> const& credentialType,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<CredentialDeleteBuilder>(ttCREDENTIAL_DELETE, account, sequence, fee)
     {
+        setCredentialType(credentialType);
     }
 
     /**

@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfOfferSequence (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getOfferSequence() const
     {
-        if (hasOfferSequence())
-        {
-            return this->tx_->at(sfOfferSequence);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOfferSequence is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOfferSequence() const
-    {
-        return this->tx_->isFieldPresent(sfOfferSequence);
+        return this->tx_->at(sfOfferSequence);
     }
 };
 
@@ -87,15 +72,17 @@ public:
     /**
      * @brief Construct a new OfferCancelBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param offerSequence The sfOfferSequence field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     OfferCancelBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT32::type::value_type> const& offerSequence,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<OfferCancelBuilder>(ttOFFER_CANCEL, account, sequence, fee)
     {
+        setOfferSequence(offerSequence);
     }
 
     /**

@@ -21,7 +21,7 @@ TEST(TransactionsLoanPayTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanPay"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanPay"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,13 +34,13 @@ TEST(TransactionsLoanPayTests, BuilderSettersRoundTrip)
 
     LoanPayBuilder builder{
         accountValue,
+        loanIDValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setLoanID(loanIDValue);
-    builder.setAmount(amountValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -57,23 +57,19 @@ TEST(TransactionsLoanPayTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = loanIDValue;
-        auto const actualOpt = tx.getLoanID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanID should be present";
-        expectEqualField(expected, *actualOpt, "sfLoanID");
-        EXPECT_TRUE(tx.hasLoanID());
+        auto const actual = tx.getLoanID();
+        expectEqualField(expected, actual, "sfLoanID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = tx.getAmount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
-        expectEqualField(expected, *actualOpt, "sfAmount");
-        EXPECT_TRUE(tx.hasAmount());
+        auto const actual = tx.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
+    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -82,7 +78,7 @@ TEST(TransactionsLoanPayTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanPayFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanPayFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -96,12 +92,12 @@ TEST(TransactionsLoanPayTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     LoanPayBuilder initialBuilder{
         accountValue,
+        loanIDValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setLoanID(loanIDValue);
-    initialBuilder.setAmount(amountValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -119,21 +115,19 @@ TEST(TransactionsLoanPayTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = loanIDValue;
-        auto const actualOpt = rebuiltTx.getLoanID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanID should be present";
-        expectEqualField(expected, *actualOpt, "sfLoanID");
+        auto const actual = rebuiltTx.getLoanID();
+        expectEqualField(expected, actual, "sfLoanID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = rebuiltTx.getAmount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
-        expectEqualField(expected, *actualOpt, "sfAmount");
+        auto const actual = rebuiltTx.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
+    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -141,7 +135,7 @@ TEST(TransactionsLoanPayTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -155,7 +149,7 @@ TEST(TransactionsLoanPayTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -164,35 +158,5 @@ TEST(TransactionsLoanPayTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(LoanPayBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(TransactionsLoanPayTests, OptionalFieldsReturnNullopt)
-{
-    // Generate a deterministic keypair for signing
-    auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanPayNullopt"));
-
-    // Common transaction fields
-    auto const accountValue = calcAccountID(publicKey);
-    std::uint32_t const sequenceValue = 3;
-    auto const feeValue = canonical_AMOUNT();
-
-    // Transaction-specific required field values
-
-    LoanPayBuilder builder{
-        accountValue,
-        sequenceValue,
-        feeValue
-    };
-
-    // Do NOT set optional fields
-
-    auto tx = builder.build(publicKey, secretKey);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasLoanID());
-    EXPECT_FALSE(tx.getLoanID().has_value());
-    EXPECT_FALSE(tx.hasAmount());
-    EXPECT_FALSE(tx.getAmount().has_value());
-}
 
 }

@@ -49,54 +49,24 @@ public:
 
     /**
      * @brief Get sfChannel (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getChannel() const
     {
-        if (hasChannel())
-        {
-            return this->tx_->at(sfChannel);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfChannel is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasChannel() const
-    {
-        return this->tx_->isFieldPresent(sfChannel);
+        return this->tx_->at(sfChannel);
     }
 
     /**
      * @brief Get sfAmount (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getAmount() const
     {
-        if (hasAmount())
-        {
-            return this->tx_->at(sfAmount);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAmount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAmount() const
-    {
-        return this->tx_->isFieldPresent(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 
     /**
@@ -139,15 +109,19 @@ public:
     /**
      * @brief Construct a new PaymentChannelFundBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param channel The sfChannel field value.
+     * @param amount The sfAmount field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     PaymentChannelFundBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT256::type::value_type> const& channel,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<PaymentChannelFundBuilder>(ttPAYCHAN_FUND, account, sequence, fee)
     {
+        setChannel(channel);
+        setAmount(amount);
     }
 
     /**

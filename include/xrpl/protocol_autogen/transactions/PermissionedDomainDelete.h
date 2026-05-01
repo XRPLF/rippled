@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfDomainID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getDomainID() const
     {
-        if (hasDomainID())
-        {
-            return this->tx_->at(sfDomainID);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfDomainID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasDomainID() const
-    {
-        return this->tx_->isFieldPresent(sfDomainID);
+        return this->tx_->at(sfDomainID);
     }
 };
 
@@ -87,15 +72,17 @@ public:
     /**
      * @brief Construct a new PermissionedDomainDeleteBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param domainID The sfDomainID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     PermissionedDomainDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT256::type::value_type> const& domainID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<PermissionedDomainDeleteBuilder>(ttPERMISSIONED_DOMAIN_DELETE, account, sequence, fee)
     {
+        setDomainID(domainID);
     }
 
     /**

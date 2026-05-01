@@ -49,80 +49,35 @@ public:
 
     /**
      * @brief Get sfHolder (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getHolder() const
     {
-        if (hasHolder())
-        {
-            return this->tx_->at(sfHolder);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfHolder is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasHolder() const
-    {
-        return this->tx_->isFieldPresent(sfHolder);
+        return this->tx_->at(sfHolder);
     }
 
     /**
      * @brief Get sfAsset (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ISSUE::type::value_type>
+    SF_ISSUE::type::value_type
     getAsset() const
     {
-        if (hasAsset())
-        {
-            return this->tx_->at(sfAsset);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAsset is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAsset() const
-    {
-        return this->tx_->isFieldPresent(sfAsset);
+        return this->tx_->at(sfAsset);
     }
 
     /**
      * @brief Get sfAsset2 (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ISSUE::type::value_type>
+    SF_ISSUE::type::value_type
     getAsset2() const
     {
-        if (hasAsset2())
-        {
-            return this->tx_->at(sfAsset2);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAsset2 is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAsset2() const
-    {
-        return this->tx_->isFieldPresent(sfAsset2);
+        return this->tx_->at(sfAsset2);
     }
 
     /**
@@ -165,15 +120,21 @@ public:
     /**
      * @brief Construct a new AMMClawbackBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param holder The sfHolder field value.
+     * @param asset The sfAsset field value.
+     * @param asset2 The sfAsset2 field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     AMMClawbackBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<AMMClawbackBuilder>(ttAMM_CLAWBACK, account, sequence, fee)
     {
+        setHolder(holder);
+        setAsset(asset);
+        setAsset2(asset2);
     }
 
     /**

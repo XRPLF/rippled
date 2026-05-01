@@ -49,54 +49,24 @@ public:
 
     /**
      * @brief Get sfTakerPays (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getTakerPays() const
     {
-        if (hasTakerPays())
-        {
-            return this->tx_->at(sfTakerPays);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfTakerPays is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasTakerPays() const
-    {
-        return this->tx_->isFieldPresent(sfTakerPays);
+        return this->tx_->at(sfTakerPays);
     }
 
     /**
      * @brief Get sfTakerGets (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getTakerGets() const
     {
-        if (hasTakerGets())
-        {
-            return this->tx_->at(sfTakerGets);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfTakerGets is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasTakerGets() const
-    {
-        return this->tx_->isFieldPresent(sfTakerGets);
+        return this->tx_->at(sfTakerGets);
     }
 
     /**
@@ -191,15 +161,19 @@ public:
     /**
      * @brief Construct a new OfferCreateBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param takerPays The sfTakerPays field value.
+     * @param takerGets The sfTakerGets field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     OfferCreateBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<OfferCreateBuilder>(ttOFFER_CREATE, account, sequence, fee)
     {
+        setTakerPays(takerPays);
+        setTakerGets(takerGets);
     }
 
     /**

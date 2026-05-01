@@ -49,106 +49,46 @@ public:
 
     /**
      * @brief Get sfDestination (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getDestination() const
     {
-        if (hasDestination())
-        {
-            return this->tx_->at(sfDestination);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfDestination is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasDestination() const
-    {
-        return this->tx_->isFieldPresent(sfDestination);
+        return this->tx_->at(sfDestination);
     }
 
     /**
      * @brief Get sfAmount (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getAmount() const
     {
-        if (hasAmount())
-        {
-            return this->tx_->at(sfAmount);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAmount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAmount() const
-    {
-        return this->tx_->isFieldPresent(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 
     /**
      * @brief Get sfSettleDelay (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getSettleDelay() const
     {
-        if (hasSettleDelay())
-        {
-            return this->tx_->at(sfSettleDelay);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSettleDelay is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSettleDelay() const
-    {
-        return this->tx_->isFieldPresent(sfSettleDelay);
+        return this->tx_->at(sfSettleDelay);
     }
 
     /**
      * @brief Get sfPublicKey (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    SF_VL::type::value_type
     getPublicKey() const
     {
-        if (hasPublicKey())
-        {
-            return this->tx_->at(sfPublicKey);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPublicKey is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPublicKey() const
-    {
-        return this->tx_->isFieldPresent(sfPublicKey);
+        return this->tx_->at(sfPublicKey);
     }
 
     /**
@@ -217,15 +157,23 @@ public:
     /**
      * @brief Construct a new PaymentChannelCreateBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param destination The sfDestination field value.
+     * @param amount The sfAmount field value.
+     * @param settleDelay The sfSettleDelay field value.
+     * @param publicKey The sfPublicKey field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     PaymentChannelCreateBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_UINT32::type::value_type> const& settleDelay,                     std::decay_t<typename SF_VL::type::value_type> const& publicKey,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<PaymentChannelCreateBuilder>(ttPAYCHAN_CREATE, account, sequence, fee)
     {
+        setDestination(destination);
+        setAmount(amount);
+        setSettleDelay(settleDelay);
+        setPublicKey(publicKey);
     }
 
     /**

@@ -21,7 +21,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testMPTokenIssuanceSet"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testMPTokenIssuanceSet"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -38,12 +38,12 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
 
     MPTokenIssuanceSetBuilder builder{
         accountValue,
+        mPTokenIssuanceIDValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setMPTokenIssuanceID(mPTokenIssuanceIDValue);
     builder.setHolder(holderValue);
     builder.setDomainID(domainIDValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
@@ -65,15 +65,13 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
-        auto const actualOpt = tx.getMPTokenIssuanceID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenIssuanceID should be present";
-        expectEqualField(expected, *actualOpt, "sfMPTokenIssuanceID");
-        EXPECT_TRUE(tx.hasMPTokenIssuanceID());
+        auto const actual = tx.getMPTokenIssuanceID();
+        expectEqualField(expected, actual, "sfMPTokenIssuanceID");
     }
 
+    // Verify optional fields
     {
         auto const& expected = holderValue;
         auto const actualOpt = tx.getHolder();
@@ -122,7 +120,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testMPTokenIssuanceSetFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testMPTokenIssuanceSetFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -140,11 +138,11 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     MPTokenIssuanceSetBuilder initialBuilder{
         accountValue,
+        mPTokenIssuanceIDValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setMPTokenIssuanceID(mPTokenIssuanceIDValue);
     initialBuilder.setHolder(holderValue);
     initialBuilder.setDomainID(domainIDValue);
     initialBuilder.setMPTokenMetadata(mPTokenMetadataValue);
@@ -167,14 +165,13 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
-        auto const actualOpt = rebuiltTx.getMPTokenIssuanceID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenIssuanceID should be present";
-        expectEqualField(expected, *actualOpt, "sfMPTokenIssuanceID");
+        auto const actual = rebuiltTx.getMPTokenIssuanceID();
+        expectEqualField(expected, actual, "sfMPTokenIssuanceID");
     }
 
+    // Verify optional fields
     {
         auto const& expected = holderValue;
         auto const actualOpt = rebuiltTx.getHolder();
@@ -217,7 +214,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -231,7 +228,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -245,7 +242,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testMPTokenIssuanceSetNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testMPTokenIssuanceSetNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -253,9 +250,11 @@ TEST(TransactionsMPTokenIssuanceSetTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const mPTokenIssuanceIDValue = canonical_UINT192();
 
     MPTokenIssuanceSetBuilder builder{
         accountValue,
+        mPTokenIssuanceIDValue,
         sequenceValue,
         feeValue
     };
@@ -265,8 +264,6 @@ TEST(TransactionsMPTokenIssuanceSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasMPTokenIssuanceID());
-    EXPECT_FALSE(tx.getMPTokenIssuanceID().has_value());
     EXPECT_FALSE(tx.hasHolder());
     EXPECT_FALSE(tx.getHolder().has_value());
     EXPECT_FALSE(tx.hasDomainID());

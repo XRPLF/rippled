@@ -47,26 +47,13 @@ public:
 
     /**
      * @brief Get sfAccount (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getAccount() const
     {
-        if (hasAccount())
-            return this->sle_->at(sfAccount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAccount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAccount() const
-    {
-        return this->sle_->isFieldPresent(sfAccount);
+        return this->sle_->at(sfAccount);
     }
 
     /**
@@ -145,98 +132,46 @@ public:
 
     /**
      * @brief Get sfLPTokenBalance (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getLPTokenBalance() const
     {
-        if (hasLPTokenBalance())
-            return this->sle_->at(sfLPTokenBalance);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLPTokenBalance is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLPTokenBalance() const
-    {
-        return this->sle_->isFieldPresent(sfLPTokenBalance);
+        return this->sle_->at(sfLPTokenBalance);
     }
 
     /**
      * @brief Get sfAsset (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ISSUE::type::value_type>
+    SF_ISSUE::type::value_type
     getAsset() const
     {
-        if (hasAsset())
-            return this->sle_->at(sfAsset);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAsset is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAsset() const
-    {
-        return this->sle_->isFieldPresent(sfAsset);
+        return this->sle_->at(sfAsset);
     }
 
     /**
      * @brief Get sfAsset2 (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ISSUE::type::value_type>
+    SF_ISSUE::type::value_type
     getAsset2() const
     {
-        if (hasAsset2())
-            return this->sle_->at(sfAsset2);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAsset2 is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAsset2() const
-    {
-        return this->sle_->isFieldPresent(sfAsset2);
+        return this->sle_->at(sfAsset2);
     }
 
     /**
      * @brief Get sfOwnerNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getOwnerNode() const
     {
-        if (hasOwnerNode())
-            return this->sle_->at(sfOwnerNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwnerNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwnerNode() const
-    {
-        return this->sle_->isFieldPresent(sfOwnerNode);
+        return this->sle_->at(sfOwnerNode);
     }
 
     /**
@@ -300,10 +235,20 @@ class AMMBuilder : public LedgerEntryBuilderBase<AMMBuilder>
 public:
     /**
      * @brief Construct a new AMMBuilder with required fields.
+     * @param account The sfAccount field value.
+     * @param lPTokenBalance The sfLPTokenBalance field value.
+     * @param asset The sfAsset field value.
+     * @param asset2 The sfAsset2 field value.
+     * @param ownerNode The sfOwnerNode field value.
      */
-    AMMBuilder()
+    AMMBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_AMOUNT::type::value_type> const& lPTokenBalance,std::decay_t<typename SF_ISSUE::type::value_type> const& asset,std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
         : LedgerEntryBuilderBase<AMMBuilder>(ltAMM)
     {
+        setAccount(account);
+        setLPTokenBalance(lPTokenBalance);
+        setAsset(asset);
+        setAsset2(asset2);
+        setOwnerNode(ownerNode);
     }
 
     /**

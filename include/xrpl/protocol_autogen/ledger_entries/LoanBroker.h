@@ -47,218 +47,101 @@ public:
 
     /**
      * @brief Get sfPreviousTxnID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getPreviousTxnID() const
     {
-        if (hasPreviousTxnID())
-            return this->sle_->at(sfPreviousTxnID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnID() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnID);
+        return this->sle_->at(sfPreviousTxnID);
     }
 
     /**
      * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousTxnLgrSeq() const
     {
-        if (hasPreviousTxnLgrSeq())
-            return this->sle_->at(sfPreviousTxnLgrSeq);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnLgrSeq is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnLgrSeq() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+        return this->sle_->at(sfPreviousTxnLgrSeq);
     }
 
     /**
      * @brief Get sfSequence (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getSequence() const
     {
-        if (hasSequence())
-            return this->sle_->at(sfSequence);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSequence is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSequence() const
-    {
-        return this->sle_->isFieldPresent(sfSequence);
+        return this->sle_->at(sfSequence);
     }
 
     /**
      * @brief Get sfOwnerNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getOwnerNode() const
     {
-        if (hasOwnerNode())
-            return this->sle_->at(sfOwnerNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwnerNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwnerNode() const
-    {
-        return this->sle_->isFieldPresent(sfOwnerNode);
+        return this->sle_->at(sfOwnerNode);
     }
 
     /**
      * @brief Get sfVaultNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getVaultNode() const
     {
-        if (hasVaultNode())
-            return this->sle_->at(sfVaultNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfVaultNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasVaultNode() const
-    {
-        return this->sle_->isFieldPresent(sfVaultNode);
+        return this->sle_->at(sfVaultNode);
     }
 
     /**
      * @brief Get sfVaultID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getVaultID() const
     {
-        if (hasVaultID())
-            return this->sle_->at(sfVaultID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfVaultID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasVaultID() const
-    {
-        return this->sle_->isFieldPresent(sfVaultID);
+        return this->sle_->at(sfVaultID);
     }
 
     /**
      * @brief Get sfAccount (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getAccount() const
     {
-        if (hasAccount())
-            return this->sle_->at(sfAccount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAccount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAccount() const
-    {
-        return this->sle_->isFieldPresent(sfAccount);
+        return this->sle_->at(sfAccount);
     }
 
     /**
      * @brief Get sfOwner (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getOwner() const
     {
-        if (hasOwner())
-            return this->sle_->at(sfOwner);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwner is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwner() const
-    {
-        return this->sle_->isFieldPresent(sfOwner);
+        return this->sle_->at(sfOwner);
     }
 
     /**
      * @brief Get sfLoanSequence (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getLoanSequence() const
     {
-        if (hasLoanSequence())
-            return this->sle_->at(sfLoanSequence);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanSequence is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanSequence() const
-    {
-        return this->sle_->isFieldPresent(sfLoanSequence);
+        return this->sle_->at(sfLoanSequence);
     }
 
     /**
@@ -466,10 +349,28 @@ class LoanBrokerBuilder : public LedgerEntryBuilderBase<LoanBrokerBuilder>
 public:
     /**
      * @brief Construct a new LoanBrokerBuilder with required fields.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
+     * @param sequence The sfSequence field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param vaultNode The sfVaultNode field value.
+     * @param vaultID The sfVaultID field value.
+     * @param account The sfAccount field value.
+     * @param owner The sfOwner field value.
+     * @param loanSequence The sfLoanSequence field value.
      */
-    LoanBrokerBuilder()
+    LoanBrokerBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& vaultNode,std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT32::type::value_type> const& loanSequence)
         : LedgerEntryBuilderBase<LoanBrokerBuilder>(ltLOAN_BROKER)
     {
+        setPreviousTxnID(previousTxnID);
+        setPreviousTxnLgrSeq(previousTxnLgrSeq);
+        setSequence(sequence);
+        setOwnerNode(ownerNode);
+        setVaultNode(vaultNode);
+        setVaultID(vaultID);
+        setAccount(account);
+        setOwner(owner);
+        setLoanSequence(loanSequence);
     }
 
     /**

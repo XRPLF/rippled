@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfOracleDocumentID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getOracleDocumentID() const
     {
-        if (hasOracleDocumentID())
-        {
-            return this->tx_->at(sfOracleDocumentID);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOracleDocumentID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOracleDocumentID() const
-    {
-        return this->tx_->isFieldPresent(sfOracleDocumentID);
+        return this->tx_->at(sfOracleDocumentID);
     }
 };
 
@@ -87,15 +72,17 @@ public:
     /**
      * @brief Construct a new OracleDeleteBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param oracleDocumentID The sfOracleDocumentID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     OracleDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<OracleDeleteBuilder>(ttORACLE_DELETE, account, sequence, fee)
     {
+        setOracleDocumentID(oracleDocumentID);
     }
 
     /**

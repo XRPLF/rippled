@@ -71,147 +71,69 @@ public:
 
     /**
      * @brief Get sfOwnerNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getOwnerNode() const
     {
-        if (hasOwnerNode())
-            return this->sle_->at(sfOwnerNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwnerNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwnerNode() const
-    {
-        return this->sle_->isFieldPresent(sfOwnerNode);
+        return this->sle_->at(sfOwnerNode);
     }
 
     /**
      * @brief Get sfSignerQuorum (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getSignerQuorum() const
     {
-        if (hasSignerQuorum())
-            return this->sle_->at(sfSignerQuorum);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSignerQuorum is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSignerQuorum() const
-    {
-        return this->sle_->isFieldPresent(sfSignerQuorum);
+        return this->sle_->at(sfSignerQuorum);
     }
 
     /**
      * @brief Get sfSignerEntries (SoeRequired)
      * @note This is an untyped field (unknown).
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    std::optional<std::reference_wrapper<STArray const>>
+    STArray const&
     getSignerEntries() const
     {
-        if (this->sle_->isFieldPresent(sfSignerEntries))
-            return this->sle_->getFieldArray(sfSignerEntries);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSignerEntries is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSignerEntries() const
-    {
-        return this->sle_->isFieldPresent(sfSignerEntries);
+        return this->sle_->getFieldArray(sfSignerEntries);
     }
 
     /**
      * @brief Get sfSignerListID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getSignerListID() const
     {
-        if (hasSignerListID())
-            return this->sle_->at(sfSignerListID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSignerListID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSignerListID() const
-    {
-        return this->sle_->isFieldPresent(sfSignerListID);
+        return this->sle_->at(sfSignerListID);
     }
 
     /**
      * @brief Get sfPreviousTxnID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getPreviousTxnID() const
     {
-        if (hasPreviousTxnID())
-            return this->sle_->at(sfPreviousTxnID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnID() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnID);
+        return this->sle_->at(sfPreviousTxnID);
     }
 
     /**
      * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousTxnLgrSeq() const
     {
-        if (hasPreviousTxnLgrSeq())
-            return this->sle_->at(sfPreviousTxnLgrSeq);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnLgrSeq is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnLgrSeq() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+        return this->sle_->at(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -227,10 +149,22 @@ class SignerListBuilder : public LedgerEntryBuilderBase<SignerListBuilder>
 public:
     /**
      * @brief Construct a new SignerListBuilder with required fields.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param signerQuorum The sfSignerQuorum field value.
+     * @param signerEntries The sfSignerEntries field value.
+     * @param signerListID The sfSignerListID field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    SignerListBuilder()
+    SignerListBuilder(std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT32::type::value_type> const& signerQuorum,STArray const& signerEntries,std::decay_t<typename SF_UINT32::type::value_type> const& signerListID,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<SignerListBuilder>(ltSIGNER_LIST)
     {
+        setOwnerNode(ownerNode);
+        setSignerQuorum(signerQuorum);
+        setSignerEntries(signerEntries);
+        setSignerListID(signerListID);
+        setPreviousTxnID(previousTxnID);
+        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**

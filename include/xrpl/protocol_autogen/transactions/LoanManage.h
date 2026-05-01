@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfLoanID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getLoanID() const
     {
-        if (hasLoanID())
-        {
-            return this->tx_->at(sfLoanID);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanID() const
-    {
-        return this->tx_->isFieldPresent(sfLoanID);
+        return this->tx_->at(sfLoanID);
     }
 };
 
@@ -87,15 +72,17 @@ public:
     /**
      * @brief Construct a new LoanManageBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param loanID The sfLoanID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     LoanManageBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT256::type::value_type> const& loanID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<LoanManageBuilder>(ttLOAN_MANAGE, account, sequence, fee)
     {
+        setLoanID(loanID);
     }
 
     /**

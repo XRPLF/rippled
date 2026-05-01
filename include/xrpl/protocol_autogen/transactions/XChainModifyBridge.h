@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfXChainBridge (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_XCHAIN_BRIDGE::type::value_type>
+    SF_XCHAIN_BRIDGE::type::value_type
     getXChainBridge() const
     {
-        if (hasXChainBridge())
-        {
-            return this->tx_->at(sfXChainBridge);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfXChainBridge is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasXChainBridge() const
-    {
-        return this->tx_->isFieldPresent(sfXChainBridge);
+        return this->tx_->at(sfXChainBridge);
     }
 
     /**
@@ -139,15 +124,17 @@ public:
     /**
      * @brief Construct a new XChainModifyBridgeBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param xChainBridge The sfXChainBridge field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     XChainModifyBridgeBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<XChainModifyBridgeBuilder>(ttXCHAIN_MODIFY_BRIDGE, account, sequence, fee)
     {
+        setXChainBridge(xChainBridge);
     }
 
     /**

@@ -49,80 +49,35 @@ public:
 
     /**
      * @brief Get sfXChainBridge (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_XCHAIN_BRIDGE::type::value_type>
+    SF_XCHAIN_BRIDGE::type::value_type
     getXChainBridge() const
     {
-        if (hasXChainBridge())
-        {
-            return this->tx_->at(sfXChainBridge);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfXChainBridge is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasXChainBridge() const
-    {
-        return this->tx_->isFieldPresent(sfXChainBridge);
+        return this->tx_->at(sfXChainBridge);
     }
 
     /**
      * @brief Get sfSignatureReward (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getSignatureReward() const
     {
-        if (hasSignatureReward())
-        {
-            return this->tx_->at(sfSignatureReward);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSignatureReward is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSignatureReward() const
-    {
-        return this->tx_->isFieldPresent(sfSignatureReward);
+        return this->tx_->at(sfSignatureReward);
     }
 
     /**
      * @brief Get sfOtherChainSource (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getOtherChainSource() const
     {
-        if (hasOtherChainSource())
-        {
-            return this->tx_->at(sfOtherChainSource);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOtherChainSource is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOtherChainSource() const
-    {
-        return this->tx_->isFieldPresent(sfOtherChainSource);
+        return this->tx_->at(sfOtherChainSource);
     }
 };
 
@@ -139,15 +94,21 @@ public:
     /**
      * @brief Construct a new XChainCreateClaimIDBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param signatureReward The sfSignatureReward field value.
+     * @param otherChainSource The sfOtherChainSource field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     XChainCreateClaimIDBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<XChainCreateClaimIDBuilder>(ttXCHAIN_CREATE_CLAIM_ID, account, sequence, fee)
     {
+        setXChainBridge(xChainBridge);
+        setSignatureReward(signatureReward);
+        setOtherChainSource(otherChainSource);
     }
 
     /**

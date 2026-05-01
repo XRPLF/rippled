@@ -21,7 +21,7 @@ TEST(TransactionsNFTokenModifyTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testNFTokenModify"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testNFTokenModify"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -35,12 +35,12 @@ TEST(TransactionsNFTokenModifyTests, BuilderSettersRoundTrip)
 
     NFTokenModifyBuilder builder{
         accountValue,
+        nFTokenIDValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setNFTokenID(nFTokenIDValue);
     builder.setOwner(ownerValue);
     builder.setURI(uRIValue);
 
@@ -59,15 +59,13 @@ TEST(TransactionsNFTokenModifyTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = nFTokenIDValue;
-        auto const actualOpt = tx.getNFTokenID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenID should be present";
-        expectEqualField(expected, *actualOpt, "sfNFTokenID");
-        EXPECT_TRUE(tx.hasNFTokenID());
+        auto const actual = tx.getNFTokenID();
+        expectEqualField(expected, actual, "sfNFTokenID");
     }
 
+    // Verify optional fields
     {
         auto const& expected = ownerValue;
         auto const actualOpt = tx.getOwner();
@@ -92,7 +90,7 @@ TEST(TransactionsNFTokenModifyTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testNFTokenModifyFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testNFTokenModifyFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -107,11 +105,11 @@ TEST(TransactionsNFTokenModifyTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     NFTokenModifyBuilder initialBuilder{
         accountValue,
+        nFTokenIDValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setNFTokenID(nFTokenIDValue);
     initialBuilder.setOwner(ownerValue);
     initialBuilder.setURI(uRIValue);
 
@@ -131,14 +129,13 @@ TEST(TransactionsNFTokenModifyTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = nFTokenIDValue;
-        auto const actualOpt = rebuiltTx.getNFTokenID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenID should be present";
-        expectEqualField(expected, *actualOpt, "sfNFTokenID");
+        auto const actual = rebuiltTx.getNFTokenID();
+        expectEqualField(expected, actual, "sfNFTokenID");
     }
 
+    // Verify optional fields
     {
         auto const& expected = ownerValue;
         auto const actualOpt = rebuiltTx.getOwner();
@@ -160,7 +157,7 @@ TEST(TransactionsNFTokenModifyTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -174,7 +171,7 @@ TEST(TransactionsNFTokenModifyTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -188,7 +185,7 @@ TEST(TransactionsNFTokenModifyTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testNFTokenModifyNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testNFTokenModifyNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -196,9 +193,11 @@ TEST(TransactionsNFTokenModifyTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const nFTokenIDValue = canonical_UINT256();
 
     NFTokenModifyBuilder builder{
         accountValue,
+        nFTokenIDValue,
         sequenceValue,
         feeValue
     };
@@ -208,8 +207,6 @@ TEST(TransactionsNFTokenModifyTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasNFTokenID());
-    EXPECT_FALSE(tx.getNFTokenID().has_value());
     EXPECT_FALSE(tx.hasOwner());
     EXPECT_FALSE(tx.getOwner().has_value());
     EXPECT_FALSE(tx.hasURI());

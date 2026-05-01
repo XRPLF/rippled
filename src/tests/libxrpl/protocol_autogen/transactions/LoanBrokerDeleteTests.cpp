@@ -21,7 +21,7 @@ TEST(TransactionsLoanBrokerDeleteTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerDelete"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerDelete"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -33,12 +33,12 @@ TEST(TransactionsLoanBrokerDeleteTests, BuilderSettersRoundTrip)
 
     LoanBrokerDeleteBuilder builder{
         accountValue,
+        loanBrokerIDValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setLoanBrokerID(loanBrokerIDValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -55,15 +55,13 @@ TEST(TransactionsLoanBrokerDeleteTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = tx.getLoanBrokerID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanBrokerID should be present";
-        expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
-        EXPECT_TRUE(tx.hasLoanBrokerID());
+        auto const actual = tx.getLoanBrokerID();
+        expectEqualField(expected, actual, "sfLoanBrokerID");
     }
 
+    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -72,7 +70,7 @@ TEST(TransactionsLoanBrokerDeleteTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerDeleteFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerDeleteFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -85,11 +83,11 @@ TEST(TransactionsLoanBrokerDeleteTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     LoanBrokerDeleteBuilder initialBuilder{
         accountValue,
+        loanBrokerIDValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setLoanBrokerID(loanBrokerIDValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -107,14 +105,13 @@ TEST(TransactionsLoanBrokerDeleteTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = rebuiltTx.getLoanBrokerID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanBrokerID should be present";
-        expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
+        auto const actual = rebuiltTx.getLoanBrokerID();
+        expectEqualField(expected, actual, "sfLoanBrokerID");
     }
 
+    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -122,7 +119,7 @@ TEST(TransactionsLoanBrokerDeleteTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -136,7 +133,7 @@ TEST(TransactionsLoanBrokerDeleteTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -145,33 +142,5 @@ TEST(TransactionsLoanBrokerDeleteTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(LoanBrokerDeleteBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(TransactionsLoanBrokerDeleteTests, OptionalFieldsReturnNullopt)
-{
-    // Generate a deterministic keypair for signing
-    auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerDeleteNullopt"));
-
-    // Common transaction fields
-    auto const accountValue = calcAccountID(publicKey);
-    std::uint32_t const sequenceValue = 3;
-    auto const feeValue = canonical_AMOUNT();
-
-    // Transaction-specific required field values
-
-    LoanBrokerDeleteBuilder builder{
-        accountValue,
-        sequenceValue,
-        feeValue
-    };
-
-    // Do NOT set optional fields
-
-    auto tx = builder.build(publicKey, secretKey);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasLoanBrokerID());
-    EXPECT_FALSE(tx.getLoanBrokerID().has_value());
-}
 
 }

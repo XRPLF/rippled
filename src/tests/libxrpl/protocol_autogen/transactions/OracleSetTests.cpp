@@ -21,7 +21,7 @@ TEST(TransactionsOracleSetTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testOracleSet"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testOracleSet"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -38,17 +38,17 @@ TEST(TransactionsOracleSetTests, BuilderSettersRoundTrip)
 
     OracleSetBuilder builder{
         accountValue,
+        oracleDocumentIDValue,
+        lastUpdateTimeValue,
+        priceDataSeriesValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setOracleDocumentID(oracleDocumentIDValue);
     builder.setProvider(providerValue);
     builder.setURI(uRIValue);
     builder.setAssetClass(assetClassValue);
-    builder.setLastUpdateTime(lastUpdateTimeValue);
-    builder.setPriceDataSeries(priceDataSeriesValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -65,15 +65,25 @@ TEST(TransactionsOracleSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = oracleDocumentIDValue;
-        auto const actualOpt = tx.getOracleDocumentID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOracleDocumentID should be present";
-        expectEqualField(expected, *actualOpt, "sfOracleDocumentID");
-        EXPECT_TRUE(tx.hasOracleDocumentID());
+        auto const actual = tx.getOracleDocumentID();
+        expectEqualField(expected, actual, "sfOracleDocumentID");
     }
 
+    {
+        auto const& expected = lastUpdateTimeValue;
+        auto const actual = tx.getLastUpdateTime();
+        expectEqualField(expected, actual, "sfLastUpdateTime");
+    }
+
+    {
+        auto const& expected = priceDataSeriesValue;
+        auto const actual = tx.getPriceDataSeries();
+        expectEqualField(expected, actual, "sfPriceDataSeries");
+    }
+
+    // Verify optional fields
     {
         auto const& expected = providerValue;
         auto const actualOpt = tx.getProvider();
@@ -98,22 +108,6 @@ TEST(TransactionsOracleSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasAssetClass());
     }
 
-    {
-        auto const& expected = lastUpdateTimeValue;
-        auto const actualOpt = tx.getLastUpdateTime();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLastUpdateTime should be present";
-        expectEqualField(expected, *actualOpt, "sfLastUpdateTime");
-        EXPECT_TRUE(tx.hasLastUpdateTime());
-    }
-
-    {
-        auto const& expected = priceDataSeriesValue;
-        auto const actualOpt = tx.getPriceDataSeries();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPriceDataSeries should be present";
-        expectEqualField(expected, *actualOpt, "sfPriceDataSeries");
-        EXPECT_TRUE(tx.hasPriceDataSeries());
-    }
-
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -122,7 +116,7 @@ TEST(TransactionsOracleSetTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testOracleSetFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testOracleSetFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -140,16 +134,16 @@ TEST(TransactionsOracleSetTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     OracleSetBuilder initialBuilder{
         accountValue,
+        oracleDocumentIDValue,
+        lastUpdateTimeValue,
+        priceDataSeriesValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setOracleDocumentID(oracleDocumentIDValue);
     initialBuilder.setProvider(providerValue);
     initialBuilder.setURI(uRIValue);
     initialBuilder.setAssetClass(assetClassValue);
-    initialBuilder.setLastUpdateTime(lastUpdateTimeValue);
-    initialBuilder.setPriceDataSeries(priceDataSeriesValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -167,14 +161,25 @@ TEST(TransactionsOracleSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = oracleDocumentIDValue;
-        auto const actualOpt = rebuiltTx.getOracleDocumentID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOracleDocumentID should be present";
-        expectEqualField(expected, *actualOpt, "sfOracleDocumentID");
+        auto const actual = rebuiltTx.getOracleDocumentID();
+        expectEqualField(expected, actual, "sfOracleDocumentID");
     }
 
+    {
+        auto const& expected = lastUpdateTimeValue;
+        auto const actual = rebuiltTx.getLastUpdateTime();
+        expectEqualField(expected, actual, "sfLastUpdateTime");
+    }
+
+    {
+        auto const& expected = priceDataSeriesValue;
+        auto const actual = rebuiltTx.getPriceDataSeries();
+        expectEqualField(expected, actual, "sfPriceDataSeries");
+    }
+
+    // Verify optional fields
     {
         auto const& expected = providerValue;
         auto const actualOpt = rebuiltTx.getProvider();
@@ -196,20 +201,6 @@ TEST(TransactionsOracleSetTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfAssetClass");
     }
 
-    {
-        auto const& expected = lastUpdateTimeValue;
-        auto const actualOpt = rebuiltTx.getLastUpdateTime();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLastUpdateTime should be present";
-        expectEqualField(expected, *actualOpt, "sfLastUpdateTime");
-    }
-
-    {
-        auto const& expected = priceDataSeriesValue;
-        auto const actualOpt = rebuiltTx.getPriceDataSeries();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPriceDataSeries should be present";
-        expectEqualField(expected, *actualOpt, "sfPriceDataSeries");
-    }
-
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -217,7 +208,7 @@ TEST(TransactionsOracleSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -231,7 +222,7 @@ TEST(TransactionsOracleSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -245,7 +236,7 @@ TEST(TransactionsOracleSetTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testOracleSetNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testOracleSetNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -253,9 +244,15 @@ TEST(TransactionsOracleSetTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const oracleDocumentIDValue = canonical_UINT32();
+    auto const lastUpdateTimeValue = canonical_UINT32();
+    auto const priceDataSeriesValue = canonical_ARRAY();
 
     OracleSetBuilder builder{
         accountValue,
+        oracleDocumentIDValue,
+        lastUpdateTimeValue,
+        priceDataSeriesValue,
         sequenceValue,
         feeValue
     };
@@ -265,18 +262,12 @@ TEST(TransactionsOracleSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasOracleDocumentID());
-    EXPECT_FALSE(tx.getOracleDocumentID().has_value());
     EXPECT_FALSE(tx.hasProvider());
     EXPECT_FALSE(tx.getProvider().has_value());
     EXPECT_FALSE(tx.hasURI());
     EXPECT_FALSE(tx.getURI().has_value());
     EXPECT_FALSE(tx.hasAssetClass());
     EXPECT_FALSE(tx.getAssetClass().has_value());
-    EXPECT_FALSE(tx.hasLastUpdateTime());
-    EXPECT_FALSE(tx.getLastUpdateTime().has_value());
-    EXPECT_FALSE(tx.hasPriceDataSeries());
-    EXPECT_FALSE(tx.getPriceDataSeries().has_value());
 }
 
 }

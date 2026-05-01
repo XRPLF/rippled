@@ -28,14 +28,14 @@ TEST(PermissionedDomainTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     PermissionedDomainBuilder builder{
+        ownerValue,
+        sequenceValue,
+        acceptedCredentialsValue,
+        ownerNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
     };
 
-    builder.setOwner(ownerValue);
-    builder.setSequence(sequenceValue);
-    builder.setAcceptedCredentials(acceptedCredentialsValue);
-    builder.setOwnerNode(ownerNodeValue);
-    builder.setPreviousTxnID(previousTxnIDValue);
-    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -48,50 +48,38 @@ TEST(PermissionedDomainTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = entry.getOwner();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfOwner");
-        EXPECT_TRUE(entry.hasOwner());
+        auto const actual = entry.getOwner();
+        expectEqualField(expected, actual, "sfOwner");
     }
 
     {
         auto const& expected = sequenceValue;
-        auto const actualOpt = entry.getSequence();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfSequence");
-        EXPECT_TRUE(entry.hasSequence());
+        auto const actual = entry.getSequence();
+        expectEqualField(expected, actual, "sfSequence");
     }
 
     {
         auto const& expected = acceptedCredentialsValue;
-        auto const actualOpt = entry.getAcceptedCredentials();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAcceptedCredentials");
-        EXPECT_TRUE(entry.hasAcceptedCredentials());
+        auto const actual = entry.getAcceptedCredentials();
+        expectEqualField(expected, actual, "sfAcceptedCredentials");
     }
 
     {
         auto const& expected = ownerNodeValue;
-        auto const actualOpt = entry.getOwnerNode();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfOwnerNode");
-        EXPECT_TRUE(entry.hasOwnerNode());
+        auto const actual = entry.getOwnerNode();
+        expectEqualField(expected, actual, "sfOwnerNode");
     }
 
     {
         auto const& expected = previousTxnIDValue;
-        auto const actualOpt = entry.getPreviousTxnID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
-        EXPECT_TRUE(entry.hasPreviousTxnID());
+        auto const actual = entry.getPreviousTxnID();
+        expectEqualField(expected, actual, "sfPreviousTxnID");
     }
 
     {
         auto const& expected = previousTxnLgrSeqValue;
-        auto const actualOpt = entry.getPreviousTxnLgrSeq();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
-        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
+        auto const actual = entry.getPreviousTxnLgrSeq();
+        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -135,79 +123,61 @@ TEST(PermissionedDomainTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = ownerValue;
 
-        auto const fromSleOpt = entryFromSle.getOwner();
-        auto const fromBuilderOpt = entryFromBuilder.getOwner();
+        auto const fromSle = entryFromSle.getOwner();
+        auto const fromBuilder = entryFromBuilder.getOwner();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfOwner");
-        expectEqualField(expected, *fromBuilderOpt, "sfOwner");
+        expectEqualField(expected, fromSle, "sfOwner");
+        expectEqualField(expected, fromBuilder, "sfOwner");
     }
 
     {
         auto const& expected = sequenceValue;
 
-        auto const fromSleOpt = entryFromSle.getSequence();
-        auto const fromBuilderOpt = entryFromBuilder.getSequence();
+        auto const fromSle = entryFromSle.getSequence();
+        auto const fromBuilder = entryFromBuilder.getSequence();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfSequence");
-        expectEqualField(expected, *fromBuilderOpt, "sfSequence");
+        expectEqualField(expected, fromSle, "sfSequence");
+        expectEqualField(expected, fromBuilder, "sfSequence");
     }
 
     {
         auto const& expected = acceptedCredentialsValue;
 
-        auto const fromSleOpt = entryFromSle.getAcceptedCredentials();
-        auto const fromBuilderOpt = entryFromBuilder.getAcceptedCredentials();
+        auto const fromSle = entryFromSle.getAcceptedCredentials();
+        auto const fromBuilder = entryFromBuilder.getAcceptedCredentials();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfAcceptedCredentials");
-        expectEqualField(expected, *fromBuilderOpt, "sfAcceptedCredentials");
+        expectEqualField(expected, fromSle, "sfAcceptedCredentials");
+        expectEqualField(expected, fromBuilder, "sfAcceptedCredentials");
     }
 
     {
         auto const& expected = ownerNodeValue;
 
-        auto const fromSleOpt = entryFromSle.getOwnerNode();
-        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
+        auto const fromSle = entryFromSle.getOwnerNode();
+        auto const fromBuilder = entryFromBuilder.getOwnerNode();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
-        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
+        expectEqualField(expected, fromSle, "sfOwnerNode");
+        expectEqualField(expected, fromBuilder, "sfOwnerNode");
     }
 
     {
         auto const& expected = previousTxnIDValue;
 
-        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
+        auto const fromSle = entryFromSle.getPreviousTxnID();
+        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
+        expectEqualField(expected, fromSle, "sfPreviousTxnID");
+        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
     }
 
     {
         auto const& expected = previousTxnLgrSeqValue;
 
-        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
+        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -250,29 +220,4 @@ TEST(PermissionedDomainTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(PermissionedDomainBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(PermissionedDomainTests, OptionalFieldsReturnNullopt)
-{
-    uint256 const index{3u};
-
-
-    PermissionedDomainBuilder builder{
-    };
-
-    auto const entry = builder.build(index);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasOwner());
-    EXPECT_FALSE(entry.getOwner().has_value());
-    EXPECT_FALSE(entry.hasSequence());
-    EXPECT_FALSE(entry.getSequence().has_value());
-    EXPECT_FALSE(entry.hasAcceptedCredentials());
-    EXPECT_FALSE(entry.getAcceptedCredentials().has_value());
-    EXPECT_FALSE(entry.hasOwnerNode());
-    EXPECT_FALSE(entry.getOwnerNode().has_value());
-    EXPECT_FALSE(entry.hasPreviousTxnID());
-    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
-    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
-    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
-}
 }

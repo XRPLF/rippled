@@ -21,7 +21,7 @@ TEST(TransactionsNFTokenCancelOfferTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testNFTokenCancelOffer"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testNFTokenCancelOffer"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -33,12 +33,12 @@ TEST(TransactionsNFTokenCancelOfferTests, BuilderSettersRoundTrip)
 
     NFTokenCancelOfferBuilder builder{
         accountValue,
+        nFTokenOffersValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setNFTokenOffers(nFTokenOffersValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -55,15 +55,13 @@ TEST(TransactionsNFTokenCancelOfferTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = nFTokenOffersValue;
-        auto const actualOpt = tx.getNFTokenOffers();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenOffers should be present";
-        expectEqualField(expected, *actualOpt, "sfNFTokenOffers");
-        EXPECT_TRUE(tx.hasNFTokenOffers());
+        auto const actual = tx.getNFTokenOffers();
+        expectEqualField(expected, actual, "sfNFTokenOffers");
     }
 
+    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -72,7 +70,7 @@ TEST(TransactionsNFTokenCancelOfferTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testNFTokenCancelOfferFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testNFTokenCancelOfferFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -85,11 +83,11 @@ TEST(TransactionsNFTokenCancelOfferTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     NFTokenCancelOfferBuilder initialBuilder{
         accountValue,
+        nFTokenOffersValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setNFTokenOffers(nFTokenOffersValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -107,14 +105,13 @@ TEST(TransactionsNFTokenCancelOfferTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = nFTokenOffersValue;
-        auto const actualOpt = rebuiltTx.getNFTokenOffers();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfNFTokenOffers should be present";
-        expectEqualField(expected, *actualOpt, "sfNFTokenOffers");
+        auto const actual = rebuiltTx.getNFTokenOffers();
+        expectEqualField(expected, actual, "sfNFTokenOffers");
     }
 
+    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -122,7 +119,7 @@ TEST(TransactionsNFTokenCancelOfferTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -136,7 +133,7 @@ TEST(TransactionsNFTokenCancelOfferTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -145,33 +142,5 @@ TEST(TransactionsNFTokenCancelOfferTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(NFTokenCancelOfferBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(TransactionsNFTokenCancelOfferTests, OptionalFieldsReturnNullopt)
-{
-    // Generate a deterministic keypair for signing
-    auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testNFTokenCancelOfferNullopt"));
-
-    // Common transaction fields
-    auto const accountValue = calcAccountID(publicKey);
-    std::uint32_t const sequenceValue = 3;
-    auto const feeValue = canonical_AMOUNT();
-
-    // Transaction-specific required field values
-
-    NFTokenCancelOfferBuilder builder{
-        accountValue,
-        sequenceValue,
-        feeValue
-    };
-
-    // Do NOT set optional fields
-
-    auto tx = builder.build(publicKey, secretKey);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasNFTokenOffers());
-    EXPECT_FALSE(tx.getNFTokenOffers().has_value());
-}
 
 }

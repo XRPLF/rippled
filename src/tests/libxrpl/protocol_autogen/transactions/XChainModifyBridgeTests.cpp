@@ -21,7 +21,7 @@ TEST(TransactionsXChainModifyBridgeTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testXChainModifyBridge"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testXChainModifyBridge"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -35,12 +35,12 @@ TEST(TransactionsXChainModifyBridgeTests, BuilderSettersRoundTrip)
 
     XChainModifyBridgeBuilder builder{
         accountValue,
+        xChainBridgeValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setXChainBridge(xChainBridgeValue);
     builder.setSignatureReward(signatureRewardValue);
     builder.setMinAccountCreateAmount(minAccountCreateAmountValue);
 
@@ -59,15 +59,13 @@ TEST(TransactionsXChainModifyBridgeTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = xChainBridgeValue;
-        auto const actualOpt = tx.getXChainBridge();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfXChainBridge should be present";
-        expectEqualField(expected, *actualOpt, "sfXChainBridge");
-        EXPECT_TRUE(tx.hasXChainBridge());
+        auto const actual = tx.getXChainBridge();
+        expectEqualField(expected, actual, "sfXChainBridge");
     }
 
+    // Verify optional fields
     {
         auto const& expected = signatureRewardValue;
         auto const actualOpt = tx.getSignatureReward();
@@ -92,7 +90,7 @@ TEST(TransactionsXChainModifyBridgeTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testXChainModifyBridgeFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testXChainModifyBridgeFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -107,11 +105,11 @@ TEST(TransactionsXChainModifyBridgeTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     XChainModifyBridgeBuilder initialBuilder{
         accountValue,
+        xChainBridgeValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setXChainBridge(xChainBridgeValue);
     initialBuilder.setSignatureReward(signatureRewardValue);
     initialBuilder.setMinAccountCreateAmount(minAccountCreateAmountValue);
 
@@ -131,14 +129,13 @@ TEST(TransactionsXChainModifyBridgeTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = xChainBridgeValue;
-        auto const actualOpt = rebuiltTx.getXChainBridge();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfXChainBridge should be present";
-        expectEqualField(expected, *actualOpt, "sfXChainBridge");
+        auto const actual = rebuiltTx.getXChainBridge();
+        expectEqualField(expected, actual, "sfXChainBridge");
     }
 
+    // Verify optional fields
     {
         auto const& expected = signatureRewardValue;
         auto const actualOpt = rebuiltTx.getSignatureReward();
@@ -160,7 +157,7 @@ TEST(TransactionsXChainModifyBridgeTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -174,7 +171,7 @@ TEST(TransactionsXChainModifyBridgeTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -188,7 +185,7 @@ TEST(TransactionsXChainModifyBridgeTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testXChainModifyBridgeNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testXChainModifyBridgeNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -196,9 +193,11 @@ TEST(TransactionsXChainModifyBridgeTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const xChainBridgeValue = canonical_XCHAIN_BRIDGE();
 
     XChainModifyBridgeBuilder builder{
         accountValue,
+        xChainBridgeValue,
         sequenceValue,
         feeValue
     };
@@ -208,8 +207,6 @@ TEST(TransactionsXChainModifyBridgeTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasXChainBridge());
-    EXPECT_FALSE(tx.getXChainBridge().has_value());
     EXPECT_FALSE(tx.hasSignatureReward());
     EXPECT_FALSE(tx.getSignatureReward().has_value());
     EXPECT_FALSE(tx.hasMinAccountCreateAmount());

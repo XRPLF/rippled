@@ -49,52 +49,24 @@ public:
 
     /**
      * @brief Get sfAuthorize (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getAuthorize() const
     {
-        if (hasAuthorize())
-        {
-            return this->tx_->at(sfAuthorize);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAuthorize is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAuthorize() const
-    {
-        return this->tx_->isFieldPresent(sfAuthorize);
+        return this->tx_->at(sfAuthorize);
     }
     /**
      * @brief Get sfPermissions (SoeRequired)
      * @note This is an untyped field.
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    std::optional<std::reference_wrapper<STArray const>>
+    STArray const&
     getPermissions() const
     {
-        if (this->tx_->isFieldPresent(sfPermissions))
-            return this->tx_->getFieldArray(sfPermissions);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPermissions is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPermissions() const
-    {
-        return this->tx_->isFieldPresent(sfPermissions);
+        return this->tx_->getFieldArray(sfPermissions);
     }
 };
 
@@ -111,15 +83,19 @@ public:
     /**
      * @brief Construct a new DelegateSetBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param authorize The sfAuthorize field value.
+     * @param permissions The sfPermissions field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     DelegateSetBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize,                     STArray const& permissions,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<DelegateSetBuilder>(ttDELEGATE_SET, account, sequence, fee)
     {
+        setAuthorize(authorize);
+        setPermissions(permissions);
     }
 
     /**

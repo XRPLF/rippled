@@ -52,13 +52,13 @@ public:
 % if field.get('mpt_support'):
      * MPT Support: ${field['mpt_support']}
 % endif
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
      * @return The field value.
 % else:
      * @return The field value, or std::nullopt if not present.
 % endif
      */
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
     [[nodiscard]]
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const
@@ -94,13 +94,13 @@ public:
      * MPT Support: ${field['mpt_support']}
 % endif
      * @note This is an untyped field (${field.get('cppType', 'unknown')}).
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
      * @return The field value.
 % else:
      * @return The field value, or std::nullopt if not present.
 % endif
      */
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
     [[nodiscard]]
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const
@@ -133,7 +133,7 @@ public:
 };
 
 <%
-    required_fields = [f for f in fields if f['requirement'] == 'soeREQUIRED']
+    required_fields = [f for f in fields if f['requirement'] == 'SoeRequired']
 %>\
 /**
  * @brief Builder for ${name} ledger entries.

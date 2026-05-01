@@ -21,7 +21,7 @@ TEST(TransactionsCheckCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCreate"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -37,13 +37,13 @@ TEST(TransactionsCheckCreateTests, BuilderSettersRoundTrip)
 
     CheckCreateBuilder builder{
         accountValue,
+        destinationValue,
+        sendMaxValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setDestination(destinationValue);
-    builder.setSendMax(sendMaxValue);
     builder.setExpiration(expirationValue);
     builder.setDestinationTag(destinationTagValue);
     builder.setInvoiceID(invoiceIDValue);
@@ -63,23 +63,19 @@ TEST(TransactionsCheckCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actualOpt = tx.getDestination();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
-        expectEqualField(expected, *actualOpt, "sfDestination");
-        EXPECT_TRUE(tx.hasDestination());
+        auto const actual = tx.getDestination();
+        expectEqualField(expected, actual, "sfDestination");
     }
 
     {
         auto const& expected = sendMaxValue;
-        auto const actualOpt = tx.getSendMax();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSendMax should be present";
-        expectEqualField(expected, *actualOpt, "sfSendMax");
-        EXPECT_TRUE(tx.hasSendMax());
+        auto const actual = tx.getSendMax();
+        expectEqualField(expected, actual, "sfSendMax");
     }
 
+    // Verify optional fields
     {
         auto const& expected = expirationValue;
         auto const actualOpt = tx.getExpiration();
@@ -112,7 +108,7 @@ TEST(TransactionsCheckCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCreateFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -129,12 +125,12 @@ TEST(TransactionsCheckCreateTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     CheckCreateBuilder initialBuilder{
         accountValue,
+        destinationValue,
+        sendMaxValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setDestination(destinationValue);
-    initialBuilder.setSendMax(sendMaxValue);
     initialBuilder.setExpiration(expirationValue);
     initialBuilder.setDestinationTag(destinationTagValue);
     initialBuilder.setInvoiceID(invoiceIDValue);
@@ -155,21 +151,19 @@ TEST(TransactionsCheckCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actualOpt = rebuiltTx.getDestination();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
-        expectEqualField(expected, *actualOpt, "sfDestination");
+        auto const actual = rebuiltTx.getDestination();
+        expectEqualField(expected, actual, "sfDestination");
     }
 
     {
         auto const& expected = sendMaxValue;
-        auto const actualOpt = rebuiltTx.getSendMax();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSendMax should be present";
-        expectEqualField(expected, *actualOpt, "sfSendMax");
+        auto const actual = rebuiltTx.getSendMax();
+        expectEqualField(expected, actual, "sfSendMax");
     }
 
+    // Verify optional fields
     {
         auto const& expected = expirationValue;
         auto const actualOpt = rebuiltTx.getExpiration();
@@ -198,7 +192,7 @@ TEST(TransactionsCheckCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -212,7 +206,7 @@ TEST(TransactionsCheckCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -226,7 +220,7 @@ TEST(TransactionsCheckCreateTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCreateNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCreateNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -234,9 +228,13 @@ TEST(TransactionsCheckCreateTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const destinationValue = canonical_ACCOUNT();
+    auto const sendMaxValue = canonical_AMOUNT();
 
     CheckCreateBuilder builder{
         accountValue,
+        destinationValue,
+        sendMaxValue,
         sequenceValue,
         feeValue
     };
@@ -246,10 +244,6 @@ TEST(TransactionsCheckCreateTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasDestination());
-    EXPECT_FALSE(tx.getDestination().has_value());
-    EXPECT_FALSE(tx.hasSendMax());
-    EXPECT_FALSE(tx.getSendMax().has_value());
     EXPECT_FALSE(tx.hasExpiration());
     EXPECT_FALSE(tx.getExpiration().has_value());
     EXPECT_FALSE(tx.hasDestinationTag());

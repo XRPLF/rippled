@@ -49,80 +49,35 @@ public:
 
     /**
      * @brief Get sfUNLModifyDisabling (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    SF_UINT8::type::value_type
     getUNLModifyDisabling() const
     {
-        if (hasUNLModifyDisabling())
-        {
-            return this->tx_->at(sfUNLModifyDisabling);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfUNLModifyDisabling is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasUNLModifyDisabling() const
-    {
-        return this->tx_->isFieldPresent(sfUNLModifyDisabling);
+        return this->tx_->at(sfUNLModifyDisabling);
     }
 
     /**
      * @brief Get sfLedgerSequence (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getLedgerSequence() const
     {
-        if (hasLedgerSequence())
-        {
-            return this->tx_->at(sfLedgerSequence);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLedgerSequence is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLedgerSequence() const
-    {
-        return this->tx_->isFieldPresent(sfLedgerSequence);
+        return this->tx_->at(sfLedgerSequence);
     }
 
     /**
      * @brief Get sfUNLModifyValidator (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    SF_VL::type::value_type
     getUNLModifyValidator() const
     {
-        if (hasUNLModifyValidator())
-        {
-            return this->tx_->at(sfUNLModifyValidator);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfUNLModifyValidator is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasUNLModifyValidator() const
-    {
-        return this->tx_->isFieldPresent(sfUNLModifyValidator);
+        return this->tx_->at(sfUNLModifyValidator);
     }
 };
 
@@ -139,15 +94,21 @@ public:
     /**
      * @brief Construct a new UNLModifyBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param uNLModifyDisabling The sfUNLModifyDisabling field value.
+     * @param ledgerSequence The sfLedgerSequence field value.
+     * @param uNLModifyValidator The sfUNLModifyValidator field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     UNLModifyBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT8::type::value_type> const& uNLModifyDisabling,                     std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence,                     std::decay_t<typename SF_VL::type::value_type> const& uNLModifyValidator,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<UNLModifyBuilder>(ttUNL_MODIFY, account, sequence, fee)
     {
+        setUNLModifyDisabling(uNLModifyDisabling);
+        setLedgerSequence(ledgerSequence);
+        setUNLModifyValidator(uNLModifyValidator);
     }
 
     /**

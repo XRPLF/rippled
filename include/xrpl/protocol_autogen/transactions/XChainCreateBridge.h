@@ -49,54 +49,24 @@ public:
 
     /**
      * @brief Get sfXChainBridge (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_XCHAIN_BRIDGE::type::value_type>
+    SF_XCHAIN_BRIDGE::type::value_type
     getXChainBridge() const
     {
-        if (hasXChainBridge())
-        {
-            return this->tx_->at(sfXChainBridge);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfXChainBridge is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasXChainBridge() const
-    {
-        return this->tx_->isFieldPresent(sfXChainBridge);
+        return this->tx_->at(sfXChainBridge);
     }
 
     /**
      * @brief Get sfSignatureReward (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getSignatureReward() const
     {
-        if (hasSignatureReward())
-        {
-            return this->tx_->at(sfSignatureReward);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSignatureReward is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSignatureReward() const
-    {
-        return this->tx_->isFieldPresent(sfSignatureReward);
+        return this->tx_->at(sfSignatureReward);
     }
 
     /**
@@ -139,15 +109,19 @@ public:
     /**
      * @brief Construct a new XChainCreateBridgeBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param xChainBridge The sfXChainBridge field value.
+     * @param signatureReward The sfSignatureReward field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     XChainCreateBridgeBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<XChainCreateBridgeBuilder>(ttXCHAIN_CREATE_BRIDGE, account, sequence, fee)
     {
+        setXChainBridge(xChainBridge);
+        setSignatureReward(signatureReward);
     }
 
     /**

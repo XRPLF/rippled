@@ -31,17 +31,17 @@ TEST(CredentialTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     CredentialBuilder builder{
+        subjectValue,
+        issuerValue,
+        credentialTypeValue,
+        issuerNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
     };
 
-    builder.setSubject(subjectValue);
-    builder.setIssuer(issuerValue);
-    builder.setCredentialType(credentialTypeValue);
     builder.setExpiration(expirationValue);
     builder.setURI(uRIValue);
-    builder.setIssuerNode(issuerNodeValue);
     builder.setSubjectNode(subjectNodeValue);
-    builder.setPreviousTxnID(previousTxnIDValue);
-    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -54,26 +54,38 @@ TEST(CredentialTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = subjectValue;
-        auto const actualOpt = entry.getSubject();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfSubject");
-        EXPECT_TRUE(entry.hasSubject());
+        auto const actual = entry.getSubject();
+        expectEqualField(expected, actual, "sfSubject");
     }
 
     {
         auto const& expected = issuerValue;
-        auto const actualOpt = entry.getIssuer();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfIssuer");
-        EXPECT_TRUE(entry.hasIssuer());
+        auto const actual = entry.getIssuer();
+        expectEqualField(expected, actual, "sfIssuer");
     }
 
     {
         auto const& expected = credentialTypeValue;
-        auto const actualOpt = entry.getCredentialType();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfCredentialType");
-        EXPECT_TRUE(entry.hasCredentialType());
+        auto const actual = entry.getCredentialType();
+        expectEqualField(expected, actual, "sfCredentialType");
+    }
+
+    {
+        auto const& expected = issuerNodeValue;
+        auto const actual = entry.getIssuerNode();
+        expectEqualField(expected, actual, "sfIssuerNode");
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+        auto const actual = entry.getPreviousTxnID();
+        expectEqualField(expected, actual, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+        auto const actual = entry.getPreviousTxnLgrSeq();
+        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
     }
 
     {
@@ -93,35 +105,11 @@ TEST(CredentialTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = issuerNodeValue;
-        auto const actualOpt = entry.getIssuerNode();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfIssuerNode");
-        EXPECT_TRUE(entry.hasIssuerNode());
-    }
-
-    {
         auto const& expected = subjectNodeValue;
         auto const actualOpt = entry.getSubjectNode();
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfSubjectNode");
         EXPECT_TRUE(entry.hasSubjectNode());
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-        auto const actualOpt = entry.getPreviousTxnID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
-        EXPECT_TRUE(entry.hasPreviousTxnID());
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-        auto const actualOpt = entry.getPreviousTxnLgrSeq();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
-        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -171,40 +159,61 @@ TEST(CredentialTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = subjectValue;
 
-        auto const fromSleOpt = entryFromSle.getSubject();
-        auto const fromBuilderOpt = entryFromBuilder.getSubject();
+        auto const fromSle = entryFromSle.getSubject();
+        auto const fromBuilder = entryFromBuilder.getSubject();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfSubject");
-        expectEqualField(expected, *fromBuilderOpt, "sfSubject");
+        expectEqualField(expected, fromSle, "sfSubject");
+        expectEqualField(expected, fromBuilder, "sfSubject");
     }
 
     {
         auto const& expected = issuerValue;
 
-        auto const fromSleOpt = entryFromSle.getIssuer();
-        auto const fromBuilderOpt = entryFromBuilder.getIssuer();
+        auto const fromSle = entryFromSle.getIssuer();
+        auto const fromBuilder = entryFromBuilder.getIssuer();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfIssuer");
-        expectEqualField(expected, *fromBuilderOpt, "sfIssuer");
+        expectEqualField(expected, fromSle, "sfIssuer");
+        expectEqualField(expected, fromBuilder, "sfIssuer");
     }
 
     {
         auto const& expected = credentialTypeValue;
 
-        auto const fromSleOpt = entryFromSle.getCredentialType();
-        auto const fromBuilderOpt = entryFromBuilder.getCredentialType();
+        auto const fromSle = entryFromSle.getCredentialType();
+        auto const fromBuilder = entryFromBuilder.getCredentialType();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
+        expectEqualField(expected, fromSle, "sfCredentialType");
+        expectEqualField(expected, fromBuilder, "sfCredentialType");
+    }
 
-        expectEqualField(expected, *fromSleOpt, "sfCredentialType");
-        expectEqualField(expected, *fromBuilderOpt, "sfCredentialType");
+    {
+        auto const& expected = issuerNodeValue;
+
+        auto const fromSle = entryFromSle.getIssuerNode();
+        auto const fromBuilder = entryFromBuilder.getIssuerNode();
+
+        expectEqualField(expected, fromSle, "sfIssuerNode");
+        expectEqualField(expected, fromBuilder, "sfIssuerNode");
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+
+        auto const fromSle = entryFromSle.getPreviousTxnID();
+        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
+
+        expectEqualField(expected, fromSle, "sfPreviousTxnID");
+        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+
+        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
+
+        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
     }
 
     {
@@ -234,19 +243,6 @@ TEST(CredentialTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = issuerNodeValue;
-
-        auto const fromSleOpt = entryFromSle.getIssuerNode();
-        auto const fromBuilderOpt = entryFromBuilder.getIssuerNode();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfIssuerNode");
-        expectEqualField(expected, *fromBuilderOpt, "sfIssuerNode");
-    }
-
-    {
         auto const& expected = subjectNodeValue;
 
         auto const fromSleOpt = entryFromSle.getSubjectNode();
@@ -257,32 +253,6 @@ TEST(CredentialTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfSubjectNode");
         expectEqualField(expected, *fromBuilderOpt, "sfSubjectNode");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-
-        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-
-        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -330,30 +300,30 @@ TEST(CredentialTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
+    auto const subjectValue = canonical_ACCOUNT();
+    auto const issuerValue = canonical_ACCOUNT();
+    auto const credentialTypeValue = canonical_VL();
+    auto const issuerNodeValue = canonical_UINT64();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     CredentialBuilder builder{
+        subjectValue,
+        issuerValue,
+        credentialTypeValue,
+        issuerNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
     };
 
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasSubject());
-    EXPECT_FALSE(entry.getSubject().has_value());
-    EXPECT_FALSE(entry.hasIssuer());
-    EXPECT_FALSE(entry.getIssuer().has_value());
-    EXPECT_FALSE(entry.hasCredentialType());
-    EXPECT_FALSE(entry.getCredentialType().has_value());
     EXPECT_FALSE(entry.hasExpiration());
     EXPECT_FALSE(entry.getExpiration().has_value());
     EXPECT_FALSE(entry.hasURI());
     EXPECT_FALSE(entry.getURI().has_value());
-    EXPECT_FALSE(entry.hasIssuerNode());
-    EXPECT_FALSE(entry.getIssuerNode().has_value());
     EXPECT_FALSE(entry.hasSubjectNode());
     EXPECT_FALSE(entry.getSubjectNode().has_value());
-    EXPECT_FALSE(entry.hasPreviousTxnID());
-    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
-    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
-    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
 }

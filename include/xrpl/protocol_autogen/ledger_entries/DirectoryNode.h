@@ -239,50 +239,24 @@ public:
 
     /**
      * @brief Get sfIndexes (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VECTOR256::type::value_type>
+    SF_VECTOR256::type::value_type
     getIndexes() const
     {
-        if (hasIndexes())
-            return this->sle_->at(sfIndexes);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfIndexes is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasIndexes() const
-    {
-        return this->sle_->isFieldPresent(sfIndexes);
+        return this->sle_->at(sfIndexes);
     }
 
     /**
      * @brief Get sfRootIndex (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getRootIndex() const
     {
-        if (hasRootIndex())
-            return this->sle_->at(sfRootIndex);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfRootIndex is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasRootIndex() const
-    {
-        return this->sle_->isFieldPresent(sfRootIndex);
+        return this->sle_->at(sfRootIndex);
     }
 
     /**
@@ -442,10 +416,14 @@ class DirectoryNodeBuilder : public LedgerEntryBuilderBase<DirectoryNodeBuilder>
 public:
     /**
      * @brief Construct a new DirectoryNodeBuilder with required fields.
+     * @param indexes The sfIndexes field value.
+     * @param rootIndex The sfRootIndex field value.
      */
-    DirectoryNodeBuilder()
+    DirectoryNodeBuilder(std::decay_t<typename SF_VECTOR256::type::value_type> const& indexes,std::decay_t<typename SF_UINT256::type::value_type> const& rootIndex)
         : LedgerEntryBuilderBase<DirectoryNodeBuilder>(ltDIR_NODE)
     {
+        setIndexes(indexes);
+        setRootIndex(rootIndex);
     }
 
     /**

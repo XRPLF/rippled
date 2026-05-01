@@ -95,26 +95,13 @@ public:
 
     /**
      * @brief Get sfHashes (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VECTOR256::type::value_type>
+    SF_VECTOR256::type::value_type
     getHashes() const
     {
-        if (hasHashes())
-            return this->sle_->at(sfHashes);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfHashes is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasHashes() const
-    {
-        return this->sle_->isFieldPresent(sfHashes);
+        return this->sle_->at(sfHashes);
     }
 };
 
@@ -130,10 +117,12 @@ class LedgerHashesBuilder : public LedgerEntryBuilderBase<LedgerHashesBuilder>
 public:
     /**
      * @brief Construct a new LedgerHashesBuilder with required fields.
+     * @param hashes The sfHashes field value.
      */
-    LedgerHashesBuilder()
+    LedgerHashesBuilder(std::decay_t<typename SF_VECTOR256::type::value_type> const& hashes)
         : LedgerEntryBuilderBase<LedgerHashesBuilder>(ltLEDGER_HASHES)
     {
+        setHashes(hashes);
     }
 
     /**

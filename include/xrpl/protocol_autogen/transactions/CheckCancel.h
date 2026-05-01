@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfCheckID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getCheckID() const
     {
-        if (hasCheckID())
-        {
-            return this->tx_->at(sfCheckID);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfCheckID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasCheckID() const
-    {
-        return this->tx_->isFieldPresent(sfCheckID);
+        return this->tx_->at(sfCheckID);
     }
 };
 
@@ -87,15 +72,17 @@ public:
     /**
      * @brief Construct a new CheckCancelBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param checkID The sfCheckID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     CheckCancelBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT256::type::value_type> const& checkID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<CheckCancelBuilder>(ttCHECK_CANCEL, account, sequence, fee)
     {
+        setCheckID(checkID);
     }
 
     /**

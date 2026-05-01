@@ -21,7 +21,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerCoverWithdraw"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerCoverWithdraw"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -36,13 +36,13 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderSettersRoundTrip)
 
     LoanBrokerCoverWithdrawBuilder builder{
         accountValue,
+        loanBrokerIDValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setLoanBrokerID(loanBrokerIDValue);
-    builder.setAmount(amountValue);
     builder.setDestination(destinationValue);
     builder.setDestinationTag(destinationTagValue);
 
@@ -61,23 +61,19 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = tx.getLoanBrokerID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanBrokerID should be present";
-        expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
-        EXPECT_TRUE(tx.hasLoanBrokerID());
+        auto const actual = tx.getLoanBrokerID();
+        expectEqualField(expected, actual, "sfLoanBrokerID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = tx.getAmount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
-        expectEqualField(expected, *actualOpt, "sfAmount");
-        EXPECT_TRUE(tx.hasAmount());
+        auto const actual = tx.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
+    // Verify optional fields
     {
         auto const& expected = destinationValue;
         auto const actualOpt = tx.getDestination();
@@ -102,7 +98,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerCoverWithdrawFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerCoverWithdrawFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -118,12 +114,12 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     LoanBrokerCoverWithdrawBuilder initialBuilder{
         accountValue,
+        loanBrokerIDValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setLoanBrokerID(loanBrokerIDValue);
-    initialBuilder.setAmount(amountValue);
     initialBuilder.setDestination(destinationValue);
     initialBuilder.setDestinationTag(destinationTagValue);
 
@@ -143,21 +139,19 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = rebuiltTx.getLoanBrokerID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanBrokerID should be present";
-        expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
+        auto const actual = rebuiltTx.getLoanBrokerID();
+        expectEqualField(expected, actual, "sfLoanBrokerID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = rebuiltTx.getAmount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
-        expectEqualField(expected, *actualOpt, "sfAmount");
+        auto const actual = rebuiltTx.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
+    // Verify optional fields
     {
         auto const& expected = destinationValue;
         auto const actualOpt = rebuiltTx.getDestination();
@@ -179,7 +173,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -193,7 +187,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -207,7 +201,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerCoverWithdrawNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerCoverWithdrawNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -215,9 +209,13 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const loanBrokerIDValue = canonical_UINT256();
+    auto const amountValue = canonical_AMOUNT();
 
     LoanBrokerCoverWithdrawBuilder builder{
         accountValue,
+        loanBrokerIDValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
@@ -227,10 +225,6 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasLoanBrokerID());
-    EXPECT_FALSE(tx.getLoanBrokerID().has_value());
-    EXPECT_FALSE(tx.hasAmount());
-    EXPECT_FALSE(tx.getAmount().has_value());
     EXPECT_FALSE(tx.hasDestination());
     EXPECT_FALSE(tx.getDestination().has_value());
     EXPECT_FALSE(tx.hasDestinationTag());

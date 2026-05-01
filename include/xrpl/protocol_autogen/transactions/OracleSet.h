@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfOracleDocumentID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getOracleDocumentID() const
     {
-        if (hasOracleDocumentID())
-        {
-            return this->tx_->at(sfOracleDocumentID);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOracleDocumentID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOracleDocumentID() const
-    {
-        return this->tx_->isFieldPresent(sfOracleDocumentID);
+        return this->tx_->at(sfOracleDocumentID);
     }
 
     /**
@@ -153,52 +138,24 @@ public:
 
     /**
      * @brief Get sfLastUpdateTime (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getLastUpdateTime() const
     {
-        if (hasLastUpdateTime())
-        {
-            return this->tx_->at(sfLastUpdateTime);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLastUpdateTime is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLastUpdateTime() const
-    {
-        return this->tx_->isFieldPresent(sfLastUpdateTime);
+        return this->tx_->at(sfLastUpdateTime);
     }
     /**
      * @brief Get sfPriceDataSeries (SoeRequired)
      * @note This is an untyped field.
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    std::optional<std::reference_wrapper<STArray const>>
+    STArray const&
     getPriceDataSeries() const
     {
-        if (this->tx_->isFieldPresent(sfPriceDataSeries))
-            return this->tx_->getFieldArray(sfPriceDataSeries);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPriceDataSeries is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPriceDataSeries() const
-    {
-        return this->tx_->isFieldPresent(sfPriceDataSeries);
+        return this->tx_->getFieldArray(sfPriceDataSeries);
     }
 };
 
@@ -215,15 +172,21 @@ public:
     /**
      * @brief Construct a new OracleSetBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param oracleDocumentID The sfOracleDocumentID field value.
+     * @param lastUpdateTime The sfLastUpdateTime field value.
+     * @param priceDataSeries The sfPriceDataSeries field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     OracleSetBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID,                     std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime,                     STArray const& priceDataSeries,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<OracleSetBuilder>(ttORACLE_SET, account, sequence, fee)
     {
+        setOracleDocumentID(oracleDocumentID);
+        setLastUpdateTime(lastUpdateTime);
+        setPriceDataSeries(priceDataSeries);
     }
 
     /**

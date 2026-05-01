@@ -31,17 +31,17 @@ TEST(NFTokenOfferTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     NFTokenOfferBuilder builder{
+        ownerValue,
+        nFTokenIDValue,
+        amountValue,
+        ownerNodeValue,
+        nFTokenOfferNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
     };
 
-    builder.setOwner(ownerValue);
-    builder.setNFTokenID(nFTokenIDValue);
-    builder.setAmount(amountValue);
-    builder.setOwnerNode(ownerNodeValue);
-    builder.setNFTokenOfferNode(nFTokenOfferNodeValue);
     builder.setDestination(destinationValue);
     builder.setExpiration(expirationValue);
-    builder.setPreviousTxnID(previousTxnIDValue);
-    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -54,42 +54,44 @@ TEST(NFTokenOfferTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = entry.getOwner();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfOwner");
-        EXPECT_TRUE(entry.hasOwner());
+        auto const actual = entry.getOwner();
+        expectEqualField(expected, actual, "sfOwner");
     }
 
     {
         auto const& expected = nFTokenIDValue;
-        auto const actualOpt = entry.getNFTokenID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfNFTokenID");
-        EXPECT_TRUE(entry.hasNFTokenID());
+        auto const actual = entry.getNFTokenID();
+        expectEqualField(expected, actual, "sfNFTokenID");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = entry.getAmount();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAmount");
-        EXPECT_TRUE(entry.hasAmount());
+        auto const actual = entry.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
     {
         auto const& expected = ownerNodeValue;
-        auto const actualOpt = entry.getOwnerNode();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfOwnerNode");
-        EXPECT_TRUE(entry.hasOwnerNode());
+        auto const actual = entry.getOwnerNode();
+        expectEqualField(expected, actual, "sfOwnerNode");
     }
 
     {
         auto const& expected = nFTokenOfferNodeValue;
-        auto const actualOpt = entry.getNFTokenOfferNode();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfNFTokenOfferNode");
-        EXPECT_TRUE(entry.hasNFTokenOfferNode());
+        auto const actual = entry.getNFTokenOfferNode();
+        expectEqualField(expected, actual, "sfNFTokenOfferNode");
+    }
+
+    {
+        auto const& expected = previousTxnIDValue;
+        auto const actual = entry.getPreviousTxnID();
+        expectEqualField(expected, actual, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+        auto const actual = entry.getPreviousTxnLgrSeq();
+        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
     }
 
     {
@@ -106,22 +108,6 @@ TEST(NFTokenOfferTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfExpiration");
         EXPECT_TRUE(entry.hasExpiration());
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-        auto const actualOpt = entry.getPreviousTxnID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
-        EXPECT_TRUE(entry.hasPreviousTxnID());
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-        auto const actualOpt = entry.getPreviousTxnLgrSeq();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
-        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -171,66 +157,71 @@ TEST(NFTokenOfferTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = ownerValue;
 
-        auto const fromSleOpt = entryFromSle.getOwner();
-        auto const fromBuilderOpt = entryFromBuilder.getOwner();
+        auto const fromSle = entryFromSle.getOwner();
+        auto const fromBuilder = entryFromBuilder.getOwner();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfOwner");
-        expectEqualField(expected, *fromBuilderOpt, "sfOwner");
+        expectEqualField(expected, fromSle, "sfOwner");
+        expectEqualField(expected, fromBuilder, "sfOwner");
     }
 
     {
         auto const& expected = nFTokenIDValue;
 
-        auto const fromSleOpt = entryFromSle.getNFTokenID();
-        auto const fromBuilderOpt = entryFromBuilder.getNFTokenID();
+        auto const fromSle = entryFromSle.getNFTokenID();
+        auto const fromBuilder = entryFromBuilder.getNFTokenID();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfNFTokenID");
-        expectEqualField(expected, *fromBuilderOpt, "sfNFTokenID");
+        expectEqualField(expected, fromSle, "sfNFTokenID");
+        expectEqualField(expected, fromBuilder, "sfNFTokenID");
     }
 
     {
         auto const& expected = amountValue;
 
-        auto const fromSleOpt = entryFromSle.getAmount();
-        auto const fromBuilderOpt = entryFromBuilder.getAmount();
+        auto const fromSle = entryFromSle.getAmount();
+        auto const fromBuilder = entryFromBuilder.getAmount();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfAmount");
-        expectEqualField(expected, *fromBuilderOpt, "sfAmount");
+        expectEqualField(expected, fromSle, "sfAmount");
+        expectEqualField(expected, fromBuilder, "sfAmount");
     }
 
     {
         auto const& expected = ownerNodeValue;
 
-        auto const fromSleOpt = entryFromSle.getOwnerNode();
-        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
+        auto const fromSle = entryFromSle.getOwnerNode();
+        auto const fromBuilder = entryFromBuilder.getOwnerNode();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
-        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
+        expectEqualField(expected, fromSle, "sfOwnerNode");
+        expectEqualField(expected, fromBuilder, "sfOwnerNode");
     }
 
     {
         auto const& expected = nFTokenOfferNodeValue;
 
-        auto const fromSleOpt = entryFromSle.getNFTokenOfferNode();
-        auto const fromBuilderOpt = entryFromBuilder.getNFTokenOfferNode();
+        auto const fromSle = entryFromSle.getNFTokenOfferNode();
+        auto const fromBuilder = entryFromBuilder.getNFTokenOfferNode();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
+        expectEqualField(expected, fromSle, "sfNFTokenOfferNode");
+        expectEqualField(expected, fromBuilder, "sfNFTokenOfferNode");
+    }
 
-        expectEqualField(expected, *fromSleOpt, "sfNFTokenOfferNode");
-        expectEqualField(expected, *fromBuilderOpt, "sfNFTokenOfferNode");
+    {
+        auto const& expected = previousTxnIDValue;
+
+        auto const fromSle = entryFromSle.getPreviousTxnID();
+        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
+
+        expectEqualField(expected, fromSle, "sfPreviousTxnID");
+        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
+    }
+
+    {
+        auto const& expected = previousTxnLgrSeqValue;
+
+        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
+
+        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
     }
 
     {
@@ -257,32 +248,6 @@ TEST(NFTokenOfferTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfExpiration");
         expectEqualField(expected, *fromBuilderOpt, "sfExpiration");
-    }
-
-    {
-        auto const& expected = previousTxnIDValue;
-
-        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
-    }
-
-    {
-        auto const& expected = previousTxnLgrSeqValue;
-
-        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -330,30 +295,30 @@ TEST(NFTokenOfferTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
+    auto const ownerValue = canonical_ACCOUNT();
+    auto const nFTokenIDValue = canonical_UINT256();
+    auto const amountValue = canonical_AMOUNT();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const nFTokenOfferNodeValue = canonical_UINT64();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     NFTokenOfferBuilder builder{
+        ownerValue,
+        nFTokenIDValue,
+        amountValue,
+        ownerNodeValue,
+        nFTokenOfferNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
     };
 
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasOwner());
-    EXPECT_FALSE(entry.getOwner().has_value());
-    EXPECT_FALSE(entry.hasNFTokenID());
-    EXPECT_FALSE(entry.getNFTokenID().has_value());
-    EXPECT_FALSE(entry.hasAmount());
-    EXPECT_FALSE(entry.getAmount().has_value());
-    EXPECT_FALSE(entry.hasOwnerNode());
-    EXPECT_FALSE(entry.getOwnerNode().has_value());
-    EXPECT_FALSE(entry.hasNFTokenOfferNode());
-    EXPECT_FALSE(entry.getNFTokenOfferNode().has_value());
     EXPECT_FALSE(entry.hasDestination());
     EXPECT_FALSE(entry.getDestination().has_value());
     EXPECT_FALSE(entry.hasExpiration());
     EXPECT_FALSE(entry.getExpiration().has_value());
-    EXPECT_FALSE(entry.hasPreviousTxnID());
-    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
-    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
-    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
 }

@@ -33,13 +33,13 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
     auto const highQualityOutValue = canonical_UINT32();
 
     RippleStateBuilder builder{
+        balanceValue,
+        lowLimitValue,
+        highLimitValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
     };
 
-    builder.setBalance(balanceValue);
-    builder.setLowLimit(lowLimitValue);
-    builder.setHighLimit(highLimitValue);
-    builder.setPreviousTxnID(previousTxnIDValue);
-    builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
     builder.setLowNode(lowNodeValue);
     builder.setLowQualityIn(lowQualityInValue);
     builder.setLowQualityOut(lowQualityOutValue);
@@ -58,42 +58,32 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = balanceValue;
-        auto const actualOpt = entry.getBalance();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfBalance");
-        EXPECT_TRUE(entry.hasBalance());
+        auto const actual = entry.getBalance();
+        expectEqualField(expected, actual, "sfBalance");
     }
 
     {
         auto const& expected = lowLimitValue;
-        auto const actualOpt = entry.getLowLimit();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLowLimit");
-        EXPECT_TRUE(entry.hasLowLimit());
+        auto const actual = entry.getLowLimit();
+        expectEqualField(expected, actual, "sfLowLimit");
     }
 
     {
         auto const& expected = highLimitValue;
-        auto const actualOpt = entry.getHighLimit();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfHighLimit");
-        EXPECT_TRUE(entry.hasHighLimit());
+        auto const actual = entry.getHighLimit();
+        expectEqualField(expected, actual, "sfHighLimit");
     }
 
     {
         auto const& expected = previousTxnIDValue;
-        auto const actualOpt = entry.getPreviousTxnID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousTxnID");
-        EXPECT_TRUE(entry.hasPreviousTxnID());
+        auto const actual = entry.getPreviousTxnID();
+        expectEqualField(expected, actual, "sfPreviousTxnID");
     }
 
     {
         auto const& expected = previousTxnLgrSeqValue;
-        auto const actualOpt = entry.getPreviousTxnLgrSeq();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousTxnLgrSeq");
-        EXPECT_TRUE(entry.hasPreviousTxnLgrSeq());
+        auto const actual = entry.getPreviousTxnLgrSeq();
+        expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
     }
 
     {
@@ -195,66 +185,51 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = balanceValue;
 
-        auto const fromSleOpt = entryFromSle.getBalance();
-        auto const fromBuilderOpt = entryFromBuilder.getBalance();
+        auto const fromSle = entryFromSle.getBalance();
+        auto const fromBuilder = entryFromBuilder.getBalance();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfBalance");
-        expectEqualField(expected, *fromBuilderOpt, "sfBalance");
+        expectEqualField(expected, fromSle, "sfBalance");
+        expectEqualField(expected, fromBuilder, "sfBalance");
     }
 
     {
         auto const& expected = lowLimitValue;
 
-        auto const fromSleOpt = entryFromSle.getLowLimit();
-        auto const fromBuilderOpt = entryFromBuilder.getLowLimit();
+        auto const fromSle = entryFromSle.getLowLimit();
+        auto const fromBuilder = entryFromBuilder.getLowLimit();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLowLimit");
-        expectEqualField(expected, *fromBuilderOpt, "sfLowLimit");
+        expectEqualField(expected, fromSle, "sfLowLimit");
+        expectEqualField(expected, fromBuilder, "sfLowLimit");
     }
 
     {
         auto const& expected = highLimitValue;
 
-        auto const fromSleOpt = entryFromSle.getHighLimit();
-        auto const fromBuilderOpt = entryFromBuilder.getHighLimit();
+        auto const fromSle = entryFromSle.getHighLimit();
+        auto const fromBuilder = entryFromBuilder.getHighLimit();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfHighLimit");
-        expectEqualField(expected, *fromBuilderOpt, "sfHighLimit");
+        expectEqualField(expected, fromSle, "sfHighLimit");
+        expectEqualField(expected, fromBuilder, "sfHighLimit");
     }
 
     {
         auto const& expected = previousTxnIDValue;
 
-        auto const fromSleOpt = entryFromSle.getPreviousTxnID();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnID();
+        auto const fromSle = entryFromSle.getPreviousTxnID();
+        auto const fromBuilder = entryFromBuilder.getPreviousTxnID();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnID");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnID");
+        expectEqualField(expected, fromSle, "sfPreviousTxnID");
+        expectEqualField(expected, fromBuilder, "sfPreviousTxnID");
     }
 
     {
         auto const& expected = previousTxnLgrSeqValue;
 
-        auto const fromSleOpt = entryFromSle.getPreviousTxnLgrSeq();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousTxnLgrSeq();
+        auto const fromSle = entryFromSle.getPreviousTxnLgrSeq();
+        auto const fromBuilder = entryFromBuilder.getPreviousTxnLgrSeq();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousTxnLgrSeq");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
+        expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
     }
 
     {
@@ -380,23 +355,23 @@ TEST(RippleStateTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
+    auto const balanceValue = canonical_AMOUNT();
+    auto const lowLimitValue = canonical_AMOUNT();
+    auto const highLimitValue = canonical_AMOUNT();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     RippleStateBuilder builder{
+        balanceValue,
+        lowLimitValue,
+        highLimitValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
     };
 
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasBalance());
-    EXPECT_FALSE(entry.getBalance().has_value());
-    EXPECT_FALSE(entry.hasLowLimit());
-    EXPECT_FALSE(entry.getLowLimit().has_value());
-    EXPECT_FALSE(entry.hasHighLimit());
-    EXPECT_FALSE(entry.getHighLimit().has_value());
-    EXPECT_FALSE(entry.hasPreviousTxnID());
-    EXPECT_FALSE(entry.getPreviousTxnID().has_value());
-    EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
-    EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
     EXPECT_FALSE(entry.hasLowNode());
     EXPECT_FALSE(entry.getLowNode().has_value());
     EXPECT_FALSE(entry.hasLowQualityIn());

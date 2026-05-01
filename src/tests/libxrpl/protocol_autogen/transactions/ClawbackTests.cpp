@@ -21,7 +21,7 @@ TEST(TransactionsClawbackTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testClawback"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testClawback"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,12 +34,12 @@ TEST(TransactionsClawbackTests, BuilderSettersRoundTrip)
 
     ClawbackBuilder builder{
         accountValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setAmount(amountValue);
     builder.setHolder(holderValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -57,15 +57,13 @@ TEST(TransactionsClawbackTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = amountValue;
-        auto const actualOpt = tx.getAmount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
-        expectEqualField(expected, *actualOpt, "sfAmount");
-        EXPECT_TRUE(tx.hasAmount());
+        auto const actual = tx.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
+    // Verify optional fields
     {
         auto const& expected = holderValue;
         auto const actualOpt = tx.getHolder();
@@ -82,7 +80,7 @@ TEST(TransactionsClawbackTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testClawbackFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testClawbackFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -96,11 +94,11 @@ TEST(TransactionsClawbackTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     ClawbackBuilder initialBuilder{
         accountValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setAmount(amountValue);
     initialBuilder.setHolder(holderValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -119,14 +117,13 @@ TEST(TransactionsClawbackTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = amountValue;
-        auto const actualOpt = rebuiltTx.getAmount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
-        expectEqualField(expected, *actualOpt, "sfAmount");
+        auto const actual = rebuiltTx.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
+    // Verify optional fields
     {
         auto const& expected = holderValue;
         auto const actualOpt = rebuiltTx.getHolder();
@@ -141,7 +138,7 @@ TEST(TransactionsClawbackTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -155,7 +152,7 @@ TEST(TransactionsClawbackTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -169,7 +166,7 @@ TEST(TransactionsClawbackTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testClawbackNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testClawbackNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -177,9 +174,11 @@ TEST(TransactionsClawbackTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const amountValue = canonical_AMOUNT();
 
     ClawbackBuilder builder{
         accountValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
@@ -189,8 +188,6 @@ TEST(TransactionsClawbackTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasAmount());
-    EXPECT_FALSE(tx.getAmount().has_value());
     EXPECT_FALSE(tx.hasHolder());
     EXPECT_FALSE(tx.getHolder().has_value());
 }

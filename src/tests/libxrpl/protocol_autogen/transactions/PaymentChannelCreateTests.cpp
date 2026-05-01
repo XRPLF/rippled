@@ -21,7 +21,7 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelCreate"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -38,15 +38,15 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderSettersRoundTrip)
 
     PaymentChannelCreateBuilder builder{
         accountValue,
+        destinationValue,
+        amountValue,
+        settleDelayValue,
+        publicKeyValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setDestination(destinationValue);
-    builder.setAmount(amountValue);
-    builder.setSettleDelay(settleDelayValue);
-    builder.setPublicKey(publicKeyValue);
     builder.setCancelAfter(cancelAfterValue);
     builder.setDestinationTag(destinationTagValue);
 
@@ -65,39 +65,31 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actualOpt = tx.getDestination();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
-        expectEqualField(expected, *actualOpt, "sfDestination");
-        EXPECT_TRUE(tx.hasDestination());
+        auto const actual = tx.getDestination();
+        expectEqualField(expected, actual, "sfDestination");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = tx.getAmount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
-        expectEqualField(expected, *actualOpt, "sfAmount");
-        EXPECT_TRUE(tx.hasAmount());
+        auto const actual = tx.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
     {
         auto const& expected = settleDelayValue;
-        auto const actualOpt = tx.getSettleDelay();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSettleDelay should be present";
-        expectEqualField(expected, *actualOpt, "sfSettleDelay");
-        EXPECT_TRUE(tx.hasSettleDelay());
+        auto const actual = tx.getSettleDelay();
+        expectEqualField(expected, actual, "sfSettleDelay");
     }
 
     {
         auto const& expected = publicKeyValue;
-        auto const actualOpt = tx.getPublicKey();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPublicKey should be present";
-        expectEqualField(expected, *actualOpt, "sfPublicKey");
-        EXPECT_TRUE(tx.hasPublicKey());
+        auto const actual = tx.getPublicKey();
+        expectEqualField(expected, actual, "sfPublicKey");
     }
 
+    // Verify optional fields
     {
         auto const& expected = cancelAfterValue;
         auto const actualOpt = tx.getCancelAfter();
@@ -122,7 +114,7 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelCreateFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -140,14 +132,14 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     PaymentChannelCreateBuilder initialBuilder{
         accountValue,
+        destinationValue,
+        amountValue,
+        settleDelayValue,
+        publicKeyValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setDestination(destinationValue);
-    initialBuilder.setAmount(amountValue);
-    initialBuilder.setSettleDelay(settleDelayValue);
-    initialBuilder.setPublicKey(publicKeyValue);
     initialBuilder.setCancelAfter(cancelAfterValue);
     initialBuilder.setDestinationTag(destinationTagValue);
 
@@ -167,35 +159,31 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = destinationValue;
-        auto const actualOpt = rebuiltTx.getDestination();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
-        expectEqualField(expected, *actualOpt, "sfDestination");
+        auto const actual = rebuiltTx.getDestination();
+        expectEqualField(expected, actual, "sfDestination");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = rebuiltTx.getAmount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
-        expectEqualField(expected, *actualOpt, "sfAmount");
+        auto const actual = rebuiltTx.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
     {
         auto const& expected = settleDelayValue;
-        auto const actualOpt = rebuiltTx.getSettleDelay();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSettleDelay should be present";
-        expectEqualField(expected, *actualOpt, "sfSettleDelay");
+        auto const actual = rebuiltTx.getSettleDelay();
+        expectEqualField(expected, actual, "sfSettleDelay");
     }
 
     {
         auto const& expected = publicKeyValue;
-        auto const actualOpt = rebuiltTx.getPublicKey();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPublicKey should be present";
-        expectEqualField(expected, *actualOpt, "sfPublicKey");
+        auto const actual = rebuiltTx.getPublicKey();
+        expectEqualField(expected, actual, "sfPublicKey");
     }
 
+    // Verify optional fields
     {
         auto const& expected = cancelAfterValue;
         auto const actualOpt = rebuiltTx.getCancelAfter();
@@ -217,7 +205,7 @@ TEST(TransactionsPaymentChannelCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -231,7 +219,7 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -245,7 +233,7 @@ TEST(TransactionsPaymentChannelCreateTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelCreateNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelCreateNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -253,9 +241,17 @@ TEST(TransactionsPaymentChannelCreateTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const destinationValue = canonical_ACCOUNT();
+    auto const amountValue = canonical_AMOUNT();
+    auto const settleDelayValue = canonical_UINT32();
+    auto const publicKeyValue = canonical_VL();
 
     PaymentChannelCreateBuilder builder{
         accountValue,
+        destinationValue,
+        amountValue,
+        settleDelayValue,
+        publicKeyValue,
         sequenceValue,
         feeValue
     };
@@ -265,14 +261,6 @@ TEST(TransactionsPaymentChannelCreateTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasDestination());
-    EXPECT_FALSE(tx.getDestination().has_value());
-    EXPECT_FALSE(tx.hasAmount());
-    EXPECT_FALSE(tx.getAmount().has_value());
-    EXPECT_FALSE(tx.hasSettleDelay());
-    EXPECT_FALSE(tx.getSettleDelay().has_value());
-    EXPECT_FALSE(tx.hasPublicKey());
-    EXPECT_FALSE(tx.getPublicKey().has_value());
     EXPECT_FALSE(tx.hasCancelAfter());
     EXPECT_FALSE(tx.getCancelAfter().has_value());
     EXPECT_FALSE(tx.hasDestinationTag());

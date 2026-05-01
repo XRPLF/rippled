@@ -47,74 +47,35 @@ public:
 
     /**
      * @brief Get sfSubject (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getSubject() const
     {
-        if (hasSubject())
-            return this->sle_->at(sfSubject);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSubject is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSubject() const
-    {
-        return this->sle_->isFieldPresent(sfSubject);
+        return this->sle_->at(sfSubject);
     }
 
     /**
      * @brief Get sfIssuer (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getIssuer() const
     {
-        if (hasIssuer())
-            return this->sle_->at(sfIssuer);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfIssuer is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasIssuer() const
-    {
-        return this->sle_->isFieldPresent(sfIssuer);
+        return this->sle_->at(sfIssuer);
     }
 
     /**
      * @brief Get sfCredentialType (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    SF_VL::type::value_type
     getCredentialType() const
     {
-        if (hasCredentialType())
-            return this->sle_->at(sfCredentialType);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfCredentialType is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasCredentialType() const
-    {
-        return this->sle_->isFieldPresent(sfCredentialType);
+        return this->sle_->at(sfCredentialType);
     }
 
     /**
@@ -167,26 +128,13 @@ public:
 
     /**
      * @brief Get sfIssuerNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getIssuerNode() const
     {
-        if (hasIssuerNode())
-            return this->sle_->at(sfIssuerNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfIssuerNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasIssuerNode() const
-    {
-        return this->sle_->isFieldPresent(sfIssuerNode);
+        return this->sle_->at(sfIssuerNode);
     }
 
     /**
@@ -215,50 +163,24 @@ public:
 
     /**
      * @brief Get sfPreviousTxnID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getPreviousTxnID() const
     {
-        if (hasPreviousTxnID())
-            return this->sle_->at(sfPreviousTxnID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnID() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnID);
+        return this->sle_->at(sfPreviousTxnID);
     }
 
     /**
      * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousTxnLgrSeq() const
     {
-        if (hasPreviousTxnLgrSeq())
-            return this->sle_->at(sfPreviousTxnLgrSeq);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnLgrSeq is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnLgrSeq() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+        return this->sle_->at(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -274,10 +196,22 @@ class CredentialBuilder : public LedgerEntryBuilderBase<CredentialBuilder>
 public:
     /**
      * @brief Construct a new CredentialBuilder with required fields.
+     * @param subject The sfSubject field value.
+     * @param issuer The sfIssuer field value.
+     * @param credentialType The sfCredentialType field value.
+     * @param issuerNode The sfIssuerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    CredentialBuilder()
+    CredentialBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,std::decay_t<typename SF_VL::type::value_type> const& credentialType,std::decay_t<typename SF_UINT64::type::value_type> const& issuerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<CredentialBuilder>(ltCREDENTIAL)
     {
+        setSubject(subject);
+        setIssuer(issuer);
+        setCredentialType(credentialType);
+        setIssuerNode(issuerNode);
+        setPreviousTxnID(previousTxnID);
+        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**

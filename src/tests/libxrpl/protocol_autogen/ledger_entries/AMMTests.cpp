@@ -32,16 +32,16 @@ TEST(AMMTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
     AMMBuilder builder{
+        accountValue,
+        lPTokenBalanceValue,
+        assetValue,
+        asset2Value,
+        ownerNodeValue
     };
 
-    builder.setAccount(accountValue);
     builder.setTradingFee(tradingFeeValue);
     builder.setVoteSlots(voteSlotsValue);
     builder.setAuctionSlot(auctionSlotValue);
-    builder.setLPTokenBalance(lPTokenBalanceValue);
-    builder.setAsset(assetValue);
-    builder.setAsset2(asset2Value);
-    builder.setOwnerNode(ownerNodeValue);
     builder.setPreviousTxnID(previousTxnIDValue);
     builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
 
@@ -56,10 +56,32 @@ TEST(AMMTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = accountValue;
-        auto const actualOpt = entry.getAccount();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAccount");
-        EXPECT_TRUE(entry.hasAccount());
+        auto const actual = entry.getAccount();
+        expectEqualField(expected, actual, "sfAccount");
+    }
+
+    {
+        auto const& expected = lPTokenBalanceValue;
+        auto const actual = entry.getLPTokenBalance();
+        expectEqualField(expected, actual, "sfLPTokenBalance");
+    }
+
+    {
+        auto const& expected = assetValue;
+        auto const actual = entry.getAsset();
+        expectEqualField(expected, actual, "sfAsset");
+    }
+
+    {
+        auto const& expected = asset2Value;
+        auto const actual = entry.getAsset2();
+        expectEqualField(expected, actual, "sfAsset2");
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+        auto const actual = entry.getOwnerNode();
+        expectEqualField(expected, actual, "sfOwnerNode");
     }
 
     {
@@ -84,38 +106,6 @@ TEST(AMMTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfAuctionSlot");
         EXPECT_TRUE(entry.hasAuctionSlot());
-    }
-
-    {
-        auto const& expected = lPTokenBalanceValue;
-        auto const actualOpt = entry.getLPTokenBalance();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLPTokenBalance");
-        EXPECT_TRUE(entry.hasLPTokenBalance());
-    }
-
-    {
-        auto const& expected = assetValue;
-        auto const actualOpt = entry.getAsset();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAsset");
-        EXPECT_TRUE(entry.hasAsset());
-    }
-
-    {
-        auto const& expected = asset2Value;
-        auto const actualOpt = entry.getAsset2();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAsset2");
-        EXPECT_TRUE(entry.hasAsset2());
-    }
-
-    {
-        auto const& expected = ownerNodeValue;
-        auto const actualOpt = entry.getOwnerNode();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfOwnerNode");
-        EXPECT_TRUE(entry.hasOwnerNode());
     }
 
     {
@@ -183,14 +173,51 @@ TEST(AMMTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = accountValue;
 
-        auto const fromSleOpt = entryFromSle.getAccount();
-        auto const fromBuilderOpt = entryFromBuilder.getAccount();
+        auto const fromSle = entryFromSle.getAccount();
+        auto const fromBuilder = entryFromBuilder.getAccount();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
+        expectEqualField(expected, fromSle, "sfAccount");
+        expectEqualField(expected, fromBuilder, "sfAccount");
+    }
 
-        expectEqualField(expected, *fromSleOpt, "sfAccount");
-        expectEqualField(expected, *fromBuilderOpt, "sfAccount");
+    {
+        auto const& expected = lPTokenBalanceValue;
+
+        auto const fromSle = entryFromSle.getLPTokenBalance();
+        auto const fromBuilder = entryFromBuilder.getLPTokenBalance();
+
+        expectEqualField(expected, fromSle, "sfLPTokenBalance");
+        expectEqualField(expected, fromBuilder, "sfLPTokenBalance");
+    }
+
+    {
+        auto const& expected = assetValue;
+
+        auto const fromSle = entryFromSle.getAsset();
+        auto const fromBuilder = entryFromBuilder.getAsset();
+
+        expectEqualField(expected, fromSle, "sfAsset");
+        expectEqualField(expected, fromBuilder, "sfAsset");
+    }
+
+    {
+        auto const& expected = asset2Value;
+
+        auto const fromSle = entryFromSle.getAsset2();
+        auto const fromBuilder = entryFromBuilder.getAsset2();
+
+        expectEqualField(expected, fromSle, "sfAsset2");
+        expectEqualField(expected, fromBuilder, "sfAsset2");
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+
+        auto const fromSle = entryFromSle.getOwnerNode();
+        auto const fromBuilder = entryFromBuilder.getOwnerNode();
+
+        expectEqualField(expected, fromSle, "sfOwnerNode");
+        expectEqualField(expected, fromBuilder, "sfOwnerNode");
     }
 
     {
@@ -230,58 +257,6 @@ TEST(AMMTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfAuctionSlot");
         expectEqualField(expected, *fromBuilderOpt, "sfAuctionSlot");
-    }
-
-    {
-        auto const& expected = lPTokenBalanceValue;
-
-        auto const fromSleOpt = entryFromSle.getLPTokenBalance();
-        auto const fromBuilderOpt = entryFromBuilder.getLPTokenBalance();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLPTokenBalance");
-        expectEqualField(expected, *fromBuilderOpt, "sfLPTokenBalance");
-    }
-
-    {
-        auto const& expected = assetValue;
-
-        auto const fromSleOpt = entryFromSle.getAsset();
-        auto const fromBuilderOpt = entryFromBuilder.getAsset();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfAsset");
-        expectEqualField(expected, *fromBuilderOpt, "sfAsset");
-    }
-
-    {
-        auto const& expected = asset2Value;
-
-        auto const fromSleOpt = entryFromSle.getAsset2();
-        auto const fromBuilderOpt = entryFromBuilder.getAsset2();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfAsset2");
-        expectEqualField(expected, *fromBuilderOpt, "sfAsset2");
-    }
-
-    {
-        auto const& expected = ownerNodeValue;
-
-        auto const fromSleOpt = entryFromSle.getOwnerNode();
-        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
-        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
     }
 
     {
@@ -355,29 +330,29 @@ TEST(AMMTests, OptionalFieldsReturnNullopt)
 {
     uint256 const index{3u};
 
+    auto const accountValue = canonical_ACCOUNT();
+    auto const lPTokenBalanceValue = canonical_AMOUNT();
+    auto const assetValue = canonical_ISSUE();
+    auto const asset2Value = canonical_ISSUE();
+    auto const ownerNodeValue = canonical_UINT64();
 
     AMMBuilder builder{
+        accountValue,
+        lPTokenBalanceValue,
+        assetValue,
+        asset2Value,
+        ownerNodeValue
     };
 
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasAccount());
-    EXPECT_FALSE(entry.getAccount().has_value());
     EXPECT_FALSE(entry.hasTradingFee());
     EXPECT_FALSE(entry.getTradingFee().has_value());
     EXPECT_FALSE(entry.hasVoteSlots());
     EXPECT_FALSE(entry.getVoteSlots().has_value());
     EXPECT_FALSE(entry.hasAuctionSlot());
     EXPECT_FALSE(entry.getAuctionSlot().has_value());
-    EXPECT_FALSE(entry.hasLPTokenBalance());
-    EXPECT_FALSE(entry.getLPTokenBalance().has_value());
-    EXPECT_FALSE(entry.hasAsset());
-    EXPECT_FALSE(entry.getAsset().has_value());
-    EXPECT_FALSE(entry.hasAsset2());
-    EXPECT_FALSE(entry.getAsset2().has_value());
-    EXPECT_FALSE(entry.hasOwnerNode());
-    EXPECT_FALSE(entry.getOwnerNode().has_value());
     EXPECT_FALSE(entry.hasPreviousTxnID());
     EXPECT_FALSE(entry.getPreviousTxnID().has_value());
     EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());

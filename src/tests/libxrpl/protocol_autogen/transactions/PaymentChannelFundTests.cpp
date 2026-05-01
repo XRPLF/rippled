@@ -21,7 +21,7 @@ TEST(TransactionsPaymentChannelFundTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelFund"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelFund"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -35,13 +35,13 @@ TEST(TransactionsPaymentChannelFundTests, BuilderSettersRoundTrip)
 
     PaymentChannelFundBuilder builder{
         accountValue,
+        channelValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setChannel(channelValue);
-    builder.setAmount(amountValue);
     builder.setExpiration(expirationValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -59,23 +59,19 @@ TEST(TransactionsPaymentChannelFundTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = channelValue;
-        auto const actualOpt = tx.getChannel();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfChannel should be present";
-        expectEqualField(expected, *actualOpt, "sfChannel");
-        EXPECT_TRUE(tx.hasChannel());
+        auto const actual = tx.getChannel();
+        expectEqualField(expected, actual, "sfChannel");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = tx.getAmount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
-        expectEqualField(expected, *actualOpt, "sfAmount");
-        EXPECT_TRUE(tx.hasAmount());
+        auto const actual = tx.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
+    // Verify optional fields
     {
         auto const& expected = expirationValue;
         auto const actualOpt = tx.getExpiration();
@@ -92,7 +88,7 @@ TEST(TransactionsPaymentChannelFundTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelFundFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelFundFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -107,12 +103,12 @@ TEST(TransactionsPaymentChannelFundTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     PaymentChannelFundBuilder initialBuilder{
         accountValue,
+        channelValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setChannel(channelValue);
-    initialBuilder.setAmount(amountValue);
     initialBuilder.setExpiration(expirationValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -131,21 +127,19 @@ TEST(TransactionsPaymentChannelFundTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = channelValue;
-        auto const actualOpt = rebuiltTx.getChannel();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfChannel should be present";
-        expectEqualField(expected, *actualOpt, "sfChannel");
+        auto const actual = rebuiltTx.getChannel();
+        expectEqualField(expected, actual, "sfChannel");
     }
 
     {
         auto const& expected = amountValue;
-        auto const actualOpt = rebuiltTx.getAmount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
-        expectEqualField(expected, *actualOpt, "sfAmount");
+        auto const actual = rebuiltTx.getAmount();
+        expectEqualField(expected, actual, "sfAmount");
     }
 
+    // Verify optional fields
     {
         auto const& expected = expirationValue;
         auto const actualOpt = rebuiltTx.getExpiration();
@@ -160,7 +154,7 @@ TEST(TransactionsPaymentChannelFundTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -174,7 +168,7 @@ TEST(TransactionsPaymentChannelFundTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -188,7 +182,7 @@ TEST(TransactionsPaymentChannelFundTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelFundNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelFundNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -196,9 +190,13 @@ TEST(TransactionsPaymentChannelFundTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const channelValue = canonical_UINT256();
+    auto const amountValue = canonical_AMOUNT();
 
     PaymentChannelFundBuilder builder{
         accountValue,
+        channelValue,
+        amountValue,
         sequenceValue,
         feeValue
     };
@@ -208,10 +206,6 @@ TEST(TransactionsPaymentChannelFundTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasChannel());
-    EXPECT_FALSE(tx.getChannel().has_value());
-    EXPECT_FALSE(tx.hasAmount());
-    EXPECT_FALSE(tx.getAmount().has_value());
     EXPECT_FALSE(tx.hasExpiration());
     EXPECT_FALSE(tx.getExpiration().has_value());
 }

@@ -47,26 +47,13 @@ public:
 
     /**
      * @brief Get sfOwner (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    SF_ACCOUNT::type::value_type
     getOwner() const
     {
-        if (hasOwner())
-            return this->sle_->at(sfOwner);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwner is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwner() const
-    {
-        return this->sle_->isFieldPresent(sfOwner);
+        return this->sle_->at(sfOwner);
     }
 
     /**
@@ -95,99 +82,47 @@ public:
 
     /**
      * @brief Get sfProvider (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    SF_VL::type::value_type
     getProvider() const
     {
-        if (hasProvider())
-            return this->sle_->at(sfProvider);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfProvider is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasProvider() const
-    {
-        return this->sle_->isFieldPresent(sfProvider);
+        return this->sle_->at(sfProvider);
     }
 
     /**
      * @brief Get sfPriceDataSeries (SoeRequired)
      * @note This is an untyped field (unknown).
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    std::optional<std::reference_wrapper<STArray const>>
+    STArray const&
     getPriceDataSeries() const
     {
-        if (this->sle_->isFieldPresent(sfPriceDataSeries))
-            return this->sle_->getFieldArray(sfPriceDataSeries);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPriceDataSeries is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPriceDataSeries() const
-    {
-        return this->sle_->isFieldPresent(sfPriceDataSeries);
+        return this->sle_->getFieldArray(sfPriceDataSeries);
     }
 
     /**
      * @brief Get sfAssetClass (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    SF_VL::type::value_type
     getAssetClass() const
     {
-        if (hasAssetClass())
-            return this->sle_->at(sfAssetClass);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAssetClass is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAssetClass() const
-    {
-        return this->sle_->isFieldPresent(sfAssetClass);
+        return this->sle_->at(sfAssetClass);
     }
 
     /**
      * @brief Get sfLastUpdateTime (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getLastUpdateTime() const
     {
-        if (hasLastUpdateTime())
-            return this->sle_->at(sfLastUpdateTime);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLastUpdateTime is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLastUpdateTime() const
-    {
-        return this->sle_->isFieldPresent(sfLastUpdateTime);
+        return this->sle_->at(sfLastUpdateTime);
     }
 
     /**
@@ -216,74 +151,35 @@ public:
 
     /**
      * @brief Get sfOwnerNode (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getOwnerNode() const
     {
-        if (hasOwnerNode())
-            return this->sle_->at(sfOwnerNode);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwnerNode is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwnerNode() const
-    {
-        return this->sle_->isFieldPresent(sfOwnerNode);
+        return this->sle_->at(sfOwnerNode);
     }
 
     /**
      * @brief Get sfPreviousTxnID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getPreviousTxnID() const
     {
-        if (hasPreviousTxnID())
-            return this->sle_->at(sfPreviousTxnID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnID() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnID);
+        return this->sle_->at(sfPreviousTxnID);
     }
 
     /**
      * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousTxnLgrSeq() const
     {
-        if (hasPreviousTxnLgrSeq())
-            return this->sle_->at(sfPreviousTxnLgrSeq);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnLgrSeq is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnLgrSeq() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+        return this->sle_->at(sfPreviousTxnLgrSeq);
     }
 };
 
@@ -299,10 +195,26 @@ class OracleBuilder : public LedgerEntryBuilderBase<OracleBuilder>
 public:
     /**
      * @brief Construct a new OracleBuilder with required fields.
+     * @param owner The sfOwner field value.
+     * @param provider The sfProvider field value.
+     * @param priceDataSeries The sfPriceDataSeries field value.
+     * @param assetClass The sfAssetClass field value.
+     * @param lastUpdateTime The sfLastUpdateTime field value.
+     * @param ownerNode The sfOwnerNode field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    OracleBuilder()
+    OracleBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_VL::type::value_type> const& provider,STArray const& priceDataSeries,std::decay_t<typename SF_VL::type::value_type> const& assetClass,std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<OracleBuilder>(ltORACLE)
     {
+        setOwner(owner);
+        setProvider(provider);
+        setPriceDataSeries(priceDataSeries);
+        setAssetClass(assetClass);
+        setLastUpdateTime(lastUpdateTime);
+        setOwnerNode(ownerNode);
+        setPreviousTxnID(previousTxnID);
+        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**

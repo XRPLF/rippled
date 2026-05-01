@@ -21,7 +21,7 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowFinish"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowFinish"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -37,13 +37,13 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
 
     EscrowFinishBuilder builder{
         accountValue,
+        ownerValue,
+        offerSequenceValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setOwner(ownerValue);
-    builder.setOfferSequence(offerSequenceValue);
     builder.setFulfillment(fulfillmentValue);
     builder.setCondition(conditionValue);
     builder.setCredentialIDs(credentialIDsValue);
@@ -63,23 +63,19 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = tx.getOwner();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOwner should be present";
-        expectEqualField(expected, *actualOpt, "sfOwner");
-        EXPECT_TRUE(tx.hasOwner());
+        auto const actual = tx.getOwner();
+        expectEqualField(expected, actual, "sfOwner");
     }
 
     {
         auto const& expected = offerSequenceValue;
-        auto const actualOpt = tx.getOfferSequence();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOfferSequence should be present";
-        expectEqualField(expected, *actualOpt, "sfOfferSequence");
-        EXPECT_TRUE(tx.hasOfferSequence());
+        auto const actual = tx.getOfferSequence();
+        expectEqualField(expected, actual, "sfOfferSequence");
     }
 
+    // Verify optional fields
     {
         auto const& expected = fulfillmentValue;
         auto const actualOpt = tx.getFulfillment();
@@ -112,7 +108,7 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowFinishFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowFinishFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -129,12 +125,12 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     EscrowFinishBuilder initialBuilder{
         accountValue,
+        ownerValue,
+        offerSequenceValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setOwner(ownerValue);
-    initialBuilder.setOfferSequence(offerSequenceValue);
     initialBuilder.setFulfillment(fulfillmentValue);
     initialBuilder.setCondition(conditionValue);
     initialBuilder.setCredentialIDs(credentialIDsValue);
@@ -155,21 +151,19 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = rebuiltTx.getOwner();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOwner should be present";
-        expectEqualField(expected, *actualOpt, "sfOwner");
+        auto const actual = rebuiltTx.getOwner();
+        expectEqualField(expected, actual, "sfOwner");
     }
 
     {
         auto const& expected = offerSequenceValue;
-        auto const actualOpt = rebuiltTx.getOfferSequence();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOfferSequence should be present";
-        expectEqualField(expected, *actualOpt, "sfOfferSequence");
+        auto const actual = rebuiltTx.getOfferSequence();
+        expectEqualField(expected, actual, "sfOfferSequence");
     }
 
+    // Verify optional fields
     {
         auto const& expected = fulfillmentValue;
         auto const actualOpt = rebuiltTx.getFulfillment();
@@ -198,7 +192,7 @@ TEST(TransactionsEscrowFinishTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -212,7 +206,7 @@ TEST(TransactionsEscrowFinishTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -226,7 +220,7 @@ TEST(TransactionsEscrowFinishTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowFinishNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowFinishNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -234,9 +228,13 @@ TEST(TransactionsEscrowFinishTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const ownerValue = canonical_ACCOUNT();
+    auto const offerSequenceValue = canonical_UINT32();
 
     EscrowFinishBuilder builder{
         accountValue,
+        ownerValue,
+        offerSequenceValue,
         sequenceValue,
         feeValue
     };
@@ -246,10 +244,6 @@ TEST(TransactionsEscrowFinishTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasOwner());
-    EXPECT_FALSE(tx.getOwner().has_value());
-    EXPECT_FALSE(tx.hasOfferSequence());
-    EXPECT_FALSE(tx.getOfferSequence().has_value());
     EXPECT_FALSE(tx.hasFulfillment());
     EXPECT_FALSE(tx.getFulfillment().has_value());
     EXPECT_FALSE(tx.hasCondition());

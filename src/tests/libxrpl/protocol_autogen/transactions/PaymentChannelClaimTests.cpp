@@ -21,7 +21,7 @@ TEST(TransactionsPaymentChannelClaimTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelClaim"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelClaim"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -38,12 +38,12 @@ TEST(TransactionsPaymentChannelClaimTests, BuilderSettersRoundTrip)
 
     PaymentChannelClaimBuilder builder{
         accountValue,
+        channelValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setChannel(channelValue);
     builder.setAmount(amountValue);
     builder.setBalance(balanceValue);
     builder.setSignature(signatureValue);
@@ -65,15 +65,13 @@ TEST(TransactionsPaymentChannelClaimTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = channelValue;
-        auto const actualOpt = tx.getChannel();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfChannel should be present";
-        expectEqualField(expected, *actualOpt, "sfChannel");
-        EXPECT_TRUE(tx.hasChannel());
+        auto const actual = tx.getChannel();
+        expectEqualField(expected, actual, "sfChannel");
     }
 
+    // Verify optional fields
     {
         auto const& expected = amountValue;
         auto const actualOpt = tx.getAmount();
@@ -122,7 +120,7 @@ TEST(TransactionsPaymentChannelClaimTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelClaimFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelClaimFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -140,11 +138,11 @@ TEST(TransactionsPaymentChannelClaimTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     PaymentChannelClaimBuilder initialBuilder{
         accountValue,
+        channelValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setChannel(channelValue);
     initialBuilder.setAmount(amountValue);
     initialBuilder.setBalance(balanceValue);
     initialBuilder.setSignature(signatureValue);
@@ -167,14 +165,13 @@ TEST(TransactionsPaymentChannelClaimTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = channelValue;
-        auto const actualOpt = rebuiltTx.getChannel();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfChannel should be present";
-        expectEqualField(expected, *actualOpt, "sfChannel");
+        auto const actual = rebuiltTx.getChannel();
+        expectEqualField(expected, actual, "sfChannel");
     }
 
+    // Verify optional fields
     {
         auto const& expected = amountValue;
         auto const actualOpt = rebuiltTx.getAmount();
@@ -217,7 +214,7 @@ TEST(TransactionsPaymentChannelClaimTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -231,7 +228,7 @@ TEST(TransactionsPaymentChannelClaimTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -245,7 +242,7 @@ TEST(TransactionsPaymentChannelClaimTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPaymentChannelClaimNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPaymentChannelClaimNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -253,9 +250,11 @@ TEST(TransactionsPaymentChannelClaimTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const channelValue = canonical_UINT256();
 
     PaymentChannelClaimBuilder builder{
         accountValue,
+        channelValue,
         sequenceValue,
         feeValue
     };
@@ -265,8 +264,6 @@ TEST(TransactionsPaymentChannelClaimTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasChannel());
-    EXPECT_FALSE(tx.getChannel().has_value());
     EXPECT_FALSE(tx.hasAmount());
     EXPECT_FALSE(tx.getAmount().has_value());
     EXPECT_FALSE(tx.hasBalance());

@@ -47,122 +47,57 @@ public:
 
     /**
      * @brief Get sfBalance (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getBalance() const
     {
-        if (hasBalance())
-            return this->sle_->at(sfBalance);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfBalance is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasBalance() const
-    {
-        return this->sle_->isFieldPresent(sfBalance);
+        return this->sle_->at(sfBalance);
     }
 
     /**
      * @brief Get sfLowLimit (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getLowLimit() const
     {
-        if (hasLowLimit())
-            return this->sle_->at(sfLowLimit);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLowLimit is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLowLimit() const
-    {
-        return this->sle_->isFieldPresent(sfLowLimit);
+        return this->sle_->at(sfLowLimit);
     }
 
     /**
      * @brief Get sfHighLimit (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getHighLimit() const
     {
-        if (hasHighLimit())
-            return this->sle_->at(sfHighLimit);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfHighLimit is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasHighLimit() const
-    {
-        return this->sle_->isFieldPresent(sfHighLimit);
+        return this->sle_->at(sfHighLimit);
     }
 
     /**
      * @brief Get sfPreviousTxnID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getPreviousTxnID() const
     {
-        if (hasPreviousTxnID())
-            return this->sle_->at(sfPreviousTxnID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnID() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnID);
+        return this->sle_->at(sfPreviousTxnID);
     }
 
     /**
      * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousTxnLgrSeq() const
     {
-        if (hasPreviousTxnLgrSeq())
-            return this->sle_->at(sfPreviousTxnLgrSeq);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousTxnLgrSeq is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousTxnLgrSeq() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
+        return this->sle_->at(sfPreviousTxnLgrSeq);
     }
 
     /**
@@ -322,10 +257,20 @@ class RippleStateBuilder : public LedgerEntryBuilderBase<RippleStateBuilder>
 public:
     /**
      * @brief Construct a new RippleStateBuilder with required fields.
+     * @param balance The sfBalance field value.
+     * @param lowLimit The sfLowLimit field value.
+     * @param highLimit The sfHighLimit field value.
+     * @param previousTxnID The sfPreviousTxnID field value.
+     * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    RippleStateBuilder()
+    RippleStateBuilder(std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,std::decay_t<typename SF_AMOUNT::type::value_type> const& lowLimit,std::decay_t<typename SF_AMOUNT::type::value_type> const& highLimit,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<RippleStateBuilder>(ltRIPPLE_STATE)
     {
+        setBalance(balance);
+        setLowLimit(lowLimit);
+        setHighLimit(highLimit);
+        setPreviousTxnID(previousTxnID);
+        setPreviousTxnLgrSeq(previousTxnLgrSeq);
     }
 
     /**

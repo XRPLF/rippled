@@ -21,7 +21,7 @@ TEST(TransactionsVaultClawbackTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultClawback"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultClawback"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -35,13 +35,13 @@ TEST(TransactionsVaultClawbackTests, BuilderSettersRoundTrip)
 
     VaultClawbackBuilder builder{
         accountValue,
+        vaultIDValue,
+        holderValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setVaultID(vaultIDValue);
-    builder.setHolder(holderValue);
     builder.setAmount(amountValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -59,23 +59,19 @@ TEST(TransactionsVaultClawbackTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = vaultIDValue;
-        auto const actualOpt = tx.getVaultID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultID");
-        EXPECT_TRUE(tx.hasVaultID());
+        auto const actual = tx.getVaultID();
+        expectEqualField(expected, actual, "sfVaultID");
     }
 
     {
         auto const& expected = holderValue;
-        auto const actualOpt = tx.getHolder();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolder should be present";
-        expectEqualField(expected, *actualOpt, "sfHolder");
-        EXPECT_TRUE(tx.hasHolder());
+        auto const actual = tx.getHolder();
+        expectEqualField(expected, actual, "sfHolder");
     }
 
+    // Verify optional fields
     {
         auto const& expected = amountValue;
         auto const actualOpt = tx.getAmount();
@@ -92,7 +88,7 @@ TEST(TransactionsVaultClawbackTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultClawbackFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultClawbackFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -107,12 +103,12 @@ TEST(TransactionsVaultClawbackTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     VaultClawbackBuilder initialBuilder{
         accountValue,
+        vaultIDValue,
+        holderValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setVaultID(vaultIDValue);
-    initialBuilder.setHolder(holderValue);
     initialBuilder.setAmount(amountValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -131,21 +127,19 @@ TEST(TransactionsVaultClawbackTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = vaultIDValue;
-        auto const actualOpt = rebuiltTx.getVaultID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultID");
+        auto const actual = rebuiltTx.getVaultID();
+        expectEqualField(expected, actual, "sfVaultID");
     }
 
     {
         auto const& expected = holderValue;
-        auto const actualOpt = rebuiltTx.getHolder();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolder should be present";
-        expectEqualField(expected, *actualOpt, "sfHolder");
+        auto const actual = rebuiltTx.getHolder();
+        expectEqualField(expected, actual, "sfHolder");
     }
 
+    // Verify optional fields
     {
         auto const& expected = amountValue;
         auto const actualOpt = rebuiltTx.getAmount();
@@ -160,7 +154,7 @@ TEST(TransactionsVaultClawbackTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -174,7 +168,7 @@ TEST(TransactionsVaultClawbackTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -188,7 +182,7 @@ TEST(TransactionsVaultClawbackTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultClawbackNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultClawbackNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -196,9 +190,13 @@ TEST(TransactionsVaultClawbackTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const vaultIDValue = canonical_UINT256();
+    auto const holderValue = canonical_ACCOUNT();
 
     VaultClawbackBuilder builder{
         accountValue,
+        vaultIDValue,
+        holderValue,
         sequenceValue,
         feeValue
     };
@@ -208,10 +206,6 @@ TEST(TransactionsVaultClawbackTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasVaultID());
-    EXPECT_FALSE(tx.getVaultID().has_value());
-    EXPECT_FALSE(tx.hasHolder());
-    EXPECT_FALSE(tx.getHolder().has_value());
     EXPECT_FALSE(tx.hasAmount());
     EXPECT_FALSE(tx.getAmount().has_value());
 }

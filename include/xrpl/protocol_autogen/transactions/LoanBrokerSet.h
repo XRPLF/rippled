@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfVaultID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getVaultID() const
     {
-        if (hasVaultID())
-        {
-            return this->tx_->at(sfVaultID);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfVaultID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasVaultID() const
-    {
-        return this->tx_->isFieldPresent(sfVaultID);
+        return this->tx_->at(sfVaultID);
     }
 
     /**
@@ -243,15 +228,17 @@ public:
     /**
      * @brief Construct a new LoanBrokerSetBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param vaultID The sfVaultID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     LoanBrokerSetBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<LoanBrokerSetBuilder>(ttLOAN_BROKER_SET, account, sequence, fee)
     {
+        setVaultID(vaultID);
     }
 
     /**

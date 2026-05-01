@@ -21,7 +21,7 @@ TEST(TransactionsEscrowCancelTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowCancel"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowCancel"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,13 +34,13 @@ TEST(TransactionsEscrowCancelTests, BuilderSettersRoundTrip)
 
     EscrowCancelBuilder builder{
         accountValue,
+        ownerValue,
+        offerSequenceValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setOwner(ownerValue);
-    builder.setOfferSequence(offerSequenceValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -57,23 +57,19 @@ TEST(TransactionsEscrowCancelTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = tx.getOwner();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOwner should be present";
-        expectEqualField(expected, *actualOpt, "sfOwner");
-        EXPECT_TRUE(tx.hasOwner());
+        auto const actual = tx.getOwner();
+        expectEqualField(expected, actual, "sfOwner");
     }
 
     {
         auto const& expected = offerSequenceValue;
-        auto const actualOpt = tx.getOfferSequence();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOfferSequence should be present";
-        expectEqualField(expected, *actualOpt, "sfOfferSequence");
-        EXPECT_TRUE(tx.hasOfferSequence());
+        auto const actual = tx.getOfferSequence();
+        expectEqualField(expected, actual, "sfOfferSequence");
     }
 
+    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -82,7 +78,7 @@ TEST(TransactionsEscrowCancelTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowCancelFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowCancelFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -96,12 +92,12 @@ TEST(TransactionsEscrowCancelTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     EscrowCancelBuilder initialBuilder{
         accountValue,
+        ownerValue,
+        offerSequenceValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setOwner(ownerValue);
-    initialBuilder.setOfferSequence(offerSequenceValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -119,21 +115,19 @@ TEST(TransactionsEscrowCancelTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = ownerValue;
-        auto const actualOpt = rebuiltTx.getOwner();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOwner should be present";
-        expectEqualField(expected, *actualOpt, "sfOwner");
+        auto const actual = rebuiltTx.getOwner();
+        expectEqualField(expected, actual, "sfOwner");
     }
 
     {
         auto const& expected = offerSequenceValue;
-        auto const actualOpt = rebuiltTx.getOfferSequence();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOfferSequence should be present";
-        expectEqualField(expected, *actualOpt, "sfOfferSequence");
+        auto const actual = rebuiltTx.getOfferSequence();
+        expectEqualField(expected, actual, "sfOfferSequence");
     }
 
+    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -141,7 +135,7 @@ TEST(TransactionsEscrowCancelTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -155,7 +149,7 @@ TEST(TransactionsEscrowCancelTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -164,35 +158,5 @@ TEST(TransactionsEscrowCancelTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(EscrowCancelBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(TransactionsEscrowCancelTests, OptionalFieldsReturnNullopt)
-{
-    // Generate a deterministic keypair for signing
-    auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowCancelNullopt"));
-
-    // Common transaction fields
-    auto const accountValue = calcAccountID(publicKey);
-    std::uint32_t const sequenceValue = 3;
-    auto const feeValue = canonical_AMOUNT();
-
-    // Transaction-specific required field values
-
-    EscrowCancelBuilder builder{
-        accountValue,
-        sequenceValue,
-        feeValue
-    };
-
-    // Do NOT set optional fields
-
-    auto tx = builder.build(publicKey, secretKey);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasOwner());
-    EXPECT_FALSE(tx.getOwner().has_value());
-    EXPECT_FALSE(tx.hasOfferSequence());
-    EXPECT_FALSE(tx.getOfferSequence().has_value());
-}
 
 }

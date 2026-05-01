@@ -21,7 +21,7 @@ TEST(TransactionsSignerListSetTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSignerListSet"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSignerListSet"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,12 +34,12 @@ TEST(TransactionsSignerListSetTests, BuilderSettersRoundTrip)
 
     SignerListSetBuilder builder{
         accountValue,
+        signerQuorumValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setSignerQuorum(signerQuorumValue);
     builder.setSignerEntries(signerEntriesValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -57,15 +57,13 @@ TEST(TransactionsSignerListSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = signerQuorumValue;
-        auto const actualOpt = tx.getSignerQuorum();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSignerQuorum should be present";
-        expectEqualField(expected, *actualOpt, "sfSignerQuorum");
-        EXPECT_TRUE(tx.hasSignerQuorum());
+        auto const actual = tx.getSignerQuorum();
+        expectEqualField(expected, actual, "sfSignerQuorum");
     }
 
+    // Verify optional fields
     {
         auto const& expected = signerEntriesValue;
         auto const actualOpt = tx.getSignerEntries();
@@ -82,7 +80,7 @@ TEST(TransactionsSignerListSetTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSignerListSetFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSignerListSetFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -96,11 +94,11 @@ TEST(TransactionsSignerListSetTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     SignerListSetBuilder initialBuilder{
         accountValue,
+        signerQuorumValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setSignerQuorum(signerQuorumValue);
     initialBuilder.setSignerEntries(signerEntriesValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -119,14 +117,13 @@ TEST(TransactionsSignerListSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = signerQuorumValue;
-        auto const actualOpt = rebuiltTx.getSignerQuorum();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSignerQuorum should be present";
-        expectEqualField(expected, *actualOpt, "sfSignerQuorum");
+        auto const actual = rebuiltTx.getSignerQuorum();
+        expectEqualField(expected, actual, "sfSignerQuorum");
     }
 
+    // Verify optional fields
     {
         auto const& expected = signerEntriesValue;
         auto const actualOpt = rebuiltTx.getSignerEntries();
@@ -141,7 +138,7 @@ TEST(TransactionsSignerListSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -155,7 +152,7 @@ TEST(TransactionsSignerListSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -169,7 +166,7 @@ TEST(TransactionsSignerListSetTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSignerListSetNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSignerListSetNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -177,9 +174,11 @@ TEST(TransactionsSignerListSetTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const signerQuorumValue = canonical_UINT32();
 
     SignerListSetBuilder builder{
         accountValue,
+        signerQuorumValue,
         sequenceValue,
         feeValue
     };
@@ -189,8 +188,6 @@ TEST(TransactionsSignerListSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasSignerQuorum());
-    EXPECT_FALSE(tx.getSignerQuorum().has_value());
     EXPECT_FALSE(tx.hasSignerEntries());
     EXPECT_FALSE(tx.getSignerEntries().has_value());
 }

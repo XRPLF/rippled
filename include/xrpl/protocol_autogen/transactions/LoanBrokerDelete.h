@@ -49,28 +49,13 @@ public:
 
     /**
      * @brief Get sfLoanBrokerID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getLoanBrokerID() const
     {
-        if (hasLoanBrokerID())
-        {
-            return this->tx_->at(sfLoanBrokerID);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanBrokerID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanBrokerID() const
-    {
-        return this->tx_->isFieldPresent(sfLoanBrokerID);
+        return this->tx_->at(sfLoanBrokerID);
     }
 };
 
@@ -87,15 +72,17 @@ public:
     /**
      * @brief Construct a new LoanBrokerDeleteBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param loanBrokerID The sfLoanBrokerID field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     LoanBrokerDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<LoanBrokerDeleteBuilder>(ttLOAN_BROKER_DELETE, account, sequence, fee)
     {
+        setLoanBrokerID(loanBrokerID);
     }
 
     /**

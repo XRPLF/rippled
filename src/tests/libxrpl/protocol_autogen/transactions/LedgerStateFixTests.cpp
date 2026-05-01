@@ -21,7 +21,7 @@ TEST(TransactionsLedgerStateFixTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLedgerStateFix"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLedgerStateFix"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,12 +34,12 @@ TEST(TransactionsLedgerStateFixTests, BuilderSettersRoundTrip)
 
     LedgerStateFixBuilder builder{
         accountValue,
+        ledgerFixTypeValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setLedgerFixType(ledgerFixTypeValue);
     builder.setOwner(ownerValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -57,15 +57,13 @@ TEST(TransactionsLedgerStateFixTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = ledgerFixTypeValue;
-        auto const actualOpt = tx.getLedgerFixType();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLedgerFixType should be present";
-        expectEqualField(expected, *actualOpt, "sfLedgerFixType");
-        EXPECT_TRUE(tx.hasLedgerFixType());
+        auto const actual = tx.getLedgerFixType();
+        expectEqualField(expected, actual, "sfLedgerFixType");
     }
 
+    // Verify optional fields
     {
         auto const& expected = ownerValue;
         auto const actualOpt = tx.getOwner();
@@ -82,7 +80,7 @@ TEST(TransactionsLedgerStateFixTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLedgerStateFixFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLedgerStateFixFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -96,11 +94,11 @@ TEST(TransactionsLedgerStateFixTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     LedgerStateFixBuilder initialBuilder{
         accountValue,
+        ledgerFixTypeValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setLedgerFixType(ledgerFixTypeValue);
     initialBuilder.setOwner(ownerValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -119,14 +117,13 @@ TEST(TransactionsLedgerStateFixTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = ledgerFixTypeValue;
-        auto const actualOpt = rebuiltTx.getLedgerFixType();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLedgerFixType should be present";
-        expectEqualField(expected, *actualOpt, "sfLedgerFixType");
+        auto const actual = rebuiltTx.getLedgerFixType();
+        expectEqualField(expected, actual, "sfLedgerFixType");
     }
 
+    // Verify optional fields
     {
         auto const& expected = ownerValue;
         auto const actualOpt = rebuiltTx.getOwner();
@@ -141,7 +138,7 @@ TEST(TransactionsLedgerStateFixTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -155,7 +152,7 @@ TEST(TransactionsLedgerStateFixTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -169,7 +166,7 @@ TEST(TransactionsLedgerStateFixTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLedgerStateFixNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLedgerStateFixNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -177,9 +174,11 @@ TEST(TransactionsLedgerStateFixTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const ledgerFixTypeValue = canonical_UINT16();
 
     LedgerStateFixBuilder builder{
         accountValue,
+        ledgerFixTypeValue,
         sequenceValue,
         feeValue
     };
@@ -189,8 +188,6 @@ TEST(TransactionsLedgerStateFixTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasLedgerFixType());
-    EXPECT_FALSE(tx.getLedgerFixType().has_value());
     EXPECT_FALSE(tx.hasOwner());
     EXPECT_FALSE(tx.getOwner().has_value());
 }

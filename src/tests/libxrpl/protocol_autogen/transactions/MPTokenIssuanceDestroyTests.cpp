@@ -21,7 +21,7 @@ TEST(TransactionsMPTokenIssuanceDestroyTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testMPTokenIssuanceDestroy"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testMPTokenIssuanceDestroy"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -33,12 +33,12 @@ TEST(TransactionsMPTokenIssuanceDestroyTests, BuilderSettersRoundTrip)
 
     MPTokenIssuanceDestroyBuilder builder{
         accountValue,
+        mPTokenIssuanceIDValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setMPTokenIssuanceID(mPTokenIssuanceIDValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -55,15 +55,13 @@ TEST(TransactionsMPTokenIssuanceDestroyTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
-        auto const actualOpt = tx.getMPTokenIssuanceID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenIssuanceID should be present";
-        expectEqualField(expected, *actualOpt, "sfMPTokenIssuanceID");
-        EXPECT_TRUE(tx.hasMPTokenIssuanceID());
+        auto const actual = tx.getMPTokenIssuanceID();
+        expectEqualField(expected, actual, "sfMPTokenIssuanceID");
     }
 
+    // Verify optional fields
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -72,7 +70,7 @@ TEST(TransactionsMPTokenIssuanceDestroyTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testMPTokenIssuanceDestroyFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testMPTokenIssuanceDestroyFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -85,11 +83,11 @@ TEST(TransactionsMPTokenIssuanceDestroyTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     MPTokenIssuanceDestroyBuilder initialBuilder{
         accountValue,
+        mPTokenIssuanceIDValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setMPTokenIssuanceID(mPTokenIssuanceIDValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -107,14 +105,13 @@ TEST(TransactionsMPTokenIssuanceDestroyTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
-        auto const actualOpt = rebuiltTx.getMPTokenIssuanceID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenIssuanceID should be present";
-        expectEqualField(expected, *actualOpt, "sfMPTokenIssuanceID");
+        auto const actual = rebuiltTx.getMPTokenIssuanceID();
+        expectEqualField(expected, actual, "sfMPTokenIssuanceID");
     }
 
+    // Verify optional fields
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -122,7 +119,7 @@ TEST(TransactionsMPTokenIssuanceDestroyTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -136,7 +133,7 @@ TEST(TransactionsMPTokenIssuanceDestroyTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -145,33 +142,5 @@ TEST(TransactionsMPTokenIssuanceDestroyTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(MPTokenIssuanceDestroyBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(TransactionsMPTokenIssuanceDestroyTests, OptionalFieldsReturnNullopt)
-{
-    // Generate a deterministic keypair for signing
-    auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testMPTokenIssuanceDestroyNullopt"));
-
-    // Common transaction fields
-    auto const accountValue = calcAccountID(publicKey);
-    std::uint32_t const sequenceValue = 3;
-    auto const feeValue = canonical_AMOUNT();
-
-    // Transaction-specific required field values
-
-    MPTokenIssuanceDestroyBuilder builder{
-        accountValue,
-        sequenceValue,
-        feeValue
-    };
-
-    // Do NOT set optional fields
-
-    auto tx = builder.build(publicKey, secretKey);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasMPTokenIssuanceID());
-    EXPECT_FALSE(tx.getMPTokenIssuanceID().has_value());
-}
 
 }

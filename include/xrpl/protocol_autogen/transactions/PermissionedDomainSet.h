@@ -75,26 +75,13 @@ public:
     /**
      * @brief Get sfAcceptedCredentials (SoeRequired)
      * @note This is an untyped field.
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    std::optional<std::reference_wrapper<STArray const>>
+    STArray const&
     getAcceptedCredentials() const
     {
-        if (this->tx_->isFieldPresent(sfAcceptedCredentials))
-            return this->tx_->getFieldArray(sfAcceptedCredentials);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAcceptedCredentials is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAcceptedCredentials() const
-    {
-        return this->tx_->isFieldPresent(sfAcceptedCredentials);
+        return this->tx_->getFieldArray(sfAcceptedCredentials);
     }
 };
 
@@ -111,15 +98,17 @@ public:
     /**
      * @brief Construct a new PermissionedDomainSetBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param acceptedCredentials The sfAcceptedCredentials field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     PermissionedDomainSetBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     STArray const& acceptedCredentials,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<PermissionedDomainSetBuilder>(ttPERMISSIONED_DOMAIN_SET, account, sequence, fee)
     {
+        setAcceptedCredentials(acceptedCredentials);
     }
 
     /**

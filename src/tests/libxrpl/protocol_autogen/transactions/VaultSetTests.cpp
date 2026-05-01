@@ -21,7 +21,7 @@ TEST(TransactionsVaultSetTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultSet"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultSet"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -36,12 +36,12 @@ TEST(TransactionsVaultSetTests, BuilderSettersRoundTrip)
 
     VaultSetBuilder builder{
         accountValue,
+        vaultIDValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setVaultID(vaultIDValue);
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setDomainID(domainIDValue);
     builder.setData(dataValue);
@@ -61,15 +61,13 @@ TEST(TransactionsVaultSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = vaultIDValue;
-        auto const actualOpt = tx.getVaultID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultID");
-        EXPECT_TRUE(tx.hasVaultID());
+        auto const actual = tx.getVaultID();
+        expectEqualField(expected, actual, "sfVaultID");
     }
 
+    // Verify optional fields
     {
         auto const& expected = assetsMaximumValue;
         auto const actualOpt = tx.getAssetsMaximum();
@@ -102,7 +100,7 @@ TEST(TransactionsVaultSetTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultSetFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultSetFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -118,11 +116,11 @@ TEST(TransactionsVaultSetTests, BuilderFromStTxRoundTrip)
     // Build an initial transaction
     VaultSetBuilder initialBuilder{
         accountValue,
+        vaultIDValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setVaultID(vaultIDValue);
     initialBuilder.setAssetsMaximum(assetsMaximumValue);
     initialBuilder.setDomainID(domainIDValue);
     initialBuilder.setData(dataValue);
@@ -143,14 +141,13 @@ TEST(TransactionsVaultSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
     // Verify required fields
-    // Verify optional fields
     {
         auto const& expected = vaultIDValue;
-        auto const actualOpt = rebuiltTx.getVaultID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultID");
+        auto const actual = rebuiltTx.getVaultID();
+        expectEqualField(expected, actual, "sfVaultID");
     }
 
+    // Verify optional fields
     {
         auto const& expected = assetsMaximumValue;
         auto const actualOpt = rebuiltTx.getAssetsMaximum();
@@ -179,7 +176,7 @@ TEST(TransactionsVaultSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -193,7 +190,7 @@ TEST(TransactionsVaultSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -207,7 +204,7 @@ TEST(TransactionsVaultSetTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultSetNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultSetNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -215,9 +212,11 @@ TEST(TransactionsVaultSetTests, OptionalFieldsReturnNullopt)
     auto const feeValue = canonical_AMOUNT();
 
     // Transaction-specific required field values
+    auto const vaultIDValue = canonical_UINT256();
 
     VaultSetBuilder builder{
         accountValue,
+        vaultIDValue,
         sequenceValue,
         feeValue
     };
@@ -227,8 +226,6 @@ TEST(TransactionsVaultSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasVaultID());
-    EXPECT_FALSE(tx.getVaultID().has_value());
     EXPECT_FALSE(tx.hasAssetsMaximum());
     EXPECT_FALSE(tx.getAssetsMaximum().has_value());
     EXPECT_FALSE(tx.hasDomainID());

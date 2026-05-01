@@ -49,54 +49,24 @@ public:
 
     /**
      * @brief Get sfLoanID (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    SF_UINT256::type::value_type
     getLoanID() const
     {
-        if (hasLoanID())
-        {
-            return this->tx_->at(sfLoanID);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanID() const
-    {
-        return this->tx_->isFieldPresent(sfLoanID);
+        return this->tx_->at(sfLoanID);
     }
 
     /**
      * @brief Get sfAmount (SoeRequired)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    SF_AMOUNT::type::value_type
     getAmount() const
     {
-        if (hasAmount())
-        {
-            return this->tx_->at(sfAmount);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAmount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAmount() const
-    {
-        return this->tx_->isFieldPresent(sfAmount);
+        return this->tx_->at(sfAmount);
     }
 };
 
@@ -113,15 +83,19 @@ public:
     /**
      * @brief Construct a new LoanPayBuilder with required fields.
      * @param account The account initiating the transaction.
+     * @param loanID The sfLoanID field value.
+     * @param amount The sfAmount field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     LoanPayBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_UINT256::type::value_type> const& loanID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<LoanPayBuilder>(ttLOAN_PAY, account, sequence, fee)
     {
+        setLoanID(loanID);
+        setAmount(amount);
     }
 
     /**
