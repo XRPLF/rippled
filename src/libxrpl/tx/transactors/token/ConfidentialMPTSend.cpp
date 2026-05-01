@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
