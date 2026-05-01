@@ -239,8 +239,8 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
 
-        // Ensure MPT is enabled
-        FeatureBitset const features = testable_amendments() | featureMPTokensV1;
+        // testable_amendments() includes MPT
+        FeatureBitset const features = testable_amendments();
         Env env(*this, features);
 
         Account const alice{"alice"};
