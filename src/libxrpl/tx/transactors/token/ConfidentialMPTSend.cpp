@@ -249,7 +249,7 @@ ConfidentialMPTSend::doApply()
     auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, account_));
     auto sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
 
-    auto const sleDestAcct = view().peek(keylet::account(destination));
+    auto const sleDestAcct = view().read(keylet::account(destination));
 
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleDestAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE

@@ -2071,7 +2071,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
-        ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}, {carol, 50, 20}}};
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{.account = bob, .payAmount = 100, .convertAmount = 60},
+             {.account = carol, .payAmount = 50, .convertAmount = 20}}};
         auto& mptAlice = confEnv.mpt;
 
         // bob sends 10 to carol
@@ -2887,7 +2891,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
-        ConfidentialEnv confEnv{env, alice, {{bob, 1000, 60}, {carol, 1000, 50}}};
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{.account = bob, .payAmount = 1000, .convertAmount = 60}, {carol, 1000, 50}}};
         auto& mptAlice = confEnv.mpt;
 
         {
@@ -2956,7 +2963,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Register keys only (amt=0) for both parties — spending stays 0.
             Env env2{*this, features};
             Account const alice2("alice"), bob2("bob"), carol2("carol");
-            ConfidentialEnv zeroEnv{env2, alice2, {{bob2, 100, 0}, {carol2, 50, 0}}};
+            ConfidentialEnv zeroEnv{
+                env2,
+                alice2,
+                {{.account = bob2, .payAmount = 100, .convertAmount = 0}, {carol2, 50, 0}}};
             auto& mptAlice2 = zeroEnv.mpt;
 
             // Trying to send any amount with 0 spending balance must fail:
@@ -5824,7 +5834,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         Env env{*this, features};
         Account const alice("alice"), bob("bob");
-        ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}}};
+        ConfidentialEnv confEnv{
+            env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 50}}};
         auto& mptAlice = confEnv.mpt;
 
         auto const spendingBalance =
@@ -5883,7 +5894,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         Env env{*this, features};
         Account const alice("alice"), bob("bob");
-        ConfidentialEnv confEnv{env, alice, {{bob, 1000, 100}}};
+        ConfidentialEnv confEnv{
+            env, alice, {{.account = bob, .payAmount = 1000, .convertAmount = 100}}};
         auto& mptAlice = confEnv.mpt;
 
         auto const versionV = mptAlice.getMPTokenVersion(bob);
@@ -5955,7 +5967,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         Env env{*this, features};
         Account const alice("alice"), bob("bob");
-        ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}}};
+        ConfidentialEnv confEnv{
+            env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 50}}};
         auto& mptAlice = confEnv.mpt;
 
         // Prepare valid parameters for a ConvertBack of 10
@@ -6029,7 +6042,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
-        ConfidentialEnv confEnv{env, alice, {{bob, 100, 100}, {carol, 50, 50}}};
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{.account = bob, .payAmount = 100, .convertAmount = 100}, {carol, 50, 50}}};
         auto& mptAlice = confEnv.mpt;
 
         // Bob sends 10 to carol.  The send amount (10) and Bob's remaining balance
@@ -6086,7 +6102,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         Env env{*this, features};
         Account const alice("alice"), bob("bob");
-        ConfidentialEnv confEnv{env, alice, {{bob, 10, 10}}};
+        ConfidentialEnv confEnv{
+            env, alice, {{.account = bob, .payAmount = 10, .convertAmount = 10}}};
         auto& mptAlice = confEnv.mpt;
 
         // Converting back 1 from 10 leaves remaining balance = 9 (non-negative).
@@ -6173,7 +6190,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         {
             Account const alice("alice"), bob("bob"), carol("carol");
             Env env{*this, features};
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}, {carol, 50, 30}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 60}, {carol, 50, 30}}};
             auto& mptAlice = confEnv.mpt;
 
             // sender's encrypted amount has an invalid coordinate
@@ -6249,7 +6269,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         {
             Account const alice("alice"), bob("bob"), carol("carol");
             Env env{*this, features};
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}, {carol, 50, 30}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 60}, {carol, 50, 30}}};
             auto& mptAlice = confEnv.mpt;
 
             Buffer badProof(ecSendProofLength);
@@ -6272,7 +6295,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         {
             Account const alice("alice"), bob("bob"), carol("carol");
             Env env{*this, features};
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}, {carol, 50, 30}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 60}, {carol, 50, 30}}};
             auto& mptAlice = confEnv.mpt;
 
             // getTrivialCiphertext() has both C1 and C2 as valid (but trivial)
@@ -6363,7 +6389,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
-        ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}, {carol, 50, 30}}};
+        ConfidentialEnv confEnv{
+            env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 60}, {carol, 50, 30}}};
         auto& mptAlice = confEnv.mpt;
 
         // The x-coordinate of the NIST P-256 generator point — a real,
@@ -6544,7 +6571,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
-        ConfidentialEnv confEnv{env, alice, {{bob, 100, 100}, {carol, 50, 50}}};
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{.account = bob, .payAmount = 100, .convertAmount = 100}, {carol, 50, 50}}};
         auto& mptAlice = confEnv.mpt;
 
         auto const bobSpendingBefore =
@@ -6860,7 +6890,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
         ConfidentialEnv confEnv{
-            env, alice, {{bob}, {carol, 1000, 50}}, tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+            env,
+            alice,
+            {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}},
+            tfMPTCanTransfer | tfMPTCanConfidentialAmount};
         auto& mptAlice = confEnv.mpt;
 
         // Set RequireDest on carol
@@ -8459,7 +8492,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Bob converts exactly 10 tokens, leaving honest remaining = 0.
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
-        ConfidentialEnv confEnv{env, alice, {{bob, 1000, 10}, {carol, 1000, 50}}};
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{.account = bob, .payAmount = 1000, .convertAmount = 10}, {carol, 1000, 50}}};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -8518,7 +8554,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
-        ConfidentialEnv confEnv{env, alice, {{bob}, {carol, 1000, 50}}};
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}}};
         auto& mptAlice = confEnv.mpt;
 
         ConfidentialSendSetup setup(mptAlice, bob, carol, alice, 10);
@@ -8633,7 +8672,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol"), dan("dan");
-        ConfidentialEnv confEnv{env, alice, {{bob}, {carol, 1000, 50}, {dan, 1000, 50}}};
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{.account = bob},
+             {.account = carol, .payAmount = 1000, .convertAmount = 50},
+             {dan, 1000, 50}}};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -8744,7 +8788,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
-        ConfidentialEnv confEnv{env, alice, {{bob}, {carol, 1000, 50}}};
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}}};
         auto& mptAlice = confEnv.mpt;
 
         ConfidentialSendSetup setup(mptAlice, bob, carol, alice, 10);
@@ -8937,7 +8984,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{bob}, {carol, 1000, 50}},
+            {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}},
             tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer | tfMPTCanClawback};
         auto& mptAlice = confEnv.mpt;
 
@@ -9069,7 +9116,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
         ConfidentialEnv confEnv{
-            env, alice, {{bob}, {carol, 1000, 50}}, tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+            env,
+            alice,
+            {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}},
+            tfMPTCanTransfer | tfMPTCanConfidentialAmount};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -9167,7 +9217,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
         ConfidentialEnv confEnv{
-            env, alice, {{bob}, {carol, 1000, 50}}, tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+            env,
+            alice,
+            {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}},
+            tfMPTCanTransfer | tfMPTCanConfidentialAmount};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
