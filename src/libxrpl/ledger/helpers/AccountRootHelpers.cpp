@@ -250,8 +250,9 @@ adjustOwnerCount(
 {
     XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCount : valid account sle");
     auto const sleType = accountSle->getType();
-    bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
-                                      : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
+    [[maybe_unused]] bool const validType = sponsorSle
+        ? sleType == ltACCOUNT_ROOT
+        : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
     XRPL_ASSERT(validType, "xrpl::adjustOwnerCount : valid account sle type");
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
 
