@@ -589,7 +589,7 @@ TEST_F(LoggerFixture, double_init_throws)
 
     // Second init should throw because LogServiceState is already initialized
     LoggingConfiguration const config{};
-    EXPECT_THROW(LogService::init(config), std::logic_error);
+    EXPECT_THROW(auto _ = LogService::init(config), std::logic_error);
 }
 
 TEST_F(LoggerFixture, reset_before_init_throws)

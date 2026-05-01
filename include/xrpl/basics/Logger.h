@@ -205,6 +205,7 @@ class Logger
          */
         template <typename T>
         [[maybe_unused]] Pump&
+        // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
         operator<<(xrpl::log::Parameter<T>&& p)
         {
             if (enabled_)
