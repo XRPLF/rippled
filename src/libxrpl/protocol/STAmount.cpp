@@ -839,16 +839,21 @@ STAmount::canonicalize()
 
         Number const num(mIsNegative, mValue, mOffset, Number::unchecked{});
         auto set = [&](auto const& val) {
-            mIsNegative = val.value() < 0;
-            mValue = mIsNegative ? -val.value() : val.value();
+            auto const value = val.value();
+            mIsNegative = value < 0;
+            mValue = mIsNegative ? -value : value;
         };
         if (native())
         {
             set(XRPAmount{num});
         }
-        else
+        else if (mAsset.holds<MPTIssue>())
         {
             set(MPTAmount{num});
+        }
+        else
+        {
+            Throw<std::runtime_error>("Unknown integral asset type");
         }
         mOffset = 0;
 
