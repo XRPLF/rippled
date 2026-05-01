@@ -273,6 +273,34 @@ accountSend(
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
     AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 
+/** Like accountSend, but verifies that sender loss and receiver gain agree
+ * at the asset's precision. For IOU transfers, canonicalization at the
+ * 16-digit mantissa edge can silently destroy precision when the two
+ * trust lines sit at different magnitudes: the sender's balance loses
+ * more than the receiver's balance gains, with the difference returning
+ * to the issuer's free liability pool. Transactors whose accounting
+ * depends on exact value transfer (vault deposit/withdraw, loan
+ * disbursement, broker cover ops) should use this entrypoint.
+ *
+ * On success, sender and receiver deltas are compared after both have
+ * been quantized to the coarser of the two trust lines' STAmount scales
+ * via `roundToAsset` — the same conservation idiom `VaultInvariant` uses
+ * at finalize time. Sub-grid canonicalization noise on a side is
+ * admitted; a delta mismatch of ≥ 1 ULP at the coarser endpoint returns
+ * `tecPRECISION_LOSS`. The check is skipped when either side is the
+ * asset's issuer (no counterparty trust line to round) or when the asset
+ * is native — XRP/MPT canonicalization is integer-exact.
+ */
+[[nodiscard]] TER
+accountSendExact(
+    ApplyView& view,
+    AccountID const& from,
+    AccountID const& to,
+    STAmount const& saAmount,
+    beast::Journal j,
+    WaiveTransferFee waiveFee = WaiveTransferFee::No,
+    AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
+
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
 /** Like accountSend, except one account is sending multiple payments (with the
  *  same asset!) simultaneously

@@ -104,7 +104,6 @@ TER
 LoanBrokerCoverDeposit::doApply()
 {
     auto const& tx = ctx_.tx;
-
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
 
@@ -112,25 +111,7 @@ LoanBrokerCoverDeposit::doApply()
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const vault = view().read(keylet::vault(broker->at(sfVaultID)));
-    if (!vault)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const vaultAsset = vault->at(sfAsset);
-
-    auto const brokerPseudoID = broker->at(sfAccount);
-
-    // Transfer assets from depositor to pseudo-account.
-    if (auto ter = accountSend(view(), account_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
-        return ter;
-
-    // Increase the LoanBroker's CoverAvailable by Amount
-    broker->at(sfCoverAvailable) += amount;
-    view().update(broker);
-
-    associateAsset(*broker, vaultAsset);
-
-    return tesSUCCESS;
+    return depositToBrokerCover(view(), broker, account_, amount, j_);
 }
 
 void

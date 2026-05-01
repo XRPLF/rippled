@@ -14,6 +14,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 
+#include <algorithm>
+
 namespace xrpl {
 
 // Internal form:
@@ -747,6 +749,43 @@ inline int
 scale(Number const& number, Asset const& asset)
 {
     return STAmount{asset, number}.exponent();
+}
+
+/** Returns true if `a` and `b` represent the same value at the asset's
+ * precision, with `referenceA` and `referenceB` as the per-operand
+ * magnitudes from which the comparison scale is derived.
+ *
+ * Both operands are quantized via `roundToAsset` to
+ * `max(scale(referenceA, asset), scale(referenceB, asset))` — the
+ * coarser of the two reference grids — and then strict-compared. This
+ * mirrors the `roundToAsset`-then-equality idiom used in
+ * `VaultInvariant` (`src/libxrpl/tx/invariants/VaultInvariant.cpp`),
+ * lifted into a single predicate and parameterized on the references
+ * separately so callers control which observations drive the scale.
+ *
+ * Reference choice matters and is the caller's responsibility:
+ *   - Pre-transfer balances are the typical reference for conservation
+ *     checks; using post-transfer values would let the larger-magnitude
+ *     side's coarser grid mask precision losses that crossed an
+ *     exponent boundary.
+ *   - Zero IOU canonicalizes with a sentinel exponent (-100) and yields
+ *     no useful precision; pass the first non-zero observation of that
+ *     endpoint instead.
+ *
+ * For native (XRP) and MPT, scale is always 0 → comparison is at integer
+ * precision → predicate degenerates to strict equality (which is exact
+ * for those asset types).
+ */
+[[nodiscard]] inline bool
+equalAtAssetScale(
+    Number const& a,
+    Number const& b,
+    Number const& referenceA,
+    Number const& referenceB,
+    Asset const& asset)
+{
+    int const minScale = std::max(scale(referenceA, asset), scale(referenceB, asset));
+    return roundToAsset(asset, a, minScale) == roundToAsset(asset, b, minScale);
 }
 
 }  // namespace xrpl

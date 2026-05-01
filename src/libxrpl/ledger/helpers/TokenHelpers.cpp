@@ -1369,6 +1369,78 @@ accountSend(
 }
 
 TER
+accountSendExact(
+    ApplyView& view,
+    AccountID const& from,
+    AccountID const& to,
+    STAmount const& saAmount,
+    beast::Journal j,
+    WaiveTransferFee waiveFee,
+    AllowMPTOverflow allowOverflow)
+{
+    // Pre-fixCleanup3_2_0 behavior is identical to accountSend (silent IOU
+    // canonicalization losses pass through). Post-amendment, we verify
+    // that the observed sender loss and receiver gain agree at the
+    // asset's precision and return tecPRECISION_LOSS otherwise.
+    //
+    // The bug we are catching is the asymmetric case — sender and receiver
+    // at different magnitudes round differently, leaving sender loss
+    // greater than receiver gain. Native (XRP) and MPT moves are exact in
+    // drops/mantissa, and sending an IOU to/from its own issuer mints or
+    // destroys the IOU rather than rounding a counterparty trust line —
+    // both of those routes have nothing to compare against, so they fall
+    // through to plain accountSend.
+    if (!view.rules().enabled(fixCleanup3_2_0))
+        return accountSend(view, from, to, saAmount, j, waiveFee, allowOverflow);
+
+    Asset const& asset = saAmount.asset();
+    AccountID const issuer = asset.getIssuer();
+    if (asset.native() || from == issuer || to == issuer)
+        return accountSend(view, from, to, saAmount, j, waiveFee, allowOverflow);
+
+    Number const beforeFrom = accountHolds(
+        view, from, asset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j);
+    Number const beforeTo = accountHolds(
+        view, to, asset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j);
+
+    auto const ter = accountSend(view, from, to, saAmount, j, waiveFee, allowOverflow);
+    if (!isTesSuccess(ter))
+        return ter;
+
+    Number const afterFrom = accountHolds(
+        view, from, asset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j);
+    Number const afterTo = accountHolds(
+        view, to, asset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j);
+    Number const senderDelta = beforeFrom - afterFrom;
+    Number const receiverDelta = afterTo - beforeTo;
+
+    // Reference magnitude for choosing the comparison scale: the
+    // pre-transfer balance, falling back to post-transfer when the
+    // pre-balance was zero. Zero IOU canonicalizes to a sentinel
+    // exponent (-100) with no meaningful precision interpretation, so
+    // the first nonzero observation of that endpoint is used. Using the
+    // pre-balance (rather than post-) is what catches the 16-digit-edge
+    // bug: an endpoint that crossed an exponent boundary swallowed ≥ 1
+    // ULP at the pre-state's grid.
+    if (!equalAtAssetScale(
+            senderDelta,
+            receiverDelta,
+            firstNonzero(beforeFrom, afterFrom),
+            firstNonzero(beforeTo, afterTo),
+            asset))
+    {
+        JLOG(j.error()) << "accountSendExact: value not conserved at asset precision"
+                        << " from=" << to_string(from) << " to=" << to_string(to)
+                        << " amount=" << saAmount.getFullText()
+                        << " senderDelta=" << to_string(senderDelta)
+                        << " receiverDelta=" << to_string(receiverDelta);
+        return tecPRECISION_LOSS;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
 accountSendMulti(
     ApplyView& view,
     AccountID const& senderID,

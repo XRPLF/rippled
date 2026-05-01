@@ -754,6 +754,21 @@ squelch(Number const& x, Number const& limit) noexcept
     return x;
 }
 
+/** Returns `value` if it is non-zero, otherwise `fallback`.
+ *
+ * The check is value-level (`signum() == 0`), not representation-level:
+ * it returns true zero regardless of what exponent the Number's internal
+ * state happens to carry. Useful when picking a representative magnitude
+ * across two observations of the same quantity (e.g. the pre- and post-
+ * state of a balance) and the primary observation may be zero with a
+ * sentinel exponent that has no useful precision interpretation.
+ */
+[[nodiscard]] constexpr Number const&
+firstNonzero(Number const& value, Number const& fallback) noexcept
+{
+    return value.signum() == 0 ? fallback : value;
+}
+
 inline std::string
 to_string(MantissaRange::mantissa_scale const& scale)
 {

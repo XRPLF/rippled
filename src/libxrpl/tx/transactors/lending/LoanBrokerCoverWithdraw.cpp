@@ -160,7 +160,6 @@ TER
 LoanBrokerCoverWithdraw::doApply()
 {
     auto const& tx = ctx_.tx;
-
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
     auto const dstAcct = tx[~sfDestination].value_or(account_);
@@ -169,21 +168,8 @@ LoanBrokerCoverWithdraw::doApply()
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const vault = view().read(keylet::vault(broker->at(sfVaultID)));
-    if (!vault)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const vaultAsset = vault->at(sfAsset);
-
-    auto const brokerPseudoID = *broker->at(sfAccount);
-
-    // Decrease the LoanBroker's CoverAvailable by Amount
-    broker->at(sfCoverAvailable) -= amount;
-    view().update(broker);
-
-    associateAsset(*broker, vaultAsset);
-
-    return doWithdraw(view(), tx, account_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
+    return withdrawFromBrokerCover(
+        view(), tx, broker, account_, dstAcct, preFeeBalance_, amount, j_);
 }
 
 void

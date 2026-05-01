@@ -130,33 +130,6 @@ sharesToAssetsWithdraw(
     return assets;
 }
 
-namespace {
-
-// Raw asset balance for delta verification. For XRP, accountHolds (regardless
-// of SpendableHandling) always returns balance-minus-reserve via xrpLiquid;
-// removing an empty MPToken during a vault deposit/withdrawal drops the
-// holder's owner count and frees one incremental-reserve, which would
-// otherwise inflate the post-balance reading and produce false delta
-// mismatches. Read sfBalance directly for XRP to dodge that. IOU / MPT trust
-// lines have no reserve concept, so accountHolds is fine there.
-[[nodiscard]] STAmount
-vaultAssetBalance(
-    ReadView const& view,
-    AccountID const& acct,
-    Asset const& vaultAsset,
-    beast::Journal j)
-{
-    if (vaultAsset.native())
-    {
-        auto const sle = view.read(keylet::account(acct));
-        return sle ? sle->getFieldAmount(sfBalance) : STAmount{vaultAsset};
-    }
-    return accountHolds(
-        view, acct, vaultAsset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j);
-}
-
-}  // namespace
-
 [[nodiscard]] TER
 depositToVault(
     ApplyView& view,
@@ -171,22 +144,14 @@ depositToVault(
     XRPL_ASSERT(
         assetsDeposited.asset() == vaultAsset, "xrpl::depositToVault : assets and vault match");
 
-    auto const holds = [&](AccountID const& acct) {
-        return vaultAssetBalance(view, acct, vaultAsset, j);
-    };
-
     // Pre-fixCleanup3_2_0 the helper performed no delta verification: silent
     // rounding by associateAsset on the STNumber accounting fields would be
     // caught (if at all) by the deposit invariants at finalize time, with
     // tecINVARIANT_FAILED. Post-amendment we snapshot the pre-state and
     // compare deltas at the end of the helper, returning tecPRECISION_LOSS
     // before invariants run.
-    bool const verifyDeltas = view.rules().enabled(fixCleanup3_2_0);
-
     Number const beforeAssetsTotal = *vault->at(sfAssetsTotal);
     Number const beforeAssetsAvailable = *vault->at(sfAssetsAvailable);
-    STAmount const beforeVaultBalance = verifyDeltas ? holds(vaultAccount) : STAmount{vaultAsset};
-    STAmount const beforeDepositorBalance = verifyDeltas ? holds(depositor) : STAmount{vaultAsset};
 
     vault->at(sfAssetsTotal) += assetsDeposited;
     vault->at(sfAssetsAvailable) += assetsDeposited;
@@ -197,20 +162,13 @@ depositToVault(
     if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
         return tecLIMIT_EXCEEDED;
 
-    // Transfer assets from depositor to vault.
-    if (auto const ter =
-            accountSend(view, depositor, vaultAccount, assetsDeposited, j, WaiveTransferFee::Yes);
+    // Transfer assets from depositor to vault. accountSendExact verifies
+    // depositor loss == vault gain, catching IOU canonicalization losses
+    // when either trust line crosses the 16-digit edge.
+    if (auto const ter = accountSendExact(
+            view, depositor, vaultAccount, assetsDeposited, j, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
-
-    // Sanity check: depositor must not be left with a negative balance.
-    if (holds(depositor) < beast::zero)
-    {
-        // LCOV_EXCL_START
-        JLOG(j.error()) << "depositToVault: negative balance of account assets.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
 
     // Round the vault's STNumber accounting fields to the asset's precision.
     // Post-amendment this must run before delta verification so any silent
@@ -218,34 +176,44 @@ depositToVault(
     // as an invariant after commit.
     associateAsset(*vault, vaultAsset);
 
-    if (verifyDeltas)
+    if (!view.rules().enabled(fixCleanup3_2_0))
+        return tesSUCCESS;
+
+    // Trust-line value-transfer integrity is enforced by accountSendExact
+    // above; this remaining check covers SLE-field rounding by
+    // associateAsset on the vault's STNumber accounting fields.
+    //
+    // The two field deltas should agree at the asset's precision. When
+    // sfAssetsTotal sits at a different magnitude from sfAssetsAvailable
+    // (loans outstanding, sfAssetsTotal == sfAssetsAvailable + outstanding
+    // principal) a deposit that fits cleanly on sfAssetsAvailable can still
+    // be silently rounded inside roundToAsset on sfAssetsTotal, leaving
+    // total understated relative to the vault's actual receipt.
+    //
+    // We use the same quantize-then-equal idiom as VaultInvariant (see
+    // makeDelta/computeCoarsestScale/roundToAsset there): both deltas are
+    // quantized to the coarser of the two fields' pre-state STAmount
+    // scales, then strict-equality compared. Comparing against
+    // assetsDeposited is intentionally avoided — the input may carry more
+    // precision than either field can hold, in which case identical
+    // rounding on both sides conserves value despite a sub-grid mismatch
+    // from the input.
+    Number const afterAssetsTotal = *vault->at(sfAssetsTotal);
+    Number const afterAssetsAvailable = *vault->at(sfAssetsAvailable);
+    Number const totalDelta = afterAssetsTotal - beforeAssetsTotal;
+    Number const availableDelta = afterAssetsAvailable - beforeAssetsAvailable;
+
+    if (!equalAtAssetScale(
+            totalDelta,
+            availableDelta,
+            firstNonzero(beforeAssetsTotal, afterAssetsTotal),
+            firstNonzero(beforeAssetsAvailable, afterAssetsAvailable),
+            vaultAsset))
     {
-        // Verify every observable balance changed by exactly
-        // `assetsDeposited`. Issuer-as-depositor is a special case: an issuer
-        // payment mints funds rather than moving the issuer's own balance, so
-        // skip the depositor-side check there. This mirrors the carve-out in
-        // the deposit invariant.
-        Number const expected = assetsDeposited;
-
-        if (*vault->at(sfAssetsTotal) - beforeAssetsTotal != expected ||
-            *vault->at(sfAssetsAvailable) - beforeAssetsAvailable != expected)
-        {
-            JLOG(j.debug()) << "depositToVault: vault accounting delta mismatch.";
-            return tecPRECISION_LOSS;
-        }
-
-        if (Number{holds(vaultAccount) - beforeVaultBalance} != expected)
-        {
-            JLOG(j.debug()) << "depositToVault: vault balance delta mismatch.";
-            return tecPRECISION_LOSS;
-        }
-
-        bool const issuerDeposit = !vaultAsset.native() && depositor == vaultAsset.getIssuer();
-        if (!issuerDeposit && Number{beforeDepositorBalance - holds(depositor)} != expected)
-        {
-            JLOG(j.debug()) << "depositToVault: depositor balance delta mismatch.";
-            return tecPRECISION_LOSS;
-        }
+        JLOG(j.error()) << "depositToVault: vault accounting delta mismatch"
+                        << " totalDelta=" << to_string(totalDelta)
+                        << " availableDelta=" << to_string(availableDelta);
+        return tecPRECISION_LOSS;
     }
 
     return tesSUCCESS;
@@ -269,24 +237,16 @@ withdrawFromVault(
     XRPL_ASSERT(
         assetsWithdrawn.asset() == vaultAsset, "xrpl::withdrawFromVault : assets and vault match");
 
-    auto const holds = [&](AccountID const& acct) {
-        return vaultAssetBalance(view, acct, vaultAsset, j);
-    };
-
     // Pre-fixCleanup3_2_0 the helper performed no delta verification: silent
-    // rounding by associateAsset on the STNumber accounting fields, or by
-    // STAmount canonicalization on the destination's trust line, would be
+    // rounding by associateAsset on the STNumber accounting fields would be
     // caught (if at all) by the withdrawal invariants at finalize time, with
     // tecINVARIANT_FAILED. Post-amendment we snapshot the pre-state and
     // compare deltas at the end of the helper, returning tecPRECISION_LOSS
-    // before invariants run.
-    bool const verifyDeltas = view.rules().enabled(fixCleanup3_2_0);
-
+    // before invariants run. Trust-line value-transfer integrity (vault
+    // pseudo-account loss == destination gain) is enforced inside doWithdraw
+    // via accountSendExact.
     Number const beforeAssetsTotal = *vault->at(sfAssetsTotal);
     Number const beforeAssetsAvailable = *vault->at(sfAssetsAvailable);
-    STAmount const beforeVaultBalance = verifyDeltas ? holds(vaultAccount) : STAmount{vaultAsset};
-    STAmount const beforeDestinationBalance =
-        verifyDeltas ? holds(destination) : STAmount{vaultAsset};
 
     [[maybe_unused]] Number const lossUnrealized = *vault->at(sfLossUnrealized);
     XRPL_ASSERT(
@@ -340,39 +300,44 @@ withdrawFromVault(
     // as an invariant after commit.
     associateAsset(*vault, vaultAsset);
 
+    // doWithdraw uses accountSendExact internally, so a destination trust
+    // line at the IOU edge that would silently canonicalize the inflow now
+    // returns tecPRECISION_LOSS rather than letting value disappear.
     if (auto const ter = doWithdraw(
             view, tx, depositor, destination, vaultAccount, preFeeBalance, assetsWithdrawn, j);
         !isTesSuccess(ter))
         return ter;
 
-    if (verifyDeltas)
+    if (!view.rules().enabled(fixCleanup3_2_0))
+        return tesSUCCESS;
+
+    // Trust-line value-transfer integrity is enforced by doWithdraw's
+    // accountSendExact above; this remaining check covers SLE-field
+    // rounding by associateAsset on the vault's STNumber accounting.
+    //
+    // Same shape as the deposit-side check: both deltas are quantized via
+    // roundToAsset to the coarser of the two fields' pre-state STAmount
+    // scales and compared with strict equality. The bug case is when
+    // sfAssetsTotal sits at a different magnitude from sfAssetsAvailable
+    // (loans outstanding) — a withdrawal that fits on sfAssetsAvailable
+    // can still be rounded inside roundToAsset on sfAssetsTotal, leaving
+    // total overstated relative to what the vault actually paid out.
+    Number const afterAssetsTotal = *vault->at(sfAssetsTotal);
+    Number const afterAssetsAvailable = *vault->at(sfAssetsAvailable);
+    Number const totalDelta = beforeAssetsTotal - afterAssetsTotal;
+    Number const availableDelta = beforeAssetsAvailable - afterAssetsAvailable;
+
+    if (!equalAtAssetScale(
+            totalDelta,
+            availableDelta,
+            firstNonzero(beforeAssetsTotal, afterAssetsTotal),
+            firstNonzero(beforeAssetsAvailable, afterAssetsAvailable),
+            vaultAsset))
     {
-        // Verify every observable balance changed by exactly
-        // `assetsWithdrawn`. Issuer-as-destination is a special case: sending
-        // an IOU to the issuer destroys it rather than crediting the issuer's
-        // balance, so skip the destination-side check there. This mirrors
-        // the carve-out in the withdrawal invariant.
-        Number const expected = assetsWithdrawn;
-
-        if (beforeAssetsTotal - *vault->at(sfAssetsTotal) != expected ||
-            beforeAssetsAvailable - *vault->at(sfAssetsAvailable) != expected)
-        {
-            JLOG(j.debug()) << "withdrawFromVault: vault accounting delta mismatch.";
-            return tecPRECISION_LOSS;
-        }
-
-        if (Number{beforeVaultBalance - holds(vaultAccount)} != expected)
-        {
-            JLOG(j.debug()) << "withdrawFromVault: vault balance delta mismatch.";
-            return tecPRECISION_LOSS;
-        }
-
-        bool const issuerWithdrawal = !vaultAsset.native() && destination == vaultAsset.getIssuer();
-        if (!issuerWithdrawal && Number{holds(destination) - beforeDestinationBalance} != expected)
-        {
-            JLOG(j.debug()) << "withdrawFromVault: destination balance delta mismatch.";
-            return tecPRECISION_LOSS;
-        }
+        JLOG(j.error()) << "withdrawFromVault: vault accounting delta mismatch"
+                        << " totalDelta=" << to_string(totalDelta)
+                        << " availableDelta=" << to_string(availableDelta);
+        return tecPRECISION_LOSS;
     }
 
     return tesSUCCESS;

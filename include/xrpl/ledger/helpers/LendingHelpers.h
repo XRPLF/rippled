@@ -474,4 +474,76 @@ loanMakePayment(
     LoanPaymentType const paymentType,
     beast::Journal j);
 
+/** Apply the asset-side of a LoanBroker cover deposit.
+
+    Transfers `amount` from `depositor` to the broker's pseudo-account via
+    `accountSendExact`, increments `sfCoverAvailable`, runs `associateAsset`
+    on the broker SLE, and (post-fixCleanup3_2_0) verifies that
+    `sfCoverAvailable` moved in lockstep with the broker pseudo-account
+    balance at the asset's precision.
+
+    The lockstep check is redundant today — `sfCoverAvailable` mirrors the
+    pseudo-account balance one-for-one and `accountSendExact` already
+    enforces trust-line value-transfer integrity — but is kept as
+    future-proofing in case `sfCoverAvailable` ever stops mirroring the
+    pseudo-account balance one-for-one (e.g. if the broker pseudo-account
+    is ever extended to hold funds beyond cover).
+
+    @param view The apply view.
+    @param broker The LoanBroker SLE (peeked, will be mutated).
+    @param depositor The account depositing cover.
+    @param amount The amount of assets to deposit.
+    @param j Journal for logging.
+
+    @return tesSUCCESS on success; tecPRECISION_LOSS if the trust-line or
+            SLE-field deltas do not agree at the asset's precision;
+            tecINTERNAL on impossible internal states; otherwise the
+            result of the underlying `accountSendExact`.
+*/
+[[nodiscard]] TER
+depositToBrokerCover(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& broker,
+    AccountID const& depositor,
+    STAmount const& amount,
+    beast::Journal j);
+
+/** Apply the asset-side of a LoanBroker cover withdrawal.
+
+    Decrements `sfCoverAvailable`, runs `associateAsset`, then routes
+    through `doWithdraw` (which uses `accountSendExact` internally) to
+    transfer `amount` from the broker's pseudo-account to `destination`.
+    Post-fixCleanup3_2_0, verifies that `sfCoverAvailable` moved in
+    lockstep with the broker pseudo-account balance at the asset's
+    precision; same future-proofing rationale as `depositToBrokerCover`.
+
+    @param view The apply view.
+    @param tx The triggering transaction (forwarded to `doWithdraw` for
+        deposit-preauth and destination-tag checks).
+    @param broker The LoanBroker SLE (peeked, will be mutated).
+    @param account The broker owner requesting the withdrawal.
+    @param destination The account receiving the assets (may equal
+        `account`).
+    @param preFeeBalance The requester's pre-fee XRP balance, forwarded to
+        `doWithdraw` for reserve verification when a new trust line /
+        MPToken needs to be created for the inbound assets.
+    @param amount The amount of assets to withdraw.
+    @param j Journal for logging.
+
+    @return tesSUCCESS on success; tecPRECISION_LOSS if the trust-line or
+            SLE-field deltas do not agree at the asset's precision;
+            tecINTERNAL on impossible internal states; otherwise the
+            result of the underlying `doWithdraw`.
+*/
+[[nodiscard]] TER
+withdrawFromBrokerCover(
+    ApplyView& view,
+    STTx const& tx,
+    std::shared_ptr<SLE> const& broker,
+    AccountID const& account,
+    AccountID const& destination,
+    XRPAmount preFeeBalance,
+    STAmount const& amount,
+    beast::Journal j);
+
 }  // namespace xrpl

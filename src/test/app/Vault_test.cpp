@@ -6280,12 +6280,749 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    // The same class of bug exists in LoanPay: a borrower paying a late
+    // payment adds the late-interest penalty to the vault's `sfAssetsTotal`
+    // via `paymentParts->valueChange`. With the vault parked at the
+    // 16-digit IOU edge and pseudo-account drained by an earlier loan
+    // disbursement, the addition pushes `sfAssetsTotal` past 10^16 and
+    // `associateAsset` silently rounds it. The pseudo-account inflow
+    // (principal + interest) stays under 10^16, so vault SLE accounting
+    // and the actual asset balance drift apart.
+    //
+    // Reproduction is parked: rejecting a contractual loan payment with
+    // tecPRECISION_LOSS could permanently block a borrower from servicing
+    // their debt (especially on late payments where the penalty grows
+    // monotonically). The deposit/withdraw/cover-deposit/cover-withdraw
+    // / loan-disbursement reproductions are all VOLUNTARY operations
+    // where the user can adjust amounts; loan repayment is contractual
+    // and a reject mechanism could leave the borrower stuck. The fix
+    // shape needs separate design (e.g. silently route the rounding loss
+    // to a dust account; switch to MPT for vault accounting; require
+    // sfScale to keep accounting under the IOU mantissa edge). Test left
+    // as documentation of the bug surface.
+    void
+    testBugAssociateAssetRoundingLoanPay()
+    {
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        // The fix is not applied to LoanPay (rejecting a contractual loan
+        // payment with tecPRECISION_LOSS could permanently block a borrower
+        // servicing their debt). The desync therefore persists in both
+        // amendment states; this test asserts the bug shape is unchanged so
+        // future work has a regression anchor.
+        auto runScenario = [this](FeatureBitset features) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(100'000), issuer, alice, borrower);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), Number{9'999'999'999'999'999LL}};
+            STAmount const aliceFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, trustLimit));
+            env(trust(borrower, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env(pay(issuer, borrower, STAmount{usd.raw(), Number{5, 15}}));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            {
+                using namespace loanBroker;
+                env(set(alice, vaultKeylet.key),
+                    debtMaximum(Number{4, 15}),
+                    fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            {
+                using namespace loan;
+                env(set(borrower, brokerKeylet.key, Number{3, 15}),
+                    sig(sfCounterpartySignature, alice),
+                    paymentTotal(4),
+                    paymentInterval(600),
+                    interestRate(percentageToTenthBips(12)),
+                    lateInterestRate(percentageToTenthBips(50)),
+                    fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            env.close(900s);
+
+            env(loan::pay(
+                borrower, loanKeylet.key, STAmount{usd.raw(), Number{5, 15}}, tfLoanLatePayment));
+            env.close();
+
+            // Verify the desync: the accounting identity sfAssetsTotal ==
+            // sfAssetsAvailable + brokerDebt is broken by the rounding loss.
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle);
+            if (!vaultSle)
+                return;
+            auto const brokerSle = env.le(keylet::loanbroker(brokerKeylet.key));
+            BEAST_EXPECT(brokerSle);
+            if (!brokerSle)
+                return;
+
+            Number const assetsTotalAfter = vaultSle->at(sfAssetsTotal);
+            Number const assetsAvailableAfter = vaultSle->at(sfAssetsAvailable);
+            Number const debtTotal = brokerSle->at(sfDebtTotal);
+            Number const expectedTotal = assetsAvailableAfter + debtTotal;
+            BEAST_EXPECTS(
+                assetsTotalAfter != expectedTotal,
+                "no desync detected: sfAssetsTotal=" + to_string(assetsTotalAfter) +
+                    " expected=" + to_string(expectedTotal));
+        };
+
+        {
+            testcase(
+                "bug: associateAsset rounding desyncs vault on LoanPay "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testable_amendments() - fixCleanup3_2_0);
+        }
+
+        {
+            testcase(
+                "bug: associateAsset rounding desyncs vault on LoanPay "
+                "(post-fixCleanup3_2_0, fix intentionally not applied)");
+            runScenario(testable_amendments());
+        }
+    }
+
+    // LoanBrokerCoverDeposit at the IOU edge. The broker's pseudo-account
+    // balance and sfCoverAvailable always update in lockstep, so the bug
+    // is purely a value-transfer mismatch: depositor loses more than the
+    // broker pseudo-account gains, with the difference disappearing into
+    // IOU canonicalization.
+    //
+    // Pre-fixCleanup3_2_0: the second 2-USD coverDeposit silently succeeds;
+    // alice loses 2 USD but the broker pseudo-account only gains 1 USD.
+    // Post-amendment: accountSendExact in LoanBrokerCoverDeposit detects
+    // the canonicalization mismatch and rejects with tecPRECISION_LOSS.
+    void
+    testAssociateAssetEdgeBrokerCover()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool fixActive) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), Number{9'999'999'999'999'999LL}};
+            STAmount const aliceFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            {
+                using namespace loanBroker;
+                env(set(alice, vaultKeylet.key),
+                    debtMaximum(Number{9, 15}),
+                    fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            auto const brokerSleHandle = env.le(keylet::loanbroker(brokerKeylet.key));
+            BEAST_EXPECT(brokerSleHandle);
+            if (!brokerSleHandle)
+                return;
+            Account const brokerPseudo{"broker", brokerSleHandle->at(sfAccount)};
+
+            // Park sfCoverAvailable at the IOU edge: alice has 9.999e15,
+            // deposits all of it. Values fit exactly in 16-digit IOU; no
+            // precision loss yet.
+            env(loanBroker::coverDeposit(alice, brokerKeylet.key, aliceFund));
+            env.close();
+
+            // Top alice up by 2 USD via the issuer. Alice was at 0 after
+            // the deposit; the issuer's payment fits cleanly.
+            env(pay(issuer, alice, usd(2)));
+            env.close();
+
+            STAmount const aliceBefore = env.balance(alice, usd);
+            STAmount const brokerBefore = env.balance(brokerPseudo, usd);
+
+            // 2-USD cover deposit. broker pseudo is at 9.999e15; adding 2
+            // → 10^16+1, IOU canonicalizes back to 10^16 — rounding away
+            // 1 unit. Alice loses 2, broker gains only 1.
+            env(loanBroker::coverDeposit(alice, brokerKeylet.key, usd(2)),
+                ter(fixActive ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS}));
+            env.close();
+
+            STAmount const aliceAfter = env.balance(alice, usd);
+            STAmount const brokerAfter = env.balance(brokerPseudo, usd);
+            Number const aliceLoss = aliceBefore - aliceAfter;
+            Number const brokerGain = brokerAfter - brokerBefore;
+
+            if (fixActive)
+            {
+                // Transaction rejected: no value moved.
+                BEAST_EXPECT(aliceLoss == Number{0});
+                BEAST_EXPECT(brokerGain == Number{0});
+            }
+            else
+            {
+                // Bug demonstrated: alice's loss exceeds broker's gain.
+                BEAST_EXPECTS(
+                    aliceLoss == Number{2} && brokerGain == Number{1},
+                    "expected alice loss=2, broker gain=1; got alice=" + to_string(aliceLoss) +
+                        " broker=" + to_string(brokerGain));
+            }
+        };
+
+        {
+            testcase(
+                "bug: LoanBroker coverDeposit silently loses value at IOU "
+                "edge (pre-fixCleanup3_2_0)");
+            runScenario(testable_amendments() - fixCleanup3_2_0, false);
+        }
+
+        {
+            testcase(
+                "bug: LoanBroker coverDeposit rejects edge canonicalization "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testable_amendments(), true);
+        }
+    }
+
+    // CoverWithdraw value-transfer probe: when the destination's trust
+    // line is at the IOU 16-digit edge, the inflow canonicalizes and the
+    // broker loses more than the destination gains.
+    //
+    // Pre-fixCleanup3_2_0: the withdrawal silently succeeds; broker pseudo
+    // loses 2 USD, bob gains only 1 USD.
+    // Post-amendment: doWithdraw uses accountSendExact and rejects with
+    // tecPRECISION_LOSS before any value moves.
+    void
+    testBugCoverWithdrawEdge()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool fixActive) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), Number{2, 16}};
+            STAmount const bobFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, trustLimit));
+            env(trust(bob, trustLimit));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env(pay(issuer, bob, bobFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            {
+                using namespace loanBroker;
+                env(set(alice, vaultKeylet.key),
+                    debtMaximum(Number{9, 15}),
+                    fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            env(loanBroker::coverDeposit(alice, brokerKeylet.key, usd(100)));
+            env.close();
+
+            auto const brokerSle = env.le(keylet::loanbroker(brokerKeylet.key));
+            BEAST_EXPECT(brokerSle);
+            if (!brokerSle)
+                return;
+            Account const brokerPseudo{"broker", brokerSle->at(sfAccount)};
+
+            STAmount const bobBefore = env.balance(bob, usd);
+            STAmount const brokerBefore = env.balance(brokerPseudo, usd);
+
+            // Withdraw 2 USD with destination = bob, whose trust line is at
+            // 9.999e15. broker pseudo loses 2 cleanly; bob's inflow of 2
+            // USD canonicalizes to +1.
+            auto tx = loanBroker::coverWithdraw(alice, brokerKeylet.key, usd(2));
+            tx[sfDestination] = bob.human();
+            env(tx, ter(fixActive ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS}));
+            env.close();
+
+            STAmount const bobAfter = env.balance(bob, usd);
+            STAmount const brokerAfter = env.balance(brokerPseudo, usd);
+            Number const brokerLoss = brokerBefore - brokerAfter;
+            Number const bobGain = bobAfter - bobBefore;
+
+            if (fixActive)
+            {
+                // Transaction rejected: no value moved.
+                BEAST_EXPECT(brokerLoss == Number{0});
+                BEAST_EXPECT(bobGain == Number{0});
+            }
+            else
+            {
+                // Bug demonstrated: broker loss exceeds bob's gain.
+                BEAST_EXPECTS(
+                    brokerLoss == Number{2} && bobGain == Number{1},
+                    "expected broker loss=2, bob gain=1; got broker=" + to_string(brokerLoss) +
+                        " bob=" + to_string(bobGain));
+            }
+        };
+
+        {
+            testcase(
+                "bug: LoanBroker coverWithdraw silently loses value at IOU "
+                "edge (pre-fixCleanup3_2_0)");
+            runScenario(testable_amendments() - fixCleanup3_2_0, false);
+        }
+
+        {
+            testcase(
+                "bug: LoanBroker coverWithdraw rejects edge canonicalization "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testable_amendments(), true);
+        }
+    }
+
+    // VaultClawback probe: vault sends assets to issuer. Sending IOU
+    // back to its own issuer destroys it (no destination trust line to
+    // canonicalize), so no value-transfer mismatch should arise. Behavior
+    // is identical pre- and post-fixCleanup3_2_0; running both states is
+    // a regression anchor.
+    void
+    testVaultClawbackEdge()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), Number{9'999'999'999'999'999LL}};
+            STAmount const aliceFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle);
+            if (!vaultSle)
+                return;
+            Account const vaultPseudo{"vault", vaultSle->at(sfAccount)};
+
+            STAmount const vaultBefore = env.balance(vaultPseudo, usd);
+
+            env(vault.clawback(
+                {.issuer = issuer, .id = vaultKeylet.key, .holder = alice, .amount = usd(2)}));
+            env.close();
+
+            STAmount const vaultAfter = env.balance(vaultPseudo, usd);
+            Number const vaultLoss = vaultBefore - vaultAfter;
+            BEAST_EXPECTS(
+                vaultLoss == Number{2},
+                "vault loss should equal clawback amount: vaultLoss=" + to_string(vaultLoss));
+        };
+
+        {
+            testcase(
+                "VaultClawback at edge: no value-transfer mismatch "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testable_amendments() - fixCleanup3_2_0);
+        }
+
+        {
+            testcase(
+                "VaultClawback at edge: no value-transfer mismatch "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testable_amendments());
+        }
+    }
+
+    // CoverClawback probe: clawback sends from broker pseudo to the
+    // issuer. Sending an IOU back to its own issuer destroys it (decreases
+    // the issuer's outstanding liability) — there's no destination trust
+    // line to canonicalize, so no value-transfer mismatch should arise.
+    // Behavior is identical pre- and post-fixCleanup3_2_0; running both
+    // states is a regression anchor.
+    void
+    testCoverClawbackEdge()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), Number{9'999'999'999'999'999LL}};
+            STAmount const aliceFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            {
+                using namespace loanBroker;
+                env(set(alice, vaultKeylet.key),
+                    debtMaximum(Number{9, 15}),
+                    fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            // Park broker cover at the IOU edge.
+            env(loanBroker::coverDeposit(alice, brokerKeylet.key, aliceFund));
+            env.close();
+
+            auto const brokerSle = env.le(keylet::loanbroker(brokerKeylet.key));
+            BEAST_EXPECT(brokerSle);
+            if (!brokerSle)
+                return;
+            Account const brokerPseudo{"broker", brokerSle->at(sfAccount)};
+
+            STAmount const brokerBefore = env.balance(brokerPseudo, usd);
+
+            // Issuer claws back 2 USD. broker pseudo decrements; issuer is
+            // the destination, IOU is destroyed (no trust-line round on
+            // receiver).
+            env(loanBroker::coverClawback(issuer),
+                loanBroker::loanBrokerID(brokerKeylet.key),
+                amount(usd(2)));
+            env.close();
+
+            STAmount const brokerAfter = env.balance(brokerPseudo, usd);
+            Number const brokerLoss = brokerBefore - brokerAfter;
+            BEAST_EXPECTS(
+                brokerLoss == Number{2},
+                "broker loss should equal clawback amount: brokerLoss=" + to_string(brokerLoss));
+        };
+
+        {
+            testcase(
+                "LoanBroker coverClawback at edge: no value-transfer "
+                "mismatch (pre-fixCleanup3_2_0)");
+            runScenario(testable_amendments() - fixCleanup3_2_0);
+        }
+
+        {
+            testcase(
+                "LoanBroker coverClawback at edge: no value-transfer "
+                "mismatch (post-fixCleanup3_2_0)");
+            runScenario(testable_amendments());
+        }
+    }
+
+    // LoanSet (loan disbursement) probe: vault sends principal to the
+    // borrower. If borrower's trust line is at the IOU edge, the inflow
+    // canonicalizes — vault loses more than borrower gains.
+    //
+    // Pre-fixCleanup3_2_0: the disbursement silently succeeds; vault loses
+    // 2 USD, borrower gains only 1 USD.
+    // Post-amendment: accountSendExact on the disbursement rejects with
+    // tecPRECISION_LOSS before any value moves.
+    void
+    testBugLoanSetDisburseEdge()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, bool fixActive) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(100'000), issuer, alice, borrower);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), Number{2, 16}};
+            STAmount const borrowerFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, trustLimit));
+            env(trust(borrower, trustLimit));
+            env.close();
+            env(pay(issuer, alice, usd(1'000)));
+            env(pay(issuer, borrower, borrowerFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(100)}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            {
+                using namespace loanBroker;
+                env(set(alice, vaultKeylet.key),
+                    debtMaximum(Number{1, 15}),
+                    fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle);
+            if (!vaultSle)
+                return;
+            Account const vaultPseudo{"vault", vaultSle->at(sfAccount)};
+
+            STAmount const vaultBefore = env.balance(vaultPseudo, usd);
+            STAmount const borrowerBefore = env.balance(borrower, usd);
+
+            // Disburse a 2 USD loan to borrower whose trust line is at
+            // 9.999e15. Vault loses 2 cleanly; borrower's inflow of 2 USD
+            // canonicalizes to +1.
+            {
+                using namespace loan;
+                env(set(borrower, brokerKeylet.key, Number{2}),
+                    sig(sfCounterpartySignature, alice),
+                    paymentTotal(4),
+                    paymentInterval(600),
+                    fee(env.current()->fees().base * 2),
+                    ter(fixActive ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS}));
+            }
+            env.close();
+
+            STAmount const vaultAfter = env.balance(vaultPseudo, usd);
+            STAmount const borrowerAfter = env.balance(borrower, usd);
+            Number const vaultLoss = vaultBefore - vaultAfter;
+            Number const borrowerGain = borrowerAfter - borrowerBefore;
+
+            if (fixActive)
+            {
+                // Transaction rejected: no value moved.
+                BEAST_EXPECT(vaultLoss == Number{0});
+                BEAST_EXPECT(borrowerGain == Number{0});
+            }
+            else
+            {
+                // Bug demonstrated: vault loss exceeds borrower gain.
+                BEAST_EXPECTS(
+                    vaultLoss == Number{2} && borrowerGain == Number{1},
+                    "expected vault loss=2, borrower gain=1; got vault=" + to_string(vaultLoss) +
+                        " borrower=" + to_string(borrowerGain));
+            }
+        };
+
+        {
+            testcase(
+                "bug: LoanSet disbursement silently loses value at IOU "
+                "edge (pre-fixCleanup3_2_0)");
+            runScenario(testable_amendments() - fixCleanup3_2_0, false);
+        }
+
+        {
+            testcase(
+                "bug: LoanSet disbursement rejects edge canonicalization "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testable_amendments(), true);
+        }
+    }
+
+    // LoanManage analog probe. The impair path adds owedToVault to
+    // sfLossUnrealized via `adjustImpreciseNumber`, which pre-rounds to
+    // vault scale BEFORE the SLE update — that pre-rounding mostly
+    // neutralizes any subsequent associateAsset rounding. Plus the
+    // sanity check `sfLossUnrealized <= sfAssetsTotal - sfAssetsAvailable`
+    // (LoanManage.cpp:318) caps sfLossUnrealized at the outstanding-loan
+    // amount, preventing it from reaching the IOU edge in the first
+    // place. Behavior is identical pre- and post-fixCleanup3_2_0; running
+    // both states is a regression anchor.
+    void
+    testAssociateAssetEdgeLoanManageImpair()
+    {
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        auto runScenario = [this](FeatureBitset features) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(100'000), issuer, alice, borrower);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), Number{9'999'999'999'999'999LL}};
+            STAmount const aliceFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, trustLimit));
+            env(trust(borrower, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            {
+                using namespace loanBroker;
+                env(set(alice, vaultKeylet.key),
+                    debtMaximum(Number{4, 15}),
+                    fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            // 0% interest so totalValueOutstanding == principal —
+            // owedToVault matches the principal exactly, fitting under
+            // the sfLossUnrealized <= sfAssetsTotal - sfAssetsAvailable
+            // cap.
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            {
+                using namespace loan;
+                env(set(borrower, brokerKeylet.key, Number{3, 15}),
+                    sig(sfCounterpartySignature, alice),
+                    paymentTotal(4),
+                    paymentInterval(600),
+                    interestRate(percentageToTenthBips(0)),
+                    fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            env(loan::manage(alice, loanKeylet.key, tfLoanImpair));
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle);
+            if (!vaultSle)
+                return;
+
+            Number const lossUnrealized = vaultSle->at(sfLossUnrealized);
+            Number const assetsTotal = vaultSle->at(sfAssetsTotal);
+            Number const assetsAvailable = vaultSle->at(sfAssetsAvailable);
+
+            // Identity expected to hold post-impair.
+            BEAST_EXPECTS(
+                lossUnrealized <= assetsTotal - assetsAvailable,
+                "lossUnrealized=" + to_string(lossUnrealized) +
+                    " > assetsTotal-assetsAvailable=" + to_string(assetsTotal - assetsAvailable));
+        };
+
+        {
+            testcase(
+                "LoanManage impair at IOU edge: no desync "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testable_amendments() - fixCleanup3_2_0);
+        }
+
+        {
+            testcase(
+                "LoanManage impair at IOU edge: no desync "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testable_amendments());
+        }
+    }
+
 public:
     void
     run() override
     {
         testBugAssociateAssetRoundingDeposit();
         testBugAssociateAssetRoundingWithdraw();
+        testBugAssociateAssetRoundingLoanPay();
+        testAssociateAssetEdgeLoanManageImpair();
+        testAssociateAssetEdgeBrokerCover();
+        testBugCoverWithdrawEdge();
+        testCoverClawbackEdge();
+        testVaultClawbackEdge();
+        testBugLoanSetDisburseEdge();
         testSequences();
         testPreflight();
         testCreateFailXRP();
