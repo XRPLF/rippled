@@ -77,8 +77,8 @@ public:
         NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const tokenSecretKey =
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr_);
 
         auto const tokenPublicKey = derivePublicKey(KeyType::Secp256k1, tokenSecretKey);
