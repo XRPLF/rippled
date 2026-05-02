@@ -60,6 +60,7 @@ public:
 
     /**
      * @brief Get sfAmount (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -71,6 +72,7 @@ public:
 
     /**
      * @brief Get sfSendMax (SoeOptional)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -173,6 +175,7 @@ public:
 
     /**
      * @brief Get sfDeliverMin (SoeOptional)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -307,6 +310,7 @@ public:
 
     /**
      * @brief Set sfAmount (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -318,6 +322,7 @@ public:
 
     /**
      * @brief Set sfSendMax (SoeOptional)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&
@@ -362,6 +367,7 @@ public:
 
     /**
      * @brief Set sfDeliverMin (SoeOptional)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     PaymentBuilder&

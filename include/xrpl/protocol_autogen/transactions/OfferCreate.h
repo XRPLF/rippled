@@ -49,6 +49,7 @@ public:
 
     /**
      * @brief Get sfTakerPays (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -60,6 +61,7 @@ public:
 
     /**
      * @brief Get sfTakerGets (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -194,6 +196,7 @@ public:
 
     /**
      * @brief Set sfTakerPays (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -205,6 +208,7 @@ public:
 
     /**
      * @brief Set sfTakerGets (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&

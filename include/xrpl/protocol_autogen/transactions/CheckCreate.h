@@ -60,6 +60,7 @@ public:
 
     /**
      * @brief Get sfSendMax (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -205,6 +206,7 @@ public:
 
     /**
      * @brief Set sfSendMax (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&

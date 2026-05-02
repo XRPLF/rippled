@@ -49,6 +49,7 @@ public:
 
     /**
      * @brief Get sfAsset (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -259,6 +260,7 @@ public:
 
     /**
      * @brief Set sfAsset (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
