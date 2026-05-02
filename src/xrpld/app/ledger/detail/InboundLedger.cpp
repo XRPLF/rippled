@@ -278,7 +278,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
             if (std::addressof(dstDB) != std::addressof(srcDB))
             {
                 Blob blob{nodeObject->getData()};
-                dstDB.store(HotLedger, std::move(blob), hash_, ledger_->header().seq);
+                dstDB.store(NodeObjectType::Ledger, std::move(blob), hash_, ledger_->header().seq);
             }
         }
         else
@@ -296,7 +296,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
 
             // Store the ledger header in the ledger's database
             ledger_->stateMap().family().db().store(
-                HotLedger, std::move(*data), hash_, ledger_->header().seq);
+                NodeObjectType::Ledger, std::move(*data), hash_, ledger_->header().seq);
         }
 
         if (seq_ == 0)
@@ -822,7 +822,7 @@ InboundLedger::takeHeader(std::string const& data)
     Serializer s(data.size() + 4);
     s.add32(HashPrefix::LedgerMaster);
     s.addRaw(data.data(), data.size());
-    f->db().store(HotLedger, std::move(s.modData()), hash_, seq_);
+    f->db().store(NodeObjectType::Ledger, std::move(s.modData()), hash_, seq_);
 
     if (ledger_->header().txHash.isZero())
         haveTransactions_ = true;

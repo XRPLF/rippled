@@ -158,7 +158,8 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
             hashes.push_back(hash);
 
             Blob data(100, static_cast<unsigned char>(i % 256));
-            nodeStore.store(HotLedger, std::move(data), hash, nodeStore.earliestLedgerSeq());
+            nodeStore.store(
+                NodeObjectType::Ledger, std::move(data), hash, nodeStore.earliestLedgerSeq());
         }
 
         // Create a request with more objects than hardMaxReplyNodes

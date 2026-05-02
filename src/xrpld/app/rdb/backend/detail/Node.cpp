@@ -249,7 +249,8 @@ saveValidatedLedger(
         Serializer s(128);
         s.add32(HashPrefix::LedgerMaster);
         addRaw(ledger->header(), s);
-        app.getNodeStore().store(HotLedger, std::move(s.modData()), ledger->header().hash, seq);
+        app.getNodeStore().store(
+            NodeObjectType::Ledger, std::move(s.modData()), ledger->header().hash, seq);
     }
 
     std::shared_ptr<AcceptedLedger> aLedger;

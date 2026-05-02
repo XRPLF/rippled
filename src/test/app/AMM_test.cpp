@@ -4435,7 +4435,7 @@ private:
     {
         testcase("AMMAndCLOB, offer quality change");
         using namespace jtx;
-        auto const gw = Account("gw_");
+        auto const gw = Account("gw");
         auto const tst = gw["TST"];
         auto const lP1 = Account("LP1");
         auto const lP2 = Account("LP2");

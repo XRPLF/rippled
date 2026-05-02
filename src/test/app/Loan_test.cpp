@@ -1035,7 +1035,7 @@ protected:
                         return "final";
                     if (paymentComponents.specialCase == ::xrpl::detail::PaymentSpecialCase::Extra)
                         return "extra";
-                    return "kNONE";
+                    return "none";
                 }() << std::endl;
             }
 
@@ -2622,7 +2622,7 @@ protected:
                         if (paymentComponents.specialCase ==
                             ::xrpl::detail::PaymentSpecialCase::Extra)
                             return "extra";
-                        return "kNONE";
+                        return "none";
                     }();
 
                     auto const totalDueAmount = STAmount{

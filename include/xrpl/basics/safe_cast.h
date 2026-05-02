@@ -62,7 +62,7 @@ template <class Dest, class Src>
 constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
 unsafeCast(Src s) noexcept
 {
-    return static_cast<Dest>(unsafe_cast<std::underlying_type_t<Dest>>(s));
+    return static_cast<Dest>(unsafeCast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>

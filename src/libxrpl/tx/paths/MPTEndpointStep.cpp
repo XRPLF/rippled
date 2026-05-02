@@ -382,7 +382,8 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SL
 
     if (prevStep_ == nullptr)
     {
-        auto const owed = accountFunds(ctx.view, src_, mptIssue_, FhIgnoreFreeze, AhIgnoreAuth, j_);
+        auto const owed = accountFunds(
+            ctx.view, src_, mptIssue_, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
         // Already at MaximumAmount
         if (owed <= beast::kZERO)
             return tecPATH_DRY;
@@ -423,7 +424,8 @@ template <class TDerived>
 std::pair<MPTAmount, DebtDirection>
 MPTEndpointStep<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
-    auto const maxFlow = accountFunds(sb, src_, mptIssue_, FhIgnoreFreeze, AhIgnoreAuth, j_);
+    auto const maxFlow = accountFunds(
+        sb, src_, mptIssue_, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
 
     // From a holder to an issuer
     if (src_ != mptIssue_.getIssuer())

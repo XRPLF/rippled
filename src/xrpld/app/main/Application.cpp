@@ -1842,7 +1842,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             }
         }
 
-        loadLedger->stateMap().flushDirty(HotAccountNode);
+        loadLedger->stateMap().flushDirty(NodeObjectType::AccountNode);
 
         XRPL_ASSERT(
             loadLedger->header().seq < kXRP_LEDGER_EARLIEST_FEES ||

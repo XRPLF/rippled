@@ -473,8 +473,8 @@ private:
         if (ec || !acceptor_.is_open())
             return;
 
-        static int kID = 0;
-        std::thread{Lambda{++kID, *this, std::move(sock_), useSSL_}}.detach();
+        static int nextId = 0;  // NOLINT(readability-identifier-naming)
+        std::thread{Lambda{++nextId, *this, std::move(sock_), useSSL_}}.detach();
         acceptor_.async_accept(
             sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](error_code ec) {
                 if (auto p = wp.lock())

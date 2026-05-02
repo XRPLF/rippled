@@ -1454,7 +1454,7 @@ OverlayImpl::updateSlotAndSquelch(
     for (auto id : peers)
     {
         slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
-            reportInboundTraffic(TrafficCount::SquelchIgnored, 0);
+            reportInboundTraffic(TrafficCount::Category::SquelchIgnored, 0);
         });
     }
 }
@@ -1483,7 +1483,7 @@ OverlayImpl::updateSlotAndSquelch(
     }
 
     slots_.updateSlotAndSquelch(key, validator, peer, type, [&]() {
-        reportInboundTraffic(TrafficCount::SquelchIgnored, 0);
+        reportInboundTraffic(TrafficCount::Category::SquelchIgnored, 0);
     });
 }
 

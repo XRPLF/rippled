@@ -192,8 +192,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         *ammSle,
         std::nullopt,
         std::nullopt,
-        FreezeHandling::FhIgnoreFreeze,
-        AuthHandling::AhIgnoreAuth,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         ctx.j);
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
@@ -205,7 +205,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         if (amountBalance != beast::kZERO || amount2Balance != beast::kZERO)
         {
             // LCOV_EXCL_START
-            JLOG(ctx.j.debug()) << "AMM Deposit: tokens balance is not beast::kZERO.";
+            JLOG(ctx.j.debug()) << "AMM Deposit: tokens balance is not zero.";
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
@@ -218,7 +218,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             lptAMMBalance < beast::kZERO)
         {
             // LCOV_EXCL_START
-            JLOG(ctx.j.debug()) << "AMM Deposit: reserves or tokens balance is beast::kZERO.";
+            JLOG(ctx.j.debug()) << "AMM Deposit: reserves or tokens balance is zero.";
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
@@ -246,8 +246,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                    ctx.view,
                    accountID,
                    deposit,
-                   FreezeHandling::FhIgnoreFreeze,
-                   AuthHandling::AhIgnoreAuth,
+                   FreezeHandling::IgnoreFreeze,
+                   AuthHandling::IgnoreAuth,
                    ctx.j) >= deposit
             ? TER(tesSUCCESS)
             : tecUNFUNDED_AMM;
@@ -395,8 +395,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
         *ammSle,
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
-        FreezeHandling::FhZeroIfFrozen,
-        AuthHandling::AhZeroIfUnauthorized,
+        FreezeHandling::ZeroIfFrozen,
+        AuthHandling::ZeroIfUnauthorized,
         ctx_.journal);
     if (!expected)
         return {expected.error(), false};  // LCOV_EXCL_LINE
@@ -528,8 +528,8 @@ AMMDeposit::deposit(
                 view,
                 account_,
                 depositAmount,
-                FreezeHandling::FhIgnoreFreeze,
-                AuthHandling::AhIgnoreAuth,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 ctx_.journal) >= depositAmount)
         {
             return tesSUCCESS;
@@ -549,7 +549,7 @@ AMMDeposit::deposit(
 
     if (lpTokensDepositActual <= beast::kZERO)
     {
-        JLOG(ctx_.journal.debug()) << "AMM Deposit: adjusted tokens beast::kZERO";
+        JLOG(ctx_.journal.debug()) << "AMM Deposit: adjusted tokens zero";
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
 

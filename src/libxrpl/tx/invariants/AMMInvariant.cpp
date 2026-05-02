@@ -146,8 +146,8 @@ ValidAMM::finalizeCreate(
             *ammAccount_,
             tx[sfAmount].asset(),
             tx[sfAmount2].asset(),
-            FhIgnoreFreeze,
-            AhIgnoreAuth,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j);
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
@@ -210,7 +210,13 @@ ValidAMM::generalInvariant(
     // NOLINTBEGIN(bugprone-unchecked-optional-access) ammAccount_ and lptAMMBalanceAfter_ set
     // together in visitEntry; callers only invoke this inside else-of-if(!ammAccount_)
     auto const [amount, amount2] = ammPoolHolds(
-        view, *ammAccount_, tx[sfAsset], tx[sfAsset2], FhIgnoreFreeze, AhIgnoreAuth, j);
+        view,
+        *ammAccount_,
+        tx[sfAsset],
+        tx[sfAsset2],
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j);
     // Deposit and Withdrawal invariant:
     // sqrt(amount * amount2) >= LPTokens
     // all balances are greater than zero

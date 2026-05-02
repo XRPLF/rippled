@@ -873,7 +873,7 @@ tokenOfferCreatePreclaim(
     {
         // We allow an IOU issuer to make a buy offer
         // using their own currency.
-        if (accountFunds(view, acctID, amount, FreezeHandling::FhZeroIfFrozen, j).signum() <= 0)
+        if (accountFunds(view, acctID, amount, FreezeHandling::ZeroIfFrozen, j).signum() <= 0)
             return tecUNFUNDED_OFFER;
     }
 

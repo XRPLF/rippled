@@ -471,7 +471,7 @@ private:
     /** Normalize Number components to an arbitrary range.
      *
      * min/maxMantissa are parameters because this function is used by both
-     * normalize(), which reads from range_, and by normalizeToRange,
+     * normalize(), which reads from kRANGE, and by normalizeToRange,
      * which is public and can accept an arbitrary range from the caller.
      */
     template <class T>

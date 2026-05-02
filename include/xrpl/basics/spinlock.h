@@ -107,7 +107,7 @@ public:
     }
 
     [[nodiscard]] bool
-    tryLock()
+    try_lock()  // NOLINT(readability-identifier-naming)
     {
         return (bits_.fetch_or(mask_, std::memory_order_acquire) & mask_) == 0;
     }
@@ -115,7 +115,7 @@ public:
     void
     lock()
     {
-        while (!tryLock())
+        while (!try_lock())
         {
             // The use of relaxed memory ordering here is intentional and
             // serves to help reduce cache coherency traffic during times
@@ -171,7 +171,7 @@ public:
     }
 
     [[nodiscard]] bool
-    tryLock()
+    try_lock()  // NOLINT(readability-identifier-naming)
     {
         T expected = 0;
 
@@ -185,7 +185,7 @@ public:
     void
     lock()
     {
-        while (!tryLock())
+        while (!try_lock())
         {
             // The use of relaxed memory ordering here is intentional and
             // serves to help reduce cache coherency traffic during times

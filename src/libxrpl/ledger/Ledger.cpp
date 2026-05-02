@@ -201,7 +201,7 @@ Ledger::Ledger(
         rawInsert(sle);
     }
 
-    stateMap_.flushDirty(HotAccountNode);
+    stateMap_.flushDirty(NodeObjectType::AccountNode);
     setImmutable();
 }
 

@@ -181,8 +181,8 @@ doAMMInfo(RPC::JsonContext& context)
         ammAccountID,
         asset1,
         asset2,
-        FreezeHandling::FhIgnoreFreeze,
-        AuthHandling::AhIgnoreAuth,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         context.j);
     auto const lptAMMBalance =
         accountID ? ammLPHolds(*ledger, *amm, *accountID, context.j) : (*amm)[sfLPTokenBalance];

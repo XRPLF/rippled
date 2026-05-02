@@ -205,8 +205,8 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         *ammSle,
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
-        FreezeHandling::FhIgnoreFreeze,
-        AuthHandling::AhIgnoreAuth,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         ctx.j);
     if (!expected)
         return expected.error();
@@ -340,8 +340,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         *ammSle,
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
-        FreezeHandling::FhZeroIfFrozen,
-        AuthHandling::AhZeroIfUnauthorized,
+        FreezeHandling::ZeroIfFrozen,
+        AuthHandling::ZeroIfUnauthorized,
         ctx_.journal);
     if (!expected)
         return {expected.error(), false};
@@ -465,8 +465,8 @@ AMMWithdraw::withdraw(
         lpTokensAMMBalance,
         lpTokensWithdraw,
         tfee,
-        FreezeHandling::FhZeroIfFrozen,
-        AuthHandling::AhZeroIfUnauthorized,
+        FreezeHandling::ZeroIfFrozen,
+        AuthHandling::ZeroIfUnauthorized,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         j_);
@@ -756,8 +756,8 @@ AMMWithdraw::equalWithdrawTokens(
         lpTokens,
         lpTokensWithdraw,
         tfee,
-        FreezeHandling::FhZeroIfFrozen,
-        AuthHandling::AhZeroIfUnauthorized,
+        FreezeHandling::ZeroIfFrozen,
+        AuthHandling::ZeroIfUnauthorized,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         ctx_.journal);

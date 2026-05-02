@@ -9,14 +9,12 @@
 namespace xrpl {
 
 /** The types of node objects. */
-// 24 bare usages across 12 files in different subsystems:
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum NodeObjectType : std::uint32_t {
-    HotUnknown = 0,
-    HotLedger = 1,
-    HotAccountNode = 3,
-    HotTransactionNode = 4,
-    HotDummy = 512  // an invalid or missing object
+enum class NodeObjectType : std::uint32_t {
+    Unknown = 0,
+    Ledger = 1,
+    AccountNode = 3,
+    TransactionNode = 4,
+    Dummy = 512  // an invalid or missing object
 };
 
 /** A simple object that the Ledger uses to store entries.
@@ -31,7 +29,7 @@ enum NodeObjectType : std::uint32_t {
 class NodeObject : public CountedObject<NodeObject>
 {
 public:
-    static constexpr std::size_t kEY_BYTES = 32;
+    static constexpr std::size_t kKEY_BYTES = 32;
 
 private:
     // This hack is used to make the constructor effectively private

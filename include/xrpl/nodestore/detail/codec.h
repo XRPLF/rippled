@@ -127,7 +127,7 @@ nodeobjectDecompress(void const* in, std::size_t inSize, BufferFactory&& bf)
             ostream os(out, result.second);
             write<std::uint32_t>(os, 0);
             write<std::uint32_t>(os, 0);
-            write<std::uint8_t>(os, HotUnknown);
+            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::Unknown));
             write<std::uint32_t>(os, static_cast<std::uint32_t>(HashPrefix::InnerNode));
             if (mask == 0)
                 Throw<std::runtime_error>("nodeobject codec v1: empty inner node");
@@ -173,7 +173,7 @@ nodeobjectDecompress(void const* in, std::size_t inSize, BufferFactory&& bf)
             ostream os(out, result.second);
             write<std::uint32_t>(os, 0);
             write<std::uint32_t>(os, 0);
-            write<std::uint8_t>(os, HotUnknown);
+            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::Unknown));
             write<std::uint32_t>(os, static_cast<std::uint32_t>(HashPrefix::InnerNode));
             write(os, is(512), 512);
             break;
@@ -307,7 +307,7 @@ filterInner(void* in, std::size_t inSize)
             ostream os(in, 9);
             write<std::uint32_t>(os, 0);
             write<std::uint32_t>(os, 0);
-            write<std::uint8_t>(os, HotUnknown);
+            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::Unknown));
         }
     }
 }

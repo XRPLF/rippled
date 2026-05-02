@@ -437,8 +437,8 @@ doWithdraw(
             view,
             sourceAcct,
             amount.asset(),
-            FreezeHandling::FhIgnoreFreeze,
-            AuthHandling::AhIgnoreAuth,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j) < amount)
     {
         // LCOV_EXCL_START

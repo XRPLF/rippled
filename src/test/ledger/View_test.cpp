@@ -786,7 +786,13 @@ class View_test : public beast::unit_test::Suite
             // Alice's USD balance should be zero if frozen.
             BEAST_EXPECT(
                 usd(0) ==
-                accountHolds(*env.closed(), alice, usd.currency, gw, FhZeroIfFrozen, env.journal));
+                accountHolds(
+                    *env.closed(),
+                    alice,
+                    usd.currency,
+                    gw,
+                    FreezeHandling::ZeroIfFrozen,
+                    env.journal));
 
             // Thaw gw and try again.
             env(fclear(gw, asfGlobalFreeze));
@@ -805,14 +811,26 @@ class View_test : public beast::unit_test::Suite
             // Bob's balance should be zero if frozen.
             BEAST_EXPECT(
                 usd(0) ==
-                accountHolds(*env.closed(), bob, usd.currency, gw, FhZeroIfFrozen, env.journal));
+                accountHolds(
+                    *env.closed(),
+                    bob,
+                    usd.currency,
+                    gw,
+                    FreezeHandling::ZeroIfFrozen,
+                    env.journal));
 
             // gw thaws bob's trust line.  bob gets his money back.
             env(trust(gw, usd(100), bob, tfClearFreeze));
             env.close();
             BEAST_EXPECT(
                 usd(50) ==
-                accountHolds(*env.closed(), bob, usd.currency, gw, FhZeroIfFrozen, env.journal));
+                accountHolds(
+                    *env.closed(),
+                    bob,
+                    usd.currency,
+                    gw,
+                    FreezeHandling::ZeroIfFrozen,
+                    env.journal));
         }
         {
             // accountHolds().
@@ -822,16 +840,33 @@ class View_test : public beast::unit_test::Suite
             // carol has no EUR.
             BEAST_EXPECT(
                 eur(0) ==
-                accountHolds(*env.closed(), carol, eur.currency, gw, FhZeroIfFrozen, env.journal));
+                accountHolds(
+                    *env.closed(),
+                    carol,
+                    eur.currency,
+                    gw,
+                    FreezeHandling::ZeroIfFrozen,
+                    env.journal));
 
             // But carol does have USD.
             BEAST_EXPECT(
                 usd(50) ==
-                accountHolds(*env.closed(), carol, usd.currency, gw, FhZeroIfFrozen, env.journal));
+                accountHolds(
+                    *env.closed(),
+                    carol,
+                    usd.currency,
+                    gw,
+                    FreezeHandling::ZeroIfFrozen,
+                    env.journal));
 
             // carol's XRP balance should be her holdings minus her reserve.
             auto const carolsXRP = accountHolds(
-                *env.closed(), carol, xrpCurrency(), xrpAccount(), FhZeroIfFrozen, env.journal);
+                *env.closed(),
+                carol,
+                xrpCurrency(),
+                xrpAccount(),
+                FreezeHandling::ZeroIfFrozen,
+                env.journal);
             // carol's XRP balance:              10000
             // base reserve:                      -200
             // 1 trust line times its reserve: 1 * -50
@@ -847,28 +882,36 @@ class View_test : public beast::unit_test::Suite
             // carol's XRP balance should now show as zero.
             BEAST_EXPECT(
                 XRP(0) ==
-                accountHolds(*env.closed(), carol, xrpCurrency(), gw, FhZeroIfFrozen, env.journal));
+                accountHolds(
+                    *env.closed(),
+                    carol,
+                    xrpCurrency(),
+                    gw,
+                    FreezeHandling::ZeroIfFrozen,
+                    env.journal));
         }
         {
             // accountFunds().
             // Gateways have whatever funds they claim to have.
-            auto const gwUSD =
-                accountFunds(*env.closed(), gw, usd(314159), FhZeroIfFrozen, env.journal);
+            auto const gwUSD = accountFunds(
+                *env.closed(), gw, usd(314159), FreezeHandling::ZeroIfFrozen, env.journal);
             BEAST_EXPECT(gwUSD == usd(314159));
 
             // carol has funds from the gateway.
-            auto carolsUSD =
-                accountFunds(*env.closed(), carol, usd(0), FhZeroIfFrozen, env.journal);
+            auto carolsUSD = accountFunds(
+                *env.closed(), carol, usd(0), FreezeHandling::ZeroIfFrozen, env.journal);
             BEAST_EXPECT(carolsUSD == usd(50));
 
             // If carol's funds are frozen she has no funds...
             env(fset(gw, asfGlobalFreeze));
             env.close();
-            carolsUSD = accountFunds(*env.closed(), carol, usd(0), FhZeroIfFrozen, env.journal);
+            carolsUSD = accountFunds(
+                *env.closed(), carol, usd(0), FreezeHandling::ZeroIfFrozen, env.journal);
             BEAST_EXPECT(carolsUSD == usd(0));
 
             // ... unless the query ignores the FROZEN state.
-            carolsUSD = accountFunds(*env.closed(), carol, usd(0), FhIgnoreFreeze, env.journal);
+            carolsUSD = accountFunds(
+                *env.closed(), carol, usd(0), FreezeHandling::IgnoreFreeze, env.journal);
             BEAST_EXPECT(carolsUSD == usd(50));
 
             // Just to be tidy, thaw gw.

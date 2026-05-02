@@ -21,12 +21,10 @@ namespace xrpl {
 //------------------------------------------------------------------------------
 
 /** Controls the treatment of frozen account balances */
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class) -- 103 usages across 23 files
-enum FreezeHandling { FhIgnoreFreeze, FhZeroIfFrozen };
+enum class FreezeHandling { IgnoreFreeze, ZeroIfFrozen };
 
 /** Controls the treatment of unauthorized MPT balances */
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class) -- 103 usages across 23 files
-enum AuthHandling { AhIgnoreAuth, AhZeroIfUnauthorized };
+enum class AuthHandling { IgnoreAuth, ZeroIfUnauthorized };
 
 /** Controls whether to include the account's full spendable balance */
 enum class SpendableHandling { SimpleBalance, FullBalance };

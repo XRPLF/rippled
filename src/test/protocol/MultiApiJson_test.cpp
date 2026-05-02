@@ -313,15 +313,15 @@ struct MultiApiJson_test : beast::unit_test::Suite
             testcase("isMember");
 
             // Well defined behaviour even if we have different types of members
-            BEAST_EXPECT(subject.isMember("foo") == decltype(subject)::None);
+            BEAST_EXPECT(subject.isMember("foo") == decltype(subject)::IsMemberResult::None);
 
             {
                 // All variants have element "One", none have element "Two"
                 MultiApiJson<1, 2> s1{};
                 s1.val[0] = makeJson("One", 12);
                 s1.val[1] = makeJson("One", 42);
-                BEAST_EXPECT(s1.isMember("One") == decltype(s1)::All);
-                BEAST_EXPECT(s1.isMember("Two") == decltype(s1)::None);
+                BEAST_EXPECT(s1.isMember("One") == decltype(s1)::IsMemberResult::All);
+                BEAST_EXPECT(s1.isMember("Two") == decltype(s1)::IsMemberResult::None);
             }
 
             {
@@ -329,8 +329,8 @@ struct MultiApiJson_test : beast::unit_test::Suite
                 MultiApiJson<1, 2> s2{};
                 s2.val[0] = makeJson("One", 12);
                 s2.val[1] = makeJson("Two", 42);
-                BEAST_EXPECT(s2.isMember("One") == decltype(s2)::Some);
-                BEAST_EXPECT(s2.isMember("Two") == decltype(s2)::Some);
+                BEAST_EXPECT(s2.isMember("One") == decltype(s2)::IsMemberResult::Some);
+                BEAST_EXPECT(s2.isMember("Two") == decltype(s2)::IsMemberResult::Some);
             }
 
             {
@@ -338,8 +338,8 @@ struct MultiApiJson_test : beast::unit_test::Suite
                 MultiApiJson<1, 3> s3{};
                 s3.val[0] = makeJson("One", 12);
                 s3.val[1] = makeJson("One", 42);
-                BEAST_EXPECT(s3.isMember("One") == decltype(s3)::Some);
-                BEAST_EXPECT(s3.isMember("Two") == decltype(s3)::None);
+                BEAST_EXPECT(s3.isMember("One") == decltype(s3)::IsMemberResult::Some);
+                BEAST_EXPECT(s3.isMember("Two") == decltype(s3)::IsMemberResult::None);
             }
         }
 

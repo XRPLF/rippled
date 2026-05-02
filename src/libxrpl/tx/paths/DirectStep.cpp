@@ -479,8 +479,8 @@ template <class TDerived>
 std::pair<IOUAmount, DebtDirection>
 DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
-    auto const srcOwed =
-        toAmount<IOUAmount>(accountHolds(sb, src_, currency_, dst_, FhIgnoreFreeze, j_));
+    auto const srcOwed = toAmount<IOUAmount>(
+        accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_));
 
     if (srcOwed.signum() > 0)
         return {srcOwed, DebtDirection::Redeems};
@@ -496,7 +496,7 @@ DirectStepI<TDerived>::debtDirection(ReadView const& sb, StrandDirection dir) co
     if (dir == StrandDirection::Forward && cache_)
         return cache_->srcDebtDir;
 
-    auto const srcOwed = accountHolds(sb, src_, currency_, dst_, FhIgnoreFreeze, j_);
+    auto const srcOwed = accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_);
     return srcOwed.signum() > 0 ? DebtDirection::Redeems : DebtDirection::Issues;
 }
 

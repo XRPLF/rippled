@@ -66,8 +66,7 @@ struct MultiApiJson
             a[key] = v;
     }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class) -- MultivarJson is scope enough
-    enum IsMemberResult : int { None = 0, Some, All };
+    enum class IsMemberResult : int { None = 0, Some, All };
 
     [[nodiscard]] IsMemberResult
     isMember(char const* key) const
@@ -80,8 +79,8 @@ struct MultiApiJson
         }
 
         if (count == 0)
-            return None;
-        return count < kSIZE ? Some : All;
+            return IsMemberResult::None;
+        return count < kSIZE ? IsMemberResult::Some : IsMemberResult::All;
     }
 
     static constexpr struct VisitorT final

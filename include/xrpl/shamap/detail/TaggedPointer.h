@@ -53,7 +53,7 @@ private:
 
     /** Deallocate memory and run destructors */
     void
-    destroyHashesAndChildren() const;
+    destroyHashesAndChildren();
 
     struct RawAllocateTag
     {

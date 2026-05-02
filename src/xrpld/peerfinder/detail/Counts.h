@@ -227,18 +227,22 @@ private:
     }
 
     // Adjusts counts based on the specified slot, in the direction indicated.
-    // Using ++/-- instead of += on std::size_t counters avoids UBSan
-    // unsigned-integer-overflow from implicit conversion of -1 to SIZE_MAX.
-    // A decrement on a zero counter is a real bug that UBSan should catch.
+    //
+    // IMPORTANT: All std::size_t counters MUST be adjusted via adjustCounter()
+    // and NEVER via `+= n` where n = static_cast<int>(dir).  When dir is
+    // Decrement, n == -1; adding -1 to a std::size_t implicitly converts -1 to
+    // SIZE_MAX, which UBSan flags as unsigned-integer-overflow and masks real
+    // underflow bugs (decrementing a counter already at zero).  Plain int
+    // counters (acceptCount_, attempts_, closingCount_) are safe with += n.
     void
     adjust(Slot const& s, CountAdjustment const dir)
     {
         int const n = static_cast<int>(dir);
         if (s.fixed())
-            fixed_ += n;
+            adjustCounter(fixed_, dir);
 
         if (s.reserved())
-            reserved_ += n;
+            adjustCounter(reserved_, dir);
 
         switch (s.state())
         {
@@ -258,19 +262,19 @@ private:
 
             case Slot::State::Active:
                 if (s.fixed())
-                    fixed_active_ += n;
+                    adjustCounter(fixed_active_, dir);
                 if (!s.fixed() && !s.reserved())
                 {
                     if (s.inbound())
                     {
-                        in_active_ += n;
+                        adjustCounter(in_active_, dir);
                     }
                     else
                     {
-                        out_active_ += n;
+                        adjustCounter(out_active_, dir);
                     }
                 }
-                active_ += n;
+                adjustCounter(active_, dir);
                 break;
 
             case Slot::State::Closing:

@@ -1522,7 +1522,7 @@ r.ripple.com:51235
         };
 
         // Failures
-        BEAST_EXPECT(!testUnknown("kNONE"));
+        BEAST_EXPECT(!testUnknown("none"));
         BEAST_EXPECT(!testUnknown("0.5"));
         BEAST_EXPECT(!testUnknown("180 seconds"));
         BEAST_EXPECT(!testUnknown("9 minutes"));
@@ -1556,7 +1556,7 @@ r.ripple.com:51235
         };
 
         // Failures
-        BEAST_EXPECT(!testDiverged("kNONE"));
+        BEAST_EXPECT(!testDiverged("none"));
         BEAST_EXPECT(!testDiverged("0.5"));
         BEAST_EXPECT(!testDiverged("180 seconds"));
         BEAST_EXPECT(!testDiverged("9 minutes"));

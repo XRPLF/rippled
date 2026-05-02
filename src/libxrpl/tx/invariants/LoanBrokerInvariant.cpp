@@ -187,8 +187,8 @@ ValidLoanBroker::finalize(
             view,
             after->at(sfAccount),
             vaultAsset,
-            FreezeHandling::FhIgnoreFreeze,
-            AuthHandling::AhIgnoreAuth,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j);
         if (after->at(sfCoverAvailable) < pseudoBalance)
         {

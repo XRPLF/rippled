@@ -81,7 +81,7 @@ public:
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, 2}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
             // invalid values
-            std::vector<AnyValue> const invalidDocument = {kNONE_TAG, 1.2, -1, "", "kNONE", "1.2"};
+            std::vector<AnyValue> const invalidDocument = {kNONE_TAG, 1.2, -1, "", "none", "1.2"};
             for (auto const& v : invalidDocument)
             {
                 ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, v}}});
@@ -112,7 +112,7 @@ public:
 
             // invalid trim value
             std::vector<AnyValue> const invalidTrim = {
-                kNONE_TAG, 0, 26, -1, 1.2, "", "kNONE", "1.2"};
+                kNONE_TAG, 0, 26, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTrim)
             {
                 ret =
@@ -121,7 +121,7 @@ public:
             }
 
             // invalid time threshold value
-            std::vector<AnyValue> const invalidTime = {kNONE_TAG, -1, 1.2, "", "kNONE", "1.2"};
+            std::vector<AnyValue> const invalidTime = {kNONE_TAG, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTime)
             {
                 ret = Oracle::aggregatePrice(

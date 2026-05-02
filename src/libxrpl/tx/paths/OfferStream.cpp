@@ -266,8 +266,8 @@ TOfferStreamBase<TIn, TOut>::step()
             offer_.owner(),
             amount.out,
             offer_.assetOut(),
-            FhZeroIfFrozen,
-            AhZeroIfUnauthorized,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             j_);
 
         // Check for unfunded offer
@@ -281,8 +281,8 @@ TOfferStreamBase<TIn, TOut>::step()
                 offer_.owner(),
                 amount.out,
                 offer_.assetOut(),
-                FhZeroIfFrozen,
-                AhZeroIfUnauthorized,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
                 j_);
 
             if (originalFunds == *ownerFunds_)
@@ -306,8 +306,8 @@ TOfferStreamBase<TIn, TOut>::step()
                 offer_.owner(),
                 amount.out,
                 offer_.assetOut(),
-                FhZeroIfFrozen,
-                AhZeroIfUnauthorized,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
                 j_);
 
             if (originalFunds == *ownerFunds_)

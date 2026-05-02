@@ -138,8 +138,12 @@ preclaimHelper<Issue>(
     // the available balance of a trustline is prone to new changes (eg.
     // XLS-34). So we must use `accountHolds`.
     if (accountHolds(
-            ctx.view, holder, clawAmount.get<Issue>().currency, issuer, FhIgnoreFreeze, ctx.j) <=
-        beast::kZERO)
+            ctx.view,
+            holder,
+            clawAmount.get<Issue>().currency,
+            issuer,
+            FreezeHandling::IgnoreFreeze,
+            ctx.j) <= beast::kZERO)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -169,8 +173,12 @@ preclaimHelper<MPTIssue>(
         return tecOBJECT_NOT_FOUND;
 
     if (accountHolds(
-            ctx.view, holder, clawAmount.get<MPTIssue>(), FhIgnoreFreeze, AhIgnoreAuth, ctx.j) <=
-        beast::kZERO)
+            ctx.view,
+            holder,
+            clawAmount.get<MPTIssue>(),
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            ctx.j) <= beast::kZERO)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -229,7 +237,7 @@ applyHelper<Issue>(ApplyContext& ctx)
         holder,
         clawAmount.get<Issue>().currency,
         clawAmount.getIssuer(),
-        FhIgnoreFreeze,
+        FreezeHandling::IgnoreFreeze,
         ctx.journal);
 
     return directSendNoFee(
@@ -246,7 +254,12 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
 
     // Get the spendable balance. Must use `accountHolds`.
     STAmount const spendableAmount = accountHolds(
-        ctx.view(), holder, clawAmount.get<MPTIssue>(), FhIgnoreFreeze, AhIgnoreAuth, ctx.journal);
+        ctx.view(),
+        holder,
+        clawAmount.get<MPTIssue>(),
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        ctx.journal);
 
     return directSendNoFee(
         ctx.view(),

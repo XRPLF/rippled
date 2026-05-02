@@ -192,8 +192,13 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     // Allow unfunded MPT for issuer (OutstandingAmount >= MaximumAmount)
     if ((!saTakerGets.holds<MPTIssue>() || saTakerGets.getIssuer() != id) &&
-        accountFunds(ctx.view, id, saTakerGets, FhZeroIfFrozen, AhZeroIfUnauthorized, viewJ) <=
-            beast::kZERO)
+        accountFunds(
+            ctx.view,
+            id,
+            saTakerGets,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
+            viewJ) <= beast::kZERO)
     {
         JLOG(ctx.j.debug()) << "delay: Offers must be at least partially funded.";
         return tecUNFUNDED_OFFER;
@@ -337,8 +342,13 @@ OfferCreate::flowCross(
         // We check this in preclaim, but when selling XRP charged fees can
         // cause a user's available balance to go to 0 (by causing it to dip
         // below the reserve) so we check this case again.
-        STAmount const inStartBalance =
-            accountFunds(psb, account_, takerAmount.in, FhZeroIfFrozen, AhZeroIfUnauthorized, j_);
+        STAmount const inStartBalance = accountFunds(
+            psb,
+            account_,
+            takerAmount.in,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
+            j_);
         // Allow unfunded MPT issuer
         auto const disallowUnfunded =
             !inStartBalance.holds<MPTIssue>() || inStartBalance.getIssuer() != account_;
@@ -450,7 +460,12 @@ OfferCreate::flowCross(
         if (isTesSuccess(result.result()))
         {
             STAmount const takerInBalance = accountFunds(
-                psb, account_, takerAmount.in, FhZeroIfFrozen, AhZeroIfUnauthorized, j_);
+                psb,
+                account_,
+                takerAmount.in,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
+                j_);
 
             if (disallowUnfunded && takerInBalance <= beast::kZERO)
             {
@@ -676,7 +691,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             }
             if (!saTakerGets || !saTakerPays)
             {
-                JLOG(j_.debug()) << "Offer rounded to beast::kZERO";
+                JLOG(j_.debug()) << "Offer rounded to zero";
                 return {result, true};
             }
 

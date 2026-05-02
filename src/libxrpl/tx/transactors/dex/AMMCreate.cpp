@@ -159,8 +159,8 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
                    ctx.view,
                    accountID,
                    amount,
-                   FreezeHandling::FhZeroIfFrozen,
-                   AuthHandling::AhZeroIfUnauthorized,
+                   FreezeHandling::ZeroIfFrozen,
+                   AuthHandling::ZeroIfUnauthorized,
                    ctx.j) < amount;
     };
 

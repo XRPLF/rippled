@@ -62,8 +62,8 @@ AcceptedLedgerTx::AcceptedLedgerTx(
                 *ledger,
                 account,
                 amount,
-                FhIgnoreFreeze,
-                AhIgnoreAuth,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 beast::Journal{beast::Journal::getNullSink()});
             json_[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }

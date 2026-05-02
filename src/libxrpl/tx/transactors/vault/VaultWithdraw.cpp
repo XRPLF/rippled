@@ -222,12 +222,8 @@ VaultWithdraw::doApply()
     }
 
     if (accountHolds(
-            view(),
-            account_,
-            share,
-            FreezeHandling::FhZeroIfFrozen,
-            AuthHandling::AhIgnoreAuth,
-            j_) < sharesRedeemed)
+            view(), account_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <
+        sharesRedeemed)
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
         return tecINSUFFICIENT_FUNDS;

@@ -835,10 +835,17 @@ ValidClawback::finalize(
             AccountID const& holder = amount.getIssuer();
             STAmount const holderBalance = amount.asset().visit(
                 [&](Issue const& issue) {
-                    return accountHolds(view, holder, issue.currency, issuer, FhIgnoreFreeze, j);
+                    return accountHolds(
+                        view, holder, issue.currency, issuer, FreezeHandling::IgnoreFreeze, j);
                 },
                 [&](MPTIssue const& issue) {
-                    return accountHolds(view, issuer, issue, FhIgnoreFreeze, AhIgnoreAuth, j);
+                    return accountHolds(
+                        view,
+                        issuer,
+                        issue,
+                        FreezeHandling::IgnoreFreeze,
+                        AuthHandling::IgnoreAuth,
+                        j);
                 });
 
             if (holderBalance.signum() < 0)

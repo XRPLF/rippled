@@ -802,8 +802,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 sb,
                 issuer,
                 assetIn,  // STAmount{0}, but the default is not used
-                FreezeHandling::FhIgnoreFreeze,
-                AuthHandling::AhIgnoreAuth,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 j_));
             if (stpAmt.in > available)
             {

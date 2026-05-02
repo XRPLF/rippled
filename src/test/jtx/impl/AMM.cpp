@@ -232,8 +232,8 @@ AMM::balances(Asset const& asset1, Asset const& asset2, std::optional<AccountID>
             ammAccountID,
             asset1,
             asset2,
-            FreezeHandling::FhIgnoreFreeze,
-            AuthHandling::AhIgnoreAuth,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             env_.journal);
         auto const lptAMMBalance = account
             ? ammLPHolds(*env_.current(), *amm, *account, env_.journal)
@@ -262,11 +262,7 @@ AMM::getLPTokensBalance(std::optional<AccountID> const& account) const
     if (account)
     {
         return accountHolds(
-                   *env_.current(),
-                   *account,
-                   lptIssue_,
-                   FreezeHandling::FhZeroIfFrozen,
-                   env_.journal)
+                   *env_.current(), *account, lptIssue_, FreezeHandling::ZeroIfFrozen, env_.journal)
             .iou();
     }
     if (auto const amm = env_.current()->read(keylet::amm(asset1_.asset(), asset2_.asset())))

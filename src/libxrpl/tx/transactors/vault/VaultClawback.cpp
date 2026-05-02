@@ -140,8 +140,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                 ctx.view,
                 holder,
                 share,
-                FreezeHandling::FhIgnoreFreeze,
-                AuthHandling::AhIgnoreAuth,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 ctx.j);
 
             // The VaultOwner must burn all shares
@@ -250,7 +250,7 @@ VaultClawback::assetsToClawback(
     if (!ctx_.view().rules().enabled(fixSecurity3_1_3) && clawbackAmount == beast::kZERO)
     {
         auto const sharesDestroyed = accountHolds(
-            view(), holder, share, FreezeHandling::FhIgnoreFreeze, AuthHandling::AhIgnoreAuth, j_);
+            view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
         auto const maybeAssets = sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
         if (!maybeAssets)
             return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
@@ -266,12 +266,7 @@ VaultClawback::assetsToClawback(
         if (clawbackAmount == beast::kZERO)
         {
             sharesDestroyed = accountHolds(
-                view(),
-                holder,
-                share,
-                FreezeHandling::FhIgnoreFreeze,
-                AuthHandling::AhIgnoreAuth,
-                j_);
+                view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
             auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
             if (!maybeAssets)
@@ -376,7 +371,7 @@ VaultClawback::doApply()
     if (account_ == vault->at(sfOwner) && amount.asset() == share)
     {
         sharesDestroyed = accountHolds(
-            view(), holder, share, FreezeHandling::FhIgnoreFreeze, AuthHandling::AhIgnoreAuth, j_);
+            view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
     }
     else  // The Issuer is clawbacking vault assets
     {
@@ -444,8 +439,8 @@ VaultClawback::doApply()
                 view(),
                 vaultAccount,
                 assetsRecovered.asset(),
-                FreezeHandling::FhIgnoreFreeze,
-                AuthHandling::AhIgnoreAuth,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 j_) < beast::kZERO)
         {
             // LCOV_EXCL_START

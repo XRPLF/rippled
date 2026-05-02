@@ -77,7 +77,7 @@ ManagerImp::makeBackend(
     }
 
     return factory->createInstance(
-        NodeObject::kEY_BYTES, parameters, burstSize, scheduler, journal);
+        NodeObject::kKEY_BYTES, parameters, burstSize, scheduler, journal);
 }
 
 std::unique_ptr<Database>

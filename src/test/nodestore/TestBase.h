@@ -67,16 +67,16 @@ public:
                 switch (randInt(rng, 3))
                 {
                     case 0:
-                        return HotLedger;
+                        return NodeObjectType::Ledger;
                     case 1:
-                        return HotAccountNode;
+                        return NodeObjectType::AccountNode;
                     case 2:
-                        return HotTransactionNode;
+                        return NodeObjectType::TransactionNode;
                     case 3:
-                        return HotUnknown;
+                        return NodeObjectType::Unknown;
                     default:
                         // will never happen, but make static analysis tool happy.
-                        return HotUnknown;
+                        return NodeObjectType::Unknown;
                 }
             }();
 

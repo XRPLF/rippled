@@ -148,8 +148,8 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
             ctx.view,
             pseudoAccountID,
             vaultAsset,
-            FreezeHandling::FhZeroIfFrozen,
-            AuthHandling::AhZeroIfUnauthorized,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j) < amount)
         return tecINSUFFICIENT_FUNDS;
 

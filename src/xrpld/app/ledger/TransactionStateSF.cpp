@@ -23,7 +23,8 @@ TransactionStateSF::gotNode(
 {
     XRPL_ASSERT(
         type != SHAMapNodeType::TnTransactionNm, "xrpl::TransactionStateSF::gotNode : valid input");
-    db_.store(HotTransactionNode, std::move(nodeData), nodeHash.asUint256(), ledgerSeq);
+    db_.store(
+        NodeObjectType::TransactionNode, std::move(nodeData), nodeHash.asUint256(), ledgerSeq);
 }
 
 std::optional<Blob>

@@ -3268,8 +3268,8 @@ NetworkOPsImp::transJson(
                 *ledger,
                 account,
                 amount,
-                FhIgnoreFreeze,
-                AhIgnoreAuth,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 registry_.get().getJournal("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
@@ -3472,7 +3472,7 @@ NetworkOPsImp::pubAccountTransaction(
             jvObj.set(jss::account_history_boundary, true);
 
         XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::None,
+            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::IsMemberResult::None,
             "xrpl::NetworkOPsImp::pubAccountTransaction : "
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
@@ -3551,7 +3551,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
         }
 
         XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::None,
+            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::IsMemberResult::None,
             "xrpl::NetworkOPs::pubProposedAccountTransaction : "
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
@@ -4400,8 +4400,8 @@ NetworkOPsImp::getBookPage(
                             view,
                             uOfferOwnerID,
                             book.out,
-                            FhZeroIfFrozen,
-                            AhZeroIfUnauthorized,
+                            FreezeHandling::ZeroIfFrozen,
+                            AuthHandling::ZeroIfUnauthorized,
                             viewJ);
 
                         if (saOwnerFunds < beast::kZERO)

@@ -125,8 +125,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             vaultAsset,
-            FreezeHandling::FhZeroIfFrozen,
-            AuthHandling::AhZeroIfUnauthorized,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j,
             SpendableHandling::FullBalance) < assets)
         return tecINSUFFICIENT_FUNDS;
@@ -257,8 +257,8 @@ VaultDeposit::doApply()
             view(),
             account_,
             assetsDeposited.asset(),
-            FreezeHandling::FhIgnoreFreeze,
-            AuthHandling::AhIgnoreAuth,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j_) < beast::kZERO)
     {
         // LCOV_EXCL_START

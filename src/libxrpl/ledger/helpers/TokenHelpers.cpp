@@ -165,7 +165,7 @@ getLineIfUsable(
         return nullptr;
     }
 
-    if (zeroIfFrozen == FhZeroIfFrozen)
+    if (zeroIfFrozen == FreezeHandling::ZeroIfFrozen)
     {
         if (isFrozen(view, account, currency, issuer) ||
             isDeepFrozen(view, account, currency, issuer))
@@ -317,7 +317,7 @@ accountHolds(
     {
         amount.clear(mptIssue);
     }
-    else if (zeroIfFrozen == FhZeroIfFrozen && isFrozen(view, account, mptIssue))
+    else if (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && isFrozen(view, account, mptIssue))
     {
         amount.clear(mptIssue);
     }
@@ -327,14 +327,14 @@ accountHolds(
 
         // Only if auth check is needed, as it needs to do an additional read
         // operation. Note featureSingleAssetVault will affect error codes.
-        if (zeroIfUnauthorized == AhZeroIfUnauthorized &&
+        if (zeroIfUnauthorized == AuthHandling::ZeroIfUnauthorized &&
             view.rules().enabled(featureSingleAssetVault))
         {
             if (auto const err = requireAuth(view, mptIssue, account, AuthType::StrongAuth);
                 !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
-        else if (zeroIfUnauthorized == AhZeroIfUnauthorized)
+        else if (zeroIfUnauthorized == AuthHandling::ZeroIfUnauthorized)
         {
             auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
 

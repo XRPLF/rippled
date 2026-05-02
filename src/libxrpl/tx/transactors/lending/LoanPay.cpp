@@ -242,8 +242,8 @@ LoanPay::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             asset,
-            FhZeroIfFrozen,
-            AhZeroIfUnauthorized,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j,
             SpendableHandling::FullBalance);
         balance < amount)
@@ -449,8 +449,8 @@ LoanPay::doApply()
             view,
             vaultPseudoAccount,
             asset,
-            FreezeHandling::FhIgnoreFreeze,
-            AuthHandling::AhIgnoreAuth,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j_);
 
         XRPL_ASSERT_PARTS(
@@ -510,15 +510,21 @@ LoanPay::doApply()
 
 #if !NDEBUG
     auto const accountBalanceBefore = accountHolds(
-        view, account_, asset, FhIgnoreFreeze, AhIgnoreAuth, j_, SpendableHandling::FullBalance);
+        view,
+        account_,
+        asset,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j_,
+        SpendableHandling::FullBalance);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
               vaultPseudoAccount,
               asset,
-              FhIgnoreFreeze,
-              AhIgnoreAuth,
+              FreezeHandling::IgnoreFreeze,
+              AuthHandling::IgnoreAuth,
               j_,
               SpendableHandling::FullBalance);
     auto const brokerBalanceBefore = account_ == brokerPayee ? STAmount{asset, 0}
@@ -526,8 +532,8 @@ LoanPay::doApply()
                                                                    view,
                                                                    brokerPayee,
                                                                    asset,
-                                                                   FhIgnoreFreeze,
-                                                                   AhIgnoreAuth,
+                                                                   FreezeHandling::IgnoreFreeze,
+                                                                   AuthHandling::IgnoreAuth,
                                                                    j_,
                                                                    SpendableHandling::FullBalance);
 #endif
@@ -571,8 +577,8 @@ LoanPay::doApply()
         view,
         vaultPseudoAccount,
         asset,
-        FreezeHandling::FhIgnoreFreeze,
-        AuthHandling::AhIgnoreAuth,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         j_);
     XRPL_ASSERT_PARTS(
         assetsAvailableAfter == pseudoAccountBalanceAfter,
@@ -580,15 +586,21 @@ LoanPay::doApply()
         "vault pseudo balance agrees after");
 
     auto const accountBalanceAfter = accountHolds(
-        view, account_, asset, FhIgnoreFreeze, AhIgnoreAuth, j_, SpendableHandling::FullBalance);
+        view,
+        account_,
+        asset,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j_,
+        SpendableHandling::FullBalance);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
               vaultPseudoAccount,
               asset,
-              FhIgnoreFreeze,
-              AhIgnoreAuth,
+              FreezeHandling::IgnoreFreeze,
+              AuthHandling::IgnoreAuth,
               j_,
               SpendableHandling::FullBalance);
     auto const brokerBalanceAfter = account_ == brokerPayee ? STAmount{asset, 0}
@@ -596,8 +608,8 @@ LoanPay::doApply()
                                                                   view,
                                                                   brokerPayee,
                                                                   asset,
-                                                                  FhIgnoreFreeze,
-                                                                  AhIgnoreAuth,
+                                                                  FreezeHandling::IgnoreFreeze,
+                                                                  AuthHandling::IgnoreAuth,
                                                                   j_,
                                                                   SpendableHandling::FullBalance);
 
