@@ -13,8 +13,6 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include <unistd.h>
-
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
