@@ -117,7 +117,7 @@ public:
  * @brief Builder for PermissionedDomain ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class PermissionedDomainBuilder : public LedgerEntryBuilderBase<PermissionedDomainBuilder>

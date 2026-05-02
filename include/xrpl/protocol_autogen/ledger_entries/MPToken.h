@@ -153,7 +153,7 @@ public:
  * @brief Builder for MPToken ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class MPTokenBuilder : public LedgerEntryBuilderBase<MPTokenBuilder>

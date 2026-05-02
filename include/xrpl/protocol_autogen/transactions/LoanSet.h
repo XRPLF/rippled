@@ -462,7 +462,7 @@ public:
  * @brief Builder for LoanSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class LoanSetBuilder : public TransactionBuilderBase<LoanSetBuilder>

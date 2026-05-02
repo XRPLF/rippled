@@ -74,7 +74,7 @@ public:
  * @brief Builder for DelegateSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class DelegateSetBuilder : public TransactionBuilderBase<DelegateSetBuilder>
