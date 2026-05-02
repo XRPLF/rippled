@@ -98,7 +98,7 @@ LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
 
     \sa keylet::signers
  */
-// All fields are soeREQUIRED because there is always a SignerEntries.
+// All fields are SoeRequired because there is always a SignerEntries.
 // If there are no SignerEntries the node is deleted.
 LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, ({
     {sfOwner,                SoeOptional},

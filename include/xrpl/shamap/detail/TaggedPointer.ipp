@@ -200,6 +200,7 @@ TaggedPointer::iterNonEmptyChildIndexes(std::uint16_t isBranch, F&& f) const
 }
 
 inline void
+// NOLINTNEXTLINE(readability-make-member-function-const)
 TaggedPointer::destroyHashesAndChildren()
 {
     if (tp_ == 0u)

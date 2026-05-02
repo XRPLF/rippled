@@ -53,7 +53,7 @@ private:
 
     /** Deallocate memory and run destructors */
     void
-    destroyHashesAndChildren();  // NOLINT(readability-make-member-function-const)
+    destroyHashesAndChildren();
 
     struct RawAllocateTag
     {

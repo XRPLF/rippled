@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 
 namespace xrpl {
@@ -81,8 +80,6 @@ private:
     unsigned int entry_ = 0;
     uint256 index_;
     std::optional<value_type> mutable cache_;
-
-    static beast::Journal j;
 };
 
 }  // namespace xrpl

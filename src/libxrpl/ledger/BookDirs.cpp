@@ -1,6 +1,5 @@
 #include <xrpl/ledger/BookDirs.h>
 
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
@@ -49,8 +48,6 @@ BookDirs::end() const -> BookDirs::const_iterator
 {
     return BookDirs::const_iterator(*view_, root_, key_);
 }
-
-beast::Journal BookDirs::const_iterator::j = beast::Journal{beast::Journal::getNullSink()};
 
 bool
 BookDirs::const_iterator::operator==(BookDirs::const_iterator const& other) const

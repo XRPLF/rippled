@@ -250,7 +250,7 @@ protected:
         // Set the signing public key
         object_.setFieldVL(sfSigningPubKey, publicKey.slice());
 
-        // Build the signing data: HashPrefix::txSign + serialized object
+        // Build the signing data: HashPrefix::TxSign + serialized object
         // (without signing fields)
         Serializer s;
         s.add32(HashPrefix::TxSign);

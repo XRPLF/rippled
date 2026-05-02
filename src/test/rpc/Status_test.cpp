@@ -163,7 +163,7 @@ private:
         expectFill("temBAD_AMOUNT", temBAD_AMOUNT, {}, "temBAD_AMOUNT: Malformed: Bad amount.");
 
         expectFill(
-            "rpcBAD_SYNTAX",
+            "RpcBadSyntax",
             RpcBadSyntax,
             {"An error.", "Another error."},
             "badSyntax: Syntax error.");
