@@ -14,9 +14,8 @@ package/
     xrpld.service       systemd unit file (used by both RPM and DEB)
     xrpld.sysusers      sysusers.d config (used by both RPM and DEB)
     xrpld.tmpfiles      tmpfiles.d config (used by both RPM and DEB)
-    xrpld.logrotate     logrotate config (installed to /opt/xrpld/bin/, user activates)
-    update-xrpld.sh     auto-update script (installed to /opt/xrpld/bin/)
-    update-xrpld-cron   cron entry for auto-update (installed to /opt/xrpld/bin/)
+    xrpld.logrotate     logrotate config (installed to /etc/logrotate.d/xrpld)
+    update-xrpld.sh     auto-update script (installed to /usr/libexec/xrpld/, run by update-xrpld.timer)
   test/
     smoketest.sh            Package install smoke test
     check_install_paths.sh  Verify install paths and compat symlinks
@@ -78,10 +77,8 @@ PKG_RELEASE=1
 docker run --rm \
   -v "$(pwd):/src" \
   -w /src \
-  -e PKG_VERSION="$VERSION" \
-  -e PKG_RELEASE="$PKG_RELEASE" \
   "$IMAGE" \
-  ./package/build_pkg.sh
+  ./package/build_pkg.sh --pkg-version "$VERSION" --pkg-release "$PKG_RELEASE"
 
 # Output:
 #   build/debbuild/*.deb         (DEB + dbgsym .ddeb)
@@ -96,7 +93,6 @@ needed, but the host toolchain replaces the pinned CI image:
 
 ```bash
 cmake \
-  -DCMAKE_INSTALL_PREFIX=/opt/xrpld \
   -Dxrpld=ON \
   -Dxrpld_version=2.4.0-local \
   -Dtests=OFF \
@@ -107,23 +103,32 @@ cmake --build . --target package       # deb on Debian/Ubuntu, rpm on RHEL
 
 The `cmake/XrplPackaging.cmake` module defines the target only if at least one
 of `rpmbuild` / `dpkg-buildpackage` is present; `build_pkg.sh` then infers the
-package format from the host's package manager. `CMAKE_INSTALL_PREFIX` must
-be `/opt/xrpld`; if it is not, both targets are skipped with a `STATUS`
-message.
+package format from the host's package manager. The packaging script installs
+to FHS-standard paths (`/usr/bin`, `/etc/xrpld`, etc.) regardless of
+`CMAKE_INSTALL_PREFIX`.
 
 ## How `build_pkg.sh` works
 
-`build_pkg.sh` takes no arguments — it is configured entirely via environment
-variables (all optional):
+`build_pkg.sh` accepts long-form flags, each of which can also be set via an
+environment variable. Flags override env vars; env vars override the built-in
+defaults. Run `./package/build_pkg.sh --help` for the same table:
 
-| Var                 | Default                       | Purpose                             |
-| ------------------- | ----------------------------- | ----------------------------------- |
-| `SRC_DIR`           | `$PWD`                        | repo root                           |
-| `BUILD_DIR`         | `$PWD/build`                  | directory holding pre-built `xrpld` |
-| `PKG_VERSION`       | parsed from `xrpld --version` | version string, e.g. `3.2.0-b1`     |
-| `PKG_RELEASE`       | `1`                           | package release number              |
-| `PKG_TYPE`          | inferred from package manager | `deb` or `rpm`                      |
-| `SOURCE_DATE_EPOCH` | latest git commit ctime       | reproducibility timestamp           |
+| Flag                       | Env var             | Default                       | Purpose                             |
+| -------------------------- | ------------------- | ----------------------------- | ----------------------------------- |
+| `--src-dir DIR`            | `SRC_DIR`           | `$PWD`                        | repo root                           |
+| `--build-dir DIR`          | `BUILD_DIR`         | `$PWD/build`                  | directory holding pre-built `xrpld` |
+| `--pkg-version STR`        | `PKG_VERSION`       | parsed from `xrpld --version` | version string, e.g. `3.2.0-b1`     |
+| `--pkg-release N`          | `PKG_RELEASE`       | `1`                           | package release number              |
+| `--pkg-type TYPE`          | `PKG_TYPE`          | inferred from package manager | `deb` or `rpm`                      |
+| `--source-date-epoch SECS` | `SOURCE_DATE_EPOCH` | latest git commit ctime       | reproducibility timestamp           |
+
+For example, on a host that has both package managers installed:
+`./package/build_pkg.sh --pkg-type rpm`.
+
+Flags are for explicit invocation; environment variables are intended for
+CMake/systemd/CI integration. The CI workflow and the CMake `package` target
+both invoke `build_pkg.sh` with no flags, configuring it entirely via env
+(see `cmake/XrplPackaging.cmake`).
 
 It resolves `SRC_DIR` and `BUILD_DIR` to absolute paths, then calls
 `stage_common()` to copy the binary, config files, and shared support files

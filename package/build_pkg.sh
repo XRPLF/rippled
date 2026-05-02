@@ -3,20 +3,56 @@ set -euo pipefail
 
 # Build an RPM or Debian package from a pre-built xrpld binary.
 #
-# Configuration is read entirely from environment variables:
-#   SRC_DIR           : repo root (default: $PWD)
-#   BUILD_DIR         : directory containing pre-built xrpld (default: $PWD/build)
-#   PKG_VERSION       : version string, e.g. 3.2.0-b1 (default: parsed from xrpld --version)
-#   PKG_RELEASE       : package release number (default: 1)
-#   PKG_TYPE          : deb | rpm (default: inferred from package manager)
-#   SOURCE_DATE_EPOCH : reproducibility timestamp (default: latest git commit ctime)
+# Flags override env vars; env vars override defaults. Env vars are intended
+# for CMake/systemd/CI integration; flags are for explicit invocation.
 
-SRC_DIR="$(cd "${SRC_DIR:-${PWD}}" && pwd)"
-BUILD_DIR="$(cd "${BUILD_DIR:-${PWD}/build}" && pwd)"
-VERSION="${PKG_VERSION:-$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3}')}"
-PKG_RELEASE="${PKG_RELEASE:-1}"
+usage() {
+    cat <<'EOF'
+Usage: build_pkg.sh [options]
 
-if [[ -z "${PKG_TYPE:-}" ]]; then
+Options (each can also be set via the env var shown):
+  --src-dir DIR             repo root                     [SRC_DIR;           default: $PWD]
+  --build-dir DIR           directory holding xrpld       [BUILD_DIR;         default: $PWD/build]
+  --pkg-version STR         version, e.g. 3.2.0-b1        [PKG_VERSION;       default: parsed from xrpld --version]
+  --pkg-release N           package release number        [PKG_RELEASE;       default: 1]
+  --pkg-type TYPE           deb or rpm                    [PKG_TYPE;          default: inferred from package manager]
+  --source-date-epoch SECS  reproducibility timestamp     [SOURCE_DATE_EPOCH; default: latest git commit ctime]
+  -h, --help                show this help and exit
+EOF
+}
+
+src_dir="${SRC_DIR:-}"
+build_dir="${BUILD_DIR:-}"
+pkg_version="${PKG_VERSION:-}"
+pkg_release="${PKG_RELEASE:-}"
+pkg_type="${PKG_TYPE:-}"
+source_date_epoch="${SOURCE_DATE_EPOCH:-}"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --src-dir)            src_dir="$2";           shift 2 ;;
+        --build-dir)          build_dir="$2";         shift 2 ;;
+        --pkg-version)        pkg_version="$2";       shift 2 ;;
+        --pkg-release)        pkg_release="$2";       shift 2 ;;
+        --pkg-type)           pkg_type="$2";          shift 2 ;;
+        --source-date-epoch)  source_date_epoch="$2"; shift 2 ;;
+        -h|--help)            usage; exit 0 ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+SRC_DIR="$(cd "${src_dir:-${PWD}}" && pwd)"
+BUILD_DIR="$(cd "${build_dir:-${PWD}/build}" && pwd)"
+VERSION="${pkg_version:-$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3}')}"
+PKG_RELEASE="${pkg_release:-1}"
+PKG_TYPE="${pkg_type}"
+SOURCE_DATE_EPOCH="${source_date_epoch}"
+
+if [[ -z "${PKG_TYPE}" ]]; then
     if command -v apt-get >/dev/null 2>&1; then
         PKG_TYPE=deb
     elif command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
@@ -27,7 +63,7 @@ if [[ -z "${PKG_TYPE:-}" ]]; then
     fi
 fi
 
-if [[ -z "${SOURCE_DATE_EPOCH:-}" ]]; then
+if [[ -z "${SOURCE_DATE_EPOCH}" ]]; then
     if git -C "$SRC_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         SOURCE_DATE_EPOCH="$(git -C "$SRC_DIR" log -1 --format=%ct)"
     else
@@ -42,6 +78,16 @@ CHANGELOG_DATE="$(date -u -R -d "@$SOURCE_DATE_EPOCH")"
 VER_BASE="${VERSION%%-*}"
 VER_SUFFIX="${VERSION#*-}"
 [[ "${VER_SUFFIX}" == "${VERSION}" ]] && VER_SUFFIX=""
+
+# Reject multi-segment suffixes (e.g. "beta-1", "rc1-15-gabc123"). The RPM
+# Release field forbids '-', and the convention here is single-token suffixes
+# like b1 or rc2. Fail early with a clear message rather than letting either
+# rpmbuild blow up or silently mangling dashes into dots.
+if [[ "${VER_SUFFIX}" == *-* ]]; then
+    echo "build_pkg.sh: multi-segment pre-release in VERSION='${VERSION}' (suffix '${VER_SUFFIX}')." >&2
+    echo "Use single-token suffixes like 3.2.0-b1 or 3.2.0-rc2." >&2
+    exit 1
+fi
 
 SHARED="${SRC_DIR}/package/shared"
 DEBIAN_DIR="${SRC_DIR}/package/debian"
@@ -62,7 +108,6 @@ stage_common() {
     cp "${SHARED}/xrpld.tmpfiles"                 "${dest}/xrpld.tmpfiles"
     cp "${SHARED}/xrpld.logrotate"                "${dest}/xrpld.logrotate"
     cp "${SHARED}/update-xrpld.sh"                "${dest}/update-xrpld.sh"
-    cp "${SHARED}/update-xrpld-cron"              "${dest}/update-xrpld-cron"
     cp "${SHARED}/update-xrpld.service"           "${dest}/update-xrpld.service"
     cp "${SHARED}/update-xrpld.timer"             "${dest}/update-xrpld.timer"
     cp "${SHARED}/50-xrpld.preset"                "${dest}/50-xrpld.preset"

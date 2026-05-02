@@ -7,7 +7,7 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart=/opt/xrpld/bin/xrpld --net --silent --conf /etc/opt/xrpld/xrpld.cfg
+ExecStart=/usr/bin/xrpld --net --silent --conf /etc/xrpld/xrpld.cfg
 Restart=always
 RestartSec=5s
 NoNewPrivileges=true

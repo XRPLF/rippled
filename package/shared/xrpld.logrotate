@@ -9,6 +9,6 @@
   compresscmd /usr/bin/gzip
   compressext .gz
   postrotate
-    /opt/xrpld/bin/xrpld --conf /etc/opt/xrpld/xrpld.cfg logrotate
+    /usr/bin/xrpld --conf /etc/xrpld/xrpld.cfg logrotate
   endscript
 }

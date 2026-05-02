@@ -1,2 +1,3 @@
-/opt/xrpld/etc/xrpld.cfg
-/opt/xrpld/etc/validators.txt
+/etc/xrpld/xrpld.cfg
+/etc/xrpld/validators.txt
+/etc/logrotate.d/xrpld

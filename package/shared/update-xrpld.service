@@ -3,12 +3,12 @@ Description=Check for and install xrpld package updates
 Documentation=man:systemd.service(5)
 Wants=network-online.target
 After=network-online.target
-ConditionPathExists=/opt/xrpld/bin/update-xrpld.sh
-ConditionPathExists=/opt/xrpld/bin/xrpld
+ConditionPathExists=/usr/libexec/xrpld/update-xrpld.sh
+ConditionPathExists=/usr/bin/xrpld
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/flock -n /run/lock/xrpld-update.lock /opt/xrpld/bin/update-xrpld.sh
+ExecStart=/usr/bin/flock -n /run/lock/xrpld-update.lock /usr/libexec/xrpld/update-xrpld.sh
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=update-xrpld

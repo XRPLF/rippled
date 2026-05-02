@@ -30,36 +30,33 @@ rm -rf %{buildroot}
 
 SRC=%{_sourcedir}
 
-install -Dm0755 ${SRC}/xrpld           %{buildroot}/opt/xrpld/bin/xrpld
-install -Dm0644 ${SRC}/xrpld.cfg       %{buildroot}/opt/xrpld/etc/xrpld.cfg
-install -Dm0644 ${SRC}/validators.txt  %{buildroot}/opt/xrpld/etc/validators.txt
+# Primary FHS layout
+install -Dm0755 ${SRC}/xrpld           %{buildroot}%{_bindir}/xrpld
+install -Dm0644 ${SRC}/xrpld.cfg       %{buildroot}%{_sysconfdir}/xrpld/xrpld.cfg
+install -Dm0644 ${SRC}/validators.txt  %{buildroot}%{_sysconfdir}/xrpld/validators.txt
 
-mkdir -p %{buildroot}/etc/opt  %{buildroot}/usr/bin %{buildroot}/usr/local/bin
-ln -s /opt/xrpld/etc           %{buildroot}/etc/opt/xrpld
-ln -s /opt/xrpld/bin/xrpld     %{buildroot}/usr/bin/xrpld
-
-# TODO: remove when rippled deprecated
-ln -s xrpld                 %{buildroot}/opt/xrpld/bin/rippled
-ln -s /opt/xrpld/bin/xrpld  %{buildroot}/usr/local/bin/rippled
-ln -s xrpld.cfg             %{buildroot}/opt/xrpld/etc/rippled.cfg
-ln -s /opt/xrpld            %{buildroot}/opt/ripple
-ln -s /etc/opt/xrpld        %{buildroot}/etc/opt/ripple
-
+# systemd units, sysusers, tmpfiles, preset
 install -Dm0644 ${SRC}/xrpld.service        %{buildroot}%{_unitdir}/xrpld.service
 install -Dm0644 ${SRC}/update-xrpld.service %{buildroot}%{_unitdir}/update-xrpld.service
 install -Dm0644 ${SRC}/update-xrpld.timer   %{buildroot}%{_unitdir}/update-xrpld.timer
+install -Dm0644 ${SRC}/xrpld.sysusers       %{buildroot}%{_sysusersdir}/xrpld.conf
+install -Dm0644 ${SRC}/xrpld.tmpfiles       %{buildroot}%{_tmpfilesdir}/xrpld.conf
+install -Dm0644 ${SRC}/50-xrpld.preset      %{buildroot}%{_presetdir}/50-xrpld.preset
 
-install -Dm0644 ${SRC}/xrpld.sysusers %{buildroot}%{_sysusersdir}/xrpld.conf
-install -Dm0644 ${SRC}/xrpld.tmpfiles %{buildroot}%{_tmpfilesdir}/xrpld.conf
+# Logrotate config (active by default)
+install -Dm0644 ${SRC}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/logrotate.d/xrpld
 
-install -Dm0644 ${SRC}/50-xrpld.preset %{buildroot}%{_presetdir}/50-xrpld.preset
+# Update helper (not on PATH; the systemd update timer references it by absolute path)
+install -Dm0755 ${SRC}/update-xrpld.sh      %{buildroot}%{_libexecdir}/xrpld/update-xrpld.sh
 
-install -Dm0755 ${SRC}/update-xrpld.sh    %{buildroot}/opt/xrpld/bin/update-xrpld.sh
-install -Dm0644 ${SRC}/update-xrpld-cron  %{buildroot}/opt/xrpld/bin/update-xrpld-cron
-install -Dm0644 ${SRC}/xrpld.logrotate    %{buildroot}/opt/xrpld/bin/xrpld.logrotate
+# Docs
+install -Dm0644 ${SRC}/LICENSE.md %{buildroot}%{_docdir}/xrpld/LICENSE.md
+install -Dm0644 ${SRC}/README.md  %{buildroot}%{_docdir}/xrpld/README.md
 
-install -Dm0644 ${SRC}/LICENSE.md %{buildroot}/opt/xrpld/share/LICENSE.md
-install -Dm0644 ${SRC}/README.md  %{buildroot}/opt/xrpld/share/README.md
+# Legacy compat symlinks (remove next major release)
+mkdir -p %{buildroot}/usr/local/bin
+ln -s %{_bindir}/xrpld   %{buildroot}/usr/local/bin/rippled
+ln -s xrpld.cfg          %{buildroot}%{_sysconfdir}/xrpld/rippled.cfg
 
 %pre
 %sysusers_create_package xrpld %{_sourcedir}/xrpld.sysusers
@@ -75,23 +72,19 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %systemd_postun_with_restart xrpld.service
 
 %files
-%license /opt/xrpld/share/LICENSE.md
-%doc /opt/xrpld/share/README.md
+%license %{_docdir}/xrpld/LICENSE.md
+%doc %{_docdir}/xrpld/README.md
 
-%dir /opt/xrpld
-%dir /opt/xrpld/bin
-%dir /opt/xrpld/etc
+%dir %{_sysconfdir}/xrpld
+%dir %{_libexecdir}/xrpld
 
-/opt/xrpld/bin/xrpld
-/opt/xrpld/bin/xrpld.logrotate
-/opt/xrpld/bin/update-xrpld.sh
-/opt/xrpld/bin/update-xrpld-cron
+%{_bindir}/xrpld
 
-/usr/bin/xrpld
-/etc/opt/xrpld
+%config(noreplace) %{_sysconfdir}/xrpld/xrpld.cfg
+%config(noreplace) %{_sysconfdir}/xrpld/validators.txt
+%config(noreplace) %{_sysconfdir}/logrotate.d/xrpld
 
-%config(noreplace) /opt/xrpld/etc/xrpld.cfg
-%config(noreplace) /opt/xrpld/etc/validators.txt
+%{_libexecdir}/xrpld/update-xrpld.sh
 
 %{_unitdir}/xrpld.service
 %{_unitdir}/update-xrpld.service
@@ -103,9 +96,6 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %ghost %dir /var/lib/xrpld
 %ghost %dir /var/log/xrpld
 
-# TODO: remove when rippled deprecated
-/opt/xrpld/bin/rippled
+# Legacy compat symlinks (remove next major release)
 /usr/local/bin/rippled
-/opt/xrpld/etc/rippled.cfg
-/etc/opt/ripple
-/opt/ripple
+%{_sysconfdir}/xrpld/rippled.cfg

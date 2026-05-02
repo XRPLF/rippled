@@ -1,15 +1,10 @@
 #[===================================================================[
    Linux packaging support: RPM and Debian targets + install tests
-#]===================================================================]
 
-if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt/xrpld")
-    message(
-        STATUS
-        "Packaging targets require -DCMAKE_INSTALL_PREFIX=/opt/xrpld "
-        "(current: '${CMAKE_INSTALL_PREFIX}'); skipping."
-    )
-    return()
-endif()
+   The packaging script (package/build_pkg.sh) installs to FHS-standard
+   paths (/usr/bin, /etc/xrpld, etc.) regardless of CMAKE_INSTALL_PREFIX,
+   so no prefix guard is needed here.
+#]===================================================================]
 
 if(NOT DEFINED pkg_release)
     set(pkg_release 1)
@@ -84,12 +79,12 @@ foreach(PKG IN LISTS PKG_TYPES)
             sh -c
             "docker rm -f xrpld_${PKG}_install_test 2>/dev/null || true && \
             docker run -d \
-            --name xrpld_${PKG}_install_test \
-            --cgroupns host \
-            --volume '${CMAKE_SOURCE_DIR}:/root:ro' \
-            --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
-            --tmpfs /run/lock \
-            ${IMAGE}"
+                --name xrpld_${PKG}_install_test \
+                --cgroupns host \
+                --volume '${CMAKE_SOURCE_DIR}:/root:ro' \
+                --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
+                --tmpfs /run/lock \
+                ${IMAGE}"
     )
     set_tests_properties(
         ${PKG}_container_start
