@@ -200,7 +200,7 @@ TaggedPointer::iterNonEmptyChildIndexes(std::uint16_t isBranch, F&& f) const
 }
 
 inline void
-TaggedPointer::destroyHashesAndChildren() const
+TaggedPointer::destroyHashesAndChildren()
 {
     if (tp_ == 0u)
         return;

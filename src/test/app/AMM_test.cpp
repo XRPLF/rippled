@@ -3091,7 +3091,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectAuctionSlot({carol_}));
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{100}}));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot({}));
-                Account const bob("bob_");
+                Account const bob("bob");
                 Account const dan("dan");
                 fund(env, {bob, dan}, XRP(1'000));
                 env(ammAlice.bid({
@@ -4868,7 +4868,7 @@ private:
         // Deposit/Withdraw in USD
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                Account const bob("bob_");
+                Account const bob("bob");
                 Account const ed("ed");
                 Account const paul("paul");
                 Account const dan("dan");
@@ -4988,7 +4988,7 @@ private:
         // Same as above but deposit/withdraw in XRP
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                Account const bob("bob_");
+                Account const bob("bob");
                 Account const ed("ed");
                 Account const paul("paul");
                 Account const dan("dan");
