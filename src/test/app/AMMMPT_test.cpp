@@ -2259,7 +2259,7 @@ private:
             // Allow to withdraw if transfer is disabled
             btc.set({.mutableFlags = tmfMPTClearCanTransfer});
             amm.withdraw(
-                WithdrawArg{.account = alice_, .asset1Out = BTC(100), .assets = {{XRP, btc}}});
+                WithdrawArg{.account = alice_, .asset1Out = btc(100), .assets = {{XRP, btc}}});
         }
 
         // Globally locked MPT

@@ -2758,7 +2758,7 @@ public:
                 // USD(125) was removed from his account due to the gateway fee.
                 //
                 // A comparable payment would look like this:
-                //   env (pay (bob, alice, USD(100)), sendmax(USD(125)))
+                //   env (pay (bob, alice, USD(100)), Sendmax(USD(125)))
                 env(offer(bob, XRP(1), usd(10'000)));
                 env.close();
 
@@ -3033,7 +3033,7 @@ public:
             // strand: alice -> [MPT/XRP BookStep] -> gw
             // strandDst_ = gw = MPT issuer, strandDeliver_ = XRP
             // trIn = rate(MPT, gw): fix charges 25% (MPT != strandDeliver_)
-            env(pay(alice, gw, XRP(1'000)), path(~XRP), sendmax(USD(1'250)));
+            env(pay(alice, gw, XRP(1'000)), Path(~XRP), Sendmax(USD(1'250)));
             env.close();
 
             // alice consumed all MPT(1250): MPT(1000) to bob + MPT(250) fee
@@ -3082,7 +3082,7 @@ public:
             // BookStep2 trIn: fix = 1.25 -> upstream needs MUSD(1000) for carol's MUSD(800) offer
             // => alice must provide full GUSD(1000) to bob's offer; without fix alice only pays
             // GUSD(800)
-            env(pay(alice, gw, XRP(800)), path(~MUSD), sendmax(GUSD(1'000)));
+            env(pay(alice, gw, XRP(800)), Path(~MUSD), Sendmax(GUSD(1'000)));
             env.close();
 
             // alice spent all GUSD(1000); bug would leave GUSD(200) unspent

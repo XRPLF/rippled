@@ -20,7 +20,7 @@
 
 namespace xrpl {
 
-class ClawbackMPT_test : public beast::unit_test::suite
+class ClawbackMPT_test : public beast::unit_test::Suite
 {
     static std::uint32_t
     ticketCount(test::jtx::Env const& env, test::jtx::Account const& acct)
@@ -48,7 +48,7 @@ class ClawbackMPT_test : public beast::unit_test::suite
 
             auto const mpt = xrpl::test::jtx::MPT(alice.name(), makeMptID(env.seq(alice), alice));
 
-            env(claw(alice, mpt(5), bob), ter(temDISABLED));
+            env(claw(alice, mpt(5), bob), Ter(temDISABLED));
             env.close();
         }
 
@@ -78,23 +78,23 @@ class ClawbackMPT_test : public beast::unit_test::suite
             auto const mpt = xrpl::test::jtx::MPT(alice.name(), makeMptID(env.seq(alice), alice));
 
             // fails due to invalid flag
-            env(claw(alice, mpt(5), bob), txflags(0x00008000), ter(temINVALID_FLAG));
+            env(claw(alice, mpt(5), bob), Txflags(0x00008000), Ter(temINVALID_FLAG));
             env.close();
 
             // fails due to zero amount
-            env(claw(alice, mpt(0), bob), ter(temBAD_AMOUNT));
+            env(claw(alice, mpt(0), bob), Ter(temBAD_AMOUNT));
             env.close();
 
             // fails due to negative amount
-            env(claw(alice, mpt(-1), bob), ter(temBAD_AMOUNT));
+            env(claw(alice, mpt(-1), bob), Ter(temBAD_AMOUNT));
             env.close();
 
             // fails when holder is not specified
-            env(claw(alice, mpt(5)), ter(temMALFORMED));
+            env(claw(alice, mpt(5)), Ter(temMALFORMED));
             env.close();
 
             // fails when issuer and holder are the same account
-            env(claw(alice, mpt(5), alice), ter(temMALFORMED));
+            env(claw(alice, mpt(5), alice), Ter(temMALFORMED));
             env.close();
         }
 
@@ -110,7 +110,7 @@ class ClawbackMPT_test : public beast::unit_test::suite
                 xrpl::test::jtx::MPT(alice.name(), makeMptID(env.seq(alice), alice));
 
             // clawback fails when the issuance does not exist
-            env(claw(alice, fakeMpt(5), bob), ter(tecOBJECT_NOT_FOUND));
+            env(claw(alice, fakeMpt(5), bob), Ter(tecOBJECT_NOT_FOUND));
             env.close();
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback});
@@ -394,7 +394,7 @@ class ClawbackMPT_test : public beast::unit_test::suite
         while (ticketCnt > 0)
         {
             // alice claws back 5 tokens using a ticket
-            env(claw(alice, mptAlice.mpt(5), bob), ticket::use(aliceTicketSeq++));
+            env(claw(alice, mptAlice.mpt(5), bob), ticket::Use(aliceTicketSeq++));
             env.close();
 
             ticketCnt--;
@@ -426,7 +426,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
     }
 };
