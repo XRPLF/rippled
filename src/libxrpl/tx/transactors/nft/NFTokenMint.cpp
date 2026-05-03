@@ -86,7 +86,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 {
     if (auto const f = ctx.tx[~sfTransferFee])
     {
-        if (f > maxTransferFee)
+        if (f > kMAX_TRANSFER_FEE)
             return temBAD_NFTOKEN_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
@@ -101,7 +101,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 
     if (auto uri = ctx.tx[~sfURI])
     {
-        if (uri->empty() || uri->length() > maxTokenURILength)
+        if (uri->empty() || uri->length() > kMAX_TOKEN_URI_LENGTH)
             return temMALFORMED;
     }
 
@@ -256,7 +256,7 @@ NFTokenMint::doApply()
                                                                                      : acctSeq - 1;
         }
 
-        std::uint32_t const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0u);
+        std::uint32_t const mintedNftCnt = (*root)[~sfMintedNFTokens].valueOr(0u);
 
         (*root)[sfMintedNFTokens] = mintedNftCnt + 1u;
         if ((*root)[sfMintedNFTokens] == 0u)

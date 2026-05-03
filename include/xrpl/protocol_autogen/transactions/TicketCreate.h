@@ -19,9 +19,9 @@ class TicketCreateBuilder;
  * @brief Transaction: TicketCreate
  *
  * Type: ttTICKET_CREATE (10)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use TicketCreateBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfTicketCount (soeREQUIRED)
+     * @brief Get sfTicketCount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -63,7 +63,7 @@ public:
  * @brief Builder for TicketCreate transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class TicketCreateBuilder : public TransactionBuilderBase<TicketCreateBuilder>
@@ -102,7 +102,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfTicketCount (soeREQUIRED)
+     * @brief Set sfTicketCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     TicketCreateBuilder&

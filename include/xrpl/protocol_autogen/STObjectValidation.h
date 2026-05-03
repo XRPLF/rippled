@@ -11,12 +11,12 @@ validateSTObject(STObject const& obj, SOTemplate const& format)
 {
     for (auto const& field : format)
     {
-        if (!obj.isFieldPresent(field.sField()) && field.style() == soeREQUIRED)
+        if (!obj.isFieldPresent(field.sField()) && field.style() == SoeRequired)
         {
             return false;  // LCOV_EXCL_LINE
         }
 
-        if (field.supportMPT() == soeMPTNotSupported && obj.isFieldPresent(field.sField()))
+        if (field.supportMPT() == SoeMptNotSupported && obj.isFieldPresent(field.sField()))
         {
             if (field.sField().fieldType == STI_AMOUNT)
             {

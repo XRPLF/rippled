@@ -33,13 +33,13 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
 {
     if (auto err = credentials::checkArray(
             ctx.tx.getFieldArray(sfAcceptedCredentials),
-            maxPermissionedDomainCredentialsArraySize,
+            kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE,
             ctx.j);
         !isTesSuccess(err))
         return err;
 
     auto const domain = ctx.tx.at(~sfDomainID);
-    if (domain && *domain == beast::zero)
+    if (domain && *domain == beast::kZERO)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -89,7 +89,7 @@ PermissionedDomainSet::doApply()
         auto cred = STObject::makeInnerObject(sfCredential);
         cred.setAccountID(sfIssuer, p.first);
         cred.setFieldVL(sfCredentialType, p.second);
-        sortedLE.push_back(std::move(cred));
+        sortedLE.pushBack(std::move(cred));
     }
 
     if (ctx_.tx.isFieldPresent(sfDomainID))

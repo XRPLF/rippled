@@ -4,10 +4,12 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STTx.h>
@@ -24,33 +26,39 @@
 
 namespace xrpl {
 
-static NetworkOPs::FailHard
+static Expected<NetworkOPs::FailHard, json::Value>
 getFailHard(RPC::JsonContext const& context)
 {
+    if (context.params.isMember(jss::fail_hard) && !context.params[jss::fail_hard].isBool())
+    {
+        return Unexpected(RPC::expectedFieldError(jss::fail_hard, "boolean"));
+    }
     return NetworkOPs::doFailHard(
-        context.params.isMember("fail_hard") && context.params["fail_hard"].asBool());
+        context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool());
 }
 
 // {
 //   tx_blob: <string> XOR tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value
+json::Value
 doSubmit(RPC::JsonContext& context)
 {
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
     if (!context.params.isMember(jss::tx_blob))
     {
         auto const failType = getFailHard(context);
+        if (!failType)
+            return failType.error();
 
         if (context.role != Role::ADMIN && !context.app.config().canSign())
-            return RPC::make_error(rpcNOT_SUPPORTED, "Signing is not supported by this server.");
+            return RPC::makeError(RpcNotSupported, "Signing is not supported by this server.");
 
         auto ret = RPC::transactionSubmit(
             context.params,
             context.apiVersion,
-            failType,
+            *failType,
             context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
             context.app,
@@ -65,12 +73,12 @@ doSubmit(RPC::JsonContext& context)
         return ret;
     }
 
-    Json::Value jvResult;
+    json::Value jvResult;
 
     auto ret = strUnHex(context.params[jss::tx_blob].asString());
 
     if (!ret || ret->empty())
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
 
     SerialIter sitTrans(makeSlice(*ret));
 
@@ -118,8 +126,10 @@ doSubmit(RPC::JsonContext& context)
     try
     {
         auto const failType = getFailHard(context);
+        if (!failType)
+            return failType.error();
 
-        context.netOps.processTransaction(transaction, isUnlimited(context.role), true, failType);
+        context.netOps.processTransaction(transaction, isUnlimited(context.role), true, *failType);
     }
     catch (std::exception& e)
     {
@@ -131,7 +141,7 @@ doSubmit(RPC::JsonContext& context)
 
     try
     {
-        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
+        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::KNone);
         jvResult[jss::tx_blob] = strHex(transaction->getSTransaction()->getSerializer().peekData());
 
         if (temUNCERTAIN != transaction->getResult())
@@ -156,12 +166,12 @@ doSubmit(RPC::JsonContext& context)
             if (auto currentLedgerState = transaction->getCurrentLedgerState())
             {
                 jvResult[jss::account_sequence_next] =
-                    safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
+                    safeCast<json::Value::UInt>(currentLedgerState->accountSeqNext);
                 jvResult[jss::account_sequence_available] =
-                    safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqAvail);
+                    safeCast<json::Value::UInt>(currentLedgerState->accountSeqAvail);
                 jvResult[jss::open_ledger_cost] = to_string(currentLedgerState->minFeeRequired);
                 jvResult[jss::validated_ledger_index] =
-                    safe_cast<Json::Value::UInt>(currentLedgerState->validatedLedger);
+                    safeCast<json::Value::UInt>(currentLedgerState->validatedLedger);
             }
         }
 

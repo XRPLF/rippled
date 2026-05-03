@@ -5,13 +5,13 @@
 namespace xrpl::test::jtx {
 
 /** Sets the literal QualityIn on a trust JTx. */
-class qualityIn
+class QualityIn
 {
 private:
     std::uint32_t qIn_;
 
 public:
-    explicit qualityIn(std::uint32_t qIn) : qIn_(qIn)
+    explicit QualityIn(std::uint32_t qIn) : qIn_(qIn)
     {
     }
 
@@ -20,26 +20,26 @@ public:
 };
 
 /** Sets the QualityIn on a trust JTx. */
-class qualityInPercent
+class QualityInPercent
 {
 private:
     std::uint32_t qIn_;  // NOLINT(cppcoreguidelines-use-default-member-init)
 
 public:
-    explicit qualityInPercent(double percent);
+    explicit QualityInPercent(double percent);
 
     void
     operator()(Env&, JTx& jtx) const;
 };
 
 /** Sets the literal QualityOut on a trust JTx. */
-class qualityOut
+class QualityOut
 {
 private:
     std::uint32_t qOut_;
 
 public:
-    explicit qualityOut(std::uint32_t qOut) : qOut_(qOut)
+    explicit QualityOut(std::uint32_t qOut) : qOut_(qOut)
     {
     }
 
@@ -48,13 +48,13 @@ public:
 };
 
 /** Sets the QualityOut on a trust JTx as a percentage. */
-class qualityOutPercent
+class QualityOutPercent
 {
 private:
     std::uint32_t qOut_;  // NOLINT(cppcoreguidelines-use-default-member-init)
 
 public:
-    explicit qualityOutPercent(double percent);
+    explicit QualityOutPercent(double percent);
 
     void
     operator()(Env&, JTx& jtx) const;

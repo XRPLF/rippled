@@ -17,7 +17,7 @@ namespace xrpl {
 
 /** Generates and logs a call stack */
 void
-LogThrow(std::string const& title);
+logThrow(std::string const& title);
 
 /** Rethrow the exception currently being handled.
 
@@ -30,9 +30,9 @@ LogThrow(std::string const& title);
     triggering false positives, since it throws.
 */
 [[noreturn]] XRPL_NO_SANITIZE_ADDRESS inline void
-Rethrow()
+rethrow()
 {
-    LogThrow("Re-throwing exception");
+    logThrow("Re-throwing exception");
     throw;
 }
 
@@ -52,12 +52,12 @@ Throw(Args&&... args)
         std::is_convertible_v<E*, std::exception*>, "Exception must derive from std::exception.");
 
     E e(std::forward<Args>(args)...);
-    LogThrow(std::string("Throwing exception of type " + beast::type_name<E>() + ": ") + e.what());
+    logThrow(std::string("Throwing exception of type " + beast::typeName<E>() + ": ") + e.what());
     throw std::move(e);
 }
 
 /** Called when faulty logic causes a broken invariant. */
 [[noreturn]] void
-LogicError(std::string const& how) noexcept;
+logicError(std::string const& how) noexcept;
 
 }  // namespace xrpl

@@ -15,7 +15,7 @@
 
 namespace xrpl::test::jtx::oracle {
 
-class GetAggregatePrice_test : public beast::unit_test::suite
+class GetAggregatePrice_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -25,22 +25,22 @@ public:
         using namespace jtx;
         Account const owner{"owner"};
         Account const some{"some"};
-        static OraclesData oracles = {{owner, 1}};
+        static OraclesData kORACLES = {{owner, 1}};
 
         {
             Env env(*this);
             auto const baseFee = env.current()->fees().base;
             // missing base_asset
-            auto ret = Oracle::aggregatePrice(env, std::nullopt, "USD", oracles);
+            auto ret = Oracle::aggregatePrice(env, std::nullopt, "USD", kORACLES);
             BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'base_asset'.");
 
             // missing quote_asset
-            ret = Oracle::aggregatePrice(env, "XRP", std::nullopt, oracles);
+            ret = Oracle::aggregatePrice(env, "XRP", std::nullopt, kORACLES);
             BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'quote_asset'.");
 
             // invalid base_asset, quote_asset
             std::vector<AnyValue> const invalidAsset = {
-                NoneTag,
+                kNONE_TAG,
                 1,
                 -1,
                 1.2,
@@ -56,11 +56,11 @@ public:
                 "012345678901234567890123456789012345678G"};
             for (auto const& v : invalidAsset)
             {
-                ret = Oracle::aggregatePrice(env, "USD", v, oracles);
+                ret = Oracle::aggregatePrice(env, "USD", v, kORACLES);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
-                ret = Oracle::aggregatePrice(env, v, "USD", oracles);
+                ret = Oracle::aggregatePrice(env, v, "USD", kORACLES);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
-                ret = Oracle::aggregatePrice(env, v, v, oracles);
+                ret = Oracle::aggregatePrice(env, v, v, kORACLES);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
 
@@ -73,7 +73,7 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
 
             // no token pairs found
-            ret = Oracle::aggregatePrice(env, "YAN", "USD", oracles);
+            ret = Oracle::aggregatePrice(env, "YAN", "USD", kORACLES);
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
             // invalid oracle document id
@@ -81,11 +81,11 @@ public:
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, 2}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
             // invalid values
-            std::vector<AnyValue> const invalidDocument = {NoneTag, 1.2, -1, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidDocument = {kNONE_TAG, 1.2, -1, "", "none", "1.2"};
             for (auto const& v : invalidDocument)
             {
                 ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, v}}});
-                Json::Value jv;
+                json::Value jv;
                 toJson(jv, v);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
@@ -111,7 +111,8 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
             // invalid trim value
-            std::vector<AnyValue> const invalidTrim = {NoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidTrim = {
+                kNONE_TAG, 0, 26, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTrim)
             {
                 ret =
@@ -120,7 +121,7 @@ public:
             }
 
             // invalid time threshold value
-            std::vector<AnyValue> const invalidTime = {NoneTag, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidTime = {kNONE_TAG, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTime)
             {
                 ret = Oracle::aggregatePrice(
@@ -174,11 +175,11 @@ public:
         // Aggregate data set includes all price oracle instances, no trimming
         // or time threshold
         {
-            auto const all = testable_amendments();
+            auto const all = testableAmendments();
             for (auto const& feats : {all - featureSingleAssetVault - featureLendingProtocol, all})
             {
                 for (auto const mantissaSize :
-                     {MantissaRange::mantissa_scale::small, MantissaRange::mantissa_scale::large})
+                     {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
                 {
                     // Regardless of the features enabled, RPC is controlled by
                     // the global mantissa size. And since it's a thread-local,

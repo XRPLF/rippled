@@ -26,7 +26,7 @@ validateLedgerNode(protocol::TMLedgerNode const& ledgerNode)
         return !ledgerNode.has_id() && !ledgerNode.has_depth();
 
     return ledgerNode.has_id() ||
-        (ledgerNode.has_depth() && ledgerNode.depth() <= SHAMap::leafDepth);
+        (ledgerNode.has_depth() && ledgerNode.depth() <= SHAMap::kLEAF_DEPTH);
 }
 
 SHAMapTreeNodePtr
@@ -61,8 +61,7 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNodePtr cons
             if (!ledgerNode.has_depth())
                 return std::nullopt;
 
-            auto const key =
-                safe_downcast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
+            auto const key = safeDowncast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
             return SHAMapNodeID::createID(ledgerNode.depth(), key);
         }
 
@@ -79,9 +78,9 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNodePtr cons
 
     if (treeNode->isLeaf())
     {
-        auto const key = safe_downcast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
-        auto const expected_id = SHAMapNodeID::createID(static_cast<int>(nodeID->getDepth()), key);
-        if (nodeID->getNodeID() != expected_id.getNodeID())
+        auto const key = safeDowncast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
+        auto const expectedID = SHAMapNodeID::createID(static_cast<int>(nodeID->getDepth()), key);
+        if (nodeID->getNodeID() != expectedID.getNodeID())
             return std::nullopt;
     }
 

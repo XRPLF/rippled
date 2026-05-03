@@ -20,7 +20,7 @@
 
 namespace xrpl::tests {
 
-class LedgerNodeHelpers_test : public beast::unit_test::suite
+class LedgerNodeHelpers_test : public beast::unit_test::Suite
 {
     static boost::intrusive_ptr<SHAMapItem>
     makeTestItem(std::uint32_t seed)
@@ -29,7 +29,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
         s.add32(seed);
         s.add32(seed + 1);
         s.add32(seed + 2);
-        return make_shamapitem(s.getSHA512Half(), s.slice());
+        return makeShamapitem(s.getSHA512Half(), s.slice());
     }
 
     static std::string
@@ -138,7 +138,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
         {
             protocol::TMLedgerNode node;
             node.set_nodedata("test_data");
-            node.set_depth(SHAMap::leafDepth);
+            node.set_depth(SHAMap::kLEAF_DEPTH);
             BEAST_EXPECT(validateLedgerNode(node));
         }
 
@@ -146,7 +146,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
         {
             protocol::TMLedgerNode node;
             node.set_nodedata("test_data");
-            node.set_depth(SHAMap::leafDepth + 1);
+            node.set_depth(SHAMap::kLEAF_DEPTH + 1);
             BEAST_EXPECT(!validateLedgerNode(node));
         }
     }
@@ -158,8 +158,8 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
 
         // Valid: inner node. It must have at least one child for `serializeNode` to work.
         {
-            auto const innerNode = intr_ptr::make_shared<SHAMapInnerNode>(1);
-            auto const childNode = intr_ptr::make_shared<SHAMapInnerNode>(1);
+            auto const innerNode = intr_ptr::makeShared<SHAMapInnerNode>(1);
+            auto const childNode = intr_ptr::makeShared<SHAMapInnerNode>(1);
             innerNode->setChild(0, childNode);
             auto const innerData = serializeNode(innerNode);
             auto const result = getTreeNode(innerData);
@@ -169,7 +169,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
         // Valid: leaf node.
         {
             auto const leafItem = makeTestItem(12345);
-            auto const leafNode = intr_ptr::make_shared<SHAMapAccountStateLeafNode>(leafItem, 1);
+            auto const leafNode = intr_ptr::makeShared<SHAMapAccountStateLeafNode>(leafItem, 1);
             auto const leafData = serializeNode(leafNode);
             auto const result = getTreeNode(leafData);
             BEAST_EXPECT(result && result->isLeaf());
@@ -190,11 +190,11 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
         // Invalid: truncated data.
         {
             auto const leafItem = makeTestItem(54321);
-            auto const leafNode = intr_ptr::make_shared<SHAMapAccountStateLeafNode>(leafItem, 1);
+            auto const leafNode = intr_ptr::makeShared<SHAMapAccountStateLeafNode>(leafItem, 1);
             // Truncate the data to trigger an exception in SHAMapTreeNode::makeAccountState when
             // the data is used to deserialize the node.
             uint256 const tag;
-            auto const leafData = serializeNode(leafNode).substr(0, tag.bytes - 1);
+            auto const leafData = serializeNode(leafNode).substr(0, tag.kBYTES - 1);
             auto const result = getTreeNode(leafData);
             BEAST_EXPECT(!result);
         }
@@ -207,8 +207,8 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
 
         {
             // Tests using inner nodes at various depths.
-            auto const innerNode = intr_ptr::make_shared<SHAMapInnerNode>(1);
-            auto const childNode = intr_ptr::make_shared<SHAMapInnerNode>(1);
+            auto const innerNode = intr_ptr::makeShared<SHAMapInnerNode>(1);
+            auto const childNode = intr_ptr::makeShared<SHAMapInnerNode>(1);
             innerNode->setChild(0, childNode);
             auto const innerData = serializeNode(innerNode);
 
@@ -249,14 +249,14 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
         {
             // Tests using leaf nodes at various depths.
             auto const leafItem = makeTestItem(12345);
-            auto const leafNode = intr_ptr::make_shared<SHAMapAccountStateLeafNode>(leafItem, 1);
+            auto const leafNode = intr_ptr::makeShared<SHAMapAccountStateLeafNode>(leafItem, 1);
             auto const leafData = serializeNode(leafNode);
             auto const leafKey = leafItem->key();
 
             // Valid: legacy `nodeid` field at arbitrary depth.
             {
-                auto const leafDepth = 5;
-                auto const leafID = SHAMapNodeID::createID(leafDepth, leafKey);
+                auto const kLEAF_DEPTH = 5;
+                auto const leafID = SHAMapNodeID::createID(kLEAF_DEPTH, leafKey);
 
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
@@ -267,8 +267,8 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
 
             // Invalid: new `id` field should not be used for leaf nodes.
             {
-                auto const leafDepth = 5;
-                auto const leafID = SHAMapNodeID::createID(leafDepth, leafKey);
+                auto const kLEAF_DEPTH = 5;
+                auto const leafID = SHAMapNodeID::createID(kLEAF_DEPTH, leafKey);
 
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
@@ -279,24 +279,24 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
 
             // Valid: new `depth` field at minimum depth.
             {
-                auto const leafDepth = 0;
-                auto const leafID = SHAMapNodeID::createID(leafDepth, leafKey);
+                auto const kLEAF_DEPTH = 0;
+                auto const leafID = SHAMapNodeID::createID(kLEAF_DEPTH, leafKey);
 
                 protocol::TMLedgerNode node;
                 node.set_nodedata(leafData);
-                node.set_depth(leafDepth);
+                node.set_depth(kLEAF_DEPTH);
                 auto const result = getSHAMapNodeID(node, leafNode);
                 BEAST_EXPECT(result == leafID);
             }
 
             // Valid: new `depth` field at arbitrary depth between minimum and maximum.
             {
-                auto const leafDepth = 10;
-                auto const leafID = SHAMapNodeID::createID(leafDepth, leafKey);
+                auto const kLEAF_DEPTH = 10;
+                auto const leafID = SHAMapNodeID::createID(kLEAF_DEPTH, leafKey);
 
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
-                ledgerNode.set_depth(leafDepth);
+                ledgerNode.set_depth(kLEAF_DEPTH);
                 auto const result = getSHAMapNodeID(ledgerNode, leafNode);
                 BEAST_EXPECT(result == leafID);
             }
@@ -306,12 +306,12 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
             // message is assumed to have been validated by the time the getSHAMapNodeID function is
             // called.
             {
-                auto const leafDepth = SHAMap::leafDepth;
-                auto const leafID = SHAMapNodeID::createID(leafDepth, leafKey);
+                auto const kLEAF_DEPTH = SHAMap::kLEAF_DEPTH;
+                auto const leafID = SHAMapNodeID::createID(kLEAF_DEPTH, leafKey);
 
                 protocol::TMLedgerNode node;
                 node.set_nodedata(leafData);
-                node.set_depth(leafDepth);
+                node.set_depth(kLEAF_DEPTH);
                 auto const result = getSHAMapNodeID(node, leafNode);
                 BEAST_EXPECT(result == leafID);
             }
@@ -320,7 +320,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
             {
                 auto const otherItem = makeTestItem(54321);
                 auto const otherNode =
-                    intr_ptr::make_shared<SHAMapAccountStateLeafNode>(otherItem, 1);
+                    intr_ptr::makeShared<SHAMapAccountStateLeafNode>(otherItem, 1);
                 auto const otherData = serializeNode(otherNode);
                 auto const otherKey = otherItem->key();
                 auto const otherDepth = 1;

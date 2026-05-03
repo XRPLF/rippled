@@ -111,7 +111,7 @@ public:
 
     /** Shrinks the slice by moving its start forward by n characters. */
     void
-    remove_prefix(std::size_t n)
+    removePrefix(std::size_t n)
     {
         data_ += n;
         size_ -= n;
@@ -119,7 +119,7 @@ public:
 
     /** Shrinks the slice by moving its end backward by n characters. */
     void
-    remove_suffix(std::size_t n)
+    removeSuffix(std::size_t n)
     {
         size_ -= n;
     }

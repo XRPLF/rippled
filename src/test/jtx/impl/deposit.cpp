@@ -12,10 +12,10 @@
 namespace xrpl::test::jtx::deposit {
 
 // Add DepositPreauth.
-Json::Value
+json::Value
 auth(jtx::Account const& account, jtx::Account const& auth)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfAuthorize.jsonName] = auth.human();
     jv[sfTransactionType.jsonName] = jss::DepositPreauth;
@@ -23,10 +23,10 @@ auth(jtx::Account const& account, jtx::Account const& auth)
 }
 
 // Remove DepositPreauth.
-Json::Value
+json::Value
 unauth(jtx::Account const& account, jtx::Account const& unauth)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfUnauthorize.jsonName] = unauth.human();
     jv[sfTransactionType.jsonName] = jss::DepositPreauth;
@@ -34,16 +34,16 @@ unauth(jtx::Account const& account, jtx::Account const& unauth)
 }
 
 // Add DepositPreauth.
-Json::Value
+json::Value
 authCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
-    jv[sfAuthorizeCredentials.jsonName] = Json::arrayValue;
+    jv[sfAuthorizeCredentials.jsonName] = json::ArrayValue;
     auto& arr(jv[sfAuthorizeCredentials.jsonName]);
     for (auto const& o : auth)
     {
-        Json::Value j2;
+        json::Value j2;
         j2[jss::Credential] = o.toJson();
         arr.append(std::move(j2));
     }
@@ -52,16 +52,16 @@ authCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> c
 }
 
 // Remove DepositPreauth.
-Json::Value
+json::Value
 unauthCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
-    jv[sfUnauthorizeCredentials.jsonName] = Json::arrayValue;
+    jv[sfUnauthorizeCredentials.jsonName] = json::ArrayValue;
     auto& arr(jv[sfUnauthorizeCredentials.jsonName]);
     for (auto const& o : auth)
     {
-        Json::Value j2;
+        json::Value j2;
         j2[jss::Credential] = o.toJson();
         arr.append(std::move(j2));
     }
