@@ -831,7 +831,7 @@ template <class T>
 XRPAmount
 toDrops(FeeLevel<T> const& level, XRPAmount baseFee)
 {
-    return mulDiv(level, baseFee, TxQ::kBASE_LEVEL).value_or(XRPAmount(STAmount::kC_MAX_NATIVE_N));
+    return mulDiv(level, baseFee, TxQ::kBASE_LEVEL).value_or(XRPAmount(STAmount::kMAX_NATIVE_N));
 }
 
 inline FeeLevel64

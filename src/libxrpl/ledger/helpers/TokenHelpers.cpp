@@ -257,7 +257,7 @@ accountHolds(
     {
         // If the account is the issuer, then their limit is effectively
         // infinite
-        return STAmount{Issue{currency, issuer}, STAmount::kC_MAX_VALUE, STAmount::kC_MAX_OFFSET};
+        return STAmount{Issue{currency, issuer}, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET};
     }
 
     // IOU: Return balance on trust line modulo freeze

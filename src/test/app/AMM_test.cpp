@@ -3057,7 +3057,7 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 // Bid a tiny amount
-                auto const tiny = Number{STAmount::kC_MIN_VALUE, STAmount::kC_MIN_OFFSET};
+                auto const tiny = Number{STAmount::kMIN_VALUE, STAmount::kMIN_OFFSET};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
                 // Auction slot purchase price is equal to the tiny amount
                 // since the minSlotPrice is 0 with no trading fee.
@@ -3067,7 +3067,7 @@ private:
                 // Bid the tiny amount
                 env(ammAlice.bid({
                     .account = alice_,
-                    .bidMin = IOUAmount{STAmount::kC_MIN_VALUE, STAmount::kC_MIN_OFFSET},
+                    .bidMin = IOUAmount{STAmount::kMIN_VALUE, STAmount::kMIN_OFFSET},
                 }));
                 // Pay slightly higher price
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny * Number{105, -2}}));

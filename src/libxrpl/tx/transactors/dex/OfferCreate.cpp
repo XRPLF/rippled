@@ -413,7 +413,7 @@ OfferCreate::flowCross(
                 [&](Issue const& issue) {
                     if (issue.native())
                     {
-                        deliver = STAmount{STAmount::kC_MAX_NATIVE};
+                        deliver = STAmount{STAmount::kMAX_NATIVE};
                     }
                     // We can't use the maximum possible currency here because
                     // there might be a gateway transfer rate to account for.
@@ -421,8 +421,8 @@ OfferCreate::flowCross(
                     // maxValue for our limit.
                     else
                     {
-                        deliver = STAmount{
-                            deliverAsset, STAmount::kC_MAX_VALUE / 2, STAmount::kC_MAX_OFFSET};
+                        deliver =
+                            STAmount{deliverAsset, STAmount::kMAX_VALUE / 2, STAmount::kMAX_OFFSET};
                     }
                 },
                 [&](MPTIssue const&) {

@@ -270,7 +270,7 @@ SharedIntrusive<T>::unsafeReleaseAndStore(T* next)
     auto action = prev->releaseStrongRef();
     switch (action)
     {
-        case Noop:
+        case NoOp:
             break;
         case Destroy:
             delete prev;
@@ -371,7 +371,7 @@ WeakIntrusive<T>::unsafeReleaseNoStore()
     auto action = ptr_->releaseWeakRef();
     switch (action)
     {
-        case Noop:
+        case NoOp:
             break;
         case Destroy:
             delete ptr_;
@@ -589,7 +589,7 @@ SharedWeakUnion<T>::convertToStrong()
     {
         [[maybe_unused]] auto action = p->releaseWeakRef();
         XRPL_ASSERT(
-            (action == ReleaseWeakRefAction::Noop),
+            (action == ReleaseWeakRefAction::NoOp),
             "xrpl::SharedWeakUnion::convertToStrong : "
             "action is noop");
         unsafeSetRawPtr(p, RefStrength::Strong);
@@ -613,7 +613,7 @@ SharedWeakUnion<T>::convertToWeak()
     auto action = p->addWeakReleaseStrongRef();
     switch (action)
     {
-        case Noop:
+        case NoOp:
             break;
         case Destroy:
             // We just added a weak ref. How could we destroy?
@@ -674,7 +674,7 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
         auto strongAction = p->releaseStrongRef();
         switch (strongAction)
         {
-            case Noop:
+            case NoOp:
                 break;
             case Destroy:
                 delete p;
@@ -692,7 +692,7 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
         auto weakAction = p->releaseWeakRef();
         switch (weakAction)
         {
-            case Noop:
+            case NoOp:
                 break;
             case Destroy:
                 delete p;

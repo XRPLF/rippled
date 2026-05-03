@@ -307,17 +307,9 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         auto const issue = usd;
         STAmount const tinyAmt(
-            issue,
-            STAmount::kC_MIN_VALUE,
-            STAmount::kC_MIN_OFFSET + 1,
-            false,
-            STAmount::Unchecked{});
+            issue, STAmount::kMIN_VALUE, STAmount::kMIN_OFFSET + 1, false, STAmount::Unchecked{});
         STAmount const hugeAmt(
-            issue,
-            STAmount::kC_MAX_VALUE,
-            STAmount::kC_MAX_OFFSET - 1,
-            false,
-            STAmount::Unchecked{});
+            issue, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET - 1, false, STAmount::Unchecked{});
 
         ApplyViewImpl av(&*env.current(), TapNone);
         PaymentSandbox pv(&av);

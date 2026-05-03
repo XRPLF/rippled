@@ -170,8 +170,8 @@ doGatewayBalances(RPC::JsonContext& context)
                         // On overflow return the largest valid STAmount.
                         // Very large sums of STAmount are approximations
                         // anyway.
-                        bal = STAmount(
-                            bal.get<Issue>(), STAmount::kC_MAX_VALUE, STAmount::kC_MAX_OFFSET);
+                        bal =
+                            STAmount(bal.get<Issue>(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
                     }
                 }
             }
@@ -227,8 +227,7 @@ doGatewayBalances(RPC::JsonContext& context)
                         // On overflow return the largest valid STAmount.
                         // Very large sums of STAmount are approximations
                         // anyway.
-                        bal =
-                            STAmount(bal.asset(), STAmount::kC_MAX_VALUE, STAmount::kC_MAX_OFFSET);
+                        bal = STAmount(bal.asset(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
                     }
                 }
             }

@@ -11,7 +11,7 @@ largestAmount(STAmount const& amt)
         [&](Issue const& issue) -> STAmount {
             if (issue.native())
                 return kINITIAL_XRP;
-            return STAmount(amt.asset(), STAmount::kC_MAX_VALUE, STAmount::kC_MAX_OFFSET);
+            return STAmount(amt.asset(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
         },
         [&](MPTIssue const&) { return STAmount(amt.asset(), kMAX_MP_TOKEN_AMOUNT, 0); });
 }

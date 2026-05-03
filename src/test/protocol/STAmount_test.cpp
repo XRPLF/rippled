@@ -54,7 +54,7 @@ public:
         {
             mantissa--;
 
-            if (mantissa < STAmount::kC_MIN_VALUE)
+            if (mantissa < STAmount::kMIN_VALUE)
                 return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
@@ -69,7 +69,7 @@ public:
         {
             mantissa++;
 
-            if (mantissa > STAmount::kC_MAX_VALUE)
+            if (mantissa > STAmount::kMAX_VALUE)
                 return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
@@ -494,15 +494,15 @@ public:
     {
         testcase("underflow");
 
-        STAmount const bigNative(STAmount::kC_MAX_NATIVE / 2);
+        STAmount const bigNative(STAmount::kMAX_NATIVE / 2);
         STAmount const bigValue(
             noIssue(),
-            (STAmount::kC_MIN_VALUE + STAmount::kC_MAX_VALUE) / 2,
-            STAmount::kC_MAX_OFFSET - 1);
+            (STAmount::kMIN_VALUE + STAmount::kMAX_VALUE) / 2,
+            STAmount::kMAX_OFFSET - 1);
         STAmount const smallValue(
             noIssue(),
-            (STAmount::kC_MIN_VALUE + STAmount::kC_MAX_VALUE) / 2,
-            STAmount::kC_MIN_OFFSET + 1);
+            (STAmount::kMIN_VALUE + STAmount::kMAX_VALUE) / 2,
+            STAmount::kMIN_OFFSET + 1);
         STAmount const zeroSt(noIssue(), 0);
 
         STAmount const smallXSmall = multiply(smallValue, smallValue, noIssue());

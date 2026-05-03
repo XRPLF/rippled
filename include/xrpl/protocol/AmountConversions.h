@@ -178,11 +178,11 @@ toMaxAmount(Asset const& asset)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
     {
-        return IOUAmount(STAmount::kC_MAX_VALUE, STAmount::kC_MAX_OFFSET);
+        return IOUAmount(STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
     }
     else if constexpr (std::is_same_v<XRPAmount, T>)
     {
-        return XRPAmount(static_cast<std::int64_t>(STAmount::kC_MAX_NATIVE_N));
+        return XRPAmount(static_cast<std::int64_t>(STAmount::kMAX_NATIVE_N));
     }
     else if constexpr (std::is_same_v<MPTAmount, T>)
     {
@@ -193,8 +193,8 @@ toMaxAmount(Asset const& asset)
         return asset.visit(
             [](Issue const& issue) {
                 if (isXRP(issue))
-                    return STAmount(issue, static_cast<std::int64_t>(STAmount::kC_MAX_NATIVE_N));
-                return STAmount(issue, STAmount::kC_MAX_VALUE, STAmount::kC_MAX_OFFSET);
+                    return STAmount(issue, static_cast<std::int64_t>(STAmount::kMAX_NATIVE_N));
+                return STAmount(issue, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
             },
             [](MPTIssue const& issue) { return STAmount(issue, kMAX_MP_TOKEN_AMOUNT); });
     }

@@ -1067,7 +1067,7 @@ ValidVault::computeCoarsestScale(std::vector<DeltaInfo> const& numbers)
         numbers, [](auto const& a, auto const& b) -> bool { return a.scale < b.scale; });
     XRPL_ASSERT_PARTS(
         max->scale, "xrpl::ValidVault::computeCoarsestScale", "scale set for destinationDelta");
-    return max->scale.value_or(STAmount::kC_MAX_OFFSET);
+    return max->scale.value_or(STAmount::kMAX_OFFSET);
 }
 
 }  // namespace xrpl

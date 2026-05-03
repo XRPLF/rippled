@@ -418,7 +418,7 @@ LoanManage::doApply()
             return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
         if (tx.isFlag(tfLoanUnimpair))
             return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-        // Noop, as described above.
+        // NoOp, as described above.
         return tesSUCCESS;
     }();
 

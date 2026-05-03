@@ -682,11 +682,11 @@ public:
         auto const baseFee = env.current()->fees().base;
         std::uint32_t const aliceSeq = env.seq("alice");
 
-        // Sign jsonNoop.
-        json::Value const jsonNoop =
+        // Sign jsonNoOp.
+        json::Value const jsonNoOp =
             env.json(noop("alice"), Fee(baseFee), Seq(aliceSeq), Sig("alice"));
-        // Re-sign jsonNoop.
-        JTx const jt = env.jt(jsonNoop);
+        // Re-sign jsonNoOp.
+        JTx const jt = env.jt(jsonNoOp);
         env(jt);
     }
 

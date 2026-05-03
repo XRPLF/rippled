@@ -43,11 +43,11 @@ setSTNumberSwitchover(bool v)
 /* The range for the mantissa when normalized */
 // log(2^63,10) ~ 18.96
 //
-static std::int64_t constexpr kMIN_MANTISSA = STAmount::kC_MIN_VALUE;
-static std::int64_t constexpr kMAX_MANTISSA = STAmount::kC_MAX_VALUE;
+static std::int64_t constexpr kMIN_MANTISSA = STAmount::kMIN_VALUE;
+static std::int64_t constexpr kMAX_MANTISSA = STAmount::kMAX_VALUE;
 /* The range for the exponent when normalized */
-static int constexpr kMIN_EXPONENT = STAmount::kC_MIN_OFFSET;
-static int constexpr kMAX_EXPONENT = STAmount::kC_MAX_OFFSET;
+static int constexpr kMIN_EXPONENT = STAmount::kMIN_OFFSET;
+static int constexpr kMAX_EXPONENT = STAmount::kMAX_OFFSET;
 
 IOUAmount
 IOUAmount::fromNumber(Number const& number)

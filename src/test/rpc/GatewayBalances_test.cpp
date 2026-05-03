@@ -190,7 +190,7 @@ public:
         auto usd = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(usd, STAmount::kC_MAX_VALUE, STAmount::kC_MAX_OFFSET);
+        STAmount const maxUSD(usd, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
 
         // Create a hotwallet
         Account const hw{"hw"};

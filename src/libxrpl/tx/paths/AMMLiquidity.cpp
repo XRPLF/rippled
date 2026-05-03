@@ -106,15 +106,15 @@ maxAmount()
 {
     if constexpr (std::is_same_v<T, XRPAmount>)
     {
-        return XRPAmount(STAmount::kC_MAX_NATIVE);
+        return XRPAmount(STAmount::kMAX_NATIVE);
     }
     else if constexpr (std::is_same_v<T, IOUAmount>)
     {
-        return IOUAmount(STAmount::kC_MAX_VALUE / 2, STAmount::kC_MAX_OFFSET);
+        return IOUAmount(STAmount::kMAX_VALUE / 2, STAmount::kMAX_OFFSET);
     }
     else if constexpr (std::is_same_v<T, STAmount>)
     {
-        return STAmount(STAmount::kC_MAX_VALUE / 2, STAmount::kC_MAX_OFFSET);
+        return STAmount(STAmount::kMAX_VALUE / 2, STAmount::kMAX_OFFSET);
     }
     else if constexpr (std::is_same_v<T, MPTAmount>)
     {

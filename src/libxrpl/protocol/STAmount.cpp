@@ -105,20 +105,20 @@ areComparable(STAmount const& v1, STAmount const& v2)
         v2.asset().value());
 }
 
-static_assert(kINITIAL_XRP.drops() == STAmount::kC_MAX_NATIVE_N);
+static_assert(kINITIAL_XRP.drops() == STAmount::kMAX_NATIVE_N);
 
 STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 {
     std::uint64_t value = sit.get64();
 
     // native or MPT
-    if ((value & kC_ISSUED_CURRENCY) == 0)
+    if ((value & kISSUED_CURRENCY) == 0)
     {
-        if ((value & kC_MP_TOKEN) != 0)
+        if ((value & kMP_TOKEN) != 0)
         {
             // is MPT
             offset_ = 0;
-            isNegative_ = (value & kC_POSITIVE) == 0;
+            isNegative_ = (value & kPOSITIVE) == 0;
             value_ = (value << 8) | sit.get8();
             asset_ = sit.get192();
             return;
@@ -126,9 +126,9 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
         // else is XRP
         asset_ = xrpIssue();
         // positive
-        if ((value & kC_POSITIVE) != 0)
+        if ((value & kPOSITIVE) != 0)
         {
-            value_ = value & kC_VALUE_MASK;
+            value_ = value & kVALUE_MASK;
             offset_ = 0;
             isNegative_ = false;
             return;
@@ -138,7 +138,7 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
         if (value == 0)
             Throw<std::runtime_error>("negative zero is not canonical");
 
-        value_ = value & kC_VALUE_MASK;
+        value_ = value & kVALUE_MASK;
         offset_ = 0;
         isNegative_ = true;
         return;
@@ -165,8 +165,8 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
         bool const isNegative = (offset & 256) == 0;
         offset = (offset & 255) - 97;  // center the range
 
-        if (value < kC_MIN_VALUE || value > kC_MAX_VALUE || offset < kC_MIN_OFFSET ||
-            offset > kC_MAX_OFFSET)
+        if (value < kMIN_VALUE || value > kMAX_VALUE || offset < kMIN_OFFSET ||
+            offset > kMAX_OFFSET)
         {
             Throw<std::runtime_error>("invalid currency value");
         }
@@ -780,9 +780,9 @@ STAmount::add(Serializer& s) const
 {
     asset_.visit(
         [&](MPTIssue const& issue) {
-            auto u8 = static_cast<unsigned char>(kC_MP_TOKEN >> 56);
+            auto u8 = static_cast<unsigned char>(kMP_TOKEN >> 56);
             if (!isNegative_)
-                u8 |= static_cast<unsigned char>(kC_POSITIVE >> 56);
+                u8 |= static_cast<unsigned char>(kPOSITIVE >> 56);
             s.add8(u8);
             s.add64(value_);
             s.addBitString(issue.getMptID());
@@ -794,7 +794,7 @@ STAmount::add(Serializer& s) const
 
                 if (!isNegative_)
                 {
-                    s.add64(value_ | kC_POSITIVE);
+                    s.add64(value_ | kPOSITIVE);
                 }
                 else
                 {
@@ -805,7 +805,7 @@ STAmount::add(Serializer& s) const
             {
                 if (*this == beast::kZERO)
                 {
-                    s.add64(kC_ISSUED_CURRENCY);
+                    s.add64(kISSUED_CURRENCY);
                 }
                 else if (isNegative_)  // 512 = not native
                 {
@@ -910,7 +910,7 @@ STAmount::canonicalize()
             {
                 // N.B. do not move the overflow check to after the
                 // multiplication
-                if (native() && value_ > kC_MAX_NATIVE_N)
+                if (native() && value_ > kMAX_NATIVE_N)
                 {
                     Throw<std::runtime_error>("Native currency amount out of range");
                 }
@@ -924,7 +924,7 @@ STAmount::canonicalize()
             }
         }
 
-        if (native() && value_ > kC_MAX_NATIVE_N)
+        if (native() && value_ > kMAX_NATIVE_N)
         {
             Throw<std::runtime_error>("Native currency amount out of range");
         }
@@ -949,22 +949,22 @@ STAmount::canonicalize()
         return;
     }
 
-    while ((value_ < kC_MIN_VALUE) && (offset_ > kC_MIN_OFFSET))
+    while ((value_ < kMIN_VALUE) && (offset_ > kMIN_OFFSET))
     {
         value_ *= 10;
         --offset_;
     }
 
-    while (value_ > kC_MAX_VALUE)
+    while (value_ > kMAX_VALUE)
     {
-        if (offset_ >= kC_MAX_OFFSET)
+        if (offset_ >= kMAX_OFFSET)
             Throw<std::runtime_error>("value overflow");
 
         value_ /= 10;
         ++offset_;
     }
 
-    if ((offset_ < kC_MIN_OFFSET) || (value_ < kC_MIN_VALUE))
+    if ((offset_ < kMIN_OFFSET) || (value_ < kMIN_VALUE))
     {
         value_ = 0;
         isNegative_ = false;
@@ -972,14 +972,14 @@ STAmount::canonicalize()
         return;
     }
 
-    if (offset_ > kC_MAX_OFFSET)
+    if (offset_ > kMAX_OFFSET)
         Throw<std::runtime_error>("value overflow");
 
     XRPL_ASSERT(
-        (value_ == 0) || ((value_ >= kC_MIN_VALUE) && (value_ <= kC_MAX_VALUE)),
+        (value_ == 0) || ((value_ >= kMIN_VALUE) && (value_ <= kMAX_VALUE)),
         "xrpl::STAmount::canonicalize : value inside range");
     XRPL_ASSERT(
-        (value_ == 0) || ((offset_ >= kC_MIN_OFFSET) && (offset_ <= kC_MAX_OFFSET)),
+        (value_ == 0) || ((offset_ >= kMIN_OFFSET) && (offset_ <= kMAX_OFFSET)),
         "xrpl::STAmount::canonicalize : offset inside range");
     XRPL_ASSERT(
         (value_ != 0) || (offset_ != -100), "xrpl::STAmount::canonicalize : value or offset set");
@@ -1288,7 +1288,7 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
 
     if (num.integral())
     {
-        while (numVal < STAmount::kC_MIN_VALUE)
+        while (numVal < STAmount::kMIN_VALUE)
         {
             // Need to bring into range
             numVal *= 10;
@@ -1298,7 +1298,7 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
 
     if (den.integral())
     {
-        while (denVal < STAmount::kC_MIN_VALUE)
+        while (denVal < STAmount::kMIN_VALUE)
         {
             denVal *= 10;
             --denOffset;
@@ -1363,7 +1363,7 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
 
     if (v1.integral())
     {
-        while (value1 < STAmount::kC_MIN_VALUE)
+        while (value1 < STAmount::kMIN_VALUE)
         {
             value1 *= 10;
             --offset1;
@@ -1372,7 +1372,7 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
 
     if (v2.integral())
     {
-        while (value2 < STAmount::kC_MIN_VALUE)
+        while (value2 < STAmount::kMIN_VALUE)
         {
             value2 *= 10;
             --offset2;
@@ -1431,9 +1431,9 @@ canonicalizeRound(bool integral, std::uint64_t& value, int& offset, bool)
             ++offset;
         }
     }
-    else if (value > STAmount::kC_MAX_VALUE)
+    else if (value > STAmount::kMAX_VALUE)
     {
-        while (value > (10 * STAmount::kC_MAX_VALUE))
+        while (value > (10 * STAmount::kMAX_VALUE))
         {
             value /= 10;
             ++offset;
@@ -1473,9 +1473,9 @@ canonicalizeRoundStrict(bool integral, std::uint64_t& value, int& offset, bool r
             ++offset;
         }
     }
-    else if (value > STAmount::kC_MAX_VALUE)
+    else if (value > STAmount::kMAX_VALUE)
     {
-        while (value > (10 * STAmount::kC_MAX_VALUE))
+        while (value > (10 * STAmount::kMAX_VALUE))
         {
             value /= 10;
             ++offset;
@@ -1503,7 +1503,7 @@ roundToScale(STAmount const& value, std::int32_t scale, Number::RoundingMode rou
     if (value.exponent() >= scale)
         return value;
 
-    STAmount const referenceValue{value.asset(), STAmount::kC_MIN_VALUE, scale, value.negative()};
+    STAmount const referenceValue{value.asset(), STAmount::kMIN_VALUE, scale, value.negative()};
 
     NumberRoundModeGuard const mg(rounding);
     // With an IOU, the the result of addition will be truncated to the
@@ -1576,7 +1576,7 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
 
     if (v1.integral())
     {
-        while (value1 < STAmount::kC_MIN_VALUE)
+        while (value1 < STAmount::kMIN_VALUE)
         {
             value1 *= 10;
             --offset1;
@@ -1585,7 +1585,7 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
 
     if (v2.integral())
     {
-        while (value2 < STAmount::kC_MIN_VALUE)
+        while (value2 < STAmount::kMIN_VALUE)
         {
             value2 *= 10;
             --offset2;
@@ -1628,8 +1628,8 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
         else
         {
             // return the smallest value above zero
-            amount = STAmount::kC_MIN_VALUE;
-            offset = STAmount::kC_MIN_OFFSET;
+            amount = STAmount::kMIN_VALUE;
+            offset = STAmount::kMIN_OFFSET;
         }
         return STAmount(asset, amount, offset, resultNegative);
     }
@@ -1665,7 +1665,7 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
 
     if (num.integral())
     {
-        while (numVal < STAmount::kC_MIN_VALUE)
+        while (numVal < STAmount::kMIN_VALUE)
         {
             numVal *= 10;
             --numOffset;
@@ -1674,7 +1674,7 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
 
     if (den.integral())
     {
-        while (denVal < STAmount::kC_MIN_VALUE)
+        while (denVal < STAmount::kMIN_VALUE)
         {
             denVal *= 10;
             --denOffset;
@@ -1719,8 +1719,8 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
         else
         {
             // return the smallest value above zero
-            amount = STAmount::kC_MIN_VALUE;
-            offset = STAmount::kC_MIN_OFFSET;
+            amount = STAmount::kMIN_VALUE;
+            offset = STAmount::kMIN_OFFSET;
         }
         return STAmount(asset, amount, offset, resultNegative);
     }

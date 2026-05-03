@@ -204,15 +204,15 @@ Logs::fromSeverity(beast::severities::Severity level)
     switch (level)
     {
         case KTrace:
-            return LsTrace;
+            return LSTrace;
         case KDebug:
-            return LsDebug;
+            return LSDebug;
         case KInfo:
-            return LsInfo;
+            return LSInfo;
         case KWarning:
-            return LsWarning;
+            return LSWarning;
         case KError:
-            return LsError;
+            return LSError;
 
         // LCOV_EXCL_START
         default:
@@ -223,7 +223,7 @@ Logs::fromSeverity(beast::severities::Severity level)
             break;
     }
 
-    return LsFatal;
+    return LSFatal;
 }
 
 beast::severities::Severity
@@ -232,22 +232,22 @@ Logs::toSeverity(LogSeverity level)
     using namespace beast::severities;
     switch (level)
     {
-        case LsTrace:
+        case LSTrace:
             return KTrace;
-        case LsDebug:
+        case LSDebug:
             return KDebug;
-        case LsInfo:
+        case LSInfo:
             return KInfo;
-        case LsWarning:
+        case LSWarning:
             return KWarning;
-        case LsError:
+        case LSError:
             return KError;
         // LCOV_EXCL_START
         default:
             UNREACHABLE("xrpl::Logs::toSeverity : invalid severity");
             [[fallthrough]];
         // LCOV_EXCL_STOP
-        case LsFatal:
+        case LSFatal:
             break;
     }
 
@@ -259,17 +259,17 @@ Logs::toString(LogSeverity s)
 {
     switch (s)
     {
-        case LsTrace:
+        case LSTrace:
             return "Trace";
-        case LsDebug:
+        case LSDebug:
             return "Debug";
-        case LsInfo:
+        case LSInfo:
             return "Info";
-        case LsWarning:
+        case LSWarning:
             return "Warning";
-        case LsError:
+        case LSError:
             return "Error";
-        case LsFatal:
+        case LSFatal:
             return "Fatal";
         // LCOV_EXCL_START
         default:
@@ -283,24 +283,24 @@ LogSeverity
 Logs::fromString(std::string const& s)
 {
     if (boost::iequals(s, "trace"))
-        return LsTrace;
+        return LSTrace;
 
     if (boost::iequals(s, "debug"))
-        return LsDebug;
+        return LSDebug;
 
     if (boost::iequals(s, "info") || boost::iequals(s, "information"))
-        return LsInfo;
+        return LSInfo;
 
     if (boost::iequals(s, "warn") || boost::iequals(s, "warning") || boost::iequals(s, "warnings"))
-        return LsWarning;
+        return LSWarning;
 
     if (boost::iequals(s, "error") || boost::iequals(s, "errors"))
-        return LsError;
+        return LSError;
 
     if (boost::iequals(s, "fatal") || boost::iequals(s, "fatals"))
-        return LsFatal;
+        return LSFatal;
 
-    return LsInvalid;
+    return LSInvalid;
 }
 
 void

@@ -37,7 +37,7 @@ doLogLevel(RPC::JsonContext& context)
 
     LogSeverity const sv(Logs::fromString(context.params[jss::severity].asString()));
 
-    if (sv == LsInvalid)
+    if (sv == LSInvalid)
         return rpcError(RpcInvalidParams);
 
     auto severity = Logs::toSeverity(sv);
