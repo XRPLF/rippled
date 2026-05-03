@@ -4750,7 +4750,7 @@ public:
             // TakerPays=Token(30): carol will receive Token when crossed.
             // TakerGets=XRP(30):  carol will give XRP when crossed.
             env(offer(carol, Token(30), XRP(30)));
-            env.require(owners(carol, 1));
+            env.require(Owners(carol, 1));
 
             // Execute offer create or cross-currency payment
             // alice partially crosses carol's offer.
@@ -4764,7 +4764,7 @@ public:
             // though her XRP balance is only reserve(1) + XRP(15), which is
             // below reserve(2) = reserve(1) + inc.
             auto const carolBalance = r + inc + XRP(15);
-            env.require(owners(carol, 2), balance(carol, Token(15)), balance(carol, carolBalance));
+            env.require(Owners(carol, 2), Balance(carol, Token(15)), Balance(carol, carolBalance));
             BEAST_EXPECT(carolBalance < r + 2 * inc);  // below reserve(2)
         };
         std::function<PrettyAsset(Env&)> const getIOU = [&](Env& env) -> PrettyAsset {
@@ -4789,9 +4789,9 @@ public:
             test(getToken, [&](Env& env, PrettyAsset const& Token) {
                 // Similar to above but with cross-currency payment.
                 env(pay(alice, bob, XRP(15)),
-                    sendmax(Token(15)),
-                    path(~XRP),
-                    txflags(tfNoRippleDirect | tfPartialPayment));
+                    Sendmax(Token(15)),
+                    Path(~XRP),
+                    Txflags(tfNoRippleDirect | tfPartialPayment));
             });
         }
     }

@@ -4238,34 +4238,34 @@ class Invariants_test : public beast::unit_test::Suite
             return true;
         };
 
-        auto test =
-            [&](auto const txType, auto&& update, bool isMPT, TER error = tecINVARIANT_FAILED) {
-                doInvariantCheck(
-                    {{"AMM"}},
-                    [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                        return update(ac, isMPT);
-                    },
-                    XRPAmount{},
-                    STTx{txType, [&](STObject& tx) {}},
-                    {tecINVARIANT_FAILED, error},
-                    [&](Account const& A1, Account const& A2, Env& env) {
-                        env.fund(XRP(1'000), gw);
-                        poolAsset = [&]() -> PrettyAsset {
-                            if (isMPT)
-                            {
-                                MPT const mpt = MPTTester({.env = env, .issuer = gw});
-                                mptID = mpt.issuanceID;
-                                return mpt;
-                            }
-                            return gw["USD"];
-                        }();
-                        AMM const amm(env, gw, XRP(100), poolAsset(100));
-                        ammAccountID = amm.ammAccount();
-                        ammID = amm.ammID();
-                        lptIssue = amm.lptIssue();
-                        return true;
-                    });
-            };
+        auto test = [&](auto const txType,
+                        auto&& update,
+                        bool isMPT,
+                        TER error = tecINVARIANT_FAILED) {
+            doInvariantCheck(
+                {{"AMM"}},
+                [&](Account const&, Account const&, ApplyContext& ac) { return update(ac, isMPT); },
+                XRPAmount{},
+                STTx{txType, [&](STObject& tx) {}},
+                {tecINVARIANT_FAILED, error},
+                [&](Account const&, Account const&, Env& env) {
+                    env.fund(XRP(1'000), gw);
+                    poolAsset = [&]() -> PrettyAsset {
+                        if (isMPT)
+                        {
+                            MPT const mpt = MPTTester({.env = env, .issuer = gw});
+                            mptID = mpt.issuanceID;
+                            return mpt;
+                        }
+                        return gw["USD"];
+                    }();
+                    AMM const amm(env, gw, XRP(100), poolAsset(100));
+                    ammAccountID = amm.ammAccount();
+                    ammID = amm.ammID();
+                    lptIssue = amm.lptIssue();
+                    return true;
+                });
+        };
 
         for (bool const isMPT : {false, true})
         {

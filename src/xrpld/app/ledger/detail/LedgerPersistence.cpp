@@ -12,8 +12,6 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/RelationalDatabase.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/SystemParameters.h>
 
 #include <cstdint>
 #include <memory>

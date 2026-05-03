@@ -6668,7 +6668,7 @@ class MPToken_test : public beast::unit_test::Suite
             usd.set({.mutableFlags = tmfMPTClearCanTrade});
             amm.withdraw({.account = gw, .tokens = 1'000, .err = Ter(tecNO_PERMISSION)});
             amm.withdraw({.account = carol, .tokens = 1'000, .err = Ter(tecNO_PERMISSION)});
-            USD.set({.mutableFlags = tmfMPTSetCanTrade});
+            usd.set({.mutableFlags = tmfMPTSetCanTrade});
 
             // MPToken created on withdraw
 
@@ -6704,11 +6704,11 @@ class MPToken_test : public beast::unit_test::Suite
         env.close();
 
         // Create MPT with DEX flags. Only alice is a holder initially.
-        MPT const BTC = MPTTester(
-            {.env = env, .issuer = gw, .holders = {alice}, .pay = 20'000, .flags = MPTDEXFlags});
+        MPT const btc = MPTTester(
+            {.env = env, .issuer = gw, .holders = {alice}, .pay = 20'000, .flags = kMPT_DEX_FLAGS});
 
         // Alice creates XRP/MPT AMM pool
-        AMM amm(env, alice, XRP(10'000), BTC(10'000));
+        AMM amm(env, alice, XRP(10'000), btc(10'000));
 
         // Carol deposits XRP (single asset) into the pool.
         // Carol gets LP tokens but does NOT have an MPToken yet.
@@ -6721,7 +6721,7 @@ class MPToken_test : public beast::unit_test::Suite
         auto const carolOwnersBeforeWithdraw = ownerCount(env, carol);
         // Carol withdraws single MPT asset. She doesn't have an MPToken,
         // so one must be created. Bug: ownerCount incremented twice.
-        amm.withdraw({.account = carol, .asset1Out = BTC(100), .flags = tfSingleAsset});
+        amm.withdraw({.account = carol, .asset1Out = btc(100), .flags = tfSingleAsset});
         auto const carolOwnersAfterWithdraw = ownerCount(env, carol);
 
         // Expected: +1 for the new MPToken (so total increase = 1)
@@ -6747,7 +6747,7 @@ class MPToken_test : public beast::unit_test::Suite
              .issuer = gw,
              .holders = {alice, carol},
              .pay = 100,
-             .flags = MPTDEXFlags,
+             .flags = kMPT_DEX_FLAGS,
              .mutableFlags = tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanTrade});
 
         // Both flags are enabled

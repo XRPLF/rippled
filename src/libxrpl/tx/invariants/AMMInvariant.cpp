@@ -233,10 +233,10 @@ ValidAMM::generalInvariant(
     };
     if (!nonNegativeBalances || (!strongInvariantCheck && !weakInvariantCheck()))
     {
-        JLOG(j.error()) << "AMM " << tx.getTxnType()
-                        << " invariant failed: " << tx.getHash(HashPrefix::TransactionId) << " "
-                        << ammPoolChanged_ << " " << amount << " " << amount2 << " "
-                        << poolProductMean << " " << lptAMMBalanceAfter_->getText() << " "
+        JLOG(j.error()) << "Invariant failed: AMM " << tx.getTxnType() << " "
+                        << tx.getHash(HashPrefix::TransactionId) << " " << ammPoolChanged_ << " "
+                        << amount << " " << amount2 << " " << poolProductMean << " "
+                        << lptAMMBalanceAfter_->getText() << " "
                         << ((*lptAMMBalanceAfter_ == beast::kZERO)
                                 ? Number{1}
                                 : ((*lptAMMBalanceAfter_ - poolProductMean) / poolProductMean));

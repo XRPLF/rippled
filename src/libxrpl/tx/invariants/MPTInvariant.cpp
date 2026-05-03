@@ -445,7 +445,7 @@ ValidMPTTransfer::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (hasPrivilege(tx, overrideFreeze))
+    if (hasPrivilege(tx, OverrideFreeze))
         return true;
 
     // DEX transactions (AMM[Create,Deposit,Withdraw], cross-currency payments, offer creates) are

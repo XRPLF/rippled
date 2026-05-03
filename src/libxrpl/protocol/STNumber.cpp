@@ -16,7 +16,6 @@
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_match.hpp>
-#include <xrpl/protocol/Rules.h>
 
 #include <cstddef>
 #include <cstdint>

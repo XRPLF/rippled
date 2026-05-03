@@ -19,7 +19,6 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
-#include <xrpl/protocol/Protocol.h>
 
 #include <algorithm>
 #include <cstdint>

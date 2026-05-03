@@ -24,7 +24,6 @@
 #include <xrpl/tx/apply.h>
 
 #include <boost/range/adaptor/transformed.hpp>
-#include <xrpl/protocol/SField.h>
 
 #include <xrpl.pb.h>
 

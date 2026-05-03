@@ -349,9 +349,6 @@ private:
                  .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
             btc.set({.flags = tfMPTLock});
             AMM const ammAlice(env, alice_, USD(10'000), btc(10'000), Ter(tecLOCKED));
-                 .flags = tfMPTCanLock | MPTDEXFlags});
-            BTC.set({.flags = tfMPTLock});
-            AMM const ammAlice(env, alice, USD(10'000), BTC(10'000), ter(tecLOCKED));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -730,13 +727,13 @@ private:
 
             if (!features[featureAMMClawback])
             {
-                ammAlice.deposit(carol_, usd(100), std::nullopt, std::nullopt, std::nullopt);
+                ammAlice.deposit(carol_, USD(100), std::nullopt, std::nullopt, std::nullopt);
             }
             else
             {
                 // Carol can not deposit non-frozen token either
                 ammAlice.deposit(
-                    carol_, usd(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecLOCKED));
+                    carol_, USD(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecLOCKED));
             }
 
             // Alice can deposit because she's not individually locked
