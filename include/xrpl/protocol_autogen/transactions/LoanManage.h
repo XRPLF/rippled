@@ -19,9 +19,9 @@ class LoanManageBuilder;
  * @brief Transaction: LoanManage
  *
  * Type: ttLOAN_MANAGE (82)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: mayModifyVault
+ * Privileges: MayModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanManageBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLoanID (soeREQUIRED)
+     * @brief Get sfLoanID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -63,7 +63,7 @@ public:
  * @brief Builder for LoanManage transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class LoanManageBuilder : public TransactionBuilderBase<LoanManageBuilder>
@@ -102,7 +102,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLoanID (soeREQUIRED)
+     * @brief Set sfLoanID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanManageBuilder&

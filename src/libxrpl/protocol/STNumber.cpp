@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
@@ -58,7 +59,7 @@ STNumber::associateAsset(Asset const& a)
     STTakesAsset::associateAsset(a);
 
     XRPL_ASSERT_PARTS(
-        getFName().shouldMeta(SField::sMD_NeedsAsset),
+        getFName().shouldMeta(SField::SMdNeedsAsset),
         "STNumber::associateAsset",
         "field needs asset");
 
@@ -76,7 +77,7 @@ STNumber::add(Serializer& s) const
     auto const exponent = value.exponent();
 
     SField const& field = getFName();
-    if (field.shouldMeta(SField::sMD_NeedsAsset))
+    if (field.shouldMeta(SField::SMdNeedsAsset))
     {
         // asset is defined in the STTakesAsset base class
         if (asset_)
@@ -96,7 +97,7 @@ STNumber::add(Serializer& s) const
             // Json. Regardless, the only time we should be serializing an
             // STNumber is when the scale is large.
             XRPL_ASSERT_PARTS(
-                Number::getMantissaScale() == MantissaRange::large,
+                Number::getMantissaScale() == MantissaRange::MantissaScale::Large,
                 "xrpl::STNumber::add",
                 "STNumber only used with large mantissa scale");
 #endif
@@ -160,7 +161,7 @@ operator<<(std::ostream& out, STNumber const& rhs)
 NumberParts
 partsFromString(std::string const& number)
 {
-    static boost::regex const reNumber(
+    static boost::regex const kRE_NUMBER(
         "^"                       // the beginning of the string
         "([-+]?)"                 // (optional) + or - character
         "(0|[1-9][0-9]*)"         // a number (no leading zeroes, unless 0)
@@ -171,7 +172,7 @@ partsFromString(std::string const& number)
 
     boost::smatch match;
 
-    if (!boost::regex_match(number, match, reNumber))
+    if (!boost::regex_match(number, match, kRE_NUMBER))
         Throw<std::runtime_error>("'" + number + "' is not a number");
 
     // Match fields:
@@ -218,7 +219,7 @@ partsFromString(std::string const& number)
 }
 
 STNumber
-numberFromJson(SField const& field, Json::Value const& value)
+numberFromJson(SField const& field, json::Value const& value)
 {
     NumberParts parts;
 
@@ -258,7 +259,7 @@ numberFromJson(SField const& field, Json::Value const& value)
     }
 
     return STNumber{
-        field, Number{parts.negative, parts.mantissa, parts.exponent, Number::normalized{}}};
+        field, Number{parts.negative, parts.mantissa, parts.exponent, Number::Normalized{}}};
 }
 
 }  // namespace xrpl

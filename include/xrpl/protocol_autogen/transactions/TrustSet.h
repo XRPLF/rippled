@@ -19,9 +19,9 @@ class TrustSetBuilder;
  * @brief Transaction: TrustSet
  *
  * Type: ttTRUST_SET (20)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use TrustSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLimitAmount (soeOPTIONAL)
+     * @brief Get sfLimitAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfQualityIn (soeOPTIONAL)
+     * @brief Get sfQualityIn (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -100,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfQualityOut (soeOPTIONAL)
+     * @brief Get sfQualityOut (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -130,7 +130,7 @@ public:
  * @brief Builder for TrustSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class TrustSetBuilder : public TransactionBuilderBase<TrustSetBuilder>
@@ -167,7 +167,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLimitAmount (soeOPTIONAL)
+     * @brief Set sfLimitAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     TrustSetBuilder&
@@ -178,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Set sfQualityIn (soeOPTIONAL)
+     * @brief Set sfQualityIn (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     TrustSetBuilder&
@@ -189,7 +189,7 @@ public:
     }
 
     /**
-     * @brief Set sfQualityOut (soeOPTIONAL)
+     * @brief Set sfQualityOut (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     TrustSetBuilder&

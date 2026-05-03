@@ -17,22 +17,22 @@ namespace xrpl {
 
 TrustLineBase::TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount)
     : key_(sle->key())
-    , mLowLimit(sle->getFieldAmount(sfLowLimit))
-    , mHighLimit(sle->getFieldAmount(sfHighLimit))
-    , mBalance(sle->getFieldAmount(sfBalance))
-    , mFlags(sle->getFieldU32(sfFlags))
-    , mViewLowest(mLowLimit.getIssuer() == viewAccount)
+    , lowLimit_(sle->getFieldAmount(sfLowLimit))
+    , highLimit_(sle->getFieldAmount(sfHighLimit))
+    , balance_(sle->getFieldAmount(sfBalance))
+    , flags_(sle->getFieldU32(sfFlags))
+    , viewLowest_(lowLimit_.getIssuer() == viewAccount)
 {
-    if (!mViewLowest)
-        mBalance.negate();
+    if (!viewLowest_)
+        balance_.negate();
 }
 
-Json::Value
+json::Value
 TrustLineBase::getJson(int)
 {
-    Json::Value ret(Json::objectValue);
-    ret["low_id"] = to_string(mLowLimit.getIssuer());
-    ret["high_id"] = to_string(mHighLimit.getIssuer());
+    json::Value ret(json::ObjectValue);
+    ret["low_id"] = to_string(lowLimit_.getIssuer());
+    ret["high_id"] = to_string(highLimit_.getIssuer());
     return ret;
 }
 
@@ -50,7 +50,7 @@ std::vector<T>
 getTrustLineItems(
     AccountID const& accountID,
     ReadView const& view,
-    LineDirection direction = LineDirection::outgoing)
+    LineDirection direction = LineDirection::Outgoing)
 {
     std::vector<T> items;
     forEachItem(
@@ -58,7 +58,7 @@ getTrustLineItems(
         accountID,
         [&items, &accountID, &direction](std::shared_ptr<SLE const> const& sleCur) {
             auto ret = T::makeItem(accountID, sleCur);
-            if (ret && (direction == LineDirection::outgoing || !ret->getNoRipple()))
+            if (ret && (direction == LineDirection::Outgoing || !ret->getNoRipple()))
                 items.push_back(std::move(*ret));
         });
     // This list may be around for a while, so free up any unneeded

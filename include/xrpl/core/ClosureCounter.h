@@ -27,10 +27,10 @@ namespace xrpl {
  * the caller that they should drop the closure and cancel their operation.
  * `join` blocks until all existing closure substitutes are destroyed.
  *
- * \tparam Ret_t The return type of the closure.
- * \tparam Args_t The argument types of the closure.
+ * \tparam Ret The return type of the closure.
+ * \tparam Args The argument types of the closure.
  */
-template <typename Ret_t, typename... Args_t>
+template <typename Ret, typename... Args>
 class ClosureCounter
 {
 private:
@@ -56,7 +56,7 @@ private:
         // a lock.  This removes a small timing window that occurs if the
         // waiting thread is handling a spurious wakeup when closureCount_
         // drops to zero.
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
 
         // Update closureCount_.  Notify if stopping and closureCount_ == 0.
         if ((--closureCount_ == 0) && waitForClosures_)
@@ -75,8 +75,8 @@ private:
         std::remove_reference_t<Closure> closure_{};
 
         static_assert(
-            std::is_same_v<decltype(closure_(std::declval<Args_t>()...)), Ret_t>,
-            "Closure arguments don't match ClosureCounter Ret_t or Args_t");
+            std::is_same_v<decltype(closure_(std::declval<Args>()...)), Ret>,
+            "Closure arguments don't match ClosureCounter Ret or Args");
 
     public:
         Substitute() = delete;
@@ -110,13 +110,13 @@ private:
             --counter_;
         }
 
-        // Note that Args_t is not deduced, it is explicit.  So Args_t&&
+        // Note that Args is not deduced, it is explicit.  So Args&&
         // would be an rvalue reference, not a forwarding reference.  We
         // want to forward exactly what the user declared.
-        Ret_t
-        operator()(Args_t... args)
+        Ret
+        operator()(Args... args)
         {
-            return closure_(std::forward<Args_t>(args)...);
+            return closure_(std::forward<Args>(args)...);
         }
     };
 
@@ -159,7 +159,7 @@ public:
 
     /** Wrap the passed closure with a reference counter.
 
-        @param closure Closure that accepts Args_t parameters and returns Ret_t.
+        @param closure Closure that accepts Args parameters and returns Ret.
         @return If join() has been called returns std::nullopt.  Otherwise
                 returns a std::optional that wraps closure with a
                 reference counter.
@@ -170,7 +170,7 @@ public:
     {
         std::optional<Substitute<Closure>> ret;
 
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         if (!waitForClosures_)
             ret.emplace(*this, std::forward<Closure>(closure));
 
@@ -193,7 +193,7 @@ public:
     bool
     joined() const
     {
-        std::lock_guard const lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         return waitForClosures_;
     }
 };

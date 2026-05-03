@@ -3,7 +3,7 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
-namespace Json {
+namespace json {
 
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
@@ -89,12 +89,12 @@ ValueIteratorBase::key() const
 {
     Value::CZString const czString = (*current_).first;
 
-    if (czString.c_str() != nullptr)
+    if (czString.cStr() != nullptr)
     {
         if (czString.isStaticString())
-            return Value(StaticString(czString.c_str()));
+            return Value(StaticString(czString.cStr()));
 
-        return Value(czString.c_str());
+        return Value(czString.cStr());
     }
 
     return Value(czString.index());
@@ -105,7 +105,7 @@ ValueIteratorBase::index() const
 {
     Value::CZString const czString = (*current_).first;
 
-    if (czString.c_str() == nullptr)
+    if (czString.cStr() == nullptr)
         return czString.index();
 
     return Value::UInt(-1);
@@ -114,7 +114,7 @@ ValueIteratorBase::index() const
 char const*
 ValueIteratorBase::memberName() const
 {
-    char const* name = (*current_).first.c_str();
+    char const* name = (*current_).first.cStr();
     return (name != nullptr) ? name : "";
 }
 
@@ -164,4 +164,4 @@ ValueIterator::operator=(SelfType const& other)
     return *this;
 }
 
-}  // namespace Json
+}  // namespace json

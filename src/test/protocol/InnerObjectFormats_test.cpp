@@ -3,7 +3,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_reader.h>  // Json::Reader
+#include <xrpl/json/json_reader.h>  // json::Reader
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>    // RPC::containsError
 #include <xrpl/protocol/STParsedJSON.h>  // STParsedJSONObject
@@ -21,7 +21,7 @@ struct TestJSONTxt
     bool const expectFail;
 };
 
-static TestJSONTxt const testArray[] = {
+static TestJSONTxt const kTEST_ARRAY[] = {
 
     // Valid SignerEntry
     {.txt = R"({
@@ -151,7 +151,7 @@ static TestJSONTxt const testArray[] = {
 
 }  // namespace InnerObjectFormatsUnitTestDetail
 
-class InnerObjectFormatsParsedJSON_test : public beast::unit_test::suite
+class InnerObjectFormatsParsedJSON_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -162,11 +162,11 @@ public:
         // Instantiate a jtx::Env so debugLog writes are exercised.
         test::jtx::Env const env(*this);
 
-        for (auto const& test : testArray)
+        for (auto const& test : kTEST_ARRAY)
         {
-            Json::Value req;
-            Json::Reader().parse(test.txt, req);
-            if (RPC::contains_error(req))
+            json::Value req;
+            json::Reader().parse(test.txt, req);
+            if (RPC::containsError(req))
             {
                 Throw<std::runtime_error>(
                     "Internal InnerObjectFormatsParsedJSON error.  Bad JSON.");
