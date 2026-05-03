@@ -255,8 +255,8 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
 
             // Valid: legacy `nodeid` field at arbitrary depth.
             {
-                auto const kLEAF_DEPTH = 5;
-                auto const leafID = SHAMapNodeID::createID(kLEAF_DEPTH, leafKey);
+                auto const kLeafDepth = 5;
+                auto const leafID = SHAMapNodeID::createID(kLeafDepth, leafKey);
 
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
@@ -267,8 +267,8 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
 
             // Invalid: new `id` field should not be used for leaf nodes.
             {
-                auto const kLEAF_DEPTH = 5;
-                auto const leafID = SHAMapNodeID::createID(kLEAF_DEPTH, leafKey);
+                auto const kLeafDepth = 5;
+                auto const leafID = SHAMapNodeID::createID(kLeafDepth, leafKey);
 
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
@@ -279,24 +279,24 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
 
             // Valid: new `depth` field at minimum depth.
             {
-                auto const kLEAF_DEPTH = 0;
-                auto const leafID = SHAMapNodeID::createID(kLEAF_DEPTH, leafKey);
+                auto const kLeafDepth = 0;
+                auto const leafID = SHAMapNodeID::createID(kLeafDepth, leafKey);
 
                 protocol::TMLedgerNode node;
                 node.set_nodedata(leafData);
-                node.set_depth(kLEAF_DEPTH);
+                node.set_depth(kLeafDepth);
                 auto const result = getSHAMapNodeID(node, leafNode);
                 BEAST_EXPECT(result == leafID);
             }
 
             // Valid: new `depth` field at arbitrary depth between minimum and maximum.
             {
-                auto const kLEAF_DEPTH = 10;
-                auto const leafID = SHAMapNodeID::createID(kLEAF_DEPTH, leafKey);
+                auto const kLeafDepth = 10;
+                auto const leafID = SHAMapNodeID::createID(kLeafDepth, leafKey);
 
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
-                ledgerNode.set_depth(kLEAF_DEPTH);
+                ledgerNode.set_depth(kLeafDepth);
                 auto const result = getSHAMapNodeID(ledgerNode, leafNode);
                 BEAST_EXPECT(result == leafID);
             }
@@ -306,12 +306,12 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
             // message is assumed to have been validated by the time the getSHAMapNodeID function is
             // called.
             {
-                auto const kLEAF_DEPTH = SHAMap::kLEAF_DEPTH;
-                auto const leafID = SHAMapNodeID::createID(kLEAF_DEPTH, leafKey);
+                auto const kLeafDepth = SHAMap::kLEAF_DEPTH;
+                auto const leafID = SHAMapNodeID::createID(kLeafDepth, leafKey);
 
                 protocol::TMLedgerNode node;
                 node.set_nodedata(leafData);
-                node.set_depth(kLEAF_DEPTH);
+                node.set_depth(kLeafDepth);
                 auto const result = getSHAMapNodeID(node, leafNode);
                 BEAST_EXPECT(result == leafID);
             }
