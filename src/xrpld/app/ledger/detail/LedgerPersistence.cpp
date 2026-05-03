@@ -8,7 +8,9 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
 #include <cstdint>
@@ -78,7 +80,7 @@ pendSaveValidated(
     // See if we can use the JobQueue.
     if (!isSynchronous &&
         registry.getJobQueue().addJob(
-            isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER,
+            isCurrent ? JtPubledger : JtPuboldledger,
             "Pub" + std::to_string(ledger->seq()),
             [&registry, ledger, isCurrent]() { saveValidatedLedger(registry, ledger, isCurrent); }))
     {
@@ -120,7 +122,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
         return;
 
     XRPL_ASSERT(
-        ledger->header().seq < XRP_LEDGER_EARLIEST_FEES || ledger->read(keylet::fees()),
+        ledger->header().seq < kXRP_LEDGER_EARLIEST_FEES || ledger->read(keylet::fees()),
         "xrpl::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 

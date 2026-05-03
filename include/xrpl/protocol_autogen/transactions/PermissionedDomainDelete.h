@@ -19,9 +19,9 @@ class PermissionedDomainDeleteBuilder;
  * @brief Transaction: PermissionedDomainDelete
  *
  * Type: ttPERMISSIONED_DOMAIN_DELETE (63)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featurePermissionedDomains
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PermissionedDomainDeleteBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDomainID (soeREQUIRED)
+     * @brief Get sfDomainID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -63,7 +63,7 @@ public:
  * @brief Builder for PermissionedDomainDelete transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class PermissionedDomainDeleteBuilder : public TransactionBuilderBase<PermissionedDomainDeleteBuilder>
@@ -102,7 +102,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDomainID (soeREQUIRED)
+     * @brief Set sfDomainID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainDeleteBuilder&

@@ -46,36 +46,36 @@
 
 namespace xrpl {
 
-create_genesis_t const create_genesis{};
+CreateGenesisT const kCREATE_GENESIS{};
 
 //------------------------------------------------------------------------------
 
-class Ledger::sles_iter_impl : public sles_type::iter_base
+class Ledger::SlesIterImpl : public SlesType::iter_base
 {
 private:
-    SHAMap::const_iterator iter_;
+    SHAMap::ConstIterator iter_;
 
 public:
-    sles_iter_impl() = delete;
-    sles_iter_impl&
-    operator=(sles_iter_impl const&) = delete;
+    SlesIterImpl() = delete;
+    SlesIterImpl&
+    operator=(SlesIterImpl const&) = delete;
 
-    sles_iter_impl(sles_iter_impl const&) = default;
+    SlesIterImpl(SlesIterImpl const&) = default;
 
-    sles_iter_impl(SHAMap::const_iterator iter) : iter_(iter)
+    SlesIterImpl(SHAMap::ConstIterator iter) : iter_(iter)
     {
     }
 
     [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
-        return std::make_unique<sles_iter_impl>(*this);
+        return std::make_unique<SlesIterImpl>(*this);
     }
 
     [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
-        if (auto const p = dynamic_cast<sles_iter_impl const*>(&impl))
+        if (auto const p = dynamic_cast<SlesIterImpl const*>(&impl))
             return iter_ == p->iter_;
         return false;
     }
@@ -86,7 +86,7 @@ public:
         ++iter_;
     }
 
-    [[nodiscard]] sles_type::value_type
+    [[nodiscard]] SlesType::value_type
     dereference() const override
     {
         SerialIter sit(iter_->slice());
@@ -96,33 +96,33 @@ public:
 
 //------------------------------------------------------------------------------
 
-class Ledger::txs_iter_impl : public txs_type::iter_base
+class Ledger::TxsIterImpl : public TxsType::iter_base
 {
 private:
     bool metadata_;
-    SHAMap::const_iterator iter_;
+    SHAMap::ConstIterator iter_;
 
 public:
-    txs_iter_impl() = delete;
-    txs_iter_impl&
-    operator=(txs_iter_impl const&) = delete;
+    TxsIterImpl() = delete;
+    TxsIterImpl&
+    operator=(TxsIterImpl const&) = delete;
 
-    txs_iter_impl(txs_iter_impl const&) = default;
+    TxsIterImpl(TxsIterImpl const&) = default;
 
-    txs_iter_impl(bool metadata, SHAMap::const_iterator iter) : metadata_(metadata), iter_(iter)
+    TxsIterImpl(bool metadata, SHAMap::ConstIterator iter) : metadata_(metadata), iter_(iter)
     {
     }
 
     [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
-        return std::make_unique<txs_iter_impl>(*this);
+        return std::make_unique<TxsIterImpl>(*this);
     }
 
     [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
-        if (auto const p = dynamic_cast<txs_iter_impl const*>(&impl))
+        if (auto const p = dynamic_cast<TxsIterImpl const*>(&impl))
             return iter_ == p->iter_;
         return false;
     }
@@ -133,7 +133,7 @@ public:
         ++iter_;
     }
 
-    [[nodiscard]] txs_type::value_type
+    [[nodiscard]] TxsType::value_type
     dereference() const override
     {
         auto const& item = *iter_;
@@ -146,12 +146,12 @@ public:
 //------------------------------------------------------------------------------
 
 Ledger::Ledger(
-    create_genesis_t,
+    CreateGenesisT,
     Rules rules,
     Fees const& fees,
     std::vector<uint256> const& amendments,
     Family& family)
-    : mImmutable(false)
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
     , fees_(fees)
@@ -159,15 +159,15 @@ Ledger::Ledger(
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = 1;
-    header_.drops = INITIAL_XRP;
-    header_.closeTimeResolution = ledgerGenesisTimeResolution;
+    header_.drops = kINITIAL_XRP;
+    header_.closeTimeResolution = kLEDGER_GENESIS_TIME_RESOLUTION;
 
-    static auto const id =
-        calcAccountID(generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")).first);
+    static auto const kID =
+        calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
     {
-        auto const sle = std::make_shared<SLE>(keylet::account(id));
+        auto const sle = std::make_shared<SLE>(keylet::account(kID));
         sle->setFieldU32(sfSequence, 1);
-        sle->setAccountID(sfAccount, id);
+        sle->setAccountID(sfAccount, kID);
         sle->setFieldAmount(sfBalance, header_.drops);
         rawInsert(sle);
     }
@@ -196,12 +196,12 @@ Ledger::Ledger(
                 sle->at(sfReserveBase) = *f;
             if (auto const f = fees.increment.dropsAs<std::uint32_t>())
                 sle->at(sfReserveIncrement) = *f;
-            sle->at(sfReferenceFeeUnits) = FEE_UNITS_DEPRECATED;
+            sle->at(sfReferenceFeeUnits) = kFEE_UNITS_DEPRECATED;
         }
         rawInsert(sle);
     }
 
-    stateMap_.flushDirty(NodeObjectType::hotACCOUNT_NODE);
+    stateMap_.flushDirty(NodeObjectType::AccountNode);
     setImmutable();
 }
 
@@ -213,7 +213,7 @@ Ledger::Ledger(
     Fees const& fees,
     Family& family,
     beast::Journal j)
-    : mImmutable(true)
+    : immutable_(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , fees_(fees)
@@ -252,7 +252,7 @@ Ledger::Ledger(
 
 // Create a new ledger that follows this one
 Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
-    : mImmutable(false)
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, prevLedger.txMap_.family())
     , stateMap_(prevLedger.stateMap_, true)
     , fees_(prevLedger.fees_)
@@ -279,7 +279,7 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
 }
 
 Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
-    : mImmutable(true)
+    : immutable_(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , rules_(std::move(rules))
@@ -295,7 +295,7 @@ Ledger::Ledger(
     Rules rules,
     Fees const& fees,
     Family& family)
-    : mImmutable(false)
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
     , fees_(fees)
@@ -304,7 +304,7 @@ Ledger::Ledger(
 {
     header_.seq = ledgerSeq;
     header_.closeTime = closeTime;
-    header_.closeTimeResolution = ledgerDefaultTimeResolution;
+    header_.closeTimeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
     setup();
 }
 
@@ -313,16 +313,16 @@ Ledger::setImmutable(bool rehash)
 {
     // Force update, since this is the only
     // place the hash transitions to valid
-    if (!mImmutable && rehash)
+    if (!immutable_ && rehash)
     {
-        header_.txHash = txMap_.getHash().as_uint256();
-        header_.accountHash = stateMap_.getHash().as_uint256();
+        header_.txHash = txMap_.getHash().asUint256();
+        header_.accountHash = stateMap_.getHash().asUint256();
     }
 
     if (rehash)
         header_.hash = calculateLedgerHash(header_);
 
-    mImmutable = true;
+    immutable_ = true;
     txMap_.setImmutable();
     stateMap_.setImmutable();
     setup();
@@ -339,7 +339,7 @@ Ledger::setAccepted(
 
     header_.closeTime = closeTime;
     header_.closeTimeResolution = closeResolution;
-    header_.closeFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
+    header_.closeFlags = correctCloseTime ? 0 : kS_LCF_NO_CONSENSUS_TIME;
     setImmutable();
 }
 
@@ -347,8 +347,7 @@ bool
 Ledger::addSLE(SLE const& sle)
 {
     auto const s = sle.getSerializer();
-    return stateMap_.addItem(
-        SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle.key(), s.slice()));
+    return stateMap_.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(sle.key(), s.slice()));
 }
 
 //------------------------------------------------------------------------------
@@ -394,7 +393,7 @@ Ledger::exists(uint256 const& key) const
 std::optional<uint256>
 Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
 {
-    auto item = stateMap_.upper_bound(key);
+    auto item = stateMap_.upperBound(key);
     if (item == stateMap_.end())
         return std::nullopt;
     if (last && item->key() >= last)
@@ -405,7 +404,7 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
 std::shared_ptr<SLE const>
 Ledger::read(Keylet const& k) const
 {
-    if (k.key == beast::zero)
+    if (k.key == beast::kZERO)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::Ledger::read : zero key");
@@ -424,33 +423,33 @@ Ledger::read(Keylet const& k) const
 //------------------------------------------------------------------------------
 
 auto
-Ledger::slesBegin() const -> std::unique_ptr<sles_type::iter_base>
+Ledger::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
 {
-    return std::make_unique<sles_iter_impl>(stateMap_.begin());
+    return std::make_unique<SlesIterImpl>(stateMap_.begin());
 }
 
 auto
-Ledger::slesEnd() const -> std::unique_ptr<sles_type::iter_base>
+Ledger::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
 {
-    return std::make_unique<sles_iter_impl>(stateMap_.end());
+    return std::make_unique<SlesIterImpl>(stateMap_.end());
 }
 
 auto
-Ledger::slesUpperBound(uint256 const& key) const -> std::unique_ptr<sles_type::iter_base>
+Ledger::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
 {
-    return std::make_unique<sles_iter_impl>(stateMap_.upper_bound(key));
+    return std::make_unique<SlesIterImpl>(stateMap_.upperBound(key));
 }
 
 auto
-Ledger::txsBegin() const -> std::unique_ptr<txs_type::iter_base>
+Ledger::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
 {
-    return std::make_unique<txs_iter_impl>(!open(), txMap_.begin());
+    return std::make_unique<TxsIterImpl>(!open(), txMap_.begin());
 }
 
 auto
-Ledger::txsEnd() const -> std::unique_ptr<txs_type::iter_base>
+Ledger::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
 {
-    return std::make_unique<txs_iter_impl>(!open(), txMap_.end());
+    return std::make_unique<TxsIterImpl>(!open(), txMap_.end());
 }
 
 bool
@@ -481,7 +480,7 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
     //        from the NodeStore needlessly.
     if (!stateMap_.peekItem(key, digest))
         return std::nullopt;
-    return digest.as_uint256();
+    return digest.asUint256();
 }
 
 //------------------------------------------------------------------------------
@@ -490,14 +489,14 @@ void
 Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
     if (!stateMap_.delItem(sle->key()))
-        LogicError("Ledger::rawErase: key not found");
+        logicError("Ledger::rawErase: key not found");
 }
 
 void
 Ledger::rawErase(uint256 const& key)
 {
     if (!stateMap_.delItem(key))
-        LogicError("Ledger::rawErase: key not found");
+        logicError("Ledger::rawErase: key not found");
 }
 
 void
@@ -506,8 +505,10 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     Serializer ss;
     sle->add(ss);
     if (!stateMap_.addGiveItem(
-            SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle->key(), ss.slice())))
-        LogicError("Ledger::rawInsert: key already exists");
+            SHAMapNodeType::TnAccountState, makeShamapitem(sle->key(), ss.slice())))
+    {
+        logicError("Ledger::rawInsert: key already exists");
+    }
 }
 
 void
@@ -516,8 +517,10 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     Serializer ss;
     sle->add(ss);
     if (!stateMap_.updateGiveItem(
-            SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle->key(), ss.slice())))
-        LogicError("Ledger::rawReplace: key not found");
+            SHAMapNodeType::TnAccountState, makeShamapitem(sle->key(), ss.slice())))
+    {
+        logicError("Ledger::rawReplace: key not found");
+    }
 }
 
 void
@@ -532,8 +535,8 @@ Ledger::rawTxInsert(
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
-    if (!txMap_.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(key, s.slice())))
-        LogicError("duplicate_tx: " + to_string(key));
+    if (!txMap_.addGiveItem(SHAMapNodeType::TnTransactionMd, makeShamapitem(key, s.slice())))
+        logicError("duplicate_tx: " + to_string(key));
 }
 
 bool
@@ -552,7 +555,7 @@ Ledger::setup()
     catch (std::exception const& ex)
     {
         JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
-        Rethrow();
+        rethrow();
     }
 
     try
@@ -614,7 +617,7 @@ Ledger::setup()
     catch (std::exception const& ex)
     {
         JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
-        Rethrow();
+        rethrow();
     }
 
     return ret;
@@ -707,13 +710,13 @@ Ledger::updateNegativeUNL()
             if (hasToReEnable && v.isFieldPresent(sfPublicKey) &&
                 v.getFieldVL(sfPublicKey) == sle->getFieldVL(sfValidatorToReEnable))
                 continue;
-            newNUnl.push_back(v);
+            newNUnl.pushBack(v);
         }
     }
 
     if (hasToDisable)
     {
-        newNUnl.push_back(STObject::makeInnerObject(sfDisabledValidator));
+        newNUnl.pushBack(STObject::makeInnerObject(sfDisabledValidator));
         newNUnl.back().setFieldVL(sfPublicKey, sle->getFieldVL(sfValidatorToDisable));
         newNUnl.back().setFieldU32(sfFirstLedgerSequence, seq());
     }
@@ -792,9 +795,9 @@ Ledger::isSensible() const
         return false;
     if (header_.accountHash.isZero())
         return false;
-    if (header_.accountHash != stateMap_.getHash().as_uint256())
+    if (header_.accountHash != stateMap_.getHash().asUint256())
         return false;
-    if (header_.txHash != txMap_.getHash().as_uint256())
+    if (header_.txHash != txMap_.getHash().asUint256())
         return false;
     return true;
 }

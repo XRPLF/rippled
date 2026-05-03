@@ -36,16 +36,16 @@ namespace xrpl {
 */
 enum class ConsensusMode {
     //! We are normal participant in consensus and propose our position
-    proposing,
+    Proposing,
     //! We are observing peer positions, but not proposing our position
-    observing,
+    Observing,
     //! We have the wrong ledger and are attempting to acquire it
-    wrongLedger,
+    WrongLedger,
     //! We switched ledgers since we started this consensus round but are now
     //! running on what we believe is the correct ledger.  This mode is as
     //! if we entered the round observing, but is used to indicate we did
     //! have the wrongLedger at some point.
-    switchedLedger
+    SwitchedLedger
 };
 
 inline std::string
@@ -53,13 +53,13 @@ to_string(ConsensusMode m)
 {
     switch (m)
     {
-        case ConsensusMode::proposing:
+        case ConsensusMode::Proposing:
             return "proposing";
-        case ConsensusMode::observing:
+        case ConsensusMode::Observing:
             return "observing";
-        case ConsensusMode::wrongLedger:
+        case ConsensusMode::WrongLedger:
             return "wrongLedger";
-        case ConsensusMode::switchedLedger:
+        case ConsensusMode::SwitchedLedger:
             return "switchedLedger";
         default:
             return "unknown";
@@ -84,15 +84,15 @@ to_string(ConsensusMode m)
 */
 enum class ConsensusPhase {
     //! We haven't closed our ledger yet, but others might have
-    open,
+    Open,
 
     //! Establishing consensus by exchanging proposals with our peers
-    establish,
+    Establish,
 
     //! We have accepted a new last closed ledger and are waiting on a call
     //! to startRound to begin the next consensus round.  No changes
     //! to consensus phase occur while in this phase.
-    accepted,
+    Accepted,
 };
 
 inline std::string
@@ -100,11 +100,11 @@ to_string(ConsensusPhase p)
 {
     switch (p)
     {
-        case ConsensusPhase::open:
+        case ConsensusPhase::Open:
             return "open";
-        case ConsensusPhase::establish:
+        case ConsensusPhase::Establish:
             return "establish";
-        case ConsensusPhase::accepted:
+        case ConsensusPhase::Accepted:
             return "accepted";
         default:
             return "unknown";

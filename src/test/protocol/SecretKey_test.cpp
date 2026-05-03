@@ -22,7 +22,7 @@
 
 namespace xrpl {
 
-class SecretKey_test : public beast::unit_test::suite
+class SecretKey_test : public beast::unit_test::Suite
 {
     struct TestKeyData
     {
@@ -83,7 +83,7 @@ public:
             BEAST_EXPECT(canonicality);
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(*canonicality == ECDSACanonicality::fullyCanonical);
+            BEAST_EXPECT(*canonicality == ECDSACanonicality::FullyCanonical);
         }
 
         {
@@ -91,7 +91,7 @@ public:
             BEAST_EXPECT(canonicality);
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(*canonicality != ECDSACanonicality::fullyCanonical);
+            BEAST_EXPECT(*canonicality != ECDSACanonicality::FullyCanonical);
         }
 
         BEAST_EXPECT(verifyDigest(pk, digest, makeSlice(sig), false));
@@ -107,17 +107,17 @@ public:
 
         for (std::size_t i = 0; i < 32; i++)
         {
-            auto const [pk, sk] = randomKeyPair(KeyType::secp256k1);
+            auto const [pk, sk] = randomKeyPair(KeyType::Secp256k1);
 
-            BEAST_EXPECT(pk == derivePublicKey(KeyType::secp256k1, sk));
+            BEAST_EXPECT(pk == derivePublicKey(KeyType::Secp256k1, sk));
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(*publicKeyType(pk) == KeyType::secp256k1);
+            BEAST_EXPECT(*publicKeyType(pk) == KeyType::Secp256k1);
 
             for (std::size_t j = 0; j < 32; j++)
             {
                 uint256 digest;
-                beast::rngfill(digest.data(), digest.size(), crypto_prng());
+                beast::rngfill(digest.data(), digest.size(), cryptoPrng());
 
                 auto sig = signDigest(pk, sk, digest);
 
@@ -155,7 +155,7 @@ public:
             for (std::size_t j = 0; j < 32; j++)
             {
                 std::vector<std::uint8_t> data(64 + (8 * i) + j);
-                beast::rngfill(data.data(), data.size(), crypto_prng());
+                beast::rngfill(data.data(), data.size(), cryptoPrng());
 
                 auto sig = sign(pk, sk, makeSlice(data));
 
@@ -193,7 +193,7 @@ public:
         // Ensure that parsing some well-known secret keys works
         {
             auto const sk1 =
-                generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase"));
+                generateSecretKey(KeyType::Secp256k1, generateSeed("masterpassphrase"));
 
             auto const sk2 = parseBase58<SecretKey>(
                 TokenType::NodePrivate, "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
@@ -203,7 +203,7 @@ public:
         }
 
         {
-            auto const sk1 = generateSecretKey(KeyType::ed25519, generateSeed("masterpassphrase"));
+            auto const sk1 = generateSecretKey(KeyType::Ed25519, generateSeed("masterpassphrase"));
 
             auto const sk2 = parseBase58<SecretKey>(
                 TokenType::NodePrivate, "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
@@ -301,12 +301,12 @@ public:
     {
         testcase("secp256k1: key derivation");
 
-        for (auto const& test : secp256k1TestVectors)
+        for (auto const& test : kSECP256K1_TEST_VECTORS)
         {
             auto const id = parseBase58<AccountID>(test.addr);
             BEAST_EXPECT(id);
 
-            auto kp = generateKeyPair(KeyType::secp256k1, Seed{makeSlice(test.seed)});
+            auto kp = generateKeyPair(KeyType::Secp256k1, Seed{makeSlice(test.seed)});
 
             BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
             BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
@@ -320,12 +320,12 @@ public:
     {
         testcase("ed25519: key derivation");
 
-        for (auto const& test : ed25519TestVectors)
+        for (auto const& test : kED25519_TEST_VECTORS)
         {
             auto const id = parseBase58<AccountID>(test.addr);
             BEAST_EXPECT(id);
 
-            auto kp = generateKeyPair(KeyType::ed25519, Seed{makeSlice(test.seed)});
+            auto kp = generateKeyPair(KeyType::Ed25519, Seed{makeSlice(test.seed)});
 
             BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
             BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
@@ -341,18 +341,18 @@ public:
 
         // secp256k1
         testKeyDerivationSecp256k1();
-        testSigning(KeyType::secp256k1);
+        testSigning(KeyType::Secp256k1);
         testDigestSigning();
         testCanonicality();
 
         // Ed25519
         testKeyDerivationEd25519();
-        testSigning(KeyType::ed25519);
+        testSigning(KeyType::Ed25519);
     }
 
 private:
     // clang-format off
-inline static TestKeyData const secp256k1TestVectors[] = {
+inline static TestKeyData const kSECP256K1_TEST_VECTORS[] = {
     {.seed={0xDE,0xDC,0xE9,0xCE,0x67,0xB4,0x51,0xD8,0x52,0xFD,0x4E,0x84,0x6F,0xCD,0xE3,0x1C},
      .pubkey={0x03,0x30,0xE7,0xFC,0x9D,0x56,0xBB,0x25,0xD6,0x89,0x3B,0xA3,0xF3,0x17,0xAE,0x5B,
       0xCF,0x33,0xB3,0x29,0x1B,0xD6,0x3D,0xB3,0x26,0x54,0xA3,0x13,0x22,0x2F,0x7F,0xD0,0x20},
@@ -925,7 +925,7 @@ inline static TestKeyData const secp256k1TestVectors[] = {
      .addr="rsYryUWhbYRiQivh693pgjnseAwPHezNj1"}
 };
 
-inline static TestKeyData const ed25519TestVectors[] = {
+inline static TestKeyData const kED25519_TEST_VECTORS[] = {
     {.seed={0xAF,0x41,0xFF,0x66,0xF7,0x5E,0xBD,0x3A,0x6B,0x18,0xFB,0x7A,0x1D,0xF6,0x1C,0x97},
      .pubkey={0xED,0x48,0xCB,0xBB,0xE0,0xEE,0x7B,0x86,0x86,0xA7,0xDE,0x9F,0x0A,0x01,0x59,0x73,
       0x4E,0x65,0xF9,0xC3,0x69,0x94,0x7F,0x2E,0x26,0x96,0x23,0x2B,0x46,0x1E,0x55,0x32,0x13},

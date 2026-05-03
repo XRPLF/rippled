@@ -21,7 +21,7 @@ TEST(TransactionsAMMCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMCreate"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -86,7 +86,7 @@ TEST(TransactionsAMMCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMCreateFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -151,7 +151,7 @@ TEST(TransactionsAMMCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -165,7 +165,7 @@ TEST(TransactionsAMMCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};

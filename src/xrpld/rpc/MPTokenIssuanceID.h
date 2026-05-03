@@ -28,7 +28,7 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta);
 
 void
 insertMPTokenIssuanceID(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta);
 /** @} */

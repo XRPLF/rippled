@@ -20,7 +20,7 @@ env:
   # Conan installs the generators in the build/generators directory, see the
   # layout() method in conanfile.py. We then run CMake from the build directory.
   BUILD_DIR: build
-  BUILD_TYPE: Release
+  BUILD_TYPE: Debug # Debug so that ASSERTS and such participate in clang-tidy check
 
 jobs:
   run-clang-tidy:

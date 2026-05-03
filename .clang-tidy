@@ -1,6 +1,4 @@
 ---
-# This entire group of checks was applied to all cpp files but not all header files.
-# ---
 Checks: "-*,
   bugprone-argument-comment,
   bugprone-assert-side-effect,
@@ -137,6 +135,7 @@ Checks: "-*,
   readability-duplicate-include,
   readability-else-after-return,
   readability-enum-initial-value,
+  readability-identifier-naming,
   readability-implicit-bool-conversion,
   readability-make-member-function-const,
   readability-math-missing-parentheses,
@@ -154,52 +153,47 @@ Checks: "-*,
   readability-use-std-min-max
   "
 # ---
-# other checks that have issues that need to be resolved:
-#
 # readability-inconsistent-declaration-parameter-name, # in this codebase this check will break a lot of arg names
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. it makes the code less readable
-# readability-identifier-naming,                       # https://github.com/XRPLF/rippled/pull/6571
 # ---
-#
 CheckOptions:
   readability-braces-around-statements.ShortStatementLines: 2
-  #   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
-  #   readability-identifier-naming.ClassCase: CamelCase
-  #   readability-identifier-naming.StructCase: CamelCase
-  #   readability-identifier-naming.UnionCase: CamelCase
-  #   readability-identifier-naming.EnumCase: CamelCase
-  #   readability-identifier-naming.EnumConstantCase: CamelCase
-  #   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
-  #   readability-identifier-naming.GlobalConstantCase: UPPER_CASE
-  #   readability-identifier-naming.GlobalConstantPrefix: "k"
-  #   readability-identifier-naming.GlobalVariableCase: CamelCase
-  #   readability-identifier-naming.GlobalVariablePrefix: "g"
-  #   readability-identifier-naming.ConstexprFunctionCase: camelBack
-  #   readability-identifier-naming.ConstexprMethodCase: camelBack
-  #   readability-identifier-naming.ClassMethodCase: camelBack
-  #   readability-identifier-naming.ClassMemberCase: camelBack
-  #   readability-identifier-naming.ClassConstantCase: UPPER_CASE
-  #   readability-identifier-naming.ClassConstantPrefix: "k"
-  #   readability-identifier-naming.StaticConstantCase: UPPER_CASE
-  #   readability-identifier-naming.StaticConstantPrefix: "k"
-  #   readability-identifier-naming.StaticVariableCase: UPPER_CASE
-  #   readability-identifier-naming.StaticVariablePrefix: "k"
-  #   readability-identifier-naming.ConstexprVariableCase: UPPER_CASE
-  #   readability-identifier-naming.ConstexprVariablePrefix: "k"
-  #   readability-identifier-naming.LocalConstantCase: camelBack
-  #   readability-identifier-naming.LocalVariableCase: camelBack
-  #   readability-identifier-naming.TemplateParameterCase: CamelCase
-  #   readability-identifier-naming.ParameterCase: camelBack
-  #   readability-identifier-naming.FunctionCase: camelBack
-  #   readability-identifier-naming.MemberCase: camelBack
-  #   readability-identifier-naming.PrivateMemberSuffix: _
-  #   readability-identifier-naming.ProtectedMemberSuffix: _
-  #   readability-identifier-naming.PublicMemberSuffix: ""
-  #   readability-identifier-naming.FunctionIgnoredRegexp: ".*tag_invoke.*"
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: CamelCase
+  readability-identifier-naming.ScopedEnumConstantCase: CamelCase
+  readability-identifier-naming.GlobalConstantCase: UPPER_CASE
+  readability-identifier-naming.GlobalConstantPrefix: "k"
+  readability-identifier-naming.GlobalVariableCase: CamelCase
+  readability-identifier-naming.GlobalVariablePrefix: "g"
+  readability-identifier-naming.ConstexprFunctionCase: camelBack
+  readability-identifier-naming.ConstexprMethodCase: camelBack
+  readability-identifier-naming.ClassMethodCase: camelBack
+  readability-identifier-naming.ClassMemberCase: camelBack
+  readability-identifier-naming.ClassConstantCase: UPPER_CASE
+  readability-identifier-naming.ClassConstantPrefix: "k"
+  readability-identifier-naming.StaticConstantCase: UPPER_CASE
+  readability-identifier-naming.StaticConstantPrefix: "k"
+  readability-identifier-naming.StaticVariableCase: UPPER_CASE
+  readability-identifier-naming.StaticVariablePrefix: "k"
+  readability-identifier-naming.ConstexprVariableCase: UPPER_CASE
+  readability-identifier-naming.ConstexprVariablePrefix: "k"
+  readability-identifier-naming.LocalConstantCase: camelBack
+  readability-identifier-naming.LocalVariableCase: camelBack
+  readability-identifier-naming.TemplateParameterCase: CamelCase
+  readability-identifier-naming.ParameterCase: camelBack
+  readability-identifier-naming.FunctionCase: camelBack
+  readability-identifier-naming.MemberCase: camelBack
+  readability-identifier-naming.PrivateMemberSuffix: _
+  readability-identifier-naming.ProtectedMemberSuffix: _
+  readability-identifier-naming.PublicMemberSuffix: ""
+  readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
   bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
   misc-include-cleaner.IgnoreHeaders: ".*/(detail|impl)/.*;.*fwd\\.h(pp)?;time.h;stdlib.h;sqlite3.h;netinet/in\\.h;sys/resource\\.h;sys/sysinfo\\.h;linux/sysinfo\\.h;__chrono/.*;bits/.*;_abort\\.h;boost/uuid/uuid_hash.hpp;boost/beast/core/flat_buffer\\.hpp;boost/beast/http/field\\.hpp;boost/beast/http/dynamic_body\\.hpp;boost/beast/http/message\\.hpp;boost/beast/http/read\\.hpp;boost/beast/http/write\\.hpp;openssl/obj_mac\\.h"
-#
-HeaderFilterRegex: '^.*/(test|xrpl|xrpld)/.*\.(h|hpp)$'
+HeaderFilterRegex: '^.*/(test|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
 ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'
 WarningsAsErrors: "*"
