@@ -23,8 +23,10 @@ validateLedgerNode(protocol::TMLedgerNode const& ledgerNode)
         return false;
 
     if (ledgerNode.has_nodeid())
+    {
         return !ledgerNode.has_id() && !ledgerNode.has_depth() &&
             deserializeSHAMapNodeID(ledgerNode.nodeid()).has_value();
+    }
 
     if (ledgerNode.has_id())
         return deserializeSHAMapNodeID(ledgerNode.id()).has_value();
