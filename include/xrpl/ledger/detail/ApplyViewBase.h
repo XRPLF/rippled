@@ -43,19 +43,19 @@ public:
     [[nodiscard]] std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
 
-    [[nodiscard]] std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<SlesType::iter_base>
     slesBegin() const override;
 
-    [[nodiscard]] std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<SlesType::iter_base>
     slesEnd() const override;
 
-    [[nodiscard]] std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<SlesType::iter_base>
     slesUpperBound(uint256 const& key) const override;
 
-    [[nodiscard]] std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] std::unique_ptr<TxsType::iter_base>
     txsBegin() const override;
 
-    [[nodiscard]] std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] std::unique_ptr<TxsType::iter_base>
     txsEnd() const override;
 
     [[nodiscard]] bool

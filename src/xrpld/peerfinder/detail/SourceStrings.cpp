@@ -15,7 +15,7 @@ class SourceStringsImp : public SourceStrings
 {
 public:
     SourceStringsImp(std::string name, Strings strings)
-        : m_name(std::move(name)), m_strings(std::move(strings))
+        : name_(std::move(name)), strings_(std::move(strings))
     {
     }
 
@@ -24,33 +24,33 @@ public:
     std::string const&
     name() override
     {
-        return m_name;
+        return name_;
     }
 
     void
     fetch(Results& results, beast::Journal journal) override
     {
         results.addresses.resize(0);
-        results.addresses.reserve(m_strings.size());
-        for (int i = 0; i < m_strings.size(); ++i)
+        results.addresses.reserve(strings_.size());
+        for (int i = 0; i < strings_.size(); ++i)
         {
-            beast::IP::Endpoint ep(beast::IP::Endpoint::from_string(m_strings[i]));
-            if (is_unspecified(ep))
-                ep = beast::IP::Endpoint::from_string(m_strings[i]);
-            if (!is_unspecified(ep))
+            beast::IP::Endpoint ep(beast::IP::Endpoint::fromString(strings_[i]));
+            if (isUnspecified(ep))
+                ep = beast::IP::Endpoint::fromString(strings_[i]);
+            if (!isUnspecified(ep))
                 results.addresses.push_back(ep);
         }
     }
 
 private:
-    std::string m_name;
-    Strings m_strings;
+    std::string name_;
+    Strings strings_;
 };
 
 //------------------------------------------------------------------------------
 
 std::shared_ptr<Source>
-SourceStrings::New(std::string const& name, Strings const& strings)
+SourceStrings::make(std::string const& name, Strings const& strings)
 {
     return std::make_shared<SourceStringsImp>(name, strings);
 }

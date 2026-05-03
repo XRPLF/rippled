@@ -20,7 +20,7 @@ private:
     transferNFToken(AccountID const& buyer, AccountID const& seller, uint256 const& nfTokenID);
 
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit NFTokenAcceptOffer(ApplyContext& ctx) : Transactor(ctx)
     {

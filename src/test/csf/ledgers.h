@@ -43,10 +43,10 @@ class Ledger
 
 public:
     struct SeqTag;
-    using Seq = tagged_integer<std::uint32_t, SeqTag>;
+    using Seq = TaggedInteger<std::uint32_t, SeqTag>;
 
     struct IdTag;
-    using ID = tagged_integer<std::uint32_t, IdTag>;
+    using ID = TaggedInteger<std::uint32_t, IdTag>;
 
     struct MakeGenesis
     {
@@ -66,7 +66,7 @@ private:
         TxSetType txs;
 
         // Resolution used to determine close time
-        NetClock::duration closeTimeResolution = ledgerDefaultTimeResolution;
+        NetClock::duration closeTimeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
 
         //! When the ledger closed (up to closeTimeResolution)
         NetClock::time_point closeTime;
@@ -118,7 +118,9 @@ private:
 
         template <class Hasher>
         friend void
-        hash_append(Hasher& h, Ledger::Instance const& instance)
+        hash_append(
+            Hasher& h,
+            Ledger::Instance const& instance)  // NOLINT(readability-identifier-naming)
         {
             using beast::hash_append;
             hash_append(h, instance.asTie());
@@ -126,14 +128,14 @@ private:
     };
 
     // Single common genesis instance
-    static Instance const genesis;
+    static Instance const kGENESIS;
 
     Ledger(ID id, Instance const* i) : id_{id}, instance_{i}
     {
     }
 
 public:
-    Ledger(MakeGenesis) : instance_(&genesis)
+    Ledger(MakeGenesis) : instance_(&kGENESIS)
     {
     }
 
@@ -205,7 +207,7 @@ public:
     friend Ledger::Seq
     mismatch(Ledger const& a, Ledger const& o);
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson() const;
 
     friend bool

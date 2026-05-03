@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainClaimID (soeREQUIRED)
+     * @brief Get sfXChainClaimID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfOtherChainSource (soeREQUIRED)
+     * @brief Get sfOtherChainSource (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainClaimAttestations (soeREQUIRED)
+     * @brief Get sfXChainClaimAttestations (SoeRequired)
      * @note This is an untyped field (unknown).
      * @return The field value.
      */
@@ -102,7 +102,7 @@ public:
     }
 
     /**
-     * @brief Get sfSignatureReward (soeREQUIRED)
+     * @brief Get sfSignatureReward (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -113,7 +113,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -124,7 +124,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -135,7 +135,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -150,7 +150,7 @@ public:
  * @brief Builder for XChainOwnedClaimID ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class XChainOwnedClaimIDBuilder : public LedgerEntryBuilderBase<XChainOwnedClaimIDBuilder>
@@ -199,7 +199,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -210,7 +210,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -221,7 +221,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainClaimID (soeREQUIRED)
+     * @brief Set sfXChainClaimID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -232,7 +232,7 @@ public:
     }
 
     /**
-     * @brief Set sfOtherChainSource (soeREQUIRED)
+     * @brief Set sfOtherChainSource (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -243,7 +243,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainClaimAttestations (soeREQUIRED)
+     * @brief Set sfXChainClaimAttestations (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -254,7 +254,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignatureReward (soeREQUIRED)
+     * @brief Set sfSignatureReward (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -265,7 +265,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -276,7 +276,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&
@@ -287,7 +287,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedClaimIDBuilder&

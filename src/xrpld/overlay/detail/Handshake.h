@@ -43,8 +43,8 @@ buildHandshake(
     boost::beast::http::fields& h,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address public_ip,
-    beast::IP::Address remote_ip,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     Application& app);
 
 /** Validate header fields necessary for upgrading the link to the peer
@@ -63,7 +63,7 @@ verifyHandshake(
     boost::beast::http::fields const& headers,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address public_ip,
+    beast::IP::Address publicIp,
     beast::IP::Address remote,
     Application& app);
 
@@ -90,8 +90,8 @@ makeRequest(
 
    @param crawlPublic if true then server's IP/Port are included in crawl
    @param req incoming http request
-   @param public_ip server's public IP
-   @param remote_ip peer's IP
+   @param publicIp server's public IP
+   @param remoteIp peer's IP
    @param sharedValue shared value based on the SSL connection state
    @param networkID specifies what network we intend to connect to
    @param version supported protocol version
@@ -102,8 +102,8 @@ http_response_type
 makeResponse(
     bool crawlPublic,
     http_request_type const& req,
-    beast::IP::Address public_ip,
-    beast::IP::Address remote_ip,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion version,
@@ -115,15 +115,15 @@ makeResponse(
 // value: \S+
 
 // compression feature
-static constexpr char FEATURE_COMPR[] = "compr";
+static constexpr char kFEATURE_COMPR[] = "compr";
 // validation/proposal reduce-relay base squelch feature
-static constexpr char FEATURE_VPRR[] = "vprr";
+static constexpr char kFEATURE_VPRR[] = "vprr";
 // transaction reduce-relay feature
-static constexpr char FEATURE_TXRR[] = "txrr";
+static constexpr char kFEATURE_TXRR[] = "txrr";
 // ledger replay
-static constexpr char FEATURE_LEDGER_REPLAY[] = "ledgerreplay";
-static constexpr char DELIM_FEATURE[] = ";";
-static constexpr char DELIM_VALUE[] = ",";
+static constexpr char kFEATURE_LEDGER_REPLAY[] = "ledgerreplay";
+static constexpr char kDELIM_FEATURE[] = ";";
+static constexpr char kDELIM_VALUE[] = ",";
 
 /** Get feature's header value
    @param headers request/response header
@@ -166,10 +166,10 @@ featureEnabled(boost::beast::http::fields const& headers, std::string const& fea
    @param value feature's value to check in the headers
    @return true if the feature is enabled
  */
-template <typename headers>
+template <typename Headers>
 bool
 peerFeatureEnabled(
-    headers const& request,
+    Headers const& request,
     std::string const& feature,
     std::string value,
     bool config)
@@ -178,9 +178,9 @@ peerFeatureEnabled(
 }
 
 /** Wrapper for enable(1)/disable type(0) of feature */
-template <typename headers>
+template <typename Headers>
 bool
-peerFeatureEnabled(headers const& request, std::string const& feature, bool config)
+peerFeatureEnabled(Headers const& request, std::string const& feature, bool config)
 {
     return config && peerFeatureEnabled(request, feature, "1", config);
 }

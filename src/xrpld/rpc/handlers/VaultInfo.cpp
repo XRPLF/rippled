@@ -16,18 +16,18 @@
 namespace xrpl {
 
 static std::optional<uint256>
-parseVault(Json::Value const& params, Json::Value& jvResult)
+parseVault(json::Value const& params, json::Value& jvResult)
 {
     auto const hasVaultId = params.isMember(jss::vault_id);
     auto const hasOwner = params.isMember(jss::owner);
     auto const hasSeq = params.isMember(jss::seq);
 
-    uint256 uNodeIndex = beast::zero;
+    uint256 uNodeIndex = beast::kZERO;
     if (hasVaultId && !hasOwner && !hasSeq)
     {
         if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
         {
-            RPC::inject_error(rpcINVALID_PARAMS, jvResult);
+            RPC::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
         }
         // else uNodeIndex holds the value we need
@@ -37,14 +37,14 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
         auto const id = parseBase58<AccountID>(params[jss::owner].asString());
         if (!id)
         {
-            RPC::inject_error(rpcACT_MALFORMED, jvResult);
+            RPC::injectError(RpcActMalformed, jvResult);
             return std::nullopt;
         }
         if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
-            params[jss::seq].asDouble() > double(Json::Value::maxUInt))
+            params[jss::seq].asDouble() > double(json::Value::kMAX_U_INT))
         {
-            RPC::inject_error(rpcINVALID_PARAMS, jvResult);
+            RPC::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
         }
 
@@ -53,14 +53,14 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
     else
     {
         // Invalid combination of fields vault_id/owner/seq
-        RPC::inject_error(rpcINVALID_PARAMS, jvResult);
+        RPC::injectError(RpcInvalidParams, jvResult);
         return std::nullopt;
     }
 
     return uNodeIndex;
 }
 
-Json::Value
+json::Value
 doVaultInfo(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
@@ -69,8 +69,8 @@ doVaultInfo(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::zero);
-    if (uNodeIndex == beast::zero)
+    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::kZERO);
+    if (uNodeIndex == beast::kZERO)
     {
         jvResult[jss::error] = "malformedRequest";
         return jvResult;
@@ -86,10 +86,10 @@ doVaultInfo(RPC::JsonContext& context)
         return jvResult;
     }
 
-    Json::Value& vault = jvResult[jss::vault];
-    vault = sleVault->getJson(JsonOptions::none);
+    json::Value& vault = jvResult[jss::vault];
+    vault = sleVault->getJson(JsonOptions::KNone);
     auto& share = vault[jss::shares];
-    share = sleIssuance->getJson(JsonOptions::none);
+    share = sleIssuance->getJson(JsonOptions::KNone);
 
     jvResult[jss::vault] = vault;
     return jvResult;

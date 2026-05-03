@@ -11,7 +11,7 @@ namespace xrpl::test::jtx {
     If a memo already exists, the new
     memo is appended to the array.
 */
-class memo
+class Memo
 {
 private:
     std::string data_;
@@ -19,7 +19,7 @@ private:
     std::string type_;
 
 public:
-    memo(std::string data, std::string format, std::string type)
+    Memo(std::string data, std::string format, std::string type)
         : data_(std::move(data)), format_(std::move(format)), type_(std::move(type))
     {
     }
@@ -28,13 +28,13 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memo_data
+class MemoData
 {
 private:
     std::string s_;
 
 public:
-    memo_data(std::string s) : s_(std::move(s))
+    MemoData(std::string s) : s_(std::move(s))
     {
     }
 
@@ -42,13 +42,13 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memo_format
+class MemoFormat
 {
 private:
     std::string s_;
 
 public:
-    memo_format(std::string s) : s_(std::move(s))
+    MemoFormat(std::string s) : s_(std::move(s))
     {
     }
 
@@ -56,13 +56,13 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memo_type
+class MemoType
 {
 private:
     std::string s_;
 
 public:
-    memo_type(std::string s) : s_(std::move(s))
+    MemoType(std::string s) : s_(std::move(s))
     {
     }
 

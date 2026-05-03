@@ -11,7 +11,7 @@ namespace xrpl {
 // Before boost 1.70, get_lowest_layer required an explicit template parameter
 template <class T>
 decltype(auto)
-get_lowest_layer(T& t) noexcept
+getLowestLayer(T& t) noexcept
 {
 #if BOOST_VERSION >= 107000
     return boost::beast::get_lowest_layer(t);

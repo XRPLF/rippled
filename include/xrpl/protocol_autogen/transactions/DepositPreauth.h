@@ -19,9 +19,9 @@ class DepositPreauthBuilder;
  * @brief Transaction: DepositPreauth
  *
  * Type: ttDEPOSIT_PREAUTH (19)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use DepositPreauthBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAuthorize (soeOPTIONAL)
+     * @brief Get sfAuthorize (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfUnauthorize (soeOPTIONAL)
+     * @brief Get sfUnauthorize (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -99,7 +99,7 @@ public:
         return this->tx_->isFieldPresent(sfUnauthorize);
     }
     /**
-     * @brief Get sfAuthorizeCredentials (soeOPTIONAL)
+     * @brief Get sfAuthorizeCredentials (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -123,7 +123,7 @@ public:
         return this->tx_->isFieldPresent(sfAuthorizeCredentials);
     }
     /**
-     * @brief Get sfUnauthorizeCredentials (soeOPTIONAL)
+     * @brief Get sfUnauthorizeCredentials (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -152,7 +152,7 @@ public:
  * @brief Builder for DepositPreauth transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class DepositPreauthBuilder : public TransactionBuilderBase<DepositPreauthBuilder>
@@ -189,7 +189,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfAuthorize (soeOPTIONAL)
+     * @brief Set sfAuthorize (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -200,7 +200,7 @@ public:
     }
 
     /**
-     * @brief Set sfUnauthorize (soeOPTIONAL)
+     * @brief Set sfUnauthorize (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -211,7 +211,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuthorizeCredentials (soeOPTIONAL)
+     * @brief Set sfAuthorizeCredentials (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -222,7 +222,7 @@ public:
     }
 
     /**
-     * @brief Set sfUnauthorizeCredentials (soeOPTIONAL)
+     * @brief Set sfUnauthorizeCredentials (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&

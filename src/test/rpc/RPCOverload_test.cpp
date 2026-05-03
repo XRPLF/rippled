@@ -20,7 +20,7 @@
 
 namespace xrpl::test {
 
-class RPCOverload_test : public beast::unit_test::suite
+class RPCOverload_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -30,7 +30,7 @@ public:
         using namespace jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
                     cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                    return no_admin(std::move(cfg));
+                    return noAdmin(std::move(cfg));
                 })};
 
         Account const alice{"alice"};
@@ -40,7 +40,7 @@ public:
         std::unique_ptr<AbstractClient> client =
             useWS ? makeWSClient(env.app().config()) : makeJSONRPCClient(env.app().config());
 
-        Json::Value tx = Json::objectValue;
+        json::Value tx = json::ObjectValue;
         tx[jss::tx_json] = pay(alice, bob, XRP(1));
         tx[jss::secret] = toBase58(generateSeed("alice"));
 

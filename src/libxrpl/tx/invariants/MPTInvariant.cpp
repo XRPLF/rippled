@@ -20,6 +20,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 
@@ -63,7 +64,7 @@ bool
 ValidMPTIssuance::finalize(
     STTx const& tx,
     TER const result,
-    XRPAmount const _fee,
+    XRPAmount const fee,
     ReadView const& view,
     beast::Journal const& j) const
 {
@@ -86,7 +87,7 @@ ValidMPTIssuance::finalize(
         }
 
         auto const txnType = tx.getTxnType();
-        if (hasPrivilege(tx, createMPTIssuance))
+        if (hasPrivilege(tx, CreateMptIssuance))
         {
             if (mptIssuancesCreated_ == 0)
             {
@@ -107,7 +108,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (hasPrivilege(tx, destroyMPTIssuance))
+        if (hasPrivilege(tx, DestroyMptIssuance))
         {
             if (mptIssuancesDeleted_ == 0)
             {
@@ -134,7 +135,7 @@ ValidMPTIssuance::finalize(
         // non-amendment-gated side effects.
         bool const enforceEscrowFinish = (txnType == ttESCROW_FINISH) &&
             (rules.enabled(featureSingleAssetVault) || lendingProtocolEnabled);
-        if (hasPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT) || enforceEscrowFinish)
+        if (hasPrivilege(tx, MustAuthorizeMpt | MayAuthorizeMpt) || enforceEscrowFinish)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -150,7 +151,7 @@ ValidMPTIssuance::finalize(
                                    "succeeded but deleted issuances";
                 return false;
             }
-            if (mptV2Enabled && hasPrivilege(tx, mayAuthorizeMPT) &&
+            if (mptV2Enabled && hasPrivilege(tx, MayAuthorizeMpt) &&
                 (txnType == ttAMM_WITHDRAW || txnType == ttAMM_CLAWBACK))
             {
                 if (submittedByIssuer && txnType == ttAMM_WITHDRAW && mptokensCreated_ > 0)
@@ -185,7 +186,7 @@ ValidMPTIssuance::finalize(
                 return false;
             }
             else if (
-                !submittedByIssuer && hasPrivilege(tx, mustAuthorizeMPT) &&
+                !submittedByIssuer && hasPrivilege(tx, MustAuthorizeMpt) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be
@@ -198,7 +199,7 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (hasPrivilege(tx, mayCreateMPT))
+        if (hasPrivilege(tx, MayCreateMpt))
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -253,7 +254,7 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (hasPrivilege(tx, mayDeleteMPT) &&
+        if (hasPrivilege(tx, MayDeleteMpt) &&
             ((txnType == ttAMM_DELETE && mptokensDeleted_ <= 2) || mptokensDeleted_ == 1) &&
             mptokensCreated_ == 0 && mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)
             return true;
@@ -300,26 +301,26 @@ ValidMPTPayment::visitEntry(
         if (type == ltMPTOKEN_ISSUANCE)
         {
             auto const outstanding = sle[sfOutstandingAmount];
-            if (outstanding > maxMPTokenAmount)
+            if (outstanding > kMAX_MP_TOKEN_AMOUNT)
             {
                 overflow_ = true;
                 return false;
             }
-            data_[makeKey(sle)].outstanding[order] = outstanding;
+            data_[makeKey(sle)].outstanding[static_cast<std::size_t>(order)] = outstanding;
         }
         else if (type == ltMPTOKEN)
         {
             auto const mptAmt = sle[sfMPTAmount];
             auto const lockedAmt = sle[~sfLockedAmount].value_or(0);
-            if (mptAmt > maxMPTokenAmount || lockedAmt > maxMPTokenAmount ||
-                lockedAmt > (maxMPTokenAmount - mptAmt))
+            if (mptAmt > kMAX_MP_TOKEN_AMOUNT || lockedAmt > kMAX_MP_TOKEN_AMOUNT ||
+                lockedAmt > (kMAX_MP_TOKEN_AMOUNT - mptAmt))
             {
                 overflow_ = true;
                 return false;
             }
             auto const res = static_cast<std::int64_t>(mptAmt + lockedAmt);
             // subtract before from after
-            if (order == Before)
+            if (order == Order::Before)
             {
                 data_[makeKey(sle)].mptAmount -= res;
             }
@@ -331,7 +332,7 @@ ValidMPTPayment::visitEntry(
         return true;
     };
 
-    if (before && !update(*before, Before))
+    if (before && !update(*before, Order::Before))
         return;
 
     if (after)
@@ -340,7 +341,7 @@ ValidMPTPayment::visitEntry(
         {
             overflow_ = (*after)[sfOutstandingAmount] > maxMPTAmount(*after);
         }
-        if (!update(*after, After))
+        if (!update(*after, Order::After))
             return;
     }
 }
@@ -362,19 +363,22 @@ ValidMPTPayment::finalize(
             return !enforce;
         }
 
-        auto const signedMax = static_cast<std::int64_t>(maxMPTokenAmount);
+        auto const signedMax = static_cast<std::int64_t>(kMAX_MP_TOKEN_AMOUNT);
         for (auto const& [id, data] : data_)
         {
             (void)id;
+            constexpr auto kI_BEFORE = static_cast<std::size_t>(Order::Before);
+            constexpr auto kI_AFTER = static_cast<std::size_t>(Order::After);
             bool const addOverflows =
-                (data.mptAmount > 0 && data.outstanding[Before] > (signedMax - data.mptAmount)) ||
-                (data.mptAmount < 0 && data.outstanding[Before] < (-signedMax - data.mptAmount));
+                (data.mptAmount > 0 &&
+                 data.outstanding[kI_BEFORE] > (signedMax - data.mptAmount)) ||
+                (data.mptAmount < 0 && data.outstanding[kI_BEFORE] < (-signedMax - data.mptAmount));
             if (addOverflows ||
-                data.outstanding[After] != (data.outstanding[Before] + data.mptAmount))
+                data.outstanding[kI_AFTER] != (data.outstanding[kI_BEFORE] + data.mptAmount))
             {
                 JLOG(j.fatal()) << "Invariant failed: invalid OutstandingAmount balance "
-                                << data.outstanding[Before] << " " << data.outstanding[After] << " "
-                                << data.mptAmount;
+                                << data.outstanding[kI_BEFORE] << " " << data.outstanding[kI_AFTER]
+                                << " " << data.mptAmount;
                 return !enforce;
             }
         }
@@ -441,7 +445,7 @@ ValidMPTTransfer::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (hasPrivilege(tx, overrideFreeze))
+    if (hasPrivilege(tx, OverrideFreeze))
         return true;
 
     // DEX transactions (AMM[Create,Deposit], cross-currency payments, offer creates) are

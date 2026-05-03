@@ -13,10 +13,10 @@
 namespace xrpl::test::jtx {
 
 // Delete account.  If successful transfer remaining XRP to dest.
-Json::Value
+json::Value
 acctdelete(jtx::Account const& account, jtx::Account const& dest)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfDestination.jsonName] = dest.human();
     jv[sfTransactionType.jsonName] = jss::AccountDelete;
