@@ -4130,7 +4130,7 @@ class Invariants_test : public beast::unit_test::Suite
                         : std::make_pair(TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED));
                     doInvariantCheck(
                         {{isSuccess ? "" : "invalid MPToken transfer between holders"}},
-                        [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                        [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                             auto update = [&](AccountID const& a, std::uint64_t v) {
                                 auto sle = ac.view().peek(keylet::mptoken(id, a));
                                 if (!sle)
@@ -4153,7 +4153,7 @@ class Invariants_test : public beast::unit_test::Suite
                             }
                             issuanceSle->at(sfOutstandingAmount) = 200;
                             ac.view().update(issuanceSle);
-                            return update(A1, 101) && update(A2, 99);
+                            return update(a1, 101) && update(a2, 99);
                         },
                         XRPAmount{},
                         STTx{
@@ -4166,12 +4166,12 @@ class Invariants_test : public beast::unit_test::Suite
                                 }
                             }},
                         {error.first, error.second},
-                        [&](Account const& A1, Account const& A2, Env& env) {
+                        [&](Account const& a1, Account const& a2, Env& env) {
                             Account const gw("gw");
                             env.fund(XRP(1'000), gw);
-                            MPTTester const USD(
-                                {.env = env, .issuer = gw, .holders = {A1, A2}, .pay = 100});
-                            id = USD.issuanceID();
+                            MPTTester const usd(
+                                {.env = env, .issuer = gw, .holders = {a1, a2}, .pay = 100});
+                            id = usd.issuanceID();
                             if (!enabled)
                             {
                                 env.disableFeature(featureMPTokensV2);
