@@ -111,7 +111,7 @@ inplaceBigintDivRem(std::span<uint64_t> numerator, std::uint64_t divisor)
         // the a null set of numbers to be zero, so the remainder is also zero.
         // LCOV_EXCL_START
         UNREACHABLE(
-            "xrpl::b58_fast::detail::inplace_bigint_div_rem : empty "
+            "xrpl::b58_fast::detail::inplaceBigintDivRem : empty "
             "numerator");
         return 0;
         // LCOV_EXCL_STOP
@@ -129,11 +129,11 @@ inplaceBigintDivRem(std::span<uint64_t> numerator, std::uint64_t divisor)
         unsigned __int128 const r = num - (denom128 * d);
         XRPL_ASSERT(
             d >> 64 == 0,
-            "xrpl::b58_fast::detail::inplace_bigint_div_rem::div_re64_ : "
+            "xrpl::b58_fast::detail::inplaceBigintDivRem::divRe64 : "
             "valid division result");
         XRPL_ASSERT(
             r >> 64 == 0,
-            "xrpl::b58_fast::detail::inplace_bigint_div_rem::div_re64_ : "
+            "xrpl::b58_fast::detail::inplaceBigintDivRem::divRe64 : "
             "valid remainder");
         return {static_cast<std::uint64_t>(d), static_cast<std::uint64_t>(r)};
     };
@@ -156,7 +156,7 @@ inplaceBigintDivRem(std::span<uint64_t> numerator, std::uint64_t divisor)
 b5810ToB58Be(std::uint64_t input)
 {
     [[maybe_unused]] static constexpr std::uint64_t kB_58_10 = 430804206899405824;  // 58^10;
-    XRPL_ASSERT(input < kB_58_10, "xrpl::b58_fast::detail::b58_10_to_b58_be : valid input");
+    XRPL_ASSERT(input < kB_58_10, "xrpl::b58_fast::detail::b5810ToB58Be : valid input");
     constexpr std::size_t kRESULT_SIZE = 10;
     std::array<std::uint8_t, kRESULT_SIZE> result{};
     int i = 0;

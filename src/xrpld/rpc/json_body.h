@@ -15,7 +15,7 @@ struct JsonBody
 
     using value_type = json::Value;
 
-    class Reader
+    class reader  // NOLINT(readability-identifier-naming) -- Boost.Beast body concept name
     {
         using dynamic_buffer_type = boost::beast::multi_buffer;
 
@@ -27,7 +27,7 @@ struct JsonBody
         using is_deferred = std::false_type;
 
         template <bool IsRequest, class Fields>
-        explicit Reader(boost::beast::http::message<IsRequest, JsonBody, Fields> const& m)
+        explicit reader(boost::beast::http::message<IsRequest, JsonBody, Fields> const& m)
         {
             stream(m.body, [&](void const* data, std::size_t n) {
                 buffer_.commit(
