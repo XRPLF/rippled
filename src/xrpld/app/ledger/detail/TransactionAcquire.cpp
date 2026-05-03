@@ -199,7 +199,7 @@ TransactionAcquire::takeNodes(
 
         ConsensusTransSetSF sf(app_, app_.getTempNodeCache());
 
-        for (auto const& d : data)
+        for (auto& d : data)
         {
             if (d.first.isRoot())
             {

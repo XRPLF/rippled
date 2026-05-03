@@ -44,10 +44,9 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
     void
     testValidateLedgerNode()
     {
-        // In the tests below the validity of the content of the node data and ID fields is not
-        // checked - only that the fields have values when expected. The content of the fields is
-        // verified in the other tests in this file.
         testcase("validateLedgerNode");
+
+        auto const validID = SHAMapNodeID::createID(3, uint256{}).getRawString();
 
         // Invalid: missing all fields.
         {
@@ -58,14 +57,14 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
         // Invalid: missing `nodedata` field.
         {
             protocol::TMLedgerNode node;
-            node.set_nodeid("test_nodeid");
+            node.set_nodeid(validID);
             BEAST_EXPECT(!validateLedgerNode(node));
         }
 
         // Invalid: missing `nodedata` field.
         {
             protocol::TMLedgerNode node;
-            node.set_id("test_nodeid");
+            node.set_id(validID);
             BEAST_EXPECT(!validateLedgerNode(node));
         }
 
@@ -80,16 +79,24 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
         {
             protocol::TMLedgerNode node;
             node.set_nodedata("test_data");
-            node.set_nodeid("test_nodeid");
+            node.set_nodeid(validID);
             BEAST_EXPECT(validateLedgerNode(node));
+        }
+
+        // Invalid: legacy `nodeid` field with garbage content.
+        {
+            protocol::TMLedgerNode node;
+            node.set_nodedata("test_data");
+            node.set_nodeid("garbage");
+            BEAST_EXPECT(!validateLedgerNode(node));
         }
 
         // Invalid: has both legacy `nodeid` and new `id` fields.
         {
             protocol::TMLedgerNode node;
             node.set_nodedata("test_data");
-            node.set_nodeid("test_nodeid");
-            node.set_id("test_nodeid");
+            node.set_nodeid(validID);
+            node.set_id(validID);
             BEAST_EXPECT(!validateLedgerNode(node));
         }
 
@@ -97,7 +104,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
         {
             protocol::TMLedgerNode node;
             node.set_nodedata("test_data");
-            node.set_nodeid("test_nodeid");
+            node.set_nodeid(validID);
             node.set_depth(5);
             BEAST_EXPECT(!validateLedgerNode(node));
         }
@@ -106,8 +113,16 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
         {
             protocol::TMLedgerNode node;
             node.set_nodedata("test_data");
-            node.set_id("test_id");
+            node.set_id(validID);
             BEAST_EXPECT(validateLedgerNode(node));
+        }
+
+        // Invalid: new `id` field with garbage content.
+        {
+            protocol::TMLedgerNode node;
+            node.set_nodedata("test_data");
+            node.set_id("garbage");
+            BEAST_EXPECT(!validateLedgerNode(node));
         }
 
         // Valid: new `depth` field.

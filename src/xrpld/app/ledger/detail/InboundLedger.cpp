@@ -1150,7 +1150,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
             if (!validateLedgerNode(ledgerNode))
             {
                 JLOG(journal_.warn()) << "Got malformed ledger node";
-                peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledgerNode");
+                peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_node");
                 return -1;
             }
         }

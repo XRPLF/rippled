@@ -512,12 +512,8 @@ SHAMap::addRootNode(
     SHAMapTreeNodePtr rootNode,
     SHAMapSyncFilter const* filter)
 {
+    XRPL_ASSERT(cowid_ >= 1, "xrpl::SHAMap::addRootNode : valid cowid");
     XRPL_ASSERT(rootNode, "xrpl::SHAMap::addRootNode : non-null root node");
-    if (!rootNode)
-    {
-        JLOG(journal_.error()) << "Null node received";
-        return SHAMapAddNode::invalid();
-    }
 
     // we already have a root_ node
     if (root_->getHash().isNonZero())
@@ -527,7 +523,6 @@ SHAMap::addRootNode(
         return SHAMapAddNode::duplicate();
     }
 
-    XRPL_ASSERT(cowid_ >= 1, "xrpl::SHAMap::addRootNode : valid cowid");
     if (rootNode->getHash() != hash)
     {
         JLOG(journal_.warn()) << "Corrupt node received";
@@ -560,17 +555,7 @@ SHAMap::addKnownNode(
     SHAMapSyncFilter const* filter)
 {
     XRPL_ASSERT(!nodeID.isRoot(), "xrpl::SHAMap::addKnownNode : valid node input");
-    if (nodeID.isRoot())
-    {
-        JLOG(journal_.error()) << "Root node received";
-        return SHAMapAddNode::invalid();
-    }
     XRPL_ASSERT(treeNode, "xrpl::SHAMap::addKnownNode : non-null tree node");
-    if (!treeNode)
-    {
-        JLOG(journal_.error()) << "Null node received";
-        return SHAMapAddNode::invalid();
-    }
 
     if (!isSynching())
     {

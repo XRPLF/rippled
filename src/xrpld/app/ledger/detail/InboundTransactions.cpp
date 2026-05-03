@@ -155,7 +155,7 @@ public:
             if (!validateLedgerNode(ledgerNode))
             {
                 JLOG(j_.warn()) << "Got malformed ledger node";
-                peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledgerNode");
+                peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_node");
                 return;
             }
 

@@ -23,10 +23,13 @@ validateLedgerNode(protocol::TMLedgerNode const& ledgerNode)
         return false;
 
     if (ledgerNode.has_nodeid())
-        return !ledgerNode.has_id() && !ledgerNode.has_depth();
+        return !ledgerNode.has_id() && !ledgerNode.has_depth() &&
+            deserializeSHAMapNodeID(ledgerNode.nodeid()).has_value();
 
-    return ledgerNode.has_id() ||
-        (ledgerNode.has_depth() && ledgerNode.depth() <= SHAMap::kLEAF_DEPTH);
+    if (ledgerNode.has_id())
+        return deserializeSHAMapNodeID(ledgerNode.id()).has_value();
+
+    return ledgerNode.has_depth() && ledgerNode.depth() <= SHAMap::kLEAF_DEPTH;
 }
 
 SHAMapTreeNodePtr
