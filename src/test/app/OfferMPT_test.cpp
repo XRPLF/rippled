@@ -3020,26 +3020,26 @@ public:
             env.fund(XRP(10'000), gw, alice, bob);
             env.close();
 
-            MPT const USD = MPTTester(
+            MPT const usd = MPTTester(
                 {.env = env, .issuer = gw, .holders = {alice, bob}, .transferFee = 25'000});
 
             // alice needs MPT(1250): MPT(1000) to bob's offer + MPT(250) transfer fee (25%)
-            env(pay(gw, alice, USD(1'250)));
+            env(pay(gw, alice, usd(1'250)));
             // bob's offer: give XRP(1000), want MPT(1000)
-            env(offer(bob, USD(1'000), XRP(1'000)));
+            env(offer(bob, usd(1'000), XRP(1'000)));
             env.close();
 
             // alice pays gw (MPT issuer) XRP(1000) using MPT as source
             // strand: alice -> [MPT/XRP BookStep] -> gw
             // strandDst_ = gw = MPT issuer, strandDeliver_ = XRP
             // trIn = rate(MPT, gw): fix charges 25% (MPT != strandDeliver_)
-            env(pay(alice, gw, XRP(1'000)), Path(~XRP), Sendmax(USD(1'250)));
+            env(pay(alice, gw, XRP(1'000)), Path(~XRP), Sendmax(usd(1'250)));
             env.close();
 
             // alice consumed all MPT(1250): MPT(1000) to bob + MPT(250) fee
-            BEAST_EXPECT(env.balance(alice, USD) == USD(0));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(0));
             // bob received MPT(1000) net
-            BEAST_EXPECT(env.balance(bob, USD) == USD(1'000));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(1'000));
         }
 
         // Payment trIn (2-hop): MPT transfer fee must be charged when MPT is
@@ -3059,22 +3059,22 @@ public:
             env.fund(XRP(10'000), gw, gw2, alice, bob, carol);
             env.close();
 
-            MPT const MUSD = MPTTester(
+            MPT const musd = MPTTester(
                 {.env = env, .issuer = gw, .holders = {bob, carol}, .transferFee = 25'000});
-            auto const GUSD = gw2["USD"];
+            auto const gusd = gw2["USD"];
 
-            env(trust(alice, GUSD(10'000)));
-            env(trust(bob, GUSD(10'000)));
+            env(trust(alice, gusd(10'000)));
+            env(trust(bob, gusd(10'000)));
             env.close();
 
-            env(pay(gw2, alice, GUSD(1'000)));
-            env(pay(gw, bob, MUSD(1'000)));
+            env(pay(gw2, alice, gusd(1'000)));
+            env(pay(gw, bob, musd(1'000)));
             env.close();
 
             // bob's offer: give MPT(1000), want GUSD(1000)
-            env(offer(bob, GUSD(1'000), MUSD(1'000)));
+            env(offer(bob, gusd(1'000), musd(1'000)));
             // carol's offer: give XRP(800), want MPT(800)
-            env(offer(carol, MUSD(800), XRP(800)));
+            env(offer(carol, musd(800), XRP(800)));
             env.close();
 
             // Payment: alice GUSD -> [BookStep1: GUSD/MUSD] -> [BookStep2: MUSD/XRP] -> gw XRP
@@ -3082,15 +3082,15 @@ public:
             // BookStep2 trIn: fix = 1.25 -> upstream needs MUSD(1000) for carol's MUSD(800) offer
             // => alice must provide full GUSD(1000) to bob's offer; without fix alice only pays
             // GUSD(800)
-            env(pay(alice, gw, XRP(800)), Path(~MUSD), Sendmax(GUSD(1'000)));
+            env(pay(alice, gw, XRP(800)), Path(~musd), Sendmax(gusd(1'000)));
             env.close();
 
             // alice spent all GUSD(1000); bug would leave GUSD(200) unspent
-            BEAST_EXPECT(env.balance(alice, GUSD) == GUSD(0));
+            BEAST_EXPECT(env.balance(alice, gusd) == gusd(0));
             // bob gave MPT(1000) and received GUSD(1000)
-            BEAST_EXPECT(env.balance(bob, MUSD) == MUSD(0));
+            BEAST_EXPECT(env.balance(bob, musd) == musd(0));
             // carol received MPT(800) net (MPT(200) went to gw as fee)
-            BEAST_EXPECT(env.balance(carol, MUSD) == MUSD(800));
+            BEAST_EXPECT(env.balance(carol, musd) == musd(800));
         }
     }
 
