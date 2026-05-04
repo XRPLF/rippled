@@ -165,11 +165,17 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
-        !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
+    if (!sleMptoken->isFieldPresent(sfHolderEncryptionKey) ||
+        !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
+        !sleMptoken->isFieldPresent(sfIssuerEncryptedBalance))
     {
         return tecNO_PERMISSION;
     }
+
+    // Sanity check: holder's MPToken must have auditor balance field if auditing
+    // is enabled
+    if (requiresAuditor && !sleMptoken->isFieldPresent(sfAuditorEncryptedBalance))
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // if the total circulating confidential balance is smaller than what the
     // holder is trying to convert back, we know for sure this txn should
