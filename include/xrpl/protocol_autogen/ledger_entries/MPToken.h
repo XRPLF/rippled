@@ -149,7 +149,7 @@ public:
     }
 
     /**
-     * @brief Get sfConfidentialBalanceInbox (soeOPTIONAL)
+     * @brief Get sfConfidentialBalanceInbox (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -173,7 +173,7 @@ public:
     }
 
     /**
-     * @brief Get sfConfidentialBalanceSpending (soeOPTIONAL)
+     * @brief Get sfConfidentialBalanceSpending (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -197,7 +197,7 @@ public:
     }
 
     /**
-     * @brief Get sfConfidentialBalanceVersion (soeDEFAULT)
+     * @brief Get sfConfidentialBalanceVersion (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -221,7 +221,7 @@ public:
     }
 
     /**
-     * @brief Get sfIssuerEncryptedBalance (soeOPTIONAL)
+     * @brief Get sfIssuerEncryptedBalance (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -245,7 +245,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuditorEncryptedBalance (soeOPTIONAL)
+     * @brief Get sfAuditorEncryptedBalance (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -269,7 +269,7 @@ public:
     }
 
     /**
-     * @brief Get sfHolderEncryptionKey (soeOPTIONAL)
+     * @brief Get sfHolderEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -415,7 +415,7 @@ public:
     }
 
     /**
-     * @brief Set sfConfidentialBalanceInbox (soeOPTIONAL)
+     * @brief Set sfConfidentialBalanceInbox (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -426,7 +426,7 @@ public:
     }
 
     /**
-     * @brief Set sfConfidentialBalanceSpending (soeOPTIONAL)
+     * @brief Set sfConfidentialBalanceSpending (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -437,7 +437,7 @@ public:
     }
 
     /**
-     * @brief Set sfConfidentialBalanceVersion (soeDEFAULT)
+     * @brief Set sfConfidentialBalanceVersion (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -448,7 +448,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuerEncryptedBalance (soeOPTIONAL)
+     * @brief Set sfIssuerEncryptedBalance (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -459,7 +459,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuditorEncryptedBalance (soeOPTIONAL)
+     * @brief Set sfAuditorEncryptedBalance (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -470,7 +470,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolderEncryptionKey (soeOPTIONAL)
+     * @brief Set sfHolderEncryptionKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&

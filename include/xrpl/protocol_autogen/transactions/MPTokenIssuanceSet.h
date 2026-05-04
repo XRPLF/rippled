@@ -189,7 +189,7 @@ public:
     }
 
     /**
-     * @brief Get sfIssuerEncryptionKey (soeOPTIONAL)
+     * @brief Get sfIssuerEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -215,7 +215,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuditorEncryptionKey (soeOPTIONAL)
+     * @brief Get sfAuditorEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -350,7 +350,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuerEncryptionKey (soeOPTIONAL)
+     * @brief Set sfIssuerEncryptionKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -361,7 +361,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuditorEncryptionKey (soeOPTIONAL)
+     * @brief Set sfAuditorEncryptionKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
