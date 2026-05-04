@@ -41,6 +41,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace xrpl {
@@ -978,16 +979,10 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 }
 
 void
-addUniquePath(STPathSet& pathSet, STPath const& path)
+addUniquePath(STPathSet& pathSet, std::unordered_set<STPath, STPathHash>& index, STPath const& path)
 {
-    // TODO(tom): building an STPathSet this way is quadratic in the size
-    // of the STPathSet!
-    for (auto const& p : pathSet)
-    {
-        if (p == path)
-            return;
-    }
-    pathSet.pushBack(path);
+    if (index.insert(path).second)
+        pathSet.pushBack(path);
 }
 
 void
@@ -1021,7 +1016,7 @@ Pathfinder::addLink(
             {  // non-default path to XRP destination
                 JLOG(j_.trace()) << "complete path found ax: "
                                  << currentPath.getJson(JsonOptions::KNone);
-                addUniquePath(completePaths_, currentPath);
+                addUniquePath(completePaths_, completePathsIndex_, currentPath);
             }
         }
         else
@@ -1124,7 +1119,8 @@ Pathfinder::addLink(
                                     {
                                         JLOG(j_.trace()) << "complete path found ae: "
                                                          << currentPath.getJson(JsonOptions::KNone);
-                                        addUniquePath(completePaths_, currentPath);
+                                        addUniquePath(
+                                            completePaths_, completePathsIndex_, currentPath);
                                     }
                                 }
                                 else if (!bDestOnly)
@@ -1255,7 +1251,7 @@ Pathfinder::addLink(
                             // complete
                             JLOG(j_.trace()) << "complete path found bx: "
                                              << currentPath.getJson(JsonOptions::KNone);
-                            addUniquePath(completePaths_, newPath);
+                            addUniquePath(completePaths_, completePathsIndex_, newPath);
                         }
                         else
                         {
@@ -1301,7 +1297,7 @@ Pathfinder::addLink(
                            // complete
                             JLOG(j_.trace()) << "complete path found ba: "
                                              << currentPath.getJson(JsonOptions::KNone);
-                            addUniquePath(completePaths_, newPath);
+                            addUniquePath(completePaths_, completePathsIndex_, newPath);
                         }
                         else
                         {
