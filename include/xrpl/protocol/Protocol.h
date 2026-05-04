@@ -348,6 +348,9 @@ std::size_t constexpr kEC_CONVERT_BACK_PROOF_LENGTH = 816;
 /** Length of the ZKProof for ConfidentialMPTClawback. */
 std::size_t constexpr kEC_CLAWBACK_PROOF_LENGTH = 64;
 
+/** Extra base fee multiplier charged to confidential MPT transactions. */
+std::uint32_t constexpr confidentialFeeMultiplier = 9;
+
 /** Compressed EC point prefix for even y-coordinate */
 std::uint8_t constexpr kEC_COMPRESSED_PREFIX_EVEN_Y = 0x02;
 

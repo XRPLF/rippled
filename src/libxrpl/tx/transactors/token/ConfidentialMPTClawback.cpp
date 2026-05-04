@@ -51,9 +51,9 @@ XRPAmount
 ConfidentialMPTClawback::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge 9 extra base fees so the total is
+    // We charge confidentialFeeMultiplier extra base fees so the total is
     // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * 9;
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * confidentialFeeMultiplier;
 }
 
 TER
