@@ -52,6 +52,8 @@
 
 namespace xrpl::test::jtx {
 
+// NOLINTBEGIN(bugprone-unchecked-optional-access)
+
 /**
  * @brief Helper function to convert a PedersenProofParams into the C library struct.
  *
@@ -2410,5 +2412,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
 
     return jv;
 }
+
+// NOLINTEND(bugprone-unchecked-optional-access)
 
 }  // namespace xrpl::test::jtx

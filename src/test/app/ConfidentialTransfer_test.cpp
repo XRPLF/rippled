@@ -57,7 +57,7 @@
 
 namespace xrpl {
 
-// NOLINTBEGIN(misc-const-correctness)
+// NOLINTBEGIN(misc-const-correctness, bugprone-unchecked-optional-access)
 class ConfidentialTransfer_test : public beast::unit_test::Suite
 {
     // Offset where the bulletproof begins in a send proof blob.
@@ -9820,7 +9820,7 @@ public:
         testWithFeats(all);
     }
 };
-// NOLINTEND(misc-const-correctness)
+// NOLINTEND(misc-const-correctness, bugprone-unchecked-optional-access)
 
 BEAST_DEFINE_TESTSUITE(ConfidentialTransfer, app, xrpl);
 }  // namespace xrpl

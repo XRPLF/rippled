@@ -349,6 +349,7 @@ class MPTTester
     std::unordered_map<AccountID, Buffer> privKeys_;
 
 public:
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum EncryptedBalanceType {
         IssuerEncryptedBalance,
         HolderEncryptedInbox,
