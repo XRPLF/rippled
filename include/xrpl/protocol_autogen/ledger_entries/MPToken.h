@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfMPTAmount (soeDEFAULT)
+     * @brief Get sfMPTAmount (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -92,7 +92,7 @@ public:
     }
 
     /**
-     * @brief Get sfLockedAmount (soeOPTIONAL)
+     * @brief Get sfLockedAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -116,7 +116,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -127,7 +127,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -138,7 +138,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -297,7 +297,7 @@ public:
  * @brief Builder for MPToken ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class MPTokenBuilder : public LedgerEntryBuilderBase<MPTokenBuilder>
@@ -338,7 +338,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -349,7 +349,7 @@ public:
     }
 
     /**
-     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -360,7 +360,7 @@ public:
     }
 
     /**
-     * @brief Set sfMPTAmount (soeDEFAULT)
+     * @brief Set sfMPTAmount (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -371,7 +371,7 @@ public:
     }
 
     /**
-     * @brief Set sfLockedAmount (soeOPTIONAL)
+     * @brief Set sfLockedAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -382,7 +382,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -393,7 +393,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
@@ -404,7 +404,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&

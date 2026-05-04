@@ -29,7 +29,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Counter(std::shared_ptr<CounterImpl> const& impl) : m_impl(impl)
+    explicit Counter(std::shared_ptr<CounterImpl> const& impl) : impl_(impl)
     {
     }
 
@@ -38,8 +38,8 @@ public:
     void
     increment(value_type amount) const
     {
-        if (m_impl)
-            m_impl->increment(amount);
+        if (impl_)
+            impl_->increment(amount);
     }
 
     Counter const&
@@ -85,7 +85,7 @@ public:
     }
 
 private:
-    std::shared_ptr<CounterImpl> m_impl;
+    std::shared_ptr<CounterImpl> impl_;
 };
 
 }  // namespace beast::insight

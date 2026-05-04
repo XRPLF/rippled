@@ -28,8 +28,8 @@ template <class TInAmt, class TOutAmt>
 struct StrandResult
 {
     bool success = false;                          ///< Strand succeeded
-    TInAmt in = beast::zero;                       ///< Currency amount in
-    TOutAmt out = beast::zero;                     ///< Currency amount out
+    TInAmt in = beast::kZERO;                      ///< Currency amount in
+    TOutAmt out = beast::kZERO;                    ///< Currency amount out
     std::optional<PaymentSandbox> sandbox;         ///< Resulting Sandbox state
     boost::container::flat_set<uint256> ofrsToRm;  ///< Offers to remove
     // Num offers consumed or partially consumed (includes expired and unfunded
@@ -45,23 +45,23 @@ struct StrandResult
 
     StrandResult(
         Strand const& strand,
-        TInAmt const& in_,
-        TOutAmt const& out_,
-        PaymentSandbox&& sandbox_,
-        boost::container::flat_set<uint256> ofrsToRm_,
-        bool inactive_)
+        TInAmt const& in,
+        TOutAmt const& out,
+        PaymentSandbox&& sandbox,
+        boost::container::flat_set<uint256> ofrsToRemoveMember,
+        bool inactive)
         : success(true)
-        , in(in_)
-        , out(out_)
-        , sandbox(std::move(sandbox_))
-        , ofrsToRm(std::move(ofrsToRm_))
+        , in(in)
+        , out(out)
+        , sandbox(std::move(sandbox))
+        , ofrsToRm(std::move(ofrsToRemoveMember))
         , ofrsUsed(offersUsed(strand))
-        , inactive(inactive_)
+        , inactive(inactive)
     {
     }
 
-    StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRm_)
-        : ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
+    StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRemoveMember)
+        : ofrsToRm(std::move(ofrsToRemoveMember)), ofrsUsed(offersUsed(strand))
     {
     }
 };
@@ -234,8 +234,11 @@ flow(
             }
         }
 
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) cachedIn/Out set after strand is stepped
+        // above
         auto const strandIn = *strand.front()->cachedIn();
         auto const strandOut = *strand.back()->cachedOut();
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
 #ifndef NDEBUG
         {
@@ -243,7 +246,8 @@ flow(
             // Re-executing the strand will change the cached values
             PaymentSandbox checkSB(&baseView);
             PaymentSandbox checkAfView(&baseView);
-            EitherAmount stepIn(*strand[0]->cachedIn());
+            EitherAmount stepIn(
+                *strand[0]->cachedIn());  // NOLINT(bugprone-unchecked-optional-access)
             for (auto i = 0; i < s; ++i)
             {
                 bool valid = false;
@@ -280,8 +284,8 @@ flow(
 template <class TInAmt, class TOutAmt>
 struct FlowResult
 {
-    TInAmt in = beast::zero;
-    TOutAmt out = beast::zero;
+    TInAmt in = beast::kZERO;
+    TOutAmt out = beast::kZERO;
     std::optional<PaymentSandbox> sandbox;
     boost::container::flat_set<uint256> removableOffers;
     TER ter = temUNKNOWN;
@@ -289,29 +293,29 @@ struct FlowResult
     FlowResult() = default;
 
     FlowResult(
-        TInAmt const& in_,
-        TOutAmt const& out_,
-        PaymentSandbox&& sandbox_,
+        TInAmt const& in,
+        TOutAmt const& out,
+        PaymentSandbox&& sandbox,
         boost::container::flat_set<uint256> ofrsToRm)
-        : in(in_)
-        , out(out_)
-        , sandbox(std::move(sandbox_))
+        : in(in)
+        , out(out)
+        , sandbox(std::move(sandbox))
         , removableOffers(std::move(ofrsToRm))
         , ter(tesSUCCESS)
     {
     }
 
-    FlowResult(TER ter_, boost::container::flat_set<uint256> ofrsToRm)
-        : removableOffers(std::move(ofrsToRm)), ter(ter_)
+    FlowResult(TER ter, boost::container::flat_set<uint256> ofrsToRm)
+        : removableOffers(std::move(ofrsToRm)), ter(ter)
     {
     }
 
     FlowResult(
-        TER ter_,
-        TInAmt const& in_,
-        TOutAmt const& out_,
+        TER ter,
+        TInAmt const& in,
+        TOutAmt const& out,
         boost::container::flat_set<uint256> ofrsToRm)
-        : in(in_), out(out_), removableOffers(std::move(ofrsToRm)), ter(ter_)
+        : in(in), out(out), removableOffers(std::move(ofrsToRm)), ter(ter)
     {
     }
 };
@@ -321,14 +325,14 @@ struct FlowResult
 inline std::optional<Quality>
 qualityUpperBound(ReadView const& v, Strand const& strand)
 {
-    Quality q{STAmount::uRateOne};
+    Quality q{STAmount::kU_RATE_ONE};
     std::optional<Quality> stepQ;
-    DebtDirection dir = DebtDirection::issues;
+    DebtDirection dir = DebtDirection::Issues;
     for (auto const& step : strand)
     {
         if (std::tie(stepQ, dir) = step->qualityUpperBound(v, dir); stepQ)
         {
-            q = composed_quality(q, *stepQ);
+            q = composedQuality(q, *stepQ);
         }
         else
         {
@@ -358,7 +362,7 @@ limitOut(
 {
     std::optional<QualityFunction> stepQualityFunc;
     std::optional<QualityFunction> qf;
-    DebtDirection dir = DebtDirection::issues;
+    DebtDirection dir = DebtDirection::Issues;
     for (auto const& step : strand)
     {
         if (std::tie(stepQualityFunc, dir) = step->getQualityFunc(v, dir); stepQualityFunc)
@@ -491,7 +495,7 @@ public:
         std::swap(cur_, next_);
     }
 
-    Strand const*
+    [[nodiscard]] Strand const*
     get(size_t i) const
     {
         if (i >= cur_.size())
@@ -519,18 +523,10 @@ public:
         next_.insert(next_.end(), std::next(cur_.begin(), i), cur_.end());
     }
 
-    auto
+    [[nodiscard]] auto
     size() const
     {
         return cur_.size();
-    }
-
-    void
-    removeIndex(std::size_t i)
-    {
-        if (i >= next_.size())
-            return;
-        next_.erase(next_.begin() + i);
     }
 };
 /// @endcond
@@ -580,12 +576,12 @@ flow(
         Quality quality;
 
         BestStrand(
-            TInAmt const& in_,
-            TOutAmt const& out_,
-            PaymentSandbox&& sb_,
-            Strand const& strand_,
-            Quality const& quality_)
-            : in(in_), out(out_), sb(std::move(sb_)), strand(strand_), quality(quality_)
+            TInAmt const& in,
+            TOutAmt const& out,
+            PaymentSandbox&& sb,
+            Strand const& strand,
+            Quality const& quality)
+            : in(in), out(out), sb(std::move(sb)), strand(strand), quality(quality)
         {
         }
     };
@@ -599,9 +595,9 @@ flow(
     // values if `remainingIn` is initialized through a copy constructor. We can
     // get similar warnings for `sendMax` if it is initialized in the most
     // natural way. Using `make_optional`, allows us to work around this bug.
-    TInAmt const sendMaxInit = sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::zero};
+    TInAmt const sendMaxInit = sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::kZERO};
     std::optional<TInAmt> const sendMax =
-        (sendMaxST && sendMaxInit >= beast::zero) ? std::make_optional(sendMaxInit) : std::nullopt;
+        (sendMaxST && sendMaxInit >= beast::kZERO) ? std::make_optional(sendMaxInit) : std::nullopt;
     std::optional<TInAmt> remainingIn = !!sendMax ? std::make_optional(sendMaxInit) : std::nullopt;
     // std::optional<TInAmt> remainingIn{sendMax};
 
@@ -623,7 +619,7 @@ flow(
     auto sum = [](auto const& col) {
         using TResult = std::decay_t<decltype(*col.begin())>;
         if (col.empty())
-            return TResult{beast::zero};
+            return TResult{beast::kZERO};
         return std::accumulate(col.begin() + 1, col.end(), *col.begin());
     };
 
@@ -631,7 +627,7 @@ flow(
     // successful
     boost::container::flat_set<uint256> ofrsToRmOnFail;
 
-    while (remainingOut > beast::zero && (!remainingIn || *remainingIn > beast::zero))
+    while (remainingOut > beast::kZERO && (!remainingIn || *remainingIn > beast::kZERO))
     {
         ++curTry;
         if (curTry >= maxTries)
@@ -658,11 +654,6 @@ flow(
         std::optional<BestStrand> best;
         if (flowDebugInfo)
             flowDebugInfo->newLiquidityPass();
-        // Index of strand to mark as inactive (remove from the active list) if
-        // the liquidity is used. This is used for strands that consume too many
-        // offers Constructed as `false,0` to workaround a gcc warning about
-        // uninitialized variables
-        std::optional<std::size_t> markInactiveOnUse;
         for (size_t strandIndex = 0, sie = activeStrands.size(); strandIndex != sie; ++strandIndex)
         {
             Strand const* strand = activeStrands.get(strandIndex);
@@ -675,7 +666,7 @@ flow(
             // the previous strand execution failed. It has to be reset
             // since this strand might not have AMM liquidity.
             ammContext.clear();
-            if (offerCrossing && limitQuality)
+            if (offerCrossing != OfferCrossing::No && limitQuality)
             {
                 auto const strandQ = qualityUpperBound(sb, *strand);
                 if (!strandQ || *strandQ < *limitQuality)
@@ -684,11 +675,11 @@ flow(
             auto f = flow<TInAmt, TOutAmt>(sb, *strand, remainingIn, limitRemainingOut, j);
 
             // rm bad offers even if the strand fails
-            SetUnion(ofrsToRm, f.ofrsToRm);
+            setUnion(ofrsToRm, f.ofrsToRm);
 
             offersConsidered += f.ofrsUsed;
 
-            if (!f.success || f.out == beast::zero)
+            if (!f.success || f.out == beast::kZERO)
                 continue;
 
             if (flowDebugInfo)
@@ -726,11 +717,6 @@ flow(
 
         if (best)
         {
-            if (markInactiveOnUse)
-            {
-                activeStrands.removeIndex(*markInactiveOnUse);
-                markInactiveOnUse.reset();
-            }
             savedIns.insert(best->in);
             savedOuts.insert(best->out);
             remainingOut = outReq - sum(savedOuts);
@@ -755,11 +741,10 @@ flow(
             JLOG(j.trace()) << "All strands dry.";
         }
 
-        best.reset();  // view in best must be destroyed before modifying base
-                       // view
+        best.reset();  // view in best must be destroyed before modifying base view
         if (!ofrsToRm.empty())
         {
-            SetUnion(ofrsToRmOnFail, ofrsToRm);
+            setUnion(ofrsToRmOnFail, ofrsToRm);
             for (auto const& o : ofrsToRm)
             {
                 if (auto ok = sb.peek(keylet::offer(o)))
@@ -794,34 +779,34 @@ flow(
     {
         if (actualOut > outReq)
         {
-            // Rounding in the payment engine is causing this assert to
-            // sometimes fire with "dust" amounts. This is causing issues when
-            // running debug builds of xrpld. While this issue still needs to
-            // be resolved, the assert is causing more harm than good at this
-            // point.
+            // Rounding in the payment engine is causing this assert to sometimes fire with "dust"
+            // amounts. This is causing issues when running debug builds of xrpld.
+            // While this issue still needs to be resolved, the assert is causing more harm than
+            // good at this point.
             // UNREACHABLE("xrpl::flow : rounding error");
 
             return {tefEXCEPTION, std::move(ofrsToRmOnFail)};
         }
         if (!partialPayment)
         {
-            // If we're offerCrossing a !partialPayment, then we're
-            // handling tfFillOrKill.
+            // If we're offerCrossing a !partialPayment, then we're handling tfFillOrKill.
             // Pre-fixFillOrKill amendment:
             //   That case is handled below; not here.
             // fixFillOrKill amendment:
-            //   That case is handled here if tfSell is also not set; i.e,
-            //   case 1.
-            if (!offerCrossing || (fillOrKillEnabled && offerCrossing != OfferCrossing::sell))
+            //   That case is handled here if tfSell is also not set; i.e, case 1.
+            if (offerCrossing == OfferCrossing::No ||
+                (fillOrKillEnabled && offerCrossing != OfferCrossing::Sell))
+            {
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
+            }
         }
-        else if (actualOut == beast::zero)
+        else if (actualOut == beast::kZERO)
         {
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing &&
-        (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::sell)))
+    if (offerCrossing != OfferCrossing::No &&
+        (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::Sell)))
     {
         // If we're offer crossing and partialPayment is *not* true, then
         // we're handling a FillOrKill offer.  In this case remainingIn must
@@ -831,7 +816,7 @@ flow(
         // fixFillOrKill amendment:
         //   Handles 2. 1. is handled above and falls through for tfSell.
         XRPL_ASSERT(remainingIn, "xrpl::flow : nonzero remainingIn");
-        if (remainingIn && *remainingIn != beast::zero)
+        if (remainingIn && *remainingIn != beast::kZERO)
             return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
     }
 

@@ -27,32 +27,32 @@ class AcceptedLedger : public CountedObject<AcceptedLedger>
 public:
     AcceptedLedger(std::shared_ptr<ReadView const> const& ledger);
 
-    std::shared_ptr<ReadView const> const&
+    [[nodiscard]] std::shared_ptr<ReadView const> const&
     getLedger() const
     {
-        return mLedger;
+        return ledger_;
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return transactions_.size();
     }
 
-    auto
+    [[nodiscard]] auto
     begin() const
     {
         return transactions_.begin();
     }
 
-    auto
+    [[nodiscard]] auto
     end() const
     {
         return transactions_.end();
     }
 
 private:
-    std::shared_ptr<ReadView const> mLedger;
+    std::shared_ptr<ReadView const> ledger_;
     std::vector<std::unique_ptr<AcceptedLedgerTx>> transactions_;
 };
 

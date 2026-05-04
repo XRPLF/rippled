@@ -69,11 +69,11 @@ validBalances(
     ValidAMM::ZeroAllowed zeroAllowed)
 {
     bool const positive =
-        amount > beast::zero && amount2 > beast::zero && lptAMMBalance > beast::zero;
+        amount > beast::kZERO && amount2 > beast::kZERO && lptAMMBalance > beast::kZERO;
     if (zeroAllowed == ValidAMM::ZeroAllowed::Yes)
     {
         return positive ||
-            (amount == beast::zero && amount2 == beast::zero && lptAMMBalance == beast::zero);
+            (amount == beast::kZERO && amount2 == beast::kZERO && lptAMMBalance == beast::kZERO);
     }
     return positive;
 }
@@ -111,7 +111,7 @@ ValidAMM::finalizeBid(bool enforce, beast::Journal const& j) const
     // LPTokens are burnt, therefore there should be fewer LPTokens
     else if (
         lptAMMBalanceBefore_ && lptAMMBalanceAfter_ &&
-        (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::zero))
+        (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::kZERO))
     {
         // LCOV_EXCL_START
         JLOG(j.error()) << "AMMBid invariant failed: " << *lptAMMBalanceBefore_ << " "
@@ -146,12 +146,14 @@ ValidAMM::finalizeCreate(
             *ammAccount_,
             tx[sfAmount].asset(),
             tx[sfAmount2].asset(),
-            fhIGNORE_FREEZE,
-            ahIGNORE_AUTH,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j);
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
         // all balances are greater than zero
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceAfter_ set with ammAccount_
+        // in visitEntry
         if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
             ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>()) != *lptAMMBalanceAfter_)
         {
@@ -160,6 +162,7 @@ ValidAMM::finalizeCreate(
             if (enforce)
                 return false;
         }
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return true;
@@ -204,8 +207,16 @@ ValidAMM::generalInvariant(
     ZeroAllowed zeroAllowed,
     beast::Journal const& j) const
 {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) ammAccount_ and lptAMMBalanceAfter_ set
+    // together in visitEntry; callers only invoke this inside else-of-if(!ammAccount_)
     auto const [amount, amount2] = ammPoolHolds(
-        view, *ammAccount_, tx[sfAsset], tx[sfAsset2], fhIGNORE_FREEZE, ahIGNORE_AUTH, j);
+        view,
+        *ammAccount_,
+        tx[sfAsset],
+        tx[sfAsset2],
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j);
     // Deposit and Withdrawal invariant:
     // sqrt(amount * amount2) >= LPTokens
     // all balances are greater than zero
@@ -216,20 +227,21 @@ ValidAMM::generalInvariant(
     bool const strongInvariantCheck = poolProductMean >= *lptAMMBalanceAfter_;
     // Allow for a small relative error if strongInvariantCheck fails
     auto weakInvariantCheck = [&]() {
-        return *lptAMMBalanceAfter_ != beast::zero &&
+        return *lptAMMBalanceAfter_ != beast::kZERO &&
             withinRelativeDistance(poolProductMean, Number{*lptAMMBalanceAfter_}, Number{1, -11});
     };
     if (!nonNegativeBalances || (!strongInvariantCheck && !weakInvariantCheck()))
     {
         JLOG(j.error()) << "AMM " << tx.getTxnType()
-                        << " invariant failed: " << tx.getHash(HashPrefix::transactionID) << " "
+                        << " invariant failed: " << tx.getHash(HashPrefix::TransactionId) << " "
                         << ammPoolChanged_ << " " << amount << " " << amount2 << " "
                         << poolProductMean << " " << lptAMMBalanceAfter_->getText() << " "
-                        << ((*lptAMMBalanceAfter_ == beast::zero)
+                        << ((*lptAMMBalanceAfter_ == beast::kZERO)
                                 ? Number{1}
                                 : ((*lptAMMBalanceAfter_ - poolProductMean) / poolProductMean));
         return false;
     }
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     return true;
 }

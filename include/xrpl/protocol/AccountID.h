@@ -25,7 +25,7 @@ public:
 }  // namespace detail
 
 /** A 160-bit unsigned that uniquely identifies an account. */
-using AccountID = base_uint<160, detail::AccountIDTag>;
+using AccountID = BaseUint<160, detail::AccountIDTag>;
 
 /** Convert AccountID to base58 checked string */
 std::string
@@ -63,13 +63,13 @@ noAccount();
 */
 // DEPRECATED
 bool
-to_issuer(AccountID&, std::string const&);
+toIssuer(AccountID&, std::string const&);
 
 // DEPRECATED Should be checking the currency or native flag
 inline bool
 isXRP(AccountID const& c)
 {
-    return c == beast::zero;
+    return c == beast::kZERO;
 }
 
 // DEPRECATED
@@ -105,10 +105,10 @@ initAccountIdCache(std::size_t count);
 }  // namespace xrpl
 
 //------------------------------------------------------------------------------
-namespace Json {
+namespace json {
 template <>
 inline xrpl::AccountID
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
 
@@ -117,7 +117,7 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
         return *r;
     Throw<JsonTypeMismatchError>(field.getJsonName(), "AccountID");
 }
-}  // namespace Json
+}  // namespace json
 
 //------------------------------------------------------------------------------
 

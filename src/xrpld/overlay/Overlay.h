@@ -35,14 +35,14 @@ protected:
     }
 
 public:
-    enum class Promote { automatic, never, always };
+    enum class Promote { Automatic, Never, Always };
 
     struct Setup
     {
         explicit Setup() = default;
 
         std::shared_ptr<boost::asio::ssl::context> context;
-        beast::IP::Address public_ip;
+        beast::IP::Address publicIp;
         int ipLimit = 0;
         std::uint32_t crawlOptions = 0;
         std::optional<std::uint32_t> networkID;
@@ -68,7 +68,7 @@ public:
     onHandoff(
         std::unique_ptr<stream_type>&& bundle,
         http_request_type&& request,
-        boost::asio::ip::tcp::endpoint remote_address) = 0;
+        boost::asio::ip::tcp::endpoint remoteAddress) = 0;
 
     /** Establish a peer connection to the specified endpoint.
         The call returns immediately, the connection attempt is
@@ -85,19 +85,19 @@ public:
         Active peers are only those peers that have completed the
         handshake and are using the peer protocol.
     */
-    virtual std::size_t
+    [[nodiscard]] virtual std::size_t
     size() const = 0;
 
     /** Return diagnostics on the status of all peers.
         @deprecated This is superseded by PropertyStream
     */
-    virtual Json::Value
+    virtual json::Value
     json() = 0;
 
     /** Returns a sequence representing the current list of peers.
         The snapshot is made at the time of the call.
     */
-    virtual PeerSequence
+    [[nodiscard]] virtual PeerSequence
     getActivePeers() const = 0;
 
     /** Calls the checkTracking function on each peer
@@ -107,7 +107,7 @@ public:
     checkTracking(std::uint32_t index) = 0;
 
     /** Returns the peer with the matching short id, or null. */
-    virtual std::shared_ptr<Peer>
+    [[nodiscard]] virtual std::shared_ptr<Peer>
     findPeerByShortID(Peer::id_t const& id) const = 0;
 
     /** Returns the peer with the matching public key, or null. */
@@ -171,7 +171,7 @@ public:
     /** Increment and retrieve counter for transaction job queue overflows. */
     virtual void
     incJqTransOverflow() = 0;
-    virtual std::uint64_t
+    [[nodiscard]] virtual std::uint64_t
     getJqTransOverflow() const = 0;
 
     /** Increment and retrieve counters for total peer disconnects, and
@@ -179,11 +179,11 @@ public:
      */
     virtual void
     incPeerDisconnect() = 0;
-    virtual std::uint64_t
+    [[nodiscard]] virtual std::uint64_t
     getPeerDisconnect() const = 0;
     virtual void
     incPeerDisconnectCharges() = 0;
-    virtual std::uint64_t
+    [[nodiscard]] virtual std::uint64_t
     getPeerDisconnectCharges() const = 0;
 
     /** Returns the ID of the network this server is configured for, if any.
@@ -194,13 +194,13 @@ public:
         @return The numerical identifier configured by the administrator of the
                 server. An unseated optional, otherwise.
     */
-    virtual std::optional<std::uint32_t>
+    [[nodiscard]] virtual std::optional<std::uint32_t>
     networkID() const = 0;
 
     /** Returns tx reduce-relay metrics
         @return json value of tx reduce-relay metrics
      */
-    virtual Json::Value
+    [[nodiscard]] virtual json::Value
     txMetrics() const = 0;
 };
 

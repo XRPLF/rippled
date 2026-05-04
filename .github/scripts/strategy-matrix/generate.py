@@ -51,20 +51,21 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Only generate a subset of configurations in PRs.
         if not all:
             # Debian:
-            # - Bookworm using GCC 13: Release on linux/amd64, set the reference
-            #   fee to 500.
-            # - Bookworm using GCC 15: Debug on linux/amd64, enable code
-            #   coverage (which will be done below).
+            # - Bookworm using GCC 13: Debug on linux/amd64, set the reference
+            #   fee to 500 and enable code coverage (which will be done below).
+            # - Bookworm using GCC 15: Debug on linux/amd64, enable Address and
+            #   UB sanitizers (which will be done below).
             # - Bookworm using Clang 16: Debug on linux/amd64, enable voidstar.
             # - Bookworm using Clang 17: Release on linux/amd64, set the
             #   reference fee to 1000.
-            # - Bookworm using Clang 20: Debug on linux/amd64.
+            # - Bookworm using Clang 20: Debug on linux/amd64, enable Address
+            #   and UB sanitizers (which will be done below).
             if os["distro_name"] == "debian":
                 skip = True
                 if os["distro_version"] == "bookworm":
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-13"
-                        and build_type == "Release"
+                        and build_type == "Debug"
                         and architecture["platform"] == "linux/amd64"
                     ):
                         cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}"
@@ -193,11 +194,11 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         ):
             continue
 
-        # Enable code coverage for Debian Bookworm using GCC 15 in Debug on
-        # linux/amd64
+        # Enable code coverage for Debian Bookworm using GCC 13 in Debug on
+        # linux/amd64.
         if (
             f"{os['distro_name']}-{os['distro_version']}" == "debian-bookworm"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-13"
             and build_type == "Debug"
             and architecture["platform"] == "linux/amd64"
         ):
@@ -234,23 +235,39 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Add the configuration to the list, with the most unique fields first,
         # so that they are easier to identify in the GitHub Actions UI, as long
         # names get truncated.
-        # Add Address and Thread (both coupled with UB) sanitizers for specific bookworm distros.
+        # Add Address and UB sanitizers as separate configurations for specific
+        # bookworm distros. Thread sanitizer is currently disabled (see below).
         # GCC-Asan xrpld-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
-        if (
-            os["distro_version"] == "bookworm"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
-        ):
-            # Add ASAN + UBSAN configuration.
+        if os[
+            "distro_version"
+        ] == "bookworm" and f"{os['compiler_name']}-{os['compiler_version']}" in [
+            "gcc-15",
+            "clang-20",
+        ]:
+            # Add ASAN configuration.
             configurations.append(
                 {
-                    "config_name": config_name + "-asan-ubsan",
+                    "config_name": config_name + "-asan",
                     "cmake_args": cmake_args,
                     "cmake_target": cmake_target,
                     "build_only": build_only,
                     "build_type": build_type,
                     "os": os,
                     "architecture": architecture,
-                    "sanitizers": "address,undefinedbehavior",
+                    "sanitizers": "address",
+                }
+            )
+            # Add UBSAN configuration.
+            configurations.append(
+                {
+                    "config_name": config_name + "-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "undefinedbehavior",
                 }
             )
             # TSAN is deactivated due to seg faults with latest compilers.

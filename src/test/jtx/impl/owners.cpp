@@ -16,7 +16,7 @@ namespace xrpl {
 namespace detail {
 
 std::uint32_t
-owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type)
+ownedCountOf(ReadView const& view, AccountID const& id, LedgerEntryType type)
 {
     std::uint32_t count = 0;
     forEachItem(view, id, [&count, type](std::shared_ptr<SLE const> const& sle) {
@@ -27,13 +27,13 @@ owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type)
 }
 
 void
-owned_count_helper(
+ownedCountHelper(
     test::jtx::Env& env,
     AccountID const& id,
     LedgerEntryType type,
     std::uint32_t value)
 {
-    env.test.expect(owned_count_of(*env.current(), id, type) == value);
+    env.test.expect(ownedCountOf(*env.current(), id, type) == value);
 }
 
 }  // namespace detail
@@ -41,7 +41,7 @@ owned_count_helper(
 namespace test::jtx {
 
 void
-owners::operator()(Env& env) const
+Owners::operator()(Env& env) const
 {
     env.test.expect(env.le(account_)->getFieldU32(sfOwnerCount) == value_);
 }

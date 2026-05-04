@@ -40,7 +40,7 @@ public:
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) override;
 
-    std::set<Peer::id_t> const&
+    [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override;
 
 private:
@@ -134,7 +134,7 @@ private:
 };
 
 std::unique_ptr<PeerSetBuilder>
-make_PeerSetBuilder(Application& app)
+makePeerSetBuilder(Application& app)
 {
     return std::make_unique<PeerSetBuilderImpl>(app);
 }
@@ -164,12 +164,12 @@ public:
         JLOG(j_.error()) << "DummyPeerSet sendRequest should not be called";
     }
 
-    std::set<Peer::id_t> const&
+    [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> const emptyPeers;
+        static std::set<Peer::id_t> const kEMPTY_PEERS;
         JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
-        return emptyPeers;
+        return kEMPTY_PEERS;
     }
 
 private:
@@ -177,7 +177,7 @@ private:
 };
 
 std::unique_ptr<PeerSet>
-make_DummyPeerSet(Application& app)
+makeDummyPeerSet(Application& app)
 {
     return std::make_unique<DummyPeerSet>(app);
 }

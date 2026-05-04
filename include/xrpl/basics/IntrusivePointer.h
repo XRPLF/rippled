@@ -159,16 +159,16 @@ public:
     reset();
 
     /** Get the raw pointer */
-    T*
+    [[nodiscard]] T*
     get() const;
 
     /** Return the strong count */
-    std::size_t
-    use_count() const;
+    [[nodiscard]] std::size_t
+    useCount() const;
 
     template <class TT, class... Args>
     friend SharedIntrusive<TT>
-    make_SharedIntrusive(Args&&... args);
+    makeSharedIntrusive(Args&&... args);
 
     template <class TT>
     friend class SharedIntrusive;
@@ -181,7 +181,7 @@ public:
 
 private:
     /** Return the raw pointer held by this object. */
-    T*
+    [[nodiscard]] T*
     unsafeGetRawPtr() const;
 
     /** Exchange the current raw pointer held by this object with the given
@@ -260,7 +260,7 @@ public:
     lock() const;
 
     /** Return true if the strong count is zero. */
-    bool
+    [[nodiscard]] bool
     expired() const;
 
     /** Set the pointer to null and decrement the weak count.
@@ -339,7 +339,7 @@ public:
        don't lock the weak pointer. Use the `lock` method if that's what's
        needed)
      */
-    SharedIntrusive<T>
+    [[nodiscard]] SharedIntrusive<T>
     getStrong() const;
 
     /** Return true if this is a strong pointer and the strong pointer is
@@ -357,31 +357,31 @@ public:
     /** If this is a strong pointer, return the raw pointer. Otherwise
        return null.
      */
-    T*
+    [[nodiscard]] T*
     get() const;
 
     /** If this is a strong pointer, return the strong count. Otherwise
      * return 0
      */
-    std::size_t
-    use_count() const;
+    [[nodiscard]] std::size_t
+    useCount() const;
 
     /** Return true if there is a non-zero strong count. */
-    bool
+    [[nodiscard]] bool
     expired() const;
 
     /** If this is a strong pointer, return the strong pointer. Otherwise
         attempt to lock the weak pointer.
      */
-    SharedIntrusive<T>
+    [[nodiscard]] SharedIntrusive<T>
     lock() const;
 
     /** Return true is this represents a strong pointer. */
-    bool
+    [[nodiscard]] bool
     isStrong() const;
 
     /** Return true is this represents a weak pointer. */
-    bool
+    [[nodiscard]] bool
     isWeak() const;
 
     /** If this is a weak pointer, attempt to convert it to a strong
@@ -406,16 +406,16 @@ private:
     // pointer. The low bit must be masked to zero when converting back to a
     // pointer. If the low bit is '1', this is a weak pointer.
     std::uintptr_t tp_{0};
-    static constexpr std::uintptr_t tagMask = 1;
-    static constexpr std::uintptr_t ptrMask = ~tagMask;
+    static constexpr std::uintptr_t kTAG_MASK = 1;
+    static constexpr std::uintptr_t kPTR_MASK = ~kTAG_MASK;
 
 private:
     /** Return the raw pointer held by this object.
      */
-    T*
+    [[nodiscard]] T*
     unsafeGetRawPtr() const;
 
-    enum class RefStrength { strong, weak };
+    enum class RefStrength { Strong, Weak };
     /** Set the raw pointer and tag bit directly.
      */
     void
@@ -442,7 +442,7 @@ private:
 */
 template <class TT, class... Args>
 SharedIntrusive<TT>
-make_SharedIntrusive(Args&&... args)
+makeSharedIntrusive(Args&&... args)
 {
     auto p = new TT(std::forward<Args>(args)...);
 
@@ -469,21 +469,21 @@ using SharedWeakUnionPtr = SharedWeakUnion<T>;
 
 template <class T, class... A>
 SharedPtr<T>
-make_shared(A&&... args)
+makeShared(A&&... args)
 {
-    return make_SharedIntrusive<T>(std::forward<A>(args)...);
+    return makeSharedIntrusive<T>(std::forward<A>(args)...);
 }
 
 template <class T, class TT>
 SharedPtr<T>
-static_pointer_cast(TT const& v)
+staticPointerCast(TT const& v)
 {
     return SharedPtr<T>(StaticCastTagSharedIntrusive{}, v);
 }
 
 template <class T, class TT>
 SharedPtr<T>
-dynamic_pointer_cast(TT const& v)
+dynamicPointerCast(TT const& v)
 {
     return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, v);
 }

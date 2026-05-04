@@ -62,7 +62,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (baseFee > maxAmount - view.fees().base)
     {
         JLOG(debugLog().error()) << "BatchTrace: Base fee overflow detected.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kINITIAL_XRP};
     }
     // LCOV_EXCL_STOP
 
@@ -75,10 +75,10 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         auto const& txns = tx.getFieldArray(sfRawTransactions);
 
         // LCOV_EXCL_START
-        if (txns.size() > maxBatchTxCount)
+        if (txns.size() > kMAX_BATCH_TX_COUNT)
         {
             JLOG(debugLog().error()) << "BatchTrace: Raw Transactions array exceeds max entries.";
-            return XRPAmount{INITIAL_XRP};
+            return XRPAmount{kINITIAL_XRP};
         }
         // LCOV_EXCL_STOP
 
@@ -90,7 +90,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             if (stx.getTxnType() == ttBATCH)
             {
                 JLOG(debugLog().error()) << "BatchTrace: Inner Batch transaction found.";
-                return XRPAmount{INITIAL_XRP};
+                return XRPAmount{kINITIAL_XRP};
             }
             // LCOV_EXCL_STOP
 
@@ -100,7 +100,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             {
                 JLOG(debugLog().error())
                     << "BatchTrace: XRPAmount overflow in txnFees calculation.";
-                return XRPAmount{INITIAL_XRP};
+                return XRPAmount{kINITIAL_XRP};
             }
             // LCOV_EXCL_STOP
             txnFees += fee;
@@ -114,10 +114,10 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         auto const& signers = tx.getFieldArray(sfBatchSigners);
 
         // LCOV_EXCL_START
-        if (signers.size() > maxBatchTxCount)
+        if (signers.size() > kMAX_BATCH_TX_COUNT)
         {
             JLOG(debugLog().error()) << "BatchTrace: Batch Signers array exceeds max entries.";
-            return XRPAmount{INITIAL_XRP};
+            return XRPAmount{kINITIAL_XRP};
         }
         // LCOV_EXCL_STOP
 
@@ -138,7 +138,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (signerCount > 0 && view.fees().base > maxAmount / signerCount)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerCount calculation.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kINITIAL_XRP};
     }
     // LCOV_EXCL_STOP
 
@@ -148,12 +148,12 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (signerFees > maxAmount - txnFees)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerFees calculation.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kINITIAL_XRP};
     }
     if (txnFees + signerFees > maxAmount - batchBase)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in total fee calculation.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kINITIAL_XRP};
     }
     // LCOV_EXCL_STOP
 
@@ -221,7 +221,7 @@ Batch::preflight(PreflightContext const& ctx)
         return temARRAY_EMPTY;
     }
 
-    if (rawTxns.size() > maxBatchTxCount)
+    if (rawTxns.size() > kMAX_BATCH_TX_COUNT)
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
                             << "txns array exceeds 8 entries.";
@@ -282,7 +282,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         if (std::ranges::any_of(
-                disabledTxTypes, [txType](auto const& disabled) { return txType == disabled; }))
+                kDISABLED_TX_TYPES, [txType](auto const& disabled) { return txType == disabled; }))
         {
             return temINVALID_INNER_BATCH;
         }
@@ -311,7 +311,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         // Check that the Fee is native asset (XRP) and zero
-        if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::zero)
+        if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::kZERO)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn must have a fee of 0. "
@@ -321,7 +321,7 @@ Batch::preflight(PreflightContext const& ctx)
 
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult =
-                xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
+                xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, TapBatch, ctx.j);
             !isTesSuccess(preflightResult.ter))
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -413,7 +413,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         STArray const& signers = ctx.tx.getFieldArray(sfBatchSigners);
 
         // Check that the batch signers array is not too large.
-        if (signers.size() > maxBatchTxCount)
+        if (signers.size() > kMAX_BATCH_TX_COUNT)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "signers array exceeds 8 entries.";

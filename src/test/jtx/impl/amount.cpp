@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <ios>
+#include <limits>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -26,7 +27,7 @@ operator AnyAmount() const
 
 template <typename T>
 static std::string
-to_places(T const d, std::uint8_t places)
+toPlaces(T const d, std::uint8_t places)
 {
     assert(places <= std::numeric_limits<T>::digits10);
 
@@ -49,7 +50,7 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
             if (issue.native())
             {
                 // measure in hundredths
-                auto const c = dropsPerXRP.drops() / 100;
+                auto const c = kJTX_DROPS_PER_XRP.drops() / 100;
                 auto const n = amount.value().mantissa();
                 if (n < c)
                 {
@@ -64,13 +65,13 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
                 }
                 else
                 {
-                    auto const d = double(n) / dropsPerXRP.drops();
+                    auto const d = double(n) / kJTX_DROPS_PER_XRP.drops();
                     if (amount.value().negative())
                     {
                         os << "-";
                     }
 
-                    os << to_places(d, 6) << " XRP";
+                    os << toPlaces(d, 6) << " XRP";
                 }
             }
             else
@@ -88,18 +89,18 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
 
 //------------------------------------------------------------------------------
 
-XRP_t const XRP{};
+XrpT const XRP{};
 
 PrettyAmount
-IOU::operator()(epsilon_t) const
+IOU::operator()(EpsilonT) const
 {
     return {STAmount(issue(), 1, -81), account.name()};
 }
 
 PrettyAmount
-IOU::operator()(xrpl::detail::epsilon_multiple m) const
+IOU::operator()(xrpl::detail::EpsilonMultiple m) const
 {
-    return {STAmount(issue(), safe_cast<std::uint64_t>(m.n), -81), account.name()};
+    return {STAmount(issue(), safeCast<std::uint64_t>(m.n), -81), account.name()};
 }
 
 std::ostream&
@@ -116,6 +117,6 @@ operator<<(std::ostream& os, MPT const& mpt)
     return os;
 }
 
-any_t const any{};
+AnyT const kANY{};
 
 }  // namespace xrpl::test::jtx
