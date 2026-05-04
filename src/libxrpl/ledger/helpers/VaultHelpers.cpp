@@ -259,9 +259,12 @@ withdrawFromVault(
     // caught (if at all) by the withdrawal invariants at finalize time, with
     // tecINVARIANT_FAILED. Post-amendment we snapshot the pre-state and
     // compare deltas at the end of the helper, returning tecPRECISION_LOSS
-    // before invariants run. Trust-line value-transfer integrity (vault
-    // pseudo-account loss == destination gain) is enforced inside doWithdraw
-    // via accountSendExact.
+    // before invariants run. Trust-line value transfer is verified inside
+    // doWithdraw via accountSendExact, which compares sender-loss to
+    // destination-gain at the coarser pre-state grid — sub-ULP-at-receiver
+    // canonicalization is admitted as silent absorption (vault loses, the
+    // unit returns to the issuer's obligation pool); super-ULP discrepancies
+    // are rejected as tecPRECISION_LOSS.
     Number const beforeAssetsTotal = *vault->at(sfAssetsTotal);
     Number const beforeAssetsAvailable = *vault->at(sfAssetsAvailable);
 
@@ -317,9 +320,9 @@ withdrawFromVault(
     // as an invariant after commit.
     associateAsset(*vault, vaultAsset);
 
-    // doWithdraw uses accountSendExact internally, so a destination trust
-    // line at the IOU edge that would silently canonicalize the inflow now
-    // returns tecPRECISION_LOSS rather than letting value disappear.
+    // doWithdraw uses accountSendExact internally; super-ULP value-transfer
+    // mismatches return tecPRECISION_LOSS, sub-ULP-at-receiver canonicalization
+    // is admitted as silent absorption.
     if (auto const ter = doWithdraw(
             view, tx, depositor, destination, vaultAccount, preFeeBalance, assetsWithdrawn, j);
         !isTesSuccess(ter))
@@ -328,17 +331,15 @@ withdrawFromVault(
     if (!view.rules().enabled(fixCleanup3_2_0))
         return tesSUCCESS;
 
-    // Trust-line value-transfer integrity is enforced by doWithdraw's
-    // accountSendExact above; this remaining check covers SLE-field
-    // rounding by associateAsset on the vault's STNumber accounting.
-    //
-    // Same shape as the deposit-side check (defense-in-depth at the
-    // coarser pre-state scale). Subtraction from already-canonicalized
-    // 16-digit STAmount values is generally clean through the mantissa
-    // edge (precision improves on the way down), so this check rarely
-    // fires; symmetry with the deposit helper is preserved so future
-    // changes (non-zero sfScale, multi-asset operations) don't
-    // introduce a silent leak.
+    // accountSendExact above covers trust-line conservation. This remaining
+    // check is orthogonal: it catches associateAsset asymmetric rounding
+    // on the vault's STNumber accounting fields (sfAssetsTotal vs
+    // sfAssetsAvailable). Subtraction from already-canonicalized 16-digit
+    // STAmount values is generally clean through the mantissa edge
+    // (precision improves on the way down), so this check rarely fires;
+    // symmetry with the deposit helper is preserved so future changes
+    // (non-zero sfScale, multi-asset operations) don't introduce a
+    // silent leak.
     Number const afterAssetsTotal = *vault->at(sfAssetsTotal);
     Number const afterAssetsAvailable = *vault->at(sfAssetsAvailable);
     Number const totalDelta = beforeAssetsTotal - afterAssetsTotal;

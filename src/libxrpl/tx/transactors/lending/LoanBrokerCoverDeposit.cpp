@@ -98,23 +98,23 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_FUNDS;
 
     // Post-fixCleanup3_2_0: reject deposits whose amount is sub-ULP at
-    // sfCoverAvailable's scale (which mirrors the broker pseudo-account
-    // trust line). Without this check, a sub-ULP cover deposit silently
-    // succeeds — depositor's trust line debits cleanly but the broker
-    // pseudo's balance and sfCoverAvailable both stay unchanged
-    // (canonicalization rounds the increment back to zero), and no
-    // broker invariant catches the loss because the two rails remain
-    // consistent. accountSendExact's two-sided check tolerates it as
+    // sfCoverAvailable's scale (which mirrors the broker pseudo-account trust
+    // line). Without this check, a sub-ULP cover deposit silently succeeds:
+    // depositor's trust line debits cleanly but broker pseudo balance and
+    // sfCoverAvailable both stay unchanged (canonicalization rounds back to
+    // zero), the two rails remain consistent so no broker invariant catches
+    // the loss, and accountSendExact's two-sided check tolerates it as
     // sub-ULP-of-coarser-side noise.
     if (ctx.view.rules().enabled(fixCleanup3_2_0))
     {
-        int const coarsestScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
-        if (roundToAsset(vaultAsset, amount, coarsestScale).signum() == 0)
-        {
-            JLOG(ctx.j.warn()) << "LoanBrokerCoverDeposit: amount " << amount.getFullText()
-                               << " is sub-ULP at broker cover scale " << coarsestScale;
-            return tecPRECISION_LOSS;
-        }
+        if (auto const ter = rejectIfSubUlpAtCoarsestScale(
+                vaultAsset,
+                amount,
+                {sleBroker->at(sfCoverAvailable)},
+                "LoanBrokerCoverDeposit",
+                ctx.j);
+            !isTesSuccess(ter))
+            return ter;
     }
 
     return tesSUCCESS;

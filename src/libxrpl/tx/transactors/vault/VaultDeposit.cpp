@@ -21,7 +21,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <algorithm>
 #include <memory>
 #include <stdexcept>
 
@@ -133,25 +132,23 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             SpendableHandling::FullBalance) < assets)
         return tecINSUFFICIENT_FUNDS;
 
-    // Post-fixCleanup3_2_0: reject deposits whose amount is sub-ULP at
-    // the vault's coarsest accounting rail. Such deposits get silently
-    // rounded away by associateAsset on the coarser SLE field, the
-    // helper-level cross-check tolerates the rounding (both deltas
-    // collapse to the same coarse bucket), and only VaultInvariant's
-    // "deposit must observably increase vault balance" assertion
-    // catches it at finalize as tecINVARIANT_FAILED. Surface it here as
-    // tecPRECISION_LOSS instead.
+    // Post-fixCleanup3_2_0: reject deposits whose amount is sub-ULP at the
+    // vault's coarsest accounting rail. associateAsset would silently round
+    // the increment away on the coarser SLE field; the helper's two-sided
+    // cross-check tolerates the rounding (both deltas collapse to the same
+    // coarse bucket); VaultInvariant's "deposit must observably increase
+    // vault balance" assertion is what would otherwise catch it at finalize
+    // as tecINVARIANT_FAILED. Surface it here as a friendly tecPRECISION_LOSS.
     if (ctx.view.rules().enabled(fixCleanup3_2_0))
     {
-        int const coarsestScale = std::max(
-            scale(vault->at(sfAssetsTotal), vaultAsset),
-            scale(vault->at(sfAssetsAvailable), vaultAsset));
-        if (roundToAsset(vaultAsset, assets, coarsestScale).signum() == 0)
-        {
-            JLOG(ctx.j.warn()) << "VaultDeposit: amount " << assets.getFullText()
-                               << " is sub-ULP at vault coarsest scale " << coarsestScale;
-            return tecPRECISION_LOSS;
-        }
+        if (auto const ter = rejectIfSubUlpAtCoarsestScale(
+                vaultAsset,
+                assets,
+                {vault->at(sfAssetsTotal), vault->at(sfAssetsAvailable)},
+                "VaultDeposit",
+                ctx.j);
+            !isTesSuccess(ter))
+            return ter;
     }
 
     return tesSUCCESS;

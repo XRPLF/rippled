@@ -19,7 +19,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <algorithm>
 #include <memory>
 #include <stdexcept>
 
@@ -143,25 +142,21 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
         return ret;
 
-    // Post-fixCleanup3_2_0: reject withdrawals whose amount is sub-ULP at
-    // the vault's coarsest accounting rail. Same rationale as the
-    // symmetric check in VaultDeposit::preclaim — surface the precision
-    // loss here as tecPRECISION_LOSS instead of letting VaultInvariant
-    // catch it at finalize as tecINVARIANT_FAILED. Only applied when the
-    // amount is in vault assets; for share-denominated withdrawals the
-    // assets-equivalent is computed in doApply and that path is checked
-    // by the helper.
+    // Post-fixCleanup3_2_0: reject withdrawals whose amount is sub-ULP at the
+    // vault's coarsest accounting rail. Same rationale as VaultDeposit::preclaim.
+    // Only applied when the amount is asset-denominated; share-denominated
+    // withdrawals route through sharesToAssetsWithdraw in doApply and the
+    // resulting asset amount is at the rail's scale by construction.
     if (ctx.view.rules().enabled(fixCleanup3_2_0) && amount.asset() == vaultAsset)
     {
-        int const coarsestScale = std::max(
-            scale(vault->at(sfAssetsTotal), vaultAsset),
-            scale(vault->at(sfAssetsAvailable), vaultAsset));
-        if (roundToAsset(vaultAsset, amount, coarsestScale).signum() == 0)
-        {
-            JLOG(ctx.j.warn()) << "VaultWithdraw: amount " << amount.getFullText()
-                               << " is sub-ULP at vault coarsest scale " << coarsestScale;
-            return tecPRECISION_LOSS;
-        }
+        if (auto const ter = rejectIfSubUlpAtCoarsestScale(
+                vaultAsset,
+                amount,
+                {vault->at(sfAssetsTotal), vault->at(sfAssetsAvailable)},
+                "VaultWithdraw",
+                ctx.j);
+            !isTesSuccess(ter))
+            return ter;
     }
 
     return tesSUCCESS;
@@ -251,24 +246,12 @@ VaultWithdraw::doApply()
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
 
-    // When the destination's IOU trust-line balance sits in a coarser exponent band than the
-    // requested amount (e.g. balance >= 10^16 with grid step 10, withdraw of 1 USD), the
-    // destination's +amount inflow rounds back to its pre-state and the receiver effectively gains
-    // nothing.
-    // Pre-fixCleanup3_2_0, this fired VaultInvariant's "withdrawal must increase
-    // destination balance" at finalize as tecINVARIANT_FAILED the same shape would also strand a
-    // sole depositor whose own trust line is past the edge, since the only path out is via the
-    // vault.
-    // Post-amendment, the IOU-only carve-out in VaultInvariant tolerates a zero-rounded
-    // destination delta paired with a vault loss that also rounds to zero at the comparison scale.
-    // The vault still drains, the depositor's shares burn. The "by equal amount" check
-    // remains the safety net: vault loss greater than 1 ULP at the comparison scale paired with a
-    // zero destination delta is still a genuine value-transfer mismatch and still fires.
-    //
-    // XRP and MPT are not affected — those asset types are integer-exact, so a zero-rounded
-    // destination delta on a non-zero withdrawal is unreachable under any rounding mode and
-    // continues to fire the strict invariant. The carve-out is gated to IOU at the invariant
-    // level (`vaultAsset.holds<Issue>()`).
+    // Receiver-side IOU canonicalization absorption: when the destination's
+    // trust line sits in a coarser exponent band than the requested amount,
+    // the inflow rounds to zero. Post-fixCleanup3_2_0, VaultInvariant's IOU
+    // carve-out admits this as silent absorption (vault drains, shares burn,
+    // unit returns to issuer's obligation pool); see ValidVault::finalize for
+    // the policy details and the safety net for super-ULP discrepancies.
     return withdrawFromVault(
         view(),
         ctx_.tx,

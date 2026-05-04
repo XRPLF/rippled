@@ -153,21 +153,20 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
             ctx.j) < amount)
         return tecINSUFFICIENT_FUNDS;
 
-    // Post-fixCleanup3_2_0: reject withdrawals whose amount is sub-ULP
-    // at sfCoverAvailable's scale (mirroring the broker pseudo trust
-    // line). Same rationale as the symmetric check in
-    // LoanBrokerCoverDeposit::preclaim — surface sub-ULP withdrawals as
-    // tecPRECISION_LOSS instead of letting them silently succeed with
-    // value destruction.
+    // Post-fixCleanup3_2_0: reject withdrawals whose amount is sub-ULP at
+    // sfCoverAvailable's scale (mirroring the broker pseudo trust line).
+    // Same rationale as LoanBrokerCoverDeposit::preclaim — surface as
+    // tecPRECISION_LOSS instead of letting it silently destroy value.
     if (ctx.view.rules().enabled(fixCleanup3_2_0))
     {
-        int const coarsestScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
-        if (roundToAsset(vaultAsset, amount, coarsestScale).signum() == 0)
-        {
-            JLOG(ctx.j.warn()) << "LoanBrokerCoverWithdraw: amount " << amount.getFullText()
-                               << " is sub-ULP at broker cover scale " << coarsestScale;
-            return tecPRECISION_LOSS;
-        }
+        if (auto const ter = rejectIfSubUlpAtCoarsestScale(
+                vaultAsset,
+                amount,
+                {sleBroker->at(sfCoverAvailable)},
+                "LoanBrokerCoverWithdraw",
+                ctx.j);
+            !isTesSuccess(ter))
+            return ter;
     }
 
     return tesSUCCESS;

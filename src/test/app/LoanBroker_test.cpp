@@ -1840,7 +1840,7 @@ class LoanBroker_test : public beast::unit_test::Suite
     // Post-amendment: accountSendExact in LoanBrokerCoverDeposit detects
     // the canonicalization mismatch and rejects with tecPRECISION_LOSS.
     void
-    testAssociateAssetEdgeBrokerCover()
+    testBugAssociateAssetEdgeBrokerCover()
     {
         using namespace test::jtx;
         using namespace loanBroker;
@@ -2575,7 +2575,7 @@ public:
     void
     run() override
     {
-        testAssociateAssetEdgeBrokerCover();
+        testBugAssociateAssetEdgeBrokerCover();
         testBugCoverWithdrawEdge();
         testCoverClawbackEdge();
         testBugIssuerCoverDepositAtEdge();

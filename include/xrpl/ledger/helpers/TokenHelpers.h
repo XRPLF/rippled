@@ -10,6 +10,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <initializer_list>
+#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -273,44 +274,16 @@ accountSend(
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
     AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 
-/** Like `accountSend`, but verifies that the IOU transfer conserves
- * value at the asset's precision and returns `tecPRECISION_LOSS` if it
- * does not. Transactors whose accounting depends on exact value transfer
- * (vault deposit/withdraw, loan disbursement, broker cover ops) should
- * use this entrypoint.
+/** Like `accountSend`, but verifies that the IOU transfer conserves value at
+ *  the asset's precision and returns `tecPRECISION_LOSS` if it does not.
+ *  Transactors whose accounting depends on exact value transfer (vault
+ *  deposit/withdraw, loan disbursement, broker cover ops) should use this
+ *  entrypoint.
  *
- * The bug class being caught: when two trust lines sit at sufficiently
- * different magnitudes, IOU canonicalization on each side rounds to a
- * different precision floor, and the sender's balance loses more than
- * the receiver's gains (or vice versa). Pre-`fixCleanup3_2_0` this is
- * silent at the helper level and either slips past invariants or fires
- * `tecINVARIANT_FAILED` at finalize time.
- *
- * Verification has three shapes depending on which sides have a real
- * counterparty trust line:
- *
- *   - Both sides non-issuer (the common case): the two trust lines
- *     round independently. Compare `senderDelta` to `receiverDelta`,
- *     anchored at the coarser of the two pre-state scales — the same
- *     `roundToAsset`-then-equality idiom `VaultInvariant` uses at
- *     finalize time. Sub-grid canonicalization noise is admitted; a
- *     delta mismatch of ≥ 1 ULP at the coarser endpoint is rejected.
- *
- *   - Sender is the asset issuer (mint): only the receiver's trust
- *     line rounds. Compare `receiverDelta` to the canonicalized amount
- *     at `scale(amount)`. The user's request is at STAmount precision
- *     (16-digit canonical) and there is no second rail to compensate
- *     for sub-rail-ULP truncation; any discrepancy at the receiver's
- *     grid from the requested amount is a real over- or under-mint.
- *
- *   - Receiver is the asset issuer (destroy): symmetric — only the
- *     sender's trust line rounds. Compare `senderDelta` to amount at
- *     `scale(amount)`.
- *
- * Skips verification entirely (falls through to plain `accountSend`)
- * pre-amendment, for integer-exact assets (XRP and MPT, where any
- * conservation check would degenerate to integer equality), and for the
- * degenerate `from == issuer && to == issuer` case.
+ *  Falls through to plain `accountSend` pre-`fixCleanup3_2_0`, for native and
+ *  MPT assets (integer-exact), and for the degenerate issuer-to-self case.
+ *  See implementation for the per-shape verification details (two-sided,
+ *  mint, destroy).
  */
 [[nodiscard]] TER
 accountSendExact(
@@ -321,6 +294,24 @@ accountSendExact(
     beast::Journal j,
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
     AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
+
+/** Reject `amount` if it is sub-ULP at the coarsest scale among the supplied
+ *  reference accounting fields. Used by transactor preclaims to surface
+ *  "the requested amount is too small to be representable on this rail" as
+ *  a friendly tecPRECISION_LOSS instead of letting the operation reach
+ *  finalize and fire tecINVARIANT_FAILED.
+ *
+ *  The coarsest scale is `max(scale(ref, asset))` over `references`. If
+ *  `roundToAsset(asset, amount, coarsestScale).signum() == 0`, returns
+ *  tecPRECISION_LOSS with `context` in the warn log; otherwise tesSUCCESS.
+ */
+[[nodiscard]] TER
+rejectIfSubUlpAtCoarsestScale(
+    Asset const& asset,
+    STAmount const& amount,
+    std::initializer_list<Number> references,
+    std::string_view context,
+    beast::Journal j);
 
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
 /** Like accountSend, except one account is sending multiple payments (with the

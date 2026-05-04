@@ -6878,7 +6878,6 @@ public:
     run() override
     {
         testBugStuckVaultReceiverAtEdge();
-        return;
         testBugAssociateAssetRoundingDeposit();
         testBugAssociateAssetRoundingWithdraw();
         testVaultClawbackEdge();

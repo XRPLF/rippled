@@ -27,9 +27,12 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <initializer_list>
+#include <limits>
 #include <string>
+#include <string_view>
 #include <variant>
 
 namespace xrpl {
@@ -1373,6 +1376,33 @@ accountSend(
         });
 }
 
+// Bug class caught: when two trust lines sit at sufficiently different
+// magnitudes, IOU canonicalization on each side rounds to a different
+// precision floor, and the sender's balance loses more than the receiver's
+// gains (or vice versa). Pre-fixCleanup3_2_0 this is silent at the helper
+// level and either slips past invariants or fires tecINVARIANT_FAILED at
+// finalize.
+//
+// Verification has three shapes depending on which sides have a real
+// counterparty trust line:
+//
+//   - Two-sided (the common case, both non-issuer): trust lines round
+//     independently. Compare senderDelta to receiverDelta, anchored at the
+//     coarser of the two pre-state scales — the same roundToAsset-then-
+//     equality idiom VaultInvariant uses at finalize. Sub-grid
+//     canonicalization noise is admitted (the absorption case for IOU
+//     withdraws); a delta mismatch ≥ 1 ULP at the coarser endpoint is
+//     rejected.
+//
+//   - Mint (sender is the asset issuer): only the receiver's trust line
+//     rounds. Compare receiverDelta to the canonicalized amount at
+//     scale(amount). The user's request is at STAmount precision (16-digit
+//     canonical) and there is no second rail to compensate for sub-rail-ULP
+//     truncation; any discrepancy at the receiver's grid from the requested
+//     amount is a real over- or under-mint.
+//
+//   - Destroy (receiver is the asset issuer): symmetric — only the sender's
+//     trust line rounds. Compare senderDelta to amount at scale(amount).
 TER
 accountSendExact(
     ApplyView& view,
@@ -1383,7 +1413,6 @@ accountSendExact(
     WaiveTransferFee waiveFee,
     AllowMPTOverflow allowOverflow)
 {
-    // See `accountSendExact` doc comment for the verification semantics
     if (!view.rules().enabled(fixCleanup3_2_0))
         return accountSend(view, from, to, saAmount, j, waiveFee, allowOverflow);
 
@@ -1438,6 +1467,30 @@ accountSendExact(
         return tecPRECISION_LOSS;
     }
 
+    return tesSUCCESS;
+}
+
+TER
+rejectIfSubUlpAtCoarsestScale(
+    Asset const& asset,
+    STAmount const& amount,
+    std::initializer_list<Number> references,
+    std::string_view context,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        references.size() > 0,
+        "xrpl::rejectIfSubUlpAtCoarsestScale : at least one reference field");
+    int coarsestScale = std::numeric_limits<int>::min();
+    for (auto const& ref : references)
+        coarsestScale = std::max(coarsestScale, scale(ref, asset));
+
+    if (roundToAsset(asset, amount, coarsestScale).signum() == 0)
+    {
+        JLOG(j.warn()) << context << ": amount " << amount.getFullText()
+                       << " is sub-ULP at coarsest scale " << coarsestScale;
+        return tecPRECISION_LOSS;
+    }
     return tesSUCCESS;
 }
 

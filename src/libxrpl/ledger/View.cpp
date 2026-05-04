@@ -448,8 +448,11 @@ doWithdraw(
     }
 
     // Move the funds directly from the pseudo-account to the dstAcct. accountSendExact verifies
-    // that source loss == destination gain so a destination trust line at the IOU 16-digit edge
-    // can't silently canonicalize the inflow and lose units.
+    // that sender-loss matches destination-gain at the coarser pre-state grid: super-ULP
+    // discrepancies (a real value-transfer mismatch) are rejected as tecPRECISION_LOSS, while
+    // sub-ULP-at-receiver canonicalization is admitted as silent absorption — the unit returns to
+    // the issuer's outstanding-obligation pool. See VaultInvariant's IOU carve-out for the
+    // companion finalize-time policy.
     return accountSendExact(view, sourceAcct, dstAcct, amount, j, WaiveTransferFee::Yes);
 }
 
