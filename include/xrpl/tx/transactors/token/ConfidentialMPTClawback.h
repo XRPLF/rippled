@@ -23,7 +23,7 @@ namespace xrpl {
 class ConfidentialMPTClawback : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit ConfidentialMPTClawback(ApplyContext& ctx) : Transactor(ctx)
     {

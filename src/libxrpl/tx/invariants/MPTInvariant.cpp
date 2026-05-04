@@ -3,7 +3,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -28,7 +27,7 @@
 
 namespace xrpl {
 
-static constexpr auto confidentialMPTTxTypes = std::to_array<TxType>({
+static constexpr auto kCONFIDENTIAL_MPT_TX_TYPES = std::to_array<TxType>({
     ttCONFIDENTIAL_MPT_SEND,
     ttCONFIDENTIAL_MPT_CONVERT,
     ttCONFIDENTIAL_MPT_CONVERT_BACK,
@@ -370,8 +369,8 @@ ValidMPTPayment::finalize(
         // They modify encrypted fields and sfConfidentialOutstandingAmount
         // rather than sfMPTAmount/sfOutstandingAmount in the standard way,
         // so ValidMPTPayment's accounting does not apply to them.
-        if (std::ranges::find(confidentialMPTTxTypes, tx.getTxnType()) !=
-            confidentialMPTTxTypes.end())
+        if (std::ranges::find(kCONFIDENTIAL_MPT_TX_TYPES, tx.getTxnType()) !=
+            kCONFIDENTIAL_MPT_TX_TYPES.end())
             return true;
 
         bool const enforce = view.rules().enabled(featureMPTokensV2);
@@ -414,12 +413,12 @@ ValidConfidentialMPToken::visitEntry(
     // Helper to get MPToken Issuance ID safely
     auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> uint192 {
         if (!sle)
-            return beast::zero;
+            return beast::kZERO;
         if (sle->getType() == ltMPTOKEN)
             return sle->getFieldH192(sfMPTokenIssuanceID);
         if (sle->getType() == ltMPTOKEN_ISSUANCE)
             return makeMptID(sle->getFieldU32(sfSequence), sle->getAccountID(sfIssuer));
-        return beast::zero;
+        return beast::kZERO;
     };
 
     if (before && before->getType() == ltMPTOKEN)
@@ -597,8 +596,8 @@ ValidConfidentialMPToken::finalize(
             }
         }
         else if (
-            std::ranges::find(confidentialMPTTxTypes, tx.getTxnType()) !=
-            confidentialMPTTxTypes.end())
+            std::ranges::find(kCONFIDENTIAL_MPT_TX_TYPES, tx.getTxnType()) !=
+            kCONFIDENTIAL_MPT_TX_TYPES.end())
         {
             // Among confidential MPT transactions, only ConfidentialMPTSend and
             // ConfidentialMPTMergeInbox leave coaDelta unmodified. Therefore, if a confidential MPT

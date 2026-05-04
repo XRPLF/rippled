@@ -147,7 +147,7 @@ TYPED_SFIELD(sfSubjectNode,              UINT64,    28)
 TYPED_SFIELD(sfLockedAmount,             UINT64,    29, SField::SMdBaseTen|SField::SMdDefault)
 TYPED_SFIELD(sfVaultNode,                UINT64,    30)
 TYPED_SFIELD(sfLoanBrokerNode,           UINT64,    31)
-TYPED_SFIELD(sfConfidentialOutstandingAmount, UINT64, 32, SField::sMD_BaseTen|SField::sMD_Default)
+TYPED_SFIELD(sfConfidentialOutstandingAmount, UINT64, 32, SField::SMdBaseTen|SField::SMdDefault)
 
 // 128-bit
 TYPED_SFIELD(sfEmailHash,                UINT128,    1)

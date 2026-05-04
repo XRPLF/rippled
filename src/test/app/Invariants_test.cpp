@@ -4374,22 +4374,22 @@ class Invariants_test : public beast::unit_test::Suite
         // Generate an MPT with privacy, issue 100 tokens to A2.
         // Perform a confidential conversion to populate encrypted state.
         auto const precloseConfidential =
-            [&mptID](Account const& A1, Account const& A2, Env& env) -> bool {
-            MPTTester mpt(env, A1, {.holders = {A2}, .fund = false});
+            [&mptID](Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
             mpt.create({.flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount});
             mptID = mpt.issuanceID();
 
-            mpt.authorize({.account = A2});
-            mpt.pay(A1, A2, 100);
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
 
-            mpt.generateKeyPair(A1);
-            mpt.set({.account = A1, .issuerPubKey = mpt.getPubKey(A1)});
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
 
-            mpt.generateKeyPair(A2);
+            mpt.generateKeyPair(a2);
             mpt.convert({
-                .account = A2,
+                .account = a2,
                 .amt = 100,
-                .holderPubKey = mpt.getPubKey(A2),
+                .holderPubKey = mpt.getPubKey(a2),
             });
             return true;
         };
@@ -4397,8 +4397,8 @@ class Invariants_test : public beast::unit_test::Suite
         // badDelete
         doInvariantCheck(
             {"MPToken deleted with encrypted fields while COA > 0"},
-            [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, A2.id()));
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 // Force an erase of the object while the COA remains 100
@@ -4413,8 +4413,8 @@ class Invariants_test : public beast::unit_test::Suite
         // badConsistency
         doInvariantCheck(
             {"MPToken encrypted field existence inconsistency"},
-            [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, A2.id()));
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 // Remove one of the required encrypted fields to create a mismatch
@@ -4429,21 +4429,21 @@ class Invariants_test : public beast::unit_test::Suite
 
         // requiresPrivacyFlag
         auto const precloseNoPrivacy = [&mptID](
-                                           Account const& A1, Account const& A2, Env& env) -> bool {
-            MPTTester mpt(env, A1, {.holders = {A2}, .fund = false});
+                                           Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
             // completely omitted the tfMPTCanConfidentialAmount flag here.
             mpt.create({.flags = tfMPTCanTransfer});
             mptID = mpt.issuanceID();
-            mpt.authorize({.account = A2});
-            mpt.pay(A1, A2, 100);
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
             return true;
         };
 
         doInvariantCheck(
             {"MPToken has encrypted fields but Issuance does not have lsfMPTCanConfidentialAmount "
              "set"},
-            [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, A2.id()));
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 // Inject all three encrypted fields consistently (inbox+spending+issuer must be
@@ -4462,7 +4462,7 @@ class Invariants_test : public beast::unit_test::Suite
         // badCOA
         doInvariantCheck(
             {"Confidential outstanding amount exceeds total outstanding amount"},
-            [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleIssuance = ac.view().peek(keylet::mptIssuance(mptID));
                 if (!sleIssuance)
                     return false;
@@ -4479,7 +4479,7 @@ class Invariants_test : public beast::unit_test::Suite
         // Conservation Violation
         doInvariantCheck(
             {"Token conservation violation for MPT"},
-            [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleIssuance = ac.view().peek(keylet::mptIssuance(mptID));
                 if (!sleIssuance)
                     return false;
@@ -4501,7 +4501,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"Invariant failed: OutstandingAmount changed "
              "by confidential transaction that should not "
              "modify it for MPT"},
-            [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleIssuance = ac.view().peek(keylet::mptIssuance(mptID));
                 if (!sleIssuance)
                     return false;
@@ -4519,8 +4519,8 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"MPToken sfConfidentialBalanceVersion not updated when sfConfidentialBalanceSpending "
              "changed"},
-            [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, A2.id()));
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 sleToken->setFieldVL(sfConfidentialBalanceSpending, Blob{0xBA, 0xDD});
@@ -4536,20 +4536,20 @@ class Invariants_test : public beast::unit_test::Suite
 
         // Skipping Deleted MPTs (Issuance deleted)
         auto const precloseOrphan = [&mptID](
-                                        Account const& A1, Account const& A2, Env& env) -> bool {
-            MPTTester mpt(env, A1, {.holders = {A2}, .fund = false});
+                                        Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
             mpt.create({.flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount});
             mptID = mpt.issuanceID();
-            mpt.authorize({.account = A2});
+            mpt.authorize({.account = a2});
 
             // Generate privacy keys and convert 0 amount so Bob has the encrypted fields
-            mpt.generateKeyPair(A1);
-            mpt.set({.account = A1, .issuerPubKey = mpt.getPubKey(A1)});
-            mpt.generateKeyPair(A2);
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            mpt.generateKeyPair(a2);
             mpt.convert({
-                .account = A2,
+                .account = a2,
                 .amt = 0,
-                .holderPubKey = mpt.getPubKey(A2),
+                .holderPubKey = mpt.getPubKey(a2),
             });
 
             // Immediately destroy the issuance. A2's empty, encrypted token object lives on.
@@ -4559,8 +4559,8 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {},
-            [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, A2.id()));
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 // Safely able to erase the deleted token.

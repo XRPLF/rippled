@@ -9,7 +9,6 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/vault.h>
 
@@ -29,6 +28,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -56,11 +56,12 @@
 
 namespace xrpl {
 
-class ConfidentialTransfer_test : public beast::unit_test::suite
+class ConfidentialTransfer_test : public beast::unit_test::Suite
 {
     // Offset where the bulletproof begins in a send proof blob.
     // Proof layout: [compact_sigma | bulletproof]
-    static constexpr size_t bulletproofOffset = ecSendProofLength - ecDoubleBulletproofLength;
+    static constexpr size_t kBULLETPROOF_OFFSET =
+        kEC_SEND_PROOF_LENGTH - kEC_DOUBLE_BULLETPROOF_LENGTH;
 
     // Generate a forged aggregated bulletproof (double bulletproof) for
     // the given values and blinding factors. Used to test that splicing
@@ -74,11 +75,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         auto* const ctx = mpt_secp256k1_context();
 
-        secp256k1_pubkey H;
-        secp256k1_mpt_get_h_generator(ctx, &H);
+        secp256k1_pubkey h;
+        secp256k1_mpt_get_h_generator(ctx, &h);
 
-        Buffer proof(ecDoubleBulletproofLength);
-        size_t proofLen = ecDoubleBulletproofLength;
+        Buffer proof(kEC_DOUBLE_BULLETPROOF_LENGTH);
+        size_t proofLen = kEC_DOUBLE_BULLETPROOF_LENGTH;
 
         unsigned char blindings[64];
         std::memcpy(blindings, blindingFactors[0].data(), 32);
@@ -91,7 +92,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 values.data(),
                 blindings,
                 2,
-                &H,
+                &h,
                 contextHash.data()) == 0)
             Throw<std::runtime_error>("Failed to generate forged bulletproof");
 
@@ -103,16 +104,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     static Buffer const&
     getBadCiphertext()
     {
-        static Buffer const badCiphertext = []() {
-            Buffer buf(ecGamalEncryptedTotalLength);
-            std::memset(buf.data(), 0xFF, ecGamalEncryptedTotalLength);
+        static Buffer const kBAD_CIPHERTEXT = []() {
+            Buffer buf(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+            std::memset(buf.data(), 0xFF, kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
 
-            buf.data()[0] = ecCompressedPrefixEvenY;
-            buf.data()[ecGamalEncryptedLength] = ecCompressedPrefixEvenY;
+            buf.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+            buf.data()[kEC_GAMAL_ENCRYPTED_LENGTH] = kEC_COMPRESSED_PREFIX_EVEN_Y;
             return buf;
         }();
 
-        return badCiphertext;
+        return kBAD_CIPHERTEXT;
     }
 
     // Get a trivial buffer that is structurally and mathematically valid, but
@@ -121,20 +122,20 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     static Buffer const&
     getTrivialCiphertext()
     {
-        static Buffer const trivialCiphertext = []() {
-            Buffer buf(ecGamalEncryptedTotalLength);
-            std::memset(buf.data(), 0, ecGamalEncryptedTotalLength);
+        static Buffer const kTRIVIAL_CIPHERTEXT = []() {
+            Buffer buf(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+            std::memset(buf.data(), 0, kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
 
-            buf.data()[0] = ecCompressedPrefixEvenY;
-            buf.data()[ecGamalEncryptedLength] = ecCompressedPrefixEvenY;
+            buf.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+            buf.data()[kEC_GAMAL_ENCRYPTED_LENGTH] = kEC_COMPRESSED_PREFIX_EVEN_Y;
 
-            buf.data()[ecGamalEncryptedLength - 1] = 0x01;
-            buf.data()[ecGamalEncryptedTotalLength - 1] = 0x01;
+            buf.data()[kEC_GAMAL_ENCRYPTED_LENGTH - 1] = 0x01;
+            buf.data()[kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH - 1] = 0x01;
 
             return buf;
         }();
 
-        return trivialCiphertext;
+        return kTRIVIAL_CIPHERTEXT;
     }
 
     // Returns a valid compressed EC point (33 bytes) that can pass preflight
@@ -142,31 +143,31 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     static Buffer const&
     getTrivialCommitment()
     {
-        static Buffer const trivialCommitment = []() {
-            Buffer buf(ecPedersenCommitmentLength);
-            std::memset(buf.data(), 0, ecPedersenCommitmentLength);
+        static Buffer const kTRIVIAL_COMMITMENT = []() {
+            Buffer buf(kEC_PEDERSEN_COMMITMENT_LENGTH);
+            std::memset(buf.data(), 0, kEC_PEDERSEN_COMMITMENT_LENGTH);
 
-            buf.data()[0] = ecCompressedPrefixEvenY;
+            buf.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
             // Set last byte to make it a valid x-coordinate on the curve
-            buf.data()[ecPedersenCommitmentLength - 1] = 0x01;
+            buf.data()[kEC_PEDERSEN_COMMITMENT_LENGTH - 1] = 0x01;
 
             return buf;
         }();
 
-        return trivialCommitment;
+        return kTRIVIAL_COMMITMENT;
     }
 
     static std::string
     getTrivialSendProofHex()
     {
-        Buffer buf(ecSendProofLength);
-        std::memset(buf.data(), 0, ecSendProofLength);
+        Buffer buf(kEC_SEND_PROOF_LENGTH);
+        std::memset(buf.data(), 0, kEC_SEND_PROOF_LENGTH);
 
-        for (std::size_t i = 0; i < ecSendProofLength; i += ecGamalEncryptedLength)
+        for (std::size_t i = 0; i < kEC_SEND_PROOF_LENGTH; i += kEC_GAMAL_ENCRYPTED_LENGTH)
         {
-            buf.data()[i] = ecCompressedPrefixEvenY;
-            if (i + ecGamalEncryptedLength - 1 < ecSendProofLength)
-                buf.data()[i + ecGamalEncryptedLength - 1] = 0x01;
+            buf.data()[i] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+            if (i + kEC_GAMAL_ENCRYPTED_LENGTH - 1 < kEC_SEND_PROOF_LENGTH)
+                buf.data()[i + kEC_GAMAL_ENCRYPTED_LENGTH - 1] = 0x01;
         }
 
         return strHex(buf);
@@ -237,9 +238,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             , issuerPubKey(*mpt.getPubKey(issuer))
             , auditorPubKey(auditor ? mpt.getPubKey(auditor->get()) : std::nullopt)
             , prevSpending(
-                  *mpt.getDecryptedBalance(sender, test::jtx::MPTTester::HOLDER_ENCRYPTED_SPENDING))
+                  *mpt.getDecryptedBalance(sender, test::jtx::MPTTester::HolderEncryptedSpending))
             , prevEncryptedSpending(
-                  *mpt.getEncryptedBalance(sender, test::jtx::MPTTester::HOLDER_ENCRYPTED_SPENDING))
+                  *mpt.getEncryptedBalance(sender, test::jtx::MPTTester::HolderEncryptedSpending))
             , balanceCommitment(mpt.getPedersenCommitment(prevSpending, balanceBlindingFactor))
         {
             recipients.push_back({Slice(senderPubKey), senderAmt});
@@ -428,7 +429,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
         }
 
-        // Edge case: maxMPTokenAmount
+        // Edge case: kMAX_MP_TOKEN_AMOUNT
         // Using raw JSON to avoid automatic decryption checks in MPTTester
         // which don't work for very large amounts (brute-force decryption is slow)
         {
@@ -445,7 +446,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.authorize({
                 .account = bob,
             });
-            mptAlice.pay(alice, bob, maxMPTokenAmount);
+            mptAlice.pay(alice, bob, kMAX_MP_TOKEN_AMOUNT);
 
             mptAlice.generateKeyPair(alice);
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
@@ -459,26 +460,26 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
 
-            // Second convert with maxMPTokenAmount using raw JSON
+            // Second convert with kMAX_MP_TOKEN_AMOUNT using raw JSON
             Buffer const blindingFactor = generateBlindingFactor();
             auto const holderCiphertext =
-                mptAlice.encryptAmount(bob, maxMPTokenAmount, blindingFactor);
+                mptAlice.encryptAmount(bob, kMAX_MP_TOKEN_AMOUNT, blindingFactor);
             auto const issuerCiphertext =
-                mptAlice.encryptAmount(alice, maxMPTokenAmount, blindingFactor);
+                mptAlice.encryptAmount(alice, kMAX_MP_TOKEN_AMOUNT, blindingFactor);
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = bob.human();
             jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
-            jv[sfMPTAmount.jsonName] = std::to_string(maxMPTokenAmount);
+            jv[sfMPTAmount.jsonName] = std::to_string(kMAX_MP_TOKEN_AMOUNT);
             jv[sfHolderEncryptedAmount.jsonName] = strHex(holderCiphertext);
             jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext);
             jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
 
-            env(jv, ter(tesSUCCESS));
+            env(jv, Ter(tesSUCCESS));
 
             // Verify the public balance was reduced
-            env.require(mptbalance(mptAlice, bob, 0));
+            env.require(MptBalance(mptAlice, bob, 0));
         }
     }
 
@@ -644,7 +645,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .amt = 10,
                 .holderPubKey = mptAlice.getPubKey(bob),
-                .auditorEncryptedAmt = makeZeroBuffer(10),
+                .auditorEncryptedAmt = gMakeZeroBuffer(10),
                 .err = temBAD_CIPHERTEXT,
             });
 
@@ -660,7 +661,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Amount exceeds maximum allowed MPT amount
             mptAlice.convert({
                 .account = bob,
-                .amt = maxMPTokenAmount + 1,
+                .amt = kMAX_MP_TOKEN_AMOUNT + 1,
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .err = temBAD_AMOUNT,
             });
@@ -696,7 +697,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 10,
-                .holderPubKey = makeZeroBuffer(ecPubKeyLength),
+                .holderPubKey = gMakeZeroBuffer(kEC_PUB_KEY_LENGTH),
                 .err = temMALFORMED,
             });
         }
@@ -932,7 +933,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Issuer pub key has correct length but invalid EC point data
             mptAlice.set({
                 .account = alice,
-                .issuerPubKey = makeZeroBuffer(ecPubKeyLength),
+                .issuerPubKey = gMakeZeroBuffer(kEC_PUB_KEY_LENGTH),
                 .err = temMALFORMED,
             });
 
@@ -940,7 +941,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.set({
                 .account = alice,
                 .issuerPubKey = mptAlice.getPubKey(alice),
-                .auditorPubKey = makeZeroBuffer(10),
+                .auditorPubKey = gMakeZeroBuffer(10),
                 .err = temMALFORMED,
             });
 
@@ -948,7 +949,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.set({
                 .account = alice,
                 .issuerPubKey = mptAlice.getPubKey(alice),
-                .auditorPubKey = makeZeroBuffer(ecPubKeyLength),
+                .auditorPubKey = gMakeZeroBuffer(kEC_PUB_KEY_LENGTH),
                 .err = temMALFORMED,
             });
 
@@ -1708,7 +1709,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 10,
-                .proof = std::string(ecSchnorrProofLength * 2, 'A'),
+                .proof = std::string(kEC_SCHNORR_PROOF_LENGTH * 2, 'A'),
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .err = tecBAD_PROOF,
             });
@@ -1774,7 +1775,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
 
-            env.require(mptbalance(mptAlice, bob, 0));
+            env.require(MptBalance(mptAlice, bob, 0));
 
             // try to convert 1 more — no public balance left
             mptAlice.convert({
@@ -1793,7 +1794,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
-        ConfidentialEnv const confEnv{env, alice, {{bob, 100, 40}}};
+        ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
     }
 
     void
@@ -2174,9 +2175,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .senderEncryptedAmt = makeZeroBuffer(ecGamalEncryptedTotalLength),
-                .destEncryptedAmt = makeZeroBuffer(ecGamalEncryptedTotalLength),
-                .issuerEncryptedAmt = makeZeroBuffer(ecGamalEncryptedTotalLength),
+                .senderEncryptedAmt = gMakeZeroBuffer(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH),
+                .destEncryptedAmt = gMakeZeroBuffer(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH),
+                .issuerEncryptedAmt = gMakeZeroBuffer(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH),
                 .err = temDISABLED,
             });
         }
@@ -2248,7 +2249,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .senderEncryptedAmt = makeZeroBuffer(10),
+                .senderEncryptedAmt = gMakeZeroBuffer(10),
                 .err = temBAD_CIPHERTEXT,
             });
 
@@ -2257,7 +2258,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .destEncryptedAmt = makeZeroBuffer(10),
+                .destEncryptedAmt = gMakeZeroBuffer(10),
                 .err = temBAD_CIPHERTEXT,
             });
 
@@ -2266,7 +2267,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .issuerEncryptedAmt = makeZeroBuffer(10),
+                .issuerEncryptedAmt = gMakeZeroBuffer(10),
                 .err = temBAD_CIPHERTEXT,
             });
 
@@ -2276,7 +2277,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .dest = carol,
                 .amt = 10,
                 .proof = getTrivialSendProofHex(),
-                .senderEncryptedAmt = makeZeroBuffer(ecGamalEncryptedTotalLength),
+                .senderEncryptedAmt = gMakeZeroBuffer(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
                 .err = temBAD_CIPHERTEXT,
@@ -2288,7 +2289,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .dest = carol,
                 .amt = 10,
                 .proof = getTrivialSendProofHex(),
-                .destEncryptedAmt = makeZeroBuffer(ecGamalEncryptedTotalLength),
+                .destEncryptedAmt = gMakeZeroBuffer(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
                 .err = temBAD_CIPHERTEXT,
@@ -2300,7 +2301,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .dest = carol,
                 .amt = 10,
                 .proof = getTrivialSendProofHex(),
-                .issuerEncryptedAmt = makeZeroBuffer(ecGamalEncryptedTotalLength),
+                .issuerEncryptedAmt = gMakeZeroBuffer(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
                 .err = temBAD_CIPHERTEXT,
@@ -2323,7 +2324,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .dest = carol,
                 .amt = 10,
                 .proof = getTrivialSendProofHex(),
-                .amountCommitment = makeZeroBuffer(100),
+                .amountCommitment = gMakeZeroBuffer(100),
                 .balanceCommitment = getTrivialCommitment(),
                 .err = temMALFORMED,
             });
@@ -2335,7 +2336,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .amt = 10,
                 .proof = getTrivialSendProofHex(),
                 .amountCommitment = getTrivialCommitment(),
-                .balanceCommitment = makeZeroBuffer(100),
+                .balanceCommitment = gMakeZeroBuffer(100),
                 .err = temMALFORMED,
             });
 
@@ -2345,7 +2346,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .dest = carol,
                 .amt = 10,
                 .proof = getTrivialSendProofHex(),
-                .amountCommitment = makeZeroBuffer(ecPedersenCommitmentLength),
+                .amountCommitment = gMakeZeroBuffer(kEC_PEDERSEN_COMMITMENT_LENGTH),
                 .balanceCommitment = getTrivialCommitment(),
                 .err = temMALFORMED,
             });
@@ -2357,7 +2358,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .amt = 10,
                 .proof = getTrivialSendProofHex(),
                 .amountCommitment = getTrivialCommitment(),
-                .balanceCommitment = makeZeroBuffer(ecPedersenCommitmentLength),
+                .balanceCommitment = gMakeZeroBuffer(kEC_PEDERSEN_COMMITMENT_LENGTH),
                 .err = temMALFORMED,
             });
         }
@@ -2418,7 +2419,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .dest = carol,
                 .amt = 10,
                 .proof = getTrivialSendProofHex(),
-                .auditorEncryptedAmt = makeZeroBuffer(10),
+                .auditorEncryptedAmt = gMakeZeroBuffer(10),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
                 .err = temBAD_CIPHERTEXT,
@@ -2534,7 +2535,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // destroy the issuance
             mptAlice.destroy();
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = bob.human();
             jv[jss::Destination] = carol.human();
             jv[jss::TransactionType] = jss::ConfidentialMPTSend;
@@ -2546,7 +2547,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             jv[sfBalanceCommitment] = strHex(getTrivialCommitment());
             jv[sfZKProof] = getTrivialSendProofHex();
 
-            env(jv, ter(tecOBJECT_NOT_FOUND));
+            env(jv, Ter(tecOBJECT_NOT_FOUND));
         }
 
         // destination does not exist
@@ -2979,7 +2980,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
 
             BEAST_EXPECT(
-                mptAlice2.getDecryptedBalance(bob2, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 0);
+                mptAlice2.getDecryptedBalance(bob2, MPTTester::HolderEncryptedSpending) == 0);
         }
 
         // todo: test m exceeding range, require using scala and refactor
@@ -3310,12 +3311,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
                 // Inject dummy confidential balance fields
-                Buffer dummyCiphertext(ecGamalEncryptedTotalLength);
-                std::memset(dummyCiphertext.data(), 0, ecGamalEncryptedTotalLength);
-                dummyCiphertext.data()[0] = ecCompressedPrefixEvenY;
-                dummyCiphertext.data()[ecGamalEncryptedLength] = ecCompressedPrefixEvenY;
-                dummyCiphertext.data()[ecGamalEncryptedLength - 1] = 0x01;
-                dummyCiphertext.data()[ecGamalEncryptedTotalLength - 1] = 0x01;
+                Buffer dummyCiphertext(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+                std::memset(dummyCiphertext.data(), 0, kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+                dummyCiphertext.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+                dummyCiphertext.data()[kEC_GAMAL_ENCRYPTED_LENGTH] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+                dummyCiphertext.data()[kEC_GAMAL_ENCRYPTED_LENGTH - 1] = 0x01;
+                dummyCiphertext.data()[kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH - 1] = 0x01;
                 sle->setFieldVL(sfConfidentialBalanceSpending, dummyCiphertext);
                 sle->setFieldVL(sfConfidentialBalanceInbox, dummyCiphertext);
                 sle->setFieldVL(sfIssuerEncryptedBalance, dummyCiphertext);
@@ -3374,7 +3375,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
         }
 
-        // Edge case: maxMPTokenAmount
+        // Edge case: kMAX_MP_TOKEN_AMOUNT
         // Using raw JSON to avoid automatic decryption checks in MPTTester
         // which don't work for very large amounts (brute-force decryption is slow)
         // TODO: improve this test once there is bounded decryption or optimized decryption for
@@ -3393,53 +3394,53 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.authorize({
                 .account = bob,
             });
-            mptAlice.pay(alice, bob, maxMPTokenAmount);
+            mptAlice.pay(alice, bob, kMAX_MP_TOKEN_AMOUNT);
 
             mptAlice.generateKeyPair(alice);
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
             mptAlice.generateKeyPair(bob);
 
-            // Convert maxMPTokenAmount to confidential using raw JSON
+            // Convert kMAX_MP_TOKEN_AMOUNT to confidential using raw JSON
             Buffer const convertBlindingFactor = generateBlindingFactor();
             auto const convertHolderCiphertext =
-                mptAlice.encryptAmount(bob, maxMPTokenAmount, convertBlindingFactor);
+                mptAlice.encryptAmount(bob, kMAX_MP_TOKEN_AMOUNT, convertBlindingFactor);
             auto const convertIssuerCiphertext =
-                mptAlice.encryptAmount(alice, maxMPTokenAmount, convertBlindingFactor);
+                mptAlice.encryptAmount(alice, kMAX_MP_TOKEN_AMOUNT, convertBlindingFactor);
             auto const convertContextHash =
                 getConvertContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob));
             auto const schnorrProof = mptAlice.getSchnorrProof(bob, convertContextHash);
             BEAST_EXPECT(schnorrProof.has_value());
 
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = bob.human();
                 jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
                 jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
-                jv[sfMPTAmount.jsonName] = std::to_string(maxMPTokenAmount);
+                jv[sfMPTAmount.jsonName] = std::to_string(kMAX_MP_TOKEN_AMOUNT);
                 jv[sfHolderEncryptionKey.jsonName] = strHex(*mptAlice.getPubKey(bob));
                 jv[sfHolderEncryptedAmount.jsonName] = strHex(convertHolderCiphertext);
                 jv[sfIssuerEncryptedAmount.jsonName] = strHex(convertIssuerCiphertext);
                 jv[sfBlindingFactor.jsonName] = strHex(convertBlindingFactor);
                 jv[sfZKProof.jsonName] = strHex(*schnorrProof);
 
-                env(jv, ter(tesSUCCESS));
+                env(jv, Ter(tesSUCCESS));
             }
 
             // Merge inbox using raw JSON - moves funds from inbox to spending balance
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = bob.human();
                 jv[jss::TransactionType] = jss::ConfidentialMPTMergeInbox;
                 jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
 
-                env(jv, ter(tesSUCCESS));
+                env(jv, Ter(tesSUCCESS));
             }
 
-            // ConvertBack maxMPTokenAmount - 1 using raw JSON
-            // After convert + merge, spending balance = maxMPTokenAmount
-            // We convert back maxMPTokenAmount - 1 to leave remainder of 1
-            std::uint64_t const convertBackAmt = maxMPTokenAmount - 1;
+            // ConvertBack kMAX_MP_TOKEN_AMOUNT - 1 using raw JSON
+            // After convert + merge, spending balance = kMAX_MP_TOKEN_AMOUNT
+            // We convert back kMAX_MP_TOKEN_AMOUNT - 1 to leave remainder of 1
+            std::uint64_t const convertBackAmt = kMAX_MP_TOKEN_AMOUNT - 1;
 
             Buffer const convertBackBlindingFactor = generateBlindingFactor();
             auto const convertBackHolderCiphertext =
@@ -3449,13 +3450,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // Get the encrypted spending balance from ledger (no decryption needed)
             auto const encryptedSpendingBalance =
-                mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+                mptAlice.getEncryptedBalance(bob, MPTTester::HolderEncryptedSpending);
             BEAST_EXPECT(encryptedSpendingBalance.has_value());
 
             // Generate pedersen commitment for the known spending balance
             Buffer const pcBlindingFactor = generateBlindingFactor();
             Buffer const pedersenCommitment =
-                mptAlice.getPedersenCommitment(maxMPTokenAmount, pcBlindingFactor);
+                mptAlice.getPedersenCommitment(kMAX_MP_TOKEN_AMOUNT, pcBlindingFactor);
 
             // Generate the proof using known spending balance value
             auto const version = mptAlice.getMPTokenVersion(bob);
@@ -3468,13 +3469,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 convertBackContextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = maxMPTokenAmount,
+                    .amt = kMAX_MP_TOKEN_AMOUNT,
                     .encryptedAmt = *encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
 
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = bob.human();
                 jv[jss::TransactionType] = jss::ConfidentialMPTConvertBack;
                 jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
@@ -3485,11 +3486,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 jv[sfBalanceCommitment.jsonName] = strHex(pedersenCommitment);
                 jv[sfZKProof.jsonName] = strHex(proof);
 
-                env(jv, ter(tesSUCCESS));
+                env(jv, Ter(tesSUCCESS));
             }
 
             // Verify the public balance was restored (minus 1 remaining in confidential)
-            env.require(mptbalance(mptAlice, bob, convertBackAmt));
+            env.require(MptBalance(mptAlice, bob, convertBackAmt));
         }
     }
 
@@ -3570,7 +3571,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.convertBack({
                 .account = bob,
-                .amt = maxMPTokenAmount + 1,
+                .amt = kMAX_MP_TOKEN_AMOUNT + 1,
                 .err = temBAD_AMOUNT,
             });
 
@@ -3578,7 +3579,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convertBack({
                 .account = bob,
                 .amt = 30,
-                .pedersenCommitment = makeZeroBuffer(ecPedersenCommitmentLength),
+                .pedersenCommitment = gMakeZeroBuffer(kEC_PEDERSEN_COMMITMENT_LENGTH),
                 .err = temMALFORMED,
             });
 
@@ -3613,7 +3614,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convertBack({
                 .account = bob,
                 .amt = 30,
-                .auditorEncryptedAmt = makeZeroBuffer(10),
+                .auditorEncryptedAmt = gMakeZeroBuffer(10),
                 .err = temBAD_CIPHERTEXT,
             });
 
@@ -3635,7 +3636,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convertBack({
                 .account = bob,
                 .amt = 30,
-                .proof = makeZeroBuffer(100),
+                .proof = gMakeZeroBuffer(100),
                 .err = temMALFORMED,
             });
         }
@@ -4316,7 +4317,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
             auto& mpt = confEnv.mpt;
 
-            auto constexpr credIdx =
+            auto constexpr kCRED_IDX =
                 "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
                 "E4";
 
@@ -4324,7 +4325,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = carol,
                 .dest = bob,
                 .amt = 10,
-                .credentials = {{credIdx}},
+                .credentials = {{kCRED_IDX}},
                 .err = temDISABLED,
             });
         }
@@ -4611,7 +4612,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // invalid issuance ID, whose issuer is not alice
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = alice.human();
                 jv[sfHolder] = bob.human();
                 jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
@@ -4621,7 +4622,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 // wrong issuance ID
                 jv[sfMPTokenIssuanceID] = "00000004AE123A8556F3CF91154711376AFB0F894F832B3E";
 
-                env(jv, ter(temMALFORMED));
+                env(jv, Ter(temMALFORMED));
             }
 
             // issuer cannot clawback from self
@@ -4799,16 +4800,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // destroy the issuance
             mptAlice.destroy();
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = alice.human();
             jv[sfHolder] = bob.human();
             jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
             jv[sfMPTAmount] = std::to_string(10);
-            std::string const dummyProof(ecClawbackProofLength * 2, '0');
+            std::string const dummyProof(kEC_CLAWBACK_PROOF_LENGTH * 2, '0');
             jv[sfZKProof] = dummyProof;
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
 
-            env(jv, ter(tecOBJECT_NOT_FOUND));
+            env(jv, Ter(tecOBJECT_NOT_FOUND));
         }
 
         // After setup, bob has confidential balance 60 in spending.
@@ -5336,10 +5337,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Buffer const pcBlindingFactor = generateBlindingFactor();
 
         auto const spendingBalance =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(spendingBalance.has_value());
         auto const encryptedSpendingBalance =
-            mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getEncryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(encryptedSpendingBalance.has_value() && !encryptedSpendingBalance->empty());
 
         Buffer const pedersenCommitment =
@@ -5554,10 +5555,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Buffer const pcBlindingFactor = generateBlindingFactor();
 
         auto const spendingBalance =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(spendingBalance.has_value());
         auto const encryptedSpendingBalance =
-            mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getEncryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(encryptedSpendingBalance.has_value() && !encryptedSpendingBalance->empty());
 
         Buffer const pedersenCommitment =
@@ -5710,11 +5711,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Buffer const pcBlindingFactor = generateBlindingFactor();
 
         auto const spendingBalance =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(
             spendingBalance.has_value() && *spendingBalance == 40);  // because bob encrypted 40
         auto const encryptedSpendingBalance =
-            mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getEncryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(encryptedSpendingBalance.has_value() && !encryptedSpendingBalance->empty());
 
         Buffer const pedersenCommitment =
@@ -5839,9 +5840,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto& mptAlice = confEnv.mpt;
 
         auto const spendingBalance =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         auto const encryptedSpendingBalance =
-            mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getEncryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         auto const version = mptAlice.getMPTokenVersion(bob);
         Buffer const pcBlindingFactor = generateBlindingFactor();
         Buffer const pedersenCommitment =
@@ -5900,9 +5901,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         auto const versionV = mptAlice.getMPTokenVersion(bob);
         auto const spendingBalanceV =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         auto const encryptedSpendingBalanceV =
-            mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getEncryptedBalance(bob, MPTTester::HolderEncryptedSpending);
 
         // Parameters for the intended ConvertBack transaction
         uint64_t const amt = 10;
@@ -5990,9 +5991,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Generate a valid proof for the ORIGINAL amount (10)
         auto const spendingBal =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         auto const spendingBalEnc =
-            mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getEncryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         Buffer const pcBf = generateBlindingFactor();
         auto const pedersenCommitment = mptAlice.getPedersenCommitment(*spendingBal, pcBf);
 
@@ -6030,7 +6031,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     /* This test verifies that xrpld correctly rejects attempts to
      * overflow the maximum allowable token amount via homomorphic manipulation.
      * It simulates an attack where an individual takes a valid ciphertext encrypting
-     * the maximum amount (maxMPTokenAmount) and homomorphically adds an encryption of
+     * the maximum amount (kMAX_MP_TOKEN_AMOUNT) and homomorphically adds an encryption of
      * 1 to it, producing a ciphertext for MAX+1. The test confirms that the Bulletproof
      * range proof or inner-product constraints detect this overflow and invalidate the
      * transaction, preserving the supply invariant. */
@@ -6049,17 +6050,17 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto& mptAlice = confEnv.mpt;
 
         // Bob sends 10 to carol.  The send amount (10) and Bob's remaining balance
-        // (90) are both within [0, maxMPTokenAmount].  Range proof passes.
+        // (90) are both within [0, kMAX_MP_TOKEN_AMOUNT].  Range proof passes.
         mptAlice.send({.account = bob, .dest = carol, .amt = 10});
 
         // Bob's spending balance is 90 after the baseline send.
         auto const bobSpendingBefore =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(bobSpendingBefore == 90);
 
-        // Construct Enc(maxMPTokenAmount) with Bob's public key.
+        // Construct Enc(kMAX_MP_TOKEN_AMOUNT) with Bob's public key.
         Buffer const bf1 = generateBlindingFactor();
-        Buffer const encMax = mptAlice.encryptAmount(bob, maxMPTokenAmount, bf1);
+        Buffer const encMax = mptAlice.encryptAmount(bob, kMAX_MP_TOKEN_AMOUNT, bf1);
 
         // Construct Enc(1) with a separate blinding factor.
         Buffer const bf2 = generateBlindingFactor();
@@ -6071,19 +6072,19 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Buffer overflowedCt = std::move(*overflowedOpt);
 
         // Submit the send transaction with the tampered ciphertext.
-        // Setting amt = maxMPTokenAmount + 1 drives proof generation for the
-        // overflowed value.  The bulletproof range check [0, maxMPTokenAmount]
+        // Setting amt = kMAX_MP_TOKEN_AMOUNT + 1 drives proof generation for the
+        // overflowed value.  The bulletproof range check [0, kMAX_MP_TOKEN_AMOUNT]
         // rejects MAX+1; the validator must return tecBAD_PROOF.
         mptAlice.send({
             .account = bob,
             .dest = carol,
-            .amt = maxMPTokenAmount + 1,
+            .amt = kMAX_MP_TOKEN_AMOUNT + 1,
             .senderEncryptedAmt = overflowedCt,
             .err = tecBAD_PROOF,
         });
 
         auto const bobSpendingAfter =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
     }
 
@@ -6092,7 +6093,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
      * simulates a scenario where an attacker takes a ciphertext encrypting zero
      * and subtracts an encryption of 1, resulting in a value of -1.
      * The test asserts that the range proof verification fails because the resulting
-     * value falls outside the valid non-negative range [0, maxMPTokenAmount],
+     * value falls outside the valid non-negative range [0, kMAX_MP_TOKEN_AMOUNT],
      * causing the validator to reject the transaction with tecBAD_PROOF. */
     void
     testConvertBackHomomorphicUnderflow(FeatureBitset features)
@@ -6107,12 +6108,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto& mptAlice = confEnv.mpt;
 
         // Converting back 1 from 10 leaves remaining balance = 9 (non-negative).
-        // Range proof [0, maxMPTokenAmount] passes.
+        // Range proof [0, kMAX_MP_TOKEN_AMOUNT] passes.
         mptAlice.convertBack({.account = bob, .amt = 1});
 
         // Bob's spending balance is now 9; public balance is 1.
         auto const bobSpendingBefore =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(bobSpendingBefore == 9);
         auto const bobPublicBefore = mptAlice.getBalance(bob);
         BEAST_EXPECT(bobPublicBefore == 1);
@@ -6126,19 +6127,19 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Buffer const encOne = mptAlice.encryptAmount(bob, 1, bf2);
 
         // Homomorphically subtract to produce CB_S_holder' = Enc(0) − Enc(1)
-        // = Enc(−1), which lies below [0, maxMPTokenAmount].
+        // = Enc(−1), which lies below [0, kMAX_MP_TOKEN_AMOUNT].
         auto underflowedOpt = homomorphicSubtract(encZero, encOne);
         BEAST_EXPECT(underflowedOpt.has_value());
         Buffer underflowedCt = std::move(*underflowedOpt);
 
         // The underflowed value as uint64_t: 0 - 1 wraps to 0xFFFFFFFFFFFFFFFF.
         // Generate a real proof using this wrapped value. The validator must still reject it
-        // because 0xFFFFFFFFFFFFFFFE (remaining balance) is outside [0, maxMPTokenAmount].
-        constexpr std::uint64_t underflowedAmt =
+        // because 0xFFFFFFFFFFFFFFFE (remaining balance) is outside [0, kMAX_MP_TOKEN_AMOUNT].
+        constexpr std::uint64_t kUNDERFLOWED_AMT =
             static_cast<std::uint64_t>(0) - static_cast<std::uint64_t>(1);
 
         Buffer const pcBf = generateBlindingFactor();
-        Buffer const pedersenCommitment = mptAlice.getPedersenCommitment(underflowedAmt, pcBf);
+        Buffer const pedersenCommitment = mptAlice.getPedersenCommitment(kUNDERFLOWED_AMT, pcBf);
 
         auto const currentVersion = mptAlice.getMPTokenVersion(bob);
         uint256 const contextHash =
@@ -6150,7 +6151,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             contextHash,
             {
                 .pedersenCommitment = pedersenCommitment,
-                .amt = underflowedAmt,
+                .amt = kUNDERFLOWED_AMT,
                 .encryptedAmt = underflowedCt,
                 .blindingFactor = pcBf,
             });
@@ -6168,7 +6169,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // after the rejected attack.
         BEAST_EXPECT(mptAlice.getBalance(bob) == bobPublicBefore);
         auto const bobSpendingAfter =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
     }
 
@@ -6236,9 +6237,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // used to tie the proof to the transfer amount and sender balance.
             // A commitment with a valid-looking prefix but an impossible
             // x-coordinate must also be rejected.
-            Buffer badCommitment(ecPedersenCommitmentLength);
-            std::memset(badCommitment.data(), 0xFF, ecPedersenCommitmentLength);
-            badCommitment.data()[0] = ecCompressedPrefixEvenY;
+            Buffer badCommitment(kEC_PEDERSEN_COMMITMENT_LENGTH);
+            std::memset(badCommitment.data(), 0xFF, kEC_PEDERSEN_COMMITMENT_LENGTH);
+            badCommitment.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
 
             mptAlice.send({
                 .account = bob,
@@ -6275,9 +6276,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {{.account = bob, .payAmount = 100, .convertAmount = 60}, {carol, 50, 30}}};
             auto& mptAlice = confEnv.mpt;
 
-            Buffer badProof(ecSendProofLength);
-            std::memset(badProof.data(), 0xFF, ecSendProofLength);
-            badProof.data()[0] = ecCompressedPrefixEvenY;
+            Buffer badProof(kEC_SEND_PROOF_LENGTH);
+            std::memset(badProof.data(), 0xFF, kEC_SEND_PROOF_LENGTH);
+            badProof.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
 
             mptAlice.send({
                 .account = bob,
@@ -6306,19 +6307,19 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const& tc = getTrivialCiphertext();
 
             // C1 = bad (0xFF...FF), C2 = valid trivial point
-            Buffer badC1goodC2(ecGamalEncryptedTotalLength);
-            std::memset(badC1goodC2.data(), 0xFF, ecGamalEncryptedTotalLength);
-            badC1goodC2.data()[0] = ecCompressedPrefixEvenY;
+            Buffer badC1goodC2(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+            std::memset(badC1goodC2.data(), 0xFF, kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+            badC1goodC2.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
             std::memcpy(
-                badC1goodC2.data() + ecGamalEncryptedLength,
-                tc.data() + ecGamalEncryptedLength,
-                ecGamalEncryptedLength);
+                badC1goodC2.data() + kEC_GAMAL_ENCRYPTED_LENGTH,
+                tc.data() + kEC_GAMAL_ENCRYPTED_LENGTH,
+                kEC_GAMAL_ENCRYPTED_LENGTH);
 
             // C1 = valid trivial point, C2 = bad (0xFF...FF)
-            Buffer goodC1badC2(ecGamalEncryptedTotalLength);
-            std::memset(goodC1badC2.data(), 0xFF, ecGamalEncryptedTotalLength);
-            std::memcpy(goodC1badC2.data(), tc.data(), ecGamalEncryptedLength);
-            goodC1badC2.data()[ecGamalEncryptedLength] = ecCompressedPrefixEvenY;
+            Buffer goodC1badC2(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+            std::memset(goodC1badC2.data(), 0xFF, kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+            std::memcpy(goodC1badC2.data(), tc.data(), kEC_GAMAL_ENCRYPTED_LENGTH);
+            goodC1badC2.data()[kEC_GAMAL_ENCRYPTED_LENGTH] = kEC_COMPRESSED_PREFIX_EVEN_Y;
 
             // sender's encrypted amount — bad C1
             mptAlice.send({
@@ -6401,23 +6402,23 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         //
         //   P-256 generator x:
         //     6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296
-        static constexpr std::uint8_t kP256GeneratorX[32] = {
+        static constexpr std::uint8_t kP256_GENERATOR_X[32] = {
             0x6B, 0x17, 0xD1, 0xF2, 0xE1, 0x2C, 0x42, 0x47, 0xF8, 0xBC, 0xE6,
             0xE5, 0x63, 0xA4, 0x40, 0xF2, 0x77, 0x03, 0x7D, 0x81, 0x2D, 0xEB,
             0x33, 0xA0, 0xF4, 0xA1, 0x39, 0x45, 0xD8, 0x98, 0xC2, 0x96,
         };
 
         // A 66-byte encrypted amount using the P-256 x-coordinate for both halves.
-        Buffer wrongGroupCt(ecGamalEncryptedTotalLength);
-        wrongGroupCt.data()[0] = ecCompressedPrefixEvenY;
-        std::memcpy(wrongGroupCt.data() + 1, kP256GeneratorX, 32);
-        wrongGroupCt.data()[ecGamalEncryptedLength] = ecCompressedPrefixEvenY;
-        std::memcpy(wrongGroupCt.data() + ecGamalEncryptedLength + 1, kP256GeneratorX, 32);
+        Buffer wrongGroupCt(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+        wrongGroupCt.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+        std::memcpy(wrongGroupCt.data() + 1, kP256_GENERATOR_X, 32);
+        wrongGroupCt.data()[kEC_GAMAL_ENCRYPTED_LENGTH] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+        std::memcpy(wrongGroupCt.data() + kEC_GAMAL_ENCRYPTED_LENGTH + 1, kP256_GENERATOR_X, 32);
 
         // A 33-byte commitment using the same wrong-curve x-coordinate.
-        Buffer wrongGroupCommitment(ecPedersenCommitmentLength);
-        wrongGroupCommitment.data()[0] = ecCompressedPrefixEvenY;
-        std::memcpy(wrongGroupCommitment.data() + 1, kP256GeneratorX, 32);
+        Buffer wrongGroupCommitment(kEC_PEDERSEN_COMMITMENT_LENGTH);
+        wrongGroupCommitment.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+        std::memcpy(wrongGroupCommitment.data() + 1, kP256_GENERATOR_X, 32);
 
         // sender's encrypted amount uses a coordinate from the wrong curve
         mptAlice.send({
@@ -6493,7 +6494,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         // 33 zero bytes — not a real public key; no valid secret maps to this.
-        Buffer const nullKey = makeZeroBuffer(ecPubKeyLength);
+        Buffer const nullKey = gMakeZeroBuffer(kEC_PUB_KEY_LENGTH);
 
         // Recipient (holder) tries to register an all-zero key.
         // Must be rejected so no account ends up with an unprotected balance.
@@ -6578,7 +6579,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto& mptAlice = confEnv.mpt;
 
         auto const bobSpendingBefore =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
 
         // issuer ciphertext encrypted under carol's holder key
         // (should be under alice's registered issuer key).
@@ -6612,9 +6613,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // all balances unchanged
         BEAST_EXPECT(
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) ==
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) ==
             bobSpendingBefore);
-        BEAST_EXPECT(mptAlice.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+        BEAST_EXPECT(mptAlice.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
     }
 
     // This test verifies that the compact AND-composed Send sigma proof
@@ -6699,7 +6700,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // Verify balances.
             auto const spendingAfter =
-                mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+                mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
             if (divergent)
             {
                 BEAST_EXPECT(spendingAfter == setup.prevSpending);
@@ -6765,7 +6766,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 50,
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .ticketSeq = ticketSeq});
-            env.require(mptbalance(mptAlice, bob, 50));
+            env.require(MptBalance(mptAlice, bob, 50));
         }
 
         // ConfidentialMPTConvert with ticket
@@ -6773,7 +6774,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             std::uint32_t const ticketSeq = env.seq(bob) + 1;
             env(ticket::create(bob, 1));
             mptAlice.convert({.account = bob, .amt = 20, .ticketSeq = ticketSeq});
-            env.require(mptbalance(mptAlice, bob, 30));
+            env.require(MptBalance(mptAlice, bob, 30));
         }
 
         // ConfidentialMPTMergeInbox with ticket.
@@ -6803,7 +6804,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             env(ticket::create(carol, 1));
             mptAlice.convertBack({.account = carol, .amt = 10, .ticketSeq = ticketSeq});
             // carol converted 50, received 10 from bob, then converted back 10 → public 60
-            env.require(mptbalance(mptAlice, carol, 60));
+            env.require(MptBalance(mptAlice, carol, 60));
         }
     }
 
@@ -6876,7 +6877,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .blindingFactor = bf,
             .ticketSeq = ticketSeq2,
         });
-        env.require(mptbalance(mptAlice, bob, 70));
+        env.require(MptBalance(mptAlice, bob, 70));
     }
 
     // Exercises ticket-specific error codes for confidential transfer transactions:
@@ -7077,17 +7078,17 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv3 = mpt.sendJV({.account = carol, .dest = dave, .amt = 50}, carolSeq + 1);
 
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, carolSeq),
-                batch::inner(jv3, carolSeq + 1),
-                batch::sig(carol),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, carolSeq),
+                batch::Inner(jv3, carolSeq + 1),
+                batch::Sig(carol),
+                Ter(tesSUCCESS));
             env.close();
 
             // AllOrNothing: inner 3 fails
             // bob's spending must remain 100; carol's inbox must remain 0.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
         }
 
         // Bob sends to two recipients (Carol and Dave) in one batch.
@@ -7113,17 +7114,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 auto const jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
 
                 env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                    batch::inner(jv1, bobSeq + 1),
-                    batch::inner(jv2, bobSeq + 2),
-                    ter(tesSUCCESS));
+                    batch::Inner(jv1, bobSeq + 1),
+                    batch::Inner(jv2, bobSeq + 2),
+                    Ter(tesSUCCESS));
                 env.close();
 
                 // Nothing applied: bob stays 150, carol and dave inbox stay 0.
                 BEAST_EXPECT(
-                    mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 150);
-                BEAST_EXPECT(
-                    mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
-                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+                    mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 150);
+                BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
             }
 
             // If we change batch mode to be tfIndependent — txn 1 applies, inner 2 fails.
@@ -7135,18 +7135,17 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 auto const jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
 
                 env(batch::outer(bob, bobSeq, batchFee, tfIndependent),
-                    batch::inner(jv1, bobSeq + 1),
-                    batch::inner(jv2, bobSeq + 2),
-                    ter(tesSUCCESS));
+                    batch::Inner(jv1, bobSeq + 1),
+                    batch::Inner(jv2, bobSeq + 2),
+                    Ter(tesSUCCESS));
                 env.close();
 
                 // bob 150→100, carol inbox 0→50
                 BEAST_EXPECT(
-                    mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-                BEAST_EXPECT(
-                    mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 50);
+                    mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+                BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 50);
                 // dave gets nothing
-                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
             }
         }
 
@@ -7180,18 +7179,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                     mpt.sendJV({.account = bob, .dest = dave, .amt = 100}, bobSeq + 2, chain1);
 
                 env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                    batch::inner(jv1, bobSeq + 1),
-                    batch::inner(jv2, bobSeq + 2),
-                    ter(tesSUCCESS));
+                    batch::Inner(jv1, bobSeq + 1),
+                    batch::Inner(jv2, bobSeq + 2),
+                    Ter(tesSUCCESS));
                 env.close();
 
                 // Both txns applied: bob 200→0, carol inbox=100, dave inbox=100.
+                BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 0);
                 BEAST_EXPECT(
-                    mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 0);
-                BEAST_EXPECT(
-                    mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 100);
-                BEAST_EXPECT(
-                    mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 100);
+                    mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 100);
+                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 100);
             }
 
             // Now Bob has 150, but tries to send two 100 in one batch.
@@ -7218,18 +7215,17 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
                 env2(
                     batch::outer(bob2, bobSeq, batchFee, tfAllOrNothing),
-                    batch::inner(jv1, bobSeq + 1),
-                    batch::inner(jv2, bobSeq + 2),
-                    ter(tesSUCCESS));
+                    batch::Inner(jv1, bobSeq + 1),
+                    batch::Inner(jv2, bobSeq + 2),
+                    Ter(tesSUCCESS));
                 env2.close();
 
                 // AllOrNothing: inner 2 fails → nothing applied.
                 BEAST_EXPECT(
-                    mpt2.getDecryptedBalance(bob2, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 150);
+                    mpt2.getDecryptedBalance(bob2, MPTTester::HolderEncryptedSpending) == 150);
                 BEAST_EXPECT(
-                    mpt2.getDecryptedBalance(carol2, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
-                BEAST_EXPECT(
-                    mpt2.getDecryptedBalance(dave2, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+                    mpt2.getDecryptedBalance(carol2, MPTTester::HolderEncryptedInbox) == 0);
+                BEAST_EXPECT(mpt2.getDecryptedBalance(dave2, MPTTester::HolderEncryptedInbox) == 0);
             }
         }
     }
@@ -7260,17 +7256,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
 
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, carolSeq),
-                batch::sig(carol),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, carolSeq),
+                batch::Sig(carol),
+                Ter(tesSUCCESS));
             env.close();
 
             // Both txn applied: bob's balance 100→90, carol 60→55, dave inbox 0→15
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 90);
-            BEAST_EXPECT(
-                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 55);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 15);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 90);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 15);
         }
     }
 
@@ -7301,17 +7296,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 300}, carolSeq);
 
             env(batch::outer(bob, bobSeq, batchFee, tfOnlyOne),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, carolSeq),
-                batch::sig(carol),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, carolSeq),
+                batch::Sig(carol),
+                Ter(tesSUCCESS));
             env.close();
 
             // No success found → nothing applied; balances unchanged
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-            BEAST_EXPECT(
-                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 60);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 60);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
         }
 
         // bob sends dave 200 (invalid), carol sends dave 5 (valid)
@@ -7324,17 +7318,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
 
             env(batch::outer(bob, bobSeq, batchFee, tfOnlyOne),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, carolSeq),
-                batch::sig(carol),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, carolSeq),
+                batch::Sig(carol),
+                Ter(tesSUCCESS));
             env.close();
 
             // Only carol's send applied: carol 60→55, dave inbox 0→5, bob unchanged
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-            BEAST_EXPECT(
-                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 55);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 5);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 5);
         }
     }
 
@@ -7365,15 +7358,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
 
             env(batch::outer(bob, bobSeq, batchFee, tfUntilFailure),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, carolSeq),
-                batch::sig(carol),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, carolSeq),
+                batch::Sig(carol),
+                Ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-            BEAST_EXPECT(
-                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 60);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 60);
         }
 
         // Bob sends dave 10, Carol sends dave 5 — both valid and independent
@@ -7386,17 +7378,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
 
             env(batch::outer(bob, bobSeq, batchFee, tfUntilFailure),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, carolSeq),
-                batch::sig(carol),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, carolSeq),
+                batch::Sig(carol),
+                Ter(tesSUCCESS));
             env.close();
 
             // Both applied: bob 100→90, carol 60→55, dave inbox 0→15
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 90);
-            BEAST_EXPECT(
-                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 55);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 15);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 90);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 15);
         }
     }
 
@@ -7431,20 +7422,19 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv3 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq + 1);
 
             env(batch::outer(bob, bobSeq, batchFee, tfIndependent),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, carolSeq),
-                batch::inner(jv3, carolSeq + 1),
-                batch::sig(carol),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, carolSeq),
+                batch::Inner(jv3, carolSeq + 1),
+                batch::Sig(carol),
+                Ter(tesSUCCESS));
             env.close();
 
             // inner 1 (bob→dave 10) applied: bob 100→90
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 90);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 90);
             // inner 2 failed (carol not changed), inner 3 applied: carol 60→55
-            BEAST_EXPECT(
-                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 55);
             // dave inbox: 10 (from bob) + 5 (from carol inner 3) = 15
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 15);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 15);
         }
     }
 
@@ -7489,17 +7479,17 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv2 = mpt.convertBackJV({.account = bob, .amt = 30}, bobSeq + 2);
 
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, bobSeq + 2),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, bobSeq + 2),
+                Ter(tesSUCCESS));
             env.close();
 
             //   regular (mptAmount): 50 (pre) - 50 (convert) + 30 (convertBack) = 30
             //   spending balance: 100 - 30 = 70
             //   inbox:    0   + 50 (from convert) = 50
-            env.require(mptbalance(mpt, bob, 30));
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 70);
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_INBOX) == 50);
+            env.require(MptBalance(mpt, bob, 30));
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 70);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedInbox) == 50);
         }
 
         // convert + mergeInbox + convertBack, stale convertBack proof.
@@ -7530,16 +7520,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv3 = mpt.convertBackJV({.account = bob, .amt = 30}, bobSeq + 3);
 
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, bobSeq + 2),
-                batch::inner(jv3, bobSeq + 3),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, bobSeq + 2),
+                batch::Inner(jv3, bobSeq + 3),
+                Ter(tesSUCCESS));
             env.close();
 
             // jv3 fails so nothing is applied.
-            env.require(mptbalance(mpt, bob, 50));
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+            env.require(MptBalance(mpt, bob, 50));
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedInbox) == 0);
         }
     }
 
@@ -7598,23 +7588,22 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv4 = mpt.mergeInboxJV({.account = carol});
 
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, carolSeq),
-                batch::inner(jv3, daveSeq),
-                batch::inner(jv4, carolSeq + 1),
-                batch::sig(carol, dave),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, carolSeq),
+                batch::Inner(jv3, daveSeq),
+                batch::Inner(jv4, carolSeq + 1),
+                batch::Sig(carol, dave),
+                Ter(tesSUCCESS));
             env.close();
 
             // All four applied:
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 70);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 70);
             // carol's inbox was merged: spending=80, inbox=0
-            BEAST_EXPECT(
-                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 80);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 80);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
             // dave: spending=30, regular=20
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 30);
-            env.require(mptbalance(mpt, dave, 20));
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedSpending) == 30);
+            env.require(MptBalance(mpt, dave, 20));
         }
 
         // bob send + bob convertBack in one AllOrNothing batch.
@@ -7641,14 +7630,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv2 = mpt.convertBackJV({.account = bob, .amt = 40}, bobSeq + 2);
 
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                batch::inner(jv1, bobSeq + 1),
-                batch::inner(jv2, bobSeq + 2),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, bobSeq + 2),
+                Ter(tesSUCCESS));
             env.close();
 
             // AllOrNothing: jv2 fails (stale proof) → nothing applied.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
         }
     }
 
@@ -7689,16 +7678,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 mpt.sendJV({.account = bob, .dest = dave, .amt = 20}, bobSeq + 1, chain1);
 
             env(batch::outer(bob, 0, batchFee, tfAllOrNothing),
-                batch::inner(jv1, bobSeq),
-                batch::inner(jv2, bobSeq + 1),
-                ticket::use(outerTicketSeq),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, bobSeq),
+                batch::Inner(jv2, bobSeq + 1),
+                ticket::Use(outerTicketSeq),
+                Ter(tesSUCCESS));
             env.close();
 
             // Both sends applied: bob 100→40, carol inbox=40, dave inbox=20.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 40);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 40);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 20);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 20);
         }
 
         // inner transactions each consume their own ticket.
@@ -7731,15 +7720,15 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 mpt.sendJV({.account = bob, .dest = dave, .amt = 30}, ticketSeq2, chain1);
 
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                batch::inner(jv1, 0, ticketSeq1),
-                batch::inner(jv2, 0, ticketSeq2),
-                ter(tesSUCCESS));
+                batch::Inner(jv1, 0, ticketSeq1),
+                batch::Inner(jv2, 0, ticketSeq2),
+                Ter(tesSUCCESS));
             env.close();
 
             // Both sends applied: bob 100→30, carol inbox=40, dave inbox=30.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 30);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 40);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 30);
         }
 
         // inner send uses wrong sequence (account seq instead of ticket seq)
@@ -7765,13 +7754,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const jv2 = mpt.mergeInboxJV({.account = bob});
 
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                batch::inner(badJV, 0, ticketSeq),
-                batch::inner(jv2, bobSeq + 1),
-                ter(tesSUCCESS));
+                batch::Inner(badJV, 0, ticketSeq),
+                batch::Inner(jv2, bobSeq + 1),
+                Ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
         }
     }
 
@@ -7829,7 +7818,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .holderPubKey = mptAlice.getPubKey(bob),
             .delegate = dave,
         });
-        env.require(mptbalance(mptAlice, bob, 100));
+        env.require(MptBalance(mptAlice, bob, 100));
 
         // Dave executes Convert again on behalf of bob (no key registration).
         mptAlice.convert({.account = bob, .amt = 50, .delegate = dave});
@@ -7924,7 +7913,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto const bobOwnersBefore = ownerCount(env, bob);
         env(delegate::set(bob, carol, {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox"}));
         env.close();
-        env.require(owners(bob, bobOwnersBefore + 1));
+        env.require(Owners(bob, bobOwnersBefore + 1));
 
         // Carol converts and merge inbox on behalf of bob.
         mptAlice.convert({
@@ -7938,7 +7927,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Bob revokes all permissions, deletes the Delegate SLE, releasing the reserve.
         env(delegate::set(bob, carol, std::vector<std::string>{}));
         env.close();
-        env.require(owners(bob, bobOwnersBefore));
+        env.require(Owners(bob, bobOwnersBefore));
 
         // Carol can no longer convert on behalf of bob.
         mptAlice.convert({
@@ -8031,7 +8020,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const carol{"carol"};
         Account const dave{"dave"};
 
-        ConfidentialEnv const confEnv{
+        ConfidentialEnv confEnv{
             env,
             alice,
             {{bob, 100, 50}, {carol, 100, 100}},
@@ -8047,27 +8036,27 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Dave attempts clawback on behalf of bob targetting bob, but since bob is not the issuer,
         // the transaction should be rejected.
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = bob.human();
             jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
             jv[sfHolder] = bob.human();
             jv[sfMPTAmount.jsonName] = "50";
-            jv[sfZKProof.jsonName] = std::string(ecClawbackProofLength * 2, '0');
-            env(jv, delegate::as(dave), ter(temMALFORMED));
+            jv[sfZKProof.jsonName] = std::string(kEC_CLAWBACK_PROOF_LENGTH * 2, '0');
+            env(jv, delegate::As(dave), Ter(temMALFORMED));
         }
 
         // Dave attempts clawback on behalf of bob targeting carol, but since bob is not the issuer,
         // the transaction should be rejected.
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = bob.human();
             jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
             jv[sfHolder] = carol.human();
             jv[sfMPTAmount.jsonName] = "100";
-            jv[sfZKProof.jsonName] = std::string(ecClawbackProofLength * 2, '0');
-            env(jv, delegate::as(dave), ter(temMALFORMED));
+            jv[sfZKProof.jsonName] = std::string(kEC_CLAWBACK_PROOF_LENGTH * 2, '0');
+            env(jv, delegate::As(dave), Ter(temMALFORMED));
         }
     }
 
@@ -8278,7 +8267,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .delegate = dave,
             .ticketSeq = ticketSeq,
         });
-        env.require(mptbalance(mptAlice, bob, 100));
+        env.require(MptBalance(mptAlice, bob, 100));
 
         // MergeInbox using ticket with delegation.
         ticketSeq = env.seq(bob) + 1;
@@ -8344,7 +8333,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         ConfidentialEnv confEnv{env, alice, {{bob}, {carol, 1000, 50}}};
         auto& mptAlice = confEnv.mpt;
 
-        ConfidentialSendSetup setup(mptAlice, bob, carol, alice, 10);
+        ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, 10);
 
         // Forge destination ciphertext (Enc(20) instead of Enc(10))
         {
@@ -8440,7 +8429,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Balance commitment for Bob's actual balance.
         auto const prevSpending =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(prevSpending.has_value());
         auto const balanceBlindingFactor = generateBlindingFactor();
         auto const balanceCommitment =
@@ -8455,7 +8444,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Corrupt bulletproof bytes.
         Buffer forgedProof = *validProof;
-        for (size_t i = bulletproofOffset; i < forgedProof.size(); i += 7)
+        for (size_t i = kBULLETPROOF_OFFSET; i < forgedProof.size(); i += 7)
             forgedProof.data()[i] ^= 0xFF;
 
         // Submit — rejected due to commitment mismatch.
@@ -8473,7 +8462,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Supply invariant: Bob's balance unchanged.
         auto const postSpending =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(postSpending.has_value());
         BEAST_EXPECT(*postSpending == *prevSpending);
     }
@@ -8501,7 +8490,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         uint64_t const sendAmount = 10;
         uint64_t const negativeRemaining = static_cast<uint64_t>(-10);  // 0xFFFFFFFFFFFFFFF6
 
-        ConfidentialSendSetup setup(mptAlice, bob, carol, alice, sendAmount);
+        ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
         auto const ctxHash = getSendContextHash(
             bob.id(), mptAlice.issuanceID(), env.seq(bob), carol.id(), setup.version);
@@ -8517,11 +8506,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             ctxHash);
 
         Buffer forgedProof(validProof->size());
-        std::memcpy(forgedProof.data(), validProof->data(), bulletproofOffset);
+        std::memcpy(forgedProof.data(), validProof->data(), kBULLETPROOF_OFFSET);
         std::memcpy(
-            forgedProof.data() + bulletproofOffset,
+            forgedProof.data() + kBULLETPROOF_OFFSET,
             forgedBulletproof.data(),
-            ecDoubleBulletproofLength);
+            kEC_DOUBLE_BULLETPROOF_LENGTH);
 
         // Rejected — commitment mismatch.
         mptAlice.send(
@@ -8538,7 +8527,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Supply invariant: Bob's balance unchanged.
         auto const postSpending =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(postSpending.has_value());
         BEAST_EXPECT(*postSpending == setup.prevSpending);
     }
@@ -8560,7 +8549,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}}};
         auto& mptAlice = confEnv.mpt;
 
-        ConfidentialSendSetup setup(mptAlice, bob, carol, alice, 10);
+        ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, 10);
 
         // Variant A: Modify transcript input (commitment) after proof generation
         // -----------------------------------------------------------------
@@ -8693,7 +8682,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // with sequence N+1, causing a mismatch.
         {
             // Fresh setup for Variant A
-            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, sendAmount);
+            ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
             auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
@@ -8737,7 +8726,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Carol's, it gets a different challenge than what the prover used.
         {
             // Fresh setup for Variant B (balance changed after Variant A)
-            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, sendAmount);
+            ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
             auto const proof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof.has_value()))
@@ -8794,7 +8783,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}}};
         auto& mptAlice = confEnv.mpt;
 
-        ConfidentialSendSetup setup(mptAlice, bob, carol, alice, 10);
+        ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, 10);
 
         // Variant A: Zero-valued response scalars
         // -----------------------------------------------------------------
@@ -8815,11 +8804,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Compact sigma proof: 6 consecutive 32-byte scalars
             // (e, z_m, z_r, z_b, z_rho, z_sk) = 192 bytes, fixed size.
             // Zero out all response scalars (z_m through z_sk, bytes 32..191).
-            static constexpr size_t sigmaScalarSize = 32;
-            static constexpr size_t challengeOffset = 0;
-            static constexpr size_t responseOffset = challengeOffset + sigmaScalarSize;
-            static constexpr size_t responseSize = 5 * sigmaScalarSize;  // z_m..z_sk
-            std::memset(forgedProof.data() + responseOffset, 0, responseSize);
+            static constexpr size_t kSIGMA_SCALAR_SIZE = 32;
+            static constexpr size_t kCHALLENGE_OFFSET = 0;
+            static constexpr size_t kRESPONSE_OFFSET = kCHALLENGE_OFFSET + kSIGMA_SCALAR_SIZE;
+            static constexpr size_t kRESPONSE_SIZE = 5 * kSIGMA_SCALAR_SIZE;  // z_m..z_sk
+            std::memset(forgedProof.data() + kRESPONSE_OFFSET, 0, kRESPONSE_SIZE);
 
             mptAlice.send(
                 {.account = bob,
@@ -8849,8 +8838,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // Create invalid ciphertext with identity-like encoding
             // All zeros is not valid on secp256k1 curve
-            Buffer invalidCiphertext(ecGamalEncryptedTotalLength);
-            std::memset(invalidCiphertext.data(), 0, ecGamalEncryptedTotalLength);
+            Buffer invalidCiphertext(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+            std::memset(invalidCiphertext.data(), 0, kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
 
             mptAlice.send(
                 {.account = bob,
@@ -8873,8 +8862,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 return;
 
             // Create invalid commitment with identity-like encoding
-            Buffer invalidCommitment(ecPedersenCommitmentLength);
-            std::memset(invalidCommitment.data(), 0, ecPedersenCommitmentLength);
+            Buffer invalidCommitment(kEC_PEDERSEN_COMMITMENT_LENGTH);
+            std::memset(invalidCommitment.data(), 0, kEC_PEDERSEN_COMMITMENT_LENGTH);
 
             mptAlice.send(
                 {.account = bob,
@@ -8904,7 +8893,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Buffer forgedProof = *proof;
 
             // secp256k1 curve order n (big-endian)
-            static constexpr unsigned char curveOrder[32] = {
+            static constexpr unsigned char kCURVE_ORDER[32] = {
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  //
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,  //
                 0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B,  //
@@ -8914,7 +8903,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Compact sigma proof: 6 consecutive 32-byte scalars.
             // Overwrite the first response scalar (z_m at byte 32) with
             // the curve order, which reduces to 0 mod n.
-            std::memcpy(forgedProof.data() + 32, curveOrder, 32);
+            std::memcpy(forgedProof.data() + 32, kCURVE_ORDER, 32);
 
             mptAlice.send(
                 {.account = bob,
@@ -8943,7 +8932,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Buffer forgedProof = *proof;
 
             // curve_order + 1 (big-endian)
-            static constexpr unsigned char overflowScalar[32] = {
+            static constexpr unsigned char kOVERFLOW_SCALAR[32] = {
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  //
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,  //
                 0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B,  //
@@ -8953,7 +8942,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Compact sigma proof: 6 consecutive 32-byte scalars.
             // Overwrite the first response scalar (z_m at byte 32) with
             // curve_order + 1, which reduces to 1 mod n.
-            std::memcpy(forgedProof.data() + 32, overflowScalar, 32);
+            std::memcpy(forgedProof.data() + 32, kOVERFLOW_SCALAR, 32);
 
             mptAlice.send(
                 {.account = bob,
@@ -9001,14 +8990,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // match, the domain-separated Fiat-Shamir transcript differs,
         // so verification equations fail.
         {
-            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, sendAmount);
+            ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
             // Generate a valid convertBack proof for bob
             auto const spendingBalance =
-                mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+                mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
             BEAST_EXPECT(spendingBalance.has_value());
             auto const encryptedSpending =
-                mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+                mptAlice.getEncryptedBalance(bob, MPTTester::HolderEncryptedSpending);
             BEAST_EXPECT(encryptedSpending.has_value());
 
             Buffer const pcBlindingFactor = generateBlindingFactor();
@@ -9031,7 +9020,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Resize the convertBack proof to match the expected send proof
             // size so it passes preflight's size check and reaches the actual
             // ZK verification in doApply.
-            auto const expectedSendSize = ecSendProofLength;
+            auto const expectedSendSize = kEC_SEND_PROOF_LENGTH;
             Buffer resizedProof(expectedSendSize);
             auto const copyLen = std::min(convertBackProof.size(), expectedSendSize);
             std::memcpy(resizedProof.data(), convertBackProof.data(), copyLen);
@@ -9060,7 +9049,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // verifier recomputes the Fiat-Shamir challenge using the correct
         // issuanceID, the challenge differs and verification fails.
         {
-            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, sendAmount);
+            ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
             // Compute context hash with a fabricated (wrong) issuanceID
             uint192 const fakeIssuanceID{1};
@@ -9161,7 +9150,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // compact sigma proof fails: the proof binds Enc(m) to the Pedersen
         // commitment PC(m, r), so substituting Enc(2m) breaks the linkage.
         {
-            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, sendAmount);
+            ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
             auto const ctxHash = getSendContextHash(
                 bob.id(), mptAlice.issuanceID(), env.seq(bob), carol.id(), setup.version);
@@ -9231,8 +9220,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // swaps them: -P has the same x but opposite y.
         auto negateCiphertext = [](Buffer const& ct) -> Buffer {
             Buffer neg = ct;
-            neg.data()[0] ^= 0x01;                       // negate C1
-            neg.data()[ecGamalEncryptedLength] ^= 0x01;  // negate C2
+            neg.data()[0] ^= 0x01;                           // negate C1
+            neg.data()[kEC_GAMAL_ENCRYPTED_LENGTH] ^= 0x01;  // negate C2
             return neg;
         };
 
@@ -9268,7 +9257,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Signature passes, but the compact sigma proof fails — the proof
         // was generated for Enc(m), not Enc(-m).
         {
-            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, sendAmount);
+            ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
             auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(validProof.has_value()))
@@ -9298,7 +9287,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // The bulletproof was generated for (b - m), not (b + m), so the
         // aggregated range proof fails.
         {
-            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, sendAmount);
+            ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
             auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(validProof.has_value()))
@@ -9381,7 +9370,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // generated for Enc(m1) only — the combined ciphertext has
         // different randomness.
         {
-            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, m1);
+            ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, m1);
 
             auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(validProof.has_value()))
@@ -9414,7 +9403,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // the ciphertext includes stale randomness from the old Enc(m1).
         {
             // Execute a valid send of m1, capturing the actual ciphertext used
-            ConfidentialSendSetup setup1(mptAlice, bob, carol, alice, m1);
+            ConfidentialSendSetup const setup1(mptAlice, bob, carol, alice, m1);
             auto const proof1 = setup1.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof1.has_value()))
                 return;
@@ -9429,7 +9418,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amountCommitment = setup1.amountCommitment,
                  .balanceCommitment = setup1.balanceCommitment});
 
-            ConfidentialSendSetup setup2(mptAlice, bob, carol, alice, m2);
+            ConfidentialSendSetup const setup2(mptAlice, bob, carol, alice, m2);
 
             auto const proof2 = setup2.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof2.has_value()))
@@ -9481,7 +9470,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto substituteC1 = [](Buffer const& target, Buffer const& source) -> Buffer {
             Buffer result = target;
             // Copy C1 (first ecGamalEncryptedLength bytes) from source
-            std::memcpy(result.data(), source.data(), ecGamalEncryptedLength);
+            std::memcpy(result.data(), source.data(), kEC_GAMAL_ENCRYPTED_LENGTH);
             return result;
         };
 
@@ -9524,7 +9513,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // binding no longer holds — C1' wasn't generated with the same r
         // used in the proof.
         {
-            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, sendAmount);
+            ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
             auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(validProof.has_value()))
@@ -9591,14 +9580,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Replace sender ciphertext with zero-randomness form:
             // C1 = all zeros (identity element — invalid encoding)
             // C2 = valid trivial point (simulating mG)
-            Buffer zeroCiphertext(ecGamalEncryptedTotalLength);
-            std::memset(zeroCiphertext.data(), 0, ecGamalEncryptedTotalLength);
+            Buffer zeroCiphertext(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+            std::memset(zeroCiphertext.data(), 0, kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
             // C2 half: use a valid point so only C1 is the problem
             auto const& tc = getTrivialCiphertext();
             std::memcpy(
-                zeroCiphertext.data() + ecGamalEncryptedLength,
-                tc.data() + ecGamalEncryptedLength,
-                ecGamalEncryptedLength);
+                zeroCiphertext.data() + kEC_GAMAL_ENCRYPTED_LENGTH,
+                tc.data() + kEC_GAMAL_ENCRYPTED_LENGTH,
+                kEC_GAMAL_ENCRYPTED_LENGTH);
             obj.setFieldVL(sfSenderEncryptedAmount, zeroCiphertext);
 
             // Re-serialize with the original (now-stale) signature
@@ -9622,13 +9611,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         {
             // Build zero-randomness ciphertext: C1 = all zeros (identity),
             // C2 = valid trivial point (simulating mG)
-            Buffer zeroCiphertext(ecGamalEncryptedTotalLength);
-            std::memset(zeroCiphertext.data(), 0, ecGamalEncryptedTotalLength);
+            Buffer zeroCiphertext(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+            std::memset(zeroCiphertext.data(), 0, kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
             auto const& tc = getTrivialCiphertext();
             std::memcpy(
-                zeroCiphertext.data() + ecGamalEncryptedLength,
-                tc.data() + ecGamalEncryptedLength,
-                ecGamalEncryptedLength);
+                zeroCiphertext.data() + kEC_GAMAL_ENCRYPTED_LENGTH,
+                tc.data() + kEC_GAMAL_ENCRYPTED_LENGTH,
+                kEC_GAMAL_ENCRYPTED_LENGTH);
 
             mptAlice.send(
                 {.account = bob,
@@ -9648,7 +9637,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // differs between transactions.
         {
             // First transaction: generate valid proof for sendAmount
-            ConfidentialSendSetup setup1(mptAlice, bob, carol, alice, sendAmount);
+            ConfidentialSendSetup const setup1(mptAlice, bob, carol, alice, sendAmount);
 
             auto const proof1 = setup1.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof1.has_value()))
@@ -9671,7 +9660,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Second transaction: reuse the same proof from tx1.
             // The context hash includes the new account sequence, so the
             // proof generated for the old sequence is invalid.
-            ConfidentialSendSetup setup2(mptAlice, bob, carol, alice, sendAmount);
+            ConfidentialSendSetup const setup2(mptAlice, bob, carol, alice, sendAmount);
 
             mptAlice.send(
                 {.account = bob,
@@ -9802,7 +9791,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
 
         testWithFeats(all);
     }

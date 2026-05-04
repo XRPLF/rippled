@@ -285,11 +285,12 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
     if (mutableFlags)
     {
-        if (std::ranges::any_of(kMPT_MUTABILITY_FLAGS, [mutableFlags, &isMutableFlag](auto const& f) {
-                bool const canMutate = f.isCannotMutate ? isMutableFlag(f.mutabilityFlag)
-                                                        : !isMutableFlag(f.mutabilityFlag);
-                return canMutate && (*mutableFlags & (f.setFlag | f.clearFlag));
-            }))
+        if (std::ranges::any_of(
+                kMPT_MUTABILITY_FLAGS, [mutableFlags, &isMutableFlag](auto const& f) {
+                    bool const canMutate = f.isCannotMutate ? isMutableFlag(f.mutabilityFlag)
+                                                            : !isMutableFlag(f.mutabilityFlag);
+                    return canMutate && (*mutableFlags & (f.setFlag | f.clearFlag));
+                }))
             return tecNO_PERMISSION;
 
         // Clearing lsfMPTRequireAuth is invalid when the issuance already has

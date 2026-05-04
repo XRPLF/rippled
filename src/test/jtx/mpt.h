@@ -30,7 +30,7 @@ When testing malformed cryptography paths, passing uninitialized memory might
 accidentally supply a valid curve point, causing the ledger's preflight checks
 to falsely succeed and return tecBAD_PROOF instead of the expected temMALFORMED.
 Explicitly zeroing the buffer guarantees it fails structural validation. */
-static auto makeZeroBuffer = [](size_t size) {
+static auto gMakeZeroBuffer = [](size_t size) {
     Buffer b(size);
     if (size > 0)
         std::memset(b.data(), 0, size);
@@ -345,15 +345,15 @@ class MPTTester
     std::optional<Account> const auditor_;
     std::optional<MPTID> id_;
     bool close_;
-    std::unordered_map<AccountID, Buffer> pubKeys;
-    std::unordered_map<AccountID, Buffer> privKeys;
+    std::unordered_map<AccountID, Buffer> pubKeys_;
+    std::unordered_map<AccountID, Buffer> privKeys_;
 
 public:
     enum EncryptedBalanceType {
-        ISSUER_ENCRYPTED_BALANCE,
-        HOLDER_ENCRYPTED_INBOX,
-        HOLDER_ENCRYPTED_SPENDING,
-        AUDITOR_ENCRYPTED_BALANCE,
+        IssuerEncryptedBalance,
+        HolderEncryptedInbox,
+        HolderEncryptedSpending,
+        AuditorEncryptedBalance,
     };
 
     MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
@@ -398,13 +398,13 @@ public:
 
     // Build a confidential convert JV without submitting.  'seq' is the inner
     // transaction sequence used in the Schnorr proof context hash.
-    Json::Value
+    json::Value
     convertJV(MPTConvert const& arg, std::uint32_t seq);
 
     void
     mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
 
-    Json::Value
+    [[nodiscard]] json::Value
     mergeInboxJV(MPTMergeInbox const& arg = MPTMergeInbox{}) const;
 
     void
@@ -414,7 +414,7 @@ public:
     // proof parameters are taken from it instead of the ledger, enabling
     // correct proof generation for a second (or later) send from the same
     // account inside a single batch.
-    Json::Value
+    json::Value
     sendJV(
         MPTConfidentialSend const& arg,
         std::uint32_t seq,
@@ -431,8 +431,8 @@ public:
     //   jv1   = sendJV({bob->carol, 100}, seq1)
     //   chain = chainAfterSend(bob, 100, jv1)  // projected balance after jv1 = 100
     //   jv2   = sendJV({bob->dave,   50}, seq2, chain)
-    ConfidentialSendChainState
-    chainAfterSend(Account const& sender, std::uint64_t sendAmt, Json::Value const& jv) const;
+    [[nodiscard]] ConfidentialSendChainState
+    chainAfterSend(Account const& sender, std::uint64_t sendAmt, json::Value const& jv) const;
 
     void
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
@@ -441,7 +441,7 @@ public:
     // inner transaction sequence used in the proof context hash.  Reads the
     // current encrypted spending balance and version from the ledger, so call
     // this before the batch is submitted.
-    Json::Value
+    json::Value
     convertBackJV(MPTConvertBack const& arg, std::uint32_t seq);
 
     void
@@ -511,13 +511,12 @@ public:
     [[nodiscard]] std::int64_t
     getBalance(Account const& account) const;
 
-    std::int64_t
+    [[nodiscard]] std::int64_t
     getIssuanceConfidentialBalance() const;
 
-    std::optional<Buffer>
-    getEncryptedBalance(
-        Account const& account,
-        EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
+    [[nodiscard]] std::optional<Buffer>
+    getEncryptedBalance(Account const& account, EncryptedBalanceType option = HolderEncryptedInbox)
+        const;
 
     MPT
     operator[](std::string const& name) const;
@@ -527,41 +526,41 @@ public:
 
     operator Asset() const;
 
-    bool
-    printMPT(Account const& holder_) const;
+    [[nodiscard]] bool
+    printMPT(Account const& holder) const;
 
     void
     generateKeyPair(Account const& account);
 
-    std::optional<Buffer>
+    [[nodiscard]] std::optional<Buffer>
     getPubKey(Account const& account) const;
 
-    std::optional<Buffer>
+    [[nodiscard]] std::optional<Buffer>
     getPrivKey(Account const& account) const;
 
-    Buffer
+    [[nodiscard]] Buffer
     encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor) const;
 
-    std::optional<uint64_t>
+    [[nodiscard]] std::optional<uint64_t>
     decryptAmount(Account const& account, Buffer const& amt) const;
 
-    std::optional<uint64_t>
+    [[nodiscard]] std::optional<uint64_t>
     getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
 
-    std::int64_t
+    [[nodiscard]] std::int64_t
     getIssuanceOutstandingBalance() const;
 
-    std::optional<Buffer>
+    [[nodiscard]] std::optional<Buffer>
     getClawbackProof(
         Account const& holder,
         std::uint64_t amount,
         Buffer const& privateKey,
         uint256 const& txHash) const;
 
-    std::optional<Buffer>
+    [[nodiscard]] std::optional<Buffer>
     getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
 
-    std::optional<Buffer>
+    [[nodiscard]] std::optional<Buffer>
     getConfidentialSendProof(
         Account const& sender,
         std::uint64_t const amount,
@@ -571,14 +570,14 @@ public:
         PedersenProofParams const& amountParams,
         PedersenProofParams const& balanceParams) const;
 
-    Buffer
+    [[nodiscard]] Buffer
     getConvertBackProof(
         Account const& holder,
         std::uint64_t const amount,
         uint256 const& contextHash,
         PedersenProofParams const& pcParams) const;
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getMPTokenVersion(Account const account) const;
 
     static Buffer
@@ -664,7 +663,7 @@ private:
     void
     fillConversionCiphertexts(
         T const& arg,
-        Json::Value& jv,
+        json::Value& jv,
         Buffer& holderCiphertext,
         Buffer& issuerCiphertext,
         std::optional<Buffer>& auditorCiphertext,

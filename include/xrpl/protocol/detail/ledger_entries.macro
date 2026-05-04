@@ -405,9 +405,9 @@ LEDGER_ENTRY(
         {sfPreviousTxnLgrSeq, SoeRequired},
         {sfDomainID, SoeOptional},
         {sfMutableFlags, SoeDefault},
-        {sfIssuerEncryptionKey, SoeOPTIONAL},
-        {sfAuditorEncryptionKey, SoeOPTIONAL},
-        {sfConfidentialOutstandingAmount, SoeDEFAULT},
+        {sfIssuerEncryptionKey, SoeOptional},
+        {sfAuditorEncryptionKey, SoeOptional},
+        {sfConfidentialOutstandingAmount, SoeDefault},
 }))
 
 /** A ledger object which tracks MPToken
@@ -421,12 +421,12 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfOwnerNode,                   SoeRequired},
     {sfPreviousTxnID,               SoeRequired},
     {sfPreviousTxnLgrSeq,           SoeRequired},
-    {sfConfidentialBalanceInbox,    SoeOPTIONAL},
-    {sfConfidentialBalanceSpending, SoeOPTIONAL},
-    {sfConfidentialBalanceVersion,  SoeDEFAULT},
-    {sfIssuerEncryptedBalance,      SoeOPTIONAL},
-    {sfAuditorEncryptedBalance,     SoeOPTIONAL},
-    {sfHolderEncryptionKey,         SoeOPTIONAL},
+    {sfConfidentialBalanceInbox,    SoeOptional},
+    {sfConfidentialBalanceSpending, SoeOptional},
+    {sfConfidentialBalanceVersion,  SoeDefault},
+    {sfIssuerEncryptedBalance,      SoeOptional},
+    {sfAuditorEncryptedBalance,     SoeOptional},
+    {sfHolderEncryptionKey,         SoeOptional},
 }))
 
 /** A ledger object which tracks Oracle

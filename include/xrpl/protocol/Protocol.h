@@ -308,50 +308,50 @@ std::size_t constexpr kPERMISSION_MAX_SIZE = 10;
 std::size_t constexpr kMAX_BATCH_TX_COUNT = 8;
 
 /** Length of one component of EC ElGamal ciphertext */
-std::size_t constexpr ecGamalEncryptedLength = 33;
+std::size_t constexpr kEC_GAMAL_ENCRYPTED_LENGTH = 33;
 
 /** EC ElGamal ciphertext length: two 33-byte components concatenated */
-std::size_t constexpr ecGamalEncryptedTotalLength = ecGamalEncryptedLength * 2;
+std::size_t constexpr kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH = kEC_GAMAL_ENCRYPTED_LENGTH * 2;
 
 /** Length of EC point (compressed) */
-std::size_t constexpr compressedECPointLength = 33;
+std::size_t constexpr kCOMPRESSED_EC_POINT_LENGTH = 33;
 
 /** Length of EC public key (compressed) */
-std::size_t constexpr ecPubKeyLength = compressedECPointLength;
+std::size_t constexpr kEC_PUB_KEY_LENGTH = kCOMPRESSED_EC_POINT_LENGTH;
 
 /** Length of EC private key in bytes */
-std::size_t constexpr ecPrivKeyLength = 32;
+std::size_t constexpr kEC_PRIV_KEY_LENGTH = 32;
 
 /** Length of the EC blinding factor in bytes */
-std::size_t constexpr ecBlindingFactorLength = 32;
+std::size_t constexpr kEC_BLINDING_FACTOR_LENGTH = 32;
 
 /** Length of Schnorr ZKProof for public key registration (compact form) in bytes */
-std::size_t constexpr ecSchnorrProofLength = 64;
+std::size_t constexpr kEC_SCHNORR_PROOF_LENGTH = 64;
 
 /** Length of Pedersen Commitment (compressed) */
-std::size_t constexpr ecPedersenCommitmentLength = compressedECPointLength;
+std::size_t constexpr kEC_PEDERSEN_COMMITMENT_LENGTH = kCOMPRESSED_EC_POINT_LENGTH;
 
 /** Length of single bulletproof (range proof for 1 commitment) in bytes */
-std::size_t constexpr ecSingleBulletproofLength = 688;
+std::size_t constexpr kEC_SINGLE_BULLETPROOF_LENGTH = 688;
 
 /** Length of double bulletproof (range proof for 2 commitments) in bytes */
-std::size_t constexpr ecDoubleBulletproofLength = 754;
+std::size_t constexpr kEC_DOUBLE_BULLETPROOF_LENGTH = 754;
 
 /** Length of the ZKProof for ConfidentialMPTSend.
  *  192 bytes compact sigma proof + 754 bytes double bulletproof. */
-std::size_t constexpr ecSendProofLength = 946;
+std::size_t constexpr kEC_SEND_PROOF_LENGTH = 946;
 
 /** Length of the ZKProof for ConfidentialMPTConvertBack.
  *  128 bytes compact sigma proof + 688 bytes single bulletproof. */
-std::size_t constexpr ecConvertBackProofLength = 816;
+std::size_t constexpr kEC_CONVERT_BACK_PROOF_LENGTH = 816;
 
 /** Length of the ZKProof for ConfidentialMPTClawback. */
-std::size_t constexpr ecClawbackProofLength = 64;
+std::size_t constexpr kEC_CLAWBACK_PROOF_LENGTH = 64;
 
 /** Compressed EC point prefix for even y-coordinate */
-std::uint8_t constexpr ecCompressedPrefixEvenY = 0x02;
+std::uint8_t constexpr kEC_COMPRESSED_PREFIX_EVEN_Y = 0x02;
 
 /** Compressed EC point prefix for odd y-coordinate */
-std::uint8_t constexpr ecCompressedPrefixOddY = 0x03;
+std::uint8_t constexpr kEC_COMPRESSED_PREFIX_ODD_Y = 0x03;
 
 }  // namespace xrpl

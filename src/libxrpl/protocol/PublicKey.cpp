@@ -212,7 +212,7 @@ publicKeyType(Slice const& slice)
         if (slice[0] == 0xED)
             return KeyType::Ed25519;
 
-        if (slice[0] == ecCompressedPrefixEvenY || slice[0] == ecCompressedPrefixOddY)
+        if (slice[0] == kEC_COMPRESSED_PREFIX_EVEN_Y || slice[0] == kEC_COMPRESSED_PREFIX_ODD_Y)
             return KeyType::Secp256k1;
     }
 
