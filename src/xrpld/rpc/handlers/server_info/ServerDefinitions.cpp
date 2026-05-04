@@ -216,10 +216,10 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     // copy into a sorted map to ensure deterministic output order (sorted by fieldCode)
-    static std::map<int, SField const*> const sortedFields(
+    static std::map<int, SField const*> const kSORTED_FIELDS(
         xrpl::SField::getKnownCodeToField().begin(), xrpl::SField::getKnownCodeToField().end());
 
-    for (auto const& [code, field] : sortedFields)
+    for (auto const& [code, field] : kSORTED_FIELDS)
     {
         if (field->fieldName.empty())
             continue;
