@@ -9,6 +9,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/vault.h>
 
@@ -1797,7 +1798,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
-        ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
+        ConfidentialEnv const confEnv{env, alice, {{bob, 100, 40}}};
     }
 
     void
@@ -2075,7 +2076,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
-        ConfidentialEnv confEnv{
+        ConfidentialEnv const confEnv{
             env,
             alice,
             {{.account = bob, .payAmount = 100, .convertAmount = 60},
