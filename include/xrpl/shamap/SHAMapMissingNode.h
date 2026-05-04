@@ -28,7 +28,7 @@ to_string(SHAMapType t)
         case SHAMapType::FREE:
             return "Free Tree";
         default:
-            return std::to_string(safe_cast<std::underlying_type_t<SHAMapType>>(t));
+            return std::to_string(safeCast<std::underlying_type_t<SHAMapType>>(t));
     }
 }
 

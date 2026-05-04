@@ -21,33 +21,33 @@
 namespace xrpl {
 
 std::size_t
-STPathElement::get_hash(STPathElement const& element)
+STPathElement::getHash(STPathElement const& element)
 {
-    std::size_t hash_account = 2654435761;
-    std::size_t hash_currency = 2654435761;
-    std::size_t hash_issuer = 2654435761;
+    std::size_t hashAccount = 2654435761;
+    std::size_t hashCurrency = 2654435761;
+    std::size_t hashIssuer = 2654435761;
 
     // NIKB NOTE: This doesn't have to be a secure hash as speed is more
     //            important. We don't even really need to fully hash the whole
     //            base_uint here, as a few bytes would do for our use.
 
     for (auto const x : element.getAccountID())
-        hash_account += (hash_account * 257) ^ x;
+        hashAccount += (hashAccount * 257) ^ x;
 
-    // Check pathAsset type instead of element's mType
-    // In some cases mType might be account but the asset
+    // Check pathAsset type instead of element's type_
+    // In some cases type_ might be account but the asset
     // is still set to either MPT or currency (see Pathfinder::addLink())
     element.getPathAsset().visit(
-        [&](MPTID const& mpt) { hash_currency += beast::uhash<>{}(mpt); },
+        [&](MPTID const& mpt) { hashCurrency += beast::Uhash<>{}(mpt); },
         [&](Currency const& currency) {
             for (auto const x : currency)
-                hash_currency += (hash_currency * 509) ^ x;
+                hashCurrency += (hashCurrency * 509) ^ x;
         });
 
     for (auto const x : element.getIssuerID())
-        hash_issuer += (hash_issuer * 911) ^ x;
+        hashIssuer += (hashIssuer * 911) ^ x;
 
-    return (hash_account ^ hash_currency ^ hash_issuer);
+    return (hashAccount ^ hashCurrency ^ hashIssuer);
 }
 
 STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
@@ -57,7 +57,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
     {
         int const iType = sit.get8();
 
-        if (iType == STPathElement::typeNone || iType == STPathElement::typeBoundary)
+        if (iType == STPathElement::TypeNone || iType == STPathElement::TypeBoundary)
         {
             if (path.empty())
             {
@@ -65,23 +65,23 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
                 Throw<std::runtime_error>("empty path");
             }
 
-            push_back(path);
+            pushBack(path);
             path.clear();
 
-            if (iType == STPathElement::typeNone)
+            if (iType == STPathElement::TypeNone)
                 return;
         }
-        else if ((iType & ~STPathElement::typeAll) != 0)
+        else if ((iType & ~STPathElement::TypeAll) != 0)
         {
             JLOG(debugLog().error()) << "Bad path element " << iType << " in pathset";
             Throw<std::runtime_error>("bad path element");
         }
         else
         {
-            auto const hasAccount = (iType & STPathElement::typeAccount) != 0u;
-            auto const hasCurrency = (iType & STPathElement::typeCurrency) != 0u;
-            auto const hasIssuer = (iType & STPathElement::typeIssuer) != 0u;
-            auto const hasMPT = (iType & STPathElement::typeMPT) != 0u;
+            auto const hasAccount = (iType & STPathElement::TypeAccount) != 0u;
+            auto const hasCurrency = (iType & STPathElement::TypeCurrency) != 0u;
+            auto const hasIssuer = (iType & STPathElement::TypeIssuer) != 0u;
+            auto const hasMPT = (iType & STPathElement::TypeMpt) != 0u;
 
             AccountID account;
             PathAsset asset;
@@ -121,18 +121,18 @@ STPathSet::move(std::size_t n, void* buf)
 bool
 STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 {  // assemble base+tail and add it to the set if it's not a duplicate
-    value.push_back(base);
+    value_.push_back(base);
 
-    std::vector<STPath>::reverse_iterator it = value.rbegin();
+    std::vector<STPath>::reverse_iterator it = value_.rbegin();
 
     STPath& newPath = *it;
-    newPath.push_back(tail);
+    newPath.pushBack(tail);
 
-    while (++it != value.rend())
+    while (++it != value_.rend())
     {
         if (*it == newPath)
         {
-            value.pop_back();
+            value_.pop_back();
             return false;
         }
     }
@@ -143,19 +143,19 @@ bool
 STPathSet::isEquivalent(STBase const& t) const
 {
     STPathSet const* v = dynamic_cast<STPathSet const*>(&t);
-    return (v != nullptr) && (value == v->value);
+    return (v != nullptr) && (value_ == v->value_);
 }
 
 bool
 STPathSet::isDefault() const
 {
-    return value.empty();
+    return value_.empty();
 }
 
 bool
 STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const
 {
-    for (auto& p : mPath)
+    for (auto& p : path_)
     {
         if (p.getAccountID() == account && p.getPathAsset() == asset && p.getIssuerID() == issuer)
             return true;
@@ -164,32 +164,32 @@ STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID cons
     return false;
 }
 
-Json::Value
+json::Value
 STPath::getJson(JsonOptions) const
 {
-    Json::Value ret(Json::arrayValue);
+    json::Value ret(json::ArrayValue);
 
-    for (auto const& it : mPath)
+    for (auto const& it : path_)
     {
-        Json::Value elem(Json::objectValue);
+        json::Value elem(json::ObjectValue);
         auto const iType = it.getNodeType();
 
         elem[jss::type] = iType;
 
-        if ((iType & STPathElement::typeAccount) != 0u)
+        if ((iType & STPathElement::TypeAccount) != 0u)
             elem[jss::account] = to_string(it.getAccountID());
 
         XRPL_ASSERT(
-            ((iType & STPathElement::typeCurrency) == 0u) ||
-                ((iType & STPathElement::typeMPT) == 0u),
+            ((iType & STPathElement::TypeCurrency) == 0u) ||
+                ((iType & STPathElement::TypeMpt) == 0u),
             "xrpl::STPath::getJson : not type Currency and MPT");
-        if ((iType & STPathElement::typeCurrency) != 0u)
+        if ((iType & STPathElement::TypeCurrency) != 0u)
             elem[jss::currency] = to_string(it.getCurrency());
 
-        if ((iType & STPathElement::typeMPT) != 0u)
+        if ((iType & STPathElement::TypeMpt) != 0u)
             elem[jss::mpt_issuance_id] = to_string(it.getMPTID());
 
-        if ((iType & STPathElement::typeIssuer) != 0u)
+        if ((iType & STPathElement::TypeIssuer) != 0u)
             elem[jss::issuer] = to_string(it.getIssuerID());
 
         ret.append(elem);
@@ -198,11 +198,11 @@ STPath::getJson(JsonOptions) const
     return ret;
 }
 
-Json::Value
+json::Value
 STPathSet::getJson(JsonOptions options) const
 {
-    Json::Value ret(Json::arrayValue);
-    for (auto const& it : value)
+    json::Value ret(json::ArrayValue);
+    for (auto const& it : value_)
         ret.append(it.getJson(options));
 
     return ret;
@@ -221,10 +221,10 @@ STPathSet::add(Serializer& s) const
     XRPL_ASSERT(getFName().fieldType == STI_PATHSET, "xrpl::STPathSet::add : valid field type");
     bool first = true;
 
-    for (auto const& spPath : value)
+    for (auto const& spPath : value_)
     {
         if (!first)
-            s.add8(STPathElement::typeBoundary);
+            s.add8(STPathElement::TypeBoundary);
 
         for (auto const& speElement : spPath)
         {
@@ -232,23 +232,23 @@ STPathSet::add(Serializer& s) const
 
             s.add8(iType);
 
-            if ((iType & STPathElement::typeAccount) != 0u)
+            if ((iType & STPathElement::TypeAccount) != 0u)
                 s.addBitString(speElement.getAccountID());
 
-            if ((iType & STPathElement::typeMPT) != 0u)
+            if ((iType & STPathElement::TypeMpt) != 0u)
                 s.addBitString(speElement.getMPTID());
 
-            if ((iType & STPathElement::typeCurrency) != 0u)
+            if ((iType & STPathElement::TypeCurrency) != 0u)
                 s.addBitString(speElement.getCurrency());
 
-            if ((iType & STPathElement::typeIssuer) != 0u)
+            if ((iType & STPathElement::TypeIssuer) != 0u)
                 s.addBitString(speElement.getIssuerID());
         }
 
         first = false;
     }
 
-    s.add8(STPathElement::typeNone);
+    s.add8(STPathElement::TypeNone);
 }
 
 }  // namespace xrpl

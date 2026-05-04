@@ -10,7 +10,7 @@ namespace RPC {
 struct JsonContext;
 }  // namespace RPC
 
-Json::Value
+json::Value
 doStop(RPC::JsonContext& context)
 {
     context.app.signalStop("RPC");

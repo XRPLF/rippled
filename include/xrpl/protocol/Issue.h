@@ -31,7 +31,7 @@ public:
     getText() const;
 
     void
-    setJson(Json::Value& jv) const;
+    setJson(json::Value& jv) const;
 
     [[nodiscard]] bool
     native() const;
@@ -49,11 +49,11 @@ isConsistent(Issue const& ac);
 std::string
 to_string(Issue const& ac);
 
-Json::Value
-to_json(Issue const& is);
+json::Value
+toJson(Issue const& is);
 
 Issue
-issueFromJson(Json::Value const& v);
+issueFromJson(json::Value const& v);
 
 std::ostream&
 operator<<(std::ostream& os, Issue const& x);
@@ -96,16 +96,16 @@ operator<=>(Issue const& lhs, Issue const& rhs)
 inline Issue const&
 xrpIssue()
 {
-    static Issue const issue{xrpCurrency(), xrpAccount()};
-    return issue;
+    static Issue const kISSUE{xrpCurrency(), xrpAccount()};
+    return kISSUE;
 }
 
 /** Returns an asset specifier that represents no account and currency. */
 inline Issue const&
 noIssue()
 {
-    static Issue const issue{noCurrency(), noAccount()};
-    return issue;
+    static Issue const kISSUE{noCurrency(), noAccount()};
+    return kISSUE;
 }
 
 inline bool

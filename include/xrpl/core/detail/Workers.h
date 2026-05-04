@@ -176,7 +176,7 @@ private:
         run();
 
     private:
-        Workers& m_workers;
+        Workers& workers_;
         std::string const threadName_;
         int const instance_;
 
@@ -192,19 +192,19 @@ private:
     deleteWorkers(beast::LockFreeStack<Worker>& stack);
 
 private:
-    Callback& m_callback;
+    Callback& callback_;
     perf::PerfLog* perfLog_;
-    std::string m_threadNames;     // The name to give each thread
-    std::condition_variable m_cv;  // signaled when all threads paused
-    std::mutex m_mut;
-    bool m_allPaused{true};
-    semaphore m_semaphore;                             // each pending task is 1 resource
-    int m_numberOfThreads{0};                          // how many we want active now
-    std::atomic<int> m_activeCount;                    // to know when all are paused
-    std::atomic<int> m_pauseCount;                     // how many threads need to pause now
-    std::atomic<int> m_runningTaskCount;               // how many calls to processTask() active
-    beast::LockFreeStack<Worker> m_everyone;           // holds all created workers
-    beast::LockFreeStack<Worker, PausedTag> m_paused;  // holds just paused workers
+    std::string threadNames_;     // The name to give each thread
+    std::condition_variable cv_;  // signaled when all threads paused
+    std::mutex mut_;
+    bool allPaused_{true};
+    semaphore semaphore_;                             // each pending task is 1 resource
+    int numberOfThreads_{0};                          // how many we want active now
+    std::atomic<int> activeCount_;                    // to know when all are paused
+    std::atomic<int> pauseCount_;                     // how many threads need to pause now
+    std::atomic<int> runningTaskCount_;               // how many calls to processTask() active
+    beast::LockFreeStack<Worker> everyone_;           // holds all created workers
+    beast::LockFreeStack<Worker, PausedTag> paused_;  // holds just paused workers
 };
 
 }  // namespace xrpl

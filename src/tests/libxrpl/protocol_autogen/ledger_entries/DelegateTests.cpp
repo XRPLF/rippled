@@ -24,6 +24,7 @@ TEST(DelegateTests, BuilderSettersRoundTrip)
     auto const authorizeValue = canonical_ACCOUNT();
     auto const permissionsValue = canonical_ARRAY();
     auto const ownerNodeValue = canonical_UINT64();
+    auto const destinationNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
@@ -36,6 +37,7 @@ TEST(DelegateTests, BuilderSettersRoundTrip)
         previousTxnLgrSeqValue
     };
 
+    builder.setDestinationNode(destinationNodeValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -82,6 +84,14 @@ TEST(DelegateTests, BuilderSettersRoundTrip)
         expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
     }
 
+    {
+        auto const& expected = destinationNodeValue;
+        auto const actualOpt = entry.getDestinationNode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDestinationNode");
+        EXPECT_TRUE(entry.hasDestinationNode());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -99,6 +109,7 @@ TEST(DelegateTests, BuilderFromSleRoundTrip)
     auto const authorizeValue = canonical_ACCOUNT();
     auto const permissionsValue = canonical_ARRAY();
     auto const ownerNodeValue = canonical_UINT64();
+    auto const destinationNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
@@ -108,6 +119,7 @@ TEST(DelegateTests, BuilderFromSleRoundTrip)
     sle->at(sfAuthorize) = authorizeValue;
     sle->setFieldArray(sfPermissions, permissionsValue);
     sle->at(sfOwnerNode) = ownerNodeValue;
+    sle->at(sfDestinationNode) = destinationNodeValue;
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
 
@@ -180,6 +192,19 @@ TEST(DelegateTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
     }
 
+    {
+        auto const& expected = destinationNodeValue;
+
+        auto const fromSleOpt = entryFromSle.getDestinationNode();
+        auto const fromBuilderOpt = entryFromBuilder.getDestinationNode();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDestinationNode");
+        expectEqualField(expected, *fromBuilderOpt, "sfDestinationNode");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -220,4 +245,31 @@ TEST(DelegateTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(DelegateBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(DelegateTests, OptionalFieldsReturnNullopt)
+{
+    uint256 const index{3u};
+
+    auto const accountValue = canonical_ACCOUNT();
+    auto const authorizeValue = canonical_ACCOUNT();
+    auto const permissionsValue = canonical_ARRAY();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+
+    DelegateBuilder builder{
+        accountValue,
+        authorizeValue,
+        permissionsValue,
+        ownerNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasDestinationNode());
+    EXPECT_FALSE(entry.getDestinationNode().has_value());
+}
 }
