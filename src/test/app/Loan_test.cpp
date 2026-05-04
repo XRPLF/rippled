@@ -5438,7 +5438,7 @@ protected:
         using namespace loan;
         using namespace std::chrono_literals;
 
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -5590,7 +5590,7 @@ protected:
             using namespace loan;
             using namespace loanBroker;
 
-            Env env(*this, all);
+            Env env(*this, all_);
 
             Account const issuer{"issuer"};
             Account const lender{"lender"};
@@ -7227,7 +7227,7 @@ protected:
         testcase("bug: computeOverpaymentComponents isRounded assertion");
 
         using namespace jtx;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const vaultOwner{"vaultOwner"};
@@ -7263,9 +7263,9 @@ protected:
         {
             using namespace loanBroker;
             env(set(vaultOwner, vaultKeylet.key),
-                managementFeeRate(TenthBips16{1000}),
-                debtMaximum(Number{5000}),
-                fee(env.current()->fees().base * 2));
+                kMANAGEMENT_FEE_RATE(TenthBips16{1000}),
+                kDEBT_MAXIMUM(Number{5000}),
+                Fee(env.current()->fees().base * 2));
         }
         env.close();
 
@@ -7276,8 +7276,8 @@ protected:
         using namespace loan;
         auto createJson = env.json(
             set(borrower, brokerKeylet.key, Number{1000}, tfLoanOverpayment),
-            fee(env.current()->fees().base * 2),
-            json(sfCounterpartySignature, Json::objectValue));
+            Fee(env.current()->fees().base * 2),
+            Json(sfCounterpartySignature, json::ObjectValue));
 
         createJson["InterestRate"] = 10000;
         createJson["PaymentTotal"] = 12;
@@ -7285,15 +7285,15 @@ protected:
         createJson["GracePeriod"] = 60;
         createJson["OverpaymentFee"] = 1000;
         createJson["OverpaymentInterestRate"] = 1000;
-        createJson = env.json(createJson, sig(sfCounterpartySignature, vaultOwner));
-        env(createJson, ter(tesSUCCESS));
+        createJson = env.json(createJson, Sig(sfCounterpartySignature, vaultOwner));
+        env(createJson, Ter(tesSUCCESS));
         env.close();
 
         // periodic * 1.5 at 15-sig-digit precision: 125.000154585042. This
         // has too many digits to round cleanly to loanScale=-10, so the
         // overpayment residual fails the isRounded check.
         STAmount const payAmount{iouAsset.raw(), Number{125'000'154'585'042LL, -12}};
-        env(pay(borrower, loanKeylet.key, payAmount), txflags(tfLoanOverpayment), ter(tesSUCCESS));
+        env(pay(borrower, loanKeylet.key, payAmount), Txflags(tfLoanOverpayment), Ter(tesSUCCESS));
         env.close();
     }
 
