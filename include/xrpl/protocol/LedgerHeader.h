@@ -26,12 +26,12 @@ struct LedgerHeader
     //
 
     // Closed means "tx set already determined"
-    uint256 hash = beast::zero;
-    uint256 txHash = beast::zero;
-    uint256 accountHash = beast::zero;
-    uint256 parentHash = beast::zero;
+    uint256 hash = beast::kZERO;
+    uint256 txHash = beast::kZERO;
+    uint256 accountHash = beast::kZERO;
+    uint256 parentHash = beast::kZERO;
 
-    XRPAmount drops = beast::zero;
+    XRPAmount drops = beast::kZERO;
 
     // If validated is false, it means "not yet validated."
     // Once validated is true, it will never be set false at a later time.
@@ -53,12 +53,12 @@ struct LedgerHeader
 };
 
 // ledger close flags
-static std::uint32_t const sLCF_NoConsensusTime = 0x01;
+static std::uint32_t const kS_LCF_NO_CONSENSUS_TIME = 0x01;
 
 inline bool
 getCloseAgree(LedgerHeader const& info)
 {
-    return (info.closeFlags & sLCF_NoConsensusTime) == 0;
+    return (info.closeFlags & kS_LCF_NO_CONSENSUS_TIME) == 0;
 }
 
 void

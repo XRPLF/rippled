@@ -21,15 +21,15 @@ public:
 
     ~LoadEvent();
 
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const;
 
     // The time spent waiting.
-    std::chrono::steady_clock::duration
+    [[nodiscard]] std::chrono::steady_clock::duration
     waitTime() const;
 
     // The time spent running.
-    std::chrono::steady_clock::duration
+    [[nodiscard]] std::chrono::steady_clock::duration
     runTime() const;
 
     void

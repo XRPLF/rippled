@@ -93,7 +93,7 @@ private:
     template <class Request, class Response>
     using Handler = std::function<std::pair<Response, grpc::Status>(RPC::GRPCContext<Request>&)>;
     // This implementation is currently limited to v1 of the API
-    static unsigned constexpr apiVersion = 1;
+    static unsigned constexpr kAPI_VERSION = 1;
 
     template <class Request, class Response>
     using Forward = std::function<grpc::Status(
@@ -127,7 +127,7 @@ public:
     setupListeners();
 
     // Obtaining actually binded endpoint (if port 0 was used for server setup).
-    boost::asio::ip::tcp::endpoint
+    [[nodiscard]] boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 
 private:
@@ -305,7 +305,7 @@ public:
 
     ~GRPCServer();
 
-    boost::asio::ip::tcp::endpoint
+    [[nodiscard]] boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 
 private:

@@ -46,7 +46,7 @@ preflightHelper<Issue>(PreflightContext const& ctx)
     // The issuer field is used for the token holder instead
     AccountID const& holder = clawAmount.getIssuer();
 
-    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::zero)
+    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -69,7 +69,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == *mptHolder)
         return temMALFORMED;
 
-    if (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} || clawAmount <= beast::zero)
+    if (clawAmount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT} || clawAmount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -121,11 +121,11 @@ preclaimHelper<Issue>(
     STAmount const balance = (*sleRippleState)[sfBalance];
 
     // If balance is positive, issuer must have higher address than holder
-    if (balance > beast::zero && issuer < holder)
+    if (balance > beast::kZERO && issuer < holder)
         return tecNO_PERMISSION;
 
     // If balance is negative, issuer must have lower address than holder
-    if (balance < beast::zero && issuer > holder)
+    if (balance < beast::kZERO && issuer > holder)
         return tecNO_PERMISSION;
 
     // At this point, we know that issuer and holder accounts
@@ -138,8 +138,12 @@ preclaimHelper<Issue>(
     // the available balance of a trustline is prone to new changes (eg.
     // XLS-34). So we must use `accountHolds`.
     if (accountHolds(
-            ctx.view, holder, clawAmount.get<Issue>().currency, issuer, fhIGNORE_FREEZE, ctx.j) <=
-        beast::zero)
+            ctx.view,
+            holder,
+            clawAmount.get<Issue>().currency,
+            issuer,
+            FreezeHandling::IgnoreFreeze,
+            ctx.j) <= beast::kZERO)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -169,8 +173,12 @@ preclaimHelper<MPTIssue>(
         return tecOBJECT_NOT_FOUND;
 
     if (accountHolds(
-            ctx.view, holder, clawAmount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) <=
-        beast::zero)
+            ctx.view,
+            holder,
+            clawAmount.get<MPTIssue>(),
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            ctx.j) <= beast::kZERO)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -229,7 +237,7 @@ applyHelper<Issue>(ApplyContext& ctx)
         holder,
         clawAmount.get<Issue>().currency,
         clawAmount.getIssuer(),
-        fhIGNORE_FREEZE,
+        FreezeHandling::IgnoreFreeze,
         ctx.journal);
 
     return directSendNoFee(
@@ -249,8 +257,8 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ctx.view(),
         holder,
         clawAmount.get<MPTIssue>(),
-        fhIGNORE_FREEZE,
-        ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         ctx.journal);
 
     return directSendNoFee(

@@ -35,7 +35,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -54,16 +54,16 @@ public:
  */
 class NFTokenCountTracking
 {
-    std::uint32_t beforeMintedTotal = 0;
-    std::uint32_t beforeBurnedTotal = 0;
-    std::uint32_t afterMintedTotal = 0;
-    std::uint32_t afterBurnedTotal = 0;
+    std::uint32_t beforeMintedTotal_ = 0;
+    std::uint32_t beforeBurnedTotal_ = 0;
+    std::uint32_t afterMintedTotal_ = 0;
+    std::uint32_t afterBurnedTotal_ = 0;
 
 public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 

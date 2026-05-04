@@ -11,10 +11,10 @@
 
 namespace xrpl::test::jtx {
 
-Json::Value
+json::Value
 fset(Account const& account, std::uint32_t on, std::uint32_t off)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::AccountSet;
     if (on != 0)
@@ -25,7 +25,7 @@ fset(Account const& account, std::uint32_t on, std::uint32_t off)
 }
 
 void
-flags::operator()(Env& env) const
+Flags::operator()(Env& env) const
 {
     auto const sle = env.le(account_);
     if (!sle)
@@ -43,7 +43,7 @@ flags::operator()(Env& env) const
 }
 
 void
-nflags::operator()(Env& env) const
+Nflags::operator()(Env& env) const
 {
     auto const sle = env.le(account_);
     if (!sle)

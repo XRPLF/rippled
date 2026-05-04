@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfTakerPays (soeREQUIRED)
+     * @brief Get sfTakerPays (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfTakerGets (soeREQUIRED)
+     * @brief Get sfTakerGets (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfBookDirectory (soeREQUIRED)
+     * @brief Get sfBookDirectory (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -101,7 +101,7 @@ public:
     }
 
     /**
-     * @brief Get sfBookNode (soeREQUIRED)
+     * @brief Get sfBookNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -112,7 +112,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -123,7 +123,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -134,7 +134,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -145,7 +145,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -169,7 +169,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -193,7 +193,7 @@ public:
     }
 
     /**
-     * @brief Get sfAdditionalBooks (soeOPTIONAL)
+     * @brief Get sfAdditionalBooks (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -222,7 +222,7 @@ public:
  * @brief Builder for Offer ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class OfferBuilder : public LedgerEntryBuilderBase<OfferBuilder>
@@ -271,7 +271,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -282,7 +282,7 @@ public:
     }
 
     /**
-     * @brief Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -293,7 +293,7 @@ public:
     }
 
     /**
-     * @brief Set sfTakerPays (soeREQUIRED)
+     * @brief Set sfTakerPays (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -304,7 +304,7 @@ public:
     }
 
     /**
-     * @brief Set sfTakerGets (soeREQUIRED)
+     * @brief Set sfTakerGets (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -315,7 +315,7 @@ public:
     }
 
     /**
-     * @brief Set sfBookDirectory (soeREQUIRED)
+     * @brief Set sfBookDirectory (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -326,7 +326,7 @@ public:
     }
 
     /**
-     * @brief Set sfBookNode (soeREQUIRED)
+     * @brief Set sfBookNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -337,7 +337,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -348,7 +348,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -359,7 +359,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -370,7 +370,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -381,7 +381,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&
@@ -392,7 +392,7 @@ public:
     }
 
     /**
-     * @brief Set sfAdditionalBooks (soeOPTIONAL)
+     * @brief Set sfAdditionalBooks (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OfferBuilder&

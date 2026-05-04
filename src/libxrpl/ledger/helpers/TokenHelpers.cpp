@@ -165,7 +165,7 @@ getLineIfUsable(
         return nullptr;
     }
 
-    if (zeroIfFrozen == fhZERO_IF_FROZEN)
+    if (zeroIfFrozen == FreezeHandling::ZeroIfFrozen)
     {
         if (isFrozen(view, account, currency, issuer) ||
             isDeepFrozen(view, account, currency, issuer))
@@ -253,12 +253,12 @@ accountHolds(
         return {accountRoot.xrpLiquid(0)};
     }
 
-    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+    bool const returnSpendable = (includeFullBalance == SpendableHandling::FullBalance);
     if (returnSpendable && account == issuer)
     {
         // If the account is the issuer, then their limit is effectively
         // infinite
-        return STAmount{Issue{currency, issuer}, STAmount::cMaxValue, STAmount::cMaxOffset};
+        return STAmount{Issue{currency, issuer}, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET};
     }
 
     // IOU: Return balance on trust line modulo freeze
@@ -291,7 +291,7 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
-    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+    bool const returnSpendable = (includeFullBalance == SpendableHandling::FullBalance);
     STAmount amount{mptIssue};
     auto const& issuer = mptIssue.getIssuer();
     bool const mptokensV2 = view.rules().enabled(featureMPTokensV2);
@@ -318,7 +318,7 @@ accountHolds(
     {
         amount.clear(mptIssue);
     }
-    else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
+    else if (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && isFrozen(view, account, mptIssue))
     {
         amount.clear(mptIssue);
     }
@@ -328,14 +328,14 @@ accountHolds(
 
         // Only if auth check is needed, as it needs to do an additional read
         // operation. Note featureSingleAssetVault will affect error codes.
-        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
+        if (zeroIfUnauthorized == AuthHandling::ZeroIfUnauthorized &&
             view.rules().enabled(featureSingleAssetVault))
         {
             if (auto const err = requireAuth(view, mptIssue, account, AuthType::StrongAuth);
                 !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
-        else if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        else if (zeroIfUnauthorized == AuthHandling::ZeroIfUnauthorized)
         {
             auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
 
@@ -402,7 +402,13 @@ accountFunds(
         [&](Issue const&) { return accountFunds(view, id, saDefault, freezeHandling, j); },
         [&](MPTIssue const&) {
             return accountHolds(
-                view, id, saDefault.asset(), freezeHandling, authHandling, j, shFULL_BALANCE);
+                view,
+                id,
+                saDefault.asset(),
+                freezeHandling,
+                authHandling,
+                j,
+                SpendableHandling::FullBalance);
         });
 }
 
@@ -570,9 +576,9 @@ directSendNoFeeIOU(
 
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
         //       for anyone to understand.
-        if (saBefore > beast::zero
+        if (saBefore > beast::kZERO
             // Sender balance was positive.
-            && saBalance <= beast::zero
+            && saBalance <= beast::kZERO
             // Sender is zero or negative.
             && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
             // Sender reserve is set.
@@ -794,7 +800,7 @@ accountSendIOU(
 {
     if (view.rules().enabled(fixAMMv1_1))
     {
-        if (saAmount < beast::zero || saAmount.holds<MPTIssue>())
+        if (saAmount < beast::kZERO || saAmount.holds<MPTIssue>())
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
@@ -803,7 +809,7 @@ accountSendIOU(
     {
         // LCOV_EXCL_START
         XRPL_ASSERT(
-            saAmount >= beast::zero && !saAmount.holds<MPTIssue>(),
+            saAmount >= beast::kZERO && !saAmount.holds<MPTIssue>(),
             "xrpl::accountSendIOU : minimum amount and not MPT");
         // LCOV_EXCL_STOP
     }
@@ -947,7 +953,7 @@ accountSendMultiIOU(
         auto const& receiverID = r.first;
         STAmount const amount{issue, r.second};
 
-        if (amount < beast::zero)
+        if (amount < beast::kZERO)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
@@ -1186,9 +1192,9 @@ directSendNoLimitMultiMPT(
     // Use uint64_t, not STAmount, to keep MaximumAmount comparisons in exact
     // integer arithmetic. STAmount implicitly converts to Number, whose
     // small-scale mantissa (~16 digits) can lose precision for values near
-    // maxMPTokenAmount (19 digits).
+    // kMAX_MP_TOKEN_AMOUNT (19 digits).
     std::uint64_t totalSendAmount{0};
-    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
+    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(kMAX_MP_TOKEN_AMOUNT);
     std::uint64_t const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
 
     // actual accumulates the total cost to the sender (includes transfer
@@ -1202,7 +1208,7 @@ directSendNoLimitMultiMPT(
     {
         STAmount const amount{mptIssue, amt};
 
-        if (amount < beast::zero)
+        if (amount < beast::kZERO)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (!amount || senderID == receiverID)
@@ -1213,7 +1219,7 @@ directSendNoLimitMultiMPT(
             if (senderID == issuer)
             {
                 XRPL_ASSERT_PARTS(
-                    takeFromSender == beast::zero,
+                    takeFromSender == beast::kZERO,
                     "xrpl::directSendNoLimitMultiMPT",
                     "sender == issuer, takeFromSender == zero");
 
@@ -1295,7 +1301,7 @@ accountSendMPT(
     AllowMPTOverflow allowOverflow)
 {
     XRPL_ASSERT(
-        saAmount >= beast::zero && saAmount.holds<MPTIssue>(),
+        saAmount >= beast::kZERO && saAmount.holds<MPTIssue>(),
         "xrpl::accountSendMPT : minimum amount and MPT");
 
     /* If we aren't sending anything or if the sender is the same as the
@@ -1397,8 +1403,8 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j)
 {
-    XRPL_ASSERT(from != beast::zero, "xrpl::transferXRP : nonzero from account");
-    XRPL_ASSERT(to != beast::zero, "xrpl::transferXRP : nonzero to account");
+    XRPL_ASSERT(from != beast::kZERO, "xrpl::transferXRP : nonzero from account");
+    XRPL_ASSERT(to != beast::kZERO, "xrpl::transferXRP : nonzero to account");
     XRPL_ASSERT(from != to, "xrpl::transferXRP : sender is not receiver");
     XRPL_ASSERT(amount.native(), "xrpl::transferXRP : amount is XRP");
 

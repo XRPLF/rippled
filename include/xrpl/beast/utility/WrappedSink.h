@@ -35,13 +35,13 @@ public:
         prefix_ = s;
     }
 
-    bool
+    [[nodiscard]] bool
     active(beast::severities::Severity level) const override
     {
         return sink_.active(level);
     }
 
-    bool
+    [[nodiscard]] bool
     console() const override
     {
         return sink_.console();
@@ -53,7 +53,7 @@ public:
         sink_.console(output);
     }
 
-    beast::severities::Severity
+    [[nodiscard]] beast::severities::Severity
     threshold() const override
     {
         return sink_.threshold();

@@ -53,7 +53,7 @@ Payment::makeTxConsequences(PreflightContext const& ctx)
 
         // If there's no sfSendMax in XRP, and the sfAmount isn't
         // in XRP, then the transaction does not spend XRP.
-        return maxAmount.native() ? maxAmount.xrp() : beast::zero;
+        return maxAmount.native() ? maxAmount.xrp() : beast::kZERO;
     };
 
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
@@ -78,7 +78,7 @@ getMaxSourceAmount(
                 Issue{issue.currency, account},
                 dstAmount.mantissa(),
                 dstAmount.exponent(),
-                dstAmount < beast::zero);
+                dstAmount < beast::kZERO);
         });
 }
 
@@ -164,13 +164,13 @@ Payment::preflight(PreflightContext const& ctx)
                         << "Payment destination account not specified.";
         return temDST_NEEDED;
     }
-    if (hasMax && maxSourceAmount <= beast::zero)
+    if (hasMax && maxSourceAmount <= beast::kZERO)
     {
         JLOG(j.trace()) << "Malformed transaction: bad max amount: "
                         << maxSourceAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    if (dstAmount <= beast::zero)
+    if (dstAmount <= beast::kZERO)
     {
         JLOG(j.trace()) << "Malformed transaction: bad dst amount: " << dstAmount.getFullText();
         return temBAD_AMOUNT;
@@ -236,14 +236,14 @@ Payment::preflight(PreflightContext const& ctx)
         {
             JLOG(j.trace()) << "Malformed transaction: Partial payment not "
                                "specified for "
-                            << jss::DeliverMin.c_str() << ".";
+                            << jss::DeliverMin.cStr() << ".";
             return temBAD_AMOUNT;
         }
 
         auto const dMin = *deliverMin;
-        if (!isLegalNet(dMin) || dMin <= beast::zero)
+        if (!isLegalNet(dMin) || dMin <= beast::kZERO)
         {
-            JLOG(j.trace()) << "Malformed transaction: Invalid " << jss::DeliverMin.c_str()
+            JLOG(j.trace()) << "Malformed transaction: Invalid " << jss::DeliverMin.cStr()
                             << " amount. " << dMin.getFullText();
             return temBAD_AMOUNT;
         }
@@ -251,13 +251,13 @@ Payment::preflight(PreflightContext const& ctx)
         {
             JLOG(j.trace()) << "Malformed transaction: Dst issue differs "
                                "from "
-                            << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
+                            << jss::DeliverMin.cStr() << ". " << dMin.getFullText();
             return temBAD_AMOUNT;
         }
         if (dMin > dstAmount)
         {
             JLOG(j.trace()) << "Malformed transaction: Dst amount less than "
-                            << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
+                            << jss::DeliverMin.cStr() << ". " << dMin.getFullText();
             return temBAD_AMOUNT;
         }
     }
@@ -375,8 +375,8 @@ Payment::preclaim(PreclaimContext const& ctx)
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
-        if (paths.size() > MaxPathSize || std::ranges::any_of(paths, [](STPath const& path) {
-                return path.size() > MaxPathLength;
+        if (paths.size() > kMAX_PATH_SIZE || std::ranges::any_of(paths, [](STPath const& path) {
+                return path.size() > kMAX_PATH_LENGTH;
             }))
         {
             return telBAD_PATH_COUNT;

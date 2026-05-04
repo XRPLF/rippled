@@ -3,6 +3,7 @@
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SlabAllocator.h>
@@ -13,6 +14,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/git/Git.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/server/Vacuum.h>
@@ -99,7 +101,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 
         if (available < needed)
         {
-            // Ignore the rlim_max, as the process may
+            // Ignore the rlimit_max_, as the process may
             // be configured to override it anyways. We
             // ask for the number descriptors we need.
             rl.rlim_cur = needed;
@@ -197,13 +199,13 @@ printHelp(po::options_description const& desc)
 /* simple unit test selector that allows a comma separated list
  * of selectors
  */
-class multi_selector
+class MultiSelector
 {
 private:
-    std::vector<beast::unit_test::selector> selectors_;
+    std::vector<beast::unit_test::Selector> selectors_;
 
 public:
-    explicit multi_selector(std::string const& patterns = "")
+    explicit MultiSelector(std::string const& patterns = "")
     {
         std::vector<std::string> v;
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
@@ -211,12 +213,12 @@ public:
         std::ranges::for_each(v, [this](std::string s) {
             boost::trim(s);
             if (selectors_.empty() || !s.empty())
-                selectors_.emplace_back(beast::unit_test::selector::automatch, s);
+                selectors_.emplace_back(beast::unit_test::Selector::ModeT::Automatch, s);
         });
     }
 
     bool
-    operator()(beast::unit_test::suite_info const& s)
+    operator()(beast::unit_test::SuiteInfo const& s)
     {
         for (auto& sel : selectors_)
         {
@@ -226,7 +228,7 @@ public:
         return false;
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return selectors_.size();
@@ -234,23 +236,23 @@ public:
 };
 
 namespace test {
-extern std::atomic<bool> envUseIPv4;
+extern std::atomic<bool> gEnvUseIPv4;
 }  // namespace test
 
 template <class Runner>
 static bool
-anyMissing(Runner& runner, multi_selector const& pred)
+anyMissing(Runner& runner, MultiSelector const& pred)
 {
     if (runner.tests() == 0)
     {
-        runner.add_failures(1);
+        runner.addFailures(1);
         std::cout << "Failed: No tests run" << std::endl;
         return true;
     }
     if (runner.suites() < pred.size())
     {
         auto const missing = pred.size() - runner.suites();
-        runner.add_failures(missing);
+        runner.addFailures(missing);
         std::cout << "Failed: " << missing << " filters did not match any existing test suites"
                   << std::endl;
         return true;
@@ -266,34 +268,34 @@ runUnitTests(
     bool log,
     bool child,
     bool ipv6,
-    std::size_t num_jobs,
+    std::size_t numJobs,
     int argc,
     char** argv)
 {
     using namespace beast::unit_test;
     using namespace xrpl::test;
 
-    xrpl::test::envUseIPv4 = (!ipv6);
+    xrpl::test::gEnvUseIPv4 = (!ipv6);
 
-    if (!child && num_jobs == 1)
+    if (!child && numJobs == 1)
     {
-        multi_runner_parent const parent_runner;
+        MultiRunnerParent const parentRunner;
 
-        multi_runner_child child_runner{num_jobs, quiet, log};
-        child_runner.arg(argument);
-        multi_selector const pred(pattern);
-        auto const any_failed = child_runner.run_multi(pred) || anyMissing(child_runner, pred);
+        MultiRunnerChild childRunner{numJobs, quiet, log};
+        childRunner.arg(argument);
+        MultiSelector const pred(pattern);
+        auto const anyFailed = childRunner.runMulti(pred) || anyMissing(childRunner, pred);
 
-        if (any_failed)
+        if (anyFailed)
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
     if (!child)
     {
-        multi_runner_parent parent_runner;
+        MultiRunnerParent parentRunner;
         std::vector<boost::process::v1::child> children;
 
-        std::string const exe_name = argv[0];
+        std::string const exeName = argv[0];
         std::vector<std::string> args;
         {
             args.reserve(argc);
@@ -302,43 +304,43 @@ runUnitTests(
             args.emplace_back("--unittest-child");
         }
 
-        children.reserve(num_jobs);
-        for (std::size_t i = 0; i < num_jobs; ++i)
+        children.reserve(numJobs);
+        for (std::size_t i = 0; i < numJobs; ++i)
         {
             children.emplace_back(
-                boost::process::v1::exe = exe_name, boost::process::v1::args = args);
+                boost::process::v1::exe = exeName, boost::process::v1::args = args);
         }
 
-        int bad_child_exits = 0;
-        int terminated_child_exits = 0;
+        int badChildExits = 0;
+        int terminatedChildExits = 0;
         for (auto& c : children)
         {
             try
             {
                 c.wait();
                 if (c.exit_code() != 0)
-                    ++bad_child_exits;
+                    ++badChildExits;
             }
             catch (...)
             {
                 // wait throws if process was terminated with a signal
-                ++bad_child_exits;
-                ++terminated_child_exits;
+                ++badChildExits;
+                ++terminatedChildExits;
             }
         }
 
-        parent_runner.add_failures(terminated_child_exits);
-        anyMissing(parent_runner, multi_selector(pattern));
+        parentRunner.addFailures(terminatedChildExits);
+        anyMissing(parentRunner, MultiSelector(pattern));
 
-        if (parent_runner.any_failed() || (bad_child_exits != 0))
+        if (parentRunner.anyFailed() || (badChildExits != 0))
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
 
     // child
-    multi_runner_child runner{num_jobs, quiet, log};
+    MultiRunnerChild runner{numJobs, quiet, log};
     runner.arg(argument);
-    auto const anyFailed = runner.run_multi(multi_selector(pattern));
+    auto const anyFailed = runner.runMulti(MultiSelector(pattern));
 
     if (anyFailed)
         return EXIT_FAILURE;
@@ -376,12 +378,12 @@ run(int argc, char** argv)
         "nodeid", po::value<std::string>(), "Specify the node identity for this server.")(
         "quorum", po::value<std::size_t>(), "Override the minimum validation quorum.")(
         "silent", "No output to the console after startup.")("standalone,a", "Run with no peers.")(
-        "verbose,v", "Verbose logging.")
-
-        ("force_ledger_present_range",
-         po::value<std::string>(),
-         "Specify the range of present ledgers for testing purposes. Min and "
-         "max values are comma separated.")("version", "Display the build version.");
+        "verbose,v", "Verbose logging.")(
+        "definitions", "Output server definitions as JSON and exit.")(
+        "force_ledger_present_range",
+        po::value<std::string>(),
+        "Specify the range of present ledgers for testing purposes. Min and "
+        "max values are comma separated.")("version", "Display the build version.");
 
     po::options_description data("Ledger/Data Options");
     data.add_options()("import", importText.c_str())(
@@ -503,10 +505,20 @@ run(int argc, char** argv)
 
     if (vm.contains("version"))
     {
+        // LCOV_EXCL_START
         std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
+        // LCOV_EXCL_STOP
+    }
+
+    if (vm.contains("definitions"))
+    {
+        // LCOV_EXCL_START
+        std::cout << json::FastWriter().write(getServerDefinitionsJson());
+        return 0;
+        // LCOV_EXCL_STOP
     }
 
 #ifndef ENABLE_TESTS
@@ -576,7 +588,7 @@ run(int argc, char** argv)
 
         try
         {
-            auto setup = setup_DatabaseCon(*config);
+            auto setup = setupDatabaseCon(*config);
             if (!doVacuumDB(setup, config->journal()))
                 return -1;
         }
@@ -704,7 +716,7 @@ run(int argc, char** argv)
     // happen after the config file is loaded.
     if (vm.contains("rpc_ip"))
     {
-        auto endpoint = beast::IP::Endpoint::from_string_checked(vm["rpc_ip"].as<std::string>());
+        auto endpoint = beast::IP::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
         if (!endpoint)
         {
             std::cerr << "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>() << "\n";
@@ -719,7 +731,7 @@ run(int argc, char** argv)
                 std::cerr << "WARNING: using deprecated rpc_port param.\n";
                 try
                 {
-                    endpoint = endpoint->at_port(vm["rpc_port"].as<std::uint16_t>());
+                    endpoint = endpoint->atPort(vm["rpc_port"].as<std::uint16_t>());
                     if (endpoint->port() == 0)
                         throw std::domain_error("0");
                 }
@@ -757,15 +769,15 @@ run(int argc, char** argv)
 
     // Construct the logs object at the configured severity
     using namespace beast::severities;
-    Severity thresh = kInfo;
+    Severity thresh = KInfo;
 
     if (vm.contains("quiet"))
     {
-        thresh = kFatal;
+        thresh = KFatal;
     }
     else if (vm.contains("verbose"))
     {
-        thresh = kTrace;
+        thresh = KTrace;
     }
 
     auto logs = std::make_unique<Logs>(thresh);
@@ -773,7 +785,7 @@ run(int argc, char** argv)
     // No arguments. Run server.
     if (!vm.contains("parameters"))
     {
-        if (config->had_trailing_comments())
+        if (config->hadTrailingComments())
         {
             JLOG(logs->journal("Application").warn())
                 << "Trailing comments were seen in your config file. "
@@ -790,10 +802,10 @@ run(int argc, char** argv)
             return -1;
 
         if (vm.contains("debug"))
-            setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
+            setDebugLogSink(logs->makeSink("Debug", beast::severities::KTrace));
 
         auto app =
-            make_Application(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+            makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
         if (!app->setup(vm))
             return -1;

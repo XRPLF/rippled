@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -15,7 +16,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 #include <memory>
 
@@ -24,13 +24,13 @@ namespace xrpl {
 bool
 LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
 LoanBrokerDelete::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::zero)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZERO)
         return temINVALID;
 
     return tesSUCCESS;
@@ -75,15 +75,16 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
 
     Asset const asset = vault->at(sfAsset);
 
-    if (auto const debtTotal = sleBroker->at(sfDebtTotal); debtTotal != beast::zero)
+    if (auto const debtTotal = sleBroker->at(sfDebtTotal); debtTotal != beast::kZERO)
     {
         // Any remaining debt should have been wiped out by the last Loan
         // Delete. This check is purely defensive.
         auto const scale = getAssetsTotalScale(vault);
 
-        auto const rounded = roundToAsset(asset, debtTotal, scale, Number::towards_zero);
+        auto const rounded =
+            roundToAsset(asset, debtTotal, scale, Number::RoundingMode::TowardsZero);
 
-        if (rounded != beast::zero)
+        if (rounded != beast::kZERO)
         {
             // LCOV_EXCL_START
             JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is " << debtTotal
@@ -96,7 +97,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     auto const coverAvailable = STAmount{asset, sleBroker->at(sfCoverAvailable)};
     // If there are assets in the cover, broker will receive them on deletion.
     // So we need to check if the broker owner is deep frozen for that asset.
-    if (coverAvailable > beast::zero)
+    if (coverAvailable > beast::kZERO)
     {
         if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
         {

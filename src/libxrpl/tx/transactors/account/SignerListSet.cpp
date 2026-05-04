@@ -46,7 +46,7 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
     // the list.  A zero quorum means we're destroying the list.
     auto const quorum = tx[sfSignerQuorum];
     std::vector<SignerEntries::SignerEntry> sign;
-    Operation op = unknown;
+    Operation op = Operation::Unknown;
 
     bool const hasSignerEntries(tx.isFieldPresent(sfSignerEntries));
     if ((quorum != 0u) && hasSignerEntries)
@@ -60,11 +60,11 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
 
         // Save deserialized list for later.
         sign = std::move(*signers);
-        op = set;
+        op = Operation::Set;
     }
     else if ((quorum == 0) && !hasSignerEntries)
     {
-        op = destroy;
+        op = Operation::Destroy;
     }
 
     return std::make_tuple(tesSUCCESS, quorum, sign, op);
@@ -85,14 +85,14 @@ SignerListSet::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(std::get<0>(result)))
         return std::get<0>(result);
 
-    if (std::get<3>(result) == unknown)
+    if (std::get<3>(result) == Operation::Unknown)
     {
         // Neither a set nor a destroy.  Malformed.
         JLOG(ctx.j.trace()) << "Malformed transaction: Invalid signer set list format.";
         return temMALFORMED;
     }
 
-    if (std::get<3>(result) == set)
+    if (std::get<3>(result) == Operation::Set)
     {
         // Validate our settings.
         auto const account = ctx.tx.getAccountID(sfAccount);
@@ -113,10 +113,10 @@ SignerListSet::doApply()
     // Perform the operation preCompute() decided on.
     switch (do_)
     {
-        case set:
+        case Operation::Set:
             return replaceSignerList();
 
-        case destroy:
+        case Operation::Destroy:
             return destroySignerList();
 
         default:
@@ -137,7 +137,7 @@ SignerListSet::preCompute()
         isTesSuccess(std::get<0>(result)),
         "xrpl::SignerListSet::preCompute : result is tesSUCCESS");
     XRPL_ASSERT(
-        std::get<3>(result) != unknown,
+        std::get<3>(result) != Operation::Unknown,
         "xrpl::SignerListSet::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);
@@ -168,10 +168,10 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // be in the range from 1 to 32.
     // We've got a lot of room to grow.
     XRPL_ASSERT(
-        entryCount >= STTx::minMultiSigners,
+        entryCount >= STTx::kMIN_MULTI_SIGNERS,
         "xrpl::signerCountBasedOwnerCountDelta : minimum signers");
     XRPL_ASSERT(
-        entryCount <= STTx::maxMultiSigners,
+        entryCount <= STTx::kMAX_MULTI_SIGNERS,
         "xrpl::signerCountBasedOwnerCountDelta : maximum signers");
     return 2 + static_cast<int>(entryCount);
 }
@@ -194,7 +194,7 @@ removeSignersFromLedger(
         return tesSUCCESS;
 
     // There are two different ways that the OwnerCount could be managed.
-    // If the lsfOneOwnerCount bit is set then remove just one owner count.
+    // If the lsfOneOwnerCount bit is Operation::Set then remove just one owner count.
     // Otherwise use the pre-MultiSignReserve amendment calculation.
     int removeFromOwnerCount = -1;
     if ((signers->getFlags() & lsfOneOwnerCount) == 0)
@@ -244,7 +244,7 @@ SignerListSet::validateQuorumAndSignerEntries(
     // Reject if there are too many or too few entries in the list.
     {
         std::size_t const signerCount = signers.size();
-        if (signerCount < STTx::minMultiSigners || signerCount > STTx::maxMultiSigners)
+        if (signerCount < STTx::kMIN_MULTI_SIGNERS || signerCount > STTx::kMAX_MULTI_SIGNERS)
         {
             JLOG(j.trace()) << "Too many or too few signers in signer list.";
             return temMALFORMED;
@@ -253,7 +253,7 @@ SignerListSet::validateQuorumAndSignerEntries(
 
     // Make sure there are no duplicate signers.
     // SignerEntry only defines operator< and operator==, not the full
-    // std::totally_ordered set required by std::ranges::less, so the
+    // std::totally_ordered Operation::Set required by std::ranges::less, so the
     // ranges version does not compile. NOLINTNEXTLINE(modernize-use-ranges)
     XRPL_ASSERT(
         std::ranges::is_sorted(signers),
@@ -371,7 +371,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
     }
     ledgerEntry->setFieldU32(sfSignerQuorum, quorum_);
     ledgerEntry->setFieldU32(sfSignerListID, DEFAULT_SIGNER_LIST_ID);
-    if (flags != 0u)  // Only set flags if they are non-default (default is zero).
+    if (flags != 0u)  // Only Operation::Set flags if they are non-default (default is zero).
         ledgerEntry->setFieldU32(sfFlags, flags);
 
     // Create the SignerListArray one SignerEntry at a time.

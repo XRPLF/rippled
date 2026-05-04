@@ -9,7 +9,7 @@
 
 namespace xrpl::Resource {
 
-using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
 // An entry in the table
 // VFALCO DEPRECATED using boost::intrusive list
@@ -25,8 +25,8 @@ struct Entry : public beast::List<Entry>::Node
     {
     }
 
-    std::string
-    to_string() const
+    [[nodiscard]] std::string
+    toString() const
     {
         return getFingerprint(key->address, publicKey);
     }
@@ -36,10 +36,10 @@ struct Entry : public beast::List<Entry>::Node
      * resource limits applied--it is still possible for certain RPC commands
      * to be forbidden, but that depends on Role.
      */
-    bool
+    [[nodiscard]] bool
     isUnlimited() const
     {
-        return key->kind == kindUnlimited;
+        return key->kind == Kind::Unlimited;
     }
 
     // Balance including remote contributions
@@ -67,7 +67,7 @@ struct Entry : public beast::List<Entry>::Node
     int refcount;
 
     // Exponentially decaying balance of resource consumption
-    DecayingSample<decayWindowSeconds, clock_type> local_balance;
+    DecayingSample<DecayWindowSeconds, clock_type> local_balance;
 
     // Normalized balance contribution from imports
     int remote_balance;
@@ -82,7 +82,7 @@ struct Entry : public beast::List<Entry>::Node
 inline std::ostream&
 operator<<(std::ostream& os, Entry const& v)
 {
-    os << v.to_string();
+    os << v.toString();
     return os;
 }
 

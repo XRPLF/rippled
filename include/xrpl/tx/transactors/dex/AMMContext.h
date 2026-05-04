@@ -18,7 +18,7 @@ public:
     // Restrict number of AMM offers. If this restriction is removed
     // then need to restrict in some other way because AMM offers are
     // not counted in the BookStep offer counter.
-    constexpr static std::uint8_t MaxIterations = 30;
+    constexpr static std::uint8_t kMAX_ITERATIONS = 30;
 
 private:
     // Tx account owner is required to get the AMM trading fee in BookStep
@@ -39,7 +39,7 @@ public:
     AMMContext&
     operator=(AMMContext const&) = delete;
 
-    bool
+    [[nodiscard]] bool
     multiPath() const
     {
         return multiPath_;
@@ -65,19 +65,19 @@ public:
         ammUsed_ = false;
     }
 
-    bool
+    [[nodiscard]] bool
     maxItersReached() const
     {
-        return ammIters_ >= MaxIterations;
+        return ammIters_ >= kMAX_ITERATIONS;
     }
 
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     curIters() const
     {
         return ammIters_;
     }
 
-    AccountID
+    [[nodiscard]] AccountID
     account() const
     {
         return account_;

@@ -62,7 +62,7 @@ isVaultPseudoAccountFrozen(
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
 
-    if (depth >= maxAssetCheckDepth)
+    if (depth >= kMAX_ASSET_CHECK_DEPTH)
         return true;  // LCOV_EXCL_LINE
 
     auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
@@ -350,7 +350,7 @@ withdrawToDestExceedsLimit(
         [&](Issue const& issue) -> TER {
             auto const& currency = issue.currency;
             auto const owed = creditBalance(view, to, issuer, currency);
-            if (owed <= beast::zero)
+            if (owed <= beast::kZERO)
             {
                 auto const limit = creditLimit(view, to, issuer, currency);
                 if (-owed >= limit || amount > (limit + owed))
@@ -437,8 +437,8 @@ doWithdraw(
             view,
             sourceAcct,
             amount.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j) < amount)
     {
         // LCOV_EXCL_START
@@ -463,7 +463,7 @@ cleanupOnAccountDelete(
     // Delete all the entries in the account directory.
     std::shared_ptr<SLE> sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::zero};
+    uint256 dirEntry{beast::kZERO};
     std::uint32_t deleted = 0;
 
     if (view.exists(ownerDirKeylet) &&
@@ -487,7 +487,7 @@ cleanupOnAccountDelete(
             }
 
             LedgerEntryType const nodeType{
-                safe_cast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
+                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
 
             // Deleter handles the details of specific account-owned object
             // deletion

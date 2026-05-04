@@ -197,7 +197,7 @@ claimHelper(
     // Remove attestations that are not valid signers. They may be no longer
     // part of the signers list, or their master key may have been disabled,
     // or their regular key may have changed
-    attestations.erase_if([&](auto const& a) {
+    attestations.eraseIf([&](auto const& a) {
         return checkAttestationPublicKey(view, signersList, a.keyAccount, a.publicKey, j) !=
             tesSUCCESS;
     });
@@ -213,7 +213,7 @@ claimHelper(
         // attestation transaction. The dst does not need to match if the
         // claimHelper is being run using an explicit claim transaction.
         using enum AttestationMatch;
-        if (matchR == nonDstMismatch || (checkDst == CheckDst::check && matchR != match))
+        if (matchR == NonDstMismatch || (checkDst == CheckDst::check && matchR != Match))
             continue;
         auto i = signersList.find(a.keyAccount);
         if (i == signersList.end())
@@ -312,7 +312,7 @@ onNewAttestations(
         }
         else
         {
-            attestations.emplace_back(*att);
+            attestations.emplaceBack(*att);
             changed = true;
         }
     }
@@ -493,7 +493,7 @@ transferHelper(
         /*default path*/ true,
         /*partial payment*/ false,
         /*owner pays transfer fee*/ true,
-        /*offer crossing*/ OfferCrossing::no,
+        /*offer crossing*/ OfferCrossing::No,
         /*limit quality*/ std::nullopt,
         /*sendmax*/ std::nullopt,
         /*domain id*/ std::nullopt,
@@ -656,9 +656,9 @@ finalizeClaimHelper(
             // cases (the attesters did their job)
             STAmount const share = [&] {
                 auto const round_mode = innerSb.rules().enabled(fixXChainRewardRounding)
-                    ? Number::rounding_mode::downward
+                    ? Number::RoundingMode::Downward
                     : Number::getround();
-                saveNumberRoundMode const _{Number::setround(round_mode)};
+                SaveNumberRoundMode const _{Number::setround(round_mode)};
 
                 STAmount const den{rewardAccounts.size()};
                 return divide(rewardPool, den, rewardPool.asset());
@@ -791,9 +791,9 @@ readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
         }
         return nullptr;
     };
-    if (auto r = tryGet(STXChainBridge::ChainType::locking))
+    if (auto r = tryGet(STXChainBridge::ChainType::Locking))
         return r;
-    return tryGet(STXChainBridge::ChainType::issuing);
+    return tryGet(STXChainBridge::ChainType::Issuing);
 }
 
 std::shared_ptr<SLE>
@@ -979,7 +979,7 @@ applyCreateAccountAttestations(
     {
         return tecXCHAIN_ACCOUNT_CREATE_PAST;
     }
-    if (attBegin->createCount >= claimCount + xbridgeMaxAccountCreateClaims)
+    if (attBegin->createCount >= claimCount + kXBRIDGE_MAX_ACCOUNT_CREATE_CLAIMS)
     {
         // Limit the number of claims on the account
         return tecXCHAIN_ACCOUNT_CREATE_TOO_MANY;
@@ -1234,7 +1234,7 @@ attestationDoApply(ApplyContext& ctx)
 
     struct ScopeResult
     {
-        STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
+        STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::Locking;
         std::unordered_map<AccountID, std::uint32_t> signersList;
         std::uint32_t quorum{};
         AccountID thisDoor;
@@ -1254,15 +1254,15 @@ attestationDoApply(ApplyContext& ctx)
         Keylet const bridgeK{ltBRIDGE, sleBridge->key()};
         AccountID const thisDoor = (*sleBridge)[sfAccount];
 
-        STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
+        STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::Locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
             {
-                dstChain = STXChainBridge::ChainType::locking;
+                dstChain = STXChainBridge::ChainType::Locking;
             }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
             {
-                dstChain = STXChainBridge::ChainType::issuing;
+                dstChain = STXChainBridge::ChainType::Issuing;
             }
             else
             {
@@ -1367,7 +1367,7 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
         // owns all the XRP). This is done so the issuing account can't "run
         // out" of wrapped tokens.
         static auto const rootAccount = calcAccountID(
-            generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")).first);
+            generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
         if (bridgeSpec.issuingChainDoor() != rootAccount)
         {
             return temXCHAIN_BRIDGE_BAD_ISSUES;
@@ -1406,8 +1406,8 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
             return ctx.view.exists(keylet::bridge(bridgeSpec, ct));
         };
 
-        if (hasBridge(STXChainBridge::ChainType::issuing) ||
-            hasBridge(STXChainBridge::ChainType::locking))
+        if (hasBridge(STXChainBridge::ChainType::Issuing) ||
+            hasBridge(STXChainBridge::ChainType::Locking))
         {
             return tecDUPLICATE;
         }
@@ -1732,15 +1732,15 @@ XChainClaim::doApply()
 
         AccountID const thisDoor = (*sleBridge)[sfAccount];
 
-        STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
+        STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::Locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
             {
-                dstChain = STXChainBridge::ChainType::locking;
+                dstChain = STXChainBridge::ChainType::Locking;
             }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
             {
-                dstChain = STXChainBridge::ChainType::issuing;
+                dstChain = STXChainBridge::ChainType::Issuing;
             }
             else
             {
@@ -1767,7 +1767,7 @@ XChainClaim::doApply()
             curAtts,
             psb,
             sendingAmount,
-            /*wasLockingChainSend*/ srcChain == STXChainBridge::ChainType::locking,
+            /*wasLockingChainSend*/ srcChain == STXChainBridge::ChainType::Locking,
             quorum,
             signersList,
             ctx_.journal);
@@ -1822,7 +1822,7 @@ XChainCommit::makeTxConsequences(PreflightContext const& ctx)
         auto const amount = ctx.tx[sfAmount];
         if (amount.native() && amount.signum() > 0)
             return amount.xrp();
-        return XRPAmount{beast::zero};
+        return XRPAmount{beast::kZERO};
     }();
 
     return TxConsequences{ctx.tx, maxSpend};
@@ -2142,15 +2142,15 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
         return tecXCHAIN_SELF_COMMIT;
     }
 
-    STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
+    STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::Locking;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
         {
-            srcChain = STXChainBridge::ChainType::locking;
+            srcChain = STXChainBridge::ChainType::Locking;
         }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
         {
-            srcChain = STXChainBridge::ChainType::issuing;
+            srcChain = STXChainBridge::ChainType::Issuing;
         }
         else
         {
