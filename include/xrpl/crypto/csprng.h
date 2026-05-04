@@ -12,7 +12,7 @@ namespace xrpl {
 
     Meets the requirements of UniformRandomNumberEngine
 */
-class csprng_engine
+class CsprngEngine
 {
 private:
     std::mutex mutex_;
@@ -20,20 +20,20 @@ private:
 public:
     using result_type = std::uint64_t;
 
-    csprng_engine(csprng_engine const&) = delete;
-    csprng_engine&
-    operator=(csprng_engine const&) = delete;
+    CsprngEngine(CsprngEngine const&) = delete;
+    CsprngEngine&
+    operator=(CsprngEngine const&) = delete;
 
-    csprng_engine(csprng_engine&&) = delete;
-    csprng_engine&
-    operator=(csprng_engine&&) = delete;
+    CsprngEngine(CsprngEngine&&) = delete;
+    CsprngEngine&
+    operator=(CsprngEngine&&) = delete;
 
-    csprng_engine();
-    ~csprng_engine();
+    CsprngEngine();
+    ~CsprngEngine();
 
     /** Mix entropy into the pool */
     void
-    mix_entropy(void* buffer = nullptr, std::size_t count = 0);
+    mixEntropy(void* buffer = nullptr, std::size_t count = 0);
 
     /** Generate a random integer */
     result_type
@@ -66,7 +66,7 @@ public:
 
     This meets the requirements of UniformRandomNumberEngine
 */
-csprng_engine&
-crypto_prng();
+CsprngEngine&
+cryptoPrng();
 
 }  // namespace xrpl

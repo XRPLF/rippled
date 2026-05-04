@@ -30,19 +30,19 @@ public:
     intr_ptr::SharedPtr<SHAMapTreeNode>
     clone(std::uint32_t cowid) const override
     {
-        return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(item_, cowid, hash_);
+        return intr_ptr::makeShared<SHAMapTxPlusMetaLeafNode>(item_, cowid, hash_);
     }
 
     SHAMapNodeType
     getType() const override
     {
-        return SHAMapNodeType::tnTRANSACTION_MD;
+        return SHAMapNodeType::TnTransactionMd;
     }
 
     void
     updateHash() final
     {
-        hash_ = SHAMapHash{sha512Half(HashPrefix::txNode, item_->slice(), item_->key())};
+        hash_ = SHAMapHash{sha512Half(HashPrefix::TxNode, item_->slice(), item_->key())};
     }
 
     void
@@ -50,13 +50,13 @@ public:
     {
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
-        s.add8(wireTypeTransactionWithMeta);
+        s.add8(kWIRE_TYPE_TRANSACTION_WITH_META);
     }
 
     void
     serializeWithPrefix(Serializer& s) const final
     {
-        s.add32(HashPrefix::txNode);
+        s.add32(HashPrefix::TxNode);
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
     }

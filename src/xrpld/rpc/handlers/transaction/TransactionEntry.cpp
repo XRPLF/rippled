@@ -20,11 +20,11 @@ namespace xrpl {
 //
 // XXX In this case, not specify either ledger does not mean ledger current. It
 // means any ledger.
-Json::Value
+json::Value
 doTransactionEntry(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
-    Json::Value jvResult = RPC::lookupLedger(lpLedger, context);
+    json::Value jvResult = RPC::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
@@ -33,7 +33,7 @@ doTransactionEntry(RPC::JsonContext& context)
     {
         jvResult[jss::error] = "fieldNotFoundTransaction";
     }
-    else if (jvResult.get(jss::ledger_hash, Json::nullValue).isNull())
+    else if (jvResult.get(jss::ledger_hash, json::NullValue).isNull())
     {
         // We don't work on ledger current.
 
@@ -60,7 +60,7 @@ doTransactionEntry(RPC::JsonContext& context)
         {
             if (context.apiVersion > 1)
             {
-                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::disable_API_prior_V2);
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::KDisableApiPriorV2);
                 jvResult[jss::hash] = to_string(sttx->getTransactionID());
 
                 if (!lpLedger->open())
@@ -76,19 +76,19 @@ doTransactionEntry(RPC::JsonContext& context)
                 {
                     jvResult[jss::ledger_index] = lpLedger->seq();
                     if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(lpLedger->seq()))
-                        jvResult[jss::close_time_iso] = to_string_iso(*closeTime);
+                        jvResult[jss::close_time_iso] = toStringIso(*closeTime);
                 }
             }
             else
             {
-                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::KNone);
             }
 
             RPC::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
 
-            auto const json_meta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
+            auto const jsonMeta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
             if (stobj)
-                jvResult[json_meta] = stobj->getJson(JsonOptions::none);
+                jvResult[jsonMeta] = stobj->getJson(JsonOptions::KNone);
             // 'accounts'
             // 'engine_...'
             // 'ledger_...'

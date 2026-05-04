@@ -131,6 +131,19 @@ public:
     }
 
     /**
+     * @brief Check if a specific flag is set.
+     *
+     * @param f The flag bitmask to check
+     * @return true if all bits in f are set in the flags field
+     */
+    [[nodiscard]]
+    bool
+    isFlag(std::uint32_t f) const
+    {
+        return sle_->isFlag(f);
+    }
+
+    /**
      * @brief Get the underlying SLE object.
      *
      * Provides direct access to the wrapped serialized ledger entry object
