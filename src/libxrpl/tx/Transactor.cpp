@@ -451,10 +451,10 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
         return terNO_ACCOUNT;
     }
 
-    SeqProxy const t_seqProx = tx.getSeqProxy();
-    SeqProxy const a_seq = SeqProxy::sequence((*acctRoot)[sfSequence]);
+    SeqProxy const tSeqProx = tx.getSeqProxy();
+    SeqProxy const aSeq = SeqProxy::sequence((*acctRoot)[sfSequence]);
 
-    if (t_seqProx.isSeq())
+    if (tSeqProx.isSeq())
     {
         if (tx.isFieldPresent(sfTicketSequence))
         {
@@ -462,39 +462,39 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
                                "and a non-zero Sequence number";
             return temSEQ_AND_TICKET;
         }
-        if (t_seqProx != a_seq)
+        if (tSeqProx != aSeq)
         {
-            if (a_seq < t_seqProx)
+            if (aSeq < tSeqProx)
             {
                 JLOG(j.trace()) << "applyTransaction: has future sequence number "
-                                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                                << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
                 return terPRE_SEQ;
             }
             // It's an already-used sequence number.
             JLOG(j.trace()) << "applyTransaction: has past sequence number "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                            << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
             return tefPAST_SEQ;
         }
     }
-    else if (t_seqProx.isTicket())
+    else if (tSeqProx.isTicket())
     {
         // Bypass the type comparison. Apples and oranges.
-        if (a_seq.value() <= t_seqProx.value())
+        if (aSeq.value() <= tSeqProx.value())
         {
             // If the Ticket number is greater than or equal to the
             // account sequence there's the possibility that the
             // transaction to create the Ticket has not hit the ledger
             // yet.  Allow a retry.
             JLOG(j.trace()) << "applyTransaction: has future ticket id "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                            << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
             return terPRE_TICKET;
         }
 
         // Transaction can never succeed if the Ticket is not in the ledger.
-        if (!view.exists(keylet::kTICKET(id, t_seqProx)))
+        if (!view.exists(keylet::kTICKET(id, tSeqProx)))
         {
             JLOG(j.trace()) << "applyTransaction: ticket already used or never created "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                            << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
             return tefNO_TICKET;
         }
     }

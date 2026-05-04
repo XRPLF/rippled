@@ -495,8 +495,8 @@ TER
 requireAuth(ReadView const& view, Asset const& asset, AccountID const& account, AuthType authType)
 {
     return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue_) {
-            return requireAuth(view, issue_, account, authType);
+        [&]<ValidIssueType TIss>(TIss const& issue) {
+            return requireAuth(view, issue, account, authType);
         },
         asset.value());
 }
@@ -842,18 +842,17 @@ accountSendIOU(
 
     if (auto stream = j.trace())
     {
-        std::string sender_bal("-");
-        std::string receiver_bal("-");
+        std::string senderBal("-");
+        std::string receiverBal("-");
 
         if (sender)
-            sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+            senderBal = sender->getFieldAmount(sfBalance).getFullText();
 
         if (receiver)
-            receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+            receiverBal = receiver->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendIOU> " << to_string(uSenderID) << " (" << sender_bal << ") -> "
-               << to_string(uReceiverID) << " (" << receiver_bal
-               << ") : " << saAmount.getFullText();
+        stream << "accountSendIOU> " << to_string(uSenderID) << " (" << senderBal << ") -> "
+               << to_string(uReceiverID) << " (" << receiverBal << ") : " << saAmount.getFullText();
     }
 
     if (sender)
@@ -889,18 +888,17 @@ accountSendIOU(
 
     if (auto stream = j.trace())
     {
-        std::string sender_bal("-");
-        std::string receiver_bal("-");
+        std::string senderBal("-");
+        std::string receiverBal("-");
 
         if (sender)
-            sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+            senderBal = sender->getFieldAmount(sfBalance).getFullText();
 
         if (receiver)
-            receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+            receiverBal = receiver->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendIOU< " << to_string(uSenderID) << " (" << sender_bal << ") -> "
-               << to_string(uReceiverID) << " (" << receiver_bal
-               << ") : " << saAmount.getFullText();
+        stream << "accountSendIOU< " << to_string(uSenderID) << " (" << senderBal << ") -> "
+               << to_string(uReceiverID) << " (" << receiverBal << ") : " << saAmount.getFullText();
     }
 
     return terResult;
@@ -937,12 +935,12 @@ accountSendMultiIOU(
 
     if (auto stream = j.trace())
     {
-        std::string sender_bal("-");
+        std::string senderBal("-");
 
         if (sender)
-            sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+            senderBal = sender->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendMultiIOU> " << to_string(senderID) << " (" << sender_bal << ") -> "
+        stream << "accountSendMultiIOU> " << to_string(senderID) << " (" << senderBal << ") -> "
                << receivers.size() << " receivers.";
     }
 
@@ -968,13 +966,13 @@ accountSendMultiIOU(
 
         if (auto stream = j.trace())
         {
-            std::string receiver_bal("-");
+            std::string receiverBal("-");
 
             if (receiver)
-                receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+                receiverBal = receiver->getFieldAmount(sfBalance).getFullText();
 
             stream << "accountSendMultiIOU> " << to_string(senderID) << " -> "
-                   << to_string(receiverID) << " (" << receiver_bal
+                   << to_string(receiverID) << " (" << receiverBal
                    << ") : " << amount.getFullText();
         }
 
@@ -993,13 +991,13 @@ accountSendMultiIOU(
 
         if (auto stream = j.trace())
         {
-            std::string receiver_bal("-");
+            std::string receiverBal("-");
 
             if (receiver)
-                receiver_bal = receiver->getFieldAmount(sfBalance).getFullText();
+                receiverBal = receiver->getFieldAmount(sfBalance).getFullText();
 
             stream << "accountSendMultiIOU< " << to_string(senderID) << " -> "
-                   << to_string(receiverID) << " (" << receiver_bal
+                   << to_string(receiverID) << " (" << receiverBal
                    << ") : " << amount.getFullText();
         }
     }
@@ -1020,12 +1018,12 @@ accountSendMultiIOU(
 
     if (auto stream = j.trace())
     {
-        std::string sender_bal("-");
+        std::string senderBal("-");
 
         if (sender)
-            sender_bal = sender->getFieldAmount(sfBalance).getFullText();
+            senderBal = sender->getFieldAmount(sfBalance).getFullText();
 
-        stream << "accountSendMultiIOU< " << to_string(senderID) << " (" << sender_bal << ") -> "
+        stream << "accountSendMultiIOU< " << to_string(senderID) << " (" << senderBal << ") -> "
                << receivers.size() << " receivers.";
     }
     return tesSUCCESS;

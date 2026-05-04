@@ -287,12 +287,12 @@ OfferCreate::checkAcceptAsset(
                 // lexicographical "greater than" comparison employing
                 // strict weak ordering. Determine which entry we need to
                 // access.
-                bool const canonical_gt(id > issuer);
+                bool const canonicalGt(id > issuer);
 
-                bool const is_authorized(
-                    ((*trustLine)[sfFlags] & (canonical_gt ? lsfLowAuth : lsfHighAuth)) != 0u);
+                bool const isAuthorized(
+                    ((*trustLine)[sfFlags] & (canonicalGt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
-                if (!is_authorized)
+                if (!isAuthorized)
                 {
                     JLOG(j.debug()) << "delay: can't receive IOUs from "
                                        "issuer without auth.";
@@ -715,11 +715,11 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // The amount of the offer that is unfilled after crossing has been
         // performed. It may be equal to the original amount (didn't cross),
         // empty (fully crossed), or something in-between.
-        Amounts place_offer;
+        Amounts placeOffer;
         PaymentSandbox psbFlow{&sb};
         PaymentSandbox psbCancelFlow{&sbCancel};
 
-        std::tie(result, place_offer) = flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
+        std::tie(result, placeOffer) = flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
         psbFlow.apply(sb);
         psbCancelFlow.apply(sbCancel);
 
@@ -733,8 +733,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         if (auto stream = j_.trace())
         {
             stream << "Cross result: " << transToken(result);
-            stream << "     in: " << formatAmount(place_offer.in);
-            stream << "    out: " << formatAmount(place_offer.out);
+            stream << "     in: " << formatAmount(placeOffer.in);
+            stream << "    out: " << formatAmount(placeOffer.out);
         }
 
         if (result == tecFAILED_PROCESSING && bOpenLedger)
@@ -747,26 +747,26 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         }
 
         XRPL_ASSERT(
-            saTakerGets.asset() == place_offer.in.asset(),
+            saTakerGets.asset() == placeOffer.in.asset(),
             "xrpl::OfferCreate::applyGuts : taker gets issue match");
         XRPL_ASSERT(
-            saTakerPays.asset() == place_offer.out.asset(),
+            saTakerPays.asset() == placeOffer.out.asset(),
             "xrpl::OfferCreate::applyGuts : taker pays issue match");
 
-        if (takerAmount != place_offer)
+        if (takerAmount != placeOffer)
             crossed = true;
 
         // The offer that we need to place after offer crossing should
         // never be negative. If it is, something went very very wrong.
-        if (place_offer.in < beast::kZERO || place_offer.out < beast::kZERO)
+        if (placeOffer.in < beast::kZERO || placeOffer.out < beast::kZERO)
         {
             JLOG(j_.fatal()) << "Cross left offer negative!"
-                             << "     in: " << formatAmount(place_offer.in)
-                             << "    out: " << formatAmount(place_offer.out);
+                             << "     in: " << formatAmount(placeOffer.in)
+                             << "    out: " << formatAmount(placeOffer.out);
             return {tefINTERNAL, true};
         }
 
-        if (place_offer.in == beast::kZERO || place_offer.out == beast::kZERO)
+        if (placeOffer.in == beast::kZERO || placeOffer.out == beast::kZERO)
         {
             JLOG(j_.debug()) << "Offer fully crossed!";
             return {result, true};
@@ -775,8 +775,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // We now need to adjust the offer to reflect the amount left after
         // crossing. We reverse in and out here, since during crossing we
         // were the taker.
-        saTakerPays = place_offer.out;
-        saTakerGets = place_offer.in;
+        saTakerPays = placeOffer.out;
+        saTakerGets = placeOffer.in;
     }
 
     XRPL_ASSERT(
@@ -845,11 +845,11 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // We need to place the remainder of the offer into its order book.
-    auto const offer_index = keylet::offer(accountID_, offerSequence);
+    auto const offerIndex = keylet::offer(accountID_, offerSequence);
 
     // Add offer to owner's directory.
     auto const ownerNode =
-        sb.dirInsert(keylet::ownerDir(accountID_), offer_index, describeOwnerDir(accountID_));
+        sb.dirInsert(keylet::ownerDir(accountID_), offerIndex, describeOwnerDir(accountID_));
 
     if (!ownerNode)
     {
@@ -900,7 +900,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             sle->setFieldH256(sfDomainID, *maybeDomain);
     };
 
-    auto const bookNode = sb.dirAppend(dir, offer_index, [&](SLE::ref sle) {
+    auto const bookNode = sb.dirAppend(dir, offerIndex, [&](SLE::ref sle) {
         // sets domainID on book directory if it's a domain offer
         setBookDir(sle, domainID);
     });
@@ -913,7 +913,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // LCOV_EXCL_STOP
     }
 
-    auto sleOffer = std::make_shared<SLE>(offer_index);
+    auto sleOffer = std::make_shared<SLE>(offerIndex);
     sleOffer->setAccountID(sfAccount, accountID_);
     sleOffer->setFieldU32(sfSequence, offerSequence);
     sleOffer->setFieldH256(sfBookDirectory, dir.key);
@@ -934,7 +934,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (bHybrid)
     {
         auto const res =
-            applyHybrid(sb, sleOffer, offer_index, saTakerPays, saTakerGets, setBookDir);
+            applyHybrid(sb, sleOffer, offerIndex, saTakerPays, saTakerGets, setBookDir);
         if (!isTesSuccess(res))
             return {res, true};  // LCOV_EXCL_LINE
     }

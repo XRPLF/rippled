@@ -122,7 +122,7 @@ PathRequest::~PathRequest()
 bool
 PathRequest::isNew()
 {
-    std::lock_guard const sl(indexLock_);
+    std::scoped_lock const sl(indexLock_);
 
     // does this path request still need its first full path
     return lastIndex_ == 0;
@@ -131,7 +131,7 @@ PathRequest::isNew()
 bool
 PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
 {
-    std::lock_guard const sl(indexLock_);
+    std::scoped_lock const sl(indexLock_);
 
     if (inProgress_)
     {
@@ -163,7 +163,7 @@ PathRequest::hasCompletion()
 void
 PathRequest::updateComplete()
 {
-    std::lock_guard const sl(indexLock_);
+    std::scoped_lock const sl(indexLock_);
 
     XRPL_ASSERT(inProgress_, "xrpl::PathRequest::updateComplete : in progress");
     inProgress_ = false;
@@ -479,7 +479,7 @@ json::Value
 PathRequest::doClose()
 {
     JLOG(journal_.debug()) << iIdentifier_ << " closed";
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
     jvStatus_[jss::closed] = true;
     return jvStatus_;
 }
@@ -487,7 +487,7 @@ PathRequest::doClose()
 json::Value
 PathRequest::doStatus(json::Value const&)
 {
-    std::lock_guard const sl(lock_);
+    std::scoped_lock const sl(lock_);
     jvStatus_[jss::status] = jss::success;
     return jvStatus_;
 }
@@ -501,14 +501,14 @@ PathRequest::doAborting() const
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(
     std::shared_ptr<AssetCache> const& cache,
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>>& pathasset_map,
+    hash_map<PathAsset, std::unique_ptr<Pathfinder>>& pathassetMap,
     PathAsset const& asset,
-    STAmount const& dst_amount,
+    STAmount const& dstAmount,
     int const level,
     std::function<bool(void)> const& continueCallback)
 {
-    auto i = pathasset_map.find(asset);
-    if (i != pathasset_map.end())
+    auto i = pathassetMap.find(asset);
+    if (i != pathassetMap.end())
         return i->second;
     auto pathfinder = std::make_unique<Pathfinder>(
         cache,
@@ -516,7 +516,7 @@ PathRequest::getPathFinder(
         *raDstAccount_,
         asset,
         std::nullopt,
-        dst_amount,
+        dstAmount,
         saSendMax_,
         domain_,
         app_);
@@ -528,7 +528,7 @@ PathRequest::getPathFinder(
     {
         pathfinder.reset();  // It's a bad request - clear it.
     }
-    return pathasset_map[asset] = std::move(pathfinder);
+    return pathassetMap[asset] = std::move(pathfinder);
 }
 
 bool
@@ -574,8 +574,8 @@ PathRequest::findPaths(
         }
     }
 
-    auto const dst_amount = convertAmount(saDstAmount_, convert_all_);
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>> pathasset_map;
+    auto const dstAmount = convertAmount(saDstAmount_, convert_all_);
+    hash_map<PathAsset, std::unique_ptr<Pathfinder>> pathassetMap;
     for (auto const& asset : sourceAssets)
     {
         if (continueCallback && !continueCallback())
@@ -584,7 +584,7 @@ PathRequest::findPaths(
                                << " Trying to find paths: " << STAmount(asset, 1).getFullText();
 
         auto& pathfinder =
-            getPathFinder(cache, pathasset_map, asset, dst_amount, level, continueCallback);
+            getPathFinder(cache, pathassetMap, asset, dstAmount, level, continueCallback);
         if (!pathfinder)
         {
             JLOG(journal_.debug()) << iIdentifier_ << " No paths found";
@@ -626,7 +626,7 @@ PathRequest::findPaths(
             *sandbox,
             saMaxAmount,     // --> Amount to send is unlimited
                              //     to get an estimate.
-            dst_amount,      // --> Amount to deliver.
+            dstAmount,       // --> Amount to deliver.
             *raDstAccount_,  // --> Account to deliver to.
             *raSrcAccount_,  // --> Account sending from.
             ps,              // --> Path set.
@@ -645,7 +645,7 @@ PathRequest::findPaths(
                 *sandbox,
                 saMaxAmount,     // --> Amount to send is unlimited
                                  //     to get an estimate.
-                dst_amount,      // --> Amount to deliver.
+                dstAmount,       // --> Amount to deliver.
                 *raDstAccount_,  // --> Account to deliver to.
                 *raSrcAccount_,  // --> Account sending from.
                 ps,              // --> Path set.
@@ -709,7 +709,7 @@ PathRequest::doUpdate(
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
 
     {
-        std::lock_guard const sl(lock_);
+        std::scoped_lock const sl(lock_);
 
         if (!isValid(cache))
             return jvStatus_;
@@ -797,7 +797,7 @@ PathRequest::doUpdate(
     }
 
     {
-        std::lock_guard const sl(lock_);
+        std::scoped_lock const sl(lock_);
         jvStatus_ = newStatus;
     }
 

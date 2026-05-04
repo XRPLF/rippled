@@ -237,10 +237,10 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast::Journal j_)
+applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Journal j)
 {
-    auto const amount = ctx_.tx[sfAmount];
-    auto const amount2 = ctx_.tx[sfAmount2];
+    auto const amount = ctx.tx[sfAmount];
+    auto const amount2 = ctx.tx[sfAmount2];
 
     auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset());
 
@@ -249,7 +249,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast:
     // AMM account already exists (should not happen)
     if (!maybeAccount)
     {
-        JLOG(j_.error()) << "AMM Instance: failed to create pseudo account.";
+        JLOG(j.error()) << "AMM Instance: failed to create pseudo account.";
         return {maybeAccount.error(), false};
     }
     auto& account = *maybeAccount;
@@ -259,7 +259,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast:
     auto const lptIss = ammLPTIssue(amount.asset(), amount2.asset(), accountId);
     if (sb.read(keylet::line(accountId, lptIss)))
     {
-        JLOG(j_.error()) << "AMM Instance: LP Token already exists.";
+        JLOG(j.error()) << "AMM Instance: LP Token already exists.";
         return {tecDUPLICATE, false};
     }
 
@@ -280,21 +280,21 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast:
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, asset1});
     ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, asset2});
     // AMM creator gets the auction slot and the voting slot.
-    initializeFeeAuctionVote(ctx_.view(), ammSle, accountID_, lptIss, ctx_.tx[sfTradingFee]);
+    initializeFeeAuctionVote(ctx.view(), ammSle, accountId, lptIss, ctx.tx[sfTradingFee]);
 
     // Add owner directory to link the root account and AMM object.
     if (auto ter = dirLink(sb, accountId, ammSle); ter)
     {
-        JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
+        JLOG(j.debug()) << "AMM Instance: failed to insert owner dir";
         return {ter, false};
     }
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto res = accountSend(sb, accountId, accountID_, lpTokens, ctx_.journal);
+    auto res = accountSend(sb, accountId, accountId, lpTokens, ctx.journal);
     if (!isTesSuccess(res))
     {
-        JLOG(j_.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
+        JLOG(j.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
         return {res, false};
     }
 
@@ -307,7 +307,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast:
                 auto const& mptID = mptIssue.getMptID();
                 std::uint32_t flags = lsfMPTAMM;
                 if (auto const err =
-                        requireAuth(ctx_.view(), mptIssue, accountId, AuthType::WeakAuth);
+                        requireAuth(ctx.view(), mptIssue, accountId, AuthType::WeakAuth);
                     !isTesSuccess(err))
                 {
                     if (err == tecNO_AUTH)
@@ -325,12 +325,12 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast:
                 // Don't adjust AMM owner count.
                 // It's irrelevant for pseudo-account like AMM.
                 return accountSend(
-                    sb, accountID_, accountId, amount, ctx_.journal, WaiveTransferFee::Yes);
+                    sb, accountId, accountId, amount, ctx.journal, WaiveTransferFee::Yes);
             },
             // Set AMM flag on AMM trustline
             [&](Issue const& issue) -> TER {
                 if (auto const res = accountSend(
-                        sb, accountID_, accountId, amount, ctx_.journal, WaiveTransferFee::Yes))
+                        sb, accountId, accountId, amount, ctx.journal, WaiveTransferFee::Yes))
                     return res;
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))
@@ -353,7 +353,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast:
     res = sendAndInitTrustOrMPT(amount);
     if (!isTesSuccess(res))
     {
-        JLOG(j_.debug()) << "AMM Instance: failed to send " << amount;
+        JLOG(j.debug()) << "AMM Instance: failed to send " << amount;
         return {res, false};
     }
 
@@ -361,17 +361,17 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast:
     res = sendAndInitTrustOrMPT(amount2);
     if (!isTesSuccess(res))
     {
-        JLOG(j_.debug()) << "AMM Instance: failed to send " << amount2;
+        JLOG(j.debug()) << "AMM Instance: failed to send " << amount2;
         return {res, false};
     }
 
-    JLOG(j_.debug()) << "AMM Instance: success " << accountId << " " << ammKeylet.key << " "
-                     << lpTokens << " " << amount << " " << amount2;
+    JLOG(j.debug()) << "AMM Instance: success " << accountId << " " << ammKeylet.key << " "
+                    << lpTokens << " " << amount << " " << amount2;
     auto addOrderBook = [&](Asset const& assetIn, Asset const& assetOut, std::uint64_t uRate) {
         Book const book{assetIn, assetOut, std::nullopt};
         auto const dir = keylet::quality(keylet::kBOOK(book), uRate);
         if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
-            ctx_.registry.get().getOrderBookDB().addOrderBook(book);
+            ctx.registry.get().getOrderBookDB().addOrderBook(book);
     };
     addOrderBook(amount.asset(), amount2.asset(), getRate(amount2, amount));
     addOrderBook(amount2.asset(), amount.asset(), getRate(amount, amount2));

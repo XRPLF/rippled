@@ -19,6 +19,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -85,13 +86,13 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<Asset> asset2;
         std::optional<uint256> ammID;
 
-        constexpr auto invalid = [](json::Value const& params) -> bool {
+        constexpr auto kINVALID = [](json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
                 (params.isMember(jss::asset) == params.isMember(jss::amm_account));
         };
 
         // NOTE, identical check for apVersion >= 3 below
-        if (context.apiVersion < 3 && invalid(params))
+        if (context.apiVersion < 3 && kINVALID(params))
             return Unexpected(RpcInvalidParams);
 
         if (params.isMember(jss::asset))
@@ -139,7 +140,7 @@ doAMMInfo(RPC::JsonContext& context)
         }
 
         // NOTE, identical check for apVersion < 3 above
-        if (context.apiVersion >= 3 && invalid(params))
+        if (context.apiVersion >= 3 && kINVALID(params))
             return Unexpected(RpcInvalidParams);
 
         XRPL_ASSERT(

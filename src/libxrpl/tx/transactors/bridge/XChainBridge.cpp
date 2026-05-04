@@ -182,7 +182,7 @@ checkAttestationPublicKey(
 // must attest to this destination, if it is `ignore` then the `dst` of the
 // attestations are not checked (as for a `claim` transaction)
 
-enum class CheckDst { check, ignore };
+enum class CheckDst { Check, Ignore };
 template <class TAttestation>
 Expected<std::vector<AccountID>, TER>
 claimHelper(
@@ -213,7 +213,7 @@ claimHelper(
         // attestation transaction. The dst does not need to match if the
         // claimHelper is being run using an explicit claim transaction.
         using enum AttestationMatch;
-        if (matchR == NonDstMismatch || (checkDst == CheckDst::check && matchR != Match))
+        if (matchR == NonDstMismatch || (checkDst == CheckDst::Check && matchR != Match))
             continue;
         auto i = signersList.find(a.keyAccount);
         if (i == signersList.end())
@@ -321,7 +321,7 @@ onNewAttestations(
         attestations,
         view,
         typename TAttestation::MatchFields{*attBegin},
-        CheckDst::check,
+        CheckDst::Check,
         quorum,
         signersList,
         j);
@@ -347,19 +347,19 @@ onClaim(
 {
     XChainClaimAttestation::MatchFields const toMatch{
         sendingAmount, wasLockingChainSend, std::nullopt};
-    return claimHelper(attestations, view, toMatch, CheckDst::ignore, quorum, signersList, j);
+    return claimHelper(attestations, view, toMatch, CheckDst::Ignore, quorum, signersList, j);
 }
 
-enum class CanCreateDstPolicy { no, yes };
+enum class CanCreateDstPolicy { No, Yes };
 
-enum class DepositAuthPolicy { normal, dstCanBypass };
+enum class DepositAuthPolicy { Normal, DstCanBypass };
 
 // Allow the fee to dip into the reserve. To support this, information about the
 // submitting account needs to be fed to the transfer helper.
 struct TransferHelperSubmittingAccountInfo
 {
     AccountID account;
-    STAmount preFeeBalance_;
+    STAmount preFeeBalance;
     STAmount postFeeBalance;
 };
 
@@ -413,7 +413,7 @@ transferHelper(
         // transaction, that's the dst account sending funds to itself. It
         // can bypass deposit auth.
         bool const canBypassDepositAuth =
-            dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::dstCanBypass;
+            dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::DstCanBypass;
 
         if (!canBypassDepositAuth && ((acctDst->getFlags() & lsfDepositAuth) != 0u) &&
             !psb.exists(keylet::depositPreauth(dst, src)))
@@ -421,7 +421,7 @@ transferHelper(
             return tecNO_PERMISSION;
         }
     }
-    else if (!amt.native() || canCreate == CanCreateDstPolicy::no)
+    else if (!amt.native() || canCreate == CanCreateDstPolicy::No)
     {
         return tecNO_DST;
     }
@@ -445,7 +445,7 @@ transferHelper(
                 if (!submittingAccountInfo || submittingAccountInfo->account != src ||
                     submittingAccountInfo->postFeeBalance != curBal)
                     return curBal;
-                return submittingAccountInfo->preFeeBalance_;
+                return submittingAccountInfo->preFeeBalance;
             }();
 
             if (availableBalance < amt + reserve)
@@ -457,7 +457,7 @@ transferHelper(
         WAccountRoot acctDst(dst, psb, j);
         if (!acctDst)
         {
-            if (canCreate == CanCreateDstPolicy::no)
+            if (canCreate == CanCreateDstPolicy::No)
             {
                 // Already checked, but OK to check again
                 return tecNO_DST;
@@ -511,9 +511,9 @@ transferHelper(
 */
 enum class OnTransferFail {
     /** Remove the claim even if the transfer fails */
-    removeClaim,
+    RemoveClaim,
     /**  Keep the claim if the transfer fails */
-    keepClaim
+    KeepClaim
 };
 
 struct FinalizeClaimHelperResult
@@ -527,7 +527,7 @@ struct FinalizeClaimHelperResult
 
     // Helper to check for overall success. If there wasn't overall success the
     // individual ters can be used to decide what needs to be done.
-    bool
+    [[nodiscard]] bool
     isTesSuccess() const
     {
         return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
@@ -535,7 +535,7 @@ struct FinalizeClaimHelperResult
             (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
-    TER
+    [[nodiscard]] TER
     ter() const
     {
         if (isTesSuccess())
@@ -636,12 +636,12 @@ finalizeClaimHelper(
             dstTag,
             claimOwner,
             thisChainAmount,
-            CanCreateDstPolicy::yes,
+            CanCreateDstPolicy::Yes,
             depositAuthPolicy,
             std::nullopt,
             j);
 
-        if (!isTesSuccess(*result.mainFundsTer) && onTransferFail == OnTransferFail::keepClaim)
+        if (!isTesSuccess(*result.mainFundsTer) && onTransferFail == OnTransferFail::KeepClaim)
         {
             return result;
         }
@@ -655,10 +655,10 @@ finalizeClaimHelper(
             // if the transfer failed, distribute the pool for "OnTransferFail"
             // cases (the attesters did their job)
             STAmount const share = [&] {
-                auto const round_mode = innerSb.rules().enabled(fixXChainRewardRounding)
+                auto const roundMode = innerSb.rules().enabled(fixXChainRewardRounding)
                     ? Number::RoundingMode::Downward
                     : Number::getround();
-                SaveNumberRoundMode const _{Number::setround(round_mode)};
+                SaveNumberRoundMode const _{Number::setround(roundMode)};
 
                 STAmount const den{rewardAccounts.size()};
                 return divide(rewardPool, den, rewardPool.asset());
@@ -674,8 +674,8 @@ finalizeClaimHelper(
                     // claim owner is not relevant to distributing rewards
                     /*claimOwner*/ std::nullopt,
                     share,
-                    CanCreateDstPolicy::no,
-                    DepositAuthPolicy::normal,
+                    CanCreateDstPolicy::No,
+                    DepositAuthPolicy::Normal,
                     std::nullopt,
                     j);
 
@@ -696,7 +696,7 @@ finalizeClaimHelper(
         }();
 
         if (!isTesSuccess(*result.rewardTer) &&
-            (onTransferFail == OnTransferFail::keepClaim || *result.rewardTer == tecINTERNAL))
+            (onTransferFail == OnTransferFail::KeepClaim || *result.rewardTer == tecINTERNAL))
         {
             return result;
         }
@@ -925,8 +925,8 @@ applyClaimAttestations(
             *rewardAccounts,
             srcChain,
             claimIDKeylet,
-            OnTransferFail::keepClaim,
-            DepositAuthPolicy::normal,
+            OnTransferFail::KeepClaim,
+            DepositAuthPolicy::Normal,
             j);
 
         auto const rTer = r.ter();
@@ -1097,8 +1097,8 @@ applyCreateAccountAttestations(
             *rewardAccounts,
             srcChain,
             claimIDKeylet,
-            OnTransferFail::removeClaim,
-            DepositAuthPolicy::normal,
+            OnTransferFail::RemoveClaim,
+            DepositAuthPolicy::Normal,
             j);
 
         auto const rTer = r.ter();
@@ -1366,9 +1366,9 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
         // Issuing account must be the root account for XRP (which presumably
         // owns all the XRP). This is done so the issuing account can't "run
         // out" of wrapped tokens.
-        static auto const rootAccount = calcAccountID(
+        static auto const kROOT_ACCOUNT = calcAccountID(
             generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
-        if (bridgeSpec.issuingChainDoor() != rootAccount)
+        if (bridgeSpec.issuingChainDoor() != kROOT_ACCOUNT)
         {
             return temXCHAIN_BRIDGE_BAD_ISSUES;
         }
@@ -1723,11 +1723,11 @@ XChainClaim::doApply()
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
         // views, it's important that the sle's lifetime doesn't overlap.
 
-        AccountRoot const account_(account, psb);
+        AccountRoot const account(account, psb);
         auto const sleBridge = peekBridge(psb, bridgeSpec);
         auto const sleClaimID = psb.peek(claimIDKeylet);
 
-        if (!(sleBridge && sleClaimID && account_))
+        if (!(sleBridge && sleClaimID && account))
             return Unexpected(tecINTERNAL);
 
         AccountID const thisDoor = (*sleBridge)[sfAccount];
@@ -1802,8 +1802,8 @@ XChainClaim::doApply()
         rewardAccounts,
         srcChain,
         claimIDKeylet,
-        OnTransferFail::keepClaim,
-        DepositAuthPolicy::dstCanBypass,
+        OnTransferFail::KeepClaim,
+        DepositAuthPolicy::DstCanBypass,
         ctx_.journal);
     if (!r.isTesSuccess())
         return r.ter();
@@ -1915,7 +1915,7 @@ XChainCommit::doApply()
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
         .account = accountID_,
-        .preFeeBalance_ = preFeeBalance_,
+        .preFeeBalance = preFeeBalance_,
         .postFeeBalance = (*account_)[sfBalance]};
 
     auto const thTer = transferHelper(
@@ -1925,8 +1925,8 @@ XChainCommit::doApply()
         /*dstTag*/ std::nullopt,
         /*claimOwner*/ std::nullopt,
         amount,
-        CanCreateDstPolicy::no,
-        DepositAuthPolicy::normal,
+        CanCreateDstPolicy::No,
+        DepositAuthPolicy::Normal,
         submittingAccountInfo,
         ctx_.journal);
 
@@ -2178,8 +2178,8 @@ XChainCreateAccountCommit::doApply()
     STAmount const reward = ctx_.tx[sfSignatureReward];
     STXChainBridge const bridge = ctx_.tx[sfXChainBridge];
 
-    AccountRoot const account_(account, psb);
-    if (!account_)
+    AccountRoot const account(account, psb);
+    if (!account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = peekBridge(psb, bridge);
@@ -2191,8 +2191,8 @@ XChainCreateAccountCommit::doApply()
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
         .account = accountID_,
-        .preFeeBalance_ = preFeeBalance_,
-        .postFeeBalance = (*account_)[sfBalance]};
+        .preFeeBalance = preFeeBalance_,
+        .postFeeBalance = (*account)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,
@@ -2201,8 +2201,8 @@ XChainCreateAccountCommit::doApply()
         /*dstTag*/ std::nullopt,
         /*claimOwner*/ std::nullopt,
         toTransfer,
-        CanCreateDstPolicy::yes,
-        DepositAuthPolicy::normal,
+        CanCreateDstPolicy::Yes,
+        DepositAuthPolicy::Normal,
         submittingAccountInfo,
         ctx_.journal);
 

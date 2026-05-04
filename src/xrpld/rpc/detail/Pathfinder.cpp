@@ -8,7 +8,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/join.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
@@ -81,14 +80,14 @@ namespace {
 
 // This is an arbitrary cutoff, and it might cause us to miss other
 // good paths with this arbitrary cut off.
-constexpr std::size_t PATHFINDER_MAX_COMPLETE_PATHS = 1000;
+constexpr std::size_t kPATHFINDER_MAX_COMPLETE_PATHS = 1000;
 
 struct AccountCandidate
 {
     int priority;
     AccountID account;
 
-    static int const highPriority = 10000;
+    static int const kHIGH_PRIORITY = 10000;
 };
 
 bool
@@ -129,7 +128,7 @@ struct PathCost
 };
 using PathCostList = std::vector<PathCost>;
 
-PathTable mPathTable;
+PathTable gMPathTable;
 
 std::string
 pathTypeToString(Pathfinder::PathType const& type)
@@ -344,7 +343,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
     }
 
     // Now iterate over all paths for that paymentType.
-    for (auto const& costedPath : mPathTable[paymentType])
+    for (auto const& costedPath : gMPathTable[paymentType])
     {
         if (continueCallback && !continueCallback())
             return false;
@@ -354,7 +353,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
             JLOG(j_.trace()) << "findPaths trying payment type " << static_cast<int>(paymentType);
             addPathsForType(costedPath.type, continueCallback);
 
-            if (completePaths_.size() > PATHFINDER_MAX_COMPLETE_PATHS)
+            if (completePaths_.size() > kPATHFINDER_MAX_COMPLETE_PATHS)
                 break;
         }
     }
@@ -1028,9 +1027,9 @@ Pathfinder::addLink(
                 auto forAssets = [&]<typename AssetType>(AssetType const& assets) {
                     candidates.reserve(assets.size());
 
-                    static bool constexpr isLine =
+                    static bool constexpr kIS_LINE =
                         std::is_same_v<AssetType, std::vector<PathFindTrustLine>>;
-                    static bool constexpr isMPT =
+                    static bool constexpr kIS_MPT =
                         std::is_same_v<AssetType, std::vector<PathFindMPT>>;
 
                     for (auto const& asset : assets)
@@ -1038,14 +1037,14 @@ Pathfinder::addLink(
                         if (continueCallback && !continueCallback())
                             return;
                         auto const& acct = [&]() constexpr {
-                            if constexpr (isLine)
+                            if constexpr (kIS_LINE)
                                 return asset.getAccountIDPeer();
                             // Unlike trustline, MPT is not bidirectional
-                            if constexpr (isMPT)
+                            if constexpr (kIS_MPT)
                                 return getMPTIssuer(asset);
                         }();
                         auto const direction = [&]() constexpr -> LineDirection {
-                            if constexpr (isLine)
+                            if constexpr (kIS_LINE)
                                 return asset.getDirectionPeer();
                             // incoming for MPT since MPT doesn't support
                             // rippling (see LineDirection comments)
@@ -1066,18 +1065,18 @@ Pathfinder::addLink(
                         }
 
                         auto const correctAsset = [&]() {
-                            if constexpr (isLine)
+                            if constexpr (kIS_LINE)
                             {
                                 return uEndPathAsset.get<Currency>() ==
                                     asset.getLimit().template get<Issue>().currency;
                             }
-                            if constexpr (isMPT)
+                            if constexpr (kIS_MPT)
                             {
                                 return uEndPathAsset.get<MPTID>() == asset.getMptID();
                             }
                         }();
                         auto checkAsset = [&]() {
-                            if constexpr (isLine)
+                            if constexpr (kIS_LINE)
                             {
                                 return (
                                     (asset.getBalance() <= beast::kZERO &&
@@ -1086,7 +1085,7 @@ Pathfinder::addLink(
                                       (bRequireAuth && !asset.getAuth()))) ||
                                     (bIsNoRippleOut && asset.getNoRipple()));
                             }
-                            if constexpr (isMPT)
+                            if constexpr (kIS_MPT)
                             {
                                 return asset.isZeroBalance() || asset.isMaxedOut() ||
                                     requireAuth(*ledger_, MPTIssue{asset}, acct);
@@ -1117,7 +1116,7 @@ Pathfinder::addLink(
                                 else if (!bDestOnly)
                                 {
                                     // this is a high-priority candidate
-                                    candidates.push_back({AccountCandidate::highPriority, acct});
+                                    candidates.push_back({AccountCandidate::kHIGH_PRIORITY, acct});
                                 }
                             }
                             else if (acct == srcAccount_)
@@ -1356,7 +1355,7 @@ makePath(char const* string)
 void
 fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 {
-    auto& list = mPathTable[type];
+    auto& list = gMPathTable[type];
     XRPL_ASSERT(list.empty(), "xrpl::fillPaths : empty paths");
     for (auto& cost : costs)
         list.push_back({cost.cost, makePath(cost.path)});
@@ -1376,7 +1375,7 @@ Pathfinder::initPathTable()
 {
     // CAUTION: Do not include rules that build default paths
 
-    mPathTable.clear();
+    gMPathTable.clear();
     fillPaths(PaymentType::XrpToXrp, {});
     /* cspell: disable */
 
