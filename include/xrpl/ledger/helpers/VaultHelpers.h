@@ -47,7 +47,7 @@ sharesToAssetsDeposit(
     STAmount const& shares);
 
 /** Controls whether to truncate shares instead of rounding. */
-enum class TruncateShares : bool { no = false, yes = true };
+enum class TruncateShares : bool { No = false, Yes = true };
 
 /** From the perspective of a vault, return the number of shares to demand from
     the depositor when they ask to withdraw a fixed amount of assets. Since
@@ -66,7 +66,7 @@ assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets,
-    TruncateShares truncate = TruncateShares::no);
+    TruncateShares truncate = TruncateShares::No);
 
 /** From the perspective of a vault, return the number of assets to give the
     depositor when they redeem a fixed amount of shares. Note, since shares are

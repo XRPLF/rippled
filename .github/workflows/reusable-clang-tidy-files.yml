@@ -20,7 +20,7 @@ env:
   # Conan installs the generators in the build/generators directory, see the
   # layout() method in conanfile.py. We then run CMake from the build directory.
   BUILD_DIR: build
-  BUILD_TYPE: Release
+  BUILD_TYPE: Debug # Debug so that ASSERTS and such participate in clang-tidy check
 
 jobs:
   run-clang-tidy:
@@ -40,7 +40,7 @@ jobs:
           enable_ccache: false
 
       - name: Print build environment
-        uses: ./.github/actions/print-env
+        uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
 
       - name: Get number of processors
         uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf

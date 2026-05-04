@@ -26,7 +26,7 @@ struct OrderBookDBConfig
     @return A new OrderBookDB instance
 */
 std::unique_ptr<OrderBookDB>
-make_OrderBookDB(ServiceRegistry& registry, OrderBookDBConfig const& config);
+makeOrderBookDb(ServiceRegistry& registry, OrderBookDBConfig const& config);
 
 class OrderBookDBImpl final : public OrderBookDB
 {
@@ -82,11 +82,11 @@ private:
     // does an order book to XRP exist
     hash_set<std::pair<Asset, Domain>> xrpDomainBooks_;
 
-    std::recursive_mutex mLock;
+    std::recursive_mutex lock_;
 
     using BookToListenersMap = hash_map<Book, BookListeners::pointer>;
 
-    BookToListenersMap mListeners;
+    BookToListenersMap listeners_;
 
     std::atomic<std::uint32_t> seq_;
 

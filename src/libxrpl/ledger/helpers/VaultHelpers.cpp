@@ -98,7 +98,7 @@ assetsToSharesWithdraw(
         return shares;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     Number result = (shareTotal * assets) / assetTotal;
-    if (truncate == TruncateShares::yes)
+    if (truncate == TruncateShares::Yes)
         result = result.truncate();
     shares = result;
     return shares;

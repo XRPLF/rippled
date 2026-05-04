@@ -20,7 +20,7 @@
 
 namespace xrpl {
 
-class Issue_test : public beast::unit_test::suite
+class Issue_test : public beast::unit_test::Suite
 {
 public:
     using Domain = uint256;
@@ -563,10 +563,10 @@ public:
         uint256 const domain1{1};
         uint256 const domain2{2};
 
-        Book const b1_d1(a1, a2, domain1);
-        Book const b2_d1(a2, a1, domain1);
-        Book const b1_d2(a1, a2, domain2);
-        Book const b2_d2(a2, a1, domain2);
+        Book const b1D1(a1, a2, domain1);
+        Book const b2D1(a2, a1, domain1);
+        Book const b1D2(a1, a2, domain2);
+        Book const b2D2(a2, a1, domain2);
 
         {
             Set c;
@@ -620,16 +620,16 @@ public:
         {
             Set c;
 
-            c.insert(b1_d1);
+            c.insert(b1D1);
             if (!BEAST_EXPECT(c.size() == 1))
                 return;
-            c.insert(b2_d1);
+            c.insert(b2D1);
             if (!BEAST_EXPECT(c.size() == 2))
                 return;
-            c.insert(b1_d2);
+            c.insert(b1D2);
             if (!BEAST_EXPECT(c.size() == 3))
                 return;
-            c.insert(b2_d2);
+            c.insert(b2D2);
             if (!BEAST_EXPECT(c.size() == 4))
                 return;
 
@@ -657,8 +657,8 @@ public:
 
             c.insert(b1);
             c.insert(b2);
-            c.insert(b1_d1);
-            c.insert(b2_d1);
+            c.insert(b1D1);
+            c.insert(b2D1);
             if (!BEAST_EXPECT(c.size() == 4))
                 return;
 
@@ -694,10 +694,10 @@ public:
         uint256 const domain1{1};
         uint256 const domain2{2};
 
-        Book const b1_d1(a1, a2, domain1);
-        Book const b2_d1(a2, a1, domain1);
-        Book const b1_d2(a1, a2, domain2);
-        Book const b2_d2(a2, a1, domain2);
+        Book const b1D1(a1, a2, domain1);
+        Book const b2D1(a2, a1, domain1);
+        Book const b1D2(a1, a2, domain2);
+        Book const b2D2(a2, a1, domain2);
 
         // typename Map::value_type value_type;
         // std::pair <Book const, int> value_type;
@@ -749,16 +749,16 @@ public:
         {
             Map c;
 
-            c.insert(std::make_pair(b1_d1, 10));
+            c.insert(std::make_pair(b1D1, 10));
             if (!BEAST_EXPECT(c.size() == 1))
                 return;
-            c.insert(std::make_pair(b2_d1, 20));
+            c.insert(std::make_pair(b2D1, 20));
             if (!BEAST_EXPECT(c.size() == 2))
                 return;
-            c.insert(std::make_pair(b1_d2, 30));
+            c.insert(std::make_pair(b1D2, 30));
             if (!BEAST_EXPECT(c.size() == 3))
                 return;
-            c.insert(std::make_pair(b2_d2, 40));
+            c.insert(std::make_pair(b2D2, 40));
             if (!BEAST_EXPECT(c.size() == 4))
                 return;
 
@@ -786,8 +786,8 @@ public:
 
             c.insert(std::make_pair(b1, 1));
             c.insert(std::make_pair(b2, 2));
-            c.insert(std::make_pair(b1_d1, 3));
-            c.insert(std::make_pair(b2_d1, 4));
+            c.insert(std::make_pair(b1D1, 3));
+            c.insert(std::make_pair(b2D1, 4));
             if (!BEAST_EXPECT(c.size() == 4))
                 return;
 

@@ -19,9 +19,9 @@ class AMMWithdrawBuilder;
  * @brief Transaction: AMMWithdraw
  *
  * Type: ttAMM_WITHDRAW (37)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureAMM
- * Privileges: mayDeleteAcct | mayAuthorizeMPT
+ * Privileges: MayDeleteAcct | MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMWithdrawBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -60,7 +60,7 @@ public:
     }
 
     /**
-     * @brief Get sfAsset2 (soeREQUIRED)
+     * @brief Get sfAsset2 (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -72,7 +72,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
+     * @brief Get sfAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
@@ -99,7 +99,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount2 (soeOPTIONAL)
+     * @brief Get sfAmount2 (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfEPrice (soeOPTIONAL)
+     * @brief Get sfEPrice (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -152,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfLPTokenIn (soeOPTIONAL)
+     * @brief Get sfLPTokenIn (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -182,7 +182,7 @@ public:
  * @brief Builder for AMMWithdraw transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class AMMWithdrawBuilder : public TransactionBuilderBase<AMMWithdrawBuilder>
@@ -223,7 +223,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -235,7 +235,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -247,7 +247,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -259,7 +259,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount2 (soeOPTIONAL)
+     * @brief Set sfAmount2 (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -271,7 +271,7 @@ public:
     }
 
     /**
-     * @brief Set sfEPrice (soeOPTIONAL)
+     * @brief Set sfEPrice (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMWithdrawBuilder&
@@ -282,7 +282,7 @@ public:
     }
 
     /**
-     * @brief Set sfLPTokenIn (soeOPTIONAL)
+     * @brief Set sfLPTokenIn (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMWithdrawBuilder&

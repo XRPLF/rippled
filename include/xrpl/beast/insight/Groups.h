@@ -29,6 +29,6 @@ public:
 
 /** Create a group container that uses the specified collector. */
 std::unique_ptr<Groups>
-make_Groups(Collector::ptr const& collector);
+makeGroups(Collector::ptr const& collector);
 
 }  // namespace beast::insight

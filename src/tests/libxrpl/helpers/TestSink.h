@@ -13,7 +13,7 @@ public:
         return sink;
     }
 
-    TestSink(beast::severities::Severity threshold = beast::severities::kDebug);
+    TestSink(beast::severities::Severity threshold = beast::severities::KDebug);
 
     void
     write(beast::severities::Severity level, std::string const& text) override;
