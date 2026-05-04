@@ -440,6 +440,49 @@ class LendingHelpers_test : public beast::unit_test::Suite
         BEAST_EXPECT(state.managementFeeDue == 0);
     }
 
+    // Direct gating proof: at near-zero rate, `computePaymentFactor` must
+    // return different values with `fixCleanup3_2_0` disabled vs enabled.
+    // The enabled path agrees with an independent polynomial reference;
+    // the disabled path diverges by a measurable amount due to the
+    // catastrophic cancellation in `(1+r)^n - 1`.
+    void
+    testComputePaymentFactorNearZeroRate()
+    {
+        testcase("computePaymentFactor: near-zero rate, amendment disabled vs enabled");
+        using namespace jtx;
+        using namespace xrpl::detail;
+
+        Number const r = loanPeriodicRate(TenthBips32{1}, 600);
+        std::uint32_t const n = 3;
+
+        // Independent reference: expand F(r,3) = r*(1+r)^3/((1+r)^3-1)
+        // algebraically for n=3, dividing numerator and denominator by r:
+        //   F(r,3) = (1 + 3r + 3r^2 + r^3) / (3 + 3r + r^2)
+        // No power(), no binomial series — pure polynomial arithmetic in
+        // Number.
+        Number const reference = (1 + 3 * r + 3 * r * r + r * r * r) / (3 + 3 * r + r * r);
+
+        // Pre-fix: closed form power(1+r, n) - 1 suffers catastrophic
+        // cancellation when r*n ~ 5.7e-10.
+        Env const envBug{*this, testableAmendments() - fixCleanup3_2_0};
+        Number const buggyFactor = computePaymentFactor(envBug.current()->rules(), r, n);
+
+        // Post-fix: hybrid binomial path avoids cancellation.
+        Env const envFix{*this};
+        Number const correctFactor = computePaymentFactor(envFix.current()->rules(), r, n);
+
+        // The amendment must change the computed factor in this regime.
+        BEAST_EXPECT(buggyFactor != correctFactor);
+
+        // The fixed factor must agree with the polynomial reference to
+        // within a few ULPs of Number's 19-digit precision.
+        BEAST_EXPECT(abs(correctFactor - reference) < Number(1, -15));
+
+        // The buggy factor must diverge from the reference by a measurable
+        // amount — empirically ~1e-10 in this regime.
+        BEAST_EXPECT(abs(buggyFactor - reference) > Number(1, -12));
+    }
+
     void
     testComputeOverpaymentComponents()
     {
@@ -1415,6 +1458,7 @@ public:
         testComputePowerMinusOne();
         testComputePowerMinusOneHybrid();
         testComputeTheoreticalLoanStateNearZeroRate();
+        testComputePaymentFactorNearZeroRate();
         testComputeOverpaymentComponents();
         testComputeInterestAndFeeParts();
     }
