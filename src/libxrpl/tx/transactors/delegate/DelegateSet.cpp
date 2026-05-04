@@ -82,7 +82,7 @@ DelegateSet::doApply()
         if (permissions.empty())
         {
             // if permissions array is empty, delete the ledger object.
-            return deleteDelegate(view(), sle, accountID_, j_);
+            return deleteDelegate(view(), sle, j_);
         }
 
         sle->setFieldArray(sfPermissions, permissions);
@@ -105,6 +105,8 @@ DelegateSet::doApply()
     sle->setAccountID(sfAuthorize, authAccount);
 
     sle->setFieldArray(sfPermissions, permissions);
+
+    // Add to delegating account's owner directory.
     auto const page = ctx_.view().dirInsert(
         keylet::ownerDir(accountID_), delegateKey, describeOwnerDir(accountID_));
 
@@ -112,6 +114,17 @@ DelegateSet::doApply()
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     (*sle)[sfOwnerNode] = *page;
+
+    // Add to authorized account's owner directory so AccountDelete can find
+    // and clean up inbound delegations.
+    auto const destPage = ctx_.view().dirInsert(
+        keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
+
+    if (!destPage)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    (*sle)[sfDestinationNode] = *destPage;
+
     ctx_.view().insert(sle);
     wrappedOwner.adjustOwnerCount(1);
 
@@ -119,16 +132,15 @@ DelegateSet::doApply()
 }
 
 TER
-DelegateSet::deleteDelegate(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    AccountID const& account,
-    beast::Journal j)
+DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), false))
+    auto const delegator = (*sle)[sfAccount];
+    auto const delegatee = (*sle)[sfAuthorize];
+
+    if (!view.dirRemove(keylet::ownerDir(delegator), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Delegate from owner.";
@@ -136,7 +148,18 @@ DelegateSet::deleteDelegate(
         // LCOV_EXCL_STOP
     }
 
-    WAccountRoot wrappedOwner(account, view, j);
+    if (auto const optPage = (*sle)[~sfDestinationNode])
+    {
+        if (!view.dirRemove(keylet::ownerDir(delegatee), *optPage, sle->key(), false))
+        {
+            // LCOV_EXCL_START
+            JLOG(j.fatal()) << "Unable to delete Delegate from authorized account.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    WAccountRoot wrappedOwner(delegator, view, j);
     if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
