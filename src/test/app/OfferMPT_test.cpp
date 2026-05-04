@@ -4823,7 +4823,7 @@ public:
             // getToken:
             //  - Create MPT with CanTransfer + CanTrade; authorize alice as holder.
             //  - Create IOU trustline
-            auto const Token = getToken(env);
+            auto const token = getToken(env);
 
             // carol: reserve(0) + 1 increment + fee covers placing one offer.
             // After the offer tx she has exactly reserve(1) + XRP(30).
@@ -4835,7 +4835,7 @@ public:
             // carol's offer goes on the book (no counterpart yet).
             // TakerPays=Token(30): carol will receive Token when crossed.
             // TakerGets=XRP(30):  carol will give XRP when crossed.
-            env(offer(carol, Token(30), XRP(30)));
+            env(offer(carol, token(30), XRP(30)));
             env.require(Owners(carol, 1));
 
             // Execute offer create or cross-currency payment
@@ -4844,13 +4844,13 @@ public:
             // Token:
             // - MPT: checkCreateMPT auto-creates an MPToken for carol (no reserve check).
             // - IOU: directSendNoFeeIOU auto-creates an Trustline for carol (no reserve check).
-            execTx(env, Token);
+            execTx(env, token);
 
             // Carol now owns 2 objects (remaining offer + new MPToken) even
             // though her XRP balance is only reserve(1) + XRP(15), which is
             // below reserve(2) = reserve(1) + inc.
             auto const carolBalance = r + inc + XRP(15);
-            env.require(Owners(carol, 2), Balance(carol, Token(15)), Balance(carol, carolBalance));
+            env.require(Owners(carol, 2), Balance(carol, token(15)), Balance(carol, carolBalance));
             BEAST_EXPECT(carolBalance < r + 2 * inc);  // below reserve(2)
         };
         std::function<PrettyAsset(Env&)> const getIOU = [&](Env& env) -> PrettyAsset {
@@ -4859,23 +4859,23 @@ public:
             return gw["USD"];
         };
         std::function<PrettyAsset(Env&)> const getMPT = [&](Env& env) -> PrettyAsset {
-            MPT const MPT1 = MPTTester({.env = env, .issuer = gw, .holders = {alice}, .pay = 100});
-            return MPT1;
+            MPT const mpT1 = MPTTester({.env = env, .issuer = gw, .holders = {alice}, .pay = 100});
+            return mpT1;
         };
         for (auto&& getToken : {getIOU, getMPT})
         {
-            test(getToken, [&](Env& env, PrettyAsset const& Token) {
+            test(getToken, [&](Env& env, PrettyAsset const& token) {
                 // alice partially crosses carol's offer.
                 // alice sends Token(15) to carol and receives XRP(15).
                 // Token is MPT: checkCreateMPT auto-creates an MPToken for carol (no reserve
                 // check). Token is IOU: directSendNoFeeIOU auto-creates a trustline for carol (no
                 // reserve check).
-                env(offer(alice, XRP(15), Token(15)));
+                env(offer(alice, XRP(15), token(15)));
             });
-            test(getToken, [&](Env& env, PrettyAsset const& Token) {
+            test(getToken, [&](Env& env, PrettyAsset const& token) {
                 // Similar to above but with cross-currency payment.
                 env(pay(alice, bob, XRP(15)),
-                    Sendmax(Token(15)),
+                    Sendmax(token(15)),
                     Path(~XRP),
                     Txflags(tfNoRippleDirect | tfPartialPayment));
             });
