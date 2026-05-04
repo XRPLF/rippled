@@ -1,78 +1,69 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/main/CollectorManager.h>
 
-#include <memory>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Group.h>
+#include <xrpl/beast/insight/Groups.h>
+#include <xrpl/beast/insight/NullCollector.h>
+#include <xrpl/beast/insight/StatsDCollector.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
 
-namespace ripple {
+#include <memory>
+#include <string>
+
+namespace xrpl {
 
 class CollectorManagerImp : public CollectorManager
 {
 public:
-    beast::Journal m_journal;
-    beast::insight::Collector::ptr m_collector;
-    std::unique_ptr<beast::insight::Groups> m_groups;
+    // NOLINTBEGIN(readability-identifier-naming)
+    beast::Journal journal_;
+    beast::insight::Collector::ptr collector_;
+    std::unique_ptr<beast::insight::Groups> groups_;
+    // NOLINTEND(readability-identifier-naming)
 
-    CollectorManagerImp(Section const& params, beast::Journal journal)
-        : m_journal(journal)
+    CollectorManagerImp(Section const& params, beast::Journal journal) : journal_(journal)
     {
         std::string const& server = get(params, "server");
 
         if (server == "statsd")
         {
             beast::IP::Endpoint const address(
-                beast::IP::Endpoint::from_string(get(params, "address")));
+                beast::IP::Endpoint::fromString(get(params, "address")));
             std::string const& prefix(get(params, "prefix"));
 
-            m_collector =
-                beast::insight::StatsDCollector::New(address, prefix, journal);
+            collector_ = beast::insight::StatsDCollector::make(address, prefix, journal);
         }
         else
         {
-            m_collector = beast::insight::NullCollector::New();
+            collector_ = beast::insight::NullCollector::make();
         }
 
-        m_groups = beast::insight::make_Groups(m_collector);
+        groups_ = beast::insight::makeGroups(collector_);
     }
 
-    ~CollectorManagerImp() = default;
+    ~CollectorManagerImp() override = default;
 
     beast::insight::Collector::ptr const&
     collector() override
     {
-        return m_collector;
+        return collector_;
     }
 
     beast::insight::Group::ptr const&
     group(std::string const& name) override
     {
-        return m_groups->get(name);
+        return groups_->get(name);
     }
 };
 
 //------------------------------------------------------------------------------
 
 std::unique_ptr<CollectorManager>
-make_CollectorManager(Section const& params, beast::Journal journal)
+makeCollectorManager(Section const& params, beast::Journal journal)
 {
     return std::make_unique<CollectorManagerImp>(params, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

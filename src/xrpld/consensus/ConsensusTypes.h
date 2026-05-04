@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_CONSENSUS_CONSENSUS_TYPES_H_INCLUDED
-#define RIPPLE_CONSENSUS_CONSENSUS_TYPES_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpld/consensus/DisputedTx.h>
@@ -28,7 +8,7 @@
 #include <chrono>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents how a node currently participates in Consensus.
 
@@ -56,16 +36,16 @@ namespace ripple {
 */
 enum class ConsensusMode {
     //! We are normal participant in consensus and propose our position
-    proposing,
+    Proposing,
     //! We are observing peer positions, but not proposing our position
-    observing,
+    Observing,
     //! We have the wrong ledger and are attempting to acquire it
-    wrongLedger,
+    WrongLedger,
     //! We switched ledgers since we started this consensus round but are now
     //! running on what we believe is the correct ledger.  This mode is as
     //! if we entered the round observing, but is used to indicate we did
     //! have the wrongLedger at some point.
-    switchedLedger
+    SwitchedLedger
 };
 
 inline std::string
@@ -73,13 +53,13 @@ to_string(ConsensusMode m)
 {
     switch (m)
     {
-        case ConsensusMode::proposing:
+        case ConsensusMode::Proposing:
             return "proposing";
-        case ConsensusMode::observing:
+        case ConsensusMode::Observing:
             return "observing";
-        case ConsensusMode::wrongLedger:
+        case ConsensusMode::WrongLedger:
             return "wrongLedger";
-        case ConsensusMode::switchedLedger:
+        case ConsensusMode::SwitchedLedger:
             return "switchedLedger";
         default:
             return "unknown";
@@ -104,15 +84,15 @@ to_string(ConsensusMode m)
 */
 enum class ConsensusPhase {
     //! We haven't closed our ledger yet, but others might have
-    open,
+    Open,
 
     //! Establishing consensus by exchanging proposals with our peers
-    establish,
+    Establish,
 
     //! We have accepted a new last closed ledger and are waiting on a call
     //! to startRound to begin the next consensus round.  No changes
     //! to consensus phase occur while in this phase.
-    accepted,
+    Accepted,
 };
 
 inline std::string
@@ -120,11 +100,11 @@ to_string(ConsensusPhase p)
 {
     switch (p)
     {
-        case ConsensusPhase::open:
+        case ConsensusPhase::Open:
             return "open";
-        case ConsensusPhase::establish:
+        case ConsensusPhase::Establish:
             return "establish";
-        case ConsensusPhase::accepted:
+        case ConsensusPhase::Accepted:
             return "accepted";
         default:
             return "unknown";
@@ -137,10 +117,10 @@ class ConsensusTimer
 {
     using time_point = std::chrono::steady_clock::time_point;
     time_point start_;
-    std::chrono::milliseconds dur_;
+    std::chrono::milliseconds dur_{};
 
 public:
-    std::chrono::milliseconds
+    [[nodiscard]] std::chrono::milliseconds
     read() const
     {
         return dur_;
@@ -208,18 +188,12 @@ struct ConsensusResult
     using NodeID_t = typename Traits::NodeID_t;
 
     using Tx_t = typename TxSet_t::Tx;
-    using Proposal_t = ConsensusProposal<
-        NodeID_t,
-        typename Ledger_t::ID,
-        typename TxSet_t::ID>;
+    using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID, typename TxSet_t::ID>;
     using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
 
-    ConsensusResult(TxSet_t&& s, Proposal_t&& p)
-        : txns{std::move(s)}, position{std::move(p)}
+    ConsensusResult(TxSet_t&& s, Proposal_t&& p) : txns{std::move(s)}, position{std::move(p)}
     {
-        XRPL_ASSERT(
-            txns.id() == position.position(),
-            "ripple::ConsensusResult : valid inputs");
+        XRPL_ASSERT(txns.id() == position.position(), "xrpl::ConsensusResult : valid inputs");
     }
 
     //! The set of transactions consensus agrees go in the ledger
@@ -244,6 +218,4 @@ struct ConsensusResult
     // The number of peers proposing during the round
     std::size_t proposers = 0;
 };
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

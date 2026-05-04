@@ -1,36 +1,52 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
 
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/directory.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
 
-#include <xrpld/ledger/BookDirs.h>
-#include <xrpld/ledger/Sandbox.h>
-
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/BookDirs.h>
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
-struct Directory_test : public beast::unit_test::suite
+struct Directory_test : public beast::unit_test::Suite
 {
     // Map [0-15576] into a unique 3 letter currency code
     std::string
@@ -52,7 +68,7 @@ struct Directory_test : public beast::unit_test::suite
 
     // Insert n empty pages, numbered [0, ... n - 1], in the
     // specified directory:
-    void
+    static void
     makePages(Sandbox& sb, uint256 const& base, std::uint64_t n)
     {
         for (std::uint64_t i = 0; i < n; ++i)
@@ -62,14 +78,22 @@ struct Directory_test : public beast::unit_test::suite
             p->setFieldV256(sfIndexes, STVector256{});
 
             if (i + 1 == n)
+            {
                 p->setFieldU64(sfIndexNext, 0);
+            }
             else
+            {
                 p->setFieldU64(sfIndexNext, i + 1);
+            }
 
             if (i == 0)
+            {
                 p->setFieldU64(sfIndexPrevious, n - 1);
+            }
             else
+            {
                 p->setFieldU64(sfIndexPrevious, i - 1);
+            }
 
             sb.insert(p);
         }
@@ -81,7 +105,7 @@ struct Directory_test : public beast::unit_test::suite
         using namespace jtx;
 
         auto gw = Account("gw");
-        auto USD = gw["USD"];
+        auto usd = gw["USD"];
         auto alice = Account("alice");
         auto bob = Account("bob");
 
@@ -92,7 +116,7 @@ struct Directory_test : public beast::unit_test::suite
 
         std::uint32_t const firstOfferSeq{env.seq(alice)};
         for (std::size_t i = 1; i <= 400; ++i)
-            env(offer(alice, USD(i), XRP(i)));
+            env(offer(alice, usd(i), XRP(i)));
         env.close();
 
         // Check Alice's directory: it should contain one
@@ -105,18 +129,16 @@ struct Directory_test : public beast::unit_test::suite
 
             do
             {
-                auto p =
-                    view->read(keylet::page(keylet::ownerDir(alice), page));
+                auto p = view->read(keylet::page(keylet::ownerDir(alice), page));
 
                 // Ensure that the entries in the page are sorted
                 auto const& v = p->getFieldV256(sfIndexes);
-                BEAST_EXPECT(std::is_sorted(v.begin(), v.end()));
+                BEAST_EXPECT(std::ranges::is_sorted(v));
 
                 // Ensure that the page contains the correct orders by
                 // calculating which sequence numbers belong here.
-                std::uint32_t const minSeq =
-                    firstOfferSeq + (page * dirNodeMaxEntries);
-                std::uint32_t const maxSeq = minSeq + dirNodeMaxEntries;
+                std::uint32_t const minSeq = firstOfferSeq + (page * kDIR_NODE_MAX_ENTRIES);
+                std::uint32_t const maxSeq = minSeq + kDIR_NODE_MAX_ENTRIES;
 
                 for (auto const& e : v)
                 {
@@ -132,14 +154,13 @@ struct Directory_test : public beast::unit_test::suite
 
         // Now check the orderbook: it should be in the order we placed
         // the offers.
-        auto book = BookDirs(
-            *env.current(), Book({xrpIssue(), USD.issue(), std::nullopt}));
+        auto book = BookDirs(*env.current(), Book({xrpIssue(), usd, std::nullopt}));
         int count = 1;
 
         for (auto const& offer : book)
         {
             count++;
-            BEAST_EXPECT(offer->getFieldAmount(sfTakerPays) == USD(count));
+            BEAST_EXPECT(offer->getFieldAmount(sfTakerPays) == usd(count));
             BEAST_EXPECT(offer->getFieldAmount(sfTakerGets) == XRP(count));
         }
     }
@@ -168,14 +189,14 @@ struct Directory_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-        env(signers(alice, jtx::none));
+        env(signers(alice, jtx::kNONE));
         env.close();
         BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
         std::vector<IOU> const currencies = [this, &gw]() {
             std::vector<IOU> c;
 
-            c.reserve((2 * dirNodeMaxEntries) + 3);
+            c.reserve((2 * kDIR_NODE_MAX_ENTRIES) + 3);
 
             while (c.size() != c.capacity())
                 c.push_back(gw[currcode(c.size())]);
@@ -183,7 +204,7 @@ struct Directory_test : public beast::unit_test::suite
             return c;
         }();
 
-        // First, Alices creates a lot of trustlines, and then
+        // First, Alice creates a lot of trustlines, and then
         // deletes them in a different order:
         {
             auto cl = currencies;
@@ -196,7 +217,7 @@ struct Directory_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-            std::shuffle(cl.begin(), cl.end(), default_prng());
+            std::shuffle(cl.begin(), cl.end(), defaultPrng());
 
             for (auto const& c : cl)
             {
@@ -214,7 +235,7 @@ struct Directory_test : public beast::unit_test::suite
 
             BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-            for (auto c : currencies)
+            for (auto const& c : currencies)
             {
                 env(trust(charlie, c(50)));
                 env.close();
@@ -229,7 +250,7 @@ struct Directory_test : public beast::unit_test::suite
             // Now fill the offers in a random order. Offer
             // entries will drop, and be replaced by trust
             // lines that are implicitly created.
-            std::shuffle(cl.begin(), cl.end(), default_prng());
+            std::shuffle(cl.begin(), cl.end(), defaultPrng());
 
             for (auto const& c : cl)
             {
@@ -240,7 +261,7 @@ struct Directory_test : public beast::unit_test::suite
             // Finally, Alice now sends the funds back to
             // Charlie. The implicitly created trust lines
             // should drop away:
-            std::shuffle(cl.begin(), cl.end(), default_prng());
+            std::shuffle(cl.begin(), cl.end(), defaultPrng());
 
             for (auto const& c : cl)
             {
@@ -262,28 +283,29 @@ struct Directory_test : public beast::unit_test::suite
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(10000), alice, gw);
         env.close();
-        env.trust(USD(1000), alice);
-        env(pay(gw, alice, USD(1000)));
+        env.trust(usd(1000), alice);
+        env(pay(gw, alice, usd(1000)));
 
         auto const firstOfferSeq = env.seq(alice);
 
         // Fill up three pages of offers
         for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < dirNodeMaxEntries; ++j)
-                env(offer(alice, XRP(1), USD(1)));
+        {
+            for (int j = 0; j < kDIR_NODE_MAX_ENTRIES; ++j)
+                env(offer(alice, XRP(1), usd(1)));
+        }
         env.close();
 
         // remove all the offers. Remove the middle page last
         for (auto page : {0, 2, 1})
         {
-            for (int i = 0; i < dirNodeMaxEntries; ++i)
+            for (int i = 0; i < kDIR_NODE_MAX_ENTRIES; ++i)
             {
-                env(offer_cancel(
-                    alice, firstOfferSeq + page * dirNodeMaxEntries + i));
+                env(offerCancel(alice, firstOfferSeq + (page * kDIR_NODE_MAX_ENTRIES) + i));
                 env.close();
             }
         }
@@ -291,9 +313,8 @@ struct Directory_test : public beast::unit_test::suite
         // All the offers have been cancelled, so the book
         // should have no entries and be empty:
         {
-            Sandbox sb(env.closed().get(), tapNONE);
-            uint256 const bookBase =
-                getBookBase({xrpIssue(), USD.issue(), std::nullopt});
+            Sandbox const sb(env.closed().get(), TapNone);
+            uint256 const bookBase = getBookBase({xrpIssue(), usd, std::nullopt});
 
             BEAST_EXPECT(dirIsEmpty(sb, keylet::page(bookBase)));
             BEAST_EXPECT(!sb.succ(bookBase, getQualityNext(bookBase)));
@@ -303,7 +324,7 @@ struct Directory_test : public beast::unit_test::suite
         // and removes her trust line. Her owner directory
         // should now be empty:
         {
-            env.trust(USD(0), alice);
+            env.trust(usd(0), alice);
             env(pay(alice, gw, alice["USD"](1000)));
             env.close();
             BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
@@ -320,62 +341,59 @@ struct Directory_test : public beast::unit_test::suite
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(10000), alice);
         env.close();
 
-        constexpr uint256 base(
-            "fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
+        constexpr uint256 kBASE("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
 
-        constexpr uint256 item(
-            "bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
+        constexpr uint256 kITEM("bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
 
         {
             // Create a chain of three pages:
-            Sandbox sb(env.closed().get(), tapNONE);
-            makePages(sb, base, 3);
+            Sandbox sb(env.closed().get(), TapNone);
+            makePages(sb, kBASE, 3);
 
             // Insert an item in the middle page:
             {
-                auto p = sb.peek(keylet::page(base, 1));
+                auto p = sb.peek(keylet::page(kBASE, 1));
                 BEAST_EXPECT(p);
 
                 STVector256 v;
-                v.push_back(item);
+                v.pushBack(kITEM);
                 p->setFieldV256(sfIndexes, v);
                 sb.update(p);
             }
 
             // Now, try to delete the item from the middle
             // page. This should cause all pages to be deleted:
-            BEAST_EXPECT(sb.dirRemove(
-                keylet::page(base, 0), 1, keylet::unchecked(item), false));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 2)));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 1)));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 0)));
+            BEAST_EXPECT(sb.dirRemove(keylet::page(kBASE, 0), 1, keylet::unchecked(kITEM), false));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 2)));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 1)));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 0)));
         }
 
         {
             // Create a chain of four pages:
-            Sandbox sb(env.closed().get(), tapNONE);
-            makePages(sb, base, 4);
+            Sandbox sb(env.closed().get(), TapNone);
+            makePages(sb, kBASE, 4);
 
             // Now add items on pages 1 and 2:
             {
-                auto p1 = sb.peek(keylet::page(base, 1));
+                auto p1 = sb.peek(keylet::page(kBASE, 1));
                 BEAST_EXPECT(p1);
 
                 STVector256 v1;
-                v1.push_back(~item);
+                v1.pushBack(~kITEM);
                 p1->setFieldV256(sfIndexes, v1);
                 sb.update(p1);
 
-                auto p2 = sb.peek(keylet::page(base, 2));
+                auto p2 = sb.peek(keylet::page(kBASE, 2));
                 BEAST_EXPECT(p2);
 
                 STVector256 v2;
-                v2.push_back(item);
+                v2.pushBack(kITEM);
                 p2->setFieldV256(sfIndexes, v2);
                 sb.update(p2);
             }
@@ -383,17 +401,16 @@ struct Directory_test : public beast::unit_test::suite
             // Now, try to delete the item from page 2.
             // This should cause pages 2 and 3 to be
             // deleted:
-            BEAST_EXPECT(sb.dirRemove(
-                keylet::page(base, 0), 2, keylet::unchecked(item), false));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 3)));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 2)));
+            BEAST_EXPECT(sb.dirRemove(keylet::page(kBASE, 0), 2, keylet::unchecked(kITEM), false));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 3)));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 2)));
 
-            auto p1 = sb.peek(keylet::page(base, 1));
+            auto p1 = sb.peek(keylet::page(kBASE, 1));
             BEAST_EXPECT(p1);
             BEAST_EXPECT(p1->getFieldU64(sfIndexNext) == 0);
             BEAST_EXPECT(p1->getFieldU64(sfIndexPrevious) == 0);
 
-            auto p0 = sb.peek(keylet::page(base, 0));
+            auto p0 = sb.peek(keylet::page(kBASE, 0));
             BEAST_EXPECT(p0);
             BEAST_EXPECT(p0->getFieldU64(sfIndexNext) == 1);
             BEAST_EXPECT(p0->getFieldU64(sfIndexPrevious) == 1);
@@ -408,35 +425,32 @@ struct Directory_test : public beast::unit_test::suite
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
-        auto ledger_data = [this](Env& env) {
-            Json::Value params;
+        auto ledgerData = [this](Env& env) {
+            json::Value params;
             params[jss::type] = jss::directory;
             params[jss::ledger_index] = "validated";
-            auto const result =
-                env.rpc("json", "ledger_data", to_string(params))[jss::result];
+            auto const result = env.rpc("json", "ledger_data", to_string(params))[jss::result];
             BEAST_EXPECT(!result.isMember(jss::marker));
             return result;
         };
 
         // fixPreviousTxnID is disabled.
-        Env env(*this, testable_amendments() - fixPreviousTxnID);
+        Env env(*this, testableAmendments() - fixPreviousTxnID);
         env.fund(XRP(10000), alice, gw);
         env.close();
-        env.trust(USD(1000), alice);
-        env(pay(gw, alice, USD(1000)));
+        env.trust(usd(1000), alice);
+        env(pay(gw, alice, usd(1000)));
         env.close();
 
         {
-            auto const jrr = ledger_data(env);
+            auto const jrr = ledgerData(env);
             auto const& jstate = jrr[jss::state];
             BEAST_EXPECTS(checkArraySize(jstate, 2), jrr.toStyledString());
             for (auto const& directory : jstate)
             {
-                BEAST_EXPECT(
-                    directory["LedgerEntryType"] ==
-                    jss::DirectoryNode);  // sanity check
+                BEAST_EXPECT(directory["LedgerEntryType"] == jss::DirectoryNode);  // sanity check
                 // The PreviousTxnID and PreviousTxnLgrSeq fields should not be
                 // on the DirectoryNode object when the amendment is disabled
                 BEAST_EXPECT(!directory.isMember("PreviousTxnID"));
@@ -450,23 +464,21 @@ struct Directory_test : public beast::unit_test::suite
 
         // Make sure the `PreviousTxnID` and `PreviousTxnLgrSeq` fields now
         // exist
-        env(offer(alice, XRP(1), USD(1)));
+        env(offer(alice, XRP(1), usd(1)));
         auto const txID = to_string(env.tx()->getTransactionID());
-        auto const ledgerSeq = env.current()->info().seq;
+        auto const ledgerSeq = env.current()->header().seq;
         env.close();
         // Make sure the fields only exist if the object is touched
         env(noop(gw));
         env.close();
 
         {
-            auto const jrr = ledger_data(env);
+            auto const jrr = ledgerData(env);
             auto const& jstate = jrr[jss::state];
             BEAST_EXPECTS(checkArraySize(jstate, 3), jrr.toStyledString());
             for (auto const& directory : jstate)
             {
-                BEAST_EXPECT(
-                    directory["LedgerEntryType"] ==
-                    jss::DirectoryNode);  // sanity check
+                BEAST_EXPECT(directory["LedgerEntryType"] == jss::DirectoryNode);  // sanity check
                 if (directory[jss::Owner] == gw.human())
                 {
                     // gw's directory did not get touched, so it
@@ -491,6 +503,89 @@ struct Directory_test : public beast::unit_test::suite
     }
 
     void
+    testDirectoryFull()
+    {
+        using namespace test::jtx;
+        Account const alice("alice");
+
+        auto const testCase = [&, this](FeatureBitset features, auto setup) {
+            using namespace test::jtx;
+
+            Env env(*this, features);
+            env.fund(XRP(20000), alice);
+            env.close();
+
+            auto const [lastPage, full] = setup(env);
+
+            // Populate root page and last page
+            for (int i = 0; i < 63; ++i)
+                env(credentials::create(alice, alice, std::to_string(i)));
+            env.close();
+
+            // NOTE, everything below can only be tested on open ledger because
+            // there is no transaction type to express what bumpLastPage does.
+
+            // Bump position of last page from 1 to highest possible
+            auto const res = directory::bumpLastPage(
+                env,
+                lastPage,
+                keylet::ownerDir(alice.id()),
+                [lastPage, this](ApplyView& view, uint256 key, std::uint64_t page) {
+                    auto sle = view.peek({ltCREDENTIAL, key});
+                    if (!BEAST_EXPECT(sle))
+                        return false;
+
+                    BEAST_EXPECT(page == lastPage);
+                    sle->setFieldU64(sfIssuerNode, page);
+                    // sfSubjectNode is not set in self-issued credentials
+                    view.update(sle);
+                    return true;
+                });
+            BEAST_EXPECT(res);
+
+            // Create one more credential
+            env(credentials::create(alice, alice, std::to_string(63)));
+
+            // Not enough space for another object if full
+            auto const expected = full ? Ter{tecDIR_FULL} : Ter{tesSUCCESS};
+            env(credentials::create(alice, alice, "foo"), expected);
+
+            // Destroy all objects in directory
+            for (int i = 0; i < 64; ++i)
+                env(credentials::deleteCred(alice, alice, alice, std::to_string(i)));
+
+            if (!full)
+                env(credentials::deleteCred(alice, alice, alice, "foo"));
+
+            // Verify directory is empty.
+            auto const sle = env.le(keylet::ownerDir(alice.id()));
+            BEAST_EXPECT(sle == nullptr);
+
+            // Test completed
+            env.close();
+        };
+
+        testCase(
+            testableAmendments() - fixDirectoryLimit,
+            [this](Env&) -> std::tuple<std::uint64_t, bool> {
+                testcase("directory full without fixDirectoryLimit");
+                return {kDIR_NODE_MAX_PAGES - 1, true};
+            });
+        testCase(
+            testableAmendments(),  //
+            [this](Env&) -> std::tuple<std::uint64_t, bool> {
+                testcase("directory not full with fixDirectoryLimit");
+                return {kDIR_NODE_MAX_PAGES - 1, false};
+            });
+        testCase(
+            testableAmendments(),  //
+            [this](Env&) -> std::tuple<std::uint64_t, bool> {
+                testcase("directory full with fixDirectoryLimit");
+                return {std::numeric_limits<std::uint64_t>::max(), true};
+            });
+    }
+
+    void
     run() override
     {
         testDirectoryOrdering();
@@ -498,10 +593,10 @@ struct Directory_test : public beast::unit_test::suite
         testRipd1353();
         testEmptyChain();
         testPreviousTxnID();
+        testDirectoryFull();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Directory, ledger, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(Directory, ledger, xrpl, 1);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

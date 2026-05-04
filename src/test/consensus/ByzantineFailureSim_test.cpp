@@ -1,32 +1,22 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/csf.h>
+#include <test/csf/Peer.h>
+#include <test/csf/PeerGroup.h>
+#include <test/csf/Sim.h>
+#include <test/csf/SimTime.h>
+#include <test/csf/TrustGraph.h>
+#include <test/csf/collectors.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpld/consensus/ConsensusParms.h>
 
-#include <utility>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace ripple {
-namespace test {
+#include <chrono>
+#include <ios>
+#include <iostream>
 
-class ByzantineFailureSim_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class ByzantineFailureSim_test : public beast::unit_test::Suite
 {
     void
     run() override
@@ -41,8 +31,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         Sim sim;
         ConsensusParms const parms{};
 
-        SimDuration const delay =
-            round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
         PeerGroup a = sim.createGroup(1);
         PeerGroup b = sim.createGroup(1);
         PeerGroup c = sim.createGroup(1);
@@ -59,18 +48,17 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         f.trustAndConnect(f + d + e + g, delay);
         g.trustAndConnect(g + a + f, delay);
 
-        PeerGroup network = a + b + c + d + e + f + g;
+        PeerGroup const network = a + b + c + d + e + f + g;
 
         StreamCollector sc{std::cout};
 
         sim.collectors.add(sc);
 
-        for (TrustGraph<Peer*>::ForkInfo const& fi :
-             sim.trustGraph.forkablePairs(0.8))
+        for (TrustGraph<Peer*>::ForkInfo const& fi : sim.trustGraph.forkablePairs(0.8))
         {
             std::cout << "Can fork " << PeerGroup{fi.unlA} << " "
-                      << " " << PeerGroup{fi.unlB} << " overlap " << fi.overlap
-                      << " required " << fi.required << "\n";
+                      << " " << PeerGroup{fi.unlB} << " overlap " << fi.overlap << " required "
+                      << fi.required << "\n";
         };
 
         // set prior state
@@ -82,23 +70,20 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         {
             peer->submit(Tx{0});
             // Peers 0,1,2,6 will close the next ledger differently by injecting
-            // a non-consensus approved transaciton
+            // a non-consensus approved transaction
             if (byzantineNodes.contains(peer))
             {
-                peer->txInjections.emplace(
-                    peer->lastClosedLedger.seq(), Tx{42});
+                peer->txInjections.emplace(peer->lastClosedLedger.seq(), Tx{42});
             }
         }
         sim.run(4);
         std::cout << "Branches: " << sim.branches() << "\n";
-        std::cout << "Fully synchronized: " << std::boolalpha
-                  << sim.synchronized() << "\n";
+        std::cout << "Fully synchronized: " << std::boolalpha << sim.synchronized() << "\n";
         // Not tessting anything currently.
         pass();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(ByzantineFailureSim, consensus, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(ByzantineFailureSim, consensus, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

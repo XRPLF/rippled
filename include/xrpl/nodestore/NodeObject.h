@@ -1,0 +1,79 @@
+#pragma once
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+
+// VFALCO NOTE Intentionally not in the NodeStore namespace
+
+namespace xrpl {
+
+/** The types of node objects. */
+enum class NodeObjectType : std::uint32_t {
+    Unknown = 0,
+    Ledger = 1,
+    AccountNode = 3,
+    TransactionNode = 4,
+    Dummy = 512  // an invalid or missing object
+};
+
+/** A simple object that the Ledger uses to store entries.
+    NodeObjects are comprised of a type, a hash, and a blob.
+    They can be uniquely identified by the hash, which is a half-SHA512 of
+    the blob. The blob is a variable length block of serialized data. The
+    type identifies what the blob contains.
+
+    @note No checking is performed to make sure the hash matches the data.
+    @see SHAMap
+*/
+class NodeObject : public CountedObject<NodeObject>
+{
+public:
+    static constexpr std::size_t kKEY_BYTES = 32;
+
+private:
+    // This hack is used to make the constructor effectively private
+    // except for when we use it in the call to make_shared.
+    // There's no portable way to make make_shared<> a friend work.
+    struct PrivateAccess
+    {
+        explicit PrivateAccess() = default;
+    };
+
+public:
+    // This constructor is private, use createObject instead.
+    NodeObject(NodeObjectType type, Blob&& data, uint256 const& hash, PrivateAccess);
+
+    /** Create an object from fields.
+
+        The caller's variable is modified during this call. The
+        underlying storage for the Blob is taken over by the NodeObject.
+
+        @param type The type of object.
+        @param ledgerIndex The ledger in which this object appears.
+        @param data A buffer containing the payload. The caller's variable
+                    is overwritten.
+        @param hash The 256-bit hash of the payload data.
+    */
+    static std::shared_ptr<NodeObject>
+    createObject(NodeObjectType type, Blob&& data, uint256 const& hash);
+
+    /** Returns the type of this object. */
+    [[nodiscard]] NodeObjectType
+    getType() const;
+
+    /** Returns the hash of the data. */
+    [[nodiscard]] uint256 const&
+    getHash() const;
+
+    /** Returns the underlying data. */
+    [[nodiscard]] Blob const&
+    getData() const;
+
+private:
+    NodeObjectType const type_;
+    uint256 const hash_;
+    Blob const data_;
+};
+
+}  // namespace xrpl

@@ -1,39 +1,35 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
+
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
+#include <xrpld/app/main/Application.h>
 
-namespace ripple {
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <vector>
+
+namespace xrpl {
 
 LedgerReplayTask::TaskParameter::TaskParameter(
     InboundLedger::Reason r,
     uint256 const& finishLedgerHash,
     std::uint32_t totalNumLedgers)
-    : reason_(r), finishHash_(finishLedgerHash), totalLedgers_(totalNumLedgers)
+    : reason(r), finishHash(finishLedgerHash), totalLedgers(totalNumLedgers)
 {
     XRPL_ASSERT(
         finishLedgerHash.isNonZero() && totalNumLedgers > 0,
-        "ripple::LedgerReplayTask::TaskParameter::TaskParameter : valid "
+        "xrpl::LedgerReplayTask::TaskParameter::TaskParameter : valid "
         "inputs");
 }
 
@@ -43,41 +39,37 @@ LedgerReplayTask::TaskParameter::update(
     std::uint32_t seq,
     std::vector<uint256> const& sList)
 {
-    if (finishHash_ != hash || sList.size() + 1 < totalLedgers_ || full_)
+    if (finishHash != hash || sList.size() + 1 < totalLedgers || full)
         return false;
 
-    finishSeq_ = seq;
-    skipList_ = sList;
-    skipList_.emplace_back(finishHash_);
-    startHash_ = skipList_[skipList_.size() - totalLedgers_];
+    finishSeq = seq;
+    skipList = sList;
+    skipList.emplace_back(finishHash);
+    startHash = skipList[skipList.size() - totalLedgers];
     XRPL_ASSERT(
-        startHash_.isNonZero(),
-        "ripple::LedgerReplayTask::TaskParameter::update : nonzero start hash");
-    startSeq_ = finishSeq_ - totalLedgers_ + 1;
-    full_ = true;
+        startHash.isNonZero(),
+        "xrpl::LedgerReplayTask::TaskParameter::update : nonzero start hash");
+    startSeq = finishSeq - totalLedgers + 1;
+    full = true;
     return true;
 }
 
 bool
-LedgerReplayTask::TaskParameter::canMergeInto(
-    TaskParameter const& existingTask) const
+LedgerReplayTask::TaskParameter::canMergeInto(TaskParameter const& existingTask) const
 {
-    if (reason_ == existingTask.reason_)
+    if (reason == existingTask.reason)
     {
-        if (finishHash_ == existingTask.finishHash_ &&
-            totalLedgers_ <= existingTask.totalLedgers_)
+        if (finishHash == existingTask.finishHash && totalLedgers <= existingTask.totalLedgers)
         {
             return true;
         }
 
-        if (existingTask.full_)
+        if (existingTask.full)
         {
-            auto const& exList = existingTask.skipList_;
-            if (auto i = std::find(exList.begin(), exList.end(), finishHash_);
-                i != exList.end())
+            auto const& exList = existingTask.skipList;
+            if (auto i = std::ranges::find(exList, finishHash); i != exList.end())
             {
-                return existingTask.totalLedgers_ >=
-                    totalLedgers_ + (exList.end() - i) - 1;
+                return existingTask.totalLedgers >= totalLedgers + (exList.end() - i) - 1;
             }
         }
     }
@@ -90,22 +82,22 @@ LedgerReplayTask::LedgerReplayTask(
     InboundLedgers& inboundLedgers,
     LedgerReplayer& replayer,
     std::shared_ptr<SkipListAcquire>& skipListAcquirer,
-    TaskParameter&& parameter)
+    TaskParameter const& parameter)
     : TimeoutCounter(
           app,
-          parameter.finishHash_,
-          LedgerReplayParameters::TASK_TIMEOUT,
-          {jtREPLAY_TASK,
-           "LedgerReplayTask",
-           LedgerReplayParameters::MAX_QUEUED_TASKS},
-          app.journal("LedgerReplayTask"))
+          parameter.finishHash,
+          LedgerReplayParameters::kTASK_TIMEOUT,
+          {.jobType = JtReplayTask,
+           .jobName = "LedReplTask",
+           .jobLimit = LedgerReplayParameters::kMAX_QUEUED_TASKS},
+          app.getJournal("LedgerReplayTask"))
     , inboundLedgers_(inboundLedgers)
     , replayer_(replayer)
     , parameter_(parameter)
-    , maxTimeouts_(std::max(
-          LedgerReplayParameters::TASK_MAX_TIMEOUTS_MINIMUM,
-          parameter.totalLedgers_ *
-              LedgerReplayParameters::TASK_MAX_TIMEOUTS_MULTIPLIER))
+    , maxTimeouts_(
+          std::max(
+              LedgerReplayParameters::kTASK_MAX_TIMEOUTS_MINIMUM,
+              parameter.totalLedgers * LedgerReplayParameters::kTASK_MAX_TIMEOUTS_MULTIPLIER))
     , skipListAcquirer_(skipListAcquirer)
 {
     JLOG(journal_.trace()) << "Create " << hash_;
@@ -121,7 +113,7 @@ LedgerReplayTask::init()
 {
     JLOG(journal_.debug()) << "Task start " << hash_;
 
-    std::weak_ptr<LedgerReplayTask> wptr = shared_from_this();
+    std::weak_ptr<LedgerReplayTask> const wptr = shared_from_this();
     skipListAcquirer_->addDataCallback([wptr](bool good, uint256 const& hash) {
         if (auto sptr = wptr.lock(); sptr)
         {
@@ -132,8 +124,7 @@ LedgerReplayTask::init()
             else
             {
                 auto const skipListData = sptr->skipListAcquirer_->getData();
-                sptr->updateSkipList(
-                    hash, skipListData->ledgerSeq, skipListData->skipList);
+                sptr->updateSkipList(hash, skipListData->ledgerSeq, skipListData->skipList);
             }
         }
     });
@@ -150,24 +141,21 @@ void
 LedgerReplayTask::trigger(ScopedLockType& sl)
 {
     JLOG(journal_.trace()) << "trigger " << hash_;
-    if (!parameter_.full_)
+    if (!parameter_.full)
         return;
 
     if (!parent_)
     {
-        parent_ = app_.getLedgerMaster().getLedgerByHash(parameter_.startHash_);
+        parent_ = app_.getLedgerMaster().getLedgerByHash(parameter_.startHash);
         if (!parent_)
         {
             parent_ = inboundLedgers_.acquire(
-                parameter_.startHash_,
-                parameter_.startSeq_,
-                InboundLedger::Reason::GENERIC);
+                parameter_.startHash, parameter_.startSeq, InboundLedger::Reason::GENERIC);
         }
         if (parent_)
         {
             JLOG(journal_.trace())
-                << "Got start ledger " << parameter_.startHash_ << " for task "
-                << hash_;
+                << "Got start ledger " << parameter_.startHash << " for task " << hash_;
         }
     }
 
@@ -177,8 +165,7 @@ LedgerReplayTask::trigger(ScopedLockType& sl)
 void
 LedgerReplayTask::deltaReady(uint256 const& deltaHash)
 {
-    JLOG(journal_.trace()) << "Delta " << deltaHash << " ready for task "
-                           << hash_;
+    JLOG(journal_.trace()) << "Delta " << deltaHash << " ready for task " << hash_;
     ScopedLockType sl(mtx_);
     if (!isDone())
         tryAdvance(sl);
@@ -188,14 +175,12 @@ void
 LedgerReplayTask::tryAdvance(ScopedLockType& sl)
 {
     JLOG(journal_.trace()) << "tryAdvance task " << hash_
-                           << (parameter_.full_ ? ", full parameter"
-                                                : ", waiting to fill parameter")
-                           << ", deltaIndex=" << deltaToBuild_
-                           << ", totalDeltas=" << deltas_.size() << ", parent "
-                           << (parent_ ? parent_->info().hash : uint256());
+                           << (parameter_.full ? ", full parameter" : ", waiting to fill parameter")
+                           << ", deltaIndex=" << deltaToBuild_ << ", totalDeltas=" << deltas_.size()
+                           << ", parent " << (parent_ ? parent_->header().hash : uint256());
 
-    bool shouldTry = parent_ && parameter_.full_ &&
-        parameter_.totalLedgers_ - 1 == deltas_.size();
+    bool const shouldTry =
+        parent_ && parameter_.full && parameter_.totalLedgers - 1 == deltas_.size();
     if (!shouldTry)
         return;
 
@@ -206,17 +191,18 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
             auto& delta = deltas_[deltaToBuild_];
             XRPL_ASSERT(
                 parent_->seq() + 1 == delta->ledgerSeq_,
-                "ripple::LedgerReplayTask::tryAdvance : consecutive sequence");
+                "xrpl::LedgerReplayTask::tryAdvance : consecutive sequence");
             if (auto l = delta->tryBuild(parent_); l)
             {
                 JLOG(journal_.debug())
-                    << "Task " << hash_ << " got ledger " << l->info().hash
-                    << " deltaIndex=" << deltaToBuild_
-                    << " totalDeltas=" << deltas_.size();
+                    << "Task " << hash_ << " got ledger " << l->header().hash
+                    << " deltaIndex=" << deltaToBuild_ << " totalDeltas=" << deltas_.size();
                 parent_ = l;
             }
             else
+            {
                 return;
+            }
         }
 
         complete_ = true;
@@ -235,7 +221,7 @@ LedgerReplayTask::updateSkipList(
     std::vector<uint256> const& sList)
 {
     {
-        ScopedLockType sl(mtx_);
+        ScopedLockType const sl(mtx_);
         if (isDone())
             return;
         if (!parameter_.update(hash, seq, sList))
@@ -255,12 +241,11 @@ LedgerReplayTask::updateSkipList(
 void
 LedgerReplayTask::onTimer(bool progress, ScopedLockType& sl)
 {
-    JLOG(journal_.trace()) << "mTimeouts=" << timeouts_ << " for " << hash_;
+    JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
     if (timeouts_ > maxTimeouts_)
     {
         failed_ = true;
-        JLOG(journal_.debug())
-            << "LedgerReplayTask Failed, too many timeouts " << hash_;
+        JLOG(journal_.debug()) << "LedgerReplayTask Failed, too many timeouts " << hash_;
     }
     else
     {
@@ -277,29 +262,30 @@ LedgerReplayTask::pmDowncast()
 void
 LedgerReplayTask::addDelta(std::shared_ptr<LedgerDeltaAcquire> const& delta)
 {
-    std::weak_ptr<LedgerReplayTask> wptr = shared_from_this();
-    delta->addDataCallback(
-        parameter_.reason_, [wptr](bool good, uint256 const& hash) {
-            if (auto sptr = wptr.lock(); sptr)
+    std::weak_ptr<LedgerReplayTask> const wptr = shared_from_this();
+    delta->addDataCallback(parameter_.reason, [wptr](bool good, uint256 const& hash) {
+        if (auto sptr = wptr.lock(); sptr)
+        {
+            if (!good)
             {
-                if (!good)
-                    sptr->cancel();
-                else
-                    sptr->deltaReady(hash);
+                sptr->cancel();
             }
-        });
+            else
+            {
+                sptr->deltaReady(hash);
+            }
+        }
+    });
 
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     if (!isDone())
     {
-        JLOG(journal_.trace())
-            << "addDelta task " << hash_ << " deltaIndex=" << deltaToBuild_
-            << " totalDeltas=" << deltas_.size();
+        JLOG(journal_.trace()) << "addDelta task " << hash_ << " deltaIndex=" << deltaToBuild_
+                               << " totalDeltas=" << deltas_.size();
         XRPL_ASSERT(
-            deltas_.empty() ||
-                deltas_.back()->ledgerSeq_ + 1 == delta->ledgerSeq_,
-            "ripple::LedgerReplayTask::addDelta : no deltas or consecutive "
-            "sequence", );
+            deltas_.empty() || deltas_.back()->ledgerSeq_ + 1 == delta->ledgerSeq_,
+            "xrpl::LedgerReplayTask::addDelta : no deltas or consecutive "
+            "sequence");
         deltas_.push_back(delta);
     }
 }
@@ -307,8 +293,8 @@ LedgerReplayTask::addDelta(std::shared_ptr<LedgerDeltaAcquire> const& delta)
 bool
 LedgerReplayTask::finished() const
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     return isDone();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

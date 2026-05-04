@@ -1,59 +1,45 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpld/peerfinder/detail/SlotImp.h>
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
+#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-namespace ripple {
-namespace PeerFinder {
+#include <xrpl/beast/container/detail/aged_unordered_container.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+
+#include <cstdint>
+#include <utility>
+
+namespace xrpl::PeerFinder {
 
 SlotImp::SlotImp(
-    beast::IP::Endpoint const& local_endpoint,
-    beast::IP::Endpoint const& remote_endpoint,
+    beast::IP::Endpoint const& localEndpoint,
+    beast::IP::Endpoint remoteEndpoint,
     bool fixed,
     clock_type& clock)
     : recent(clock)
-    , m_inbound(true)
-    , m_fixed(fixed)
-    , m_reserved(false)
-    , m_state(accept)
-    , m_remote_endpoint(remote_endpoint)
-    , m_local_endpoint(local_endpoint)
-    , m_listening_port(unknownPort)
+    , inbound_(true)
+    , fixed_(fixed)
+    , reserved_(false)
+    , state_(State::Accept)
+    , remote_endpoint_(std::move(remoteEndpoint))
+    , local_endpoint_(localEndpoint)
+    , listening_port_(kUNKNOWN_PORT)
     , checked(false)
     , canAccept(false)
     , connectivityCheckInProgress(false)
 {
 }
 
-SlotImp::SlotImp(
-    beast::IP::Endpoint const& remote_endpoint,
-    bool fixed,
-    clock_type& clock)
+SlotImp::SlotImp(beast::IP::Endpoint remoteEndpoint, bool fixed, clock_type& clock)
     : recent(clock)
-    , m_inbound(false)
-    , m_fixed(fixed)
-    , m_reserved(false)
-    , m_state(connect)
-    , m_remote_endpoint(remote_endpoint)
-    , m_listening_port(unknownPort)
+    , inbound_(false)
+    , fixed_(fixed)
+    , reserved_(false)
+    , state_(State::Connect)
+    , remote_endpoint_(std::move(remoteEndpoint))
+    , listening_port_(kUNKNOWN_PORT)
     , checked(true)
     , canAccept(true)
     , connectivityCheckInProgress(false)
@@ -61,37 +47,36 @@ SlotImp::SlotImp(
 }
 
 void
-SlotImp::state(State state_)
+SlotImp::state(State state)
 {
     // Must go through activate() to set active state
     XRPL_ASSERT(
-        state_ != active,
-        "ripple::PeerFinder::SlotImp::state : input state is not active");
+        state != State::Active, "xrpl::PeerFinder::SlotImp::state : input state is not active");
 
     // The state must be different
     XRPL_ASSERT(
-        state_ != m_state,
-        "ripple::PeerFinder::SlotImp::state : input state is different from "
+        state_ != state,
+        "xrpl::PeerFinder::SlotImp::state : input state is different from "
         "current");
 
     // You can't transition into the initial states
     XRPL_ASSERT(
-        state_ != accept && state_ != connect,
-        "ripple::PeerFinder::SlotImp::state : input state is not an initial");
+        state != State::Accept && state != State::Connect,
+        "xrpl::PeerFinder::SlotImp::state : input state is not an initial");
 
     // Can only become connected from outbound connect state
     XRPL_ASSERT(
-        state_ != connected || (!m_inbound && m_state == connect),
-        "ripple::PeerFinder::SlotImp::state : input state is not connected an "
+        state != State::Connected || (!inbound_ && state_ == State::Connect),
+        "xrpl::PeerFinder::SlotImp::state : input state is not connected an "
         "invalid state");
 
     // Can't gracefully close on an outbound connection attempt
     XRPL_ASSERT(
-        state_ != closing || m_state != connect,
-        "ripple::PeerFinder::SlotImp::state : input state is not closing an "
+        state != State::Closing || state_ != State::Connect,
+        "xrpl::PeerFinder::SlotImp::state : input state is not closing an "
         "invalid state");
 
-    m_state = state_;
+    state_ = state;
 }
 
 void
@@ -99,10 +84,10 @@ SlotImp::activate(clock_type::time_point const& now)
 {
     // Can only become active from the accept or connected state
     XRPL_ASSERT(
-        m_state == accept || m_state == connected,
-        "ripple::PeerFinder::SlotImp::activate : valid state");
+        state_ == State::Accept || state_ == State::Connected,
+        "xrpl::PeerFinder::SlotImp::activate : valid state");
 
-    m_state = active;
+    state_ = State::Active;
     whenAcceptEndpoints = now;
 }
 
@@ -112,30 +97,30 @@ Slot::~Slot() = default;
 
 //------------------------------------------------------------------------------
 
-SlotImp::recent_t::recent_t(clock_type& clock) : cache(clock)
+SlotImp::RecentT::RecentT(clock_type& clock) : cache_(clock)
 {
 }
 
 void
-SlotImp::recent_t::insert(beast::IP::Endpoint const& ep, std::uint32_t hops)
+SlotImp::RecentT::insert(beast::IP::Endpoint const& ep, std::uint32_t hops)
 {
-    auto const result(cache.emplace(ep, hops));
+    auto const result(cache_.emplace(ep, hops));
     if (!result.second)
     {
         // NOTE Other logic depends on this <= inequality.
         if (hops <= result.first->second)
         {
             result.first->second = hops;
-            cache.touch(result.first);
+            cache_.touch(result.first);
         }
     }
 }
 
 bool
-SlotImp::recent_t::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
+SlotImp::RecentT::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
 {
-    auto const iter(cache.find(ep));
-    if (iter == cache.end())
+    auto const iter(cache_.find(ep));
+    if (iter == cache_.end())
         return false;
     // We avoid sending an endpoint if we heard it
     // from them recently at the same or lower hop count.
@@ -144,10 +129,9 @@ SlotImp::recent_t::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
 }
 
 void
-SlotImp::recent_t::expire()
+SlotImp::RecentT::expire()
 {
-    beast::expire(cache, Tuning::liveCacheSecondsToLive);
+    beast::expire(cache_, Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
 }
 
-}  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl::PeerFinder

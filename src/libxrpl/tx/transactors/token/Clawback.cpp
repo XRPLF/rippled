@@ -1,0 +1,295 @@
+#include <xrpl/tx/transactors/token/Clawback.h>
+
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <variant>
+
+namespace xrpl {
+
+template <ValidIssueType T>
+static NotTEC
+preflightHelper(PreflightContext const& ctx);
+
+template <>
+NotTEC
+preflightHelper<Issue>(PreflightContext const& ctx)
+{
+    if (ctx.tx.isFieldPresent(sfHolder))
+        return temMALFORMED;
+
+    AccountID const issuer = ctx.tx[sfAccount];
+    STAmount const clawAmount = ctx.tx[sfAmount];
+
+    // The issuer field is used for the token holder instead
+    AccountID const& holder = clawAmount.getIssuer();
+
+    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::kZERO)
+        return temBAD_AMOUNT;
+
+    return tesSUCCESS;
+}
+
+template <>
+NotTEC
+preflightHelper<MPTIssue>(PreflightContext const& ctx)
+{
+    if (!ctx.rules.enabled(featureMPTokensV1))
+        return temDISABLED;
+
+    auto const mptHolder = ctx.tx[~sfHolder];
+    auto const clawAmount = ctx.tx[sfAmount];
+
+    if (!mptHolder)
+        return temMALFORMED;
+
+    // issuer is the same as holder
+    if (ctx.tx[sfAccount] == *mptHolder)
+        return temMALFORMED;
+
+    if (clawAmount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT} || clawAmount <= beast::kZERO)
+        return temBAD_AMOUNT;
+
+    return tesSUCCESS;
+}
+
+NotTEC
+Clawback::preflight(PreflightContext const& ctx)
+{
+    if (auto const ret = std::visit(
+            [&]<typename T>(T const&) { return preflightHelper<T>(ctx); },
+            ctx.tx[sfAmount].asset().value());
+        !isTesSuccess(ret))
+        return ret;
+
+    return tesSUCCESS;
+}
+
+template <ValidIssueType T>
+static TER
+preclaimHelper(
+    PreclaimContext const& ctx,
+    SLE const& sleIssuer,
+    AccountID const& issuer,
+    AccountID const& holder,
+    STAmount const& clawAmount);
+
+template <>
+TER
+preclaimHelper<Issue>(
+    PreclaimContext const& ctx,
+    SLE const& sleIssuer,
+    AccountID const& issuer,
+    AccountID const& holder,
+    STAmount const& clawAmount)
+{
+    std::uint32_t const issuerFlagsIn = sleIssuer.getFieldU32(sfFlags);
+
+    // If AllowTrustLineClawback is not set or NoFreeze is set, return no
+    // permission
+    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
+        ((issuerFlagsIn & lsfNoFreeze) != 0u))
+        return tecNO_PERMISSION;
+
+    auto const sleRippleState =
+        ctx.view.read(keylet::line(holder, issuer, clawAmount.get<Issue>().currency));
+    if (!sleRippleState)
+        return tecNO_LINE;
+
+    STAmount const balance = (*sleRippleState)[sfBalance];
+
+    // If balance is positive, issuer must have higher address than holder
+    if (balance > beast::kZERO && issuer < holder)
+        return tecNO_PERMISSION;
+
+    // If balance is negative, issuer must have lower address than holder
+    if (balance < beast::kZERO && issuer > holder)
+        return tecNO_PERMISSION;
+
+    // At this point, we know that issuer and holder accounts
+    // are correct and a trustline exists between them.
+    //
+    // Must now explicitly check the balance to make sure
+    // available balance is non-zero.
+    //
+    // We can't directly check the balance of trustline because
+    // the available balance of a trustline is prone to new changes (eg.
+    // XLS-34). So we must use `accountHolds`.
+    if (accountHolds(
+            ctx.view,
+            holder,
+            clawAmount.get<Issue>().currency,
+            issuer,
+            FreezeHandling::IgnoreFreeze,
+            ctx.j) <= beast::kZERO)
+        return tecINSUFFICIENT_FUNDS;
+
+    return tesSUCCESS;
+}
+
+template <>
+TER
+preclaimHelper<MPTIssue>(
+    PreclaimContext const& ctx,
+    SLE const& sleIssuer,
+    AccountID const& issuer,
+    AccountID const& holder,
+    STAmount const& clawAmount)
+{
+    auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
+    auto const sleIssuance = ctx.view.read(issuanceKey);
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    if (((*sleIssuance)[sfFlags] & lsfMPTCanClawback) == 0u)
+        return tecNO_PERMISSION;
+
+    if (sleIssuance->getAccountID(sfIssuer) != issuer)
+        return tecNO_PERMISSION;
+
+    if (!ctx.view.exists(keylet::mptoken(issuanceKey.key, holder)))
+        return tecOBJECT_NOT_FOUND;
+
+    if (accountHolds(
+            ctx.view,
+            holder,
+            clawAmount.get<MPTIssue>(),
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            ctx.j) <= beast::kZERO)
+        return tecINSUFFICIENT_FUNDS;
+
+    return tesSUCCESS;
+}
+
+TER
+Clawback::preclaim(PreclaimContext const& ctx)
+{
+    AccountID const issuer = ctx.tx[sfAccount];
+    auto const clawAmount = ctx.tx[sfAmount];
+    AccountID const holder = clawAmount.holds<Issue>() ? clawAmount.getIssuer() : ctx.tx[sfHolder];
+
+    auto const sleIssuer = ctx.view.read(keylet::account(issuer));
+    auto const sleHolder = ctx.view.read(keylet::account(holder));
+    if (!sleIssuer || !sleHolder)
+        return terNO_ACCOUNT;
+
+    // Note the order of checks - when SAV is active, this check here will make
+    // the one which follows `sleHolder->isFieldPresent(sfAMMID)` redundant.
+    if (ctx.view.rules().enabled(featureSingleAssetVault) && isPseudoAccount(sleHolder))
+    {
+        return tecPSEUDO_ACCOUNT;
+    }
+    if (sleHolder->isFieldPresent(sfAMMID))
+    {
+        return tecAMM_ACCOUNT;
+    }
+
+    return std::visit(
+        [&]<typename T>(T const&) {
+            return preclaimHelper<T>(ctx, *sleIssuer, issuer, holder, clawAmount);
+        },
+        ctx.tx[sfAmount].asset().value());
+}
+
+template <ValidIssueType T>
+static TER
+applyHelper(ApplyContext& ctx);
+
+template <>
+TER
+applyHelper<Issue>(ApplyContext& ctx)
+{
+    AccountID const issuer = ctx.tx[sfAccount];
+    STAmount clawAmount = ctx.tx[sfAmount];
+    AccountID const holder = clawAmount.getIssuer();  // cannot be reference
+
+    // Replace the `issuer` field with issuer's account
+    clawAmount.get<Issue>().account = issuer;
+    if (holder == issuer)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    // Get the spendable balance. Must use `accountHolds`.
+    STAmount const spendableAmount = accountHolds(
+        ctx.view(),
+        holder,
+        clawAmount.get<Issue>().currency,
+        clawAmount.getIssuer(),
+        FreezeHandling::IgnoreFreeze,
+        ctx.journal);
+
+    return directSendNoFee(
+        ctx.view(), holder, issuer, std::min(spendableAmount, clawAmount), true, ctx.journal);
+}
+
+template <>
+TER
+applyHelper<MPTIssue>(ApplyContext& ctx)
+{
+    AccountID const issuer = ctx.tx[sfAccount];
+    auto clawAmount = ctx.tx[sfAmount];
+    AccountID const holder = ctx.tx[sfHolder];
+
+    // Get the spendable balance. Must use `accountHolds`.
+    STAmount const spendableAmount = accountHolds(
+        ctx.view(),
+        holder,
+        clawAmount.get<MPTIssue>(),
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        ctx.journal);
+
+    return directSendNoFee(
+        ctx.view(),
+        holder,
+        issuer,
+        std::min(spendableAmount, clawAmount),
+        /*checkIssuer*/ false,
+        ctx.journal);
+}
+
+TER
+Clawback::doApply()
+{
+    return std::visit(
+        [&]<typename T>(T const&) { return applyHelper<T>(ctx_); },
+        ctx_.tx[sfAmount].asset().value());
+}
+
+void
+Clawback::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
+}
+
+}  // namespace xrpl

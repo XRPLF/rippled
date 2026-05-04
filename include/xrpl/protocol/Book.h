@@ -1,32 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_BOOK_H_INCLUDED
-#define RIPPLE_PROTOCOL_BOOK_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Asset.h>
 
 #include <boost/utility/base_from_member.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 /** Specifies an order book.
     The order book is a pair of Issues called in and out.
@@ -35,19 +15,14 @@ namespace ripple {
 class Book final : public CountedObject<Book>
 {
 public:
-    Issue in;
-    Issue out;
+    Asset in;
+    Asset out;
     std::optional<uint256> domain;
 
-    Book()
-    {
-    }
+    Book() = default;
 
-    Book(
-        Issue const& in_,
-        Issue const& out_,
-        std::optional<uint256> const& domain_)
-        : in(in_), out(out_), domain(domain_)
+    Book(Asset const& in, Asset const& out, std::optional<uint256> const& domain)
+        : in(in), out(out), domain(domain)
     {
     }
 };
@@ -76,17 +51,16 @@ reversed(Book const& book);
 
 /** Equality comparison. */
 /** @{ */
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(Book const& lhs, Book const& rhs)
 {
-    return (lhs.in == rhs.in) && (lhs.out == rhs.out) &&
-        (lhs.domain == rhs.domain);
+    return (lhs.in == rhs.in) && (lhs.out == rhs.out) && (lhs.domain == rhs.domain);
 }
 /** @} */
 
 /** Strict weak ordering. */
 /** @{ */
-[[nodiscard]] inline constexpr std::weak_ordering
+[[nodiscard]] constexpr std::weak_ordering
 operator<=>(Book const& lhs, Book const& rhs)
 {
     if (auto const c{lhs.in <=> rhs.in}; c != 0)
@@ -106,66 +80,113 @@ operator<=>(Book const& lhs, Book const& rhs)
 }
 /** @} */
 
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
 namespace std {
 
 template <>
-struct hash<ripple::Issue>
-    : private boost::base_from_member<std::hash<ripple::Currency>, 0>,
-      private boost::base_from_member<std::hash<ripple::AccountID>, 1>
+struct hash<xrpl::Issue> : private boost::base_from_member<std::hash<xrpl::Currency>, 0>,
+                           private boost::base_from_member<std::hash<xrpl::AccountID>, 1>
 {
 private:
-    using currency_hash_type =
-        boost::base_from_member<std::hash<ripple::Currency>, 0>;
-    using issuer_hash_type =
-        boost::base_from_member<std::hash<ripple::AccountID>, 1>;
+    using currency_hash_type = boost::base_from_member<std::hash<xrpl::Currency>, 0>;
+    using issuer_hash_type = boost::base_from_member<std::hash<xrpl::AccountID>, 1>;
 
 public:
     hash() = default;
 
     using value_type = std::size_t;
-    using argument_type = ripple::Issue;
+    using argument_type = xrpl::Issue;
 
     value_type
     operator()(argument_type const& value) const
     {
         value_type result(currency_hash_type::member(value.currency));
         if (!isXRP(value.currency))
-            boost::hash_combine(
-                result, issuer_hash_type::member(value.account));
+            boost::hash_combine(result, issuer_hash_type::member(value.account));
         return result;
+    }
+};
+
+template <>
+struct hash<xrpl::MPTIssue> : private boost::base_from_member<std::hash<xrpl::MPTID>, 0>
+{
+private:
+    using id_hash_type = boost::base_from_member<std::hash<xrpl::MPTID>, 0>;
+
+public:
+    explicit hash() = default;
+
+    using value_type = std::size_t;
+    using argument_type = xrpl::MPTIssue;
+
+    value_type
+    operator()(argument_type const& value) const
+    {
+        value_type const result(id_hash_type::member(value.getMptID()));
+        return result;
+    }
+};
+
+template <>
+struct hash<xrpl::Asset>
+{
+private:
+    using value_type = std::size_t;
+    using argument_type = xrpl::Asset;
+
+    using issue_hasher = std::hash<xrpl::Issue>;
+    using mptissue_hasher = std::hash<xrpl::MPTIssue>;
+
+    issue_hasher m_issue_hasher_;
+    mptissue_hasher m_mptissue_hasher_;
+
+public:
+    explicit hash() = default;
+
+    value_type
+    operator()(argument_type const& asset) const
+    {
+        return asset.visit(
+            [&](xrpl::Issue const& issue) {
+                value_type const result(m_issue_hasher_(issue));
+                return result;
+            },
+            [&](xrpl::MPTIssue const& issue) {
+                value_type const result(m_mptissue_hasher_(issue));
+                return result;
+            });
     }
 };
 
 //------------------------------------------------------------------------------
 
 template <>
-struct hash<ripple::Book>
+struct hash<xrpl::Book>
 {
 private:
-    using issue_hasher = std::hash<ripple::Issue>;
-    using uint256_hasher = ripple::uint256::hasher;
+    using asset_hasher = std::hash<xrpl::Asset>;
+    using uint256_hasher = xrpl::uint256::hasher;
 
-    issue_hasher m_issue_hasher;
-    uint256_hasher m_uint256_hasher;
+    asset_hasher issue_hasher_;
+    uint256_hasher uint256_hasher_;
 
 public:
     hash() = default;
 
     using value_type = std::size_t;
-    using argument_type = ripple::Book;
+    using argument_type = xrpl::Book;
 
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(m_issue_hasher(value.in));
-        boost::hash_combine(result, m_issue_hasher(value.out));
+        value_type result(issue_hasher_(value.in));
+        boost::hash_combine(result, issue_hasher_(value.out));
 
         if (value.domain)
-            boost::hash_combine(result, m_uint256_hasher(*value.domain));
+            boost::hash_combine(result, uint256_hasher_(*value.domain));
 
         return result;
     }
@@ -178,25 +199,39 @@ public:
 namespace boost {
 
 template <>
-struct hash<ripple::Issue> : std::hash<ripple::Issue>
+struct hash<xrpl::Issue> : std::hash<xrpl::Issue>
 {
     hash() = default;
 
-    using Base = std::hash<ripple::Issue>;
+    using Base = std::hash<xrpl::Issue>;
     // VFALCO NOTE broken in vs2012
     // using Base::Base; // inherit ctors
 };
 
 template <>
-struct hash<ripple::Book> : std::hash<ripple::Book>
+struct hash<xrpl::MPTIssue> : std::hash<xrpl::MPTIssue>
+{
+    explicit hash() = default;
+
+    using Base = std::hash<xrpl::MPTIssue>;
+};
+
+template <>
+struct hash<xrpl::Asset> : std::hash<xrpl::Asset>
+{
+    explicit hash() = default;
+
+    using Base = std::hash<xrpl::Asset>;
+};
+
+template <>
+struct hash<xrpl::Book> : std::hash<xrpl::Book>
 {
     hash() = default;
 
-    using Base = std::hash<ripple::Book>;
+    using Base = std::hash<xrpl::Book>;
     // VFALCO NOTE broken in vs2012
     // using Base::Base; // inherit ctors
 };
 
 }  // namespace boost
-
-#endif

@@ -1,47 +1,28 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/Quality.h>
 
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/STAmount.h>
 
 #include <cstdint>
 #include <limits>
 
-namespace ripple {
+namespace xrpl {
 
-Quality::Quality(std::uint64_t value) : m_value(value)
+Quality::Quality(std::uint64_t value) : value_(value)
 {
 }
 
-Quality::Quality(Amounts const& amount)
-    : m_value(getRate(amount.out, amount.in))
+Quality::Quality(Amounts const& amount) : value_(getRate(amount.out, amount.in))
 {
 }
 
 Quality&
 Quality::operator++()
 {
-    XRPL_ASSERT(m_value > 0, "ripple::Quality::operator++() : minimum value");
-    --m_value;
+    XRPL_ASSERT(value_ > 0, "xrpl::Quality::operator++() : minimum value");
+    --value_;
     return *this;
 }
 
@@ -57,9 +38,9 @@ Quality&
 Quality::operator--()
 {
     XRPL_ASSERT(
-        m_value < std::numeric_limits<value_type>::max(),
-        "ripple::Quality::operator--() : maximum value");
-    ++m_value;
+        value_ < std::numeric_limits<value_type>::max(),
+        "xrpl::Quality::operator--() : maximum value");
+    ++value_;
     return *this;
 }
 
@@ -71,119 +52,89 @@ Quality::operator--(int)
     return prev;
 }
 
-template <STAmount (
-    *DivRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
+template <STAmount (*DivRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
-ceil_in_impl(
-    Amounts const& amount,
-    STAmount const& limit,
-    bool roundUp,
-    Quality const& quality)
+ceilInImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
     if (amount.in > limit)
     {
-        Amounts result(
-            limit,
-            DivRoundFunc(limit, quality.rate(), amount.out.asset(), roundUp));
+        Amounts result(limit, DivRoundFunc(limit, quality.rate(), amount.out.asset(), roundUp));
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
-        XRPL_ASSERT(
-            result.in == limit, "ripple::ceil_in_impl : result matches limit");
+        XRPL_ASSERT(result.in == limit, "xrpl::ceil_in_impl : result matches limit");
         return result;
     }
-    XRPL_ASSERT(
-        amount.in <= limit, "ripple::ceil_in_impl : result inside limit");
+    XRPL_ASSERT(amount.in <= limit, "xrpl::ceil_in_impl : result inside limit");
     return amount;
 }
 
 Amounts
-Quality::ceil_in(Amounts const& amount, STAmount const& limit) const
+Quality::ceilIn(Amounts const& amount, STAmount const& limit) const
 {
-    return ceil_in_impl<divRound>(amount, limit, /* roundUp */ true, *this);
+    return ceilInImpl<divRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
-Quality::ceil_in_strict(
-    Amounts const& amount,
-    STAmount const& limit,
-    bool roundUp) const
+Quality::ceilInStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
-    return ceil_in_impl<divRoundStrict>(amount, limit, roundUp, *this);
+    return ceilInImpl<divRoundStrict>(amount, limit, roundUp, *this);
 }
 
-template <STAmount (
-    *MulRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
+template <STAmount (*MulRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
-ceil_out_impl(
-    Amounts const& amount,
-    STAmount const& limit,
-    bool roundUp,
-    Quality const& quality)
+ceilOutImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
     if (amount.out > limit)
     {
-        Amounts result(
-            MulRoundFunc(limit, quality.rate(), amount.in.asset(), roundUp),
-            limit);
+        Amounts result(MulRoundFunc(limit, quality.rate(), amount.in.asset(), roundUp), limit);
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;
-        XRPL_ASSERT(
-            result.out == limit,
-            "ripple::ceil_out_impl : result matches limit");
+        XRPL_ASSERT(result.out == limit, "xrpl::ceil_out_impl : result matches limit");
         return result;
     }
-    XRPL_ASSERT(
-        amount.out <= limit, "ripple::ceil_out_impl : result inside limit");
+    XRPL_ASSERT(amount.out <= limit, "xrpl::ceil_out_impl : result inside limit");
     return amount;
 }
 
 Amounts
-Quality::ceil_out(Amounts const& amount, STAmount const& limit) const
+Quality::ceilOut(Amounts const& amount, STAmount const& limit) const
 {
-    return ceil_out_impl<mulRound>(amount, limit, /* roundUp */ true, *this);
+    return ceilOutImpl<mulRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
-Quality::ceil_out_strict(
-    Amounts const& amount,
-    STAmount const& limit,
-    bool roundUp) const
+Quality::ceilOutStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
-    return ceil_out_impl<mulRoundStrict>(amount, limit, roundUp, *this);
+    return ceilOutImpl<mulRoundStrict>(amount, limit, roundUp, *this);
 }
 
 Quality
-composed_quality(Quality const& lhs, Quality const& rhs)
+composedQuality(Quality const& lhs, Quality const& rhs)
 {
-    STAmount const lhs_rate(lhs.rate());
-    XRPL_ASSERT(
-        lhs_rate != beast::zero,
-        "ripple::composed_quality : nonzero left input");
+    STAmount const lhsRate(lhs.rate());
+    XRPL_ASSERT(lhsRate != beast::kZERO, "xrpl::composed_quality : nonzero left input");
 
-    STAmount const rhs_rate(rhs.rate());
-    XRPL_ASSERT(
-        rhs_rate != beast::zero,
-        "ripple::composed_quality : nonzero right input");
+    STAmount const rhsRate(rhs.rate());
+    XRPL_ASSERT(rhsRate != beast::kZERO, "xrpl::composed_quality : nonzero right input");
 
-    STAmount const rate(mulRound(lhs_rate, rhs_rate, lhs_rate.asset(), true));
+    STAmount const rate(mulRound(lhsRate, rhsRate, lhsRate.asset(), true));
 
-    std::uint64_t const stored_exponent(rate.exponent() + 100);
-    std::uint64_t const stored_mantissa(rate.mantissa());
+    std::uint64_t const storedExponent(rate.exponent() + 100);
+    std::uint64_t const storedMantissa(rate.mantissa());
 
     XRPL_ASSERT(
-        (stored_exponent > 0) && (stored_exponent <= 255),
-        "ripple::composed_quality : valid exponent");
+        (storedExponent > 0) && (storedExponent <= 255), "xrpl::composed_quality : valid exponent");
 
-    return Quality((stored_exponent << (64 - 8)) | stored_mantissa);
+    return Quality((storedExponent << (64 - 8)) | storedMantissa);
 }
 
 Quality
 Quality::round(int digits) const
 {
     // Modulus for mantissa
-    static std::uint64_t const mod[17] = {
+    static std::uint64_t const kMOD[17] = {
         /* 0 */ 10000000000000000,
         /* 1 */ 1000000000000000,
         /* 2 */ 100000000000000,
@@ -203,12 +154,12 @@ Quality::round(int digits) const
         /* 16 */ 1,
     };
 
-    auto exponent = m_value >> (64 - 8);
-    auto mantissa = m_value & 0x00ffffffffffffffULL;
-    mantissa += mod[digits] - 1;
-    mantissa -= (mantissa % mod[digits]);
+    auto exponent = value_ >> (64 - 8);
+    auto mantissa = value_ & 0x00ffffffffffffffULL;
+    mantissa += kMOD[digits] - 1;
+    mantissa -= (mantissa % kMOD[digits]);
 
     return Quality{(exponent << (64 - 8)) | mantissa};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

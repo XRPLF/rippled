@@ -1,38 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_HASHPREFIX_H_INCLUDED
-#define RIPPLE_PROTOCOL_HASHPREFIX_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
 constexpr std::uint32_t
-make_hash_prefix(char a, char b, char c)
+makeHashPrefix(char a, char b, char c)
 {
-    return (static_cast<std::uint32_t>(a) << 24) +
-        (static_cast<std::uint32_t>(b) << 16) +
+    return (static_cast<std::uint32_t>(a) << 24) + (static_cast<std::uint32_t>(b) << 16) +
         (static_cast<std::uint32_t>(c) << 8);
 }
 
@@ -54,43 +33,40 @@ make_hash_prefix(char a, char b, char c)
 */
 enum class HashPrefix : std::uint32_t {
     /** transaction plus signature to give transaction ID */
-    transactionID = detail::make_hash_prefix('T', 'X', 'N'),
+    TransactionId = detail::makeHashPrefix('T', 'X', 'N'),
 
     /** transaction plus metadata */
-    txNode = detail::make_hash_prefix('S', 'N', 'D'),
+    TxNode = detail::makeHashPrefix('S', 'N', 'D'),
 
     /** account state */
-    leafNode = detail::make_hash_prefix('M', 'L', 'N'),
+    LeafNode = detail::makeHashPrefix('M', 'L', 'N'),
 
     /** inner node in V1 tree */
-    innerNode = detail::make_hash_prefix('M', 'I', 'N'),
+    InnerNode = detail::makeHashPrefix('M', 'I', 'N'),
 
     /** ledger master data for signing */
-    ledgerMaster = detail::make_hash_prefix('L', 'W', 'R'),
+    LedgerMaster = detail::makeHashPrefix('L', 'W', 'R'),
 
     /** inner transaction to sign */
-    txSign = detail::make_hash_prefix('S', 'T', 'X'),
+    TxSign = detail::makeHashPrefix('S', 'T', 'X'),
 
     /** inner transaction to multi-sign */
-    txMultiSign = detail::make_hash_prefix('S', 'M', 'T'),
+    TxMultiSign = detail::makeHashPrefix('S', 'M', 'T'),
 
     /** validation for signing */
-    validation = detail::make_hash_prefix('V', 'A', 'L'),
+    Validation = detail::makeHashPrefix('V', 'A', 'L'),
 
     /** proposal for signing */
-    proposal = detail::make_hash_prefix('P', 'R', 'P'),
+    Proposal = detail::makeHashPrefix('P', 'R', 'P'),
 
     /** Manifest */
-    manifest = detail::make_hash_prefix('M', 'A', 'N'),
+    Manifest = detail::makeHashPrefix('M', 'A', 'N'),
 
     /** Payment Channel Claim */
-    paymentChannelClaim = detail::make_hash_prefix('C', 'L', 'M'),
-
-    /** Credentials signature */
-    credential = detail::make_hash_prefix('C', 'R', 'D'),
+    PaymentChannelClaim = detail::makeHashPrefix('C', 'L', 'M'),
 
     /** Batch */
-    batch = detail::make_hash_prefix('B', 'C', 'H'),
+    Batch = detail::makeHashPrefix('B', 'C', 'H'),
 };
 
 template <class Hasher>
@@ -101,6 +77,4 @@ hash_append(Hasher& h, HashPrefix const& hp) noexcept
     hash_append(h, static_cast<std::uint32_t>(hp));
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

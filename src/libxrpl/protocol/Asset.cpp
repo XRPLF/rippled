@@ -1,43 +1,26 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
+#include <xrpl/protocol/Asset.h>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <variant>
 
-namespace ripple {
+namespace xrpl {
 
 AccountID const&
 Asset::getIssuer() const
 {
-    return std::visit(
-        [&](auto&& issue) -> AccountID const& { return issue.getIssuer(); },
-        issue_);
+    return std::visit([&](auto&& issue) -> AccountID const& { return issue.getIssuer(); }, issue_);
 }
 
 std::string
@@ -47,7 +30,7 @@ Asset::getText() const
 }
 
 void
-Asset::setJson(Json::Value& jv) const
+Asset::setJson(json::Value& jv) const
 {
     std::visit([&](auto&& issue) { issue.setJson(jv); }, issue_);
 }
@@ -61,12 +44,11 @@ Asset::operator()(Number const& number) const
 std::string
 to_string(Asset const& asset)
 {
-    return std::visit(
-        [&](auto const& issue) { return to_string(issue); }, asset.value());
+    return std::visit([&](auto const& issue) { return to_string(issue); }, asset.value());
 }
 
 bool
-validJSONAsset(Json::Value const& jv)
+validJSONAsset(json::Value const& jv)
 {
     if (jv.isMember(jss::mpt_issuance_id))
         return !(jv.isMember(jss::currency) || jv.isMember(jss::issuer));
@@ -74,15 +56,21 @@ validJSONAsset(Json::Value const& jv)
 }
 
 Asset
-assetFromJson(Json::Value const& v)
+assetFromJson(json::Value const& v)
 {
     if (!v.isMember(jss::currency) && !v.isMember(jss::mpt_issuance_id))
-        Throw<std::runtime_error>(
-            "assetFromJson must contain currency or mpt_issuance_id");
+        Throw<std::runtime_error>("assetFromJson must contain currency or mpt_issuance_id");
 
     if (v.isMember(jss::currency))
         return issueFromJson(v);
     return mptIssueFromJson(v);
 }
 
-}  // namespace ripple
+std::ostream&
+operator<<(std::ostream& os, Asset const& x)
+{
+    std::visit([&]<ValidIssueType TIss>(TIss const& issue) { os << issue; }, x.value());
+    return os;
+}
+
+}  // namespace xrpl

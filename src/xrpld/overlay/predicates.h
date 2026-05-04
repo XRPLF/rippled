@@ -1,40 +1,20 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_PREDICATES_H_INCLUDED
-#define RIPPLE_OVERLAY_PREDICATES_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
 
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 /** Sends a message to all peers */
-struct send_always
+struct SendAlways
 {
     using return_type = void;
 
     std::shared_ptr<Message> const& msg;
 
-    send_always(std::shared_ptr<Message> const& m) : msg(m)
+    SendAlways(std::shared_ptr<Message> const& m) : msg(m)
     {
     }
 
@@ -49,15 +29,14 @@ struct send_always
 
 /** Sends a message to match peers */
 template <typename Predicate>
-struct send_if_pred
+struct SendIfPred
 {
     using return_type = void;
 
     std::shared_ptr<Message> const& msg;
     Predicate const& predicate;
 
-    send_if_pred(std::shared_ptr<Message> const& m, Predicate const& p)
-        : msg(m), predicate(p)
+    SendIfPred(std::shared_ptr<Message> const& m, Predicate const& p) : msg(m), predicate(p)
     {
     }
 
@@ -71,25 +50,24 @@ struct send_if_pred
 
 /** Helper function to aid in type deduction */
 template <typename Predicate>
-send_if_pred<Predicate>
-send_if(std::shared_ptr<Message> const& m, Predicate const& f)
+SendIfPred<Predicate>
+sendIf(std::shared_ptr<Message> const& m, Predicate const& f)
 {
-    return send_if_pred<Predicate>(m, f);
+    return SendIfPred<Predicate>(m, f);
 }
 
 //------------------------------------------------------------------------------
 
 /** Sends a message to non-matching peers */
 template <typename Predicate>
-struct send_if_not_pred
+struct SendIfNotPred
 {
     using return_type = void;
 
     std::shared_ptr<Message> const& msg;
     Predicate const& predicate;
 
-    send_if_not_pred(std::shared_ptr<Message> const& m, Predicate const& p)
-        : msg(m), predicate(p)
+    SendIfNotPred(std::shared_ptr<Message> const& m, Predicate const& p) : msg(m), predicate(p)
     {
     }
 
@@ -103,41 +81,38 @@ struct send_if_not_pred
 
 /** Helper function to aid in type deduction */
 template <typename Predicate>
-send_if_not_pred<Predicate>
-send_if_not(std::shared_ptr<Message> const& m, Predicate const& f)
+SendIfNotPred<Predicate>
+sendIfNot(std::shared_ptr<Message> const& m, Predicate const& f)
 {
-    return send_if_not_pred<Predicate>(m, f);
+    return SendIfNotPred<Predicate>(m, f);
 }
 
 //------------------------------------------------------------------------------
 
 /** Select the specific peer */
-struct match_peer
+struct MatchPeer
 {
     Peer const* matchPeer;
 
-    match_peer(Peer const* match = nullptr) : matchPeer(match)
+    MatchPeer(Peer const* match = nullptr) : matchPeer(match)
     {
     }
 
     bool
     operator()(std::shared_ptr<Peer> const& peer) const
     {
-        if (matchPeer && (peer.get() == matchPeer))
-            return true;
-
-        return false;
+        return (matchPeer != nullptr) && (peer.get() == matchPeer);
     }
 };
 
 //------------------------------------------------------------------------------
 
 /** Select all peers (except optional excluded) that are in our cluster */
-struct peer_in_cluster
+struct PeerInCluster
 {
-    match_peer skipPeer;
+    MatchPeer skipPeer;
 
-    peer_in_cluster(Peer const* skip = nullptr) : skipPeer(skip)
+    PeerInCluster(Peer const* skip = nullptr) : skipPeer(skip)
     {
     }
 
@@ -157,24 +132,19 @@ struct peer_in_cluster
 //------------------------------------------------------------------------------
 
 /** Select all peers that are in the specified set */
-struct peer_in_set
+struct PeerInSet
 {
     std::set<Peer::id_t> const& peerSet;
 
-    peer_in_set(std::set<Peer::id_t> const& peers) : peerSet(peers)
+    PeerInSet(std::set<Peer::id_t> const& peers) : peerSet(peers)
     {
     }
 
     bool
     operator()(std::shared_ptr<Peer> const& peer) const
     {
-        if (peerSet.count(peer->id()) == 0)
-            return false;
-
-        return true;
+        return peerSet.contains(peer->id());
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

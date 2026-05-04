@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
-#define RIPPLE_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
@@ -29,7 +9,7 @@
 #include <mutex>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 class LedgerReplayClient;
@@ -37,33 +17,33 @@ class LedgerReplayClient;
 
 namespace LedgerReplayParameters {
 // timeout value for LedgerReplayTask
-auto constexpr TASK_TIMEOUT = std::chrono::milliseconds{500};
+auto constexpr kTASK_TIMEOUT = std::chrono::milliseconds{500};
 
 // for LedgerReplayTask to calculate max allowed timeouts
-// = max( TASK_MAX_TIMEOUTS_MINIMUM,
-//        (# of ledger to replay) * TASK_MAX_TIMEOUTS_MULTIPLIER)
-std::uint32_t constexpr TASK_MAX_TIMEOUTS_MULTIPLIER = 2;
-std::uint32_t constexpr TASK_MAX_TIMEOUTS_MINIMUM = 10;
+// = max( kTASK_MAX_TIMEOUTS_MINIMUM,
+//        (# of ledger to replay) * kTASK_MAX_TIMEOUTS_MULTIPLIER)
+std::uint32_t constexpr kTASK_MAX_TIMEOUTS_MULTIPLIER = 2;
+std::uint32_t constexpr kTASK_MAX_TIMEOUTS_MINIMUM = 10;
 
 // timeout value for subtasks: LedgerDeltaAcquire and SkipListAcquire
-auto constexpr SUB_TASK_TIMEOUT = std::chrono::milliseconds{250};
+auto constexpr kSUB_TASK_TIMEOUT = std::chrono::milliseconds{250};
 // max of allowed subtask timeouts
-std::uint32_t constexpr SUB_TASK_MAX_TIMEOUTS = 10;
+std::uint32_t constexpr kSUB_TASK_MAX_TIMEOUTS = 10;
 
 // max number of peers that do not support the ledger replay feature
 // returned by the PeerSet before switch to fallback
-auto constexpr MAX_NO_FEATURE_PEER_COUNT = 2;
+auto constexpr kMAX_NO_FEATURE_PEER_COUNT = 2;
 // subtask timeout value after fallback
-auto constexpr SUB_TASK_FALLBACK_TIMEOUT = std::chrono::milliseconds{1000};
+auto constexpr kSUB_TASK_FALLBACK_TIMEOUT = std::chrono::milliseconds{1000};
 
 // for LedgerReplayer to limit the number of LedgerReplayTask
-std::uint32_t constexpr MAX_TASKS = 10;
+std::uint32_t constexpr kMAX_TASKS = 10;
 
 // for LedgerReplayer to limit the number of ledgers to replay in one task
-std::uint32_t constexpr MAX_TASK_SIZE = 256;
+std::uint32_t constexpr kMAX_TASK_SIZE = 256;
 
 // to limit the number of LedgerReplay related jobs in JobQueue
-std::uint32_t constexpr MAX_QUEUED_TASKS = 100;
+std::uint32_t constexpr kMAX_QUEUED_TASKS = 100;
 }  // namespace LedgerReplayParameters
 
 /**
@@ -87,10 +67,7 @@ public:
      * @note totalNumLedgers must > 0 && totalNumLedgers must <= 256
      */
     void
-    replay(
-        InboundLedger::Reason r,
-        uint256 const& finishLedgerHash,
-        std::uint32_t totalNumLedgers);
+    replay(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
     /** Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task */
     void
@@ -103,9 +80,7 @@ public:
      * @note  info and data must have been verified against the ledger hash
      */
     void
-    gotSkipList(
-        LedgerInfo const& info,
-        boost::intrusive_ptr<SHAMapItem const> const& data);
+    gotSkipList(LedgerHeader const& info, boost::intrusive_ptr<SHAMapItem const> const& data);
 
     /**
      * Process a ledger delta (extracted from a TMReplayDeltaResponse message)
@@ -115,7 +90,7 @@ public:
      */
     void
     gotReplayDelta(
-        LedgerInfo const& info,
+        LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
     /** Remove completed tasks */
@@ -128,21 +103,21 @@ public:
     std::size_t
     tasksSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::scoped_lock const lock(mtx_);
         return tasks_.size();
     }
 
     std::size_t
     deltasSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::scoped_lock const lock(mtx_);
         return deltas_.size();
     }
 
     std::size_t
     skipListsSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::scoped_lock const lock(mtx_);
         return skipLists_.size();
     }
 
@@ -160,6 +135,4 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

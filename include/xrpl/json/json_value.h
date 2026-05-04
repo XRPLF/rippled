@@ -1,48 +1,31 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_JSON_JSON_VALUE_H_INCLUDED
-#define RIPPLE_JSON_JSON_VALUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/json/json_forwards.h>
 
 #include <cstring>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
 
 /** \brief JSON (JavaScript Object Notation).
  */
-namespace Json {
+namespace json {
 
 /** \brief Type of the value held by a Value object.
  */
+// Used throughout JSON layer
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum ValueType {
-    nullValue = 0,  ///< 'null' value
-    intValue,       ///< signed integer value
-    uintValue,      ///< unsigned integer value
-    realValue,      ///< double value
-    stringValue,    ///< UTF-8 string value
-    booleanValue,   ///< bool value
-    arrayValue,     ///< array value (ordered list)
-    objectValue     ///< object value (collection of name/value pairs).
+    NullValue = 0,  ///< 'null' value
+    IntValue,       ///< signed integer value
+    UintValue,      ///< unsigned integer value
+    RealValue,      ///< double value
+    StringValue,    ///< UTF-8 string value
+    BooleanValue,   ///< bool value
+    ArrayValue,     ///< array value (ordered list)
+    ObjectValue     ///< object value (collection of name/value pairs).
 };
 
 /** \brief Lightweight wrapper to tag static string.
@@ -53,8 +36,8 @@ enum ValueType {
  *
  * Example of usage:
  * \code
- * Json::Value aValue( StaticString("some text") );
- * Json::Value object;
+ * json::Value aValue( StaticString("some text") );
+ * json::Value object;
  * static const StaticString code("code");
  * object[code] = 1234;
  * \endcode
@@ -62,7 +45,7 @@ enum ValueType {
 class StaticString
 {
 public:
-    constexpr explicit StaticString(char const* czstring) : str_(czstring)
+    constexpr explicit StaticString(char const* czString) : str_(czString)
     {
     }
 
@@ -72,8 +55,8 @@ public:
         return str_;
     }
 
-    constexpr char const*
-    c_str() const
+    [[nodiscard]] constexpr char const*
+    cStr() const
     {
         return str_;
     }
@@ -85,7 +68,7 @@ private:
 inline bool
 operator==(StaticString x, StaticString y)
 {
-    return strcmp(x.c_str(), y.c_str()) == 0;
+    return strcmp(x.cStr(), y.cStr()) == 0;
 }
 
 inline bool
@@ -97,7 +80,7 @@ operator!=(StaticString x, StaticString y)
 inline bool
 operator==(std::string const& x, StaticString y)
 {
-    return strcmp(x.c_str(), y.c_str()) == 0;
+    return strcmp(x.c_str(), y.cStr()) == 0;
 }
 
 inline bool
@@ -153,24 +136,23 @@ public:
     using Members = std::vector<std::string>;
     using iterator = ValueIterator;
     using const_iterator = ValueConstIterator;
-    using UInt = Json::UInt;
-    using Int = Json::Int;
+    using UInt = json::UInt;
+    using Int = json::Int;
     using ArrayIndex = UInt;
 
-    static Value const null;
-    static Int const minInt;
-    static Int const maxInt;
-    static UInt const maxUInt;
+    static Value const kNULL;
+    static constexpr Int kMIN_INT = std::numeric_limits<Int>::min();
+    static constexpr Int kMAX_INT = std::numeric_limits<Int>::max();
+    static constexpr UInt kMAX_U_INT = std::numeric_limits<UInt>::max();
 
 private:
     class CZString
     {
     public:
-        enum DuplicationPolicy {
-            noDuplication = 0,
-            duplicate,
-            duplicateOnCopy
-        };
+        // Stored as int field, implicit conversion
+        // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+        enum DuplicationPolicy { NoDuplication = 0, Duplicate, DuplicateOnCopy };
+
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
         CZString(CZString const& other);
@@ -181,11 +163,11 @@ private:
         operator<(CZString const& other) const;
         bool
         operator==(CZString const& other) const;
-        int
+        [[nodiscard]] int
         index() const;
-        char const*
-        c_str() const;
-        bool
+        [[nodiscard]] char const*
+        cStr() const;
+        [[nodiscard]] bool
         isStaticString() const;
 
     private:
@@ -207,17 +189,17 @@ public:
 
            Examples:
     \code
-    Json::Value null_value; // null
-    Json::Value arr_value(Json::arrayValue); // []
-    Json::Value obj_value(Json::objectValue); // {}
+    json::Value null_value; // null
+    json::Value arr_value(json::arrayValue); // []
+    json::Value obj_value(json::objectValue); // {}
     \endcode
          */
-    Value(ValueType type = nullValue);
+    Value(ValueType type = NullValue);
     Value(Int value);
     Value(UInt value);
     Value(double value);
     Value(char const* value);
-    Value(ripple::Number const& value);
+    Value(xrpl::Number const& value);
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
@@ -226,7 +208,7 @@ public:
      * constructor.
      * Example of usage:
      * \code
-     * Json::Value aValue( StaticString("some text") );
+     * json::Value aValue( StaticString("some text") );
      * \endcode
      */
     Value(StaticString const& value);
@@ -246,56 +228,60 @@ public:
     void
     swap(Value& other) noexcept;
 
-    ValueType
+    [[nodiscard]] ValueType
     type() const;
 
-    char const*
+    [[nodiscard]] char const*
     asCString() const;
     /** Returns the unquoted string value. */
-    std::string
+    [[nodiscard]] std::string
     asString() const;
-    Int
+    [[nodiscard]] Int
     asInt() const;
-    UInt
+    [[nodiscard]] UInt
     asUInt() const;
-    double
+    [[nodiscard]] double
     asDouble() const;
-    bool
+    [[nodiscard]] bool
     asBool() const;
+
+    /** Correct absolute value from int or unsigned int */
+    [[nodiscard]] UInt
+    asAbsUInt() const;
 
     // TODO: What is the "empty()" method this docstring mentions?
     /** isNull() tests to see if this field is null.  Don't use this method to
         test for emptiness: use empty(). */
-    bool
+    [[nodiscard]] bool
     isNull() const;
-    bool
+    [[nodiscard]] bool
     isBool() const;
-    bool
+    [[nodiscard]] bool
     isInt() const;
-    bool
+    [[nodiscard]] bool
     isUInt() const;
-    bool
+    [[nodiscard]] bool
     isIntegral() const;
-    bool
+    [[nodiscard]] bool
     isDouble() const;
-    bool
+    [[nodiscard]] bool
     isNumeric() const;
-    bool
+    [[nodiscard]] bool
     isString() const;
-    bool
+    [[nodiscard]] bool
     isArray() const;
-    bool
+    [[nodiscard]] bool
     isArrayOrNull() const;
-    bool
+    [[nodiscard]] bool
     isObject() const;
-    bool
+    [[nodiscard]] bool
     isObjectOrNull() const;
 
-    bool
+    [[nodiscard]] bool
     isConvertibleTo(ValueType other) const;
 
     /// Number of values in array or object
-    UInt
+    [[nodiscard]] UInt
     size() const;
 
     /** Returns false if this is an empty array, empty object, empty string,
@@ -323,10 +309,10 @@ public:
     operator[](UInt index) const;
     /// If the array contains at least index+1 elements, returns the element
     /// value, otherwise returns defaultValue.
-    Value
+    [[nodiscard]] Value
     get(UInt index, Value const& defaultValue) const;
     /// Return true if index < size().
-    bool
+    [[nodiscard]] bool
     isValidIndex(UInt index) const;
     /// \brief Append value to array at the end.
     ///
@@ -360,7 +346,7 @@ public:
      * the new entry is not duplicated.
      * Example of use:
      * \code
-     * Json::Value object;
+     * json::Value object;
      * static const StaticString code("code");
      * object[code] = 1234;
      * \endcode
@@ -374,7 +360,7 @@ public:
     Value
     get(char const* key, Value const& defaultValue) const;
     /// Return the member named key if it exist, defaultValue otherwise.
-    Value
+    [[nodiscard]] Value
     get(std::string const& key, Value const& defaultValue) const;
 
     /// \brief Remove and return the named member.
@@ -393,23 +379,26 @@ public:
     bool
     isMember(char const* key) const;
     /// Return true if the object has a member named key.
-    bool
+    [[nodiscard]] bool
     isMember(std::string const& key) const;
+    /// Return true if the object has a member named key.
+    [[nodiscard]] bool
+    isMember(StaticString const& key) const;
 
     /// \brief Return a list of the member names.
     ///
     /// If null, return an empty list.
     /// \pre type() is objectValue or nullValue
     /// \post if type() was nullValue, it remains nullValue
-    Members
+    [[nodiscard]] Members
     getMemberNames() const;
 
-    std::string
+    [[nodiscard]] std::string
     toStyledString() const;
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
 
     iterator
@@ -429,19 +418,19 @@ private:
 private:
     union ValueHolder
     {
-        Int int_;
-        UInt uint_;
-        double real_;
-        bool bool_;
-        char* string_;
-        ObjectValues* map_{nullptr};
+        Int intVal;
+        UInt uintVal;
+        double realVal;
+        bool boolVal;
+        char* stringVal;
+        ObjectValues* mapVal{nullptr};
     } value_;
     ValueType type_ : 8;
-    int allocated_ : 1;  // Notes: if declared as bool, bitfield is useless.
+    int allocated_ : 1 {};  // Notes: if declared as bool, bitfield is useless.
 };
 
 inline Value
-to_json(ripple::Number const& number)
+toJson(xrpl::Number const& number)
 {
     return to_string(number);
 }
@@ -480,14 +469,16 @@ operator>=(Value const& x, Value const& y)
  * string value memory management done by Value.
  *
  * - makeMemberName() and releaseMemberName() are called to respectively
- * duplicate and free an Json::objectValue member name.
+ * duplicate and free an json::objectValue member name.
  * - duplicateStringValue() and releaseStringValue() are called similarly to
- *   duplicate and free a Json::stringValue value.
+ *   duplicate and free a json::stringValue value.
  */
 class ValueAllocator
 {
 public:
-    enum { unknown = (unsigned)-1 };
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+    enum { Unknown = (unsigned)-1 };
 
     virtual ~ValueAllocator() = default;
 
@@ -496,7 +487,7 @@ public:
     virtual void
     releaseMemberName(char* memberName) = 0;
     virtual char*
-    duplicateStringValue(char const* value, unsigned int length = unknown) = 0;
+    duplicateStringValue(char const* value, unsigned int length = Unknown) = 0;
     virtual void
     releaseStringValue(char* value) = 0;
 };
@@ -529,20 +520,20 @@ public:
 
     /// Return either the index or the member name of the referenced value as a
     /// Value.
-    Value
+    [[nodiscard]] Value
     key() const;
 
     /// Return the index of the referenced Value. -1 if it is not an arrayValue.
-    UInt
+    [[nodiscard]] UInt
     index() const;
 
     /// Return the member name of the referenced Value. "" if it is not an
     /// objectValue.
-    char const*
+    [[nodiscard]] char const*
     memberName() const;
 
 protected:
-    Value&
+    [[nodiscard]] Value&
     deref() const;
 
     void
@@ -551,10 +542,10 @@ protected:
     void
     decrement();
 
-    difference_type
+    [[nodiscard]] difference_type
     computeDistance(SelfType const& other) const;
 
-    bool
+    [[nodiscard]] bool
     isEqual(SelfType const& other) const;
 
     void
@@ -657,7 +648,7 @@ public:
     SelfType
     operator++(int)
     {
-        SelfType temp(*this);
+        SelfType const temp(*this);
         ++*this;
         return temp;
     }
@@ -665,7 +656,7 @@ public:
     SelfType
     operator--(int)
     {
-        SelfType temp(*this);
+        SelfType const temp(*this);
         --*this;
         return temp;
     }
@@ -691,6 +682,4 @@ public:
     }
 };
 
-}  // namespace Json
-
-#endif  // CPPTL_JSON_H_INCLUDED
+}  // namespace json

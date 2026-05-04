@@ -1,43 +1,37 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/Account.h>
+
 #include <test/jtx/amount.h>
 
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+#include <cassert>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
 
-std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>>
-    Account::cache_;
+namespace xrpl::test::jtx {
 
-Account const Account::master(
+std::unordered_map<std::pair<std::string, KeyType>, Account, beast::Uhash<>> Account::cache;
+
+Account const Account::kMASTER(
     "master",
-    generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")),
-    Account::privateCtorTag{});
+    generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")),
+    Account::PrivateCtorTag{});
 
 Account::Account(
     std::string name,
     std::pair<PublicKey, SecretKey> const& keys,
-    Account::privateCtorTag)
+    Account::PrivateCtorTag)
     : name_(std::move(name))
     , pk_(keys.first)
     , sk_(keys.second)
@@ -50,13 +44,13 @@ Account
 Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
 {
     auto p = std::make_pair(name, type);  // non-const so it can be moved from
-    auto const iter = cache_.find(p);
-    if (iter != cache_.end())
+    auto const iter = cache.find(p);
+    if (iter != cache.end())
         return iter->second;
 
     auto const keys = [stringType, &name, type]() {
         // Special handling for base58Seeds.
-        if (stringType == base58Seed)
+        if (stringType == AcctStringType::Base58Seed)
         {
             std::optional<Seed> const seed = parseBase58<Seed>(name);
             if (!seed.has_value())
@@ -66,34 +60,40 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
         }
         return generateKeyPair(type, generateSeed(name));
     }();
-    auto r = cache_.emplace(
+    auto r = cache.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(std::move(p)),
-        std::forward_as_tuple(std::move(name), keys, privateCtorTag{}));
+        std::forward_as_tuple(std::move(name), keys, PrivateCtorTag{}));
     return r.first->second;
 }
 
 Account::Account(std::string name, KeyType type)
-    : Account(fromCache(Account::other, std::move(name), type))
+    : Account(fromCache(Account::AcctStringType::Other, std::move(name), type))
 {
 }
 
 Account::Account(AcctStringType stringType, std::string base58SeedStr)
     : Account(fromCache(
-          Account::base58Seed,
+          Account::AcctStringType::Base58Seed,
           std::move(base58SeedStr),
-          KeyType::secp256k1))
+          KeyType::Secp256k1))
 {
+}
+
+Account::Account(std::string name, AccountID const& id)
+    : Account(name, randomKeyPair(KeyType::Secp256k1), PrivateCtorTag{})
+{
+    // override the randomly generated values
+    id_ = id;
+    human_ = toBase58(id_);
 }
 
 IOU
 Account::operator[](std::string const& s) const
 {
-    auto const currency = to_currency(s);
+    auto const currency = toCurrency(s);
     assert(currency != noCurrency());
     return IOU(*this, currency);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx

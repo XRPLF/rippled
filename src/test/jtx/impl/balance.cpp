@@ -1,61 +1,83 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/balance.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+#include <test/jtx/Env.h>
+
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+
+#include <variant>
+
+namespace xrpl::test::jtx {
+
+#define TEST_EXPECT(cond) env.test.expect(cond, __FILE__, __LINE__)
+#define TEST_EXPECTS(cond, reason) \
+    ((cond) ? (env.test.pass(), true) : (env.test.fail((reason), __FILE__, __LINE__), false))
 
 void
-balance::operator()(Env& env) const
+doBalance(Env& env, AccountID const& account, bool kNONE, STAmount const& value, Issue const& issue)
 {
-    if (isXRP(value_.issue()))
+    if (isXRP(issue))
     {
-        auto const sle = env.le(account_);
-        if (none_)
+        auto const sle = env.le(keylet::account(account));
+        if (kNONE)
         {
-            env.test.expect(!sle);
+            TEST_EXPECT(!sle);
         }
-        else if (env.test.expect(sle))
+        else if (TEST_EXPECT(sle))
         {
-            env.test.expect(sle->getFieldAmount(sfBalance) == value_);
+            TEST_EXPECTS(
+                sle->getFieldAmount(sfBalance) == value,
+                sle->getFieldAmount(sfBalance).getText() + " / " + value.getText());
         }
     }
     else
     {
-        auto const sle = env.le(keylet::line(account_.id(), value_.issue()));
-        if (none_)
+        auto const sle = env.le(keylet::line(account, issue));
+        if (kNONE)
         {
-            env.test.expect(!sle);
+            TEST_EXPECT(!sle);
         }
-        else if (env.test.expect(sle))
+        else if (TEST_EXPECT(sle))
         {
             auto amount = sle->getFieldAmount(sfBalance);
-            amount.setIssuer(value_.issue().account);
-            if (account_.id() > value_.issue().account)
+            amount.get<Issue>().account = value.getIssuer();
+            if (account > value.getIssuer())
                 amount.negate();
-            env.test.expect(amount == value_);
+            TEST_EXPECTS(amount == value, amount.getText());
         }
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+void
+doBalance(
+    Env& env,
+    AccountID const& account,
+    bool kNONE,
+    STAmount const& value,
+    MPTIssue const& mptIssue)
+{
+    auto const sle = env.le(keylet::mptoken(mptIssue.getMptID(), account));
+    if (kNONE)
+    {
+        TEST_EXPECT(!sle);
+    }
+    else if (TEST_EXPECT(sle))
+    {
+        STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
+        TEST_EXPECT(amount == value);
+    }
+}
+
+void
+Balance::operator()(Env& env) const
+{
+    std::visit(
+        [&](auto const& issue) { doBalance(env, account_.id(), none_, value_, issue); },
+        value_.asset().value());
+}
+
+}  // namespace xrpl::test::jtx

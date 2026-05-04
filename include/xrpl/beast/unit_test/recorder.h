@@ -1,83 +1,75 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_RECORDER_HPP
-#define BEAST_UNIT_TEST_RECORDER_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/results.h>
 #include <xrpl/beast/unit_test/runner.h>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** A test runner that stores the results. */
-class recorder : public runner
+class Recorder : public Runner
 {
 private:
-    results m_results;
-    suite_results m_suite;
-    case_results m_case;
+    Results results_;
+    SuiteResults suite_;
+    CaseResults case_;
 
 public:
-    recorder() = default;
+    Recorder() = default;
 
     /** Returns a report with the results of all completed suites. */
-    results const&
+    [[nodiscard]] Results const&
     report() const
     {
-        return m_results;
+        return results_;
     }
 
 private:
-    virtual void
-    on_suite_begin(suite_info const& info) override
+    void
+    onSuiteBegin(SuiteInfo const& info) override
     {
-        m_suite = suite_results(info.full_name());
+        suite_ = SuiteResults(info.fullName());
     }
 
-    virtual void
-    on_suite_end() override
+    void
+    onSuiteEnd() override
     {
-        m_results.insert(std::move(m_suite));
+        results_.insert(std::move(suite_));
     }
 
-    virtual void
-    on_case_begin(std::string const& name) override
+    void
+    onCaseBegin(std::string const& name) override
     {
-        m_case = case_results(name);
+        case_ = CaseResults(name);
     }
 
-    virtual void
-    on_case_end() override
+    void
+    onCaseEnd() override
     {
-        if (m_case.tests.size() > 0)
-            m_suite.insert(std::move(m_case));
+        if (!case_.tests.empty())
+            suite_.insert(std::move(case_));
     }
 
-    virtual void
-    on_pass() override
+    void
+    onPass() override
     {
-        m_case.tests.pass();
+        case_.tests.pass();
     }
 
-    virtual void
-    on_fail(std::string const& reason) override
+    void
+    onFail(std::string const& reason) override
     {
-        m_case.tests.fail(reason);
+        case_.tests.fail(reason);
     }
 
-    virtual void
-    on_log(std::string const& s) override
+    void
+    onLog(std::string const& s) override
     {
-        m_case.log.insert(s);
+        case_.log.insert(s);
     }
 };
 
-}  // namespace unit_test
-}  // namespace beast
-
-#endif
+}  // namespace beast::unit_test

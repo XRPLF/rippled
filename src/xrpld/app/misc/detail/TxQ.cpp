@@ -1,37 +1,55 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013, 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpld/app/misc/TxQ.h>
 
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/tx/apply.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/tx/apply.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <boost/function/function_base.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
 #include <limits>
+#include <memory>
+#include <mutex>
 #include <numeric>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -39,8 +57,8 @@ static FeeLevel64
 getFeeLevelPaid(ReadView const& view, STTx const& tx)
 {
     auto const [baseFee, effectiveFeePaid] = [&view, &tx]() {
-        XRPAmount baseFee = calculateBaseFee(view, tx);
-        XRPAmount feePaid = tx[sfFee].xrp();
+        XRPAmount const baseFee = calculateBaseFee(view, tx);
+        XRPAmount const feePaid = tx[sfFee].xrp();
 
         // If baseFee is 0 then the cost of a basic transaction is free, but we
         // need the effective fee level to be non-zero.
@@ -53,13 +71,13 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
         return std::pair{baseFee + mod, feePaid + mod};
     }();
 
-    XRPL_ASSERT(baseFee.signum() > 0, "ripple::getFeeLevelPaid : positive fee");
+    XRPL_ASSERT(baseFee.signum() > 0, "xrpl::getFeeLevelPaid : positive fee");
     if (effectiveFeePaid.signum() <= 0 || baseFee.signum() <= 0)
     {
         return FeeLevel64(0);
     }
 
-    return mulDiv(effectiveFeePaid, TxQ::baseLevel, baseFee)
+    return mulDiv(effectiveFeePaid, TxQ::kBASE_LEVEL, baseFee)
         .value_or(FeeLevel64(std::numeric_limits<std::uint64_t>::max()));
 }
 
@@ -75,7 +93,7 @@ static FeeLevel64
 increase(FeeLevel64 level, std::uint32_t increasePercent)
 {
     return mulDiv(level, 100 + increasePercent, 100)
-        .value_or(static_cast<FeeLevel64>(ripple::muldiv_max));
+        .value_or(static_cast<FeeLevel64>(xrpl::kMULDIV_MAX));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -95,16 +113,14 @@ TxQ::FeeMetrics::update(
     std::for_each(txBegin, txEnd, [&](auto const& tx) {
         feeLevels.push_back(getFeeLevelPaid(view, *tx.first));
     });
-    std::sort(feeLevels.begin(), feeLevels.end());
-    XRPL_ASSERT(
-        size == feeLevels.size(),
-        "ripple::TxQ::FeeMetrics::update : fee levels size");
+    std::ranges::sort(feeLevels);
+    XRPL_ASSERT(size == feeLevels.size(), "xrpl::TxQ::FeeMetrics::update : fee levels size");
 
     JLOG((timeLeap ? j_.warn() : j_.debug()))
-        << "Ledger " << view.info().seq << " has " << size << " transactions. "
+        << "Ledger " << view.header().seq << " has " << size << " transactions. "
         << "Ledgers are processing " << (timeLeap ? "slowly" : "as expected")
-        << ". Expected transactions is currently " << txnsExpected_
-        << " and multiplier is " << escalationMultiplier_;
+        << ". Expected transactions is currently " << txnsExpected_ << " and multiplier is "
+        << escalationMultiplier_;
 
     if (timeLeap)
     {
@@ -114,21 +130,16 @@ TxQ::FeeMetrics::update(
         // upperLimit must be >= minimumTxnCount_ or std::clamp can give
         // unexpected results
         auto const upperLimit = std::max<std::uint64_t>(
-            mulDiv(txnsExpected_, cutPct, 100).value_or(ripple::muldiv_max),
-            minimumTxnCount_);
+            mulDiv(txnsExpected_, cutPct, 100).value_or(xrpl::kMULDIV_MAX), minimumTxnCount_);
         txnsExpected_ = std::clamp<std::uint64_t>(
-            mulDiv(size, cutPct, 100).value_or(ripple::muldiv_max),
-            minimumTxnCount_,
-            upperLimit);
+            mulDiv(size, cutPct, 100).value_or(xrpl::kMULDIV_MAX), minimumTxnCount_, upperLimit);
         recentTxnCounts_.clear();
     }
     else if (size > txnsExpected_ || size > targetTxnCount_)
     {
-        recentTxnCounts_.push_back(
-            mulDiv(size, 100 + setup.normalConsensusIncreasePercent, 100)
-                .value_or(ripple::muldiv_max));
-        auto const iter =
-            std::max_element(recentTxnCounts_.begin(), recentTxnCounts_.end());
+        recentTxnCounts_.push_back(mulDiv(size, 100 + setup.normalConsensusIncreasePercent, 100)
+                                       .value_or(xrpl::kMULDIV_MAX));
+        auto const iter = std::ranges::max_element(recentTxnCounts_);
         BOOST_ASSERT(iter != recentTxnCounts_.end());
         auto const next = [&] {
             // Grow quickly: If the max_element is >= the
@@ -147,7 +158,7 @@ TxQ::FeeMetrics::update(
         txnsExpected_ = std::min(next, maximumTxnCount_.value_or(next));
     }
 
-    if (!size)
+    if (size == 0)
     {
         escalationMultiplier_ = setup.minimumEscalationMultiplier;
     }
@@ -158,10 +169,8 @@ TxQ::FeeMetrics::update(
         // number of elements, it will add the two elements
         // on either side of the "middle" and average them.
         escalationMultiplier_ =
-            (feeLevels[size / 2] + feeLevels[(size - 1) / 2] + FeeLevel64{1}) /
-            2;
-        escalationMultiplier_ =
-            std::max(escalationMultiplier_, setup.minimumEscalationMultiplier);
+            (feeLevels[size / 2] + feeLevels[(size - 1) / 2] + FeeLevel64{1}) / 2;
+        escalationMultiplier_ = std::max(escalationMultiplier_, setup.minimumEscalationMultiplier);
     }
     JLOG(j_.debug()) << "Expected transactions updated to " << txnsExpected_
                      << " and multiplier updated to " << escalationMultiplier_;
@@ -185,10 +194,10 @@ TxQ::FeeMetrics::scaleFeeLevel(Snapshot const& snapshot, OpenView const& view)
         // Compute escalated fee level
         // Don't care about the overflow flag
         return mulDiv(multiplier, current * current, target * target)
-            .value_or(static_cast<FeeLevel64>(ripple::muldiv_max));
+            .value_or(static_cast<FeeLevel64>(xrpl::kMULDIV_MAX));
     }
 
-    return baseLevel;
+    return kBASE_LEVEL;
 }
 
 namespace detail {
@@ -200,7 +209,7 @@ sumOfFirstSquares(std::size_t xIn)
 
     // We expect that size_t == std::uint64_t but, just in case, guarantee
     // we lose no bits.
-    std::uint64_t x{xIn};
+    std::uint64_t const x{xIn};
 
     // If x is anywhere on the order of 2^^21, it's going
     // to completely dominate the computation and is likely
@@ -213,20 +222,17 @@ sumOfFirstSquares(std::size_t xIn)
 }
 
 // Unit tests for sumOfSquares()
-static_assert(sumOfFirstSquares(1).first == true);
+static_assert(sumOfFirstSquares(1).first);
 static_assert(sumOfFirstSquares(1).second == 1);
 
-static_assert(sumOfFirstSquares(2).first == true);
+static_assert(sumOfFirstSquares(2).first);
 static_assert(sumOfFirstSquares(2).second == 5);
 
-static_assert(sumOfFirstSquares(0x1FFFFF).first == true, "");
+static_assert(sumOfFirstSquares(0x1FFFFF).first, "");
 static_assert(sumOfFirstSquares(0x1FFFFF).second == 0x2AAAA8AAAAB00000ul, "");
 
-static_assert(sumOfFirstSquares(0x200000).first == false, "");
-static_assert(
-    sumOfFirstSquares(0x200000).second ==
-        std::numeric_limits<std::uint64_t>::max(),
-    "");
+static_assert(!sumOfFirstSquares(0x200000).first, "");
+static_assert(sumOfFirstSquares(0x200000).second == std::numeric_limits<std::uint64_t>::max(), "");
 
 }  // namespace detail
 
@@ -252,7 +258,7 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
 
     XRPL_ASSERT(
         current > target,
-        "ripple::TxQ::FeeMetrics::escalatedSeriesFeeLevel : current over "
+        "xrpl::TxQ::FeeMetrics::escalatedSeriesFeeLevel : current over "
         "target");
 
     /* Calculate (apologies for the terrible notation)
@@ -268,29 +274,29 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
     // are nearly nil.
     if (!sumNlast.first)
         return {sumNlast.first, FeeLevel64{sumNlast.second}};
-    auto const totalFeeLevel = mulDiv(
-        multiplier, sumNlast.second - sumNcurrent.second, target * target);
+    auto const totalFeeLevel =
+        mulDiv(multiplier, sumNlast.second - sumNcurrent.second, target * target);
 
-    return {totalFeeLevel.has_value(), *totalFeeLevel};
+    return {
+        totalFeeLevel.has_value(), *totalFeeLevel};  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 LedgerHash TxQ::MaybeTx::parentHashComp{};
 
 TxQ::MaybeTx::MaybeTx(
-    std::shared_ptr<STTx const> const& txn_,
-    TxID const& txID_,
-    FeeLevel64 feeLevel_,
-    ApplyFlags const flags_,
-    PreflightResult const& pfresult_)
-    : txn(txn_)
-    , feeLevel(feeLevel_)
-    , txID(txID_)
-    , account(txn_->getAccountID(sfAccount))
-    , lastValid(getLastLedgerSequence(*txn_))
-    , seqProxy(txn_->getSeqProxy())
-    , retriesRemaining(retriesAllowed)
-    , flags(flags_)
-    , pfresult(pfresult_)
+    std::shared_ptr<STTx const> const& txn,
+    TxID const& txId,
+    FeeLevel64 feeLevel,
+    ApplyFlags const flags,
+    PreflightResult const& pfResult)
+    : txn(txn)
+    , feeLevel(feeLevel)
+    , txID(txId)
+    , account(txn->getAccountID(sfAccount))
+    , lastValid(getLastLedgerSequence(*txn))
+    , seqProxy(txn->getSeqProxy())
+    , flags(flags)
+    , pfResult(pfResult)
 {
 }
 
@@ -298,22 +304,21 @@ ApplyResult
 TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     // If the rules or flags change, preflight again
-    XRPL_ASSERT(
-        pfresult, "ripple::TxQ::MaybeTx::apply : preflight result is set");
-    STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
-    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
+    XRPL_ASSERT(pfResult, "xrpl::TxQ::MaybeTx::apply : preflight result is set");
+    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
-    if (pfresult->rules != view.rules() || pfresult->flags != flags)
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
+    if (pfResult->rules != view.rules() || pfResult->flags != flags)
     {
         JLOG(j.debug()) << "Queued transaction " << txID
-                        << " rules or flags have changed. Flags from "
-                        << pfresult->flags << " to " << flags;
+                        << " rules or flags have changed. Flags from " << pfResult->flags << " to "
+                        << flags;
 
-        pfresult.emplace(
-            preflight(app, view.rules(), pfresult->tx, flags, pfresult->j));
+        pfResult.emplace(preflight(app, view.rules(), pfResult->tx, flags, pfResult->j));
     }
 
-    auto pcresult = preclaim(*pfresult, app, view);
+    auto pcresult = preclaim(*pfResult, app, view);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     return doApply(pcresult, app, view);
 }
@@ -323,7 +328,7 @@ TxQ::TxQAccount::TxQAccount(std::shared_ptr<STTx const> const& txn)
 {
 }
 
-TxQ::TxQAccount::TxQAccount(AccountID const& account_) : account(account_)
+TxQ::TxQAccount::TxQAccount(AccountID const& account) : account(account)
 {
 }
 
@@ -342,13 +347,11 @@ TxQ::MaybeTx&
 TxQ::TxQAccount::add(MaybeTx&& txn)
 {
     auto const seqProx = txn.seqProxy;
+    [[maybe_unused]] auto const* txnPtr = &txn;
 
     auto result = transactions.emplace(seqProx, std::move(txn));
-    XRPL_ASSERT(
-        result.second, "ripple::TxQ::TxQAccount::add : emplace succeeded");
-    XRPL_ASSERT(
-        &result.first->second != &txn,
-        "ripple::TxQ::TxQAccount::add : transaction moved");
+    XRPL_ASSERT(result.second, "xrpl::TxQ::TxQAccount::add : emplace succeeded");
+    XRPL_ASSERT(&result.first->second != txnPtr, "xrpl::TxQ::TxQAccount::add : transaction moved");
 
     return result.first->second;
 }
@@ -371,13 +374,12 @@ TxQ::~TxQ()
     byFee_.clear();
 }
 
-template <size_t fillPercentage>
+template <size_t FillPercentage>
 bool
 TxQ::isFull() const
 {
-    static_assert(
-        fillPercentage > 0 && fillPercentage <= 100, "Invalid fill percentage");
-    return maxSize_ && byFee_.size() >= (*maxSize_ * fillPercentage / 100);
+    static_assert(FillPercentage > 0 && FillPercentage <= 100, "Invalid fill percentage");
+    return maxSize_ && byFee_.size() >= (*maxSize_ * FillPercentage / 100);
 }
 
 TER
@@ -388,14 +390,14 @@ TxQ::canBeHeld(
     std::shared_ptr<SLE const> const& sleAccount,
     AccountMap::iterator const& accountIter,
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
-    std::lock_guard<std::mutex> const& lock)
+    std::scoped_lock<std::mutex> const& lock)
 {
     // PreviousTxnID is deprecated and should never be used.
     // AccountTxnID is not supported by the transaction
     // queue yet, but should be added in the future.
     // tapFAIL_HARD transactions are never held
-    if (tx.isFieldPresent(sfPreviousTxnID) ||
-        tx.isFieldPresent(sfAccountTxnID) || (flags & tapFAIL_HARD))
+    if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
+        ((flags & TapFailHard) != 0u))
         return telCAN_NOT_QUEUE;
 
     {
@@ -403,8 +405,7 @@ TxQ::canBeHeld(
         // promise to stick around for long enough that it has
         // a realistic chance of getting into a ledger.
         auto const lastValid = getLastLedgerSequence(tx);
-        if (lastValid &&
-            *lastValid < view.info().seq + setup_.minimumLastLedgerBuffer)
+        if (lastValid && *lastValid < view.header().seq + setup_.minimumLastLedgerBuffer)
             return telCAN_NOT_QUEUE;
     }
 
@@ -425,30 +426,35 @@ TxQ::canBeHeld(
     // transaction fills the _first_ sequence hole for the account.
     auto const txSeqProx = tx.getSeqProxy();
     if (txSeqProx.isTicket())
+    {
         // Tickets always follow sequence-based transactions, so a ticket
         // cannot unblock a sequence-based transaction.
         return telCAN_NOT_QUEUE_FULL;
+    }
 
     // This is the next queuable sequence-based SeqProxy for the account.
     SeqProxy const nextQueuable = nextQueuableSeqImpl(sleAccount, lock);
     if (txSeqProx != nextQueuable)
+    {
         // The provided transaction does not fill the next open sequence gap.
         return telCAN_NOT_QUEUE_FULL;
+    }
 
     // Make sure they are not just topping off the account's queued
     // sequence-based transactions.
     if (auto const nextTxIter = txQAcct.transactions.upper_bound(nextQueuable);
         nextTxIter != txQAcct.transactions.end() && nextTxIter->first.isSeq())
+    {
         // There is a next transaction and it is sequence based.  They are
         // filling a real gap.  Allow it.
         return tesSUCCESS;
+    }
 
     return telCAN_NOT_QUEUE_FULL;
 }
 
 auto
-TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter)
-    -> FeeMultiSet::iterator_type
+TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter) -> FeeMultiSet::iterator_type
 {
     auto& txQAccount = byAccount_.at(candidateIter->account);
     auto const seqProx = candidateIter->seqProxy;
@@ -457,7 +463,7 @@ TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     // intrusive list remove it from the TxQAccount
     // so the memory can be freed.
     [[maybe_unused]] auto const found = txQAccount.remove(seqProx);
-    XRPL_ASSERT(found, "ripple::TxQ::erase : account removed");
+    XRPL_ASSERT(found, "xrpl::TxQ::erase : account removed");
 
     return newCandidateIter;
 }
@@ -467,38 +473,32 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     -> FeeMultiSet::iterator_type
 {
     auto& txQAccount = byAccount_.at(candidateIter->account);
-    auto const accountIter =
-        txQAccount.transactions.find(candidateIter->seqProxy);
+    auto const accountIter = txQAccount.transactions.find(candidateIter->seqProxy);
     XRPL_ASSERT(
-        accountIter != txQAccount.transactions.end(),
-        "ripple::TxQ::eraseAndAdvance : account found");
+        accountIter != txQAccount.transactions.end(), "xrpl::TxQ::eraseAndAdvance : account found");
 
     // Note that sequence-based transactions must be applied in sequence order
     // from smallest to largest.  But ticket-based transactions can be
     // applied in any order.
     XRPL_ASSERT(
-        candidateIter->seqProxy.isTicket() ||
-            accountIter == txQAccount.transactions.begin(),
-        "ripple::TxQ::eraseAndAdvance : ticket or sequence");
+        candidateIter->seqProxy.isTicket() || accountIter == txQAccount.transactions.begin(),
+        "xrpl::TxQ::eraseAndAdvance : ticket or sequence");
     XRPL_ASSERT(
         byFee_.iterator_to(accountIter->second) == candidateIter,
-        "ripple::TxQ::eraseAndAdvance : found in byFee");
+        "xrpl::TxQ::eraseAndAdvance : found in byFee");
     auto const accountNextIter = std::next(accountIter);
 
     // Check if the next transaction for this account is earlier in the queue,
     // which means we skipped it earlier, and need to try it again.
     auto const feeNextIter = std::next(candidateIter);
-    bool const useAccountNext =
-        accountNextIter != txQAccount.transactions.end() &&
+    bool const useAccountNext = accountNextIter != txQAccount.transactions.end() &&
         accountNextIter->first > candidateIter->seqProxy &&
-        (feeNextIter == byFee_.end() ||
-         byFee_.value_comp()(accountNextIter->second, *feeNextIter));
+        (feeNextIter == byFee_.end() || byFee_.value_comp()(accountNextIter->second, *feeNextIter));
 
     auto const candidateNextIter = byFee_.erase(candidateIter);
     txQAccount.transactions.erase(accountIter);
 
-    return useAccountNext ? byFee_.iterator_to(accountNextIter->second)
-                          : candidateNextIter;
+    return useAccountNext ? byFee_.iterator_to(accountNextIter->second) : candidateNextIter;
 }
 
 auto
@@ -522,7 +522,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     TxQ::AccountMap::iterator const& accountIter,
     TxQAccount::TxMap::iterator beginTxIter,
     FeeLevel64 feeLevelPaid,
-    PreflightResult const& pfresult,
+    PreflightResult const& pfResult,
     std::size_t const txExtraCount,
     ApplyFlags flags,
     FeeMetrics::Snapshot const& metricsSnapshot,
@@ -531,15 +531,15 @@ TxQ::tryClearAccountQueueUpThruTx(
     SeqProxy const tSeqProx{tx.getSeqProxy()};
     XRPL_ASSERT(
         beginTxIter != accountIter->second.transactions.end(),
-        "ripple::TxQ::tryClearAccountQueueUpThruTx : non-empty accounts input");
+        "xrpl::TxQ::tryClearAccountQueueUpThruTx : non-empty accounts input");
 
     // This check is only concerned with the range from
     // [aSeqProxy, tSeqProxy)
     auto endTxIter = accountIter->second.transactions.lower_bound(tSeqProx);
     auto const dist = std::distance(beginTxIter, endTxIter);
 
-    auto const requiredTotalFeeLevel = FeeMetrics::escalatedSeriesFeeLevel(
-        metricsSnapshot, view, txExtraCount, dist + 1);
+    auto const requiredTotalFeeLevel =
+        FeeMetrics::escalatedSeriesFeeLevel(metricsSnapshot, view, txExtraCount, dist + 1);
     // If the computation for the total manages to overflow (however extremely
     //    unlikely), then there's no way we can confidently verify if the queue
     //    can be cleared.
@@ -547,10 +547,7 @@ TxQ::tryClearAccountQueueUpThruTx(
         return {telINSUF_FEE_P, false};
 
     auto const totalFeeLevelPaid = std::accumulate(
-        beginTxIter,
-        endTxIter,
-        feeLevelPaid,
-        [](auto const& total, auto const& txn) {
+        beginTxIter, endTxIter, feeLevelPaid, [](auto const& total, auto const& txn) {
             return total + txn.second.feeLevel;
         });
 
@@ -597,7 +594,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     }
     // Apply the current tx. Because the state of the view has been changed
     // by the queued txs, we also need to preclaim again.
-    auto const txResult = doApply(preclaim(pfresult, app, view), app, view);
+    auto const txResult = doApply(preclaim(pfResult, app, view), app, view);
 
     if (txResult.applied)
     {
@@ -605,8 +602,7 @@ TxQ::tryClearAccountQueueUpThruTx(
         // queue.
         endTxIter = erase(accountIter->second, beginTxIter, endTxIter);
         // If `tx` is replacing a queued tx, delete that one, too.
-        if (endTxIter != accountIter->second.transactions.end() &&
-            endTxIter->first == tSeqProx)
+        if (endTxIter != accountIter->second.transactions.end() && endTxIter->first == tSeqProx)
             erase(accountIter->second, endTxIter, std::next(endTxIter));
     }
 
@@ -734,15 +730,14 @@ TxQ::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
-    STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
-    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
+    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
-    auto const pfresult = preflight(app, view.rules(), *tx, flags, j);
-    if (pfresult.ter != tesSUCCESS)
-        return {pfresult.ter, false};
+    auto const pfResult = preflight(app, view.rules(), *tx, flags, j);
+    if (!isTesSuccess(pfResult.ter))
+        return {pfResult.ter, false};
 
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
@@ -766,20 +761,21 @@ TxQ::apply(
     // If the transaction needs a Ticket is that Ticket in the ledger?
     SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
-    if (txSeqProx.isTicket() &&
-        !view.exists(keylet::ticket(account, txSeqProx)))
+    if (txSeqProx.isTicket() && !view.exists(keylet::kTICKET(account, txSeqProx)))
     {
         if (txSeqProx.value() < acctSeqProx.value())
+        {
             // The ticket number is low enough that it should already be
             // in the ledger if it were ever going to exist.
             return {tefNO_TICKET, false};
+        }
 
         // We don't queue transactions that use Tickets unless
         // we can find the Ticket in the ledger.
         return {terPRE_TICKET, false};
     }
 
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     // accountIter is not const because it may be updated further down.
     AccountMap::iterator accountIter = byAccount_.find(account);
@@ -795,10 +791,8 @@ TxQ::apply(
     // to individually check each queued ticket against the ledger.
     struct TxIter
     {
-        TxIter(
-            TxQAccount::TxMap::iterator first_,
-            TxQAccount::TxMap::iterator end_)
-            : first(first_), end(end_)
+        TxIter(TxQAccount::TxMap::iterator first, TxQAccount::TxMap::iterator end)
+            : first(first), end(end)
         {
         }
 
@@ -807,58 +801,56 @@ TxQ::apply(
     };
 
     std::optional<TxIter> const txIter =
-        [accountIter,
-         accountIsInQueue,
-         acctSeqProx]() -> std::optional<TxIter> {
+        [accountIter, accountIsInQueue, acctSeqProx]() -> std::optional<TxIter> {
         if (!accountIsInQueue)
             return {};
 
         // Find the first transaction in the queue that we might apply.
         TxQAccount::TxMap& acctTxs = accountIter->second.transactions;
-        TxQAccount::TxMap::iterator const firstIter =
-            acctTxs.lower_bound(acctSeqProx);
+        TxQAccount::TxMap::iterator const firstIter = acctTxs.lower_bound(acctSeqProx);
 
         if (firstIter == acctTxs.end())
+        {
             // Even though there may be transactions in the queue, there are
             // none that we should pay attention to.
             return {};
+        }
 
         return {TxIter{firstIter, acctTxs.end()}};
     }();
 
-    auto const acctTxCount{
-        !txIter ? 0 : std::distance(txIter->first, txIter->end)};
+    auto const acctTxCount{!txIter ? 0 : std::distance(txIter->first, txIter->end)};
 
     // Is tx a blocker?  If so there are very limited conditions when it
     // is allowed in the TxQ:
     //  1. If the account's queue is empty or
     //  2. If the blocker replaces the only entry in the account's queue.
     auto const transactionID = tx->getTransactionID();
-    if (pfresult.consequences.isBlocker())
+    if (pfResult.consequences.isBlocker())
     {
         if (acctTxCount > 1)
         {
             // A blocker may not be co-resident with other transactions in
             // the account's queue.
-            JLOG(j_.trace())
-                << "Rejecting blocker transaction " << transactionID
-                << ".  Account has other queued transactions.";
+            JLOG(j_.trace()) << "Rejecting blocker transaction " << transactionID
+                             << ".  Account has other queued transactions.";
             return {telCAN_NOT_QUEUE_BLOCKS, false};
         }
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) acctTxCount == 1 implies txIter is set
         if (acctTxCount == 1 && (txSeqProx != txIter->first->first))
         {
             // The blocker is not replacing the lone queued transaction.
-            JLOG(j_.trace())
-                << "Rejecting blocker transaction " << transactionID
-                << ".  Blocker does not replace lone queued transaction.";
+            JLOG(j_.trace()) << "Rejecting blocker transaction " << transactionID
+                             << ".  Blocker does not replace lone queued transaction.";
             return {telCAN_NOT_QUEUE_BLOCKS, false};
         }
     }
 
     // If the transaction is intending to replace a transaction in the queue
     // identify the one that might be replaced.
-    auto replacedTxIter = [accountIsInQueue, &accountIter, txSeqProx]()
-        -> std::optional<TxQAccount::TxMap::iterator> {
+    auto replacedTxIter = [accountIsInQueue,
+                           &accountIter,
+                           txSeqProx]() -> std::optional<TxQAccount::TxMap::iterator> {
         if (accountIsInQueue)
         {
             TxQAccount& txQAcct = accountIter->second;
@@ -873,8 +865,7 @@ TxQ::apply(
     // replacement, so just pull it up now.
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
     auto const feeLevelPaid = getFeeLevelPaid(view, *tx);
-    auto const requiredFeeLevel =
-        getRequiredFeeLevel(view, flags, metricsSnapshot, lock);
+    auto const requiredFeeLevel = getRequiredFeeLevel(view, flags, metricsSnapshot, lock);
 
     // Is there a blocker already in the account's queue?  If so, don't
     // allow additional transactions in the queue.
@@ -885,9 +876,10 @@ TxQ::apply(
         //
         // We only need to check if txIter->first is a blocker because we
         // require that a blocker be alone in the account's queue.
-        if (acctTxCount == 1 &&
-            txIter->first->second.consequences().isBlocker() &&
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) acctTxCount == 1 implies txIter is set
+        if (acctTxCount == 1 && txIter->first->second.consequences().isBlocker() &&
             (txIter->first->first != txSeqProx))
+        // NOLINTEND(bugprone-unchecked-optional-access)
         {
             return {telCAN_NOT_QUEUE_BLOCKED, false};
         }
@@ -902,29 +894,25 @@ TxQ::apply(
             // Is the current transaction's fee higher than
             // the queued transaction's fee + a percentage
             TxQAccount::TxMap::iterator const& existingIter = *replacedTxIter;
-            auto requiredRetryLevel = increase(
-                existingIter->second.feeLevel, setup_.retrySequencePercent);
-            JLOG(j_.trace())
-                << "Found transaction in queue for account " << account
-                << " with " << txSeqProx << " new txn fee level is "
-                << feeLevelPaid << ", old txn fee level is "
-                << existingIter->second.feeLevel
-                << ", new txn needs fee level of " << requiredRetryLevel;
+            auto requiredRetryLevel =
+                increase(existingIter->second.feeLevel, setup_.retrySequencePercent);
+            JLOG(j_.trace()) << "Found transaction in queue for account " << account << " with "
+                             << txSeqProx << " new txn fee level is " << feeLevelPaid
+                             << ", old txn fee level is " << existingIter->second.feeLevel
+                             << ", new txn needs fee level of " << requiredRetryLevel;
             if (feeLevelPaid > requiredRetryLevel)
             {
                 // Continue, leaving the queued transaction marked for removal.
                 // DO NOT REMOVE if the new tx fails, because there may
                 // be other txs dependent on it in the queue.
-                JLOG(j_.trace()) << "Removing transaction from queue "
-                                 << existingIter->second.txID << " in favor of "
-                                 << transactionID;
+                JLOG(j_.trace()) << "Removing transaction from queue " << existingIter->second.txID
+                                 << " in favor of " << transactionID;
             }
             else
             {
                 // Drop the current transaction
-                JLOG(j_.trace())
-                    << "Ignoring transaction " << transactionID
-                    << " in favor of queued " << existingIter->second.txID;
+                JLOG(j_.trace()) << "Ignoring transaction " << transactionID
+                                 << " in favor of queued " << existingIter->second.txID;
                 return {telCAN_NOT_QUEUE_FEE, false};
             }
         }
@@ -935,8 +923,7 @@ TxQ::apply(
         ApplyViewImpl applyView;
         OpenView openView;
 
-        MultiTxn(OpenView& view, ApplyFlags flags)
-            : applyView(&view, flags), openView(&applyView)
+        MultiTxn(OpenView& view, ApplyFlags flags) : applyView(&view, flags), openView(&applyView)
         {
         }
     };
@@ -977,14 +964,8 @@ TxQ::apply(
         {
             // If the transaction is queueable, create the multiTxn
             // object to hold the info we need to adjust for prior txns.
-            TER const ter{canBeHeld(
-                *tx,
-                flags,
-                view,
-                sleAccount,
-                accountIter,
-                replacedTxIter,
-                lock)};
+            TER const ter{
+                canBeHeld(*tx, flags, view, sleAccount, accountIter, replacedTxIter, lock)};
             if (!isTesSuccess(ter))
                 return {ter, false};
 
@@ -1000,13 +981,12 @@ TxQ::apply(
             //
             //  o Additional transactions with Sequences should
             //    follow preceding sequence-based transactions with no
-            //    gaps (except for those required by CreateTicket
+            //    gaps (except for those required by TicketCreate
             //    transactions).
 
             // Find the entry in the queue that precedes the new
             // transaction, if one does.
-            TxQAccount::TxMap::const_iterator const prevIter =
-                txQAcct.getPrevTx(txSeqProx);
+            TxQAccount::TxMap::const_iterator const prevIter = txQAcct.getPrevTx(txSeqProx);
 
             // Does the new transaction go to the front of the queue?
             // This can happen if:
@@ -1014,8 +994,9 @@ TxQ::apply(
             //  o The current first thing in the queue has a Ticket and
             //    * The tx has a Ticket that precedes it or
             //    * txSeqProx == acctSeqProx.
-            XRPL_ASSERT(
-                prevIter != txIter->end, "ripple::TxQ::apply : not end");
+            // NOLINTBEGIN(bugprone-unchecked-optional-access) acctTxCount > 0 in else branch
+            // implies txIter is set
+            XRPL_ASSERT(prevIter != txIter->end, "xrpl::TxQ::apply : not end");
             if (prevIter == txIter->end || txSeqProx < prevIter->first)
             {
                 // The first Sequence number in the queue must be the
@@ -1023,9 +1004,13 @@ TxQ::apply(
                 if (txSeqProx.isSeq())
                 {
                     if (txSeqProx < acctSeqProx)
+                    {
                         return {tefPAST_SEQ, false};
-                    else if (txSeqProx > acctSeqProx)
+                    }
+                    if (txSeqProx > acctSeqProx)
+                    {
                         return {terPRE_SEQ, false};
+                    }
                 }
             }
             else if (!replacedTxIter)
@@ -1035,16 +1020,15 @@ TxQ::apply(
                 // front of this one in the queue.  Make sure the current
                 // transaction fits in proper sequence order with the
                 // previous transaction or is a ticket.
-                if (txSeqProx.isSeq() &&
-                    nextQueuableSeqImpl(sleAccount, lock) != txSeqProx)
+                if (txSeqProx.isSeq() && nextQueuableSeqImpl(sleAccount, lock) != txSeqProx)
                     return {telCAN_NOT_QUEUE, false};
             }
 
             // Sum fees and spending for all of the queued transactions
             // so we know how much to remove from the account balance
             // for the trial preclaim.
-            XRPAmount potentialSpend = beast::zero;
-            XRPAmount totalFee = beast::zero;
+            XRPAmount potentialSpend = beast::kZERO;
+            XRPAmount totalFee = beast::kZERO;
             for (auto iter = txIter->first; iter != txIter->end; ++iter)
             {
                 // If we're replacing this transaction don't include
@@ -1053,18 +1037,18 @@ TxQ::apply(
                 if (iter->first != txSeqProx)
                 {
                     totalFee += iter->second.consequences().fee();
-                    potentialSpend +=
-                        iter->second.consequences().potentialSpend();
+                    potentialSpend += iter->second.consequences().potentialSpend();
                 }
                 else if (std::next(iter) != txIter->end)
                 {
                     // The fee for the candidate transaction _should_ be
                     // counted if it's replacing a transaction in the middle
                     // of the queue.
-                    totalFee += pfresult.consequences.fee();
-                    potentialSpend += pfresult.consequences.potentialSpend();
+                    totalFee += pfResult.consequences.fee();
+                    potentialSpend += pfResult.consequences.potentialSpend();
                 }
             }
+            // NOLINTEND(bugprone-unchecked-optional-access)
 
             /* Check if the total fees in flight are greater
                 than the account's current balance, or the
@@ -1113,10 +1097,9 @@ TxQ::apply(
                comparable scale to the base fee, ignore the
                reserve. Only check the account balance.
             */
-            auto const reserve = view.fees().accountReserve(0);
+            auto const reserve = view.fees().reserve;
             auto const base = view.fees().base;
-            if (totalFee >= balance ||
-                (reserve > 10 * base && totalFee >= reserve))
+            if (totalFee >= balance || (reserve > 10 * base && totalFee >= reserve))
             {
                 // Drop the current transaction
                 JLOG(j_.trace()) << "Ignoring transaction " << transactionID
@@ -1134,13 +1117,12 @@ TxQ::apply(
             // Subtract the fees and XRP spend from all of the other
             // transactions in the queue.  That prevents a transaction
             // inserted in the middle from fouling up later transactions.
-            auto const potentialTotalSpend = totalFee +
-                std::min(balance - std::min(balance, reserve), potentialSpend);
+            auto const potentialTotalSpend =
+                totalFee + std::min(balance - std::min(balance, reserve), potentialSpend);
             XRPL_ASSERT(
                 potentialTotalSpend > XRPAmount{0} ||
-                    (potentialTotalSpend == XRPAmount{0} &&
-                     multiTxn->applyView.fees().base == 0),
-                "ripple::TxQ::apply : total spend check");
+                    (potentialTotalSpend == XRPAmount{0} && multiTxn->applyView.fees().base == 0),
+                "xrpl::TxQ::apply : total spend check");
             sleBump->setFieldAmount(sfBalance, balance - potentialTotalSpend);
             // The transaction's sequence/ticket will be valid when the other
             // transactions in the queue have been processed. If the tx has a
@@ -1164,18 +1146,16 @@ TxQ::apply(
     // Note that earlier code has already verified that the sequence/ticket
     // is valid.  So we use a special entry point that runs all of the
     // preclaim checks with the exception of the sequence check.
-    auto const pcresult =
-        preclaim(pfresult, app, multiTxn ? multiTxn->openView : view);
+    auto const pcresult = preclaim(pfResult, app, multiTxn ? multiTxn->openView : view);
     if (!pcresult.likelyToClaimFee)
         return {pcresult.ter, false};
 
     // Too low of a fee should get caught by preclaim
-    XRPL_ASSERT(feeLevelPaid >= baseLevel, "ripple::TxQ::apply : minimum fee");
+    XRPL_ASSERT(feeLevelPaid >= kBASE_LEVEL, "xrpl::TxQ::apply : minimum fee");
 
-    JLOG(j_.trace()) << "Transaction " << transactionID << " from account "
-                     << account << " has fee level of " << feeLevelPaid
-                     << " needs at least " << requiredFeeLevel
-                     << " to get in the open ledger, which has "
+    JLOG(j_.trace()) << "Transaction " << transactionID << " from account " << account
+                     << " has fee level of " << feeLevelPaid << " needs at least "
+                     << requiredFeeLevel << " to get in the open ledger, which has "
                      << view.txCount() << " entries.";
 
     /* Quick heuristic check to see if it's worth checking that this tx has
@@ -1196,10 +1176,10 @@ TxQ::apply(
             conditions change, but don't waste the effort to clear).
     */
     if (txSeqProx.isSeq() && txIter && multiTxn.has_value() &&
-        txIter->first->second.retriesRemaining == MaybeTx::retriesAllowed &&
-        feeLevelPaid > requiredFeeLevel && requiredFeeLevel > baseLevel)
+        txIter->first->second.retriesRemaining == MaybeTx::kRETRIES_ALLOWED &&
+        feeLevelPaid > requiredFeeLevel && requiredFeeLevel > kBASE_LEVEL)
     {
-        OpenView sandbox(open_ledger, &view, view.rules());
+        OpenView sandbox(kOPEN_LEDGER, &view, view.rules());
 
         auto result = tryClearAccountQueueUpThruTx(
             app,
@@ -1208,7 +1188,7 @@ TxQ::apply(
             accountIter,
             txIter->first,
             feeLevelPaid,
-            pfresult,
+            pfResult,
             view.txCount(),
             flags,
             metricsSnapshot,
@@ -1226,13 +1206,11 @@ TxQ::apply(
     // If `multiTxn` has a value, then `canBeHeld` has already been verified
     if (!multiTxn)
     {
-        TER const ter{canBeHeld(
-            *tx, flags, view, sleAccount, accountIter, replacedTxIter, lock)};
+        TER const ter{canBeHeld(*tx, flags, view, sleAccount, accountIter, replacedTxIter, lock)};
         if (!isTesSuccess(ter))
         {
             // Bail, transaction cannot be held
-            JLOG(j_.trace())
-                << "Transaction " << transactionID << " cannot be held";
+            JLOG(j_.trace()) << "Transaction " << transactionID << " cannot be held";
             return {ter, false};
         }
     }
@@ -1255,10 +1233,9 @@ TxQ::apply(
             // is 2000, and an account can only have 10 transactions
             // queued. However, it can occur if settings are changed,
             // and there is unit test coverage.
-            JLOG(j_.info())
-                << "Queue is full, and transaction " << transactionID
-                << " would kick a transaction from the same account ("
-                << account << ") out of the queue.";
+            JLOG(j_.info()) << "Queue is full, and transaction " << transactionID
+                            << " would kick a transaction from the same account (" << account
+                            << ") out of the queue.";
             return {telCAN_NOT_QUEUE_FULL, false};
         }
         auto const& endAccount = byAccount_.at(lastRIter->account);
@@ -1266,29 +1243,24 @@ TxQ::apply(
             // Compute the average of all the txs for the endAccount,
             // but only if the last tx in the queue has a lower fee
             // level than this candidate tx.
-            if (lastRIter->feeLevel > feeLevelPaid ||
-                endAccount.transactions.size() == 1)
+            if (lastRIter->feeLevel > feeLevelPaid || endAccount.transactions.size() == 1)
                 return lastRIter->feeLevel;
 
-            constexpr FeeLevel64 max{std::numeric_limits<std::uint64_t>::max()};
+            constexpr FeeLevel64 kMAX{std::numeric_limits<std::uint64_t>::max()};
             auto endTotal = std::accumulate(
                 endAccount.transactions.begin(),
                 endAccount.transactions.end(),
                 std::pair<FeeLevel64, FeeLevel64>(0, 0),
-                [&](auto const& total,
-                    auto const& txn) -> std::pair<FeeLevel64, FeeLevel64> {
+                [&](auto const& total, auto const& txn) -> std::pair<FeeLevel64, FeeLevel64> {
                     // Check for overflow.
-                    auto next =
-                        txn.second.feeLevel / endAccount.transactions.size();
-                    auto mod =
-                        txn.second.feeLevel % endAccount.transactions.size();
-                    if (total.first >= max - next || total.second >= max - mod)
-                        return {max, FeeLevel64{0}};
+                    auto next = txn.second.feeLevel / endAccount.transactions.size();
+                    auto mod = txn.second.feeLevel % endAccount.transactions.size();
+                    if (total.first >= kMAX - next || total.second >= kMAX - mod)
+                        return {kMAX, FeeLevel64{0}};
 
                     return {total.first + next, total.second + mod};
                 });
-            return endTotal.first +
-                endTotal.second / endAccount.transactions.size();
+            return endTotal.first + endTotal.second / endAccount.transactions.size();
         }();
         if (feeLevelPaid > endEffectiveFeeLevel)
         {
@@ -1297,19 +1269,16 @@ TxQ::apply(
             auto dropRIter = endAccount.transactions.rbegin();
             XRPL_ASSERT(
                 dropRIter->second.account == lastRIter->account,
-                "ripple::TxQ::apply : cheapest transaction found");
-            JLOG(j_.info())
-                << "Removing last item of account " << lastRIter->account
-                << " from queue with average fee of " << endEffectiveFeeLevel
-                << " in favor of " << transactionID << " with fee of "
-                << feeLevelPaid;
+                "xrpl::TxQ::apply : cheapest transaction found");
+            JLOG(j_.info()) << "Removing last item of account " << lastRIter->account
+                            << " from queue with average fee of " << endEffectiveFeeLevel
+                            << " in favor of " << transactionID << " with fee of " << feeLevelPaid;
             erase(byFee_.iterator_to(dropRIter->second));
         }
         else
         {
-            JLOG(j_.info())
-                << "Queue is full, and transaction " << transactionID
-                << " fee is lower than end item's account average fee";
+            JLOG(j_.info()) << "Queue is full, and transaction " << transactionID
+                            << " fee is lower than end item's account average fee";
             return {telCAN_NOT_QUEUE_FULL, false};
         }
     }
@@ -1324,9 +1293,8 @@ TxQ::apply(
     {
         // Create a new TxQAccount object and add the byAccount lookup.
         [[maybe_unused]] bool created = false;
-        std::tie(accountIter, created) =
-            byAccount_.emplace(account, TxQAccount(tx));
-        XRPL_ASSERT(created, "ripple::TxQ::apply : account created");
+        std::tie(accountIter, created) = byAccount_.emplace(account, TxQAccount(tx));
+        XRPL_ASSERT(created, "xrpl::TxQ::apply : account created");
     }
     // Modify the flags for use when coming out of the queue.
     // These changes _may_ cause an extra `preflight`, but as long as
@@ -1334,17 +1302,16 @@ TxQ::apply(
     // will not be checked again, so the cost should be minimal.
 
     // Don't allow soft failures, which can lead to retries
-    flags &= ~tapRETRY;
+    flags &= ~TapRetry;
 
-    auto& candidate = accountIter->second.add(
-        {tx, transactionID, feeLevelPaid, flags, pfresult});
+    auto& candidate = accountIter->second.add({tx, transactionID, feeLevelPaid, flags, pfResult});
 
     // Then index it into the byFee lookup.
     byFee_.insert(candidate);
-    JLOG(j_.debug()) << "Added transaction " << candidate.txID
-                     << " with result " << transToken(pfresult.ter) << " from "
-                     << (accountIsInQueue ? "existing" : "new") << " account "
-                     << candidate.account << " to queue."
+    JLOG(j_.debug()) << "Added transaction " << candidate.txID << " with result "
+                     << transToken(pfResult.ter) << " from "
+                     << (accountIsInQueue ? "existing" : "new") << " account " << candidate.account
+                     << " to queue."
                      << " Flags: " << flags;
 
     return {terQUEUED, false};
@@ -1365,16 +1332,15 @@ TxQ::apply(
 void
 TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 {
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     feeMetrics_.update(app, view, timeLeap, setup_);
     auto const& snapshot = feeMetrics_.getSnapshot();
 
-    auto ledgerSeq = view.info().seq;
+    auto ledgerSeq = view.header().seq;
 
     if (!timeLeap)
-        maxSize_ = std::max(
-            snapshot.txnsExpected * setup_.ledgersInQueue, setup_.queueSizeMin);
+        maxSize_ = std::max(snapshot.txnsExpected * setup_.ledgersInQueue, setup_.queueSizeMin);
 
     // Remove any queued candidates whose LastLedgerSequence has gone by.
     for (auto candidateIter = byFee_.begin(); candidateIter != byFee_.end();)
@@ -1392,13 +1358,16 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 
     // Remove any TxQAccounts that don't have candidates
     // under them
-    for (auto txQAccountIter = byAccount_.begin();
-         txQAccountIter != byAccount_.end();)
+    for (auto txQAccountIter = byAccount_.begin(); txQAccountIter != byAccount_.end();)
     {
         if (txQAccountIter->second.empty())
+        {
             txQAccountIter = byAccount_.erase(txQAccountIter);
+        }
         else
+        {
             ++txQAccountIter;
+        }
     }
 }
 
@@ -1442,7 +1411,7 @@ TxQ::accept(Application& app, OpenView& view)
 
     auto ledgerChanged = false;
 
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
 
@@ -1450,41 +1419,35 @@ TxQ::accept(Application& app, OpenView& view)
     {
         auto& account = byAccount_.at(candidateIter->account);
         auto const beginIter = account.transactions.begin();
-        if (candidateIter->seqProxy.isSeq() &&
-            candidateIter->seqProxy > beginIter->first)
+        if (candidateIter->seqProxy.isSeq() && candidateIter->seqProxy > beginIter->first)
         {
             // There is a sequence transaction at the front of the queue and
             // candidate has a later sequence, so skip this candidate.  We
             // need to process sequence-based transactions in sequence order.
-            JLOG(j_.trace())
-                << "Skipping queued transaction " << candidateIter->txID
-                << " from account " << candidateIter->account
-                << " as it is not the first.";
+            JLOG(j_.trace()) << "Skipping queued transaction " << candidateIter->txID
+                             << " from account " << candidateIter->account
+                             << " as it is not the first.";
             candidateIter++;
             continue;
         }
-        auto const requiredFeeLevel =
-            getRequiredFeeLevel(view, tapNONE, metricsSnapshot, lock);
+        auto const requiredFeeLevel = getRequiredFeeLevel(view, TapNone, metricsSnapshot, lock);
         auto const feeLevelPaid = candidateIter->feeLevel;
-        JLOG(j_.trace()) << "Queued transaction " << candidateIter->txID
-                         << " from account " << candidateIter->account
-                         << " has fee level of " << feeLevelPaid
+        JLOG(j_.trace()) << "Queued transaction " << candidateIter->txID << " from account "
+                         << candidateIter->account << " has fee level of " << feeLevelPaid
                          << " needs at least " << requiredFeeLevel;
         if (feeLevelPaid >= requiredFeeLevel)
         {
-            JLOG(j_.trace()) << "Applying queued transaction "
-                             << candidateIter->txID << " to open ledger.";
+            JLOG(j_.trace()) << "Applying queued transaction " << candidateIter->txID
+                             << " to open ledger.";
 
-            auto const [txnResult, didApply, _metadata] =
-                candidateIter->apply(app, view, j_);
+            auto const [txnResult, didApply, _metadata] = candidateIter->apply(app, view, j_);
 
             if (didApply)
             {
                 // Remove the candidate from the queue
-                JLOG(j_.debug())
-                    << "Queued transaction " << candidateIter->txID
-                    << " applied successfully with " << transToken(txnResult)
-                    << ". Remove from queue.";
+                JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID
+                                 << " applied successfully with " << transToken(txnResult)
+                                 << ". Remove from queue.";
 
                 candidateIter = eraseAndAdvance(candidateIter);
                 ledgerChanged = true;
@@ -1494,28 +1457,32 @@ TxQ::accept(Application& app, OpenView& view)
                 candidateIter->retriesRemaining <= 0)
             {
                 if (candidateIter->retriesRemaining <= 0)
+                {
                     account.retryPenalty = true;
+                }
                 else
+                {
                     account.dropPenalty = true;
-                JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID
-                                 << " failed with " << transToken(txnResult)
-                                 << ". Remove from queue.";
+                }
+                JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
+                                 << transToken(txnResult) << ". Remove from queue.";
                 candidateIter = eraseAndAdvance(candidateIter);
             }
             else
             {
-                JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID
-                                 << " failed with " << transToken(txnResult)
-                                 << ". Leave in queue."
-                                 << " Applied: " << didApply
-                                 << ". Flags: " << candidateIter->flags;
+                JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
+                                 << transToken(txnResult) << ". Leave in queue."
+                                 << " Applied: " << didApply << ". Flags: " << candidateIter->flags;
                 if (account.retryPenalty && candidateIter->retriesRemaining > 2)
+                {
                     candidateIter->retriesRemaining = 1;
+                }
                 else
+                {
                     --candidateIter->retriesRemaining;
+                }
                 candidateIter->lastResult = txnResult;
-                if (account.dropPenalty && account.transactions.size() > 1 &&
-                    isFull<95>())
+                if (account.dropPenalty && account.transactions.size() > 1 && isFull<95>())
                 {
                     // The queue is close to full, this account has multiple
                     // txs queued, and this account has had a transaction
@@ -1525,11 +1492,9 @@ TxQ::accept(Application& app, OpenView& view)
                         // Since the failed transaction has a ticket, order
                         // doesn't matter.  Drop this one.
                         JLOG(j_.info())
-                            << "Queue is nearly full, and transaction "
-                            << candidateIter->txID << " failed with "
-                            << transToken(txnResult)
-                            << ". Removing ticketed tx from account "
-                            << account.account;
+                            << "Queue is nearly full, and transaction " << candidateIter->txID
+                            << " failed with " << transToken(txnResult)
+                            << ". Removing ticketed tx from account " << account.account;
                         candidateIter = eraseAndAdvance(candidateIter);
                     }
                     else
@@ -1541,14 +1506,12 @@ TxQ::accept(Application& app, OpenView& view)
                         auto dropRIter = account.transactions.rbegin();
                         XRPL_ASSERT(
                             dropRIter->second.account == candidateIter->account,
-                            "ripple::TxQ::accept : account check");
+                            "xrpl::TxQ::accept : account check");
 
                         JLOG(j_.info())
-                            << "Queue is nearly full, and transaction "
-                            << candidateIter->txID << " failed with "
-                            << transToken(txnResult)
-                            << ". Removing last item from account "
-                            << account.account;
+                            << "Queue is nearly full, and transaction " << candidateIter->txID
+                            << " failed with " << transToken(txnResult)
+                            << ". Removing last item from account " << account.account;
                         auto endIter = byFee_.iterator_to(dropRIter->second);
                         if (endIter != candidateIter)
                             erase(endIter);
@@ -1556,7 +1519,9 @@ TxQ::accept(Application& app, OpenView& view)
                     }
                 }
                 else
+                {
                     ++candidateIter;
+                }
             }
         }
         else
@@ -1569,11 +1534,15 @@ TxQ::accept(Application& app, OpenView& view)
     // ledger have been. Rebuild the queue using the open ledger's
     // parent hash, so that transactions paying the same fee are
     // reordered.
-    LedgerHash const& parentHash = view.info().parentHash;
+    LedgerHash const& parentHash = view.header().parentHash;
     if (parentHash == parentHash_)
+    {
         JLOG(j_.warn()) << "Parent ledger hash unchanged from " << parentHash;
+    }
     else
+    {
         parentHash_ = parentHash;
+    }
 
     [[maybe_unused]] auto const startingSize = byFee_.size();
     // byFee_ doesn't "own" the candidate objects inside it, so it's
@@ -1595,9 +1564,7 @@ TxQ::accept(Application& app, OpenView& view)
             byFee_.insert(candidate);
         }
     }
-    XRPL_ASSERT(
-        byFee_.size() == startingSize,
-        "ripple::TxQ::accept : byFee size match");
+    XRPL_ASSERT(byFee_.size() == startingSize, "xrpl::TxQ::accept : byFee size match");
 
     return ledgerChanged;
 }
@@ -1608,7 +1575,7 @@ TxQ::accept(Application& app, OpenView& view)
 SeqProxy
 TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return nextQueuableSeqImpl(sleAccount, lock);
 }
 
@@ -1621,7 +1588,7 @@ TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
 SeqProxy
 TxQ::nextQueuableSeqImpl(
     std::shared_ptr<SLE const> const& sleAccount,
-    std::lock_guard<std::mutex> const&) const
+    std::scoped_lock<std::mutex> const&) const
 {
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.
@@ -1632,8 +1599,7 @@ TxQ::nextQueuableSeqImpl(
 
     // If the account is not in the queue then acctSeqProx is good enough.
     auto const accountIter = byAccount_.find((*sleAccount)[sfAccount]);
-    if (accountIter == byAccount_.end() ||
-        accountIter->second.transactions.empty())
+    if (accountIter == byAccount_.end() || accountIter->second.transactions.empty())
         return acctSeqProx;
 
     TxQAccount::TxMap const& acctTxs = accountIter->second.transactions;
@@ -1643,14 +1609,15 @@ TxQ::nextQueuableSeqImpl(
     // wild, but it's uncommon.
     TxQAccount::TxMap::const_iterator txIter = acctTxs.lower_bound(acctSeqProx);
 
-    if (txIter == acctTxs.end() || !txIter->first.isSeq() ||
-        txIter->first != acctSeqProx)
+    if (txIter == acctTxs.end() || !txIter->first.isSeq() || txIter->first != acctSeqProx)
+    {
         // Either...
         //   o There are no queued sequence-based transactions equal to or
         //     following acctSeqProx or
         //   o acctSeqProx is not currently in the queue.
         // So acctSeqProx is as good as it gets.
         return acctSeqProx;
+    }
 
     // There are sequence-based transactions queued that follow acctSeqProx.
     // Locate the first opening to put a transaction into.
@@ -1670,7 +1637,7 @@ TxQ::getRequiredFeeLevel(
     OpenView& view,
     ApplyFlags flags,
     FeeMetrics::Snapshot const& metricsSnapshot,
-    std::lock_guard<std::mutex> const& lock) const
+    std::scoped_lock<std::mutex> const& lock)
 {
     return FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
 }
@@ -1699,9 +1666,8 @@ TxQ::tryDirectApply(
         return {};
 
     FeeLevel64 const requiredFeeLevel = [this, &view, flags]() {
-        std::lock_guard lock(mutex_);
-        return getRequiredFeeLevel(
-            view, flags, feeMetrics_.getSnapshot(), lock);
+        std::scoped_lock const lock(mutex_);
+        return getRequiredFeeLevel(view, flags, feeMetrics_.getSnapshot(), lock);
     }();
 
     // If the transaction's fee is high enough we may be able to put the
@@ -1712,29 +1678,25 @@ TxQ::tryDirectApply(
     {
         // Attempt to apply the transaction directly.
         auto const transactionID = tx->getTransactionID();
-        JLOG(j_.trace()) << "Applying transaction " << transactionID
-                         << " to open ledger.";
+        JLOG(j_.trace()) << "Applying transaction " << transactionID << " to open ledger.";
 
-        auto const [txnResult, didApply, metadata] =
-            ripple::apply(app, view, *tx, flags, j);
+        auto const [txnResult, didApply, metadata] = xrpl::apply(app, view, *tx, flags, j);
 
         JLOG(j_.trace()) << "New transaction " << transactionID
-                         << (didApply ? " applied successfully with "
-                                      : " failed with ")
+                         << (didApply ? " applied successfully with " : " failed with ")
                          << transToken(txnResult);
 
         if (didApply)
         {
             // If the applied transaction replaced a transaction in the
             // queue then remove the replaced transaction.
-            std::lock_guard lock(mutex_);
+            std::scoped_lock const lock(mutex_);
 
-            AccountMap::iterator accountIter = byAccount_.find(account);
+            AccountMap::iterator const accountIter = byAccount_.find(account);
             if (accountIter != byAccount_.end())
             {
                 TxQAccount& txQAcct = accountIter->second;
-                if (auto const existingIter =
-                        txQAcct.transactions.find(txSeqProx);
+                if (auto const existingIter = txQAcct.transactions.find(txSeqProx);
                     existingIter != txQAcct.transactions.end())
                 {
                     removeFromByFee(existingIter, tx);
@@ -1756,18 +1718,16 @@ TxQ::removeFromByFee(
         // If the transaction we're holding replaces a transaction in the
         // queue, remove the transaction that is being replaced.
         auto deleteIter = byFee_.iterator_to((*replacedTxIter)->second);
-        XRPL_ASSERT(
-            deleteIter != byFee_.end(),
-            "ripple::TxQ::removeFromByFee : found in byFee");
+        XRPL_ASSERT(deleteIter != byFee_.end(), "xrpl::TxQ::removeFromByFee : found in byFee");
         XRPL_ASSERT(
             &(*replacedTxIter)->second == &*deleteIter,
-            "ripple::TxQ::removeFromByFee : matching transaction");
+            "xrpl::TxQ::removeFromByFee : matching transaction");
         XRPL_ASSERT(
             deleteIter->seqProxy == tx->getSeqProxy(),
-            "ripple::TxQ::removeFromByFee : matching sequence");
+            "xrpl::TxQ::removeFromByFee : matching sequence");
         XRPL_ASSERT(
             deleteIter->account == (*tx)[sfAccount],
-            "ripple::TxQ::removeFromByFee : matching account");
+            "xrpl::TxQ::removeFromByFee : matching account");
 
         erase(deleteIter);
     }
@@ -1779,7 +1739,7 @@ TxQ::getMetrics(OpenView const& view) const
 {
     Metrics result;
 
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto const snapshot = feeMetrics_.getSnapshot();
 
@@ -1787,9 +1747,9 @@ TxQ::getMetrics(OpenView const& view) const
     result.txQMaxSize = maxSize_;
     result.txInLedger = view.txCount();
     result.txPerLedger = snapshot.txnsExpected;
-    result.referenceFeeLevel = baseLevel;
+    result.referenceFeeLevel = kBASE_LEVEL;
     result.minProcessingFeeLevel =
-        isFull() ? byFee_.rbegin()->feeLevel + FeeLevel64{1} : baseLevel;
+        isFull() ? byFee_.rbegin()->feeLevel + FeeLevel64{1} : kBASE_LEVEL;
     result.medFeeLevel = snapshot.escalationMultiplier;
     result.openLedgerFeeLevel = FeeMetrics::scaleFeeLevel(snapshot, view);
 
@@ -1797,13 +1757,11 @@ TxQ::getMetrics(OpenView const& view) const
 }
 
 TxQ::FeeAndSeq
-TxQ::getTxRequiredFeeAndSeq(
-    OpenView const& view,
-    std::shared_ptr<STTx const> const& tx) const
+TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> const& tx) const
 {
     auto const account = (*tx)[sfAccount];
 
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto const snapshot = feeMetrics_.getSnapshot();
     auto const baseFee = calculateBaseFee(view, *tx);
@@ -1814,10 +1772,10 @@ TxQ::getTxRequiredFeeAndSeq(
     std::uint32_t const accountSeq = sle ? (*sle)[sfSequence] : 0;
     std::uint32_t const availableSeq = nextQueuableSeqImpl(sle, lock).value();
     return {
-        mulDiv(fee, baseFee, baseLevel)
-            .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
-        accountSeq,
-        availableSeq};
+        .fee = mulDiv(fee, baseFee, kBASE_LEVEL)
+                   .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
+        .accountSeq = accountSeq,
+        .availableSeq = availableSeq};
 }
 
 std::vector<TxQ::TxDetails>
@@ -1825,12 +1783,11 @@ TxQ::getAccountTxs(AccountID const& account) const
 {
     std::vector<TxDetails> result;
 
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     AccountMap::const_iterator const accountIter{byAccount_.find(account)};
 
-    if (accountIter == byAccount_.end() ||
-        accountIter->second.transactions.empty())
+    if (accountIter == byAccount_.end() || accountIter->second.transactions.empty())
         return result;
 
     result.reserve(accountIter->second.transactions.size());
@@ -1846,7 +1803,7 @@ TxQ::getTxs() const
 {
     std::vector<TxDetails> result;
 
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     result.reserve(byFee_.size());
 
@@ -1856,10 +1813,10 @@ TxQ::getTxs() const
     return result;
 }
 
-Json::Value
+json::Value
 TxQ::doRPC(Application& app) const
 {
-    auto const view = app.openLedger().current();
+    auto const view = app.getOpenLedger().current();
     if (!view)
     {
         BOOST_ASSERT(false);
@@ -1868,11 +1825,11 @@ TxQ::doRPC(Application& app) const
 
     auto const metrics = getMetrics(*view);
 
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ObjectValue);
 
-    auto& levels = ret[jss::levels] = Json::objectValue;
+    auto& levels = ret[jss::levels] = json::ObjectValue;
 
-    ret[jss::ledger_current_index] = view->info().seq;
+    ret[jss::ledger_current_index] = view->header().seq;
     ret[jss::expected_ledger_size] = std::to_string(metrics.txPerLedger);
     ret[jss::current_ledger_size] = std::to_string(metrics.txInLedger);
     ret[jss::current_queue_size] = std::to_string(metrics.txCount);
@@ -1893,7 +1850,7 @@ TxQ::doRPC(Application& app) const
             return XRPAmount{1};
         return baseFee;
     }();
-    auto& drops = ret[jss::drops] = Json::Value();
+    auto& drops = ret[jss::drops] = json::Value();
 
     drops[jss::base_fee] = to_string(baseFee);
     drops[jss::median_fee] = to_string(toDrops(metrics.medFeeLevel, baseFee));
@@ -1901,8 +1858,7 @@ TxQ::doRPC(Application& app) const
         metrics.minProcessingFeeLevel,
         metrics.txCount >= metrics.txQMaxSize ? effectiveBaseFee : baseFee));
     auto openFee = toDrops(metrics.openLedgerFeeLevel, effectiveBaseFee);
-    if (effectiveBaseFee &&
-        toFeeLevel(openFee, effectiveBaseFee) < metrics.openLedgerFeeLevel)
+    if (effectiveBaseFee && toFeeLevel(openFee, effectiveBaseFee) < metrics.openLedgerFeeLevel)
         openFee += 1;
     drops[jss::open_ledger_fee] = to_string(openFee);
 
@@ -1912,22 +1868,18 @@ TxQ::doRPC(Application& app) const
 //////////////////////////////////////////////////////////////////////////
 
 TxQ::Setup
-setup_TxQ(Config const& config)
+setupTxQ(Config const& config)
 {
     TxQ::Setup setup;
     auto const& section = config.section("transaction_queue");
     set(setup.ledgersInQueue, "ledgers_in_queue", section);
     set(setup.queueSizeMin, "minimum_queue_size", section);
     set(setup.retrySequencePercent, "retry_sequence_percent", section);
-    set(setup.minimumEscalationMultiplier,
-        "minimum_escalation_multiplier",
-        section);
+    set(setup.minimumEscalationMultiplier, "minimum_escalation_multiplier", section);
     set(setup.minimumTxnInLedger, "minimum_txn_in_ledger", section);
-    set(setup.minimumTxnInLedgerSA,
-        "minimum_txn_in_ledger_standalone",
-        section);
+    set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone", section);
     set(setup.targetTxnInLedger, "target_txn_in_ledger", section);
-    std::uint32_t max;
+    std::uint32_t max = 0;
     if (set(max, "maximum_txn_in_ledger", section))
     {
         if (max < setup.minimumTxnInLedger)
@@ -1954,11 +1906,9 @@ setup_TxQ(Config const& config)
        MAXINT, but put a reasonable limit on this percentage so that
        the factor can't be configured to render escalation effectively
        moot. (There are other ways to do that, including
-       minimum_txn_in_ledger.)
+       minimum_txn_in_ledger_.)
     */
-    set(setup.normalConsensusIncreasePercent,
-        "normal_consensus_increase_percent",
-        section);
+    set(setup.normalConsensusIncreasePercent, "normal_consensus_increase_percent", section);
     setup.normalConsensusIncreasePercent =
         std::clamp(setup.normalConsensusIncreasePercent, 0u, 1000u);
 
@@ -1966,11 +1916,8 @@ setup_TxQ(Config const& config)
        are nonsensical (uint overflows happen, so the limit grows
        instead of shrinking). 0 is not recommended.
     */
-    set(setup.slowConsensusDecreasePercent,
-        "slow_consensus_decrease_percent",
-        section);
-    setup.slowConsensusDecreasePercent =
-        std::clamp(setup.slowConsensusDecreasePercent, 0u, 100u);
+    set(setup.slowConsensusDecreasePercent, "slow_consensus_decrease_percent", section);
+    setup.slowConsensusDecreasePercent = std::clamp(setup.slowConsensusDecreasePercent, 0u, 100u);
 
     set(setup.maximumTxnPerAccount, "maximum_txn_per_account", section);
     set(setup.minimumLastLedgerBuffer, "minimum_last_ledger_buffer", section);
@@ -1979,4 +1926,4 @@ setup_TxQ(Config const& config)
     return setup;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

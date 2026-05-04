@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_TX_H_INCLUDED
-#define RIPPLE_TEST_CSF_TX_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -32,10 +12,9 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 
-namespace ripple {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 //! A single transaction
 class Tx
@@ -52,7 +31,7 @@ public:
     {
     }
 
-    ID const&
+    [[nodiscard]] ID const&
     id() const
     {
         return id_;
@@ -82,13 +61,13 @@ using TxSetType = boost::container::flat_set<Tx>;
 class TxSet
 {
 public:
-    using ID = beast::uhash<>::result_type;
+    using ID = beast::Uhash<>::result_type;
     using Tx = csf::Tx;
 
     static ID
     calcID(TxSetType const& txs)
     {
-        return beast::uhash<>{}(txs);
+        return beast::Uhash<>{}(txs);
     }
 
     class MutableTxSet
@@ -116,22 +95,23 @@ public:
     };
 
     TxSet() = default;
-    TxSet(TxSetType const& s) : txs_{s}, id_{calcID(txs_)}
+    TxSet(TxSetType s) : txs_{std::move(s)}, id_{calcID(txs_)}
     {
     }
 
-    TxSet(MutableTxSet&& m) : txs_{std::move(m.txs_)}, id_{calcID(txs_)}
+    TxSet(MutableTxSet&& m)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        : txs_{m.txs_}, id_{calcID(txs_)}
     {
     }
 
-    bool
+    [[nodiscard]] bool
     exists(Tx::ID const txId) const
     {
         auto it = txs_.find(Tx{txId});
         return it != txs_.end();
     }
 
-    Tx const*
+    [[nodiscard]] Tx const*
     find(Tx::ID const& txId) const
     {
         auto it = txs_.find(Tx{txId});
@@ -140,13 +120,13 @@ public:
         return nullptr;
     }
 
-    TxSetType const&
+    [[nodiscard]] TxSetType const&
     txs() const
     {
         return txs_;
     }
 
-    ID
+    [[nodiscard]] ID
     id() const
     {
         return id_;
@@ -156,12 +136,12 @@ public:
                     it was in this set and not other. False means
                     it was in the other set and not this
     */
-    std::map<Tx::ID, bool>
+    [[nodiscard]] std::map<Tx::ID, bool>
     compare(TxSet const& other) const
     {
         std::map<Tx::ID, bool> res;
 
-        auto populate_diffs = [&res](auto const& a, auto const& b, bool s) {
+        auto populateDiffs = [&res](auto const& a, auto const& b, bool s) {
             auto populator = [&](auto const& tx) { res[tx.id()] = s; };
             std::set_difference(
                 a.begin(),
@@ -171,8 +151,8 @@ public:
                 boost::make_function_output_iterator(std::ref(populator)));
         };
 
-        populate_diffs(txs_, other.txs_, true);
-        populate_diffs(other.txs_, txs_, false);
+        populateDiffs(txs_, other.txs_, true);
+        populateDiffs(other.txs_, txs_, false);
         return res;
     }
 
@@ -181,7 +161,7 @@ private:
     TxSetType txs_;
 
     //! The unique ID of this tx set
-    ID id_;
+    ID id_{};
 };
 
 //------------------------------------------------------------------------------
@@ -198,13 +178,17 @@ inline std::ostream&
 operator<<(std::ostream& o, boost::container::flat_set<T> const& ts)
 {
     o << "{ ";
-    bool do_comma = false;
+    bool doComma = false;
     for (auto const& t : ts)
     {
-        if (do_comma)
+        if (doComma)
+        {
             o << ", ";
+        }
         else
-            do_comma = true;
+        {
+            doComma = true;
+        }
         o << t;
     }
     o << " }";
@@ -227,8 +211,4 @@ hash_append(Hasher& h, Tx const& tx)
     hash_append(h, tx.id());
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::csf

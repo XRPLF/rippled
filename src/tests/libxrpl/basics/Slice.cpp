@@ -1,105 +1,90 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Slice.h>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
-using namespace ripple;
+using namespace xrpl;
 
-static std::uint8_t const data[] = {
-    0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a,
-    0x18, 0xb4, 0x70, 0xcb, 0xf5, 0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c,
-    0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};
+static std::uint8_t const kDATA[] = {
+    0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a, 0x18, 0xb4, 0x70, 0xcb, 0xf5,
+    0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c, 0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};
 
-TEST_SUITE_BEGIN("Slice");
-
-TEST_CASE("equality & inequality")
+TEST(Slice, equality_and_inequality)
 {
     Slice const s0{};
 
-    CHECK(s0.size() == 0);
-    CHECK(s0.data() == nullptr);
-    CHECK(s0 == s0);
+    EXPECT_EQ(s0.size(), 0);
+    EXPECT_EQ(s0.data(), nullptr);
+    EXPECT_EQ(s0, s0);
 
     // Test slices of equal and unequal size pointing to same data:
-    for (std::size_t i = 0; i != sizeof(data); ++i)
+    for (std::size_t i = 0; i != sizeof(kDATA); ++i)
     {
-        Slice const s1{data, i};
+        Slice const s1{kDATA, i};
 
-        CHECK(s1.size() == i);
-        CHECK(s1.data() != nullptr);
+        EXPECT_EQ(s1.size(), i);
+        EXPECT_NE(s1.data(), nullptr);
 
         if (i == 0)
-            CHECK(s1 == s0);
-        else
-            CHECK(s1 != s0);
-
-        for (std::size_t j = 0; j != sizeof(data); ++j)
         {
-            Slice const s2{data, j};
+            EXPECT_EQ(s1, s0);
+        }
+        else
+        {
+            EXPECT_NE(s1, s0);
+        }
+
+        for (std::size_t j = 0; j != sizeof(kDATA); ++j)
+        {
+            Slice const s2{kDATA, j};
 
             if (i == j)
-                CHECK(s1 == s2);
+            {
+                EXPECT_EQ(s1, s2);
+            }
             else
-                CHECK(s1 != s2);
+            {
+                EXPECT_NE(s1, s2);
+            }
         }
     }
 
     // Test slices of equal size but pointing to different data:
-    std::array<std::uint8_t, sizeof(data)> a;
-    std::array<std::uint8_t, sizeof(data)> b;
+    std::array<std::uint8_t, sizeof(kDATA)> a{};
+    std::array<std::uint8_t, sizeof(kDATA)> b{};
 
-    for (std::size_t i = 0; i != sizeof(data); ++i)
-        a[i] = b[i] = data[i];
+    for (std::size_t i = 0; i != sizeof(kDATA); ++i)
+        a[i] = b[i] = kDATA[i];
 
-    CHECK(makeSlice(a) == makeSlice(b));
+    EXPECT_EQ(makeSlice(a), makeSlice(b));
     b[7]++;
-    CHECK(makeSlice(a) != makeSlice(b));
+    EXPECT_NE(makeSlice(a), makeSlice(b));
     a[7]++;
-    CHECK(makeSlice(a) == makeSlice(b));
+    EXPECT_EQ(makeSlice(a), makeSlice(b));
 }
 
-TEST_CASE("indexing")
+TEST(Slice, indexing)
 {
-    Slice const s{data, sizeof(data)};
+    Slice const s{kDATA, sizeof(kDATA)};
 
-    for (std::size_t i = 0; i != sizeof(data); ++i)
-        CHECK(s[i] == data[i]);
+    for (std::size_t i = 0; i != sizeof(kDATA); ++i)
+        EXPECT_EQ(s[i], kDATA[i]);
 }
 
-TEST_CASE("advancing")
+TEST(Slice, advancing)
 {
-    for (std::size_t i = 0; i < sizeof(data); ++i)
+    for (std::size_t i = 0; i < sizeof(kDATA); ++i)
     {
-        for (std::size_t j = 0; i + j < sizeof(data); ++j)
+        for (std::size_t j = 0; i + j < sizeof(kDATA); ++j)
         {
-            Slice s(data + i, sizeof(data) - i);
+            Slice s(kDATA + i, sizeof(kDATA) - i);
             s += j;
 
-            CHECK(s.data() == data + i + j);
-            CHECK(s.size() == sizeof(data) - i - j);
+            EXPECT_EQ(s.data(), kDATA + i + j);
+            EXPECT_EQ(s.size(), sizeof(kDATA) - i - j);
         }
     }
 }
-
-TEST_SUITE_END();

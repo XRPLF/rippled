@@ -1,49 +1,29 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_JSON_JSONPROPERTYSTREAM_H_INCLUDED
-#define RIPPLE_JSON_JSONPROPERTYSTREAM_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 
-/** A PropertyStream::Sink which produces a Json::Value of type objectValue. */
+/** A PropertyStream::Sink which produces a json::Value of type objectValue. */
 class JsonPropertyStream : public beast::PropertyStream
 {
 public:
-    Json::Value m_top;
-    std::vector<Json::Value*> m_stack;
+    json::Value topValue;  // TODO: rename: clashes with top() method
+    std::vector<json::Value*> stack;
 
 public:
     JsonPropertyStream();
-    Json::Value const&
+    [[nodiscard]] json::Value const&
     top() const;
 
 protected:
     void
-    map_begin() override;
+    mapBegin() override;
     void
-    map_begin(std::string const& key) override;
+    mapBegin(std::string const& key) override;
     void
-    map_end() override;
+    mapEnd() override;
     void
     add(std::string const& key, short value) override;
     void
@@ -61,11 +41,11 @@ protected:
     void
     add(std::string const& key, std::string const& v) override;
     void
-    array_begin() override;
+    arrayBegin() override;
     void
-    array_begin(std::string const& key) override;
+    arrayBegin(std::string const& key) override;
     void
-    array_end() override;
+    arrayEnd() override;
 
     void
     add(short value) override;
@@ -85,6 +65,4 @@ protected:
     add(std::string const& v) override;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,13 +1,12 @@
-#ifndef RIPPLE_TEST_JTX_SIGNERUTILS_H_INCLUDED
-#define RIPPLE_TEST_JTX_SIGNERUTILS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 
+#include <algorithm>
+#include <utility>
 #include <vector>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 struct Reg
 {
@@ -18,8 +17,7 @@ struct Reg
     {
     }
 
-    Reg(Account const& acct_, Account const& regularSig)
-        : acct(acct_), sig(regularSig)
+    Reg(Account acct, Account regularSig) : acct(std::move(acct)), sig(std::move(regularSig))
     {
     }
 
@@ -27,8 +25,7 @@ struct Reg
     {
     }
 
-    Reg(char const* acct_, char const* regularSig)
-        : acct(acct_), sig(regularSig)
+    Reg(char const* acct, char const* regularSig) : acct(acct), sig(regularSig)
     {
     }
 
@@ -43,14 +40,7 @@ struct Reg
 inline void
 sortSigners(std::vector<Reg>& signers)
 {
-    std::sort(
-        signers.begin(), signers.end(), [](Reg const& lhs, Reg const& rhs) {
-            return lhs.acct < rhs.acct;
-        });
+    std::ranges::sort(signers, [](Reg const& lhs, Reg const& rhs) { return lhs.acct < rhs.acct; });
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx

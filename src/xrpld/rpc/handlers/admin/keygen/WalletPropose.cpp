@@ -1,0 +1,174 @@
+#include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
+
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <cmath>
+#include <map>
+#include <optional>
+#include <string>
+
+namespace xrpl {
+
+double
+estimateEntropy(std::string const& input)
+{
+    // First, we calculate the Shannon entropy. This gives
+    // the average number of bits per symbol that we would
+    // need to encode the input.
+    std::map<int, double> freq;
+
+    for (auto const& c : input)
+        freq[c]++;
+
+    double se = 0.0;
+
+    for (auto const& [_, f] : freq)
+    {
+        (void)_;
+        auto x = f / input.length();
+        se += (x)*log2(x);
+    }
+
+    // We multiply it by the length, to get an estimate of
+    // the number of bits in the input. We floor because it
+    // is better to be conservative.
+    return std::floor(-se * input.length());
+}
+
+// {
+//  passphrase: <string>
+// }
+json::Value
+doWalletPropose(RPC::JsonContext& context)
+{
+    return walletPropose(context.params);
+}
+
+json::Value
+walletPropose(json::Value const& params)
+{
+    std::optional<KeyType> keyType;
+    std::optional<Seed> seed;
+    bool libSeed = false;
+
+    if (params.isMember(jss::key_type))
+    {
+        if (!params[jss::key_type].isString())
+        {
+            return RPC::expectedFieldError(jss::key_type, "string");
+        }
+
+        keyType = keyTypeFromString(params[jss::key_type].asString());
+
+        if (!keyType)
+            return rpcError(RpcInvalidParams);
+    }
+
+    // XrplLib encodes seed used to generate an Ed25519 wallet in a
+    // non-standard way. While we never encode seeds that way, we try
+    // to detect such keys to avoid user confusion.
+    {
+        if (params.isMember(jss::passphrase))
+        {
+            seed = RPC::parseXrplLibSeed(params[jss::passphrase]);
+        }
+        else if (params.isMember(jss::seed))
+        {
+            seed = RPC::parseXrplLibSeed(params[jss::seed]);
+        }
+
+        if (seed)
+        {
+            libSeed = true;
+
+            // If the user *explicitly* requests a key type other than
+            // Ed25519 we return an error.
+            if (keyType.value_or(KeyType::Ed25519) != KeyType::Ed25519)
+                return rpcError(RpcBadSeed);
+
+            keyType = KeyType::Ed25519;
+        }
+    }
+
+    if (!seed)
+    {
+        if (params.isMember(jss::passphrase) || params.isMember(jss::seed) ||
+            params.isMember(jss::seed_hex))
+        {
+            json::Value err;
+
+            seed = RPC::getSeedFromRPC(params, err);
+
+            if (!seed)
+                return err;
+        }
+        else
+        {
+            seed = randomSeed();
+        }
+    }
+
+    if (!keyType)
+        keyType = KeyType::Secp256k1;
+
+    auto const publicKey = generateKeyPair(*keyType, *seed).first;
+
+    json::Value obj(json::ObjectValue);
+
+    auto const seed1751 = seedAs1751(*seed);
+    auto const seedHex = strHex(*seed);
+    auto const seedBase58 = toBase58(*seed);
+
+    obj[jss::master_seed] = seedBase58;
+    obj[jss::master_seed_hex] = seedHex;
+    obj[jss::master_key] = seed1751;
+    obj[jss::account_id] = toBase58(calcAccountID(publicKey));
+    obj[jss::public_key] = toBase58(TokenType::AccountPublic, publicKey);
+    obj[jss::key_type] = to_string(*keyType);
+    obj[jss::public_key_hex] = strHex(publicKey);
+
+    // If a passphrase was specified, and it was hashed and used as a seed
+    // run a quick entropy check and add an appropriate warning, because
+    // "brain wallets" can be easily attacked.
+    if (!libSeed && params.isMember(jss::passphrase))
+    {
+        auto const passphrase = params[jss::passphrase].asString();
+
+        if (passphrase != seed1751 && passphrase != seedBase58 && passphrase != seedHex)
+        {
+            // 80 bits of entropy isn't bad, but it's better to
+            // err on the side of caution and be conservative.
+            if (estimateEntropy(passphrase) < 80.0)
+            {
+                obj[jss::warning] =
+                    "This wallet was generated using a user-supplied "
+                    "passphrase that has low entropy and is vulnerable "
+                    "to brute-force attacks.";
+            }
+            else
+            {
+                obj[jss::warning] =
+                    "This wallet was generated using a user-supplied "
+                    "passphrase. It may be vulnerable to brute-force "
+                    "attacks.";
+            }
+        }
+    }
+
+    return obj;
+}
+
+}  // namespace xrpl

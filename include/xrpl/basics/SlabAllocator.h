@@ -1,24 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
+// Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
-#define RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/type_name.h>
@@ -39,7 +21,7 @@
 #include <sys/mman.h>
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 template <typename Type>
 class SlabAllocator
@@ -54,46 +36,40 @@ class SlabAllocator
     struct SlabBlock
     {
         // A mutex to protect the freelist for this block:
-        std::mutex m_;
+        std::mutex m;
 
         // A linked list of appropriately sized free buffers:
-        std::uint8_t* l_ = nullptr;
+        std::uint8_t* l = nullptr;
 
         // The next memory block
-        SlabBlock* next_;
+        SlabBlock* next;
 
         // The underlying memory block:
-        std::uint8_t const* const p_ = nullptr;
+        std::uint8_t const* const p = nullptr;
 
         // The extent of the underlying memory block:
-        std::size_t const size_;
+        std::size_t const size;
 
-        SlabBlock(
-            SlabBlock* next,
-            std::uint8_t* data,
-            std::size_t size,
-            std::size_t item)
-            : next_(next), p_(data), size_(size)
+        SlabBlock(SlabBlock* next, std::uint8_t* data, std::size_t size, std::size_t item)
+            : next(next), p(data), size(size)
         {
             // We don't need to grab the mutex here, since we're the only
             // ones with access at this moment.
 
-            while (data + item <= p_ + size_)
+            while (data + item <= p + size)
             {
                 // Use memcpy to avoid unaligned UB
                 // (will optimize to equivalent code)
-                std::memcpy(data, &l_, sizeof(std::uint8_t*));
-                l_ = data;
+                std::memcpy(data, static_cast<void const*>(&l), sizeof(std::uint8_t*));
+                l = data;
                 data += item;
             }
         }
 
-        ~SlabBlock()
-        {
-            // Calling this destructor will release the allocated memory but
-            // will not properly destroy any objects that are constructed in
-            // the block itself.
-        }
+        // Calling this destructor will release the allocated memory but
+        // will not properly destroy any objects that are constructed in
+        // the block itself.
+        ~SlabBlock() = default;
 
         SlabBlock(SlabBlock const& other) = delete;
         SlabBlock&
@@ -105,26 +81,25 @@ class SlabAllocator
 
         /** Determines whether the given pointer belongs to this allocator */
         bool
-        own(std::uint8_t const* p) const noexcept
+        own(std::uint8_t const* pIn) const noexcept
         {
-            return (p >= p_) && (p < p_ + size_);
+            return (pIn >= p) && (pIn < p + size);
         }
 
         std::uint8_t*
         allocate() noexcept
         {
-            std::uint8_t* ret;
+            std::uint8_t* ret = nullptr;  // NOLINT(misc-const-correctness)
 
             {
-                std::lock_guard l(m_);
+                std::scoped_lock const lock(m);
+                ret = l;
 
-                ret = l_;
-
-                if (ret)
+                if (ret != nullptr)
                 {
                     // Use memcpy to avoid unaligned UB
                     // (will optimize to equivalent code)
-                    std::memcpy(&l_, ret, sizeof(std::uint8_t*));
+                    std::memcpy(static_cast<void*>(&l), ret, sizeof(std::uint8_t*));
                 }
             }
 
@@ -143,16 +118,14 @@ class SlabAllocator
         void
         deallocate(std::uint8_t* ptr) noexcept
         {
-            XRPL_ASSERT(
-                own(ptr),
-                "ripple::SlabAllocator::SlabBlock::deallocate : own input");
+            XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
-            std::lock_guard l(m_);
+            std::scoped_lock const lock(m);
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)
-            std::memcpy(ptr, &l_, sizeof(std::uint8_t*));
-            l_ = ptr;
+            std::memcpy(ptr, static_cast<void const*>(&l), sizeof(std::uint8_t*));
+            l = ptr;
         }
     };
 
@@ -176,21 +149,20 @@ public:
         @param count the number of items the slab allocator can allocate; note
                      that a count of 0 is valid and means that the allocator
                      is, effectively, disabled. This can be very useful in some
-                     contexts (e.g. when mimimal memory usage is needed) and
+                     contexts (e.g. when minimal memory usage is needed) and
                      allows for graceful failure.
      */
     constexpr explicit SlabAllocator(
         std::size_t extra,
         std::size_t alloc = 0,
         std::size_t align = 0)
-        : itemAlignment_(align ? align : alignof(Type))
-        , itemSize_(
-              boost::alignment::align_up(sizeof(Type) + extra, itemAlignment_))
+        : itemAlignment_((align != 0u) ? align : alignof(Type))
+        , itemSize_(boost::alignment::align_up(sizeof(Type) + extra, itemAlignment_))
         , slabSize_(alloc)
     {
         XRPL_ASSERT(
             (itemAlignment_ & (itemAlignment_ - 1)) == 0,
-            "ripple::SlabAllocator::SlabAllocator : valid alignment");
+            "xrpl::SlabAllocator::SlabAllocator : valid alignment");
     }
 
     SlabAllocator(SlabAllocator const& other) = delete;
@@ -201,15 +173,13 @@ public:
     SlabAllocator&
     operator=(SlabAllocator&& other) = delete;
 
-    ~SlabAllocator()
-    {
-        // FIXME: We can't destroy the memory blocks we've allocated, because
-        //        we can't be sure that they are not being used. Cleaning the
-        //        shutdown process up could make this possible.
-    }
+    // FIXME: We can't destroy the memory blocks we've allocated, because
+    //        we can't be sure that they are not being used. Cleaning the
+    //        shutdown process up could make this possible.
+    ~SlabAllocator() = default;
 
     /** Returns the size of the memory block this allocator returns. */
-    constexpr std::size_t
+    [[nodiscard]] constexpr std::size_t
     size() const noexcept
     {
         return itemSize_;
@@ -230,22 +200,18 @@ public:
             if (auto ret = slab->allocate())
                 return ret;
 
-            slab = slab->next_;
+            slab = slab->next;
         }
 
         // No slab can satisfy our request, so we attempt to allocate a new
         // one here:
-        std::size_t size = slabSize_;
+        std::size_t const size = slabSize_;
 
         // We want to allocate the memory at a 2 MiB boundary, to make it
         // possible to use hugepage mappings on Linux:
-        auto buf =
-            boost::alignment::aligned_alloc(megabytes(std::size_t(2)), size);
-
-        // clang-format off
-        if (!buf) [[unlikely]]
+        auto buf = boost::alignment::aligned_alloc(megabytes(std::size_t(2)), size);
+        if (buf == nullptr) [[unlikely]]
             return nullptr;
-            // clang-format on
 
 #if BOOST_OS_LINUX
         // When allocating large blocks, attempt to leverage Linux's
@@ -258,31 +224,24 @@ public:
 
         // We need to carve out a bit of memory for the slab header
         // and then align the rest appropriately:
-        auto slabData = reinterpret_cast<void*>(
-            reinterpret_cast<std::uint8_t*>(buf) + sizeof(SlabBlock));
+        auto slabData =
+            reinterpret_cast<void*>(reinterpret_cast<std::uint8_t*>(buf) + sizeof(SlabBlock));
         auto slabSize = size - sizeof(SlabBlock);
 
         // This operation is essentially guaranteed not to fail but
         // let's be careful anyways.
-        if (!boost::alignment::align(
-                itemAlignment_, itemSize_, slabData, slabSize))
+        if (boost::alignment::align(itemAlignment_, itemSize_, slabData, slabSize) == nullptr)
         {
             boost::alignment::aligned_free(buf);
             return nullptr;
         }
 
         slab = new (buf) SlabBlock(
-            slabs_.load(),
-            reinterpret_cast<std::uint8_t*>(slabData),
-            slabSize,
-            itemSize_);
+            slabs_.load(), reinterpret_cast<std::uint8_t*>(slabData), slabSize, itemSize_);
 
         // Link the new slab
         while (!slabs_.compare_exchange_weak(
-            slab->next_,
-            slab,
-            std::memory_order_release,
-            std::memory_order_relaxed))
+            slab->next, slab, std::memory_order_release, std::memory_order_relaxed))
         {
             ;  // Nothing to do
         }
@@ -302,10 +261,10 @@ public:
     {
         XRPL_ASSERT(
             ptr,
-            "ripple::SlabAllocator::SlabAllocator::deallocate : non-null "
+            "xrpl::SlabAllocator::SlabAllocator::deallocate : non-null "
             "input");
 
-        for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next_)
+        for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next)
         {
             if (slab->own(ptr))
             {
@@ -324,7 +283,7 @@ class SlabAllocatorSet
 {
 private:
     // The list of allocators that belong to this set
-    boost::container::static_vector<SlabAllocator<Type>, 64> allocators_;
+    boost::container::static_vector<SlabAllocator<Type>, 64> allocators_{};
 
     std::size_t maxSize_ = 0;
 
@@ -334,16 +293,16 @@ public:
         friend class SlabAllocatorSet;
 
     private:
-        std::size_t extra;
-        std::size_t alloc;
-        std::size_t align;
+        std::size_t extra_;
+        std::size_t alloc_;
+        std::size_t align_;
 
     public:
         constexpr SlabConfig(
-            std::size_t extra_,
-            std::size_t alloc_ = 0,
-            std::size_t align_ = alignof(Type))
-            : extra(extra_), alloc(alloc_), align(align_)
+            std::size_t extra,
+            std::size_t alloc = 0,
+            std::size_t align = alignof(Type))
+            : extra_(extra), alloc_(alloc), align_(align)
         {
         }
     };
@@ -352,29 +311,23 @@ public:
     {
         // Ensure that the specified allocators are sorted from smallest to
         // largest by size:
-        std::sort(
-            std::begin(cfg),
-            std::end(cfg),
-            [](SlabConfig const& a, SlabConfig const& b) {
-                return a.extra < b.extra;
-            });
+        std::sort(std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
+            return a.extra_ < b.extra_;
+        });
 
         // We should never have two slabs of the same size
         if (std::adjacent_find(
-                std::begin(cfg),
-                std::end(cfg),
-                [](SlabConfig const& a, SlabConfig const& b) {
-                    return a.extra == b.extra;
+                std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
+                    return a.extra_ == b.extra_;
                 }) != cfg.end())
         {
             throw std::runtime_error(
-                "SlabAllocatorSet<" + beast::type_name<Type>() +
-                ">: duplicate slab size");
+                "SlabAllocatorSet<" + beast::typeName<Type>() + ">: duplicate slab size");
         }
 
         for (auto const& c : cfg)
         {
-            auto& a = allocators_.emplace_back(c.extra, c.alloc, c.align);
+            auto& a = allocators_.emplace_back(c.extra_, c.alloc_, c.align_);
 
             if (a.size() > maxSize_)
                 maxSize_ = a.size();
@@ -389,9 +342,7 @@ public:
     SlabAllocatorSet&
     operator=(SlabAllocatorSet&& other) = delete;
 
-    ~SlabAllocatorSet()
-    {
-    }
+    ~SlabAllocatorSet() = default;
 
     /** Returns a suitably aligned pointer, if one is available.
 
@@ -436,6 +387,4 @@ public:
     }
 };
 
-}  // namespace ripple
-
-#endif  // RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
+}  // namespace xrpl

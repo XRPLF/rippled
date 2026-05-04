@@ -1,39 +1,21 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
-#define RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 inline STAmount
-toSTAmount(IOUAmount const& iou, Issue const& iss)
+toSTAmount(IOUAmount const& iou, Asset const& asset)
 {
+    XRPL_ASSERT(asset.holds<Issue>(), "xrpl::toSTAmount : is Issue");
     bool const isNeg = iou.signum() < 0;
     std::uint64_t const umant = isNeg ? -iou.mantissa() : iou.mantissa();
-    return STAmount(iss, umant, iou.exponent(), isNeg, STAmount::unchecked());
+    return STAmount(asset, umant, iou.exponent(), isNeg, STAmount::Unchecked());
 }
 
 inline STAmount
@@ -51,12 +33,23 @@ toSTAmount(XRPAmount const& xrp)
 }
 
 inline STAmount
-toSTAmount(XRPAmount const& xrp, Issue const& iss)
+toSTAmount(XRPAmount const& xrp, Asset const& asset)
 {
-    XRPL_ASSERT(
-        isXRP(iss.account) && isXRP(iss.currency),
-        "ripple::toSTAmount : is XRP");
+    XRPL_ASSERT(isXRP(asset), "xrpl::toSTAmount : is XRP");
     return toSTAmount(xrp);
+}
+
+inline STAmount
+toSTAmount(MPTAmount const& mpt)
+{
+    return STAmount(mpt, noMPT());
+}
+
+inline STAmount
+toSTAmount(MPTAmount const& mpt, Asset const& asset)
+{
+    XRPL_ASSERT(asset.holds<MPTIssue>(), "xrpl::toSTAmount : is MPT");
+    return STAmount(mpt, asset.get<MPTIssue>());
 }
 
 template <class T>
@@ -76,12 +69,11 @@ toAmount<IOUAmount>(STAmount const& amt)
 {
     XRPL_ASSERT(
         amt.mantissa() < std::numeric_limits<std::int64_t>::max(),
-        "ripple::toAmount<IOUAmount> : maximum mantissa");
+        "xrpl::toAmount<IOUAmount> : maximum mantissa");
     bool const isNeg = amt.negative();
-    std::int64_t const sMant =
-        isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
+    std::int64_t const sMant = isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
-    XRPL_ASSERT(!isXRP(amt), "ripple::toAmount<IOUAmount> : is not XRP");
+    XRPL_ASSERT(!isXRP(amt), "xrpl::toAmount<IOUAmount> : is not XRP");
     return IOUAmount(sMant, amt.exponent());
 }
 
@@ -91,13 +83,27 @@ toAmount<XRPAmount>(STAmount const& amt)
 {
     XRPL_ASSERT(
         amt.mantissa() < std::numeric_limits<std::int64_t>::max(),
-        "ripple::toAmount<XRPAmount> : maximum mantissa");
+        "xrpl::toAmount<XRPAmount> : maximum mantissa");
     bool const isNeg = amt.negative();
-    std::int64_t const sMant =
-        isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
+    std::int64_t const sMant = isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
-    XRPL_ASSERT(isXRP(amt), "ripple::toAmount<XRPAmount> : is XRP");
+    XRPL_ASSERT(isXRP(amt), "xrpl::toAmount<XRPAmount> : is XRP");
     return XRPAmount(sMant);
+}
+
+template <>
+inline MPTAmount
+toAmount<MPTAmount>(STAmount const& amt)
+{
+    XRPL_ASSERT(
+        amt.holds<MPTIssue>() && amt.mantissa() <= kMAX_MP_TOKEN_AMOUNT && amt.exponent() == 0,
+        "xrpl::toAmount<MPTAmount> : maximum mantissa");
+    if (amt.mantissa() > kMAX_MP_TOKEN_AMOUNT || amt.exponent() != 0)
+        Throw<std::runtime_error>("toAmount<MPTAmount>: invalid mantissa or exponent");
+    bool const isNeg = amt.negative();
+    std::int64_t const sMant = isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
+
+    return MPTAmount(sMant);
 }
 
 template <class T>
@@ -122,79 +128,113 @@ toAmount<XRPAmount>(XRPAmount const& amt)
     return amt;
 }
 
+template <class T>
+T
+toAmount(MPTAmount const& amt) = delete;
+
+template <>
+inline MPTAmount
+toAmount<MPTAmount>(MPTAmount const& amt)
+{
+    return amt;
+}
+
 template <typename T>
 T
-toAmount(
-    Issue const& issue,
-    Number const& n,
-    Number::rounding_mode mode = Number::getround())
+toAmount(Asset const& asset, Number const& n, Number::RoundingMode mode = Number::getround())
 {
-    saveNumberRoundMode rm(Number::getround());
-    if (isXRP(issue))
+    SaveNumberRoundMode const rm(Number::getround());
+    if (isXRP(asset))
         Number::setround(mode);
 
     if constexpr (std::is_same_v<IOUAmount, T>)
+    {
         return IOUAmount(n);
+    }
     else if constexpr (std::is_same_v<XRPAmount, T>)
+    {
         return XRPAmount(static_cast<std::int64_t>(n));
+    }
+    else if constexpr (std::is_same_v<MPTAmount, T>)
+    {
+        return MPTAmount(static_cast<std::int64_t>(n));
+    }
     else if constexpr (std::is_same_v<STAmount, T>)
     {
-        if (isXRP(issue))
-            return STAmount(issue, static_cast<std::int64_t>(n));
-        return STAmount(issue, n.mantissa(), n.exponent());
+        if (isXRP(asset))
+            return STAmount(asset, static_cast<std::int64_t>(n));
+        return STAmount(asset, n);
     }
     else
     {
-        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
-        static_assert(alwaysFalse, "Unsupported type for toAmount");
+        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
+        static_assert(kALWAYS_FALSE, "Unsupported type for toAmount");
     }
 }
 
 template <typename T>
 T
-toMaxAmount(Issue const& issue)
+toMaxAmount(Asset const& asset)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
-        return IOUAmount(STAmount::cMaxValue, STAmount::cMaxOffset);
+    {
+        return IOUAmount(STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+    }
     else if constexpr (std::is_same_v<XRPAmount, T>)
-        return XRPAmount(static_cast<std::int64_t>(STAmount::cMaxNativeN));
+    {
+        return XRPAmount(static_cast<std::int64_t>(STAmount::kMAX_NATIVE_N));
+    }
+    else if constexpr (std::is_same_v<MPTAmount, T>)
+    {
+        return MPTAmount(kMAX_MP_TOKEN_AMOUNT);
+    }
     else if constexpr (std::is_same_v<STAmount, T>)
     {
-        if (isXRP(issue))
-            return STAmount(
-                issue, static_cast<std::int64_t>(STAmount::cMaxNativeN));
-        return STAmount(issue, STAmount::cMaxValue, STAmount::cMaxOffset);
+        return asset.visit(
+            [](Issue const& issue) {
+                if (isXRP(issue))
+                    return STAmount(issue, static_cast<std::int64_t>(STAmount::kMAX_NATIVE_N));
+                return STAmount(issue, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+            },
+            [](MPTIssue const& issue) { return STAmount(issue, kMAX_MP_TOKEN_AMOUNT); });
     }
     else
     {
-        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
-        static_assert(alwaysFalse, "Unsupported type for toMaxAmount");
+        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
+        static_assert(kALWAYS_FALSE, "Unsupported type for toMaxAmount");
     }
 }
 
 inline STAmount
-toSTAmount(
-    Issue const& issue,
-    Number const& n,
-    Number::rounding_mode mode = Number::getround())
+toSTAmount(Asset const& asset, Number const& n, Number::RoundingMode mode = Number::getround())
 {
-    return toAmount<STAmount>(issue, n, mode);
+    return toAmount<STAmount>(asset, n, mode);
 }
 
 template <typename T>
-Issue
-getIssue(T const& amt)
+Asset
+getAsset(T const& amt)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
+    {
         return noIssue();
+    }
     else if constexpr (std::is_same_v<XRPAmount, T>)
+    {
         return xrpIssue();
+    }
+    else if constexpr (std::is_same_v<MPTAmount, T>)
+    {
+        return noMPT();
+    }
     else if constexpr (std::is_same_v<STAmount, T>)
-        return amt.issue();
+    {
+        return amt.asset();
+    }
     else
     {
-        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
-        static_assert(alwaysFalse, "Unsupported type for getIssue");
+        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
+        static_assert(kALWAYS_FALSE, "Unsupported type for getIssue");
     }
 }
 
@@ -203,18 +243,26 @@ constexpr T
 get(STAmount const& a)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
+    {
         return a.iou();
+    }
     else if constexpr (std::is_same_v<XRPAmount, T>)
+    {
         return a.xrp();
+    }
+    else if constexpr (std::is_same_v<MPTAmount, T>)
+    {
+        return a.mpt();
+    }
     else if constexpr (std::is_same_v<STAmount, T>)
+    {
         return a;
+    }
     else
     {
-        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
-        static_assert(alwaysFalse, "Unsupported type for get");
+        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
+        static_assert(kALWAYS_FALSE, "Unsupported type for get");
     }
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/protocol/TER.h>
 
 #include <boost/range/adaptor/transformed.hpp>
@@ -27,11 +8,9 @@
 #include <unordered_map>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
-std::unordered_map<
-    TERUnderlyingType,
-    std::pair<char const* const, char const* const>> const&
+std::unordered_map<TERUnderlyingType, std::pair<char const* const, char const* const>> const&
 transResults()
 {
     // clang-format off
@@ -43,7 +22,7 @@ transResults()
     static
     std::unordered_map<
             TERUnderlyingType,
-            std::pair<char const* const, char const* const>> const results
+            std::pair<char const* const, char const* const>> const kRESULTS
     {
         MAKE_ERROR(tecAMM_BALANCE,                   "AMM has invalid balance."),
         MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM invalid LP tokens."),
@@ -127,7 +106,6 @@ transResults()
         MAKE_ERROR(tecLIMIT_EXCEEDED,                "Limit exceeded."),
         MAKE_ERROR(tecPSEUDO_ACCOUNT,                "This operation is not allowed against a pseudo-account."),
         MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
-        MAKE_ERROR(tecNO_DELEGATE_PERMISSION,        "Delegated account lacks permission to perform this transaction."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -178,6 +156,7 @@ transResults()
         MAKE_ERROR(temBAD_FEE,                   "Invalid fee, negative or not XRP."),
         MAKE_ERROR(temBAD_ISSUER,                "Malformed: Bad issuer."),
         MAKE_ERROR(temBAD_LIMIT,                 "Limits must be non-negative."),
+        MAKE_ERROR(temBAD_MPT,                   "Malformed: Bad MPT."),
         MAKE_ERROR(temBAD_OFFER,                 "Malformed: Bad offer."),
         MAKE_ERROR(temBAD_PATH,                  "Malformed: Bad path."),
         MAKE_ERROR(temBAD_PATH_LOOP,             "Malformed: Loop in path."),
@@ -235,6 +214,8 @@ transResults()
         MAKE_ERROR(terPRE_TICKET,             "Ticket is not yet in ledger."),
         MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
         MAKE_ERROR(terADDRESS_COLLISION,      "Failed to allocate an unique account address."),
+        MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
+        MAKE_ERROR(terLOCKED,                 "Fund is locked."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };
@@ -242,7 +223,7 @@ transResults()
 
 #undef MAKE_ERROR
 
-    return results;
+    return kRESULTS;
 }
 
 bool
@@ -281,23 +262,22 @@ transHuman(TER code)
 std::optional<TER>
 transCode(std::string const& token)
 {
-    static auto const results = [] {
+    static auto const kRESULTS = [] {
         auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
-        auto tRange = boost::adaptors::transform(range, [](auto const& r) {
-            return std::make_pair(r.second.first, r.first);
-        });
+        auto tRange = boost::adaptors::transform(
+            range, [](auto const& r) { return std::make_pair(r.second.first, r.first); });
         std::unordered_map<std::string, TERUnderlyingType> const byToken(
             tRange.begin(), tRange.end());
         return byToken;
     }();
 
-    auto const r = results.find(token);
+    auto const r = kRESULTS.find(token);
 
-    if (r == results.end())
+    if (r == kRESULTS.end())
         return std::nullopt;
 
     return TER::fromInt(r->second);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

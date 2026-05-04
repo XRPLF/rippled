@@ -1,30 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
-#define RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Supports data retrieval by managing a set of peers.
 
@@ -68,7 +48,7 @@ public:
         std::shared_ptr<Peer> const& peer) = 0;
 
     /** get the set of ids of previously added peers */
-    virtual std::set<Peer::id_t> const&
+    [[nodiscard]] virtual std::set<Peer::id_t> const&
     getPeerIds() const = 0;
 };
 
@@ -82,7 +62,7 @@ public:
 };
 
 std::unique_ptr<PeerSetBuilder>
-make_PeerSetBuilder(Application& app);
+makePeerSetBuilder(Application& app);
 
 /**
  * Make a dummy PeerSet that does not do anything.
@@ -90,8 +70,6 @@ make_PeerSetBuilder(Application& app);
  *       where a real PeerSet is not needed.
  */
 std::unique_ptr<PeerSet>
-make_DummyPeerSet(Application& app);
+makeDummyPeerSet(Application& app);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

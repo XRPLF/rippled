@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_CHRONO_ABSTRACT_CLOCK_H_INCLUDED
-#define BEAST_CHRONO_ABSTRACT_CLOCK_H_INCLUDED
+#pragma once
 
 namespace beast {
 
@@ -51,7 +31,7 @@ namespace beast {
         http://en.cppreference.com/w/cpp/concept/Clock
 */
 template <class Clock>
-class abstract_clock
+class AbstractClock
 {
 public:
     using rep = typename Clock::rep;
@@ -60,11 +40,11 @@ public:
     using time_point = typename Clock::time_point;
     using clock_type = Clock;
 
-    static bool const is_steady = Clock::is_steady;
+    static bool const is_steady = Clock::is_steady;  // NOLINT(readability-identifier-naming)
 
-    virtual ~abstract_clock() = default;
-    abstract_clock() = default;
-    abstract_clock(abstract_clock const&) = default;
+    virtual ~AbstractClock() = default;
+    AbstractClock() = default;
+    AbstractClock(AbstractClock const&) = default;
 
     /** Returns the current time. */
     [[nodiscard]] virtual time_point
@@ -76,14 +56,14 @@ public:
 namespace detail {
 
 template <class Facade, class Clock>
-struct abstract_clock_wrapper : public abstract_clock<Facade>
+struct AbstractClockWrapper : public AbstractClock<Facade>
 {
-    explicit abstract_clock_wrapper() = default;
+    explicit AbstractClockWrapper() = default;
 
-    using typename abstract_clock<Facade>::duration;
-    using typename abstract_clock<Facade>::time_point;
+    using typename AbstractClock<Facade>::duration;
+    using typename AbstractClock<Facade>::time_point;
 
-    time_point
+    [[nodiscard]] time_point
     now() const override
     {
         return Clock::now();
@@ -100,13 +80,11 @@ struct abstract_clock_wrapper : public abstract_clock<Facade>
     @tparam Clock The actual concrete clock to use.
 */
 template <class Facade, class Clock = Facade>
-abstract_clock<Facade>&
-get_abstract_clock()
+AbstractClock<Facade>&
+getAbstractClock()
 {
-    static detail::abstract_clock_wrapper<Facade, Clock> clock;
-    return clock;
+    static detail::AbstractClockWrapper<Facade, Clock> kCLOCK;
+    return kCLOCK;
 }
 
 }  // namespace beast
-
-#endif

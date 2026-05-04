@@ -1,35 +1,15 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_LEDGER_TIMEOUTCOUNTER_H_INCLUDED
-#define RIPPLE_APP_LEDGER_TIMEOUTCOUNTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/Job.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 /**
     This class is an "active" object. It maintains its own timer
@@ -41,7 +21,7 @@ namespace ripple {
 
     1. The entry point is `setTimer`.
 
-    2. After `mTimerInterval`, `queueJob` is called, which schedules a job to
+    2. After `timerInterval_`, `queueJob` is called, which schedules a job to
        call `invokeOnTimer` (or loops back to setTimer if there are too many
        concurrent jobs).
 
@@ -50,7 +30,7 @@ namespace ripple {
 
     4. `onTimer` is the only "real" virtual method in this class. It is the
        callback for when the timeout expires. Generally, its only responsibility
-       is to set `mFailed = true`. However, if it wants to implement a policy of
+       is to set `failed_ = true`. However, if it wants to implement a policy of
        retries, then it has a chance to just increment a count of expired
        timeouts.
 
@@ -59,11 +39,11 @@ namespace ripple {
 
    This loop executes concurrently with another asynchronous sequence,
    implemented by the subtype, that is trying to make progress and eventually
-   set `mComplete = true`. While it is making progress but not complete, it
-   should set `mProgress = true`, which is passed to onTimer so it can decide
+   set `complete_ = true`. While it is making progress but not complete, it
+   should set `progress_ = true`, which is passed to onTimer so it can decide
    whether to postpone failure and reset the timeout. However, if it can
    complete all its work in one synchronous step (while it holds the lock), then
-   it can ignore `mProgress`.
+   it can ignore `progress_`.
 */
 class TimeoutCounter
 {
@@ -78,6 +58,8 @@ public:
      */
     virtual void
     cancel();
+
+    virtual ~TimeoutCounter() = default;
 
 protected:
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
@@ -96,9 +78,7 @@ protected:
         QueueJobParameter&& jobParameter,
         beast::Journal journal);
 
-    virtual ~TimeoutCounter() = default;
-
-    /** Schedule a call to queueJob() after mTimerInterval. */
+    /** Schedule a call to queueJob() after timerInterval_. */
     void
     setTimer(ScopedLockType&);
 
@@ -120,8 +100,8 @@ protected:
         return complete_ || failed_;
     }
 
-    // Used in this class for access to boost::asio::io_service and
-    // ripple::Overlay. Used in subtypes for the kitchen sink.
+    // Used in this class for access to boost::asio::io_context and
+    // xrpl::Overlay. Used in subtypes for the kitchen sink.
     Application& app_;
     beast::Journal journal_;
     mutable std::recursive_mutex mtx_;
@@ -129,11 +109,11 @@ protected:
     /** The hash of the object (in practice, always a ledger) we are trying to
      * fetch. */
     uint256 const hash_;
-    int timeouts_;
-    bool complete_;
-    bool failed_;
+    int timeouts_{0};
+    bool complete_{false};
+    bool failed_{false};
     /** Whether forward progress has been made. */
-    bool progress_;
+    bool progress_{false};
     /** The minimum time to wait between calls to execute(). */
     std::chrono::milliseconds timerInterval_;
 
@@ -149,6 +129,4 @@ private:
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

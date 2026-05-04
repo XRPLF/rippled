@@ -1,24 +1,21 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_TEST_YIELD_TO_HPP
-#define BEAST_TEST_YIELD_TO_HPP
+#pragma once
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/optional.hpp>
+#include <boost/thread/csbl/memory/allocator_arg.hpp>
 
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <vector>
 
-namespace beast {
-namespace test {
+namespace beast::test {
 
 /** Mix-in to support tests using asio coroutines.
 
@@ -26,13 +23,13 @@ namespace test {
     functions inside coroutines. This is handy for testing
     asynchronous asio code.
 */
-class enable_yield_to
+class EnableYieldTo
 {
 protected:
-    boost::asio::io_service ios_;
+    boost::asio::io_context ios_;
 
 private:
-    boost::optional<boost::asio::io_service::work> work_;
+    boost::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     std::vector<std::thread> threads_;
     std::mutex m_;
     std::condition_variable cv_;
@@ -42,23 +39,25 @@ public:
     /// The type of yield context passed to functions.
     using yield_context = boost::asio::yield_context;
 
-    explicit enable_yield_to(std::size_t concurrency = 1) : work_(ios_)
+    explicit EnableYieldTo(std::size_t concurrency = 1) : work_(boost::asio::make_work_guard(ios_))
     {
         threads_.reserve(concurrency);
-        while (concurrency--)
+        for (std::size_t i = 0; i < concurrency; ++i)
+        {
             threads_.emplace_back([&] { ios_.run(); });
+        }
     }
 
-    ~enable_yield_to()
+    ~EnableYieldTo()
     {
         work_ = boost::none;
         for (auto& t : threads_)
             t.join();
     }
 
-    /// Return the `io_service` associated with the object
-    boost::asio::io_service&
-    get_io_service()
+    /// Return the `io_context` associated with the object
+    boost::asio::io_context&
+    getIoContext()
     {
         return ios_;
     }
@@ -81,7 +80,7 @@ public:
 #else
     template <class F0, class... FN>
     void
-    yield_to(F0&& f0, FN&&... fn);
+    yieldTo(F0&& f0, FN&&... fn);
 #endif
 
 private:
@@ -97,7 +96,7 @@ private:
 
 template <class F0, class... FN>
 void
-enable_yield_to::yield_to(F0&& f0, FN&&... fn)
+EnableYieldTo::yieldTo(F0&& f0, FN&&... fn)
 {
     running_ = 1 + sizeof...(FN);
     spawn(f0, fn...);
@@ -107,21 +106,23 @@ enable_yield_to::yield_to(F0&& f0, FN&&... fn)
 
 template <class F0, class... FN>
 inline void
-enable_yield_to::spawn(F0&& f, FN&&... fn)
+EnableYieldTo::spawn(F0&& f, FN&&... fn)
 {
     boost::asio::spawn(
         ios_,
+        boost::allocator_arg,
+        boost::context::fixedsize_stack(2 * 1024 * 1024),
         [&](yield_context yield) {
             f(yield);
-            std::lock_guard lock{m_};
+            std::scoped_lock const lock{m_};
             if (--running_ == 0)
                 cv_.notify_all();
         },
-        boost::coroutines::attributes(2 * 1024 * 1024));
+        [](std::exception_ptr e) {
+            if (e)
+                std::rethrow_exception(e);
+        });
     spawn(fn...);
 }
 
-}  // namespace test
-}  // namespace beast
-
-#endif
+}  // namespace beast::test

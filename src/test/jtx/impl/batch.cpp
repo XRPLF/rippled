@@ -1,61 +1,50 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/batch.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/utility.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Batch.h>
-#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <optional>
-#include <sstream>
+#include <ostream>
+#include <utility>
 
-namespace ripple {
-namespace test {
-namespace jtx {
-
-namespace batch {
+namespace xrpl::test::jtx::batch {
 
 XRPAmount
-calcBatchFee(
-    test::jtx::Env const& env,
-    uint32_t const& numSigners,
-    uint32_t const& txns)
+calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns)
 {
     XRPAmount const feeDrops = env.current()->fees().base;
     return ((numSigners + 2) * feeDrops) + feeDrops * txns;
 }
 
 // Batch.
-Json::Value
-outer(
-    jtx::Account const& account,
-    uint32_t seq,
-    STAmount const& fee,
-    std::uint32_t flags)
+json::Value
+outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::Batch;
     jv[jss::Account] = account.human();
-    jv[jss::RawTransactions] = Json::Value{Json::arrayValue};
+    jv[jss::RawTransactions] = json::Value{json::ArrayValue};
     jv[jss::Sequence] = seq;
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);
@@ -63,18 +52,18 @@ outer(
 }
 
 void
-inner::operator()(Env& env, JTx& jt) const
+Inner::operator()(Env& env, JTx& jt) const
 {
     auto const index = jt.jv[jss::RawTransactions].size();
-    Json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
+    json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
 
     // Initialize the batch transaction
-    batchTransaction = Json::Value{};
+    batchTransaction = json::Value{};
     batchTransaction[jss::RawTransaction] = txn_;
 }
 
 void
-sig::operator()(Env& env, JTx& jt) const
+Sig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     std::optional<STObject> st;
@@ -84,10 +73,10 @@ sig::operator()(Env& env, JTx& jt) const
         jt.jv[jss::SigningPubKey] = "";
         st = parse(jt.jv);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
     STTx const& stx = STTx{std::move(*st)};
     auto& js = jt[sfBatchSigners.getJsonName()];
@@ -100,15 +89,14 @@ sig::operator()(Env& env, JTx& jt) const
 
         Serializer msg;
         serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
-        auto const sig = ripple::sign(
-            *publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
-        jo[sfTxnSignature.getJsonName()] =
-            strHex(Slice{sig.data(), sig.size()});
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
+        jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
     }
 }
 
 void
-msig::operator()(Env& env, JTx& jt) const
+Msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     std::optional<STObject> st;
@@ -118,10 +106,10 @@ msig::operator()(Env& env, JTx& jt) const
         jt.jv[jss::SigningPubKey] = "";
         st = parse(jt.jv);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
     STTx const& stx = STTx{std::move(*st)};
     auto& bs = jt[sfBatchSigners.getJsonName()];
@@ -140,15 +128,10 @@ msig::operator()(Env& env, JTx& jt) const
         Serializer msg;
         serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
         finishMultiSigningData(e.acct.id(), msg);
-        auto const sig = ripple::sign(
-            *publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
-        iso[sfTxnSignature.getJsonName()] =
-            strHex(Slice{sig.data(), sig.size()});
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
+        iso[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
     }
 }
 
-}  // namespace batch
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx::batch

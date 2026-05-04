@@ -1,42 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2021 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_EXPECTED_H_INCLUDED
-#define RIPPLE_BASICS_EXPECTED_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated"
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
 #include <boost/outcome.hpp>
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 /** Expected is an approximation of std::expected (hoped for in C++23)
 
@@ -46,9 +16,9 @@ namespace ripple {
 */
 
 // Exception thrown by an invalid access to Expected.
-struct bad_expected_access : public std::runtime_error
+struct BadExpectedAccess : public std::runtime_error
 {
-    bad_expected_access() : runtime_error("bad expected access")
+    BadExpectedAccess() : runtime_error("bad expected access")
     {
     }
 };
@@ -56,30 +26,33 @@ struct bad_expected_access : public std::runtime_error
 namespace detail {
 
 // Custom policy for Expected.  Always throw on an invalid access.
-struct throw_policy : public boost::outcome_v2::policy::base
+struct ThrowPolicy : public boost::outcome_v2::policy::base
 {
     template <class Impl>
     static constexpr void
+    // NOLINTNEXTLINE(readability-identifier-naming)
     wide_value_check(Impl&& self)
     {
         if (!base::_has_value(std::forward<Impl>(self)))
-            Throw<bad_expected_access>();
+            Throw<BadExpectedAccess>();
     }
 
     template <class Impl>
     static constexpr void
+    // NOLINTNEXTLINE(readability-identifier-naming)
     wide_error_check(Impl&& self)
     {
         if (!base::_has_error(std::forward<Impl>(self)))
-            Throw<bad_expected_access>();
+            Throw<BadExpectedAccess>();
     }
 
     template <class Impl>
     static constexpr void
+    // NOLINTNEXTLINE(readability-identifier-naming)
     wide_exception_check(Impl&& self)
     {
         if (!base::_has_exception(std::forward<Impl>(self)))
-            Throw<bad_expected_access>();
+            Throw<BadExpectedAccess>();
     }
 };
 
@@ -91,7 +64,7 @@ template <class E>
 class Unexpected
 {
 public:
-    static_assert(!std::is_same<E, void>::value, "E must not be void");
+    static_assert(!std::is_same_v<E, void>, "E must not be void");
 
     Unexpected() = delete;
 
@@ -103,7 +76,7 @@ public:
     {
     }
 
-    constexpr E const&
+    [[nodiscard]] constexpr E const&
     value() const&
     {
         return val_;
@@ -121,7 +94,7 @@ public:
         return std::move(val_);
     }
 
-    constexpr E const&&
+    [[nodiscard]] constexpr E const&&
     value() const&&
     {
         return std::move(val_);
@@ -137,16 +110,14 @@ Unexpected(E (&)[N]) -> Unexpected<E const*>;
 
 // Definition of Expected.  All of the machinery comes from boost::result.
 template <class T, class E>
-class [[nodiscard]] Expected
-    : private boost::outcome_v2::result<T, E, detail::throw_policy>
+class [[nodiscard]] Expected : private boost::outcome_v2::result<T, E, detail::ThrowPolicy>
 {
-    using Base = boost::outcome_v2::result<T, E, detail::throw_policy>;
+    using Base = boost::outcome_v2::result<T, E, detail::ThrowPolicy>;
 
 public:
     template <typename U>
         requires std::convertible_to<U, T>
-    constexpr Expected(U&& r)
-        : Base(boost::outcome_v2::in_place_type_t<T>{}, std::forward<U>(r))
+    constexpr Expected(U&& r) : Base(boost::outcome_v2::in_place_type_t<T>{}, std::forward<U>(r))
     {
     }
 
@@ -157,13 +128,14 @@ public:
     {
     }
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
+    // NOLINTNEXTLINE(readability-identifier-naming)
     has_value() const
     {
         return Base::has_value();
     }
 
-    constexpr T const&
+    [[nodiscard]] constexpr T const&
     value() const
     {
         return Base::value();
@@ -175,7 +147,7 @@ public:
         return Base::value();
     }
 
-    constexpr E const&
+    [[nodiscard]] constexpr E const&
     error() const
     {
         return Base::error();
@@ -224,10 +196,10 @@ public:
 // Specialization of Expected<void, E>.  Allows returning either success
 // (without a value) or the reason for the failure.
 template <class E>
-class [[nodiscard]] Expected<void, E>
-    : private boost::outcome_v2::result<void, E, detail::throw_policy>
+class [[nodiscard]]
+Expected<void, E> : private boost::outcome_v2::result<void, E, detail::ThrowPolicy>
 {
-    using Base = boost::outcome_v2::result<void, E, detail::throw_policy>;
+    using Base = boost::outcome_v2::result<void, E, detail::ThrowPolicy>;
 
 public:
     // The default constructor makes a successful Expected<void, E>.
@@ -242,7 +214,7 @@ public:
     {
     }
 
-    constexpr E const&
+    [[nodiscard]] constexpr E const&
     error() const
     {
         return Base::error();
@@ -261,6 +233,4 @@ public:
     }
 };
 
-}  // namespace ripple
-
-#endif  // RIPPLE_BASICS_EXPECTED_H_INCLUDED
+}  // namespace xrpl

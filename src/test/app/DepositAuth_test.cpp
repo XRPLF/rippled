@@ -1,30 +1,50 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/escrow.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/require.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
-
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <random>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 // Helper function that returns the reserve on an account based on
 // the passed in number of owners.
@@ -34,14 +54,14 @@ reserve(jtx::Env& env, std::uint32_t count)
     return env.current()->fees().accountReserve(count);
 }
 
-// Helper function that returns true if acct has the lsfDepostAuth flag set.
+// Helper function that returns true if acct has the lsfDepositAuth flag set.
 static bool
 hasDepositAuth(jtx::Env const& env, jtx::Account const& acct)
 {
     return ((*env.le(acct))[sfFlags] & lsfDepositAuth) == lsfDepositAuth;
 }
 
-struct DepositAuth_test : public beast::unit_test::suite
+struct DepositAuth_test : public beast::unit_test::Suite
 {
     void
     testEnable()
@@ -52,21 +72,6 @@ struct DepositAuth_test : public beast::unit_test::suite
         Account const alice{"alice"};
 
         {
-            // featureDepositAuth is disabled.
-            Env env(*this, testable_amendments() - featureDepositAuth);
-            env.fund(XRP(10000), alice);
-
-            // Note that, to support old behavior, invalid flags are ignored.
-            env(fset(alice, asfDepositAuth));
-            env.close();
-            BEAST_EXPECT(!hasDepositAuth(env, alice));
-
-            env(fclear(alice, asfDepositAuth));
-            env.close();
-            BEAST_EXPECT(!hasDepositAuth(env, alice));
-        }
-        {
-            // featureDepositAuth is enabled.
             Env env(*this);
             env.fund(XRP(10000), alice);
 
@@ -92,47 +97,45 @@ struct DepositAuth_test : public beast::unit_test::suite
         Account const bob{"bob"};
         Account const carol{"carol"};
         Account const gw{"gw"};
-        IOU const USD = gw["USD"];
+        IOU const usd = gw["USD"];
 
         Env env(*this);
 
         env.fund(XRP(10000), alice, bob, carol, gw);
         env.close();
-        env.trust(USD(1000), alice, bob);
+        env.trust(usd(1000), alice, bob);
         env.close();
 
-        env(pay(gw, alice, USD(150)));
-        env(offer(carol, USD(100), XRP(100)));
+        env(pay(gw, alice, usd(150)));
+        env(offer(carol, usd(100), XRP(100)));
         env.close();
 
         // Make sure bob's trust line is all set up so he can receive USD.
-        env(pay(alice, bob, USD(50)));
+        env(pay(alice, bob, usd(50)));
         env.close();
 
         // bob sets the lsfDepositAuth flag.
-        env(fset(bob, asfDepositAuth), require(flags(bob, asfDepositAuth)));
+        env(fset(bob, asfDepositAuth), Require(Flags(bob, asfDepositAuth)));
         env.close();
 
         // None of the following payments should succeed.
-        auto failedIouPayments = [this, &env, &alice, &bob, &USD]() {
-            env.require(flags(bob, asfDepositAuth));
+        auto failedIouPayments = [this, &env, &alice, &bob, &usd]() {
+            env.require(Flags(bob, asfDepositAuth));
 
             // Capture bob's balances before hand to confirm they don't change.
             PrettyAmount const bobXrpBalance{env.balance(bob, XRP)};
-            PrettyAmount const bobUsdBalance{env.balance(bob, USD)};
+            PrettyAmount const bobUsdBalance{env.balance(bob, usd)};
 
-            env(pay(alice, bob, USD(50)), ter(tecNO_PERMISSION));
+            env(pay(alice, bob, usd(50)), Ter(tecNO_PERMISSION));
             env.close();
 
             // Note that even though alice is paying bob in XRP, the payment
             // is still not allowed since the payment passes through an offer.
-            env(pay(alice, bob, drops(1)),
-                sendmax(USD(1)),
-                ter(tecNO_PERMISSION));
+            env(pay(alice, bob, drops(1)), Sendmax(usd(1)), Ter(tecNO_PERMISSION));
             env.close();
 
             BEAST_EXPECT(bobXrpBalance == env.balance(bob, XRP));
-            BEAST_EXPECT(bobUsdBalance == env.balance(bob, USD));
+            BEAST_EXPECT(bobUsdBalance == env.balance(bob, usd));
         };
 
         //  Test when bob has an XRP balance > base reserve.
@@ -140,23 +143,23 @@ struct DepositAuth_test : public beast::unit_test::suite
 
         // Set bob's XRP balance == base reserve.  Also demonstrate that
         // bob can make payments while his lsfDepositAuth flag is set.
-        env(pay(bob, alice, USD(25)));
+        env(pay(bob, alice, usd(25)));
         env.close();
 
         {
             STAmount const bobPaysXRP{env.balance(bob, XRP) - reserve(env, 1)};
             XRPAmount const bobPaysFee{reserve(env, 1) - reserve(env, 0)};
-            env(pay(bob, alice, bobPaysXRP), fee(bobPaysFee));
+            env(pay(bob, alice, bobPaysXRP), Fee(bobPaysFee));
             env.close();
         }
 
         // Test when bob's XRP balance == base reserve.
         BEAST_EXPECT(env.balance(bob, XRP) == reserve(env, 0));
-        BEAST_EXPECT(env.balance(bob, USD) == USD(25));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(25));
         failedIouPayments();
 
         // Test when bob has an XRP balance == 0.
-        env(noop(bob), fee(reserve(env, 0)));
+        env(noop(bob), Fee(reserve(env, 0)));
         env.close();
 
         BEAST_EXPECT(env.balance(bob, XRP) == XRP(0));
@@ -169,10 +172,10 @@ struct DepositAuth_test : public beast::unit_test::suite
         env(fclear(bob, asfDepositAuth));
         env.close();
 
-        env(pay(alice, bob, USD(50)));
+        env(pay(alice, bob, usd(50)));
         env.close();
 
-        env(pay(alice, bob, drops(1)), sendmax(USD(1)));
+        env(pay(alice, bob, drops(1)), Sendmax(usd(1)));
         env.close();
     }
 
@@ -194,12 +197,12 @@ struct DepositAuth_test : public beast::unit_test::suite
         env.close();
 
         // bob sets the lsfDepositAuth flag.
-        env(fset(bob, asfDepositAuth), fee(drops(baseFee)));
+        env(fset(bob, asfDepositAuth), Fee(drops(baseFee)));
         env.close();
         BEAST_EXPECT(env.balance(bob, XRP) == XRP(10000) - drops(baseFee));
 
         // bob has more XRP than the base reserve.  Any XRP payment should fail.
-        env(pay(alice, bob, drops(1)), ter(tecNO_PERMISSION));
+        env(pay(alice, bob, drops(1)), Ter(tecNO_PERMISSION));
         env.close();
         BEAST_EXPECT(env.balance(bob, XRP) == XRP(10000) - drops(baseFee));
 
@@ -207,7 +210,7 @@ struct DepositAuth_test : public beast::unit_test::suite
         {
             STAmount const bobPaysXRP{env.balance(bob, XRP) - reserve(env, 1)};
             XRPAmount const bobPaysFee{reserve(env, 1) - reserve(env, 0)};
-            env(pay(bob, alice, bobPaysXRP), fee(bobPaysFee));
+            env(pay(bob, alice, bobPaysXRP), Fee(bobPaysFee));
             env.close();
         }
 
@@ -219,16 +222,16 @@ struct DepositAuth_test : public beast::unit_test::suite
 
         // bob has exactly the base reserve + 1.  No payment should succeed.
         BEAST_EXPECT(env.balance(bob, XRP) == reserve(env, 0) + drops(1));
-        env(pay(alice, bob, drops(1)), ter(tecNO_PERMISSION));
+        env(pay(alice, bob, drops(1)), Ter(tecNO_PERMISSION));
         env.close();
 
         // Take bob down to a balance of 0 XRP.
-        env(noop(bob), fee(reserve(env, 0) + drops(1)));
+        env(noop(bob), Fee(reserve(env, 0) + drops(1)));
         env.close();
         BEAST_EXPECT(env.balance(bob, XRP) == drops(0));
 
         // We should not be able to pay bob more than the base reserve.
-        env(pay(alice, bob, reserve(env, 0) + drops(1)), ter(tecNO_PERMISSION));
+        env(pay(alice, bob, reserve(env, 0) + drops(1)), Ter(tecNO_PERMISSION));
         env.close();
 
         // However a payment of exactly the base reserve should succeed.
@@ -239,22 +242,20 @@ struct DepositAuth_test : public beast::unit_test::suite
         // We should be able to pay bob the base reserve one more time.
         env(pay(alice, bob, reserve(env, 0) + drops(0)));
         env.close();
-        BEAST_EXPECT(
-            env.balance(bob, XRP) == (reserve(env, 0) + reserve(env, 0)));
+        BEAST_EXPECT(env.balance(bob, XRP) == (reserve(env, 0) + reserve(env, 0)));
 
         // bob's above the threshold again.  Any payment should fail.
-        env(pay(alice, bob, drops(1)), ter(tecNO_PERMISSION));
+        env(pay(alice, bob, drops(1)), Ter(tecNO_PERMISSION));
         env.close();
-        BEAST_EXPECT(
-            env.balance(bob, XRP) == (reserve(env, 0) + reserve(env, 0)));
+        BEAST_EXPECT(env.balance(bob, XRP) == (reserve(env, 0) + reserve(env, 0)));
 
         // Take bob back down to a zero XRP balance.
-        env(noop(bob), fee(env.balance(bob, XRP)));
+        env(noop(bob), Fee(env.balance(bob, XRP)));
         env.close();
         BEAST_EXPECT(env.balance(bob, XRP) == drops(0));
 
         // bob should not be able to clear lsfDepositAuth.
-        env(fclear(bob, asfDepositAuth), ter(terINSUF_FEE_B));
+        env(fclear(bob, asfDepositAuth), Ter(terINSUF_FEE_B));
         env.close();
 
         // We should be able to pay bob 1 drop now.
@@ -270,7 +271,7 @@ struct DepositAuth_test : public beast::unit_test::suite
         // request to clear lsfDepositAuth.  So the balance should be zero
         // and lsfDepositAuth should be cleared.
         BEAST_EXPECT(env.balance(bob, XRP) == drops(0));
-        env.require(nflags(bob, asfDepositAuth));
+        env.require(Nflags(bob, asfDepositAuth));
 
         // Since bob no longer has lsfDepositAuth set we should be able to
         // pay him more than the base reserve.
@@ -293,56 +294,47 @@ struct DepositAuth_test : public beast::unit_test::suite
         Account const alice("alice");
         Account const bob("bob");
 
-        IOU const USD1(gw1["USD"]);
-        IOU const USD2(gw2["USD"]);
+        IOU const usD1(gw1["USD"]);
+        IOU const usD2(gw2["USD"]);
 
         auto testIssuer = [&](FeatureBitset const& features,
                               bool noRipplePrev,
                               bool noRippleNext,
                               bool withDepositAuth) {
-            assert(!withDepositAuth || features[featureDepositAuth]);
-
             Env env(*this, features);
 
             env.fund(XRP(10000), gw1, alice, bob);
             env.close();
             env(trust(gw1, alice["USD"](10), noRipplePrev ? tfSetNoRipple : 0));
             env(trust(gw1, bob["USD"](10), noRippleNext ? tfSetNoRipple : 0));
-            env.trust(USD1(10), alice, bob);
+            env.trust(usD1(10), alice, bob);
 
-            env(pay(gw1, alice, USD1(10)));
+            env(pay(gw1, alice, usD1(10)));
 
             if (withDepositAuth)
                 env(fset(gw1, asfDepositAuth));
 
-            TER const result = (noRippleNext && noRipplePrev) ? TER{tecPATH_DRY}
-                                                              : TER{tesSUCCESS};
-            env(pay(alice, bob, USD1(10)), path(gw1), ter(result));
+            TER const result = (noRippleNext && noRipplePrev) ? TER{tecPATH_DRY} : TER{tesSUCCESS};
+            env(pay(alice, bob, usD1(10)), Path(gw1), Ter(result));
         };
 
         auto testNonIssuer = [&](FeatureBitset const& features,
                                  bool noRipplePrev,
                                  bool noRippleNext,
                                  bool withDepositAuth) {
-            assert(!withDepositAuth || features[featureDepositAuth]);
-
             Env env(*this, features);
 
             env.fund(XRP(10000), gw1, gw2, alice);
             env.close();
-            env(trust(alice, USD1(10), noRipplePrev ? tfSetNoRipple : 0));
-            env(trust(alice, USD2(10), noRippleNext ? tfSetNoRipple : 0));
-            env(pay(gw2, alice, USD2(10)));
+            env(trust(alice, usD1(10), noRipplePrev ? tfSetNoRipple : 0));
+            env(trust(alice, usD2(10), noRippleNext ? tfSetNoRipple : 0));
+            env(pay(gw2, alice, usD2(10)));
 
             if (withDepositAuth)
                 env(fset(alice, asfDepositAuth));
 
-            TER const result = (noRippleNext && noRipplePrev) ? TER{tecPATH_DRY}
-                                                              : TER{tesSUCCESS};
-            env(pay(gw1, gw2, USD2(10)),
-                path(alice),
-                sendmax(USD1(10)),
-                ter(result));
+            TER const result = (noRippleNext && noRipplePrev) ? TER{tecPATH_DRY} : TER{tesSUCCESS};
+            env(pay(gw1, gw2, usD2(10)), Path(alice), Sendmax(usD1(10)), Ter(result));
         };
 
         // Test every combo of noRipplePrev, noRippleNext, and withDepositAuth
@@ -352,30 +344,10 @@ struct DepositAuth_test : public beast::unit_test::suite
             auto const noRippleNext = i & 0x2;
             auto const withDepositAuth = i & 0x4;
             testIssuer(
-                testable_amendments() | featureDepositAuth,
-                noRipplePrev,
-                noRippleNext,
-                withDepositAuth);
-
-            if (!withDepositAuth)
-                testIssuer(
-                    testable_amendments() - featureDepositAuth,
-                    noRipplePrev,
-                    noRippleNext,
-                    withDepositAuth);
+                testableAmendments(), noRipplePrev != 0, noRippleNext != 0, withDepositAuth != 0);
 
             testNonIssuer(
-                testable_amendments() | featureDepositAuth,
-                noRipplePrev,
-                noRippleNext,
-                withDepositAuth);
-
-            if (!withDepositAuth)
-                testNonIssuer(
-                    testable_amendments() - featureDepositAuth,
-                    noRipplePrev,
-                    noRippleNext,
-                    withDepositAuth);
+                testableAmendments(), noRipplePrev != 0, noRippleNext != 0, withDepositAuth != 0);
         }
     }
 
@@ -389,17 +361,16 @@ struct DepositAuth_test : public beast::unit_test::suite
     }
 };
 
-static Json::Value
+static json::Value
 ledgerEntryDepositPreauth(
     jtx::Env& env,
     jtx::Account const& acc,
     std::vector<jtx::deposit::AuthorizeCredentials> const& auth)
 {
-    Json::Value jvParams;
+    json::Value jvParams;
     jvParams[jss::ledger_index] = jss::validated;
     jvParams[jss::deposit_preauth][jss::owner] = acc.human();
-    jvParams[jss::deposit_preauth][jss::authorized_credentials] =
-        Json::arrayValue;
+    jvParams[jss::deposit_preauth][jss::authorized_credentials] = json::ArrayValue;
     auto& arr(jvParams[jss::deposit_preauth][jss::authorized_credentials]);
     for (auto const& o : auth)
     {
@@ -408,7 +379,7 @@ ledgerEntryDepositPreauth(
     return env.rpc("json", "ledger_entry", to_string(jvParams));
 }
 
-struct DepositPreauth_test : public beast::unit_test::suite
+struct DepositPreauth_test : public beast::unit_test::Suite
 {
     void
     testEnable()
@@ -419,26 +390,6 @@ struct DepositPreauth_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const becky{"becky"};
         {
-            // featureDepositPreauth is disabled.
-            Env env(*this, testable_amendments() - featureDepositPreauth);
-            env.fund(XRP(10000), alice, becky);
-            env.close();
-
-            // Should not be able to add a DepositPreauth to alice.
-            env(deposit::auth(alice, becky), ter(temDISABLED));
-            env.close();
-            env.require(owners(alice, 0));
-            env.require(owners(becky, 0));
-
-            // Should not be able to remove a DepositPreauth from alice.
-            env(deposit::unauth(alice, becky), ter(temDISABLED));
-            env.close();
-            env.require(owners(alice, 0));
-            env.require(owners(becky, 0));
-        }
-        {
-            // featureDepositPreauth is enabled.  The valid case is really
-            // simple:
             //  o We should be able to add and remove an entry, and
             //  o That entry should cost one reserve.
             //  o The reserve should be returned when the entry is removed.
@@ -449,14 +400,14 @@ struct DepositPreauth_test : public beast::unit_test::suite
             // Add a DepositPreauth to alice.
             env(deposit::auth(alice, becky));
             env.close();
-            env.require(owners(alice, 1));
-            env.require(owners(becky, 0));
+            env.require(Owners(alice, 1));
+            env.require(Owners(becky, 0));
 
             // Remove a DepositPreauth from alice.
             env(deposit::unauth(alice, becky));
             env.close();
-            env.require(owners(alice, 0));
-            env.require(owners(becky, 0));
+            env.require(Owners(alice, 0));
+            env.require(Owners(becky, 0));
         }
         {
             // Verify that an account can be preauthorized and unauthorized
@@ -474,21 +425,21 @@ struct DepositPreauth_test : public beast::unit_test::suite
             std::uint32_t aliceTicketSeq{env.seq(alice)};
 
             // Add a DepositPreauth to alice.
-            env(deposit::auth(alice, becky), ticket::use(--aliceTicketSeq));
+            env(deposit::auth(alice, becky), ticket::Use(--aliceTicketSeq));
             env.close();
             // Alice uses a ticket but gains a preauth entry.
             env.require(tickets(alice, 1));
-            env.require(owners(alice, 2));
+            env.require(Owners(alice, 2));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
-            env.require(owners(becky, 0));
+            env.require(Owners(becky, 0));
 
             // Remove a DepositPreauth from alice.
-            env(deposit::unauth(alice, becky), ticket::use(--aliceTicketSeq));
+            env(deposit::unauth(alice, becky), ticket::Use(--aliceTicketSeq));
             env.close();
             env.require(tickets(alice, 0));
-            env.require(owners(alice, 0));
+            env.require(Owners(alice, 0));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
-            env.require(owners(becky, 0));
+            env.require(Owners(becky, 0));
         }
     }
 
@@ -510,104 +461,104 @@ struct DepositPreauth_test : public beast::unit_test::suite
         env.memoize(carol);
 
         // Add DepositPreauth to an unfunded account.
-        env(deposit::auth(alice, becky), seq(1), ter(terNO_ACCOUNT));
+        env(deposit::auth(alice, becky), Seq(1), Ter(terNO_ACCOUNT));
 
         env.fund(XRP(10000), alice, becky);
         env.close();
 
         // Bad fee.
-        env(deposit::auth(alice, becky), fee(drops(-10)), ter(temBAD_FEE));
+        env(deposit::auth(alice, becky), Fee(drops(-10)), Ter(temBAD_FEE));
         env.close();
 
         // Bad flags.
-        env(deposit::auth(alice, becky), txflags(tfSell), ter(temINVALID_FLAG));
+        env(deposit::auth(alice, becky), Txflags(tfSell), Ter(temINVALID_FLAG));
         env.close();
 
         {
             // Neither auth not unauth.
-            Json::Value tx{deposit::auth(alice, becky)};
+            json::Value tx{deposit::auth(alice, becky)};
             tx.removeMember(sfAuthorize.jsonName);
-            env(tx, ter(temMALFORMED));
+            env(tx, Ter(temMALFORMED));
             env.close();
         }
         {
             // Both auth and unauth.
-            Json::Value tx{deposit::auth(alice, becky)};
+            json::Value tx{deposit::auth(alice, becky)};
             tx[sfUnauthorize.jsonName] = becky.human();
-            env(tx, ter(temMALFORMED));
+            env(tx, Ter(temMALFORMED));
             env.close();
         }
         {
             // Alice authorizes a zero account.
-            Json::Value tx{deposit::auth(alice, becky)};
+            json::Value tx{deposit::auth(alice, becky)};
             tx[sfAuthorize.jsonName] = to_string(xrpAccount());
-            env(tx, ter(temINVALID_ACCOUNT_ID));
+            env(tx, Ter(temINVALID_ACCOUNT_ID));
             env.close();
         }
 
         // alice authorizes herself.
-        env(deposit::auth(alice, alice), ter(temCANNOT_PREAUTH_SELF));
+        env(deposit::auth(alice, alice), Ter(temCANNOT_PREAUTH_SELF));
         env.close();
 
         // alice authorizes an unfunded account.
-        env(deposit::auth(alice, carol), ter(tecNO_TARGET));
+        env(deposit::auth(alice, carol), Ter(tecNO_TARGET));
         env.close();
 
         // alice successfully authorizes becky.
-        env.require(owners(alice, 0));
-        env.require(owners(becky, 0));
+        env.require(Owners(alice, 0));
+        env.require(Owners(becky, 0));
         env(deposit::auth(alice, becky));
         env.close();
-        env.require(owners(alice, 1));
-        env.require(owners(becky, 0));
+        env.require(Owners(alice, 1));
+        env.require(Owners(becky, 0));
 
         // alice attempts to create a duplicate authorization.
-        env(deposit::auth(alice, becky), ter(tecDUPLICATE));
+        env(deposit::auth(alice, becky), Ter(tecDUPLICATE));
         env.close();
-        env.require(owners(alice, 1));
-        env.require(owners(becky, 0));
+        env.require(Owners(alice, 1));
+        env.require(Owners(becky, 0));
 
         // carol attempts to preauthorize but doesn't have enough reserve.
         env.fund(drops(249'999'999), carol);
         env.close();
 
-        env(deposit::auth(carol, becky), ter(tecINSUFFICIENT_RESERVE));
+        env(deposit::auth(carol, becky), Ter(tecINSUFFICIENT_RESERVE));
         env.close();
-        env.require(owners(carol, 0));
-        env.require(owners(becky, 0));
+        env.require(Owners(carol, 0));
+        env.require(Owners(becky, 0));
 
         // carol gets enough XRP to (barely) meet the reserve.
         env(pay(alice, carol, drops(env.current()->fees().base + 1)));
         env.close();
         env(deposit::auth(carol, becky));
         env.close();
-        env.require(owners(carol, 1));
-        env.require(owners(becky, 0));
+        env.require(Owners(carol, 1));
+        env.require(Owners(becky, 0));
 
-        // But carol can't meet the reserve for another preauthorization.
-        env(deposit::auth(carol, alice), ter(tecINSUFFICIENT_RESERVE));
+        // But carol can't meet the reserve for another pre-authorization.
+        env(deposit::auth(carol, alice), Ter(tecINSUFFICIENT_RESERVE));
         env.close();
-        env.require(owners(carol, 1));
-        env.require(owners(becky, 0));
-        env.require(owners(alice, 1));
+        env.require(Owners(carol, 1));
+        env.require(Owners(becky, 0));
+        env.require(Owners(alice, 1));
 
         // alice attempts to remove an authorization she doesn't have.
-        env(deposit::unauth(alice, carol), ter(tecNO_ENTRY));
+        env(deposit::unauth(alice, carol), Ter(tecNO_ENTRY));
         env.close();
-        env.require(owners(alice, 1));
-        env.require(owners(becky, 0));
+        env.require(Owners(alice, 1));
+        env.require(Owners(becky, 0));
 
         // alice successfully removes her authorization of becky.
         env(deposit::unauth(alice, becky));
         env.close();
-        env.require(owners(alice, 0));
-        env.require(owners(becky, 0));
+        env.require(Owners(alice, 0));
+        env.require(Owners(becky, 0));
 
         // alice removes becky again and gets an error.
-        env(deposit::unauth(alice, becky), ter(tecNO_ENTRY));
+        env(deposit::unauth(alice, becky), Ter(tecNO_ENTRY));
         env.close();
-        env.require(owners(alice, 0));
-        env.require(owners(becky, 0));
+        env.require(Owners(alice, 0));
+        env.require(Owners(becky, 0));
     }
 
     void
@@ -619,9 +570,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const becky{"becky"};
         Account const gw{"gw"};
-        IOU const USD(gw["USD"]);
-
-        bool const supportsPreauth = {features[featureDepositPreauth]};
+        IOU const usd(gw["USD"]);
 
         {
             // The initial implementation of DepositAuth had a bug where an
@@ -631,35 +580,27 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, becky, gw);
             env.close();
 
-            env.trust(USD(1000), alice);
-            env.trust(USD(1000), becky);
+            env.trust(usd(1000), alice);
+            env.trust(usd(1000), becky);
             env.close();
 
-            env(pay(gw, alice, USD(500)));
+            env(pay(gw, alice, usd(500)));
             env.close();
 
-            env(offer(alice, XRP(100), USD(100), tfPassive),
-                require(offers(alice, 1)));
+            env(offer(alice, XRP(100), usd(100), tfPassive), Require(offers(alice, 1)));
             env.close();
 
             // becky pays herself USD (10) by consuming part of alice's offer.
             // Make sure the payment works if PaymentAuth is not involved.
-            env(pay(becky, becky, USD(10)), path(~USD), sendmax(XRP(10)));
+            env(pay(becky, becky, usd(10)), Path(~usd), Sendmax(XRP(10)));
             env.close();
 
             // becky decides to require authorization for deposits.
             env(fset(becky, asfDepositAuth));
             env.close();
 
-            // becky pays herself again.  Whether it succeeds depends on
-            // whether featureDepositPreauth is enabled.
-            TER const expect{
-                supportsPreauth ? TER{tesSUCCESS} : TER{tecNO_PERMISSION}};
-
-            env(pay(becky, becky, USD(10)),
-                path(~USD),
-                sendmax(XRP(10)),
-                ter(expect));
+            // becky pays herself again.
+            env(pay(becky, becky, usd(10)), Path(~usd), Sendmax(XRP(10)), Ter(tesSUCCESS));
             env.close();
 
             {
@@ -671,29 +612,15 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
                 bool const supportsCredentials = features[featureCredentials];
 
-                TER const expectCredentials(
-                    supportsCredentials ? TER(tesSUCCESS) : TER(temDISABLED));
-                TER const expectPayment(
-                    !supportsCredentials
-                        ? TER(temDISABLED)
-                        : (!supportsPreauth ? TER(tecNO_PERMISSION)
-                                            : TER(tesSUCCESS)));
-                TER const expectDP(
-                    !supportsPreauth
-                        ? TER(temDISABLED)
-                        : (!supportsCredentials ? TER(temDISABLED)
-                                                : TER(tesSUCCESS)));
+                TER const expectTer(!supportsCredentials ? TER(temDISABLED) : TER(tesSUCCESS));
 
-                env(deposit::authCredentials(becky, {{carol, credType}}),
-                    ter(expectDP));
+                env(deposit::authCredentials(becky, {{carol, credType}}), Ter(expectTer));
                 env.close();
 
                 // gw accept credentials
-                env(credentials::create(gw, carol, credType),
-                    ter(expectCredentials));
+                env(credentials::create(gw, carol, credType), Ter(expectTer));
                 env.close();
-                env(credentials::accept(gw, carol, credType),
-                    ter(expectCredentials));
+                env(credentials::accept(gw, carol, credType), Ter(expectTer));
                 env.close();
 
                 auto jv = credentials::ledgerEntry(env, gw, carol, credType);
@@ -702,117 +629,94 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     : "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6"
                       "EA288BE4";
 
-                env(pay(gw, becky, USD(100)),
-                    credentials::ids({credIdx}),
-                    ter(expectPayment));
+                env(pay(gw, becky, usd(100)), credentials::Ids({credIdx}), Ter(expectTer));
                 env.close();
             }
-
-            {
-                using namespace std::chrono;
-
-                if (!supportsPreauth)
-                {
-                    auto const seq1 = env.seq(alice);
-                    env(escrow::create(alice, becky, XRP(100)),
-                        escrow::finish_time(env.now() + 1s));
-                    env.close();
-
-                    // Failed as rule is disabled
-                    env(escrow::finish(gw, alice, seq1),
-                        fee(1500),
-                        ter(tecNO_PERMISSION));
-                    env.close();
-                }
-            }
         }
 
-        if (supportsPreauth)
-        {
-            // Make sure DepositPreauthorization works for payments.
+        // Make sure DepositPreauthorization works for payments.
 
-            Account const carol{"carol"};
+        Account const carol{"carol"};
 
-            Env env(*this, features);
-            env.fund(XRP(5000), alice, becky, carol, gw);
-            env.close();
+        Env env(*this, features);
+        env.fund(XRP(5000), alice, becky, carol, gw);
+        env.close();
 
-            env.trust(USD(1000), alice);
-            env.trust(USD(1000), becky);
-            env.trust(USD(1000), carol);
-            env.close();
+        env.trust(usd(1000), alice);
+        env.trust(usd(1000), becky);
+        env.trust(usd(1000), carol);
+        env.close();
 
-            env(pay(gw, alice, USD(1000)));
-            env.close();
+        env(pay(gw, alice, usd(1000)));
+        env.close();
 
-            // Make XRP and IOU payments from alice to becky.  Should be fine.
-            env(pay(alice, becky, XRP(100)));
-            env(pay(alice, becky, USD(100)));
-            env.close();
+        // Make XRP and IOU payments from alice to becky.  Should be fine.
+        env(pay(alice, becky, XRP(100)));
+        env(pay(alice, becky, usd(100)));
+        env.close();
 
-            // becky decides to require authorization for deposits.
-            env(fset(becky, asfDepositAuth));
-            env.close();
+        // becky decides to require authorization for deposits.
+        env(fset(becky, asfDepositAuth));
+        env.close();
 
-            // alice can no longer pay becky.
-            env(pay(alice, becky, XRP(100)), ter(tecNO_PERMISSION));
-            env(pay(alice, becky, USD(100)), ter(tecNO_PERMISSION));
-            env.close();
+        // alice can no longer pay becky.
+        env(pay(alice, becky, XRP(100)), Ter(tecNO_PERMISSION));
+        env(pay(alice, becky, usd(100)), Ter(tecNO_PERMISSION));
+        env.close();
 
-            // becky preauthorizes carol for deposit, which doesn't provide
-            // authorization for alice.
-            env(deposit::auth(becky, carol));
-            env.close();
+        // becky preauthorizes carol for deposit, which doesn't provide
+        // authorization for alice.
+        env(deposit::auth(becky, carol));
+        env.close();
 
-            // alice still can't pay becky.
-            env(pay(alice, becky, XRP(100)), ter(tecNO_PERMISSION));
-            env(pay(alice, becky, USD(100)), ter(tecNO_PERMISSION));
-            env.close();
+        // alice still can't pay becky.
+        env(pay(alice, becky, XRP(100)), Ter(tecNO_PERMISSION));
+        env(pay(alice, becky, usd(100)), Ter(tecNO_PERMISSION));
+        env.close();
 
-            // becky preauthorizes alice for deposit.
-            env(deposit::auth(becky, alice));
-            env.close();
+        // becky preauthorizes alice for deposit.
+        env(deposit::auth(becky, alice));
+        env.close();
 
-            // alice can now pay becky.
-            env(pay(alice, becky, XRP(100)));
-            env(pay(alice, becky, USD(100)));
-            env.close();
+        // alice can now pay becky.
+        env(pay(alice, becky, XRP(100)));
+        env(pay(alice, becky, usd(100)));
+        env.close();
 
-            // alice decides to require authorization for deposits.
-            env(fset(alice, asfDepositAuth));
-            env.close();
+        // alice decides to require authorization for deposits.
+        env(fset(alice, asfDepositAuth));
+        env.close();
 
-            // Even though alice is authorized to pay becky, becky is not
-            // authorized to pay alice.
-            env(pay(becky, alice, XRP(100)), ter(tecNO_PERMISSION));
-            env(pay(becky, alice, USD(100)), ter(tecNO_PERMISSION));
-            env.close();
+        // Even though alice is authorized to pay becky, becky is not
+        // authorized to pay alice.
+        env(pay(becky, alice, XRP(100)), Ter(tecNO_PERMISSION));
+        env(pay(becky, alice, usd(100)), Ter(tecNO_PERMISSION));
+        env.close();
 
-            // becky unauthorizes carol.  Should have no impact on alice.
-            env(deposit::unauth(becky, carol));
-            env.close();
+        // becky unauthorizes carol.  Should have no impact on alice.
+        env(deposit::unauth(becky, carol));
+        env.close();
 
-            env(pay(alice, becky, XRP(100)));
-            env(pay(alice, becky, USD(100)));
-            env.close();
+        env(pay(alice, becky, XRP(100)));
+        env(pay(alice, becky, usd(100)));
+        env.close();
 
-            // becky unauthorizes alice.  alice now can't pay becky.
-            env(deposit::unauth(becky, alice));
-            env.close();
+        // becky unauthorizes alice.  alice now can't pay becky.
+        env(deposit::unauth(becky, alice));
+        env.close();
 
-            env(pay(alice, becky, XRP(100)), ter(tecNO_PERMISSION));
-            env(pay(alice, becky, USD(100)), ter(tecNO_PERMISSION));
-            env.close();
+        env(pay(alice, becky, XRP(100)), Ter(tecNO_PERMISSION));
+        env(pay(alice, becky, usd(100)), Ter(tecNO_PERMISSION));
+        env.close();
 
-            // becky decides to remove authorization for deposits.  Now
-            // alice can pay becky again.
-            env(fclear(becky, asfDepositAuth));
-            env.close();
+        // becky decides to remove authorization for deposits.  Now
+        // alice can pay becky again.
+        env(fclear(becky, asfDepositAuth));
+        env.close();
 
-            env(pay(alice, becky, XRP(100)));
-            env(pay(alice, becky, USD(100)));
-            env.close();
-        }
+        env(pay(alice, becky, XRP(100)));
+        env(pay(alice, becky, usd(100)));
+        env.close();
     }
 
     void
@@ -830,32 +734,29 @@ struct DepositPreauth_test : public beast::unit_test::suite
         {
             testcase("Payment failure with disabled credentials rule.");
 
-            Env env(*this, testable_amendments() - featureCredentials);
+            Env env(*this, testableAmendments() - featureCredentials);
 
             env.fund(XRP(5000), issuer, bob, alice);
             env.close();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
             // Setup DepositPreauth object failed - amendent is not supported
-            env(deposit::authCredentials(bob, {{issuer, credType}}),
-                ter(temDISABLED));
+            env(deposit::authCredentials(bob, {{issuer, credType}}), Ter(temDISABLED));
             env.close();
 
             // But can create old DepositPreauth
             env(deposit::auth(bob, alice));
             env.close();
 
-            // And alice can't pay with any credentials, amendement is not
+            // And alice can't pay with any credentials, amendment is not
             // enabled
             std::string const invalidIdx =
                 "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
                 "01E034";
-            env(pay(alice, bob, XRP(10)),
-                credentials::ids({invalidIdx}),
-                ter(temDISABLED));
+            env(pay(alice, bob, XRP(10)), credentials::Ids({invalidIdx}), Ter(temDISABLED));
             env.close();
         }
 
@@ -872,41 +773,35 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.close();
 
             // Get the index of the credentials
-            auto const jv =
-                credentials::ledgerEntry(env, alice, issuer, credType);
+            auto const jv = credentials::ledgerEntry(env, alice, issuer, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
-            // Bob will accept payements from accounts with credentials signed
+            // Bob will accept payments from accounts with credentials signed
             // by 'issuer'
             env(deposit::authCredentials(bob, {{issuer, credType}}));
             env.close();
 
-            auto const jDP =
-                ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
+            auto const jDP = ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
             BEAST_EXPECT(
                 jDP.isObject() && jDP.isMember(jss::result) &&
-                !jDP[jss::result].isMember(jss::error) &&
-                jDP[jss::result].isMember(jss::node) &&
+                !jDP[jss::result].isMember(jss::error) && jDP[jss::result].isMember(jss::node) &&
                 jDP[jss::result][jss::node].isMember("LedgerEntryType") &&
-                jDP[jss::result][jss::node]["LedgerEntryType"] ==
-                    jss::DepositPreauth);
+                jDP[jss::result][jss::node]["LedgerEntryType"] == jss::DepositPreauth);
 
             // Alice can't pay - empty credentials array
             {
                 auto jv = pay(alice, bob, XRP(100));
-                jv[sfCredentialIDs.jsonName] = Json::arrayValue;
-                env(jv, ter(temMALFORMED));
+                jv[sfCredentialIDs.jsonName] = json::ArrayValue;
+                env(jv, Ter(temMALFORMED));
                 env.close();
             }
 
             // Alice can't pay - not accepted credentials
-            env(pay(alice, bob, XRP(100)),
-                credentials::ids({credIdx}),
-                ter(tecBAD_CREDENTIALS));
+            env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx}), Ter(tecBAD_CREDENTIALS));
             env.close();
 
             // Alice accept the credentials
@@ -914,18 +809,18 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.close();
 
             // Now Alice can pay
-            env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
+            env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx}));
             env.close();
 
             // Alice can pay Maria without depositPreauth enabled
-            env(pay(alice, maria, XRP(250)), credentials::ids({credIdx}));
+            env(pay(alice, maria, XRP(250)), credentials::Ids({credIdx}));
             env.close();
 
             // john can accept payment with old depositPreauth and valid
             // credentials
             env(fset(john, asfDepositAuth));
             env(deposit::auth(john, alice));
-            env(pay(alice, john, XRP(100)), credentials::ids({credIdx}));
+            env(pay(alice, john, XRP(100)), credentials::Ids({credIdx}));
             env.close();
         }
 
@@ -944,31 +839,27 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env(credentials::accept(alice, issuer, credType));
             env.close();
             // Get the index of the credentials
-            auto const jv =
-                credentials::ledgerEntry(env, alice, issuer, credType);
+            auto const jv = credentials::ledgerEntry(env, alice, issuer, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
             {
-                // Success as destination didn't enable preauthorization so
+                // Success as destination didn't enable pre-authorization so
                 // valid credentials will not fail
-                env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
+                env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx}));
             }
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
             {
                 // Fail as destination didn't setup DepositPreauth object
-                env(pay(alice, bob, XRP(100)),
-                    credentials::ids({credIdx}),
-                    ter(tecNO_PERMISSION));
+                env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx}), Ter(tecNO_PERMISSION));
             }
 
             // Bob setup DepositPreauth object, duplicates is not allowed
-            env(deposit::authCredentials(
-                    bob, {{issuer, credType}, {issuer, credType}}),
-                ter(temMALFORMED));
+            env(deposit::authCredentials(bob, {{issuer, credType}, {issuer, credType}}),
+                Ter(temMALFORMED));
 
             // Bob setup DepositPreauth object
             env(deposit::authCredentials(bob, {{issuer, credType}}));
@@ -980,15 +871,15 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     "01E034";
                 // Alice can't pay with non-existing credentials
                 env(pay(alice, bob, XRP(100)),
-                    credentials::ids({invalidIdx}),
-                    ter(tecBAD_CREDENTIALS));
+                    credentials::Ids({invalidIdx}),
+                    Ter(tecBAD_CREDENTIALS));
             }
 
             {  // maria can't pay using valid credentials but issued for
                // different account
                 env(pay(maria, bob, XRP(100)),
-                    credentials::ids({credIdx}),
-                    ter(tecBAD_CREDENTIALS));
+                    credentials::Ids({credIdx}),
+                    Ter(tecBAD_CREDENTIALS));
             }
 
             {
@@ -998,24 +889,20 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
                 env(credentials::accept(alice, issuer, credType2));
                 env.close();
-                auto const jv =
-                    credentials::ledgerEntry(env, alice, issuer, credType2);
-                std::string const credIdx2 =
-                    jv[jss::result][jss::index].asString();
+                auto const jv = credentials::ledgerEntry(env, alice, issuer, credType2);
+                std::string const credIdx2 = jv[jss::result][jss::index].asString();
 
                 // Alice can't pay with invalid set of valid credentials
                 env(pay(alice, bob, XRP(100)),
-                    credentials::ids({credIdx, credIdx2}),
-                    ter(tecNO_PERMISSION));
+                    credentials::Ids({credIdx, credIdx2}),
+                    Ter(tecNO_PERMISSION));
             }
 
             // Error, duplicate credentials
-            env(pay(alice, bob, XRP(100)),
-                credentials::ids({credIdx, credIdx}),
-                ter(temMALFORMED));
+            env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx, credIdx}), Ter(temMALFORMED));
 
             // Alice can pay
-            env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
+            env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx}));
             env.close();
         }
     }
@@ -1042,89 +929,79 @@ struct DepositPreauth_test : public beast::unit_test::suite
             {
                 // both included [AuthorizeCredentials UnauthorizeCredentials]
                 auto jv = deposit::authCredentials(bob, {{issuer, credType}});
-                jv[sfUnauthorizeCredentials.jsonName] = Json::arrayValue;
-                env(jv, ter(temMALFORMED));
+                jv[sfUnauthorizeCredentials.jsonName] = json::ArrayValue;
+                env(jv, Ter(temMALFORMED));
             }
 
             {
                 // both included [Unauthorize, AuthorizeCredentials]
                 auto jv = deposit::authCredentials(bob, {{issuer, credType}});
                 jv[sfUnauthorize.jsonName] = issuer.human();
-                env(jv, ter(temMALFORMED));
+                env(jv, Ter(temMALFORMED));
             }
 
             {
                 // both included [Authorize, AuthorizeCredentials]
                 auto jv = deposit::authCredentials(bob, {{issuer, credType}});
                 jv[sfAuthorize.jsonName] = issuer.human();
-                env(jv, ter(temMALFORMED));
+                env(jv, Ter(temMALFORMED));
             }
 
             {
                 // both included [Unauthorize, UnauthorizeCredentials]
                 auto jv = deposit::unauthCredentials(bob, {{issuer, credType}});
                 jv[sfUnauthorize.jsonName] = issuer.human();
-                env(jv, ter(temMALFORMED));
+                env(jv, Ter(temMALFORMED));
             }
 
             {
                 // both included [Authorize, UnauthorizeCredentials]
                 auto jv = deposit::unauthCredentials(bob, {{issuer, credType}});
                 jv[sfAuthorize.jsonName] = issuer.human();
-                env(jv, ter(temMALFORMED));
+                env(jv, Ter(temMALFORMED));
             }
 
             {
                 // AuthorizeCredentials is empty
                 auto jv = deposit::authCredentials(bob, {});
-                env(jv, ter(temARRAY_EMPTY));
+                env(jv, Ter(temARRAY_EMPTY));
             }
 
             {
                 // invalid issuer
                 auto jv = deposit::authCredentials(bob, {});
                 auto& arr(jv[sfAuthorizeCredentials.jsonName]);
-                Json::Value cred = Json::objectValue;
+                json::Value cred = json::ObjectValue;
                 cred[jss::Issuer] = to_string(xrpAccount());
-                cred[sfCredentialType.jsonName] =
-                    strHex(std::string_view(credType));
-                Json::Value credParent;
+                cred[sfCredentialType.jsonName] = strHex(std::string_view(credType));
+                json::Value credParent;
                 credParent[jss::Credential] = cred;
                 arr.append(std::move(credParent));
 
-                env(jv, ter(temINVALID_ACCOUNT_ID));
+                env(jv, Ter(temINVALID_ACCOUNT_ID));
             }
 
             {
                 // empty credential type
                 auto jv = deposit::authCredentials(bob, {{issuer, {}}});
-                env(jv, ter(temMALFORMED));
+                env(jv, Ter(temMALFORMED));
             }
 
             {
                 // AuthorizeCredentials is larger than 8 elements
-                Account const a("a"), b("b"), c("c"), d("d"), e("e"), f("f"),
-                    g("g"), h("h"), i("i");
+                Account const a("a"), b("b"), c("c"), d("d"), e("e"), f("f"), g("g"), h("h"),
+                    i("i");
                 auto const& z = credType;
                 auto jv = deposit::authCredentials(
-                    bob,
-                    {{a, z},
-                     {b, z},
-                     {c, z},
-                     {d, z},
-                     {e, z},
-                     {f, z},
-                     {g, z},
-                     {h, z},
-                     {i, z}});
-                env(jv, ter(temARRAY_TOO_LARGE));
+                    bob, {{a, z}, {b, z}, {c, z}, {d, z}, {e, z}, {f, z}, {g, z}, {h, z}, {i, z}});
+                env(jv, Ter(temARRAY_TOO_LARGE));
             }
 
             {
                 // Can't create with non-existing issuer
                 Account const rick{"rick"};
                 auto jv = deposit::authCredentials(bob, {{rick, credType}});
-                env(jv, ter(tecNO_ISSUER));
+                env(jv, Ter(tecNO_ISSUER));
                 env.close();
             }
 
@@ -1134,13 +1011,12 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.fund(env.current()->fees().accountReserve(0), john);
                 env.close();
                 auto jv = deposit::authCredentials(john, {{issuer, credType}});
-                env(jv, ter(tecINSUFFICIENT_RESERVE));
+                env(jv, Ter(tecINSUFFICIENT_RESERVE));
             }
 
             {
                 // NO deposit object exists
-                env(deposit::unauthCredentials(bob, {{issuer, credType}}),
-                    ter(tecNO_ENTRY));
+                env(deposit::unauthCredentials(bob, {{issuer, credType}}), Ter(tecNO_ENTRY));
             }
 
             // Create DepositPreauth object
@@ -1148,42 +1024,35 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env(deposit::authCredentials(bob, {{issuer, credType}}));
                 env.close();
 
-                auto const jDP =
-                    ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
+                auto const jDP = ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
                 BEAST_EXPECT(
                     jDP.isObject() && jDP.isMember(jss::result) &&
                     !jDP[jss::result].isMember(jss::error) &&
                     jDP[jss::result].isMember(jss::node) &&
                     jDP[jss::result][jss::node].isMember("LedgerEntryType") &&
-                    jDP[jss::result][jss::node]["LedgerEntryType"] ==
-                        jss::DepositPreauth);
+                    jDP[jss::result][jss::node]["LedgerEntryType"] == jss::DepositPreauth);
 
                 // Check object fields
-                BEAST_EXPECT(
-                    jDP[jss::result][jss::node][jss::Account] == bob.human());
-                auto const& credentials(
-                    jDP[jss::result][jss::node]["AuthorizeCredentials"]);
+                BEAST_EXPECT(jDP[jss::result][jss::node][jss::Account] == bob.human());
+                auto const& credentials(jDP[jss::result][jss::node]["AuthorizeCredentials"]);
                 BEAST_EXPECT(credentials.isArray() && credentials.size() == 1);
                 for (auto const& o : credentials)
                 {
                     auto const& c(o[jss::Credential]);
                     BEAST_EXPECT(c[jss::Issuer].asString() == issuer.human());
                     BEAST_EXPECT(
-                        c["CredentialType"].asString() ==
-                        strHex(std::string_view(credType)));
+                        c["CredentialType"].asString() == strHex(std::string_view(credType)));
                 }
 
                 // can't create duplicate
-                env(deposit::authCredentials(bob, {{issuer, credType}}),
-                    ter(tecDUPLICATE));
+                env(deposit::authCredentials(bob, {{issuer, credType}}), Ter(tecDUPLICATE));
             }
 
             // Delete DepositPreauth object
             {
                 env(deposit::unauthCredentials(bob, {{issuer, credType}}));
                 env.close();
-                auto const jDP =
-                    ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
+                auto const jDP = ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
                 BEAST_EXPECT(
                     jDP.isObject() && jDP.isMember(jss::result) &&
                     jDP[jss::result].isMember(jss::error) &&
@@ -1202,7 +1071,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const gw{"gw"};
-        IOU const USD = gw["USD"];
+        IOU const usd = gw["USD"];
         Account const zelda{"zelda"};
 
         {
@@ -1215,13 +1084,10 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // Create credentials
             auto jv = credentials::create(alice, issuer, credType);
-            // Current time in ripple epoch.
+            // Current time in XRPL epoch.
             // Every time ledger close, unittest timer increase by 10s
-            uint32_t const t = env.current()
-                                   ->info()
-                                   .parentCloseTime.time_since_epoch()
-                                   .count() +
-                60;
+            uint32_t const t =
+                env.current()->header().parentCloseTime.time_since_epoch().count() + 60;
             jv[sfExpiration.jsonName] = t;
             env(jv);
             env.close();
@@ -1232,11 +1098,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // Create credential which not expired
             jv = credentials::create(alice, issuer, credType2);
-            uint32_t const t2 = env.current()
-                                    ->info()
-                                    .parentCloseTime.time_since_epoch()
-                                    .count() +
-                1000;
+            uint32_t const t2 =
+                env.current()->header().parentCloseTime.time_since_epoch().count() + 1000;
             jv[sfExpiration.jsonName] = t2;
             env(jv);
             env.close();
@@ -1252,31 +1115,28 @@ struct DepositPreauth_test : public beast::unit_test::suite
             jv = credentials::ledgerEntry(env, alice, issuer, credType2);
             std::string const credIdx2 = jv[jss::result][jss::index].asString();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
             // Bob setup DepositPreauth object
-            env(deposit::authCredentials(
-                bob, {{issuer, credType}, {issuer, credType2}}));
+            env(deposit::authCredentials(bob, {{issuer, credType}, {issuer, credType2}}));
             env.close();
 
             {
                 // Alice can pay
-                env(pay(alice, bob, XRP(100)),
-                    credentials::ids({credIdx, credIdx2}));
+                env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx, credIdx2}));
                 env.close();
                 env.close();
 
                 // Ledger closed, time increased, alice can't pay anymore
                 env(pay(alice, bob, XRP(100)),
-                    credentials::ids({credIdx, credIdx2}),
-                    ter(tecEXPIRED));
+                    credentials::Ids({credIdx, credIdx2}),
+                    Ter(tecEXPIRED));
                 env.close();
 
                 {
                     // check that expired credentials were deleted
-                    auto const jDelCred =
-                        credentials::ledgerEntry(env, alice, issuer, credType);
+                    auto const jDelCred = credentials::ledgerEntry(env, alice, issuer, credType);
                     BEAST_EXPECT(
                         jDelCred.isObject() && jDelCred.isMember(jss::result) &&
                         jDelCred[jss::result].isMember(jss::error) &&
@@ -1285,20 +1145,15 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
                 {
                     // check that non-expired credential still present
-                    auto const jle =
-                        credentials::ledgerEntry(env, alice, issuer, credType2);
+                    auto const jle = credentials::ledgerEntry(env, alice, issuer, credType2);
                     BEAST_EXPECT(
                         jle.isObject() && jle.isMember(jss::result) &&
                         !jle[jss::result].isMember(jss::error) &&
                         jle[jss::result].isMember(jss::node) &&
-                        jle[jss::result][jss::node].isMember(
-                            "LedgerEntryType") &&
-                        jle[jss::result][jss::node]["LedgerEntryType"] ==
-                            jss::Credential &&
-                        jle[jss::result][jss::node][jss::Issuer] ==
-                            issuer.human() &&
-                        jle[jss::result][jss::node][jss::Subject] ==
-                            alice.human() &&
+                        jle[jss::result][jss::node].isMember("LedgerEntryType") &&
+                        jle[jss::result][jss::node]["LedgerEntryType"] == jss::Credential &&
+                        jle[jss::result][jss::node][jss::Issuer] == issuer.human() &&
+                        jle[jss::result][jss::node][jss::Subject] == alice.human() &&
                         jle[jss::result][jss::node]["CredentialType"] ==
                             strHex(std::string_view(credType2)));
                 }
@@ -1309,11 +1164,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 auto jv = credentials::create(gw, issuer, credType);
-                uint32_t const t = env.current()
-                                       ->info()
-                                       .parentCloseTime.time_since_epoch()
-                                       .count() +
-                    40;
+                uint32_t const t =
+                    env.current()->header().parentCloseTime.time_since_epoch().count() + 40;
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
                 env.close();
@@ -1321,8 +1173,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
 
                 jv = credentials::ledgerEntry(env, gw, issuer, credType);
-                std::string const credIdx =
-                    jv[jss::result][jss::index].asString();
+                std::string const credIdx = jv[jss::result][jss::index].asString();
 
                 BEAST_EXPECT(ownerCount(env, issuer) == 0);
                 BEAST_EXPECT(ownerCount(env, gw) == 1);
@@ -1332,14 +1183,11 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
 
                 // credentials are expired
-                env(pay(gw, bob, USD(150)),
-                    credentials::ids({credIdx}),
-                    ter(tecEXPIRED));
+                env(pay(gw, bob, usd(150)), credentials::Ids({credIdx}), Ter(tecEXPIRED));
                 env.close();
 
                 // check that expired credentials were deleted
-                auto const jDelCred =
-                    credentials::ledgerEntry(env, gw, issuer, credType);
+                auto const jDelCred = credentials::ledgerEntry(env, gw, issuer, credType);
                 BEAST_EXPECT(
                     jDelCred.isObject() && jDelCred.isMember(jss::result) &&
                     jDelCred[jss::result].isMember(jss::error) &&
@@ -1362,11 +1210,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // Create credentials
             auto jv = credentials::create(zelda, issuer, credType);
-            uint32_t const t = env.current()
-                                   ->info()
-                                   .parentCloseTime.time_since_epoch()
-                                   .count() +
-                50;
+            uint32_t const t =
+                env.current()->header().parentCloseTime.time_since_epoch().count() + 50;
             jv[sfExpiration.jsonName] = t;
             env(jv);
             env.close();
@@ -1379,7 +1224,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             jv = credentials::ledgerEntry(env, zelda, issuer, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
             // Bob setup DepositPreauth object
@@ -1387,15 +1232,12 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.close();
 
             auto const seq = env.seq(alice);
-            env(escrow::create(alice, bob, XRP(1000)),
-                escrow::finish_time(env.now() + 1s));
+            env(escrow::create(alice, bob, XRP(1000)), escrow::kFINISH_TIME(env.now() + 1s));
             env.close();
 
             // zelda can't finish escrow with invalid credentials
             {
-                env(escrow::finish(zelda, alice, seq),
-                    credentials::ids({}),
-                    ter(temMALFORMED));
+                env(escrow::finish(zelda, alice, seq), credentials::Ids({}), Ter(temMALFORMED));
                 env.close();
             }
 
@@ -1406,22 +1248,21 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     "01E034";
 
                 env(escrow::finish(zelda, alice, seq),
-                    credentials::ids({invalidIdx}),
-                    ter(tecBAD_CREDENTIALS));
+                    credentials::Ids({invalidIdx}),
+                    Ter(tecBAD_CREDENTIALS));
                 env.close();
             }
 
             {  // Ledger closed, time increased, zelda can't finish escrow
                 env(escrow::finish(zelda, alice, seq),
-                    credentials::ids({credIdx}),
-                    fee(1500),
-                    ter(tecEXPIRED));
+                    credentials::Ids({credIdx}),
+                    Fee(1500),
+                    Ter(tecEXPIRED));
                 env.close();
             }
 
             // check that expired credentials were deleted
-            auto const jDelCred =
-                credentials::ledgerEntry(env, zelda, issuer, credType);
+            auto const jDelCred = credentials::ledgerEntry(env, zelda, issuer, credType);
             BEAST_EXPECT(
                 jDelCred.isObject() && jDelCred.isMember(jss::result) &&
                 jDelCred[jss::result].isMember(jss::error) &&
@@ -1473,26 +1314,23 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env(deposit::authCredentials(stock, credentials));
                 env.close();
 
-                auto const dp =
-                    ledgerEntryDepositPreauth(env, stock, credentials);
-                auto const& authCred(
-                    dp[jss::result][jss::node]["AuthorizeCredentials"]);
-                BEAST_EXPECT(
-                    authCred.isArray() &&
-                    authCred.size() == credentials.size());
-                std::vector<std::pair<Account, std::string>> readedCreds;
+                auto const dp = ledgerEntryDepositPreauth(env, stock, credentials);
+                auto const& authCred(dp[jss::result][jss::node]["AuthorizeCredentials"]);
+                BEAST_EXPECT(authCred.isArray() && authCred.size() == credentials.size());
+                std::vector<std::pair<Account, std::string>> readCreds;
                 for (auto const& o : authCred)
                 {
                     auto const& c(o[jss::Credential]);
                     auto issuer = c[jss::Issuer].asString();
 
                     if (BEAST_EXPECT(pubKey2Acc.contains(issuer)))
-                        readedCreds.emplace_back(
-                            pubKey2Acc.at(issuer),
-                            c["CredentialType"].asString());
+                    {
+                        readCreds.emplace_back(
+                            pubKey2Acc.at(issuer), c["CredentialType"].asString());
+                    }
                 }
 
-                BEAST_EXPECT(std::ranges::is_sorted(readedCreds));
+                BEAST_EXPECT(std::ranges::is_sorted(readCreds));
 
                 env(deposit::unauthCredentials(stock, credentials));
                 env.close();
@@ -1508,8 +1346,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             for (int i = 0; i < 10; ++i)
             {
                 std::ranges::shuffle(credentials, gen);
-                env(deposit::authCredentials(stock, credentials),
-                    ter(tecDUPLICATE));
+                env(deposit::authCredentials(stock, credentials), Ter(tecDUPLICATE));
             }
         }
 
@@ -1524,8 +1361,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             {
                 auto credentials2 = copyCredentials;
                 credentials2.push_back(c);
-                env(deposit::authCredentials(stock, credentials2),
-                    ter(temMALFORMED));
+                env(deposit::authCredentials(stock, credentials2), Ter(temMALFORMED));
             }
 
             // create batch of credentials and save their hashes
@@ -1537,12 +1373,10 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env(credentials::accept(alice, c.issuer, c.credType));
                 env.close();
 
-                credentialIDs.push_back(credentials::ledgerEntry(
-                                            env,
-                                            alice,
-                                            c.issuer,
-                                            c.credType)[jss::result][jss::index]
-                                            .asString());
+                credentialIDs.push_back(
+                    credentials::ledgerEntry(
+                        env, alice, c.issuer, c.credType)[jss::result][jss::index]
+                        .asString());
             }
 
             // check duplicates in payment params
@@ -1551,9 +1385,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 auto credentialIDs2 = credentialIDs;
                 credentialIDs2.push_back(h);
 
-                env(pay(alice, bob, XRP(100)),
-                    credentials::ids(credentialIDs2),
-                    ter(temMALFORMED));
+                env(pay(alice, bob, XRP(100)), credentials::Ids(credentialIDs2), Ter(temMALFORMED));
             }
         }
     }
@@ -1563,9 +1395,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
     {
         testEnable();
         testInvalid();
-        auto const supported{jtx::testable_amendments()};
-        testPayment(supported - featureDepositPreauth - featureCredentials);
-        testPayment(supported - featureDepositPreauth);
+        auto const supported{jtx::testableAmendments()};
         testPayment(supported - featureCredentials);
         testPayment(supported);
         testCredentialsPayment();
@@ -1575,8 +1405,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DepositAuth, app, ripple);
-BEAST_DEFINE_TESTSUITE(DepositPreauth, app, ripple);
+BEAST_DEFINE_TESTSUITE(DepositAuth, app, xrpl);
+BEAST_DEFINE_TESTSUITE(DepositPreauth, app, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

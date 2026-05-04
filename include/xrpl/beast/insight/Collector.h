@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_INSIGHT_COLLECTOR_H_INCLUDED
-#define BEAST_INSIGHT_COLLECTOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Counter.h>
 #include <xrpl/beast/insight/Event.h>
@@ -28,8 +8,7 @@
 
 #include <string>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 /** Interface for a manager that allows collection of metrics.
 
@@ -63,13 +42,13 @@ public:
     /** @{ */
     template <class Handler>
     Hook
-    make_hook(Handler handler)
+    makeHook(Handler handler)
     {
-        return make_hook(HookImpl::HandlerType(handler));
+        return makeHook(HookImpl::HandlerType(handler));
     }
 
     virtual Hook
-    make_hook(HookImpl::HandlerType const& handler) = 0;
+    makeHook(HookImpl::HandlerType const& handler) = 0;
     /** @} */
 
     /** Create a counter with the specified name.
@@ -77,14 +56,14 @@ public:
     */
     /** @{ */
     virtual Counter
-    make_counter(std::string const& name) = 0;
+    makeCounter(std::string const& name) = 0;
 
     Counter
-    make_counter(std::string const& prefix, std::string const& name)
+    makeCounter(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_counter(name);
-        return make_counter(prefix + "." + name);
+            return makeCounter(name);
+        return makeCounter(prefix + "." + name);
     }
     /** @} */
 
@@ -93,14 +72,14 @@ public:
     */
     /** @{ */
     virtual Event
-    make_event(std::string const& name) = 0;
+    makeEvent(std::string const& name) = 0;
 
     Event
-    make_event(std::string const& prefix, std::string const& name)
+    makeEvent(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_event(name);
-        return make_event(prefix + "." + name);
+            return makeEvent(name);
+        return makeEvent(prefix + "." + name);
     }
     /** @} */
 
@@ -109,14 +88,14 @@ public:
     */
     /** @{ */
     virtual Gauge
-    make_gauge(std::string const& name) = 0;
+    makeGauge(std::string const& name) = 0;
 
     Gauge
-    make_gauge(std::string const& prefix, std::string const& name)
+    makeGauge(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_gauge(name);
-        return make_gauge(prefix + "." + name);
+            return makeGauge(name);
+        return makeGauge(prefix + "." + name);
     }
     /** @} */
 
@@ -125,19 +104,16 @@ public:
     */
     /** @{ */
     virtual Meter
-    make_meter(std::string const& name) = 0;
+    makeMeter(std::string const& name) = 0;
 
     Meter
-    make_meter(std::string const& prefix, std::string const& name)
+    makeMeter(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_meter(name);
-        return make_meter(prefix + "." + name);
+            return makeMeter(name);
+        return makeMeter(prefix + "." + name);
     }
     /** @} */
 };
 
-}  // namespace insight
-}  // namespace beast
-
-#endif
+}  // namespace beast::insight

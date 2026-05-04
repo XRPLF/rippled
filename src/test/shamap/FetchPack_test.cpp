@@ -1,45 +1,41 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/shamap/SHAMap.h>
-#include <xrpld/shamap/SHAMapSyncFilter.h>
-
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
-#include <functional>
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <stdexcept>
 
-namespace ripple {
-namespace tests {
+namespace xrpl::tests {
 
-class FetchPack_test : public beast::unit_test::suite
+class FetchPack_test : public beast::unit_test::Suite
 {
 public:
-    enum { tableItems = 100, tableItemsExtra = 20 };
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+    enum { TableItems = 100, TableItemsExtra = 20 };
 
     using Map = hash_map<SHAMapHash, Blob>;
     using Table = SHAMap;
@@ -56,8 +52,7 @@ public:
 
     struct TestFilter : SHAMapSyncFilter
     {
-        TestFilter(Map& map, beast::Journal journal)
-            : mMap(map), mJournal(journal)
+        TestFilter(Map& map, beast::Journal journal) : map(map), journal(journal)
         {
         }
 
@@ -66,52 +61,51 @@ public:
             bool fromFilter,
             SHAMapHash const& nodeHash,
             std::uint32_t ledgerSeq,
-            Blob&& nodeData,
+            Blob&& nodeData,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
             SHAMapNodeType type) const override
         {
         }
 
-        std::optional<Blob>
+        [[nodiscard]] std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
-            Map::iterator it = mMap.find(nodeHash);
-            if (it == mMap.end())
+            Map::iterator const it = map.find(nodeHash);
+            if (it == map.end())
             {
-                JLOG(mJournal.fatal()) << "Test filter missing node";
+                JLOG(journal.fatal()) << "Test filter missing node";
                 return std::nullopt;
             }
             return it->second;
         }
 
-        Map& mMap;
-        beast::Journal mJournal;
+        Map& map;
+        beast::Journal journal;
     };
 
-    boost::intrusive_ptr<Item>
-    make_random_item(beast::xor_shift_engine& r)
+    static boost::intrusive_ptr<Item>
+    makeRandomItemMember(beast::xor_shift_engine& r)
     {
         Serializer s;
         for (int d = 0; d < 3; ++d)
-            s.add32(ripple::rand_int<std::uint32_t>(r));
-        return make_shamapitem(s.getSHA512Half(), s.slice());
+            s.add32(xrpl::randInt<std::uint32_t>(r));
+        return makeShamapitem(s.getSHA512Half(), s.slice());
     }
 
-    void
-    add_random_items(std::size_t n, Table& t, beast::xor_shift_engine& r)
+    static void
+    addRandomItems(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
-        while (n--)
+        while ((n--) != 0u)
         {
-            auto const result(t.addItem(
-                SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
+            auto const result(t.addItem(SHAMapNodeType::TnAccountState, makeRandomItemMember(r)));
             assert(result);
             (void)result;
         }
     }
 
     void
-    on_fetch(Map& map, SHAMapHash const& hash, Blob const& blob)
+    onFetch(Map& map, SHAMapHash const& hash, Blob const& blob)
     {
-        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.as_uint256());
+        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.asUint256());
         map.emplace(hash, blob);
     }
 
@@ -122,16 +116,16 @@ public:
         test::SuiteJournal journal("FetchPack_test", *this);
 
         TestNodeFamily f(journal);
-        std::shared_ptr<Table> t1(std::make_shared<Table>(SHAMapType::FREE, f));
+        std::shared_ptr<Table> const t1(std::make_shared<Table>(SHAMapType::FREE, f));
 
         pass();
 
         //         beast::Random r;
-        //         add_random_items (tableItems, *t1, r);
+        //         add_random_items_ (tableItems, *t1, r);
         //         std::shared_ptr <Table> t2 (t1->snapShot (true));
         //
-        //         add_random_items (tableItemsExtra, *t1, r);
-        //         add_random_items (tableItemsExtra, *t2, r);
+        //         add_random_items_ (tableItemsExtra, *t1, r);
+        //         add_random_items_ (tableItemsExtra, *t2, r);
 
         // turn t1 into t2
         //         Map map;
@@ -171,7 +165,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FetchPack, shamap, ripple);
+BEAST_DEFINE_TESTSUITE(FetchPack, shamap, xrpl);
 
-}  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl::tests

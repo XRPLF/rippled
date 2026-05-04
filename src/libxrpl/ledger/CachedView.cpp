@@ -1,0 +1,77 @@
+#include <xrpl/ledger/CachedView.h>
+
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <memory>
+#include <mutex>
+#include <optional>
+
+namespace xrpl::detail {
+
+bool
+CachedViewImpl::exists(Keylet const& k) const
+{
+    return read(k) != nullptr;
+}
+
+std::shared_ptr<SLE const>
+CachedViewImpl::read(Keylet const& k) const
+{
+    static CountedObjects::Counter kHITS{"CachedView::hit"};
+    static CountedObjects::Counter kHITSEXPIRED{"CachedView::hitExpired"};
+    static CountedObjects::Counter kMISSES{"CachedView::miss"};
+    bool cacheHit = false;
+    bool baseRead = false;
+
+    auto const digest = [&]() -> std::optional<uint256> {
+        {
+            std::scoped_lock const lock(mutex_);
+            auto const iter = map_.find(k.key);
+            if (iter != map_.end())
+            {
+                cacheHit = true;
+                return iter->second;
+            }
+        }
+        return base_.digest(k.key);
+    }();
+    if (!digest)
+        return nullptr;
+    auto sle = cache_.fetch(*digest, [&]() {
+        baseRead = true;
+        return base_.read(k);
+    });
+    // If the sle is null, then a failure must have occurred in base_.read()
+    XRPL_ASSERT(sle || baseRead, "xrpl::CachedView::read : null SLE result from base");
+    if (cacheHit && baseRead)
+    {
+        kHITSEXPIRED.increment();
+    }
+    else if (cacheHit)
+    {
+        kHITS.increment();
+    }
+    else
+    {
+        kMISSES.increment();
+    }
+
+    if (!cacheHit)
+    {
+        // Avoid acquiring this lock unless necessary. It is only necessary if
+        // the key was not found in the map_. The lock is needed to add the key
+        // and digest.
+        std::scoped_lock const lock(mutex_);
+        map_.emplace(k.key, *digest);
+    }
+    if (!sle || !k.check(*sle))
+        return nullptr;
+    return sle;
+}
+
+}  // namespace xrpl::detail

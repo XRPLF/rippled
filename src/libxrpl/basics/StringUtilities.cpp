@@ -1,24 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/basics/StringUtilities.h>
 
 #include <xrpl/basics/Blob.h>
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 
@@ -27,7 +9,6 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 
 #include <cstdint>
@@ -36,14 +17,14 @@
 #include <string>
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 sqlBlobLiteral(Blob const& blob)
 {
     std::string j;
 
-    j.reserve(blob.size() * 2 + 3);
+    j.reserve((blob.size() * 2) + 3);
     j.push_back('X');
     j.push_back('\'');
     boost::algorithm::hex(blob.begin(), blob.end(), std::back_inserter(j));
@@ -53,10 +34,10 @@ sqlBlobLiteral(Blob const& blob)
 }
 
 bool
-parseUrl(parsedURL& pUrl, std::string const& strUrl)
+parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
-    static boost::regex reUrl(
+    static boost::regex const kRE_URL(
         "(?i)\\`\\s*"
         // required scheme
         "([[:alpha:]][-+.[:alpha:][:digit:]]*?):"
@@ -77,7 +58,7 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl)
     // Bail if there is no match.
     try
     {
-        if (!boost::regex_match(strUrl, smMatch, reUrl))
+        if (!boost::regex_match(strUrl, smMatch, kRE_URL))
             return false;
     }
     catch (...)
@@ -93,7 +74,7 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl)
     // We need to use Endpoint to parse the domain to
     // strip surrounding brackets from IPv6 addresses,
     // e.g. [::1] => ::1.
-    auto const result = beast::IP::Endpoint::from_string_checked(domain);
+    auto const result = beast::IP::Endpoint::fromStringChecked(domain);
     pUrl.domain = result ? result->address().to_string() : domain;
     std::string const port = smMatch[5];
     if (!port.empty())
@@ -113,16 +94,16 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl)
 }
 
 std::string
-trim_whitespace(std::string str)
+trimWhitespace(std::string str)
 {
     boost::trim(str);
     return str;
 }
 
 std::optional<std::uint64_t>
-to_uint64(std::string const& s)
+toUint64(std::string const& s)
 {
-    std::uint64_t result;
+    std::uint64_t result = 0;
     if (beast::lexicalCastChecked(result, s))
         return result;
     return std::nullopt;
@@ -139,7 +120,7 @@ isProperlyFormedTomlDomain(std::string_view domain)
     // obviously wrong domain names but it isn't perfect. It does not
     // really support IDNs. If this turns out to be an issue, a more
     // thorough regex can be used or this check can just be removed.
-    static boost::regex const re(
+    static boost::regex const kRE(
         "^"                   // Beginning of line
         "("                   // Beginning of a segment
         "(?!-)"               //  - must not begin with '-'
@@ -152,7 +133,7 @@ isProperlyFormedTomlDomain(std::string_view domain)
         ,
         boost::regex_constants::optimize);
 
-    return boost::regex_match(domain.begin(), domain.end(), re);
+    return boost::regex_match(domain.begin(), domain.end(), kRE);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

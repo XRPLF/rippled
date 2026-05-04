@@ -1,26 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/NFTokenID.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/NFTokenID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
@@ -36,23 +18,20 @@
 #include <optional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 bool
-canHaveNFTokenID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta)
+canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta)
 {
     if (!serializedTx)
         return false;
 
     TxType const tt = serializedTx->getTxnType();
-    if (tt != ttNFTOKEN_MINT && tt != ttNFTOKEN_ACCEPT_OFFER &&
-        tt != ttNFTOKEN_CANCEL_OFFER)
+    if (tt != ttNFTOKEN_MINT && tt != ttNFTOKEN_ACCEPT_OFFER && tt != ttNFTOKEN_CANCEL_OFFER)
         return false;
 
     // if the transaction failed nothing could have been delivered.
-    if (transactionMeta.getResultTER() != tesSUCCESS)
+    if (!isTesSuccess(transactionMeta.getResultTER()))
         return false;
 
     return true;
@@ -75,14 +54,10 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
         SField const& fName = node.getFName();
         if (fName == sfCreatedNode)
         {
-            STArray const& toAddPrevNFTs = node.peekAtField(sfNewFields)
-                                               .downcast<STObject>()
-                                               .getFieldArray(sfNFTokens);
-            std::transform(
-                toAddPrevNFTs.begin(),
-                toAddPrevNFTs.end(),
-                std::back_inserter(finalIDs),
-                [](STObject const& nft) {
+            STArray const& toAddPrevNFTs =
+                node.peekAtField(sfNewFields).downcast<STObject>().getFieldArray(sfNFTokens);
+            std::ranges::transform(
+                toAddPrevNFTs, std::back_inserter(finalIDs), [](STObject const& nft) {
                     return nft.getFieldH256(sfNFTokenID);
                 });
         }
@@ -95,31 +70,23 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
             // field changing, but no NFTs within that page changing. In this
             // case, there will be no previous NFTs and we need to skip.
             // However, there will always be NFTs listed in the final fields,
-            // as rippled outputs all fields in final fields even if they were
+            // as xrpld outputs all fields in final fields even if they were
             // not changed.
             STObject const& previousFields =
                 node.peekAtField(sfPreviousFields).downcast<STObject>();
             if (!previousFields.isFieldPresent(sfNFTokens))
                 continue;
 
-            STArray const& toAddPrevNFTs =
-                previousFields.getFieldArray(sfNFTokens);
-            std::transform(
-                toAddPrevNFTs.begin(),
-                toAddPrevNFTs.end(),
-                std::back_inserter(prevIDs),
-                [](STObject const& nft) {
+            STArray const& toAddPrevNFTs = previousFields.getFieldArray(sfNFTokens);
+            std::ranges::transform(
+                toAddPrevNFTs, std::back_inserter(prevIDs), [](STObject const& nft) {
                     return nft.getFieldH256(sfNFTokenID);
                 });
 
-            STArray const& toAddFinalNFTs = node.peekAtField(sfFinalFields)
-                                                .downcast<STObject>()
-                                                .getFieldArray(sfNFTokens);
-            std::transform(
-                toAddFinalNFTs.begin(),
-                toAddFinalNFTs.end(),
-                std::back_inserter(finalIDs),
-                [](STObject const& nft) {
+            STArray const& toAddFinalNFTs =
+                node.peekAtField(sfFinalFields).downcast<STObject>().getFieldArray(sfNFTokens);
+            std::ranges::transform(
+                toAddFinalNFTs, std::back_inserter(finalIDs), [](STObject const& nft) {
                     return nft.getFieldH256(sfNFTokenID);
                 });
         }
@@ -132,15 +99,14 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
 
     // Find the first NFT ID that doesn't match.  We're looking for an
     // added NFT, so the one we want will be the mismatch in finalIDs.
-    auto const diff = std::mismatch(
-        finalIDs.begin(), finalIDs.end(), prevIDs.begin(), prevIDs.end());
+    auto const diff = std::ranges::mismatch(finalIDs, prevIDs);
 
     // There should always be a difference so the returned finalIDs
     // iterator should never be end().  But better safe than sorry.
-    if (diff.first == finalIDs.end())
+    if (diff.in1 == finalIDs.end())
         return std::nullopt;
 
-    return *diff.first;
+    return *diff.in1;
 }
 
 std::vector<uint256>
@@ -153,24 +119,22 @@ getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta)
             node.getFName() != sfDeletedNode)
             continue;
 
-        auto const& toAddNFT = node.peekAtField(sfFinalFields)
-                                   .downcast<STObject>()
-                                   .getFieldH256(sfNFTokenID);
+        auto const& toAddNFT =
+            node.peekAtField(sfFinalFields).downcast<STObject>().getFieldH256(sfNFTokenID);
         tokenIDResult.push_back(toAddNFT);
     }
 
     // Deduplicate the NFT IDs because multiple offers could affect the same NFT
     // and hence we would get duplicate NFT IDs
-    sort(tokenIDResult.begin(), tokenIDResult.end());
-    tokenIDResult.erase(
-        unique(tokenIDResult.begin(), tokenIDResult.end()),
-        tokenIDResult.end());
+    std::ranges::sort(tokenIDResult);
+    auto const uniq = std::ranges::unique(tokenIDResult);
+    tokenIDResult.erase(uniq.begin(), uniq.end());
     return tokenIDResult;
 }
 
 void
 insertNFTokenID(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
@@ -186,21 +150,19 @@ insertNFTokenID(
     }
     else if (type == ttNFTOKEN_ACCEPT_OFFER)
     {
-        std::vector<uint256> result =
-            getNFTokenIDFromDeletedOffer(transactionMeta);
+        std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
-        if (result.size() > 0)
+        if (!result.empty())
             response[jss::nftoken_id] = to_string(result.front());
     }
     else if (type == ttNFTOKEN_CANCEL_OFFER)
     {
-        std::vector<uint256> result =
-            getNFTokenIDFromDeletedOffer(transactionMeta);
+        std::vector<uint256> const result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
-        response[jss::nftoken_ids] = Json::Value(Json::arrayValue);
+        response[jss::nftoken_ids] = json::Value(json::ArrayValue);
         for (auto const& nftID : result)
             response[jss::nftoken_ids].append(to_string(nftID));
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

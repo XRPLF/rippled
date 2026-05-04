@@ -1,34 +1,24 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/TER.h>
 
-#include <test/jtx.h>
+#include <cstddef>
+#include <tuple>
 
-#include <xrpl/beast/unit_test.h>
-
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 // Make sure "plump" order books don't have problems
-class PlumpBook_test : public beast::unit_test::suite
+class PlumpBook_test : public beast::unit_test::Suite
 {
 public:
-    void
+    static void
     createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
@@ -45,13 +35,13 @@ public:
         using namespace jtx;
         auto const billion = 1000000000ul;
         Env env(*this);
-        env.disable_sigs();
+        env.disableSigs();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
-        env.trust(USD(billion), "alice");
-        env(pay(gw, "alice", USD(billion)));
-        createOffers(env, USD, n);
+        env.trust(usd(billion), "alice");
+        env(pay(gw, "alice", usd(billion)));
+        createOffers(env, usd, n);
     }
 
     void
@@ -61,7 +51,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook, tx, ripple, 5);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook, app, xrpl, 5);
 
 //------------------------------------------------------------------------------
 
@@ -76,14 +66,14 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ThinBook, tx, ripple);
+BEAST_DEFINE_TESTSUITE(ThinBook, app, xrpl);
 
 //------------------------------------------------------------------------------
 
-class OversizeMeta_test : public beast::unit_test::suite
+class OversizeMeta_test : public beast::unit_test::Suite
 {
 public:
-    void
+    static void
     createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
@@ -101,15 +91,15 @@ public:
         using namespace jtx;
         auto const billion = 1000000000ul;
         Env env(*this);
-        env.disable_sigs();
+        env.disableSigs();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
-        env.trust(USD(billion), "alice");
-        env(pay(gw, "alice", USD(billion)));
-        createOffers(env, USD, n);
-        env(pay("alice", gw, USD(billion)));
-        env(offer("alice", USD(1), XRP(1)));
+        env.trust(usd(billion), "alice");
+        env(pay(gw, "alice", usd(billion)));
+        createOffers(env, usd, n);
+        env(pay("alice", gw, usd(billion)));
+        env(offer("alice", usd(1), XRP(1)));
     }
 
     void
@@ -119,11 +109,11 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, app, xrpl, 3);
 
 //------------------------------------------------------------------------------
 
-class FindOversizeCross_test : public beast::unit_test::suite
+class FindOversizeCross_test : public beast::unit_test::Suite
 {
 public:
     // Return lowest x in [lo, hi] for which f(x)==true
@@ -142,12 +132,14 @@ public:
                 len -= l2 + 1;
             }
             else
+            {
                 len = l2;
+            }
         }
         return lo;
     }
 
-    void
+    static void
     createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
@@ -164,28 +156,26 @@ public:
         using namespace jtx;
         auto const billion = 1000000000ul;
         Env env(*this);
-        env.disable_sigs();
+        env.disableSigs();
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
-        env.trust(USD(billion), "alice");
-        env(pay(gw, "alice", USD(billion)));
-        createOffers(env, USD, n);
-        env(pay("alice", gw, USD(billion)));
-        env(offer("alice", USD(1), XRP(1)), ter(std::ignore));
+        env.trust(usd(billion), "alice");
+        env(pay(gw, "alice", usd(billion)));
+        createOffers(env, usd, n);
+        env(pay("alice", gw, usd(billion)));
+        env(offer("alice", usd(1), XRP(1)), Ter(std::ignore));
         return env.ter() == tecOVERSIZE;
     }
 
     void
     run() override
     {
-        auto const result =
-            bfind(100, 9000, [&](std::size_t n) { return oversize(n); });
+        auto const result = bfind(100, 9000, [&](std::size_t n) { return oversize(n); });
         log << "Min oversize offers = " << result << '\n';
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, tx, ripple, 50);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, xrpl, 50);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

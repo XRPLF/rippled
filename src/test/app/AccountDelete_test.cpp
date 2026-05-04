@@ -1,31 +1,52 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/check.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/did.h>
+#include <test/jtx/escrow.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
-
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
-namespace test {
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <string>
 
-class AccountDelete_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class AccountDelete_test : public beast::unit_test::Suite
 {
 private:
     // Helper function that verifies the expected DeliveredAmount is present.
@@ -36,14 +57,13 @@ private:
     verifyDeliveredAmount(jtx::Env& env, STAmount const& amount)
     {
         // Get the hash for the most recent transaction.
-        std::string const txHash{
-            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         // We can't use env.meta() here, because meta() doesn't include
         // delivered_amount.
         env.close();
-        Json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+        json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         // Expect there to be a DeliveredAmount field.
         if (!BEAST_EXPECT(meta.isMember(sfDeliveredAmount.jsonName)))
@@ -51,13 +71,13 @@ private:
 
         // DeliveredAmount and delivered_amount should both be present and
         // equal amount.
-        Json::Value const jsonExpect{amount.getJson(JsonOptions::none)};
+        json::Value const jsonExpect{amount.getJson(JsonOptions::KNone)};
         BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == jsonExpect);
         BEAST_EXPECT(meta[jss::delivered_amount] == jsonExpect);
     }
 
     // Helper function to create a payment channel.
-    static Json::Value
+    static json::Value
     payChanCreate(
         jtx::Account const& account,
         jtx::Account const& to,
@@ -66,11 +86,11 @@ private:
         NetClock::time_point const& cancelAfter,
         PublicKey const& pk)
     {
-        Json::Value jv;
+        json::Value jv;
         jv[jss::TransactionType] = jss::PaymentChannelCreate;
         jv[jss::Account] = account.human();
         jv[jss::Destination] = to.human();
-        jv[jss::Amount] = amount.getJson(JsonOptions::none);
+        jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
         jv[sfSettleDelay.jsonName] = settleDelay.count();
         jv[sfCancelAfter.jsonName] = cancelAfter.time_since_epoch().count() + 2;
         jv[sfPublicKey.jsonName] = strHex(pk.slice());
@@ -95,34 +115,30 @@ public:
         env.close();
 
         // Alice can't delete her account and then give herself the XRP.
-        env(acctdelete(alice, alice), ter(temDST_IS_SRC));
+        env(acctdelete(alice, alice), Ter(temDST_IS_SRC));
 
         // alice can't delete her account with a negative fee.
-        env(acctdelete(alice, becky), fee(drops(-1)), ter(temBAD_FEE));
+        env(acctdelete(alice, becky), Fee(drops(-1)), Ter(temBAD_FEE));
 
         // Invalid flags.
-        env(acctdelete(alice, becky),
-            txflags(tfImmediateOrCancel),
-            ter(temINVALID_FLAG));
+        env(acctdelete(alice, becky), Txflags(tfImmediateOrCancel), Ter(temINVALID_FLAG));
 
         // Account deletion has a high fee.  Make sure the fee requirement
         // behaves as we expect.
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, becky), ter(telINSUF_FEE_P));
+        env(acctdelete(alice, becky), Ter(telINSUF_FEE_P));
 
         // Try a fee one drop less than the required amount.
-        env(acctdelete(alice, becky),
-            fee(acctDelFee - drops(1)),
-            ter(telINSUF_FEE_P));
+        env(acctdelete(alice, becky), Fee(acctDelFee - drops(1)), Ter(telINSUF_FEE_P));
 
         // alice's account is created too recently to be deleted.
-        env(acctdelete(alice, becky), fee(acctDelFee), ter(tecTOO_SOON));
+        env(acctdelete(alice, becky), Fee(acctDelFee), Ter(tecTOO_SOON));
 
         // Give becky a trustline.  She is no longer deletable.
         env(trust(becky, gw["USD"](1000)));
         env.close();
 
-        // Give carol a deposit preauthorization, an offer, a ticket,
+        // Give carol a deposit pre-authorization, an offer, a ticket,
         // a signer list, and a DID.  Even with all that she's still deletable.
         env(deposit::auth(carol, becky));
         std::uint32_t const carolOfferSeq{env.seq(carol)};
@@ -134,13 +150,13 @@ public:
 
         // Deleting should fail with TOO_SOON, which is a relatively
         // cheap check compared to validating the contents of her directory.
-        env(acctdelete(alice, becky), fee(acctDelFee), ter(tecTOO_SOON));
+        env(acctdelete(alice, becky), Fee(acctDelFee), Ter(tecTOO_SOON));
 
         // Close enough ledgers to almost be able to delete alice's account.
         incLgrSeqForAccDel(env, alice, 1);
 
         // alice's account is still created too recently to be deleted.
-        env(acctdelete(alice, becky), fee(acctDelFee), ter(tecTOO_SOON));
+        env(acctdelete(alice, becky), Fee(acctDelFee), Ter(tecTOO_SOON));
 
         // The most recent delete attempt advanced alice's sequence.  So
         // close two ledgers and her account should be deletable.
@@ -155,7 +171,7 @@ public:
             BEAST_EXPECT(env.closed()->exists(keylet::account(alice.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(alice.id())));
 
-            env(acctdelete(alice, becky), fee(acctDelFee));
+            env(acctdelete(alice, becky), Fee(acctDelFee));
             verifyDeliveredAmount(env, aliceOldBalance - acctDelFee);
             env.close();
 
@@ -164,26 +180,24 @@ public:
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(alice.id())));
 
             // Verify that alice's XRP, minus the fee, was transferred to becky.
-            BEAST_EXPECT(
-                env.balance(becky) ==
-                aliceOldBalance + beckyOldBalance - acctDelFee);
+            BEAST_EXPECT(env.balance(becky) == aliceOldBalance + beckyOldBalance - acctDelFee);
         }
 
         // Attempt to delete becky's account but get stopped by the trust line.
-        env(acctdelete(becky, carol), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(becky, carol), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // Verify that becky's account is still there by giving her a regular
         // key.  This has the side effect of setting the lsfPasswordSpent bit
         // on her account root.
         Account const beck("beck");
-        env(regkey(becky, beck), fee(drops(0)));
+        env(regkey(becky, beck), Fee(drops(0)));
         env.close();
 
         // Show that the lsfPasswordSpent bit is set by attempting to change
         // becky's regular key for free again.  That fails.
         Account const reb("reb");
-        env(regkey(becky, reb), sig(becky), fee(drops(0)), ter(telINSUF_FEE_P));
+        env(regkey(becky, reb), Sig(becky), Fee(drops(0)), Ter(telINSUF_FEE_P));
 
         // Close enough ledgers that becky's failing regkey transaction is
         // no longer retried.
@@ -195,42 +209,34 @@ public:
             auto const carolOldBalance{env.balance(carol)};
 
             // Verify that Carol's account, directory, deposit
-            // preauthorization, offer, ticket, and signer list exist.
+            // pre-authorization, offer, ticket, and signer list exist.
             BEAST_EXPECT(env.closed()->exists(keylet::account(carol.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::ownerDir(carol.id())));
-            BEAST_EXPECT(env.closed()->exists(
-                keylet::depositPreauth(carol.id(), becky.id())));
-            BEAST_EXPECT(
-                env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
-            BEAST_EXPECT(env.closed()->exists(
-                keylet::ticket(carol.id(), carolTicketSeq)));
+            BEAST_EXPECT(env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
+            BEAST_EXPECT(env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
+            BEAST_EXPECT(env.closed()->exists(keylet::kTICKET(carol.id(), carolTicketSeq)));
             BEAST_EXPECT(env.closed()->exists(keylet::signers(carol.id())));
 
             // Delete carol's account even with stuff in her directory.  Show
             // that multisigning for the delete does not increase carol's fee.
-            env(acctdelete(carol, becky), fee(acctDelFee), msig(alice));
+            env(acctdelete(carol, becky), Fee(acctDelFee), Msig(alice));
             verifyDeliveredAmount(env, carolOldBalance - acctDelFee);
             env.close();
 
             // Verify that Carol's account, directory, and other stuff are gone.
             BEAST_EXPECT(!env.closed()->exists(keylet::account(carol.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(carol.id())));
-            BEAST_EXPECT(!env.closed()->exists(
-                keylet::depositPreauth(carol.id(), becky.id())));
-            BEAST_EXPECT(!env.closed()->exists(
-                keylet::offer(carol.id(), carolOfferSeq)));
-            BEAST_EXPECT(!env.closed()->exists(
-                keylet::ticket(carol.id(), carolTicketSeq)));
+            BEAST_EXPECT(!env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
+            BEAST_EXPECT(!env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
+            BEAST_EXPECT(!env.closed()->exists(keylet::kTICKET(carol.id(), carolTicketSeq)));
             BEAST_EXPECT(!env.closed()->exists(keylet::signers(carol.id())));
 
             // Verify that Carol's XRP, minus the fee, was transferred to becky.
-            BEAST_EXPECT(
-                env.balance(becky) ==
-                carolOldBalance + beckyOldBalance - acctDelFee);
+            BEAST_EXPECT(env.balance(becky) == carolOldBalance + beckyOldBalance - acctDelFee);
 
             // Since becky received an influx of XRP, her lsfPasswordSpent bit
             // is cleared and she can change her regular key for free again.
-            env(regkey(becky, reb), sig(becky), fee(drops(0)));
+            env(regkey(becky, reb), Sig(becky), Fee(drops(0)));
         }
     }
 
@@ -271,7 +277,7 @@ public:
         // Delete alice's account.
         auto const acctDelFee{drops(env.current()->fees().increment)};
         auto const aliceBalance{env.balance(alice)};
-        env(acctdelete(alice, gw), fee(acctDelFee));
+        env(acctdelete(alice, gw), Fee(acctDelFee));
         verifyDeliveredAmount(env, aliceBalance - acctDelFee);
         env.close();
 
@@ -287,12 +293,8 @@ public:
 
         testcase("Owned types");
 
-        // We want to test both...
-        //  o Old-style PayChannels without a recipient backlink as well as
-        //  o New-styled PayChannels with the backlink.
-        // So we start the test using old-style PayChannels.  Then we pass
-        // the amendment to get new-style PayChannels.
-        Env env{*this, testable_amendments() - fixPayChanRecipientOwnerDir};
+        // We want to test PayChannels with the backlink.
+        Env env{*this, testableAmendments()};
         Account const alice("alice");
         Account const becky("becky");
         Account const gw("gw");
@@ -325,8 +327,8 @@ public:
         env.close();
 
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
-        env(acctdelete(becky, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(becky, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // Cancel the check, but add an escrow.  Again, with the escrow
@@ -338,45 +340,42 @@ public:
         using namespace std::chrono_literals;
         std::uint32_t const escrowSeq{env.seq(alice)};
         env(escrow::create(alice, becky, XRP(333)),
-            escrow::finish_time(env.now() + 3s),
-            escrow::cancel_time(env.now() + 4s));
+            escrow::kFINISH_TIME(env.now() + 3s),
+            escrow::kCANCEL_TIME(env.now() + 4s));
         env.close();
 
         // alice and becky should be unable to delete their accounts because
         // of the escrow.
-        env(acctdelete(alice, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
-        env(acctdelete(becky, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(becky, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // Now cancel the escrow, but create a payment channel between
         // alice and becky.
 
-        bool const withTokenEscrow =
-            env.current()->rules().enabled(featureTokenEscrow);
+        bool const withTokenEscrow = env.current()->rules().enabled(featureTokenEscrow);
         if (withTokenEscrow)
         {
             Account const gw1("gw1");
             Account const carol("carol");
-            auto const USD = gw1["USD"];
+            auto const usd = gw1["USD"];
             env.fund(XRP(100000), carol, gw1);
             env(fset(gw1, asfAllowTrustLineLocking));
             env.close();
-            env.trust(USD(10000), carol);
+            env.trust(usd(10000), carol);
             env.close();
-            env(pay(gw1, carol, USD(100)));
+            env(pay(gw1, carol, usd(100)));
             env.close();
 
             std::uint32_t const escrowSeq{env.seq(carol)};
-            env(escrow::create(carol, becky, USD(1)),
-                escrow::finish_time(env.now() + 3s),
-                escrow::cancel_time(env.now() + 4s));
+            env(escrow::create(carol, becky, usd(1)),
+                escrow::kFINISH_TIME(env.now() + 3s),
+                escrow::kCANCEL_TIME(env.now() + 4s));
             env.close();
 
             incLgrSeqForAccDel(env, gw1);
 
-            env(acctdelete(gw1, becky),
-                fee(acctDelFee),
-                ter(tecHAS_OBLIGATIONS));
+            env(acctdelete(gw1, becky), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
             env.close();
 
             env(escrow::cancel(becky, carol, escrowSeq));
@@ -386,55 +385,44 @@ public:
         env(escrow::cancel(becky, alice, escrowSeq));
         env.close();
 
-        Keylet const alicePayChanKey{
-            keylet::payChan(alice, becky, env.seq(alice))};
+        Keylet const alicePayChanKey{keylet::payChan(alice, becky, env.seq(alice))};
 
-        env(payChanCreate(
-            alice, becky, XRP(57), 4s, env.now() + 2s, alice.pk()));
+        env(payChanCreate(alice, becky, XRP(57), 4s, env.now() + 2s, alice.pk()));
         env.close();
 
-        // An old-style PayChannel does not add a back link from the
-        // destination.  So with the PayChannel in place becky should be
-        // able to delete her account, but alice should not.
+        // With the PayChannel in place becky and alice should not be
+        // able to delete her account
         auto const beckyBalance{env.balance(becky)};
-        env(acctdelete(alice, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
-        env(acctdelete(becky, gw), fee(acctDelFee));
-        verifyDeliveredAmount(env, beckyBalance - acctDelFee);
+        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(becky, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
-        // Alice cancels her PayChannel which will leave her with only offers
+        // Alice cancels her PayChannel, which will leave her with only offers
         // in her directory.
 
         // Lambda to close a PayChannel.
-        auto payChanClose = [](jtx::Account const& account,
-                               Keylet const& payChanKeylet,
-                               PublicKey const& pk) {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::PaymentChannelClaim;
-            jv[jss::Flags] = tfClose;
-            jv[jss::Account] = account.human();
-            jv[sfChannel.jsonName] = to_string(payChanKeylet.key);
-            jv[sfPublicKey.jsonName] = strHex(pk.slice());
-            return jv;
-        };
+        auto payChanClose =
+            [](jtx::Account const& account, Keylet const& payChanKeylet, PublicKey const& pk) {
+                json::Value jv;
+                jv[jss::TransactionType] = jss::PaymentChannelClaim;
+                jv[jss::Flags] = tfClose;
+                jv[jss::Account] = account.human();
+                jv[sfChannel.jsonName] = to_string(payChanKeylet.key);
+                jv[sfPublicKey.jsonName] = strHex(pk.slice());
+                return jv;
+            };
         env(payChanClose(alice, alicePayChanKey, alice.pk()));
         env.close();
 
-        // Now enable the amendment so PayChannels add a backlink from the
-        // destination.
-        env.enableFeature(fixPayChanRecipientOwnerDir);
-        env.close();
-
-        // gw creates a PayChannel with alice as the destination.  With the
-        // amendment passed this should prevent alice from deleting her
-        // account.
+        // gw creates a PayChannel with alice as the destination, this should
+        // prevent alice from deleting her account.
         Keylet const gwPayChanKey{keylet::payChan(gw, alice, env.seq(gw))};
 
         env(payChanCreate(gw, alice, XRP(68), 4s, env.now() + 2s, alice.pk()));
         env.close();
 
         // alice can't delete her account because of the PayChannel.
-        env(acctdelete(alice, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // alice closes the PayChannel which should (finally) allow her to
@@ -444,141 +432,9 @@ public:
 
         // Now alice can successfully delete her account.
         auto const aliceBalance{env.balance(alice)};
-        env(acctdelete(alice, gw), fee(acctDelFee));
+        env(acctdelete(alice, gw), Fee(acctDelFee));
         verifyDeliveredAmount(env, aliceBalance - acctDelFee);
         env.close();
-    }
-
-    void
-    testResurrection()
-    {
-        // Create an account with an old-style PayChannel.  Delete the
-        // destination of the PayChannel then resurrect the destination.
-        // The PayChannel should still work.
-        using namespace jtx;
-
-        testcase("Resurrection");
-
-        // We need an old-style PayChannel that doesn't provide a backlink
-        // from the destination.  So don't enable the amendment with that fix.
-        Env env{*this, testable_amendments() - fixPayChanRecipientOwnerDir};
-        Account const alice("alice");
-        Account const becky("becky");
-
-        env.fund(XRP(10000), alice, becky);
-        env.close();
-
-        // Verify that becky's account root is present.
-        Keylet const beckyAcctKey{keylet::account(becky.id())};
-        BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
-
-        using namespace std::chrono_literals;
-        Keylet const payChanKey{keylet::payChan(alice, becky, env.seq(alice))};
-        auto const payChanXRP = XRP(37);
-
-        env(payChanCreate(
-            alice, becky, payChanXRP, 4s, env.now() + 1h, alice.pk()));
-        env.close();
-        BEAST_EXPECT(env.closed()->exists(payChanKey));
-
-        // Close enough ledgers to be able to delete becky's account.
-        incLgrSeqForAccDel(env, becky);
-
-        auto const beckyPreDelBalance{env.balance(becky)};
-
-        auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(becky, alice), fee(acctDelFee));
-        verifyDeliveredAmount(env, beckyPreDelBalance - acctDelFee);
-        env.close();
-
-        // Verify that becky's account root is gone.
-        BEAST_EXPECT(!env.closed()->exists(beckyAcctKey));
-
-        // All it takes is a large enough XRP payment to resurrect
-        // becky's account.  Try too small a payment.
-        env(pay(alice,
-                becky,
-                drops(env.current()->fees().accountReserve(0)) - XRP(1)),
-            ter(tecNO_DST_INSUF_XRP));
-        env.close();
-
-        // Actually resurrect becky's account.
-        env(pay(alice, becky, XRP(10)));
-        env.close();
-
-        // becky's account root should be back.
-        BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
-        BEAST_EXPECT(env.balance(becky) == XRP(10));
-
-        // becky's resurrected account can be the destination of alice's
-        // PayChannel.
-        auto payChanClaim = [&]() {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::PaymentChannelClaim;
-            jv[jss::Account] = alice.human();
-            jv[sfChannel.jsonName] = to_string(payChanKey.key);
-            jv[sfBalance.jsonName] =
-                payChanXRP.value().getJson(JsonOptions::none);
-            return jv;
-        };
-        env(payChanClaim());
-        env.close();
-
-        BEAST_EXPECT(env.balance(becky) == XRP(10) + payChanXRP);
-    }
-
-    void
-    testAmendmentEnable()
-    {
-        // Start with the featureDeletableAccounts amendment disabled.
-        // Then enable the amendment and delete an account.
-        using namespace jtx;
-
-        testcase("Amendment enable");
-
-        Env env{*this, testable_amendments() - featureDeletableAccounts};
-        Account const alice("alice");
-        Account const becky("becky");
-
-        env.fund(XRP(10000), alice, becky);
-        env.close();
-
-        // Close enough ledgers to be able to delete alice's account.
-        incLgrSeqForAccDel(env, alice);
-
-        // Verify that alice's account root is present.
-        Keylet const aliceAcctKey{keylet::account(alice.id())};
-        BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-
-        auto const alicePreDelBal{env.balance(alice)};
-        auto const beckyPreDelBal{env.balance(becky)};
-
-        auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, becky), fee(acctDelFee), ter(temDISABLED));
-        env.close();
-
-        // Verify that alice's account root is still present and alice and
-        // becky both have their XRP.
-        BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-        BEAST_EXPECT(env.balance(alice) == alicePreDelBal);
-        BEAST_EXPECT(env.balance(becky) == beckyPreDelBal);
-
-        // When the amendment is enabled the previous transaction is
-        // retried into the new open ledger and succeeds.
-        env.enableFeature(featureDeletableAccounts);
-        env.close();
-
-        // alice's account is still in the most recently closed ledger.
-        BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-
-        // Verify that alice's account root is gone from the current ledger
-        // and becky has alice's XRP.
-        BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-        BEAST_EXPECT(
-            env.balance(becky) == alicePreDelBal + beckyPreDelBal - acctDelFee);
-
-        env.close();
-        BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
     }
 
     void
@@ -604,8 +460,8 @@ public:
         // Alice creates 1001 offers.  This is one greater than the number of
         // directory entries an AccountDelete will remove.
         std::uint32_t const offerSeq0{env.seq(alice)};
-        constexpr int offerCount{1001};
-        for (int i{0}; i < offerCount; ++i)
+        constexpr int kOFFER_COUNT{1001};
+        for (int i{0}; i < kOFFER_COUNT; ++i)
         {
             env(offer(alice, gw[currency](1), XRP(1)));
             env.close();
@@ -636,54 +492,51 @@ public:
         // Verify the existence of the expected ledger entries.
         Keylet const aliceOwnerDirKey{keylet::ownerDir(alice.id())};
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(closed->exists(keylet::account(alice.id())));
             BEAST_EXPECT(closed->exists(aliceOwnerDirKey));
 
             // alice's directory nodes.
-            for (std::uint32_t i{0}; i < ((offerCount / 32) + 1); ++i)
+            for (std::uint32_t i{0}; i < ((kOFFER_COUNT / 32) + 1); ++i)
                 BEAST_EXPECT(closed->exists(keylet::page(aliceOwnerDirKey, i)));
 
             // alice's offers.
-            for (std::uint32_t i{0}; i < offerCount; ++i)
-                BEAST_EXPECT(
-                    closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
+            for (std::uint32_t i{0}; i < kOFFER_COUNT; ++i)
+                BEAST_EXPECT(closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
         }
 
         // Delete alice's account.  Should fail because she has too many
         // offers in her directory.
         auto const acctDelFee{drops(env.current()->fees().increment)};
 
-        env(acctdelete(alice, gw), fee(acctDelFee), ter(tefTOO_BIG));
+        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tefTOO_BIG));
 
         // Cancel one of alice's offers.  Then the account delete can succeed.
-        env.require(offers(alice, offerCount));
-        env(offer_cancel(alice, offerSeq0));
+        env.require(offers(alice, kOFFER_COUNT));
+        env(offerCancel(alice, offerSeq0));
         env.close();
-        env.require(offers(alice, offerCount - 1));
+        env.require(offers(alice, kOFFER_COUNT - 1));
 
         // alice successfully deletes her account.
         auto const alicePreDelBal{env.balance(alice)};
-        env(acctdelete(alice, gw), fee(acctDelFee));
+        env(acctdelete(alice, gw), Fee(acctDelFee));
         verifyDeliveredAmount(env, alicePreDelBal - acctDelFee);
         env.close();
 
         // Verify that alice's account root is gone as well as her directory
         // nodes and all of her offers.
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(!closed->exists(keylet::account(alice.id())));
             BEAST_EXPECT(!closed->exists(aliceOwnerDirKey));
 
             // alice's former directory nodes.
-            for (std::uint32_t i{0}; i < ((offerCount / 32) + 1); ++i)
-                BEAST_EXPECT(
-                    !closed->exists(keylet::page(aliceOwnerDirKey, i)));
+            for (std::uint32_t i{0}; i < ((kOFFER_COUNT / 32) + 1); ++i)
+                BEAST_EXPECT(!closed->exists(keylet::page(aliceOwnerDirKey, i)));
 
             // alice's former offers.
-            for (std::uint32_t i{0}; i < offerCount; ++i)
-                BEAST_EXPECT(
-                    !closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
+            for (std::uint32_t i{0}; i < kOFFER_COUNT; ++i)
+                BEAST_EXPECT(!closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
         }
     }
 
@@ -699,20 +552,20 @@ public:
         Env env{*this};
         Account const alice{"alice"};
         Account const gw{"gw"};
-        auto const BUX{gw["BUX"]};
+        auto const bux{gw["BUX"]};
 
         env.fund(XRP(10000), alice, gw);
         env.close();
 
         // alice creates an offer that, if crossed, will implicitly create
         // a trust line.
-        env(offer(alice, BUX(30), XRP(30)));
+        env(offer(alice, bux(30), XRP(30)));
         env.close();
 
         // gw crosses alice's offer.  alice should end up with BUX(30).
-        env(offer(gw, XRP(30), BUX(30)));
+        env(offer(gw, XRP(30), bux(30)));
         env.close();
-        env.require(balance(alice, BUX(30)));
+        env.require(Balance(alice, bux(30)));
 
         // Close enough ledgers to be able to delete alice's account.
         incLgrSeqForAccDel(env, alice);
@@ -720,13 +573,13 @@ public:
         // alice and gw can't delete their accounts because of the implicitly
         // created trust line.
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
-        env(acctdelete(gw, alice), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(gw, alice), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
         env.close();
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(closed->exists(keylet::account(alice.id())));
             BEAST_EXPECT(closed->exists(keylet::account(gw.id())));
         }
@@ -747,12 +600,12 @@ public:
         // Note that the fee structure for unit tests does not match the fees
         // on the production network (October 2019).  Unit tests have a base
         // reserve of 200 XRP.
-        env.fund(env.current()->fees().accountReserve(0), noripple(alice));
+        env.fund(env.current()->fees().reserve, noripple(alice));
         env.close();
 
         // Burn a chunk of alice's funds so she only has 1 XRP remaining in
         // her account.
-        env(noop(alice), fee(env.balance(alice) - XRP(1)));
+        env(noop(alice), Fee(env.balance(alice) - XRP(1)));
         env.close();
 
         auto const acctDelFee{drops(env.current()->fees().increment)};
@@ -763,9 +616,7 @@ public:
         //
         // The balance of env.master should not change.
         auto const masterBalance{env.balance(env.master)};
-        env(acctdelete(alice, env.master),
-            fee(acctDelFee),
-            ter(terINSUF_FEE_B));
+        env(acctdelete(alice, env.master), Fee(acctDelFee), Ter(terINSUF_FEE_B));
         env.close();
         {
             std::shared_ptr<ReadView const> const closed{env.closed()};
@@ -776,10 +627,10 @@ public:
         // alice again attempts to delete her account.  This time she specifies
         // her current balance in XRP.  Again the transaction fails.
         BEAST_EXPECT(env.balance(alice) == XRP(1));
-        env(acctdelete(alice, env.master), fee(XRP(1)), ter(telINSUF_FEE_P));
+        env(acctdelete(alice, env.master), Fee(XRP(1)), Ter(telINSUF_FEE_P));
         env.close();
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(closed->exists(keylet::account(alice.id())));
             BEAST_EXPECT(env.balance(env.master) == masterBalance);
         }
@@ -803,15 +654,14 @@ public:
         std::uint32_t const ticketSeq{env.seq(bob) + 1};
         env(ticket::create(bob, 250));
         env.close();
-        env.require(owners(bob, 250));
+        env.require(Owners(bob, 250));
 
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(
-                    closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
+                BEAST_EXPECT(closed->exists(keylet::kTICKET(bob.id(), ticketSeq + i)));
             }
         }
 
@@ -822,16 +672,15 @@ public:
         // of his tickets should be removed from the ledger.
         auto const acctDelFee{drops(env.current()->fees().increment)};
         auto const bobOldBalance{env.balance(bob)};
-        env(acctdelete(bob, alice), ticket::use(ticketSeq), fee(acctDelFee));
+        env(acctdelete(bob, alice), ticket::Use(ticketSeq), Fee(acctDelFee));
         verifyDeliveredAmount(env, bobOldBalance - acctDelFee);
         env.close();
         {
-            std::shared_ptr<ReadView const> closed{env.closed()};
+            std::shared_ptr<ReadView const> const closed{env.closed()};
             BEAST_EXPECT(!closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(
-                    !closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
+                BEAST_EXPECT(!closed->exists(keylet::kTICKET(bob.id(), ticketSeq + i)));
             }
         }
     }
@@ -867,17 +716,17 @@ public:
         // becky attempts to delete her account using daria as the destination.
         // Since daria is not in the ledger the delete attempt fails.
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(becky, daria), fee(acctDelFee), ter(tecNO_DST));
+        env(acctdelete(becky, daria), Fee(acctDelFee), Ter(tecNO_DST));
         env.close();
 
         // becky attempts to delete her account, but carol requires a
         // destination tag which becky has omitted.
-        env(acctdelete(becky, carol), fee(acctDelFee), ter(tecDST_TAG_NEEDED));
+        env(acctdelete(becky, carol), Fee(acctDelFee), Ter(tecDST_TAG_NEEDED));
         env.close();
 
         // becky attempts to delete her account, but alice won't take her XRP,
         // so the delete is blocked.
-        env(acctdelete(becky, alice), fee(acctDelFee), ter(tecNO_PERMISSION));
+        env(acctdelete(becky, alice), Fee(acctDelFee), Ter(tecNO_PERMISSION));
         env.close();
 
         // alice preauthorizes deposits from becky.  Now becky can delete her
@@ -886,7 +735,7 @@ public:
         env.close();
 
         auto const beckyOldBalance{env.balance(becky)};
-        env(acctdelete(becky, alice), fee(acctDelFee));
+        env(acctdelete(becky, alice), Fee(acctDelFee));
         verifyDeliveredAmount(env, beckyOldBalance - acctDelFee);
         env.close();
     }
@@ -895,8 +744,7 @@ public:
     testDestinationDepositAuthCredentials()
     {
         {
-            testcase(
-                "Destination Constraints with DepositPreauth and Credentials");
+            testcase("Destination Constraints with DepositPreauth and Credentials");
 
             using namespace test::jtx;
 
@@ -916,8 +764,7 @@ public:
             env.close();
 
             // get credentials index
-            auto const jv =
-                credentials::ledgerEntry(env, becky, carol, credType);
+            auto const jv = credentials::ledgerEntry(env, becky, carol, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
             // Close enough ledgers to be able to delete becky's account.
@@ -927,9 +774,9 @@ public:
 
             // becky use credentials but they aren't accepted
             env(acctdelete(becky, alice),
-                credentials::ids({credIdx}),
-                fee(acctDelFee),
-                ter(tecBAD_CREDENTIALS));
+                credentials::Ids({credIdx}),
+                Fee(acctDelFee),
+                Ter(tecBAD_CREDENTIALS));
             env.close();
 
             {
@@ -942,9 +789,9 @@ public:
 
             // Fail, credentials still not accepted
             env(acctdelete(becky, alice),
-                credentials::ids({credIdx}),
-                fee(acctDelFee),
-                ter(tecBAD_CREDENTIALS));
+                credentials::Ids({credIdx}),
+                Fee(acctDelFee),
+                Ter(tecBAD_CREDENTIALS));
             env.close();
 
             // becky accept the credentials
@@ -953,15 +800,15 @@ public:
 
             // Fail, credentials doesn’t belong to carol
             env(acctdelete(carol, alice),
-                credentials::ids({credIdx}),
-                fee(acctDelFee),
-                ter(tecBAD_CREDENTIALS));
+                credentials::Ids({credIdx}),
+                Fee(acctDelFee),
+                Ter(tecBAD_CREDENTIALS));
 
             // Fail, no depositPreauth for provided credentials
             env(acctdelete(becky, alice),
-                credentials::ids({credIdx}),
-                fee(acctDelFee),
-                ter(tecNO_PERMISSION));
+                credentials::Ids({credIdx}),
+                Fee(acctDelFee),
+                Ter(tecNO_PERMISSION));
             env.close();
 
             // alice create DepositPreauth Object
@@ -970,35 +817,26 @@ public:
 
             // becky attempts to delete her account, but alice won't take her
             // XRP, so the delete is blocked.
-            env(acctdelete(becky, alice),
-                fee(acctDelFee),
-                ter(tecNO_PERMISSION));
+            env(acctdelete(becky, alice), Fee(acctDelFee), Ter(tecNO_PERMISSION));
 
             // becky use empty credentials and can't delete account
-            env(acctdelete(becky, alice),
-                fee(acctDelFee),
-                credentials::ids({}),
-                ter(temMALFORMED));
+            env(acctdelete(becky, alice), Fee(acctDelFee), credentials::Ids({}), Ter(temMALFORMED));
 
             // becky use bad credentials and can't delete account
             env(acctdelete(becky, alice),
-                credentials::ids(
-                    {"48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
-                     "A288BE4"}),
-                fee(acctDelFee),
-                ter(tecBAD_CREDENTIALS));
+                credentials::Ids({"48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
+                                  "A288BE4"}),
+                Fee(acctDelFee),
+                Ter(tecBAD_CREDENTIALS));
             env.close();
 
             // becky use credentials and can delete account
-            env(acctdelete(becky, alice),
-                credentials::ids({credIdx}),
-                fee(acctDelFee));
+            env(acctdelete(becky, alice), credentials::Ids({credIdx}), Fee(acctDelFee));
             env.close();
 
             {
                 // check that credential object deleted too
-                auto const jNoCred =
-                    credentials::ledgerEntry(env, becky, carol, credType);
+                auto const jNoCred = credentials::ledgerEntry(env, becky, carol, credType);
                 BEAST_EXPECT(
                     jNoCred.isObject() && jNoCred.isMember(jss::result) &&
                     jNoCred[jss::result].isMember(jss::error) &&
@@ -1012,20 +850,16 @@ public:
                 env(credentials::accept(daria, carol, credType));
                 env.close();
                 std::string const credDaria =
-                    credentials::ledgerEntry(
-                        env, daria, carol, credType)[jss::result][jss::index]
+                    credentials::ledgerEntry(env, daria, carol, credType)[jss::result][jss::index]
                         .asString();
 
                 // daria use valid credentials, which aren't required and can
                 // delete her account
-                env(acctdelete(daria, carol),
-                    credentials::ids({credDaria}),
-                    fee(acctDelFee));
+                env(acctdelete(daria, carol), credentials::Ids({credDaria}), Fee(acctDelFee));
                 env.close();
 
                 // check that credential object deleted too
-                auto const jNoCred =
-                    credentials::ledgerEntry(env, daria, carol, credType);
+                auto const jNoCred = credentials::ledgerEntry(env, daria, carol, credType);
 
                 BEAST_EXPECT(
                     jNoCred.isObject() && jNoCred.isMember(jss::result) &&
@@ -1045,11 +879,10 @@ public:
                 env(credentials::accept(eaton, carol, credType));
                 env.close();
                 std::string const credEaton =
-                    credentials::ledgerEntry(
-                        env, eaton, carol, credType)[jss::result][jss::index]
+                    credentials::ledgerEntry(env, eaton, carol, credType)[jss::result][jss::index]
                         .asString();
 
-                // fred make preauthorization through authorized account
+                // fred make pre-authorization through authorized account
                 env(fset(fred, asfDepositAuth));
                 env.close();
                 env(deposit::auth(fred, eaton));
@@ -1061,14 +894,11 @@ public:
 
                 // eaton use valid credentials, but he already authorized
                 // through "Authorized" field.
-                env(acctdelete(eaton, fred),
-                    credentials::ids({credEaton}),
-                    fee(acctDelFee));
+                env(acctdelete(eaton, fred), credentials::Ids({credEaton}), Fee(acctDelFee));
                 env.close();
 
                 // check that credential object deleted too
-                auto const jNoCred =
-                    credentials::ledgerEntry(env, eaton, carol, credType);
+                auto const jNoCred = credentials::ledgerEntry(env, eaton, carol, credType);
 
                 BEAST_EXPECT(
                     jNoCred.isObject() && jNoCred.isMember(jss::result) &&
@@ -1084,34 +914,29 @@ public:
                 env.close();
 
                 auto jv = credentials::create(john, carol, credType);
-                uint32_t const t = env.current()
-                                       ->info()
-                                       .parentCloseTime.time_since_epoch()
-                                       .count() +
-                    20;
+                uint32_t const t =
+                    env.current()->header().parentCloseTime.time_since_epoch().count() + 20;
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
                 env.close();
                 env(credentials::accept(john, carol, credType));
                 env.close();
                 jv = credentials::ledgerEntry(env, john, carol, credType);
-                std::string const credIdx =
-                    jv[jss::result][jss::index].asString();
+                std::string const credIdx = jv[jss::result][jss::index].asString();
 
                 incLgrSeqForAccDel(env, john);
 
                 // credentials are expired
                 // john use credentials but can't delete account
                 env(acctdelete(john, alice),
-                    credentials::ids({credIdx}),
-                    fee(acctDelFee),
-                    ter(tecEXPIRED));
+                    credentials::Ids({credIdx}),
+                    Fee(acctDelFee),
+                    Ter(tecEXPIRED));
                 env.close();
 
                 {
                     // check that expired credential object deleted
-                    auto jv =
-                        credentials::ledgerEntry(env, john, carol, credType);
+                    auto jv = credentials::ledgerEntry(env, john, carol, credType);
                     BEAST_EXPECT(
                         jv.isObject() && jv.isMember(jss::result) &&
                         jv[jss::result].isMember(jss::error) &&
@@ -1128,7 +953,7 @@ public:
             Account const becky{"becky"};
             Account const carol{"carol"};
 
-            Env env{*this, testable_amendments() - featureCredentials};
+            Env env{*this, testableAmendments() - featureCredentials};
             env.fund(XRP(100000), alice, becky, carol);
             env.close();
 
@@ -1152,9 +977,9 @@ public:
             env.close();
 
             env(acctdelete(becky, alice),
-                credentials::ids({credIdx}),
-                fee(acctDelFee),
-                ter(temDISABLED));
+                credentials::Ids({credIdx}),
+                Fee(acctDelFee),
+                Ter(temDISABLED));
             env.close();
         }
     }
@@ -1184,21 +1009,19 @@ public:
             env.close();
 
             // get credentials index
-            auto const jv =
-                credentials::ledgerEntry(env, becky, carol, credType);
+            auto const jv = credentials::ledgerEntry(env, becky, carol, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
             // Close enough ledgers to be able to delete carol's account.
             incLgrSeqForAccDel(env, carol);
 
             auto const acctDelFee{drops(env.current()->fees().increment)};
-            env(acctdelete(carol, alice), fee(acctDelFee));
+            env(acctdelete(carol, alice), Fee(acctDelFee));
             env.close();
 
             {  // check that credential object deleted too
                 BEAST_EXPECT(!env.le(credIdx));
-                auto const jv =
-                    credentials::ledgerEntry(env, becky, carol, credType);
+                auto const jv = credentials::ledgerEntry(env, becky, carol, credType);
                 BEAST_EXPECT(
                     jv.isObject() && jv.isMember(jss::result) &&
                     jv[jss::result].isMember(jss::error) &&
@@ -1228,21 +1051,19 @@ public:
             env.close();
 
             // get credentials index
-            auto const jv =
-                credentials::ledgerEntry(env, becky, carol, credType);
+            auto const jv = credentials::ledgerEntry(env, becky, carol, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
             // Close enough ledgers to be able to delete carol's account.
             incLgrSeqForAccDel(env, becky);
 
             auto const acctDelFee{drops(env.current()->fees().increment)};
-            env(acctdelete(becky, alice), fee(acctDelFee));
+            env(acctdelete(becky, alice), Fee(acctDelFee));
             env.close();
 
             {  // check that credential object deleted too
                 BEAST_EXPECT(!env.le(credIdx));
-                auto const jv =
-                    credentials::ledgerEntry(env, becky, carol, credType);
+                auto const jv = credentials::ledgerEntry(env, becky, carol, credType);
                 BEAST_EXPECT(
                     jv.isObject() && jv.isMember(jss::result) &&
                     jv[jss::result].isMember(jss::error) &&
@@ -1257,8 +1078,6 @@ public:
         testBasics();
         testDirectories();
         testOwnedTypes();
-        testResurrection();
-        testAmendmentEnable();
         testTooManyOffers();
         testImplicitlyCreatedTrustline();
         testBalanceTooSmallForFee();
@@ -1269,7 +1088,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, xrpl, 2);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

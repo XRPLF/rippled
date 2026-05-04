@@ -1,39 +1,19 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_LEDGER_OPENLEDGER_H_INCLUDED
-#define RIPPLE_APP_LEDGER_OPENLEDGER_H_INCLUDED
-
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/misc/CanonicalTXSet.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/ledger/CachedSLEs.h>
-#include <xrpld/ledger/OpenView.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/CachedSLEs.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OpenView.h>
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 // How many total extra passes we make
 // We must ensure we make at least one non-retriable pass
@@ -189,13 +169,13 @@ private:
         ApplyFlags flags,
         beast::Journal j);
 
-    enum Result { success, failure, retry };
+    enum class Result { Success, Failure, Retry };
 
     std::shared_ptr<OpenView>
     create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger);
 
     static Result
-    apply_one(
+    applyOne(
         Application& app,
         OpenView& view,
         std::shared_ptr<STTx const> const& tx,
@@ -226,14 +206,13 @@ OpenLedger::apply(
             auto const txId = tx->getTransactionID();
             if (check.txExists(txId))
                 continue;
-            auto const result = apply_one(app, view, tx, true, flags, j);
-            if (result == Result::retry)
+            auto const result = applyOne(app, view, tx, true, flags, j);
+            if (result == Result::Retry)
                 retries.insert(tx);
         }
         catch (std::exception const& e)
         {
-            JLOG(j.error())
-                << "OpenLedger::apply: Caught exception: " << e.what();
+            JLOG(j.error()) << "OpenLedger::apply: Caught exception: " << e.what();
         }
     }
     bool retry = true;
@@ -243,15 +222,15 @@ OpenLedger::apply(
         auto iter = retries.begin();
         while (iter != retries.end())
         {
-            switch (apply_one(app, view, iter->second, retry, flags, j))
+            switch (applyOne(app, view, iter->second, retry, flags, j))
             {
-                case Result::success:
+                case Result::Success:
                     ++changes;
                     [[fallthrough]];
-                case Result::failure:
+                case Result::Failure:
                     iter = retries.erase(iter);
                     break;
-                case Result::retry:
+                case Result::Retry:
                     ++iter;
             }
         }
@@ -265,8 +244,7 @@ OpenLedger::apply(
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    XRPL_ASSERT(
-        retries.empty() || !retry, "ripple::OpenLedger::apply : valid retries");
+    XRPL_ASSERT(retries.empty() || !retry, "xrpl::OpenLedger::apply : valid retries");
 }
 
 //------------------------------------------------------------------------------
@@ -285,6 +263,4 @@ debugTostr(SHAMap const& set);
 std::string
 debugTostr(std::shared_ptr<ReadView const> const& view);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

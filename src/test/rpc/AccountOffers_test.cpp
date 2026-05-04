@@ -1,38 +1,30 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
-
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
-class AccountOffers_test : public beast::unit_test::suite
+class AccountOffers_test : public beast::unit_test::Suite
 {
 public:
     // test helper
     static bool
-    checkMarker(Json::Value const& val)
+    checkMarker(json::Value const& val)
     {
         return val.isMember(jss::marker) && val[jss::marker].isString() &&
-            val[jss::marker].asString().size() > 0;
+            !val[jss::marker].asString().empty();
     }
 
     void
@@ -41,74 +33,70 @@ public:
         testcase("Non-Admin Min Limit");
 
         using namespace jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
         Account const gw("G1");
-        auto const USD_gw = gw["USD"];
+        auto const usdGw = gw["USD"];
         Account const bob("bob");
-        auto const USD_bob = bob["USD"];
+        auto const usdBob = bob["USD"];
 
         env.fund(XRP(10000), gw, bob);
-        env.trust(USD_gw(1000), bob);
+        env.trust(usdGw(1000), bob);
 
         // this is to provide some USD from gw in the
         // bob account so that it can rightly
         // make offers that give those USDs
-        env(pay(gw, bob, USD_gw(10)));
-        unsigned const offer_count = 12u;
-        for (auto i = 0u; i < offer_count; i++)
+        env(pay(gw, bob, usdGw(10)));
+        unsigned const offerCount = 12u;
+        for (auto i = 0u; i < offerCount; i++)
         {
-            Json::Value jvo = offer(bob, XRP(100 + i), USD_gw(1));
+            json::Value jvo = offer(bob, XRP(100 + i), usdGw(1));
             jvo[sfExpiration.fieldName] = 10000000u;
             env(jvo);
         }
 
         // make non-limited RPC call
-        auto const jro_nl =
-            env.rpc("account_offers", bob.human())[jss::result][jss::offers];
-        BEAST_EXPECT(checkArraySize(jro_nl, offer_count));
+        auto const jroNl = env.rpc("account_offers", bob.human())[jss::result][jss::offers];
+        BEAST_EXPECT(checkArraySize(jroNl, offerCount));
 
         // now make a low-limit query, should get "corrected"
         // to a min of 10 results with a marker set since there
         // are more than 10 total
-        Json::Value jvParams;
+        json::Value jvParams;
         jvParams[jss::account] = bob.human();
         jvParams[jss::limit] = 1u;
-        auto const jrr_l = env.rpc(
-            "json", "account_offers", jvParams.toStyledString())[jss::result];
-        auto const& jro_l = jrr_l[jss::offers];
-        BEAST_EXPECT(checkMarker(jrr_l));
+        auto const jrrL = env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+        auto const& jroL = jrrL[jss::offers];
+        BEAST_EXPECT(checkMarker(jrrL));
         // 9u is the expected size, since one account object is a trustline
-        BEAST_EXPECT(checkArraySize(jro_l, 9u));
+        BEAST_EXPECT(checkArraySize(jroL, 9u));
     }
 
     void
     testSequential(bool asAdmin)
     {
-        testcase(
-            std::string("Sequential - ") + (asAdmin ? "admin" : "non-admin"));
+        testcase(std::string("Sequential - ") + (asAdmin ? "admin" : "non-admin"));
 
         using namespace jtx;
-        Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
+        Env env{*this, asAdmin ? envconfig() : envconfig(noAdmin)};
         Account const gw("G1");
-        auto const USD_gw = gw["USD"];
+        auto const usdGw = gw["USD"];
         Account const bob("bob");
-        auto const USD_bob = bob["USD"];
+        auto const usdBob = bob["USD"];
 
         env.fund(XRP(10000), gw, bob);
-        env.trust(USD_gw(1000), bob);
+        env.trust(usdGw(1000), bob);
 
         // this is to provide some USD from gw in the
         // bob account so that it can rightly
         // make offers that give those USDs
-        env(pay(gw, bob, USD_gw(10)));
+        env(pay(gw, bob, usdGw(10)));
 
-        env(offer(bob, XRP(100), USD_bob(1)));
-        env(offer(bob, XRP(200), USD_gw(2)));
-        env(offer(bob, XRP(30), USD_gw(6)));
+        env(offer(bob, XRP(100), usdBob(1)));
+        env(offer(bob, XRP(200), usdGw(2)));
+        env(offer(bob, XRP(30), usdGw(6)));
 
         // make the RPC call
-        auto const jroOuter =
-            env.rpc("account_offers", bob.human())[jss::result][jss::offers];
+        auto const jroOuter = env.rpc("account_offers", bob.human())[jss::result][jss::offers];
         if (BEAST_EXPECT(checkArraySize(jroOuter, 3u)))
         {
             // Note that the returned offers are sorted by index, not by
@@ -117,104 +105,74 @@ public:
             // if the sequence numbers or the account IDs change.
             BEAST_EXPECT(jroOuter[0u][jss::quality] == "100000000");
             BEAST_EXPECT(jroOuter[0u][jss::taker_gets][jss::currency] == "USD");
-            BEAST_EXPECT(
-                jroOuter[0u][jss::taker_gets][jss::issuer] == gw.human());
+            BEAST_EXPECT(jroOuter[0u][jss::taker_gets][jss::issuer] == gw.human());
             BEAST_EXPECT(jroOuter[0u][jss::taker_gets][jss::value] == "2");
             BEAST_EXPECT(jroOuter[0u][jss::taker_pays] == "200000000");
 
             BEAST_EXPECT(jroOuter[1u][jss::quality] == "100000000");
             BEAST_EXPECT(jroOuter[1u][jss::taker_gets][jss::currency] == "USD");
-            BEAST_EXPECT(
-                jroOuter[1u][jss::taker_gets][jss::issuer] == bob.human());
+            BEAST_EXPECT(jroOuter[1u][jss::taker_gets][jss::issuer] == bob.human());
             BEAST_EXPECT(jroOuter[1u][jss::taker_gets][jss::value] == "1");
             BEAST_EXPECT(jroOuter[1u][jss::taker_pays] == "100000000");
 
             BEAST_EXPECT(jroOuter[2u][jss::quality] == "5000000");
             BEAST_EXPECT(jroOuter[2u][jss::taker_gets][jss::currency] == "USD");
-            BEAST_EXPECT(
-                jroOuter[2u][jss::taker_gets][jss::issuer] == gw.human());
+            BEAST_EXPECT(jroOuter[2u][jss::taker_gets][jss::issuer] == gw.human());
             BEAST_EXPECT(jroOuter[2u][jss::taker_gets][jss::value] == "6");
             BEAST_EXPECT(jroOuter[2u][jss::taker_pays] == "30000000");
         }
 
         {
             // now make a limit (= 1) query for the same data
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::limit] = 1u;
-            auto const jrr_l_1 = env.rpc(
-                "json",
-                "account_offers",
-                jvParams.toStyledString())[jss::result];
-            auto const& jro_l_1 = jrr_l_1[jss::offers];
+            auto const jrrL1 =
+                env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+            auto const& jroL1 = jrrL1[jss::offers];
             // there is a difference in the validation of the limit param
             // between admin and non-admin requests. with admin requests, the
             // limit parameter is NOT subject to sane defaults, but with a
             // non-admin there are pre-configured limit ranges applied. That's
             // why we have different BEAST_EXPECT()s here for the two scenarios
-            BEAST_EXPECT(checkArraySize(jro_l_1, asAdmin ? 1u : 3u));
-            BEAST_EXPECT(
-                asAdmin ? checkMarker(jrr_l_1)
-                        : (!jrr_l_1.isMember(jss::marker)));
+            BEAST_EXPECT(checkArraySize(jroL1, asAdmin ? 1u : 3u));
+            BEAST_EXPECT(asAdmin ? checkMarker(jrrL1) : (!jrrL1.isMember(jss::marker)));
             if (asAdmin)
             {
-                BEAST_EXPECT(jroOuter[0u] == jro_l_1[0u]);
+                BEAST_EXPECT(jroOuter[0u] == jroL1[0u]);
 
                 // second item...with previous marker passed
-                jvParams[jss::marker] = jrr_l_1[jss::marker];
-                auto const jrr_l_2 = env.rpc(
-                    "json",
-                    "account_offers",
-                    jvParams.toStyledString())[jss::result];
-                auto const& jro_l_2 = jrr_l_2[jss::offers];
-                BEAST_EXPECT(checkMarker(jrr_l_2));
-                BEAST_EXPECT(checkArraySize(jro_l_2, 1u));
-                BEAST_EXPECT(jroOuter[1u] == jro_l_2[0u]);
+                jvParams[jss::marker] = jrrL1[jss::marker];
+                auto const jrrL2 =
+                    env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+                auto const& jroL2 = jrrL2[jss::offers];
+                BEAST_EXPECT(checkMarker(jrrL2));
+                BEAST_EXPECT(checkArraySize(jroL2, 1u));
+                BEAST_EXPECT(jroOuter[1u] == jroL2[0u]);
 
                 // last item...with previous marker passed
-                jvParams[jss::marker] = jrr_l_2[jss::marker];
+                jvParams[jss::marker] = jrrL2[jss::marker];
                 jvParams[jss::limit] = 10u;
-                auto const jrr_l_3 = env.rpc(
-                    "json",
-                    "account_offers",
-                    jvParams.toStyledString())[jss::result];
-                auto const& jro_l_3 = jrr_l_3[jss::offers];
-                BEAST_EXPECT(!jrr_l_3.isMember(jss::marker));
-                BEAST_EXPECT(checkArraySize(jro_l_3, 1u));
-                BEAST_EXPECT(jroOuter[2u] == jro_l_3[0u]);
+                auto const jrrL3 =
+                    env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+                auto const& jroL3 = jrrL3[jss::offers];
+                BEAST_EXPECT(!jrrL3.isMember(jss::marker));
+                BEAST_EXPECT(checkArraySize(jroL3, 1u));
+                BEAST_EXPECT(jroOuter[2u] == jroL3[0u]);
             }
             else
             {
-                BEAST_EXPECT(jroOuter == jro_l_1);
+                BEAST_EXPECT(jroOuter == jroL1);
             }
         }
 
         {
-            // now make a limit (= 0) query for the same data
-            // since we operate on the admin port, the limit
-            // value of 0 is not adjusted into tuned ranges for admin requests
-            // so we literally get 0 elements in that case. For non-admin
-            // requests, we get limit defaults applied thus all our results
-            // come back (we are below the min results limit)
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::limit] = 0u;
-            auto const jrr = env.rpc(
-                "json",
-                "account_offers",
-                jvParams.toStyledString())[jss::result];
-            auto const& jro = jrr[jss::offers];
-            if (asAdmin)
-            {
-                // limit == 0 is invalid
-                BEAST_EXPECT(jrr.isMember(jss::error_message));
-            }
-            else
-            {
-                // Call should enforce min limit of 10
-                BEAST_EXPECT(checkArraySize(jro, 3u));
-                BEAST_EXPECT(!jrr.isMember(jss::marker));
-            }
+            auto const jrr =
+                env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::error_message));
         }
     }
 
@@ -226,12 +184,12 @@ public:
         using namespace jtx;
         Env env(*this);
         Account const gw("G1");
-        auto const USD_gw = gw["USD"];
+        auto const usdGw = gw["USD"];
         Account const bob("bob");
-        auto const USD_bob = bob["USD"];
+        auto const usdBob = bob["USD"];
 
         env.fund(XRP(10000), gw, bob);
-        env.trust(USD_gw(1000), bob);
+        env.trust(usdGw(1000), bob);
 
         {
             // no account field
@@ -244,31 +202,27 @@ public:
         {
             // test account non-string
             auto testInvalidAccountParam = [&](auto const& param) {
-                Json::Value params;
+                json::Value params;
                 params[jss::account] = param;
-                auto jrr = env.rpc(
-                    "json", "account_offers", to_string(params))[jss::result];
+                auto jrr = env.rpc("json", "account_offers", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    jrr[jss::error_message] == "Invalid field 'account'.");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::nullValue));
-            testInvalidAccountParam(Json::Value(Json::objectValue));
-            testInvalidAccountParam(Json::Value(Json::arrayValue));
+            testInvalidAccountParam(json::Value(json::NullValue));
+            testInvalidAccountParam(json::Value(json::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ArrayValue));
         }
 
         {
             // empty string account
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = "";
-            auto const jrr = env.rpc(
-                "json",
-                "account_offers",
-                jvParams.toStyledString())[jss::result];
+            auto const jrr =
+                env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "actMalformed");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account malformed.");
@@ -276,8 +230,7 @@ public:
 
         {
             // bogus account value
-            auto const jrr = env.rpc(
-                "account_offers", Account("bogus").human())[jss::result];
+            auto const jrr = env.rpc("account_offers", Account("bogus").human())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "actNotFound");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account not found.");
@@ -285,61 +238,48 @@ public:
 
         {
             // bad limit
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::limit] = "0";  // NOT an integer
-            auto const jrr = env.rpc(
-                "json",
-                "account_offers",
-                jvParams.toStyledString())[jss::result];
+            auto const jrr =
+                env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
-            BEAST_EXPECT(
-                jrr[jss::error_message] ==
-                "Invalid field 'limit', not unsigned integer.");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not unsigned integer.");
         }
 
         {
             // invalid marker
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::marker] = "NOT_A_MARKER";
-            auto const jrr = env.rpc(
-                "json",
-                "account_offers",
-                jvParams.toStyledString())[jss::result];
+            auto const jrr =
+                env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECTS(
-                jrr[jss::error_message] == "Invalid field 'marker'.",
-                jrr.toStyledString());
+                jrr[jss::error_message] == "Invalid field 'marker'.", jrr.toStyledString());
         }
 
         {
             // invalid marker - not a string
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::marker] = 1;
-            auto const jrr = env.rpc(
-                "json",
-                "account_offers",
-                jvParams.toStyledString())[jss::result];
+            auto const jrr =
+                env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
-            BEAST_EXPECT(
-                jrr[jss::error_message] ==
-                "Invalid field 'marker', not string.");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not string.");
         }
 
         {
             // ask for a bad ledger index
-            Json::Value jvParams;
+            json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::ledger_index] = 10u;
-            auto const jrr = env.rpc(
-                "json",
-                "account_offers",
-                jvParams.toStyledString())[jss::result];
+            auto const jrr =
+                env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
@@ -356,7 +296,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

@@ -1,30 +1,14 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Protocol.h>
 
-namespace ripple {
+#include <memory>
+
+namespace xrpl {
 
 /*
 I guess you can put some items in, make sure they're still there. Let some
@@ -36,7 +20,7 @@ then canonicalize a new object with the same key, make sure you get the
 original object.
 */
 
-class TaggedCache_test : public beast::unit_test::suite
+class TaggedCache_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -105,7 +89,7 @@ public:
             {
                 auto const p1 = c.fetch(3);
                 auto p2 = std::make_shared<Value>("three");
-                c.canonicalize_replace_client(3, p2);
+                c.canonicalizeReplaceClient(3, p2);
                 BEAST_EXPECT(p1.get() == p2.get());
             }
             ++clock;
@@ -136,7 +120,7 @@ public:
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Canonicalize a new object with the same key
                 auto p2 = std::make_shared<std::string>("four");
-                BEAST_EXPECT(c.canonicalize_replace_client(4, p2));
+                BEAST_EXPECT(c.canonicalizeReplaceClient(4, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Make sure we get the original object
@@ -151,6 +135,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TaggedCache, common, ripple);
+BEAST_DEFINE_TESTSUITE(TaggedCache, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

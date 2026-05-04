@@ -1,31 +1,18 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 
+#include <test/jtx/amount.h>
+
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-namespace ripple {
-namespace test {
+#include <atomic>
+#include <map>
+#include <memory>
+#include <vector>
 
-std::atomic<bool> envUseIPv4{false};
+namespace xrpl::test {
+
+std::atomic<bool> gEnvUseIPv4{false};
 
 void
 setupConfigForUnitTests(Config& cfg)
@@ -73,7 +60,7 @@ setupConfigForUnitTests(Config& cfg)
 namespace jtx {
 
 std::unique_ptr<Config>
-no_admin(std::unique_ptr<Config> cfg)
+noAdmin(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
@@ -81,16 +68,16 @@ no_admin(std::unique_ptr<Config> cfg)
 }
 
 std::unique_ptr<Config>
-secure_gateway(std::unique_ptr<Config> cfg)
+secureGateway(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
-    (*cfg)[PORT_RPC].set("secure_gateway", getEnvLocalhostAddr());
+    (*cfg)[PORT_RPC].set("secureGateway", getEnvLocalhostAddr());
     return cfg;
 }
 
 std::unique_ptr<Config>
-admin_localnet(std::unique_ptr<Config> cfg)
+adminLocalnet(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "127.0.0.0/8");
     (*cfg)[PORT_WS].set("admin", "127.0.0.0/8");
@@ -98,23 +85,29 @@ admin_localnet(std::unique_ptr<Config> cfg)
 }
 
 std::unique_ptr<Config>
-secure_gateway_localnet(std::unique_ptr<Config> cfg)
+secureGatewayLocalnet(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
-    (*cfg)[PORT_RPC].set("secure_gateway", "127.0.0.0/8");
-    (*cfg)[PORT_WS].set("secure_gateway", "127.0.0.0/8");
+    (*cfg)[PORT_RPC].set("secureGateway", "127.0.0.0/8");
+    (*cfg)[PORT_WS].set("secureGateway", "127.0.0.0/8");
+    return cfg;
+}
+std::unique_ptr<Config>
+singleThreadIo(std::unique_ptr<Config> cfg)
+{
+    cfg->IO_WORKERS = 1;
     return cfg;
 }
 
-auto constexpr defaultseed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
+auto constexpr kDEFAULTSEED = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
 std::unique_ptr<Config>
 validator(std::unique_ptr<Config> cfg, std::string const& seed)
 {
     // If the config has valid validation keys then we run as a validator.
     cfg->section(SECTION_VALIDATION_SEED)
-        .append(std::vector<std::string>{seed.empty() ? defaultseed : seed});
+        .append(std::vector<std::string>{seed.empty() ? kDEFAULTSEED : seed});
     return cfg;
 }
 
@@ -127,16 +120,57 @@ addGrpcConfig(std::unique_ptr<Config> cfg)
 }
 
 std::unique_ptr<Config>
-addGrpcConfigWithSecureGateway(
-    std::unique_ptr<Config> cfg,
-    std::string const& secureGateway)
+addGrpcConfigWithSecureGateway(std::unique_ptr<Config> cfg, std::string const& secureGateway)
 {
     (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
 
     // Check https://man7.org/linux/man-pages/man7/ip.7.html
     // "ip_local_port_range" section for using 0 ports
     (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-    (*cfg)[SECTION_PORT_GRPC].set("secure_gateway", secureGateway);
+    (*cfg)[SECTION_PORT_GRPC].set("secureGateway", secureGateway);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLS(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndClientCA(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& clientCAPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", clientCAPath);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndCertChain(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& certChainPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", certChainPath);
     return cfg;
 }
 
@@ -174,5 +208,4 @@ makeConfig(
 }
 
 }  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

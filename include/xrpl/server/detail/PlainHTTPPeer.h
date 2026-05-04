@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_SERVER_PLAINHTTPPEER_H_INCLUDED
-#define RIPPLE_SERVER_PLAINHTTPPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
@@ -28,12 +8,11 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Handler>
-class PlainHTTPPeer
-    : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>,
-      public std::enable_shared_from_this<PlainHTTPPeer<Handler>>
+class PlainHTTPPeer : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>,
+                      public std::enable_shared_from_this<PlainHTTPPeer<Handler>>
 {
 private:
     friend class BaseHTTPPeer<Handler, PlainHTTPPeer>;
@@ -51,7 +30,7 @@ public:
         Handler& handler,
         boost::asio::io_context& ioc,
         beast::Journal journal,
-        endpoint_type remote_address,
+        endpoint_type remoteAddress,
         ConstBufferSequence const& buffers,
         stream_type&& stream);
 
@@ -63,10 +42,10 @@ public:
 
 private:
     void
-    do_request() override;
+    doRequest() override;
 
     void
-    do_close() override;
+    doClose() override;
 };
 
 //------------------------------------------------------------------------------
@@ -78,7 +57,7 @@ PlainHTTPPeer<Handler>::PlainHTTPPeer(
     Handler& handler,
     boost::asio::io_context& ioc,
     beast::Journal journal,
-    endpoint_type remote_endpoint,
+    endpoint_type remoteEndpoint,
     ConstBufferSequence const& buffers,
     stream_type&& stream)
     : BaseHTTPPeer<Handler, PlainHTTPPeer>(
@@ -86,7 +65,7 @@ PlainHTTPPeer<Handler>::PlainHTTPPeer(
           handler,
           ioc.get_executor(),
           journal,
-          remote_endpoint,
+          remoteEndpoint,
           buffers)
     , stream_(std::move(stream))
     , socket_(stream_.socket())
@@ -95,7 +74,7 @@ PlainHTTPPeer<Handler>::PlainHTTPPeer(
     // otherwise Nagle's algorithm makes Env
     // tests run slower on Linux systems.
     //
-    if (remote_endpoint.address().is_loopback())
+    if (remoteEndpoint.address().is_loopback())
         socket_.set_option(boost::asio::ip::tcp::no_delay{true});
 }
 
@@ -105,21 +84,16 @@ PlainHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remote_address_))
     {
-        boost::asio::spawn(
-            this->strand_,
-            std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()));
+        util::spawn(this->strand_, std::bind(&PlainHTTPPeer::doClose, this->shared_from_this()));
         return;
     }
 
     if (!socket_.is_open())
         return;
 
-    boost::asio::spawn(
+    util::spawn(
         this->strand_,
-        std::bind(
-            &PlainHTTPPeer::do_read,
-            this->shared_from_this(),
-            std::placeholders::_1));
+        std::bind(&PlainHTTPPeer::doRead, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>
@@ -138,11 +112,11 @@ PlainHTTPPeer<Handler>::websocketUpgrade()
 
 template <class Handler>
 void
-PlainHTTPPeer<Handler>::do_request()
+PlainHTTPPeer<Handler>::doRequest()
 {
     ++this->request_count_;
-    auto const what = this->handler_.onHandoff(
-        this->session(), std::move(this->message_), this->remote_address_);
+    auto const what =
+        this->handler_.onHandoff(this->session(), std::move(this->message_), this->remote_address_);
     if (what.moved)
         return;
     boost::system::error_code ec;
@@ -157,7 +131,7 @@ PlainHTTPPeer<Handler>::do_request()
     }
 
     // Perform half-close when Connection: close and not SSL
-    if (!beast::rfc2616::is_keep_alive(this->message_))
+    if (!beast::rfc2616::isKeepAlive(this->message_))
         socket_.shutdown(socket_type::shutdown_receive, ec);
     if (ec)
         return this->fail(ec, "request");
@@ -167,12 +141,10 @@ PlainHTTPPeer<Handler>::do_request()
 
 template <class Handler>
 void
-PlainHTTPPeer<Handler>::do_close()
+PlainHTTPPeer<Handler>::doClose()
 {
     boost::system::error_code ec;
     socket_.shutdown(socket_type::shutdown_send, ec);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

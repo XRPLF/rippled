@@ -1,50 +1,26 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_JTX_DID_H_INCLUDED
-#define RIPPLE_TEST_JTX_DID_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
-
 /** DID operations. */
-namespace did {
+namespace xrpl::test::jtx::did {
 
-Json::Value
+json::Value
 set(jtx::Account const& account);
 
-Json::Value
+json::Value
 setValid(jtx::Account const& account);
 
 /** Sets the optional DIDDocument on a DIDSet. */
-class document
+class Document
 {
 private:
     std::string document_;
 
 public:
-    explicit document(std::string const& u) : document_(strHex(u))
+    explicit Document(std::string const& u) : document_(strHex(u))
     {
     }
 
@@ -56,13 +32,13 @@ public:
 };
 
 /** Sets the optional URI on a DIDSet. */
-class uri
+class Uri
 {
 private:
     std::string uri_;
 
 public:
-    explicit uri(std::string const& u) : uri_(strHex(u))
+    explicit Uri(std::string const& u) : uri_(strHex(u))
     {
     }
 
@@ -73,14 +49,14 @@ public:
     }
 };
 
-/** Sets the optional Attestation on a DIDSet. */
-class data
+/** Sets the optional Data on a DIDSet. */
+class Data
 {
 private:
     std::string data_;
 
 public:
-    explicit data(std::string const& u) : data_(strHex(u))
+    explicit Data(std::string const& u) : data_(strHex(u))
     {
     }
 
@@ -91,14 +67,7 @@ public:
     }
 };
 
-Json::Value
+json::Value
 del(jtx::Account const& account);
 
-}  // namespace did
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx::did

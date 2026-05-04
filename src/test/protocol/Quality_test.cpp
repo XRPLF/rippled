@@ -1,30 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
-class Quality_test : public beast::unit_test::suite
+class Quality_test : public beast::unit_test::Suite
 {
 public:
     // Create a raw, non-integral amount from mantissa and exponent
@@ -35,21 +22,17 @@ public:
 
     template <class Integer>
     static STAmount
-    amount(
-        Integer integer,
-        std::enable_if_t<std::is_signed<Integer>::value>* = 0)
+    amount(Integer integer, std::enable_if_t<std::is_signed_v<Integer>>* = 0)
     {
-        static_assert(std::is_integral<Integer>::value, "");
+        static_assert(std::is_integral_v<Integer>, "");
         return STAmount(integer, false);
     }
 
     template <class Integer>
     static STAmount
-    amount(
-        Integer integer,
-        std::enable_if_t<!std::is_signed<Integer>::value>* = 0)
+    amount(Integer integer, std::enable_if_t<!std::is_signed_v<Integer>>* = 0)
     {
-        static_assert(std::is_integral<Integer>::value, "");
+        static_assert(std::is_integral_v<Integer>, "");
         if (integer < 0)
             return STAmount(-integer, true);
         return STAmount(integer, false);
@@ -64,46 +47,34 @@ public:
 
     template <class In1, class Out1, class Int, class In2, class Out2>
     void
-    ceil_in(
-        Quality const& q,
-        In1 in,
-        Out1 out,
-        Int limit,
-        In2 in_expected,
-        Out2 out_expected)
+    ceilIn(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
     {
-        auto expect_result(amounts(in_expected, out_expected));
-        auto actual_result(q.ceil_in(amounts(in, out), amount(limit)));
+        auto expectResult(amounts(inExpected, outExpected));
+        auto actualResult(q.ceilIn(amounts(in, out), amount(limit)));
 
-        BEAST_EXPECT(actual_result == expect_result);
+        BEAST_EXPECT(actualResult == expectResult);
     }
 
     template <class In1, class Out1, class Int, class In2, class Out2>
     void
-    ceil_out(
-        Quality const& q,
-        In1 in,
-        Out1 out,
-        Int limit,
-        In2 in_expected,
-        Out2 out_expected)
+    ceilOut(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
     {
-        auto const expect_result(amounts(in_expected, out_expected));
-        auto const actual_result(q.ceil_out(amounts(in, out), amount(limit)));
+        auto const expectResult(amounts(inExpected, outExpected));
+        auto const actualResult(q.ceilOut(amounts(in, out), amount(limit)));
 
-        BEAST_EXPECT(actual_result == expect_result);
+        BEAST_EXPECT(actualResult == expectResult);
     }
 
     void
-    test_ceil_in()
+    testCeilIn()
     {
         testcase("ceil_in");
 
         {
             // 1 in, 1 out:
-            Quality q(Amounts(amount(1), amount(1)));
+            Quality const q(Amounts(amount(1), amount(1)));
 
-            ceil_in(
+            ceilIn(
                 q,
                 1,
                 1,  // 1 in, 1 out
@@ -111,7 +82,7 @@ public:
                 1,
                 1);  // 1 in, 1 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 10,
                 10,  // 10 in, 10 out
@@ -119,7 +90,7 @@ public:
                 5,
                 5);  // 5 in, 5 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 5,
                 5,   // 5 in, 5 out
@@ -130,9 +101,9 @@ public:
 
         {
             // 1 in, 2 out:
-            Quality q(Amounts(amount(1), amount(2)));
+            Quality const q(Amounts(amount(1), amount(2)));
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 80,  // 40 in, 80 out
@@ -140,7 +111,7 @@ public:
                 40,
                 80);  // 40 in, 20 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 80,  // 40 in, 80 out
@@ -148,7 +119,7 @@ public:
                 20,
                 40);  // 20 in, 40 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 80,  // 40 in, 80 out
@@ -159,9 +130,9 @@ public:
 
         {
             // 2 in, 1 out:
-            Quality q(Amounts(amount(2), amount(1)));
+            Quality const q(Amounts(amount(2), amount(1)));
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -169,7 +140,7 @@ public:
                 20,
                 10);  // 20 in, 10 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -177,7 +148,7 @@ public:
                 40,
                 20);  // 40 in, 20 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -188,15 +159,15 @@ public:
     }
 
     void
-    test_ceil_out()
+    testCeilOut()
     {
         testcase("ceil_out");
 
         {
             // 1 in, 1 out:
-            Quality q(Amounts(amount(1), amount(1)));
+            Quality const q(Amounts(amount(1), amount(1)));
 
-            ceil_out(
+            ceilOut(
                 q,
                 1,
                 1,  // 1 in, 1 out
@@ -204,7 +175,7 @@ public:
                 1,
                 1);  // 1 in, 1 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 10,
                 10,  // 10 in, 10 out
@@ -212,7 +183,7 @@ public:
                 5,
                 5);  // 5 in, 5 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 10,
                 10,  // 10 in, 10 out
@@ -223,9 +194,9 @@ public:
 
         {
             // 1 in, 2 out:
-            Quality q(Amounts(amount(1), amount(2)));
+            Quality const q(Amounts(amount(1), amount(2)));
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 80,  // 40 in, 80 out
@@ -233,7 +204,7 @@ public:
                 20,
                 40);  // 20 in, 40 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 80,  // 40 in, 80 out
@@ -241,7 +212,7 @@ public:
                 40,
                 80);  // 40 in, 80 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 80,   // 40 in, 80 out
@@ -252,9 +223,9 @@ public:
 
         {
             // 2 in, 1 out:
-            Quality q(Amounts(amount(2), amount(1)));
+            Quality const q(Amounts(amount(2), amount(1)));
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -262,7 +233,7 @@ public:
                 40,
                 20);  // 40 in, 20 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -270,7 +241,7 @@ public:
                 40,
                 20);  // 40 in, 20 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -281,28 +252,27 @@ public:
     }
 
     void
-    test_raw()
+    testRaw()
     {
         testcase("raw");
 
         {
-            Quality q(0x5d048191fb9130daull);  // 126836389.7680090
+            Quality const q(0x5d048191fb9130daull);  // 126836389.7680090
             Amounts const value(
-                amount(349469768),               // 349.469768 XRP
-                raw(2755280000000000ull, -15));  // 2.75528
-            STAmount const limit(
-                raw(4131113916555555, -16));  // .4131113916555555
-            Amounts const result(q.ceil_out(value, limit));
-            BEAST_EXPECT(result.in != beast::zero);
+                amount(349469768),                             // 349.469768 XRP
+                raw(2755280000000000ull, -15));                // 2.75528
+            STAmount const limit(raw(4131113916555555, -16));  // .4131113916555555
+            Amounts const result(q.ceilOut(value, limit));
+            BEAST_EXPECT(result.in != beast::kZERO);
         }
     }
 
     void
-    test_round()
+    testRound()
     {
         testcase("round");
 
-        Quality q(0x59148191fb913522ull);  // 57719.63525051682
+        Quality const q(0x59148191fb913522ull);  // 57719.63525051682
         BEAST_EXPECT(q.round(3).rate().getText() == "57800");
         BEAST_EXPECT(q.round(4).rate().getText() == "57720");
         BEAST_EXPECT(q.round(5).rate().getText() == "57720");
@@ -320,7 +290,7 @@ public:
     }
 
     void
-    test_comparisons()
+    testComparisons()
     {
         testcase("comparisons");
 
@@ -357,7 +327,7 @@ public:
     }
 
     void
-    test_composition()
+    testComposition()
     {
         testcase("composition");
 
@@ -371,22 +341,21 @@ public:
         Quality const q21(Amounts(amount2, amount1));
         Quality const q31(Amounts(amount3, amount1));
 
-        BEAST_EXPECT(composed_quality(q12, q21) == q11);
+        BEAST_EXPECT(composedQuality(q12, q21) == q11);
 
-        Quality const q13_31(composed_quality(q13, q31));
-        Quality const q31_13(composed_quality(q31, q13));
+        Quality const q1331(composedQuality(q13, q31));
+        Quality const q3113(composedQuality(q31, q13));
 
-        BEAST_EXPECT(q13_31 == q31_13);
-        BEAST_EXPECT(q13_31 == q11);
+        BEAST_EXPECT(q1331 == q3113);
+        BEAST_EXPECT(q1331 == q11);
     }
 
     void
-    test_operations()
+    testOperations()
     {
         testcase("operations");
 
-        Quality const q11(
-            Amounts(STAmount(noIssue(), 731), STAmount(noIssue(), 731)));
+        Quality const q11(Amounts(STAmount(noIssue(), 731), STAmount(noIssue(), 731)));
 
         Quality qa(q11);
         Quality qb(q11);
@@ -405,16 +374,16 @@ public:
     void
     run() override
     {
-        test_comparisons();
-        test_composition();
-        test_operations();
-        test_ceil_in();
-        test_ceil_out();
-        test_raw();
-        test_round();
+        testComparisons();
+        testComposition();
+        testOperations();
+        testCeilIn();
+        testCeilOut();
+        testRaw();
+        testRound();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Quality, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Quality, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

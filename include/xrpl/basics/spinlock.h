@@ -1,22 +1,6 @@
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
+// Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
-#ifndef RIPPLE_BASICS_SPINLOCK_H_INCLUDED
-#define RIPPLE_BASICS_SPINLOCK_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -28,7 +12,7 @@
 #include <immintrin.h>
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 /** Inform the processor that we are in a tight spin-wait loop.
@@ -42,7 +26,7 @@ namespace detail {
     specific amount of time, to prevent this.
  */
 inline void
-spin_pause() noexcept
+spinPause() noexcept
 {
 #ifdef __aarch64__
     asm volatile("yield");
@@ -87,7 +71,7 @@ spin_pause() noexcept
         https://en.cppreference.com/w/cpp/named_req/Lockable
  */
 template <class T>
-class packed_spinlock
+class PackedSpinlock
 {
     // clang-format off
     static_assert(std::is_unsigned_v<T>);
@@ -103,9 +87,9 @@ private:
     T const mask_;
 
 public:
-    packed_spinlock(packed_spinlock const&) = delete;
-    packed_spinlock&
-    operator=(packed_spinlock const&) = delete;
+    PackedSpinlock(PackedSpinlock const&) = delete;
+    PackedSpinlock&
+    operator=(PackedSpinlock const&) = delete;
 
     /** A single spinlock packed inside the specified atomic
 
@@ -115,16 +99,15 @@ public:
         @note For performance reasons, you should strive to have `lock` be
               on a cacheline by itself.
      */
-    packed_spinlock(std::atomic<T>& lock, int index)
-        : bits_(lock), mask_(static_cast<T>(1) << index)
+    PackedSpinlock(std::atomic<T>& lock, int index) : bits_(lock), mask_(static_cast<T>(1) << index)
     {
         XRPL_ASSERT(
             index >= 0 && (mask_ != 0),
-            "ripple::packed_spinlock::packed_spinlock : valid index and mask");
+            "xrpl::packed_spinlock::packed_spinlock : valid index and mask");
     }
 
     [[nodiscard]] bool
-    try_lock()
+    try_lock()  // NOLINT(readability-identifier-naming)
     {
         return (bits_.fetch_or(mask_, std::memory_order_acquire) & mask_) == 0;
     }
@@ -139,7 +122,7 @@ public:
             // of contention by avoiding writes that would definitely not
             // result in the lock being acquired.
             while ((bits_.load(std::memory_order_relaxed) & mask_) != 0)
-                detail::spin_pause();
+                detail::spinPause();
         }
     }
 
@@ -163,7 +146,7 @@ public:
         https://en.cppreference.com/w/cpp/named_req/Lockable
  */
 template <class T>
-class spinlock
+class Spinlock
 {
     static_assert(std::is_unsigned_v<T>);
     static_assert(std::atomic<T>::is_always_lock_free);
@@ -172,9 +155,9 @@ private:
     std::atomic<T>& lock_;
 
 public:
-    spinlock(spinlock const&) = delete;
-    spinlock&
-    operator=(spinlock const&) = delete;
+    Spinlock(Spinlock const&) = delete;
+    Spinlock&
+    operator=(Spinlock const&) = delete;
 
     /** Grabs the
 
@@ -183,12 +166,12 @@ public:
         @note For performance reasons, you should strive to have `lock` be
               on a cacheline by itself.
      */
-    spinlock(std::atomic<T>& lock) : lock_(lock)
+    Spinlock(std::atomic<T>& lock) : lock_(lock)
     {
     }
 
     [[nodiscard]] bool
-    try_lock()
+    try_lock()  // NOLINT(readability-identifier-naming)
     {
         T expected = 0;
 
@@ -209,7 +192,7 @@ public:
             // of contention by avoiding writes that would definitely not
             // result in the lock being acquired.
             while (lock_.load(std::memory_order_relaxed) != 0)
-                detail::spin_pause();
+                detail::spinPause();
         }
     }
 
@@ -221,6 +204,4 @@ public:
 };
 /** @} */
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

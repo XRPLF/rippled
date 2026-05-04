@@ -1,47 +1,44 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
+#include <test/jtx/permissioned_domains.h>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/jss.h>
 
-#include <test/jtx.h>
+#include <map>
+#include <memory>
+#include <optional>
+#include <set>
+#include <stdexcept>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
 
-namespace ripple {
-namespace test {
-namespace jtx {
-namespace pdomain {
+namespace xrpl::test::jtx::pdomain {
 
 // helpers
 // Make json for PermissionedDomainSet transaction
-Json::Value
-setTx(
-    AccountID const& account,
-    Credentials const& credentials,
-    std::optional<uint256> domain)
+json::Value
+setTx(AccountID const& account, Credentials const& credentials, std::optional<uint256> domain)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::PermissionedDomainSet;
     jv[sfAccount] = to_string(account);
     if (domain)
         jv[sfDomainID] = to_string(*domain);
 
-    Json::Value acceptedCredentials(Json::arrayValue);
+    json::Value acceptedCredentials(json::ArrayValue);
     for (auto const& credential : credentials)
     {
-        Json::Value object(Json::objectValue);
+        json::Value object(json::ObjectValue);
         object[sfCredential] = credential.toJson();
         acceptedCredentials.append(std::move(object));
     }
@@ -51,10 +48,10 @@ setTx(
 }
 
 // Make json for PermissionedDomainDelete transaction
-Json::Value
+json::Value
 deleteTx(AccountID const& account, uint256 const& domain)
 {
-    Json::Value jv{Json::objectValue};
+    json::Value jv{json::ObjectValue};
     jv[sfTransactionType] = jss::PermissionedDomainDelete;
     jv[sfAccount] = to_string(account);
     jv[sfDomainID] = to_string(domain);
@@ -62,17 +59,17 @@ deleteTx(AccountID const& account, uint256 const& domain)
 }
 
 // Get PermissionedDomain objects by type from account_objects rpc call
-std::map<uint256, Json::Value>
+std::map<uint256, json::Value>
 getObjects(Account const& account, Env& env, bool withType)
 {
-    std::map<uint256, Json::Value> ret;
-    Json::Value params;
+    std::map<uint256, json::Value> ret;
+    json::Value params;
     params[jss::account] = account.human();
     if (withType)
         params[jss::type] = jss::permissioned_domain;
 
     auto const& resp = env.rpc("json", "account_objects", to_string(params));
-    Json::Value objects(Json::arrayValue);
+    json::Value objects(json::ArrayValue);
     objects = resp[jss::result][jss::account_objects];
     for (auto const& object : objects)
     {
@@ -99,11 +96,10 @@ getObjects(Account const& account, Env& env, bool withType)
 bool
 objectExists(uint256 const& objID, Env& env)
 {
-    Json::Value params;
+    json::Value params;
     params[jss::index] = to_string(objID);
 
-    auto const result =
-        env.rpc("json", "ledger_entry", to_string(params))["result"];
+    auto const result = env.rpc("json", "ledger_entry", to_string(params))["result"];
 
     if ((result["status"] == "error") && (result["error"] == "entryNotFound"))
         return false;
@@ -120,22 +116,21 @@ objectExists(uint256 const& objID, Env& env)
 // Extract credentials from account_object object
 Credentials
 credentialsFromJson(
-    Json::Value const& object,
+    json::Value const& object,
     std::unordered_map<std::string, Account> const& human2Acc)
 {
     Credentials ret;
-    Json::Value credentials(Json::arrayValue);
+    json::Value credentials(json::ArrayValue);
     credentials = object["AcceptedCredentials"];
     for (auto const& credential : credentials)
     {
-        Json::Value obj(Json::objectValue);
+        json::Value obj(json::ObjectValue);
         obj = credential[jss::Credential];
         auto const& issuer = obj[jss::Issuer];
         auto const& credentialType = obj["CredentialType"];
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): used only in tests
         auto blob = strUnHex(credentialType.asString()).value();
-        ret.push_back(
-            {human2Acc.at(issuer.asString()),
-             std::string(blob.begin(), blob.end())});
+        ret.push_back({human2Acc.at(issuer.asString()), std::string(blob.begin(), blob.end())});
     }
     return ret;
 }
@@ -155,8 +150,8 @@ uint256
 getNewDomain(std::shared_ptr<STObject const> const& meta)
 {
     uint256 ret;
-    auto metaJson = meta->getJson(JsonOptions::none);
-    Json::Value a(Json::arrayValue);
+    auto metaJson = meta->getJson(JsonOptions::KNone);
+    json::Value a(json::ArrayValue);
     a = metaJson["AffectedNodes"];
 
     for (auto const& node : a)
@@ -166,15 +161,11 @@ getNewDomain(std::shared_ptr<STObject const> const& meta)
         {
             continue;
         }
-        std::ignore =
-            ret.parseHex(node["CreatedNode"]["LedgerIndex"].asString());
+        std::ignore = ret.parseHex(node["CreatedNode"]["LedgerIndex"].asString());
         break;
     }
 
     return ret;
 }
 
-}  // namespace pdomain
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx::pdomain

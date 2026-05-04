@@ -1,48 +1,28 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2014, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/nodestore/detail/varint.h>
-
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/nodestore/detail/varint.h>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 
-namespace ripple {
-namespace NodeStore {
-namespace tests {
+namespace xrpl::NodeStore::tests {
 
-class varint_test : public beast::unit_test::suite
+class varint_test : public beast::unit_test::Suite
 {
 public:
     void
-    test_varints(std::vector<std::size_t> vv)
+    testVarints(std::vector<std::size_t> vv)
     {
         testcase("encode, decode");
         for (auto const v : vv)
         {
-            std::array<std::uint8_t, varint_traits<std::size_t>::max> vi;
-            auto const n0 = write_varint(vi.data(), v);
+            std::array<std::uint8_t, varint_traits<std::size_t>::kMAX> vi{};
+            auto const n0 = writeVarint(vi.data(), v);
             expect(n0 > 0, "write error");
-            expect(n0 == size_varint(v), "size error");
-            std::size_t v1;
-            auto const n1 = read_varint(vi.data(), n0, v1);
+            expect(n0 == sizeVarint(v), "size error");
+            std::size_t v1 = 0;
+            auto const n1 = readVarint(vi.data(), n0, v1);
             expect(n1 == n0, "read error");
             expect(v == v1, "wrong value");
         }
@@ -51,7 +31,7 @@ public:
     void
     run() override
     {
-        test_varints(
+        testVarints(
             {0,
              1,
              2,
@@ -72,8 +52,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(varint, NodeStore, ripple);
+BEAST_DEFINE_TESTSUITE(varint, nodestore, xrpl);
 
-}  // namespace tests
-}  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl::NodeStore::tests

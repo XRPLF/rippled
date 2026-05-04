@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
-#define RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
@@ -26,21 +6,26 @@
 #include <functional>
 #include <initializer_list>
 #include <stdexcept>
+#include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Kind of element in each entry of an SOTemplate. */
+// 2026 usages, 129 files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOEStyle {
-    soeINVALID = -1,
-    soeREQUIRED = 0,  // required
-    soeOPTIONAL = 1,  // optional, may be present with default value
-    soeDEFAULT = 2,   // optional, if present, must not have default value
+    SoeInvalid = -1,
+    SoeRequired = 0,  // required
+    SoeOptional = 1,  // optional, may be present with default value
+    SoeDefault = 2,   // optional, if present, must not have default value
                       // inner object with the default fields has to be
                       // constructed with STObject::makeInnerObject()
 };
 
+// Part of a Python-parsed DSL (transactions.macro); bare enumerator names required by the parser
 /** Amount fields that can support MPT */
-enum SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
 //------------------------------------------------------------------------------
 
@@ -50,7 +35,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOETxMPTIssue supportMpt_ = soeMPTNone;
+    SOETxMPTIssue supportMpt_ = SoeMptNone;
 
 private:
     void
@@ -61,14 +46,12 @@ private:
             auto nm = std::to_string(fieldName.getCode());
             if (fieldName.hasName())
                 nm += ": '" + fieldName.getName() + "'";
-            Throw<std::runtime_error>(
-                "SField (" + nm + ") in SOElement must be useful.");
+            Throw<std::runtime_error>("SField (" + nm + ") in SOElement must be useful.");
         }
     }
 
 public:
-    SOElement(SField const& fieldName, SOEStyle style)
-        : sField_(fieldName), style_(style)
+    SOElement(SField const& fieldName, SOEStyle style) : sField_(fieldName), style_(style)
     {
         init(fieldName);
     }
@@ -78,25 +61,25 @@ public:
     SOElement(
         TypedField<T> const& fieldName,
         SOEStyle style,
-        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+        SOETxMPTIssue supportMpt = SoeMptNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);
     }
 
-    SField const&
+    [[nodiscard]] SField const&
     sField() const
     {
         return sField_.get();
     }
 
-    SOEStyle
+    [[nodiscard]] SOEStyle
     style() const
     {
         return style_;
     }
 
-    SOETxMPTIssue
+    [[nodiscard]] SOETxMPTIssue
     supportMPT() const
     {
         return supportMpt_;
@@ -119,50 +102,54 @@ public:
     operator=(SOTemplate&& other) = default;
 
     /** Create a template populated with all fields.
-        After creating the template fields cannot be
-        added, modified, or removed.
+        After creating the template fields cannot be added, modified, or removed.
+    */
+    SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields = {});
+
+    /** Create a template populated with all fields.
+        Note: Defers to the vector constructor above.
     */
     SOTemplate(
         std::initializer_list<SOElement> uniqueFields,
         std::initializer_list<SOElement> commonFields = {});
 
     /* Provide for the enumeration of fields */
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     begin() const
     {
         return elements_.cbegin();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     cbegin() const
     {
         return begin();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     end() const
     {
         return elements_.cend();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     cend() const
     {
         return end();
     }
 
     /** The number of entries in this template */
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return elements_.size();
     }
 
     /** Retrieve the position of a named field. */
-    int
+    [[nodiscard]] int
     getIndex(SField const&) const;
 
-    SOEStyle
+    [[nodiscard]] SOEStyle
     style(SField const& sf) const
     {
         return elements_[indices_[sf.getNum()]].style();
@@ -173,6 +160,4 @@ private:
     std::vector<int> indices_;  // field num -> index
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

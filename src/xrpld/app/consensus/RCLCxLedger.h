@@ -1,32 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_CONSENSUS_RCLCXLEDGER_H_INCLUDED
-#define RIPPLE_APP_CONSENSUS_RCLCXLEDGER_H_INCLUDED
-
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/ledger/ReadView.h>
 
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents a ledger in RCLConsensus.
 
@@ -52,64 +32,64 @@ public:
 
         @param l The ledger to wrap.
     */
-    RCLCxLedger(std::shared_ptr<Ledger const> const& l) : ledger_{l}
+    RCLCxLedger(std::shared_ptr<Ledger const> const& l) : ledger{l}
     {
     }
 
     //! Sequence number of the ledger.
-    Seq const&
+    [[nodiscard]] Seq const&
     seq() const
     {
-        return ledger_->info().seq;
+        return ledger->header().seq;
     }
 
     //! Unique identifier (hash) of this ledger.
-    ID const&
+    [[nodiscard]] ID const&
     id() const
     {
-        return ledger_->info().hash;
+        return ledger->header().hash;
     }
 
     //! Unique identifier (hash) of this ledger's parent.
-    ID const&
+    [[nodiscard]] ID const&
     parentID() const
     {
-        return ledger_->info().parentHash;
+        return ledger->header().parentHash;
     }
 
     //! Resolution used when calculating this ledger's close time.
-    NetClock::duration
+    [[nodiscard]] NetClock::duration
     closeTimeResolution() const
     {
-        return ledger_->info().closeTimeResolution;
+        return ledger->header().closeTimeResolution;
     }
 
     //! Whether consensus process agreed on close time of the ledger.
-    bool
+    [[nodiscard]] bool
     closeAgree() const
     {
-        return ripple::getCloseAgree(ledger_->info());
+        return xrpl::getCloseAgree(ledger->header());
     }
 
     //! The close time of this ledger
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     closeTime() const
     {
-        return ledger_->info().closeTime;
+        return ledger->header().closeTime;
     }
 
     //! The close time of this ledger's parent.
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     parentCloseTime() const
     {
-        return ledger_->info().parentCloseTime;
+        return ledger->header().parentCloseTime;
     }
 
     //! JSON representation of this ledger.
-    Json::Value
+    [[nodiscard]] json::Value
     getJson() const
     {
-        return ripple::getJson({*ledger_, {}});
+        return xrpl::getJson({*ledger, {}});
     }
 
     /** The ledger instance.
@@ -117,7 +97,6 @@ public:
         TODO: Make this shared_ptr<ReadView const> .. requires ability to create
         a new ledger from a readView?
     */
-    std::shared_ptr<Ledger const> ledger_;
+    std::shared_ptr<Ledger const> ledger;
 };
-}  // namespace ripple
-#endif
+}  // namespace xrpl

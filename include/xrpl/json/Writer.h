@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_JSON_WRITER_H_INCLUDED
-#define RIPPLE_JSON_WRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/contract.h>
@@ -27,7 +7,7 @@
 
 #include <memory>
 
-namespace Json {
+namespace json {
 
 /**
  *  Writer implements an O(1)-space, O(1)-granular output JSON writer.
@@ -127,7 +107,7 @@ namespace Json {
 class Writer
 {
 public:
-    enum CollectionType { array, object };
+    enum class CollectionType { Array, Object };
 
     explicit Writer(Output const& output);
     Writer(Writer&&) noexcept;
@@ -158,7 +138,7 @@ public:
     /** Append a value to an array.
      *
      *  Scalar must be a scalar - that is, a number, boolean, string, string
-     *  literal, nullptr or Json::Value
+     *  literal, nullptr or json::Value
      */
     template <typename Scalar>
     void
@@ -208,9 +188,9 @@ public:
     void
     output(char const*);
 
-    /*** Output a Json::Value. */
+    /*** Output a json::Value. */
     void
-    output(Json::Value const&);
+    output(json::Value const&);
 
     /** Output a null. */
     void output(std::nullptr_t);
@@ -236,9 +216,9 @@ public:
     }
 
     void
-    output(Json::StaticString const& t)
+    output(json::StaticString const& t)
     {
-        output(t.c_str());
+        output(t.cStr());
     }
 
 private:
@@ -253,9 +233,7 @@ inline void
 check(bool condition, std::string const& message)
 {
     if (!condition)
-        ripple::Throw<std::logic_error>(message);
+        xrpl::Throw<std::logic_error>(message);
 }
 
-}  // namespace Json
-
-#endif
+}  // namespace json

@@ -1,28 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Number.h>
+
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <numeric>
@@ -32,57 +16,77 @@
 #include <utility>
 
 #ifdef _MSC_VER
-#pragma message("Using boost::multiprecision::uint128_t")
+#pragma message("Using boost::multiprecision::uint128_t and int128_t")
 #include <boost/multiprecision/cpp_int.hpp>
 using uint128_t = boost::multiprecision::uint128_t;
+using int128_t = boost::multiprecision::int128_t;
 #else   // !defined(_MSC_VER)
 using uint128_t = __uint128_t;
+using int128_t = __int128_t;
 #endif  // !defined(_MSC_VER)
 
-namespace ripple {
+namespace xrpl {
 
-thread_local Number::rounding_mode Number::mode_ = Number::to_nearest;
+thread_local Number::RoundingMode Number::mode = Number::RoundingMode::ToNearest;
+thread_local std::reference_wrapper<MantissaRange const> Number::kRANGE = kLARGE_RANGE;
 
-Number::rounding_mode
+Number::RoundingMode
 Number::getround()
 {
-    return mode_;
+    return mode;
 }
 
-Number::rounding_mode
-Number::setround(rounding_mode mode)
+Number::RoundingMode
+Number::setround(RoundingMode inMode)
 {
-    return std::exchange(mode_, mode);
+    return std::exchange(Number::mode, inMode);
+}
+
+MantissaRange::MantissaScale
+Number::getMantissaScale()
+{
+    return kRANGE.get().scale;
+}
+
+void
+Number::setMantissaScale(MantissaRange::MantissaScale scale)
+{
+    if (scale != MantissaRange::MantissaScale::Small &&
+        scale != MantissaRange::MantissaScale::Large)
+        logicError("Unknown mantissa scale");
+    kRANGE = scale == MantissaRange::MantissaScale::Small ? kSMALL_RANGE : kLARGE_RANGE;
 }
 
 // Guard
 
-// The Guard class is used to tempoarily add extra digits of
-// preicision to an operation.  This enables the final result
+// The Guard class is used to temporarily add extra digits of
+// precision to an operation.  This enables the final result
 // to be correctly rounded to the internal precision of Number.
+
+template <class T>
+concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>;
 
 class Number::Guard
 {
-    std::uint64_t digits_;   // 16 decimal guard digits
-    std::uint8_t xbit_ : 1;  // has a non-zero digit been shifted off the end
-    std::uint8_t sbit_ : 1;  // the sign of the guard digits
+    std::uint64_t digits_{0};    // 16 decimal guard digits
+    std::uint8_t xbit_ : 1 {0};  // has a non-zero digit been shifted off the end
+    std::uint8_t sbit_ : 1 {0};  // the sign of the guard digits
 
 public:
-    explicit Guard() : digits_{0}, xbit_{0}, sbit_{0}
-    {
-    }
+    explicit Guard() = default;
 
     // set & test the sign bit
     void
-    set_positive() noexcept;
+    setPositive() noexcept;
     void
-    set_negative() noexcept;
-    bool
-    is_negative() const noexcept;
+    setNegative() noexcept;
+    [[nodiscard]] bool
+    isNegative() const noexcept;
 
     // add a digit
+    template <class T>
     void
-    push(unsigned d) noexcept;
+    push(T d) noexcept;
 
     // recover a digit
     unsigned
@@ -91,40 +95,75 @@ public:
     // Indicate round direction:  1 is up, -1 is down, 0 is even
     // This enables the client to round towards nearest, and on
     // tie, round towards even.
-    int
-    round() noexcept;
+    [[nodiscard]] int
+    round() const noexcept;
+
+    // Modify the result to the correctly rounded value
+    template <UnsignedMantissa T>
+    void
+    doRoundUp(
+        bool& negative,
+        T& mantissa,
+        int& exponent,
+        internalrep const& minMantissa,
+        internalrep const& maxMantissa,
+        std::string location);
+
+    // Modify the result to the correctly rounded value
+    template <UnsignedMantissa T>
+    void
+    doRoundDown(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa);
+
+    // Modify the result to the correctly rounded value
+    void
+    doRound(rep& drops, std::string location) const;
+
+private:
+    void
+    doPush(unsigned d) noexcept;
+
+    template <UnsignedMantissa T>
+    void
+    bringIntoRange(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa);
 };
 
 inline void
-Number::Guard::set_positive() noexcept
+Number::Guard::setPositive() noexcept
 {
     sbit_ = 0;
 }
 
 inline void
-Number::Guard::set_negative() noexcept
+Number::Guard::setNegative() noexcept
 {
     sbit_ = 1;
 }
 
 inline bool
-Number::Guard::is_negative() const noexcept
+Number::Guard::isNegative() const noexcept
 {
     return sbit_ == 1;
 }
 
 inline void
-Number::Guard::push(unsigned d) noexcept
+Number::Guard::doPush(unsigned d) noexcept
 {
-    xbit_ = xbit_ || (digits_ & 0x0000'0000'0000'000F) != 0;
+    xbit_ = xbit_ || ((digits_ & 0x0000'0000'0000'000F) != 0);
     digits_ >>= 4;
     digits_ |= (d & 0x0000'0000'0000'000FULL) << 60;
+}
+
+template <class T>
+inline void
+Number::Guard::push(T d) noexcept
+{
+    doPush(static_cast<unsigned>(d));
 }
 
 inline unsigned
 Number::Guard::pop() noexcept
 {
-    unsigned d = (digits_ & 0xF000'0000'0000'0000) >> 60;
+    unsigned const d = (digits_ & 0xF000'0000'0000'0000) >> 60;
     digits_ <<= 4;
     return d;
 }
@@ -134,14 +173,14 @@ Number::Guard::pop() noexcept
 //      0 if Guard is exactly half
 //      1 if Guard is greater than half
 int
-Number::Guard::round() noexcept
+Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
-    if (mode == towards_zero)
+    if (mode == RoundingMode::TowardsZero)
         return -1;
 
-    if (mode == downward)
+    if (mode == RoundingMode::Downward)
     {
         if (sbit_)
         {
@@ -151,7 +190,7 @@ Number::Guard::round() noexcept
         return -1;
     }
 
-    if (mode == upward)
+    if (mode == RoundingMode::Upward)
     {
         if (sbit_)
             return -1;
@@ -170,101 +209,337 @@ Number::Guard::round() noexcept
     return 0;
 }
 
+template <UnsignedMantissa T>
+void
+Number::Guard::bringIntoRange(
+    bool& negative,
+    T& mantissa,
+    int& exponent,
+    internalrep const& minMantissa)
+{
+    // Bring mantissa back into the minMantissa / maxMantissa range AFTER
+    // rounding
+    if (mantissa < minMantissa)
+    {
+        mantissa *= 10;
+        --exponent;
+    }
+    if (exponent < kMIN_EXPONENT)
+    {
+        constexpr Number kZERO = Number{};
+
+        negative = kZERO.negative_;
+        mantissa = kZERO.mantissa_;
+        exponent = kZERO.exponent_;
+    }
+}
+
+template <UnsignedMantissa T>
+void
+Number::Guard::doRoundUp(
+    bool& negative,
+    T& mantissa,
+    int& exponent,
+    internalrep const& minMantissa,
+    internalrep const& maxMantissa,
+    std::string location)
+{
+    auto r = round();
+    if (r == 1 || (r == 0 && (mantissa & 1) == 1))
+    {
+        ++mantissa;
+        // Ensure mantissa after incrementing fits within both the
+        // min/maxMantissa range and is a valid "rep".
+        if (mantissa > maxMantissa || mantissa > kMAX_REP)
+        {
+            mantissa /= 10;
+            ++exponent;
+        }
+    }
+    bringIntoRange(negative, mantissa, exponent, minMantissa);
+    if (exponent > kMAX_EXPONENT)
+        Throw<std::overflow_error>(std::string(location));
+}
+
+template <UnsignedMantissa T>
+void
+Number::Guard::doRoundDown(
+    bool& negative,
+    T& mantissa,
+    int& exponent,
+    internalrep const& minMantissa)
+{
+    auto r = round();
+    if (r == 1 || (r == 0 && (mantissa & 1) == 1))
+    {
+        --mantissa;
+        if (mantissa < minMantissa)
+        {
+            mantissa *= 10;
+            --exponent;
+        }
+    }
+    bringIntoRange(negative, mantissa, exponent, minMantissa);
+}
+
+// Modify the result to the correctly rounded value
+void
+Number::Guard::doRound(rep& drops, std::string location) const
+{
+    auto r = round();
+    if (r == 1 || (r == 0 && (drops & 1) == 1))
+    {
+        if (drops >= kMAX_REP)
+        {
+            static_assert(sizeof(internalrep) == sizeof(rep));
+            // This should be impossible, because it's impossible to represent
+            // "maxRep + 0.6" in Number, regardless of the scale. There aren't
+            // enough digits available. You'd either get a mantissa of "maxRep"
+            // or "(maxRep + 1) / 10", neither of which will round up when
+            // converting to rep, though the latter might overflow _before_
+            // rounding.
+            Throw<std::overflow_error>(std::string(location));  // LCOV_EXCL_LINE
+        }
+        ++drops;
+    }
+    if (isNegative())
+        drops = -drops;
+}
+
 // Number
 
-constexpr Number one{1000000000000000, -15, Number::unchecked{}};
+// Safely convert rep (int64) mantissa to internalrep (uint64). If the rep is
+// negative, returns the positive value. This takes a little extra work because
+// converting std::numeric_limits<std::int64_t>::min() flirts with UB, and can
+// vary across compilers.
+Number::internalrep
+Number::externalToInternal(rep mantissa)
+{
+    // If the mantissa is already positive, just return it
+    if (mantissa >= 0)
+        return mantissa;
+    // If the mantissa is negative, but fits within the positive range of rep,
+    // return it negated
+    if (mantissa >= -std::numeric_limits<rep>::max())
+        return -mantissa;
+
+    // If the mantissa doesn't fit within the positive range, convert to
+    // int128_t, negate that, and cast it back down to the internalrep
+    // In practice, this is only going to cover the case of
+    // std::numeric_limits<rep>::min().
+    int128_t const temp = mantissa;
+    return static_cast<internalrep>(-temp);
+}
+
+constexpr Number
+Number::oneSmall()
+{
+    return Number{false, Number::kSMALL_RANGE.min, -Number::kSMALL_RANGE.log, Number::Unchecked{}};
+};
+
+constexpr Number kONE_SML = Number::oneSmall();
+
+constexpr Number
+Number::oneLarge()
+{
+    return Number{false, Number::kLARGE_RANGE.min, -Number::kLARGE_RANGE.log, Number::Unchecked{}};
+};
+
+constexpr Number kONE_LRG = Number::oneLarge();
+
+Number
+Number::one()
+{
+    if (&kRANGE.get() == &kSMALL_RANGE)
+        return kONE_SML;
+    XRPL_ASSERT(&kRANGE.get() == &kLARGE_RANGE, "Number::one() : valid range");
+    return kONE_LRG;
+}
+
+// Use the member names in this static function for now so the diff is cleaner
+// TODO: Rename the function parameters to get rid of the "_" suffix
+template <class T>
+void
+doNormalize(
+    bool& negative,
+    T& mantissa,
+    int& exponent,
+    MantissaRange::rep const& minMantissa,
+    MantissaRange::rep const& maxMantissa)
+{
+    auto constexpr kMIN_EXPONENT = Number::kMIN_EXPONENT;
+    auto constexpr kMAX_EXPONENT = Number::kMAX_EXPONENT;
+    auto constexpr kMAX_REP = Number::kMAX_REP;
+
+    using Guard = Number::Guard;
+
+    constexpr Number kZERO = Number{};
+    if (mantissa == 0)
+    {
+        mantissa = kZERO.mantissa_;
+        exponent = kZERO.exponent_;
+        negative = kZERO.negative_;
+        return;
+    }
+    auto m = mantissa;
+    while ((m < minMantissa) && (exponent > kMIN_EXPONENT))
+    {
+        m *= 10;
+        --exponent;
+    }
+    Guard g;
+    if (negative)
+        g.setNegative();
+    while (m > maxMantissa)
+    {
+        if (exponent >= kMAX_EXPONENT)
+            throw std::overflow_error("Number::normalize 1");
+        g.push(m % 10);
+        m /= 10;
+        ++exponent;
+    }
+    if ((exponent < kMIN_EXPONENT) || (m < minMantissa))
+    {
+        mantissa = kZERO.mantissa_;
+        exponent = kZERO.exponent_;
+        negative = kZERO.negative_;
+        return;
+    }
+
+    // When using the largeRange, "m" needs fit within an int64, even if
+    // the final mantissa_ is going to end up larger to fit within the
+    // MantissaRange. Cut it down here so that the rounding will be done while
+    // it's smaller.
+    //
+    // Example: 9,900,000,000,000,123,456 > 9,223,372,036,854,775,807,
+    //      so "m" will be modified to 990,000,000,000,012,345. Then that value
+    //      will be rounded to 990,000,000,000,012,345 or
+    //      990,000,000,000,012,346, depending on the rounding mode. Finally,
+    //      mantissa_ will be "m*10" so it fits within the range, and end up as
+    //      9,900,000,000,000,123,450 or 9,900,000,000,000,123,460.
+    // mantissa() will return mantissa_ / 10, and exponent() will return
+    // exponent_ + 1.
+    if (m > kMAX_REP)
+    {
+        if (exponent >= kMAX_EXPONENT)
+            throw std::overflow_error("Number::normalize 1.5");
+        g.push(m % 10);
+        m /= 10;
+        ++exponent;
+    }
+    // Before modification, m should be within the min/max range. After
+    // modification, it must be less than maxRep. In other words, the original
+    // value should have been no more than maxRep * 10.
+    // (maxRep * 10 > maxMantissa)
+    XRPL_ASSERT_PARTS(m <= kMAX_REP, "xrpl::doNormalize", "intermediate mantissa fits in int64");
+    mantissa = m;
+
+    g.doRoundUp(negative, mantissa, exponent, minMantissa, maxMantissa, "Number::normalize 2");
+    XRPL_ASSERT_PARTS(
+        mantissa >= minMantissa && mantissa <= maxMantissa,
+        "xrpl::doNormalize",
+        "final mantissa fits in range");
+}
+
+template <>
+void
+Number::normalize<uint128_t>(
+    bool& negative,
+    uint128_t& mantissa,
+    int& exponent,
+    internalrep const& minMantissa,
+    internalrep const& maxMantissa)
+{
+    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa);
+}
+
+template <>
+void
+Number::normalize<unsigned long long>(
+    bool& negative,
+    unsigned long long& mantissa,
+    int& exponent,
+    internalrep const& minMantissa,
+    internalrep const& maxMantissa)
+{
+    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa);
+}
+
+template <>
+void
+Number::normalize<unsigned long>(
+    bool& negative,
+    unsigned long& mantissa,
+    int& exponent,
+    internalrep const& minMantissa,
+    internalrep const& maxMantissa)
+{
+    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa);
+}
 
 void
 Number::normalize()
 {
-    if (mantissa_ == 0)
-    {
-        *this = Number{};
-        return;
-    }
-    bool const negative = (mantissa_ < 0);
-    auto m = static_cast<std::make_unsigned_t<rep>>(mantissa_);
-    if (negative)
-        m = -m;
-    while ((m < minMantissa) && (exponent_ > minExponent))
-    {
-        m *= 10;
-        --exponent_;
-    }
-    Guard g;
-    if (negative)
-        g.set_negative();
-    while (m > maxMantissa)
-    {
-        if (exponent_ >= maxExponent)
-            throw std::overflow_error("Number::normalize 1");
-        g.push(m % 10);
-        m /= 10;
-        ++exponent_;
-    }
-    mantissa_ = m;
-    if ((exponent_ < minExponent) || (mantissa_ < minMantissa))
-    {
-        *this = Number{};
-        return;
-    }
+    auto const& range = kRANGE.get();
+    normalize(negative_, mantissa_, exponent_, range.min, range.max);
+}
 
-    auto r = g.round();
-    if (r == 1 || (r == 0 && (mantissa_ & 1) == 1))
+// Copy the number, but set a new exponent. Because the mantissa doesn't change,
+// the result will be "mostly" normalized, but the exponent could go out of
+// range.
+Number
+Number::shiftExponent(int exponentDelta) const
+{
+    XRPL_ASSERT_PARTS(isnormal(), "xrpl::Number::shiftExponent", "normalized");
+    auto const newExponent = exponent_ + exponentDelta;
+    if (newExponent >= kMAX_EXPONENT)
+        throw std::overflow_error("Number::shiftExponent");
+    if (newExponent < kMIN_EXPONENT)
     {
-        ++mantissa_;
-        if (mantissa_ > maxMantissa)
-        {
-            mantissa_ /= 10;
-            ++exponent_;
-        }
+        return Number{};
     }
-    if (exponent_ > maxExponent)
-        throw std::overflow_error("Number::normalize 2");
-
-    if (negative)
-        mantissa_ = -mantissa_;
+    Number const result{negative_, mantissa_, newExponent, Unchecked{}};
+    XRPL_ASSERT_PARTS(result.isnormal(), "xrpl::Number::shiftExponent", "result is normalized");
+    return result;
 }
 
 Number&
 Number::operator+=(Number const& y)
 {
-    if (y == Number{})
+    constexpr Number kZERO = Number{};
+    if (y == kZERO)
         return *this;
-    if (*this == Number{})
+    if (*this == kZERO)
     {
         *this = y;
         return *this;
     }
     if (*this == -y)
     {
-        *this = Number{};
+        *this = kZERO;
         return *this;
     }
-    XRPL_ASSERT(
-        isnormal() && y.isnormal(),
-        "ripple::Number::operator+=(Number) : is normal");
-    auto xm = mantissa();
-    auto xe = exponent();
-    int xn = 1;
-    if (xm < 0)
-    {
-        xm = -xm;
-        xn = -1;
-    }
-    auto ym = y.mantissa();
-    auto ye = y.exponent();
-    int yn = 1;
-    if (ym < 0)
-    {
-        ym = -ym;
-        yn = -1;
-    }
+
+    XRPL_ASSERT(isnormal() && y.isnormal(), "xrpl::Number::operator+=(Number) : is normal");
+    // *n = negative
+    // *s = sign
+    // *m = mantissa
+    // *e = exponent
+
+    // Need to use uint128_t, because large mantissas can overflow when added
+    // together.
+    bool xn = negative_;
+    uint128_t xm = mantissa_;
+    auto xe = exponent_;
+
+    bool const yn = y.negative_;
+    uint128_t ym = y.mantissa_;
+    auto ye = y.exponent_;
     Guard g;
     if (xe < ye)
     {
-        if (xn == -1)
-            g.set_negative();
+        if (xn)
+            g.setNegative();
         do
         {
             g.push(xm % 10);
@@ -274,8 +549,8 @@ Number::operator+=(Number const& y)
     }
     else if (xe > ye)
     {
-        if (yn == -1)
-            g.set_negative();
+        if (yn)
+            g.setNegative();
         do
         {
             g.push(ym % 10);
@@ -283,27 +558,21 @@ Number::operator+=(Number const& y)
             ++ye;
         } while (xe > ye);
     }
+
+    auto const& range = kRANGE.get();
+    auto const& minMantissa = range.min;
+    auto const& maxMantissa = range.max;
+
     if (xn == yn)
     {
         xm += ym;
-        if (xm > maxMantissa)
+        if (xm > maxMantissa || xm > kMAX_REP)
         {
             g.push(xm % 10);
             xm /= 10;
             ++xe;
         }
-        auto r = g.round();
-        if (r == 1 || (r == 0 && (xm & 1) == 1))
-        {
-            ++xm;
-            if (xm > maxMantissa)
-            {
-                xm /= 10;
-                ++xe;
-            }
-        }
-        if (xe > maxExponent)
-            throw std::overflow_error("Number::addition overflow");
+        g.doRoundUp(xn, xm, xe, minMantissa, maxMantissa, "Number::addition overflow");
     }
     else
     {
@@ -317,30 +586,19 @@ Number::operator+=(Number const& y)
             xe = ye;
             xn = yn;
         }
-        while (xm < minMantissa)
+        while (xm < minMantissa && xm * 10 <= kMAX_REP)
         {
             xm *= 10;
             xm -= g.pop();
             --xe;
         }
-        auto r = g.round();
-        if (r == 1 || (r == 0 && (xm & 1) == 1))
-        {
-            --xm;
-            if (xm < minMantissa)
-            {
-                xm *= 10;
-                --xe;
-            }
-        }
-        if (xe < minExponent)
-        {
-            xm = 0;
-            xe = Number{}.exponent_;
-        }
+        g.doRoundDown(xn, xm, xe, minMantissa);
     }
-    mantissa_ = xm * xn;
+
+    negative_ = xn;
+    mantissa_ = static_cast<internalrep>(xm);
     exponent_ = xe;
+    normalize();
     return *this;
 }
 
@@ -375,39 +633,42 @@ divu10(uint128_t& u)
 Number&
 Number::operator*=(Number const& y)
 {
-    if (*this == Number{})
+    constexpr Number kZERO = Number{};
+    if (*this == kZERO)
         return *this;
-    if (y == Number{})
+    if (y == kZERO)
     {
         *this = y;
         return *this;
     }
-    XRPL_ASSERT(
-        isnormal() && y.isnormal(),
-        "ripple::Number::operator*=(Number) : is normal");
-    auto xm = mantissa();
-    auto xe = exponent();
-    int xn = 1;
-    if (xm < 0)
-    {
-        xm = -xm;
-        xn = -1;
-    }
-    auto ym = y.mantissa();
-    auto ye = y.exponent();
-    int yn = 1;
-    if (ym < 0)
-    {
-        ym = -ym;
-        yn = -1;
-    }
+    // *n = negative
+    // *s = sign
+    // *m = mantissa
+    // *e = exponent
+
+    bool const xn = negative_;
+    int const xs = xn ? -1 : 1;
+    internalrep xm = mantissa_;
+    auto xe = exponent_;
+
+    bool const yn = y.negative_;
+    int const ys = yn ? -1 : 1;
+    internalrep const ym = y.mantissa_;
+    auto ye = y.exponent_;
+
     auto zm = uint128_t(xm) * uint128_t(ym);
     auto ze = xe + ye;
-    auto zn = xn * yn;
+    auto zs = xs * ys;
+    bool zn = (zs == -1);
     Guard g;
-    if (zn == -1)
-        g.set_negative();
-    while (zm > maxMantissa)
+    if (zn)
+        g.setNegative();
+
+    auto const& range = kRANGE.get();
+    auto const& minMantissa = range.min;
+    auto const& maxMantissa = range.max;
+
+    while (zm > maxMantissa || zm > kMAX_REP)
     {
         // The following is optimization for:
         // g.push(static_cast<unsigned>(zm % 10));
@@ -415,78 +676,129 @@ Number::operator*=(Number const& y)
         g.push(divu10(zm));
         ++ze;
     }
-    xm = static_cast<rep>(zm);
+    xm = static_cast<internalrep>(zm);
     xe = ze;
-    auto r = g.round();
-    if (r == 1 || (r == 0 && (xm & 1) == 1))
-    {
-        ++xm;
-        if (xm > maxMantissa)
-        {
-            xm /= 10;
-            ++xe;
-        }
-    }
-    if (xe < minExponent)
-    {
-        xm = 0;
-        xe = Number{}.exponent_;
-    }
-    if (xe > maxExponent)
-        throw std::overflow_error(
-            "Number::multiplication overflow : exponent is " +
-            std::to_string(xe));
-    mantissa_ = xm * zn;
+    g.doRoundUp(
+        zn,
+        xm,
+        xe,
+        minMantissa,
+        maxMantissa,
+        "Number::multiplication overflow : exponent is " + std::to_string(xe));
+    negative_ = zn;
+    mantissa_ = xm;
     exponent_ = xe;
-    XRPL_ASSERT(
-        isnormal() || *this == Number{},
-        "ripple::Number::operator*=(Number) : result is normal");
+
+    normalize();
     return *this;
 }
 
 Number&
 Number::operator/=(Number const& y)
 {
-    if (y == Number{})
+    constexpr Number kZERO = Number{};
+    if (y == kZERO)
         throw std::overflow_error("Number: divide by 0");
-    if (*this == Number{})
+    if (*this == kZERO)
         return *this;
-    int np = 1;
-    auto nm = mantissa();
-    auto ne = exponent();
-    if (nm < 0)
+    // n* = numerator
+    // d* = denominator
+    // *p = negative (positive?)
+    // *s = sign
+    // *m = mantissa
+    // *e = exponent
+
+    bool const np = negative_;
+    int const ns = (np ? -1 : 1);
+    auto nm = mantissa_;
+    auto ne = exponent_;
+
+    bool const dp = y.negative_;
+    int const ds = (dp ? -1 : 1);
+    auto dm = y.mantissa_;
+    auto de = y.exponent_;
+
+    auto const& range = kRANGE.get();
+    auto const& minMantissa = range.min;
+    auto const& maxMantissa = range.max;
+
+    // Shift by 10^17 gives greatest precision while not overflowing
+    // uint128_t or the cast back to int64_t
+    // TODO: Can/should this be made bigger for largeRange?
+    // log(2^128,10) ~ 38.5
+    // largeRange.log = 18, fits in 10^19
+    // f can be up to 10^(38-19) = 10^19 safely
+    static_assert(kSMALL_RANGE.log == 15);
+    static_assert(kLARGE_RANGE.log == 18);
+    bool const small = Number::getMantissaScale() == MantissaRange::MantissaScale::Small;
+    uint128_t const f = small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
+    XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
+
+    // unsigned denominator
+    auto const dmu = static_cast<uint128_t>(dm);
+    // correctionFactor can be anything between 10 and f, depending on how much
+    // extra precision we want to only use for rounding with the
+    // largeRange. Three digits seems like plenty, and is more than
+    // the smallRange uses.
+    uint128_t const correctionFactor = 1'000;
+
+    auto const numerator = uint128_t(nm) * f;
+
+    auto zm = numerator / dmu;
+    auto ze = ne - de - (small ? 17 : 19);
+    bool zn = (ns * ds) < 0;
+    if (!small)
     {
-        nm = -nm;
-        np = -1;
+        // Virtually multiply numerator by correctionFactor. Since that would
+        // overflow in the existing uint128_t, we'll do that part separately.
+        // The math for this would work for small mantissas, but we need to
+        // preserve existing behavior.
+        //
+        // Consider:
+        // ((numerator * correctionFactor) / dmu) / correctionFactor
+        // = ((numerator / dmu) * correctionFactor) / correctionFactor)
+        //
+        // But that assumes infinite precision. With integer math, this is
+        // equivalent to
+        //
+        // = ((numerator / dmu * correctionFactor)
+        //   + ((numerator % dmu) * correctionFactor) / dmu) / correctionFactor
+        //
+        // We have already set `mantissa_ = numerator / dmu`. Now we
+        // compute `remainder = numerator % dmu`, and if it is
+        // nonzero, we do the rest of the arithmetic. If it's zero, we can skip
+        // it.
+        auto const remainder = (numerator % dmu);
+        if (remainder != 0)
+        {
+            zm *= correctionFactor;
+            auto const correction = remainder * correctionFactor / dmu;
+            zm += correction;
+            // divide by 1000 by moving the exponent, so we don't lose the
+            // integer value we just computed
+            ze -= 3;
+        }
     }
-    int dp = 1;
-    auto dm = y.mantissa();
-    auto de = y.exponent();
-    if (dm < 0)
-    {
-        dm = -dm;
-        dp = -1;
-    }
-    // Shift by 10^17 gives greatest precision while not overflowing uint128_t
-    // or the cast back to int64_t
-    uint128_t const f = 100'000'000'000'000'000;
-    mantissa_ = static_cast<std::int64_t>(uint128_t(nm) * f / uint128_t(dm));
-    exponent_ = ne - de - 17;
-    mantissa_ *= np * dp;
-    normalize();
+    normalize(zn, zm, ze, minMantissa, maxMantissa);
+    negative_ = zn;
+    mantissa_ = static_cast<internalrep>(zm);
+    exponent_ = ze;
+    XRPL_ASSERT_PARTS(isnormal(), "xrpl::Number::operator/=", "result is normalized");
+
     return *this;
 }
 
-Number::operator rep() const
+Number::
+operator rep() const
 {
-    rep drops = mantissa_;
-    int offset = exponent_;
+    rep drops = mantissa();
+    int offset = exponent();
     Guard g;
     if (drops != 0)
     {
-        if (drops < 0)
+        if (negative_)
         {
-            g.set_negative();
+            g.setNegative();
             drops = -drops;
         }
         for (; offset < 0; ++offset)
@@ -496,95 +808,103 @@ Number::operator rep() const
         }
         for (; offset > 0; --offset)
         {
-            if (drops > std::numeric_limits<decltype(drops)>::max() / 10)
+            if (drops > kMAX_REP / 10)
                 throw std::overflow_error("Number::operator rep() overflow");
             drops *= 10;
         }
-        auto r = g.round();
-        if (r == 1 || (r == 0 && (drops & 1) == 1))
-        {
-            ++drops;
-        }
-        if (g.is_negative())
-            drops = -drops;
+        g.doRound(drops, "Number::operator rep() rounding overflow");
     }
     return drops;
+}
+
+Number
+Number::truncate() const noexcept
+{
+    if (exponent_ >= 0 || mantissa_ == 0)
+        return *this;
+
+    Number ret = *this;
+    while (ret.exponent_ < 0 && ret.mantissa_ != 0)
+    {
+        ret.exponent_ += 1;
+        ret.mantissa_ /= rep(10);
+    }
+    // We are guaranteed that normalize() will never throw an exception
+    // because exponent is either negative or zero at this point.
+    ret.normalize();
+    return ret;
 }
 
 std::string
 to_string(Number const& amount)
 {
     // keep full internal accuracy, but make more human friendly if possible
-    if (amount == Number{})
+    constexpr Number kZERO = Number{};
+    if (amount == kZERO)
         return "0";
 
-    auto const exponent = amount.exponent();
-    auto mantissa = amount.mantissa();
+    auto exponent = amount.exponent_;
+    auto mantissa = amount.mantissa_;
+    bool const negative = amount.negative_;
 
     // Use scientific notation for exponents that are too small or too large
-    if (((exponent != 0) && ((exponent < -25) || (exponent > -5))))
+    auto const rangeLog = Number::mantissaLog();
+    if (((exponent != 0) && ((exponent < -(rangeLog + 10)) || (exponent > -(rangeLog - 10)))))
     {
-        std::string ret = std::to_string(mantissa);
+        while (mantissa != 0 && mantissa % 10 == 0 && exponent < Number::kMAX_EXPONENT)
+        {
+            mantissa /= 10;
+            ++exponent;
+        }
+        std::string ret = negative ? "-" : "";
+        ret.append(std::to_string(mantissa));
         ret.append(1, 'e');
         ret.append(std::to_string(exponent));
         return ret;
     }
 
-    bool negative = false;
+    XRPL_ASSERT(exponent + 43 > 0, "xrpl::to_string(Number) : minimum exponent");
 
-    if (mantissa < 0)
-    {
-        mantissa = -mantissa;
-        negative = true;
-    }
+    ptrdiff_t const padPrefix = rangeLog + 12;
+    ptrdiff_t const padSuffix = rangeLog + 8;
 
-    XRPL_ASSERT(
-        exponent + 43 > 0, "ripple::to_string(Number) : minimum exponent");
-
-    ptrdiff_t const pad_prefix = 27;
-    ptrdiff_t const pad_suffix = 23;
-
-    std::string const raw_value(std::to_string(mantissa));
+    std::string const rawValue(std::to_string(mantissa));
     std::string val;
 
-    val.reserve(raw_value.length() + pad_prefix + pad_suffix);
-    val.append(pad_prefix, '0');
-    val.append(raw_value);
-    val.append(pad_suffix, '0');
+    val.reserve(rawValue.length() + padPrefix + padSuffix);
+    val.append(padPrefix, '0');
+    val.append(rawValue);
+    val.append(padSuffix, '0');
 
-    ptrdiff_t const offset(exponent + 43);
+    ptrdiff_t const offset(exponent + padPrefix + rangeLog + 1);
 
-    auto pre_from(val.begin());
-    auto const pre_to(val.begin() + offset);
+    auto preFrom(val.begin());
+    auto const preTo(val.begin() + offset);
 
-    auto const post_from(val.begin() + offset);
-    auto post_to(val.end());
+    auto const postFrom(val.begin() + offset);
+    auto postTo(val.end());
 
     // Crop leading zeroes. Take advantage of the fact that there's always a
     // fixed amount of leading zeroes and skip them.
-    if (std::distance(pre_from, pre_to) > pad_prefix)
-        pre_from += pad_prefix;
+    if (std::distance(preFrom, preTo) > padPrefix)
+        preFrom += padPrefix;
 
-    XRPL_ASSERT(
-        post_to >= post_from,
-        "ripple::to_string(Number) : first distance check");
+    XRPL_ASSERT(postTo >= postFrom, "xrpl::to_string(Number) : first distance check");
 
-    pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
+    preFrom = std::find_if(preFrom, preTo, [](char c) { return c != '0'; });
 
     // Crop trailing zeroes. Take advantage of the fact that there's always a
     // fixed amount of trailing zeroes and skip them.
-    if (std::distance(post_from, post_to) > pad_suffix)
-        post_to -= pad_suffix;
+    if (std::distance(postFrom, postTo) > padSuffix)
+        postTo -= padSuffix;
 
-    XRPL_ASSERT(
-        post_to >= post_from,
-        "ripple::to_string(Number) : second distance check");
+    XRPL_ASSERT(postTo >= postFrom, "xrpl::to_string(Number) : second distance check");
 
-    post_to = std::find_if(
-                  std::make_reverse_iterator(post_to),
-                  std::make_reverse_iterator(post_from),
-                  [](char c) { return c != '0'; })
-                  .base();
+    postTo = std::find_if(
+                 std::make_reverse_iterator(postTo),
+                 std::make_reverse_iterator(postFrom),
+                 [](char c) { return c != '0'; })
+                 .base();
 
     std::string ret;
 
@@ -592,15 +912,19 @@ to_string(Number const& amount)
         ret.append(1, '-');
 
     // Assemble the output:
-    if (pre_from == pre_to)
+    if (preFrom == preTo)
+    {
         ret.append(1, '0');
+    }
     else
-        ret.append(pre_from, pre_to);
+    {
+        ret.append(preFrom, preTo);
+    }
 
-    if (post_to != post_from)
+    if (postTo != postFrom)
     {
         ret.append(1, '.');
-        ret.append(post_from, post_to);
+        ret.append(postFrom, postTo);
     }
 
     return ret;
@@ -613,7 +937,7 @@ Number
 power(Number const& f, unsigned n)
 {
     if (n == 0)
-        return one;
+        return Number::one();
     if (n == 1)
         return f;
     auto r = power(f, n / 2);
@@ -635,6 +959,9 @@ power(Number const& f, unsigned n)
 Number
 root(Number f, unsigned d)
 {
+    constexpr Number kZERO = Number{};
+    auto const one = Number::one();
+
     if (f == one || d == 1)
         return f;
     if (d == 0)
@@ -642,36 +969,38 @@ root(Number f, unsigned d)
         if (f == -one)
             return one;
         if (abs(f) < one)
-            return Number{};
+            return kZERO;
         throw std::overflow_error("Number::root infinity");
     }
-    if (f < Number{} && d % 2 == 0)
+    if (f < kZERO && d % 2 == 0)
         throw std::overflow_error("Number::root nan");
-    if (f == Number{})
+    if (f == kZERO)
         return f;
 
     // Scale f into the range (0, 1) such that f's exponent is a multiple of d
-    auto e = f.exponent() + 16;
+    auto e = f.exponent_ + Number::mantissaLog() + 1;
     auto const di = static_cast<int>(d);
     auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
     {
-        int k = (e >= 0 ? e : e - (di - 1)) / di;
-        int k2 = e - k * di;
+        int const k = (e >= 0 ? e : e - (di - 1)) / di;
+        int const k2 = e - (k * di);
         if (k2 == 0)
             return 0;
         return di - k2;
     }();
     e += ex;
-    f = Number{f.mantissa(), f.exponent() - e};  // f /= 10^e;
+    f = f.shiftExponent(-e);  // f /= 10^e;
+
+    XRPL_ASSERT_PARTS(f.isnormal(), "xrpl::root(Number, unsigned)", "f is normalized");
     bool neg = false;
-    if (f < Number{})
+    if (f < kZERO)
     {
         neg = true;
         f = -f;
     }
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = ((6 * di + 11) * di + 6) * di + 1;
+    auto const D = (((6 * di + 11) * di + 6) * di) + 1;  // NOLINT(readability-identifier-naming)
     auto const a0 = 3 * di * ((2 * di - 3) * di + 1);
     auto const a1 = 24 * di * (2 * di - 1);
     auto const a2 = -30 * (di - 1) * di;
@@ -694,27 +1023,33 @@ root(Number f, unsigned d)
     } while (r != rm1 && r != rm2);
 
     //  return r * 10^(e/d) to reverse scaling
-    return Number{r.mantissa(), r.exponent() + e / di};
+    auto const result = r.shiftExponent(e / di);
+    XRPL_ASSERT_PARTS(result.isnormal(), "xrpl::root(Number, unsigned)", "result is normalized");
+    return result;
 }
 
 Number
 root2(Number f)
 {
+    constexpr Number kZERO = Number{};
+    auto const one = Number::one();
+
     if (f == one)
         return f;
-    if (f < Number{})
+    if (f < kZERO)
         throw std::overflow_error("Number::root nan");
-    if (f == Number{})
+    if (f == kZERO)
         return f;
 
     // Scale f into the range (0, 1) such that f's exponent is a multiple of d
-    auto e = f.exponent() + 16;
+    auto e = f.exponent_ + Number::mantissaLog() + 1;
     if (e % 2 != 0)
         ++e;
-    f = Number{f.mantissa(), f.exponent() - e};  // f /= 10^e;
+    f = f.shiftExponent(-e);  // f /= 10^e;
+    XRPL_ASSERT_PARTS(f.isnormal(), "xrpl::root2(Number)", "f is normalized");
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = 105;
+    auto const D = 105;  // NOLINT(readability-identifier-naming)
     auto const a0 = 18;
     auto const a1 = 144;
     auto const a2 = -60;
@@ -732,7 +1067,10 @@ root2(Number f)
     } while (r != rm1 && r != rm2);
 
     //  return r * 10^(e/2) to reverse scaling
-    return Number{r.mantissa(), r.exponent() + e / 2};
+    auto const result = r.shiftExponent(e / 2);
+    XRPL_ASSERT_PARTS(result.isnormal(), "xrpl::root2(Number)", "result is normalized");
+
+    return result;
 }
 
 // Returns f^(n/d)
@@ -740,6 +1078,9 @@ root2(Number f)
 Number
 power(Number const& f, unsigned n, unsigned d)
 {
+    constexpr Number kZERO = Number{};
+    auto const one = Number::one();
+
     if (f == one)
         return f;
     auto g = std::gcd(n, d);
@@ -750,7 +1091,7 @@ power(Number const& f, unsigned n, unsigned d)
         if (f == -one)
             return one;
         if (abs(f) < one)
-            return Number{};
+            return kZERO;
         // abs(f) > one
         throw std::overflow_error("Number::power infinity");
     }
@@ -758,9 +1099,9 @@ power(Number const& f, unsigned n, unsigned d)
         return one;
     n /= g;
     d /= g;
-    if ((n % 2) == 1 && (d % 2) == 0 && f < Number{})
+    if ((n % 2) == 1 && (d % 2) == 0 && f < kZERO)
         throw std::overflow_error("Number::power nan");
     return root(power(f, n), d);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

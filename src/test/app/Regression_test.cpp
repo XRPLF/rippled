@@ -1,37 +1,60 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Env_ss.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/check.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/require.h>
+#include <test/jtx/rpc.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/tx/apply.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
-namespace ripple {
-namespace test {
+#include <boost/asio/buffer.hpp>
 
-struct Regression_test : public beast::unit_test::suite
+#include <cassert>
+#include <chrono>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace xrpl::test {
+
+struct Regression_test : public beast::unit_test::Suite
 {
     // OfferCreate, then OfferCreate with cancel
     void
@@ -40,14 +63,14 @@ struct Regression_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
         auto const gw = Account("gw");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), "alice", gw);
-        env(offer("alice", USD(10), XRP(10)), require(owners("alice", 1)));
-        env(offer("alice", USD(20), XRP(10)),
-            json(R"raw(
+        env(offer("alice", usd(10), XRP(10)), Require(Owners("alice", 1)));
+        env(offer("alice", usd(20), XRP(10)),
+            Json(R"raw(
                 { "OfferSequence" : 4 }
             )raw"),
-            require(owners("alice", 1)));
+            Require(Owners("alice", 1)));
     }
 
     void
@@ -62,32 +85,31 @@ struct Regression_test : public beast::unit_test::suite
         // be reproduced against an open ledger. Make a local
         // closed ledger and work with it directly.
         auto closed = std::make_shared<Ledger>(
-            create_genesis,
-            env.app().config(),
+            kCREATE_GENESIS,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
-        auto expectedDrops = INITIAL_XRP;
-        BEAST_EXPECT(closed->info().drops == expectedDrops);
+        auto expectedDrops = kINITIAL_XRP;
+        BEAST_EXPECT(closed->header().drops == expectedDrops);
 
         auto const aliceXRP = 400;
         auto const aliceAmount = XRP(aliceXRP);
 
-        auto next = std::make_shared<Ledger>(
-            *closed, env.app().timeKeeper().closeTime());
+        auto next = std::make_shared<Ledger>(*closed, env.app().getTimeKeeper().closeTime());
         {
             // Fund alice
             auto const jt = env.jt(pay(env.master, "alice", aliceAmount));
             OpenView accum(&*next);
 
-            auto const result =
-                ripple::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
-            BEAST_EXPECT(result.ter == tesSUCCESS);
+            auto const result = xrpl::apply(env.app(), accum, *jt.stx, TapNone, env.journal);
+            BEAST_EXPECT(isTesSuccess(result.ter));
             BEAST_EXPECT(result.applied);
 
             accum.apply(*next);
         }
         expectedDrops -= next->fees().base;
-        BEAST_EXPECT(next->info().drops == expectedDrops);
+        BEAST_EXPECT(next->header().drops == expectedDrops);
         {
             auto const sle = next->read(keylet::account(Account("alice").id()));
             BEAST_EXPECT(sle);
@@ -99,12 +121,11 @@ struct Regression_test : public beast::unit_test::suite
         {
             // Specify the seq manually since the env's open ledger
             // doesn't know about this account.
-            auto const jt = env.jt(noop("alice"), fee(expectedDrops), seq(2));
+            auto const jt = env.jt(noop("alice"), Fee(expectedDrops), Seq(2));
 
             OpenView accum(&*next);
 
-            auto const result =
-                ripple::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
+            auto const result = xrpl::apply(env.app(), accum, *jt.stx, TapNone, env.journal);
             BEAST_EXPECT(result.ter == tecINSUFF_FEE);
             BEAST_EXPECT(result.applied);
 
@@ -117,8 +138,8 @@ struct Regression_test : public beast::unit_test::suite
 
             BEAST_EXPECT(balance == XRP(0));
         }
-        expectedDrops -= aliceXRP * dropsPerXRP;
-        BEAST_EXPECT(next->info().drops == expectedDrops);
+        expectedDrops -= aliceXRP * kDROPS_PER_XRP;
+        BEAST_EXPECT(next->header().drops == expectedDrops);
     }
 
     void
@@ -132,10 +153,10 @@ struct Regression_test : public beast::unit_test::suite
         auto test256r1key = [&env](Account const& acct) {
             auto const baseFee = env.current()->fees().base;
             std::uint32_t const acctSeq = env.seq(acct);
-            Json::Value jsonNoop =
-                env.json(noop(acct), fee(baseFee), seq(acctSeq), sig(acct));
-            JTx jt = env.jt(jsonNoop);
-            jt.fill_sig = false;
+            json::Value const jsonNoOp =
+                env.json(noop(acct), Fee(baseFee), Seq(acctSeq), Sig(acct));
+            JTx jt = env.jt(jsonNoOp);
+            jt.fillSig = false;
 
             // Random secp256r1 public key generated by
             // https://kjur.github.io/jsrsasign/sample-ecdsa.html
@@ -154,13 +175,11 @@ struct Regression_test : public beast::unit_test::suite
             secp256r1Sig->setFieldVL(sfSigningPubKey, *pubKeyBlob);
             jt.stx.reset(secp256r1Sig.release());
 
-            env(jt,
-                rpc("invalidTransaction",
-                    "fails local checks: Invalid signature."));
+            env(jt, Rpc("invalidTransaction", "fails local checks: Invalid signature."));
         };
 
-        Account const alice{"alice", KeyType::secp256k1};
-        Account const becky{"becky", KeyType::ed25519};
+        Account const alice{"alice", KeyType::Secp256k1};
+        Account const becky{"becky", KeyType::Ed25519};
 
         env.fund(XRP(10000), alice, becky);
 
@@ -174,17 +193,16 @@ struct Regression_test : public beast::unit_test::suite
         testcase("Autofilled fee should use the escalated fee");
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->section("transaction_queue")
-                .set("minimum_txn_in_ledger_standalone", "3");
+            cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
             cfg->FEES.reference_fee = 10;
             return cfg;
         }));
-        Env_ss envs(env);
+        EnvSs envs(env);
 
         auto const alice = Account("alice");
         env.fund(XRP(100000), alice);
 
-        auto params = Json::Value(Json::objectValue);
+        auto params = json::Value(json::ObjectValue);
         // Max fee = 50k drops
         params[jss::fee_mult_max] = 5000;
         std::vector<int> const expectedFees({10, 10, 8889, 13889, 20000});
@@ -193,7 +211,7 @@ struct Regression_test : public beast::unit_test::suite
         // our fee limit.
         for (int i = 0; i < 5; ++i)
         {
-            envs(noop(alice), fee(none), seq(none))(params);
+            envs(noop(alice), Fee(kNONE), Seq(kNONE))(params);
 
             auto tx = env.tx();
             if (BEAST_EXPECT(tx))
@@ -242,15 +260,13 @@ struct Regression_test : public beast::unit_test::suite
         std::string const request =
             R"json({"command":"path_find","id":19,"subcommand":"create","source_account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","destination_account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","destination_amount":"1000000","source_currencies":[{"currency":"0000000000000000000000000000000000000000"},{"currency":"0000000000000000000000005553440000000000"},{"currency":"0000000000000000000000004254430000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004254430000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004254430000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004555520000000000"},{"currency":"0000000000000000000000004554480000000000"},{"currency":"0000000000000000000000004A50590000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"000000000000000000000000434E590000000000"},{"currency":"0000000000000000000000004742490000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004341440000000000"}]})json";
 
-        Json::Value jvRequest;
-        Json::Reader jrReader;
+        json::Value jvRequest;
+        json::Reader jrReader;
 
         std::vector<boost::asio::const_buffer> buffers;
         buffers.emplace_back(buffer(request, 1024));
-        buffers.emplace_back(
-            buffer(request.data() + 1024, request.length() - 1024));
-        BEAST_EXPECT(
-            jrReader.parse(jvRequest, buffers) && jvRequest.isObject());
+        buffers.emplace_back(buffer(request.data() + 1024, request.length() - 1024));
+        BEAST_EXPECT(jrReader.parse(jvRequest, buffers) && jvRequest.isObject());
     }
 
     void
@@ -262,31 +278,28 @@ struct Regression_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
 
-        Account alice("alice");
-        Account bob("bob");
+        Account const alice("alice");
+        Account const bob("bob");
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
         {
-            auto const alice_index = keylet::account(alice).key;
-            if (BEAST_EXPECT(alice_index.isNonZero()))
+            auto const aliceIndex = keylet::account(alice).key;
+            if (BEAST_EXPECT(aliceIndex.isNonZero()))
             {
-                env(check::cash(
-                        alice, alice_index, check::DeliverMin(XRP(100))),
-                    ter(tecNO_ENTRY));
+                env(check::cash(alice, aliceIndex, check::DeliverMin(XRP(100))), Ter(tecNO_ENTRY));
             }
         }
 
         {
-            auto const bob_index = keylet::account(bob).key;
+            auto const bobIndex = keylet::account(bob).key;
 
             auto const digest = [&]() -> std::optional<uint256> {
-                auto const& state =
-                    env.app().getLedgerMaster().getClosedLedger()->stateMap();
+                auto const& state = env.app().getLedgerMaster().getClosedLedger()->stateMap();
                 SHAMapHash digest;
-                if (!state.peekItem(bob_index, digest))
+                if (!state.peekItem(bobIndex, digest))
                     return std::nullopt;
-                return digest.as_uint256();
+                return digest.asUint256();
             }();
 
             auto const mapCounts = [&](CountedObjects::List const& list) {
@@ -299,30 +312,24 @@ struct Regression_test : public beast::unit_test::suite
                 return result;
             };
 
-            if (BEAST_EXPECT(bob_index.isNonZero()) &&
-                BEAST_EXPECT(digest.has_value()))
+            if (BEAST_EXPECT(bobIndex.isNonZero()) && BEAST_EXPECT(digest.has_value()))
             {
-                auto& cache = env.app().cachedSLEs();
-                cache.del(*digest, false);
-                auto const beforeCounts =
-                    mapCounts(CountedObjects::getInstance().getCounts(0));
+                auto& cache = env.app().getCachedSLEs();
+                cache.del(*digest, false);  // NOLINT(bugprone-unchecked-optional-access)
+                auto const beforeCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
-                env(check::cash(alice, bob_index, check::DeliverMin(XRP(100))),
-                    ter(tecNO_ENTRY));
+                env(check::cash(alice, bobIndex, check::DeliverMin(XRP(100))), Ter(tecNO_ENTRY));
 
-                auto const afterCounts =
-                    mapCounts(CountedObjects::getInstance().getCounts(0));
+                auto const afterCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
                 using namespace std::string_literals;
                 BEAST_EXPECT(
-                    beforeCounts.at("CachedView::hit"s) ==
-                    afterCounts.at("CachedView::hit"s));
+                    beforeCounts.at("CachedView::hit"s) == afterCounts.at("CachedView::hit"s));
                 BEAST_EXPECT(
                     beforeCounts.at("CachedView::hitExpired"s) + 1 ==
                     afterCounts.at("CachedView::hitExpired"s));
                 BEAST_EXPECT(
-                    beforeCounts.at("CachedView::miss"s) ==
-                    afterCounts.at("CachedView::miss"s));
+                    beforeCounts.at("CachedView::miss"s) == afterCounts.at("CachedView::miss"s));
             }
         }
     }
@@ -340,7 +347,6 @@ struct Regression_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Regression, app, ripple);
+BEAST_DEFINE_TESTSUITE(Regression, app, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

@@ -1,0 +1,270 @@
+#include <xrpl/ledger/OpenView.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <boost/container/pmr/monotonic_buffer_resource.hpp>
+
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+
+namespace xrpl {
+
+class OpenView::TxsIterImpl : public TxsType::iter_base
+{
+private:
+    bool metadata_;
+    txs_map::const_iterator iter_;
+
+public:
+    explicit TxsIterImpl(bool metadata, txs_map::const_iterator iter)
+        : metadata_(metadata), iter_(iter)
+    {
+    }
+
+    [[nodiscard]] std::unique_ptr<base_type>
+    copy() const override
+    {
+        return std::make_unique<TxsIterImpl>(metadata_, iter_);
+    }
+
+    [[nodiscard]] bool
+    equal(base_type const& impl) const override
+    {
+        if (auto const p = dynamic_cast<TxsIterImpl const*>(&impl))
+            return iter_ == p->iter_;
+        return false;
+    }
+
+    void
+    increment() override
+    {
+        ++iter_;
+    }
+
+    [[nodiscard]] value_type
+    dereference() const override
+    {
+        value_type result;
+        {
+            SerialIter sit(iter_->second.txn->slice());
+            result.first = std::make_shared<STTx const>(sit);
+        }
+        if (metadata_)
+        {
+            SerialIter sit(iter_->second.meta->slice());
+            result.second = std::make_shared<STObject const>(sit, sfMetadata);
+        }
+        return result;
+    }
+};
+
+//------------------------------------------------------------------------------
+
+OpenView::OpenView(OpenView const& rhs)
+    : ReadView(rhs)
+    , TxsRawView(rhs)
+    , monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+          kINITIAL_BUFFER_SIZE)}
+    , txs_{rhs.txs_, monotonic_resource_.get()}
+    , rules_{rhs.rules_}
+    , header_{rhs.header_}
+    , base_{rhs.base_}
+    , items_{rhs.items_}
+    , hold_{rhs.hold_}
+    , open_{rhs.open_} {};
+
+OpenView::OpenView(OpenLedgerT, ReadView const* base, Rules rules, std::shared_ptr<void const> hold)
+    : monotonic_resource_{
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kINITIAL_BUFFER_SIZE)}
+    , txs_{monotonic_resource_.get()}
+    , rules_(std::move(rules))
+    , header_(base->header())
+    , base_(base)
+    , hold_(std::move(hold))
+{
+    header_.validated = false;
+    header_.accepted = false;
+    header_.seq = base_->header().seq + 1;
+    header_.parentCloseTime = base_->header().closeTime;
+    header_.parentHash = base_->header().hash;
+}
+
+OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
+    : monotonic_resource_{
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kINITIAL_BUFFER_SIZE)}
+    , txs_{monotonic_resource_.get()}
+    , rules_(base->rules())
+    , header_(base->header())
+    , base_(base)
+    , hold_(std::move(hold))
+    , open_(base->open())
+{
+}
+
+std::size_t
+OpenView::txCount() const
+{
+    return baseTxCount_ + txs_.size();
+}
+
+void
+OpenView::apply(TxsRawView& to) const
+{
+    items_.apply(to);
+    for (auto const& item : txs_)
+        to.rawTxInsert(item.first, item.second.txn, item.second.meta);
+}
+
+//---
+
+LedgerHeader const&
+OpenView::header() const
+{
+    return header_;
+}
+
+Fees const&
+OpenView::fees() const
+{
+    return base_->fees();
+}
+
+Rules const&
+OpenView::rules() const
+{
+    return rules_;
+}
+
+bool
+OpenView::exists(Keylet const& k) const
+{
+    return items_.exists(*base_, k);
+}
+
+auto
+OpenView::succ(key_type const& key, std::optional<key_type> const& last) const
+    -> std::optional<key_type>
+{
+    return items_.succ(*base_, key, last);
+}
+
+std::shared_ptr<SLE const>
+OpenView::read(Keylet const& k) const
+{
+    return items_.read(*base_, k);
+}
+
+auto
+OpenView::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
+{
+    return items_.slesBegin(*base_);
+}
+
+auto
+OpenView::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
+{
+    return items_.slesEnd(*base_);
+}
+
+auto
+OpenView::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
+{
+    return items_.slesUpperBound(*base_, key);
+}
+
+auto
+OpenView::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
+{
+    return std::make_unique<TxsIterImpl>(!open(), txs_.cbegin());
+}
+
+auto
+OpenView::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
+{
+    return std::make_unique<TxsIterImpl>(!open(), txs_.cend());
+}
+
+bool
+OpenView::txExists(key_type const& key) const
+{
+    return txs_.contains(key);
+}
+
+auto
+OpenView::txRead(key_type const& key) const -> tx_type
+{
+    auto const iter = txs_.find(key);
+    if (iter == txs_.end())
+        return base_->txRead(key);
+    auto const& item = iter->second;
+    auto stx = std::make_shared<STTx const>(SerialIter{item.txn->slice()});
+    decltype(tx_type::second) sto;
+    if (item.meta)
+    {
+        sto = std::make_shared<STObject const>(SerialIter{item.meta->slice()}, sfMetadata);
+    }
+    else
+    {
+        sto = nullptr;
+    }
+    return {std::move(stx), std::move(sto)};
+}
+
+//---
+
+void
+OpenView::rawErase(std::shared_ptr<SLE> const& sle)
+{
+    items_.erase(sle);
+}
+
+void
+OpenView::rawInsert(std::shared_ptr<SLE> const& sle)
+{
+    items_.insert(sle);
+}
+
+void
+OpenView::rawReplace(std::shared_ptr<SLE> const& sle)
+{
+    items_.replace(sle);
+}
+
+void
+OpenView::rawDestroyXRP(XRPAmount const& fee)
+{
+    items_.destroyXRP(fee);
+    // VFALCO Deduct from header_.totalDrops ?
+    //        What about child views?
+}
+
+//---
+
+void
+OpenView::rawTxInsert(
+    key_type const& key,
+    std::shared_ptr<Serializer const> const& txn,
+    std::shared_ptr<Serializer const> const& metaData)
+{
+    auto const result = txs_.emplace(
+        std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
+    if (!result.second)
+        Throw<std::logic_error>("rawTxInsert: duplicate TX id: " + to_string(key));
+}
+
+}  // namespace xrpl

@@ -1,24 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/basics/make_SSLContext.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/make_SSLContext.h>
 
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
@@ -27,8 +9,9 @@
 
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
-#include <openssl/objects.h>
+#include <openssl/objects.h>  // IWYU pragma: keep
 #include <openssl/ossl_typ.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
@@ -43,11 +26,11 @@
 #include <memory>
 #include <string>
 
-namespace ripple {
-namespace openssl {
-namespace detail {
+namespace xrpl {
 
-/** The default strength of self-signed RSA certifices.
+namespace openssl::detail {
+
+/** The default strength of self-signed RSA certificates.
 
     Per NIST Special Publication 800-57 Part 3, 2048-bit RSA is still
     considered acceptably secure. Generally, we would want to go above
@@ -63,7 +46,7 @@ namespace detail {
       @note If you increase the number of bits you need to generate new
             default DH parameters and update defaultDH  accordingly.
  * */
-int defaultRSAKeyBits = 2048;
+int gDefaultRsaKeyBits = 2048;
 
 /** The default DH parameters.
 
@@ -77,7 +60,7 @@ int defaultRSAKeyBits = 2048;
     @note If you increase the number of bits you need to update
           defaultRSAKeyBits accordingly.
  */
-static constexpr char const defaultDH[] =
+static constexpr char const kDEFAULT_DH[] =
     "-----BEGIN DH PARAMETERS-----\n"
     "MIIBCAKCAQEApKSWfR7LKy0VoZ/SDCObCvJ5HKX2J93RJ+QN8kJwHh+uuA8G+t8Q\n"
     "MDRjL5HanlV/sKN9HXqBc7eqHmmbqYwIXKUt9MUZTLNheguddxVlc2IjdP5i9Ps8\n"
@@ -101,56 +84,55 @@ static constexpr char const defaultDH[] =
           global or per-port basis, using the `ssl_ciphers` directive in the
           config file.
  */
-std::string const defaultCipherList = "TLSv1.2:!CBC:!DSS:!PSK:!eNULL:!aNULL";
+std::string const kDEFAULT_CIPHER_LIST = "TLSv1.2:!CBC:!DSS:!PSK:!eNULL:!aNULL";
 
 static void
 initAnonymous(boost::asio::ssl::context& context)
 {
     using namespace openssl;
 
-    static auto defaultRSA = []() {
+    static auto kDEFAULT_RSA = []() {
         BIGNUM* bn = BN_new();
         BN_set_word(bn, RSA_F4);
 
         auto rsa = RSA_new();
 
         if (!rsa)
-            LogicError("RSA_new failed");
+            logicError("RSA_new failed");
 
-        if (RSA_generate_key_ex(rsa, defaultRSAKeyBits, bn, nullptr) != 1)
-            LogicError("RSA_generate_key_ex failure");
+        if (RSA_generate_key_ex(rsa, gDefaultRsaKeyBits, bn, nullptr) != 1)
+            logicError("RSA_generate_key_ex failure");
 
         BN_clear_free(bn);
 
         return rsa;
     }();
 
-    static auto defaultEphemeralPrivateKey = []() {
+    static auto kDEFAULT_EPHEMERAL_PRIVATE_KEY = []() {
         auto pkey = EVP_PKEY_new();
 
         if (!pkey)
-            LogicError("EVP_PKEY_new failed");
+            logicError("EVP_PKEY_new failed");
 
         // We need to up the reference count of here, since we are retaining a
         // copy of the key for (potential) reuse.
-        if (RSA_up_ref(defaultRSA) != 1)
-            LogicError(
-                "EVP_PKEY_assign_RSA: incrementing reference count failed");
+        if (RSA_up_ref(kDEFAULT_RSA) != 1)
+            logicError("EVP_PKEY_assign_RSA: incrementing reference count failed");
 
-        if (!EVP_PKEY_assign_RSA(pkey, defaultRSA))
-            LogicError("EVP_PKEY_assign_RSA failed");
+        if (!EVP_PKEY_assign_RSA(pkey, kDEFAULT_RSA))
+            logicError("EVP_PKEY_assign_RSA failed");
 
         return pkey;
     }();
 
-    static auto defaultCert = []() {
+    static auto kDEFAULT_CERT = []() {
         auto x509 = X509_new();
 
         if (x509 == nullptr)
-            LogicError("X509_new failed");
+            logicError("X509_new failed");
 
         // According to the standards (X.509 et al), the value should be one
-        // less than the actualy certificate version we want. Since we want
+        // less than the actually certificate version we want. Since we want
         // version 3, we must use a 2.
         X509_set_version(x509, 2);
 
@@ -160,13 +142,12 @@ initAnonymous(boost::asio::ssl::context& context)
 
         auto const ts = std::time(nullptr) - (25 * 60 * 60);
 
-        int ret = std::strftime(
-            buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
+        int const ret = std::strftime(buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
 
         buf[ret] = 0;
 
         if (ASN1_TIME_set_string_X509(X509_get_notBefore(x509), buf) != 1)
-            LogicError("Unable to set certificate validity date");
+            logicError("Unable to set certificate validity date");
 
         // And make it valid for two years
         X509_gmtime_adj(X509_get_notAfter(x509), 2 * 365 * 24 * 60 * 60);
@@ -195,32 +176,28 @@ initAnonymous(boost::asio::ssl::context& context)
             X509V3_set_ctx_nodb(&ctx);
             X509V3_set_ctx(&ctx, x509, x509, nullptr, nullptr, 0);
 
-            if (auto ext = X509V3_EXT_conf_nid(
-                    nullptr, &ctx, NID_basic_constraints, "critical,CA:FALSE"))
+            if (auto ext =
+                    X509V3_EXT_conf_nid(nullptr, &ctx, NID_basic_constraints, "critical,CA:FALSE"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
             }
 
             if (auto ext = X509V3_EXT_conf_nid(
-                    nullptr,
-                    &ctx,
-                    NID_ext_key_usage,
-                    "critical,serverAuth,clientAuth"))
+                    nullptr, &ctx, NID_ext_key_usage, "critical,serverAuth,clientAuth"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
             }
 
-            if (auto ext = X509V3_EXT_conf_nid(
-                    nullptr, &ctx, NID_key_usage, "critical,digitalSignature"))
+            if (auto ext =
+                    X509V3_EXT_conf_nid(nullptr, &ctx, NID_key_usage, "critical,digitalSignature"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
             }
 
-            if (auto ext = X509V3_EXT_conf_nid(
-                    nullptr, &ctx, NID_subject_key_identifier, "hash"))
+            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_subject_key_identifier, "hash"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
@@ -228,62 +205,61 @@ initAnonymous(boost::asio::ssl::context& context)
         }
 
         // And a private key
-        X509_set_pubkey(x509, defaultEphemeralPrivateKey);
+        X509_set_pubkey(x509, kDEFAULT_EPHEMERAL_PRIVATE_KEY);
 
-        if (!X509_sign(x509, defaultEphemeralPrivateKey, EVP_sha256()))
-            LogicError("X509_sign failed");
+        if (!X509_sign(x509, kDEFAULT_EPHEMERAL_PRIVATE_KEY, EVP_sha256()))
+            logicError("X509_sign failed");
 
         return x509;
     }();
 
     SSL_CTX* const ctx = context.native_handle();
 
-    if (SSL_CTX_use_certificate(ctx, defaultCert) <= 0)
-        LogicError("SSL_CTX_use_certificate failed");
+    if (SSL_CTX_use_certificate(ctx, kDEFAULT_CERT) <= 0)
+        logicError("SSL_CTX_use_certificate failed");
 
-    if (SSL_CTX_use_PrivateKey(ctx, defaultEphemeralPrivateKey) <= 0)
-        LogicError("SSL_CTX_use_PrivateKey failed");
+    if (SSL_CTX_use_PrivateKey(ctx, kDEFAULT_EPHEMERAL_PRIVATE_KEY) <= 0)
+        logicError("SSL_CTX_use_PrivateKey failed");
 }
 
 static void
 initAuthenticated(
     boost::asio::ssl::context& context,
-    std::string const& key_file,
-    std::string const& cert_file,
-    std::string const& chain_file)
+    std::string const& keyFile,
+    std::string const& certFile,
+    std::string const& chainFile)
 {
-    auto fmt_error = [](boost::system::error_code ec) -> std::string {
+    auto fmtError = [](boost::system::error_code ec) -> std::string {
         return " [" + std::to_string(ec.value()) + ": " + ec.message() + "]";
     };
 
     SSL_CTX* const ssl = context.native_handle();
 
-    bool cert_set = false;
+    bool certSet = false;
 
-    if (!cert_file.empty())
+    if (!certFile.empty())
     {
         boost::system::error_code ec;
 
-        context.use_certificate_file(
-            cert_file, boost::asio::ssl::context::pem, ec);
+        // NOLINTNEXTLINE(bugprone-unused-return-value)
+        context.use_certificate_file(certFile, boost::asio::ssl::context::pem, ec);
 
         if (ec)
-            LogicError("Problem with SSL certificate file" + fmt_error(ec));
+            logicError("Problem with SSL certificate file" + fmtError(ec));
 
-        cert_set = true;
+        certSet = true;
     }
 
-    if (!chain_file.empty())
+    if (!chainFile.empty())
     {
         // VFALCO Replace fopen() with RAII
-        FILE* f = fopen(chain_file.c_str(), "r");
+        FILE* f = fopen(chainFile.c_str(), "r");
 
-        if (!f)
+        if (f == nullptr)
         {
-            LogicError(
+            logicError(
                 "Problem opening SSL chain file" +
-                fmt_error(boost::system::error_code(
-                    errno, boost::system::generic_category())));
+                fmtError(boost::system::error_code(errno, boost::system::generic_category())));
         }
 
         try
@@ -295,19 +271,21 @@ initAuthenticated(
                 if (x == nullptr)
                     break;
 
-                if (!cert_set)
+                if (!certSet)
                 {
                     if (SSL_CTX_use_certificate(ssl, x) != 1)
-                        LogicError(
+                    {
+                        logicError(
                             "Problem retrieving SSL certificate from chain "
                             "file.");
+                    }
 
-                    cert_set = true;
+                    certSet = true;
                 }
                 else if (SSL_CTX_add_extra_chain_cert(ssl, x) != 1)
                 {
                     X509_free(x);
-                    LogicError("Problem adding SSL chain certificate.");
+                    logicError("Problem adding SSL chain certificate.");
                 }
             }
 
@@ -316,57 +294,48 @@ initAuthenticated(
         catch (std::exception const& ex)
         {
             fclose(f);
-            LogicError(
-                std::string(
-                    "Reading the SSL chain file generated an exception: ") +
-                ex.what());
+            logicError(
+                std::string("Reading the SSL chain file generated an exception: ") + ex.what());
         }
     }
 
-    if (!key_file.empty())
+    if (!keyFile.empty())
     {
         boost::system::error_code ec;
 
-        context.use_private_key_file(
-            key_file, boost::asio::ssl::context::pem, ec);
+        // NOLINTNEXTLINE(bugprone-unused-return-value)
+        context.use_private_key_file(keyFile, boost::asio::ssl::context::pem, ec);
 
         if (ec)
         {
-            LogicError(
-                "Problem using the SSL private key file" + fmt_error(ec));
+            logicError("Problem using the SSL private key file" + fmtError(ec));
         }
     }
 
     if (SSL_CTX_check_private_key(ssl) != 1)
     {
-        LogicError("Invalid key in SSL private key file.");
+        logicError("Invalid key in SSL private key file.");
     }
 }
 
 std::shared_ptr<boost::asio::ssl::context>
-get_context(std::string cipherList)
+getContext(std::string cipherList)
 {
-    auto c = std::make_shared<boost::asio::ssl::context>(
-        boost::asio::ssl::context::sslv23);
+    auto c = std::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);
 
     c->set_options(
-        boost::asio::ssl::context::default_workarounds |
-        boost::asio::ssl::context::no_sslv2 |
-        boost::asio::ssl::context::no_sslv3 |
-        boost::asio::ssl::context::no_tlsv1 |
-        boost::asio::ssl::context::no_tlsv1_1 |
-        boost::asio::ssl::context::single_dh_use |
+        boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 |
+        boost::asio::ssl::context::no_sslv3 | boost::asio::ssl::context::no_tlsv1 |
+        boost::asio::ssl::context::no_tlsv1_1 | boost::asio::ssl::context::single_dh_use |
         boost::asio::ssl::context::no_compression);
 
     if (cipherList.empty())
-        cipherList = defaultCipherList;
+        cipherList = kDEFAULT_CIPHER_LIST;
 
-    if (auto result =
-            SSL_CTX_set_cipher_list(c->native_handle(), cipherList.c_str());
-        result != 1)
-        LogicError("SSL_CTX_set_cipher_list failed");
+    if (auto result = SSL_CTX_set_cipher_list(c->native_handle(), cipherList.c_str()); result != 1)
+        logicError("SSL_CTX_set_cipher_list failed");
 
-    c->use_tmp_dh({std::addressof(detail::defaultDH), sizeof(defaultDH)});
+    c->use_tmp_dh({std::addressof(detail::kDEFAULT_DH), sizeof(kDEFAULT_DH)});
 
     // Disable all renegotiation support in TLS v1.2. This can help prevent
     // exploitation of the bug described in CVE-2021-3499 (for details see
@@ -377,14 +346,13 @@ get_context(std::string cipherList)
     return c;
 }
 
-}  // namespace detail
-}  // namespace openssl
+}  // namespace openssl::detail
 
 //------------------------------------------------------------------------------
 std::shared_ptr<boost::asio::ssl::context>
-make_SSLContext(std::string const& cipherList)
+makeSslContext(std::string const& cipherList)
 {
-    auto context = openssl::detail::get_context(cipherList);
+    auto context = openssl::detail::getContext(cipherList);
     openssl::detail::initAnonymous(*context);
     // VFALCO NOTE, It seems the WebSocket context never has
     // set_verify_mode called, for either setting of WEBSOCKET_SECURE
@@ -393,15 +361,15 @@ make_SSLContext(std::string const& cipherList)
 }
 
 std::shared_ptr<boost::asio::ssl::context>
-make_SSLContextAuthed(
+makeSslContextAuthed(
     std::string const& keyFile,
     std::string const& certFile,
     std::string const& chainFile,
     std::string const& cipherList)
 {
-    auto context = openssl::detail::get_context(cipherList);
+    auto context = openssl::detail::getContext(cipherList);
     openssl::detail::initAuthenticated(*context, keyFile, certFile, chainFile);
     return context;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

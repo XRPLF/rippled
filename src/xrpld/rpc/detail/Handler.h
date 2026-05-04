@@ -1,45 +1,27 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_RPC_HANDLER_H_INCLUDED
-#define RIPPLE_RPC_HANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Status.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-namespace Json {
-class Object;
-}
+#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/server/NetworkOPs.h>
 
-namespace ripple {
-namespace RPC {
+namespace json {
+class Object;
+}  // namespace json
+
+namespace xrpl::RPC {
 
 // Under what condition can we call this RPC?
+// Bitwise flags
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum Condition {
-    NO_CONDITION = 0,
-    NEEDS_NETWORK_CONNECTION = 1,
-    NEEDS_CURRENT_LEDGER = 1 << 1,
-    NEEDS_CLOSED_LEDGER = 1 << 2,
+    NoCondition = 0,
+    NeedsNetworkConnection = 1,
+    NeedsCurrentLedger = 1 << 1,
+    NeedsClosedLedger = 1 << 2,
 };
 
 struct Handler
@@ -47,26 +29,24 @@ struct Handler
     template <class JsonValue>
     using Method = std::function<Status(JsonContext&, JsonValue&)>;
 
-    char const* name_;
-    Method<Json::Value> valueMethod_;
-    Role role_;
-    RPC::Condition condition_;
+    char const* name;
+    Method<json::Value> valueMethod;
+    Role role;
+    RPC::Condition condition;
 
-    unsigned minApiVer_ = apiMinimumSupportedVersion;
-    unsigned maxApiVer_ = apiMaximumValidVersion;
+    unsigned minApiVer = kAPI_MINIMUM_SUPPORTED_VERSION;
+    unsigned maxApiVer = kAPI_MAXIMUM_VALID_VERSION;
 };
 
 Handler const*
 getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
-/** Return a Json::objectValue with a single entry. */
+/** Return a json::objectValue with a single entry. */
 template <class Value>
-Json::Value
-makeObjectValue(
-    Value const& value,
-    Json::StaticString const& field = jss::message)
+json::Value
+makeObjectValue(Value const& value, json::StaticString const& field = jss::message)
 {
-    Json::Value result(Json::objectValue);
+    json::Value result(json::ObjectValue);
     result[field] = value;
     return result;
 }
@@ -76,41 +56,37 @@ std::set<char const*>
 getHandlerNames();
 
 template <class T>
-error_code_i
-conditionMet(Condition condition_required, T& context)
+ErrorCodeI
+conditionMet(Condition conditionRequired, T& context)
 {
-    if (context.app.getOPs().isAmendmentBlocked() &&
-        (condition_required != NO_CONDITION))
+    if (context.app.getOPs().isAmendmentBlocked() && (conditionRequired != NoCondition))
     {
-        return rpcAMENDMENT_BLOCKED;
+        return RpcAmendmentBlocked;
     }
 
-    if (context.app.getOPs().isUNLBlocked() &&
-        (condition_required != NO_CONDITION))
+    if (context.app.getOPs().isUNLBlocked() && (conditionRequired != NoCondition))
     {
-        return rpcEXPIRED_VALIDATOR_LIST;
+        return RpcExpiredValidatorList;
     }
 
-    if ((condition_required != NO_CONDITION) &&
+    if ((conditionRequired != NoCondition) &&
         (context.netOps.getOperatingMode() < OperatingMode::SYNCING))
     {
         JLOG(context.j.info()) << "Insufficient network mode for RPC: "
                                << context.netOps.strOperatingMode();
 
         if (context.apiVersion == 1)
-            return rpcNO_NETWORK;
-        return rpcNOT_SYNCED;
+            return RpcNoNetwork;
+        return RpcNotSynced;
     }
 
-    if (!context.app.config().standalone() &&
-        condition_required != NO_CONDITION)
+    if (!context.app.config().standalone() && conditionRequired != NoCondition)
     {
-        if (context.ledgerMaster.getValidatedLedgerAge() >
-            Tuning::maxValidatedLedgerAge)
+        if (context.ledgerMaster.getValidatedLedgerAge() > Tuning::kMAX_VALIDATED_LEDGER_AGE)
         {
             if (context.apiVersion == 1)
-                return rpcNO_CURRENT;
-            return rpcNOT_SYNCED;
+                return RpcNoCurrent;
+            return RpcNotSynced;
         }
 
         auto const cID = context.ledgerMaster.getCurrentLedgerIndex();
@@ -118,27 +94,22 @@ conditionMet(Condition condition_required, T& context)
 
         if (cID + 10 < vID)
         {
-            JLOG(context.j.debug())
-                << "Current ledger ID(" << cID
-                << ") is less than validated ledger ID(" << vID << ")";
+            JLOG(context.j.debug()) << "Current ledger ID(" << cID
+                                    << ") is less than validated ledger ID(" << vID << ")";
             if (context.apiVersion == 1)
-                return rpcNO_CURRENT;
-            return rpcNOT_SYNCED;
+                return RpcNoCurrent;
+            return RpcNotSynced;
         }
     }
 
-    if ((condition_required != NO_CONDITION) &&
-        !context.ledgerMaster.getClosedLedger())
+    if ((conditionRequired != NoCondition) && !context.ledgerMaster.getClosedLedger())
     {
         if (context.apiVersion == 1)
-            return rpcNO_CLOSED;
-        return rpcNOT_SYNCED;
+            return RpcNoClosed;
+        return RpcNotSynced;
     }
 
-    return rpcSUCCESS;
+    return RpcSuccess;
 }
 
-}  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::RPC

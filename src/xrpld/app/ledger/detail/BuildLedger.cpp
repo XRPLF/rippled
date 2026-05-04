@@ -1,32 +1,30 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/BuildLedger.h>
-#include <xrpld/app/ledger/Ledger.h>
+
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/misc/CanonicalTXSet.h>
-#include <xrpld/app/tx/apply.h>
+#include <xrpld/app/main/Application.h>
 
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/tx/apply.h>
 
-namespace ripple {
+#include <cstddef>
+#include <exception>
+#include <memory>
+#include <set>
+
+namespace xrpl {
 
 /* Generic buildLedgerImpl that dispatches to ApplyTxs invocable with signature
     void(OpenView&, std::shared_ptr<Ledger> const&)
@@ -47,7 +45,7 @@ buildLedgerImpl(
 {
     auto built = std::make_shared<Ledger>(*parent, closeTime);
 
-    if (built->isFlagLedger() && built->rules().enabled(featureNegativeUNL))
+    if (built->isFlagLedger())
     {
         built->updateNegativeUNL();
     }
@@ -57,8 +55,7 @@ buildLedgerImpl(
 
     {
         OpenView accum(&*built);
-        XRPL_ASSERT(
-            !accum.open(), "ripple::buildLedgerImpl : valid ledger state");
+        XRPL_ASSERT(!accum.open(), "xrpl::buildLedgerImpl : valid ledger state");
         applyTxs(accum, built);
         accum.apply(*built);
     }
@@ -68,18 +65,16 @@ buildLedgerImpl(
         // Write the final version of all modified SHAMap
         // nodes to the node store to preserve the new LCL
 
-        int const asf = built->stateMap().flushDirty(hotACCOUNT_NODE);
-        int const tmf = built->txMap().flushDirty(hotTRANSACTION_NODE);
-        JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf
-                        << " transaction nodes";
+        int const asf = built->stateMap().flushDirty(NodeObjectType::AccountNode);
+        int const tmf = built->txMap().flushDirty(NodeObjectType::TransactionNode);
+        JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf << " transaction nodes";
     }
     built->unshare();
 
     // Accept ledger
     XRPL_ASSERT(
-        built->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            built->read(keylet::fees()),
-        "ripple::buildLedgerImpl : valid ledger fees");
+        built->header().seq < kXRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()),
+        "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
     return built;
@@ -110,8 +105,8 @@ applyTransactions(
     // Attempt to apply all of the retriable transactions
     for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
     {
-        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass
-                        << " begins (" << txns.size() << " transactions)";
+        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass << " begins ("
+                        << txns.size() << " transactions)";
         int changes = 0;
 
         auto it = txns.begin();
@@ -128,8 +123,7 @@ applyTransactions(
                     continue;
                 }
 
-                switch (applyTransaction(
-                    app, view, *it->second, certainRetry, tapNONE, j))
+                switch (applyTransaction(app, view, *it->second, certainRetry, TapNone, j))
                 {
                     case ApplyTransactionResult::Success:
                         it = txns.erase(it);
@@ -147,33 +141,30 @@ applyTransactions(
             }
             catch (std::exception const& ex)
             {
-                JLOG(j.warn())
-                    << "Transaction " << txid << " throws: " << ex.what();
+                JLOG(j.warn()) << "Transaction " << txid << " throws: " << ex.what();
                 failed.insert(txid);
                 it = txns.erase(it);
             }
         }
 
-        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass
-                        << " completed (" << changes << " changes)";
+        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass << " completed ("
+                        << changes << " changes)";
 
         // Accumulate changes.
         count += changes;
 
         // A non-retry pass made no changes
-        if (!changes && !certainRetry)
+        if ((changes == 0) && !certainRetry)
             break;
 
         // Stop retriable passes
-        if (!changes || (pass >= LEDGER_RETRY_PASSES))
+        if ((changes == 0) || (pass >= LEDGER_RETRY_PASSES))
             certainRetry = false;
     }
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    XRPL_ASSERT(
-        txns.empty() || !certainRetry,
-        "ripple::applyTransactions : retry transactions");
+    XRPL_ASSERT(txns.empty() || !certainRetry, "xrpl::applyTransactions : retry transactions");
     return count;
 }
 
@@ -201,24 +192,21 @@ buildLedger(
         app,
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
-            JLOG(j.debug())
-                << "Attempting to apply " << txns.size() << " transactions";
+            JLOG(j.debug()) << "Attempting to apply " << txns.size() << " transactions";
 
-            auto const applied =
-                applyTransactions(app, built, txns, failedTxns, accum, j);
+            auto const applied = applyTransactions(app, built, txns, failedTxns, accum, j);
 
             if (!txns.empty() || !failedTxns.empty())
-                JLOG(j.debug())
-                    << "Applied " << applied << " transactions; "
-                    << failedTxns.size() << " failed and " << txns.size()
-                    << " will be retried. "
-                    << "Total transactions in ledger (including Inner Batch): "
-                    << accum.txCount();
+            {
+                JLOG(j.debug()) << "Applied " << applied << " transactions; " << failedTxns.size()
+                                << " failed and " << txns.size() << " will be retried. "
+                                << "Total transactions in ledger (including Inner Batch): "
+                                << accum.txCount();
+            }
             else
-                JLOG(j.debug())
-                    << "Applied " << applied << " transactions. "
-                    << "Total transactions in ledger (including Inner Batch): "
-                    << accum.txCount();
+                JLOG(j.debug()) << "Applied " << applied << " transactions. "
+                                << "Total transactions in ledger (including Inner Batch): "
+                                << accum.txCount();
         });
 }
 
@@ -232,13 +220,13 @@ buildLedger(
 {
     auto const& replayLedger = replayData.replay();
 
-    JLOG(j.debug()) << "Report: Replay Ledger " << replayLedger->info().hash;
+    JLOG(j.debug()) << "Report: Replay Ledger " << replayLedger->header().hash;
 
     return buildLedgerImpl(
         replayData.parent(),
-        replayLedger->info().closeTime,
-        ((replayLedger->info().closeFlags & sLCF_NoConsensusTime) == 0),
-        replayLedger->info().closeTimeResolution,
+        replayLedger->header().closeTime,
+        ((replayLedger->header().closeFlags & kS_LCF_NO_CONSENSUS_TIME) == 0),
+        replayLedger->header().closeTimeResolution,
         app,
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
@@ -247,4 +235,4 @@ buildLedger(
         });
 }
 
-}  // namespace ripple
+}  // namespace xrpl

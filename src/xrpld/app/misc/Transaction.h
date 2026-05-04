@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
-#define RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -28,11 +8,12 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
 
 #include <optional>
 #include <variant>
 
-namespace ripple {
+namespace xrpl {
 
 //
 // Transactions should be constructed in JSON with. Use STObject::parseJson to
@@ -40,10 +21,9 @@ namespace ripple {
 //
 
 class Application;
-class Database;
 class Rules;
 
-enum TransStatus {
+enum class TransStatus {
     NEW = 0,         // just received / generated
     INVALID = 1,     // no valid signature, insufficient funds
     INCLUDED = 2,    // added to the current ledger
@@ -55,8 +35,6 @@ enum TransStatus {
     INCOMPLETE = 8   // needs more signatures
 };
 
-enum class TxSearched { all, some, unknown };
-
 // This class is for constructing and examining transactions.
 // Transactions are static so manipulation functions are unnecessary.
 class Transaction : public std::enable_shared_from_this<Transaction>,
@@ -66,10 +44,7 @@ public:
     using pointer = std::shared_ptr<Transaction>;
     using ref = pointer const&;
 
-    Transaction(
-        std::shared_ptr<STTx const> const&,
-        std::string&,
-        Application&) noexcept;
+    Transaction(std::shared_ptr<STTx const> const&, std::string&, Application&) noexcept;
 
     // The two boost::optional parameters are because SOCI requires
     // boost::optional (not std::optional) parameters.
@@ -88,43 +63,43 @@ public:
     std::shared_ptr<STTx const> const&
     getSTransaction()
     {
-        return mTransaction;
+        return transaction_;
     }
 
     uint256 const&
     getID() const
     {
-        return mTransactionID;
+        return transactionID_;
     }
 
     LedgerIndex
     getLedger() const
     {
-        return mLedgerIndex;
+        return ledgerIndex_;
     }
 
     bool
     isValidated() const
     {
-        return mLedgerIndex != 0;
+        return ledgerIndex_ != 0;
     }
 
     TransStatus
     getStatus() const
     {
-        return mStatus;
+        return status_;
     }
 
     TER
     getResult()
     {
-        return mResult;
+        return result_;
     }
 
     void
     setResult(TER terResult)
     {
-        mResult = terResult;
+        result_ = terResult;
     }
 
     void
@@ -137,13 +112,13 @@ public:
     void
     setStatus(TransStatus status)
     {
-        mStatus = status;
+        status_ = status;
     }
 
     void
     setLedger(LedgerIndex ledger)
     {
-        mLedgerIndex = ledger;
+        ledgerIndex_ = ledger;
     }
 
     /**
@@ -152,9 +127,9 @@ public:
     void
     setApplying()
     {
-        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
-        mApplying = true;
+        applying_ = true;
     }
 
     /**
@@ -163,11 +138,11 @@ public:
      * @return Whether transaction is being applied within a batch.
      */
     bool
-    getApplying()
+    getApplying() const
     {
-        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
-        return mApplying;
+        return applying_;
     }
 
     /**
@@ -176,9 +151,9 @@ public:
     void
     clearApplying()
     {
-        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
-        mApplying = false;
+        applying_ = false;
     }
 
     struct SubmitResult
@@ -199,7 +174,7 @@ public:
          * @brief any Get true of any state is true
          * @return True if any state if true
          */
-        bool
+        [[nodiscard]] bool
         any() const
         {
             return applied || broadcast || queued || kept;
@@ -240,7 +215,7 @@ public:
     }
 
     /**
-     * @brief setQueued Set this flag once was put into heldtxns queue
+     * @brief setQueued Set this flag once was put into held-txns queue
      */
     void
     setQueued()
@@ -312,11 +287,10 @@ public:
         std::uint32_t accountSeq,
         std::uint32_t availableSeq)
     {
-        currentLedgerState_.emplace(
-            validatedLedger, fee, accountSeq, availableSeq);
+        currentLedgerState_.emplace(validatedLedger, fee, accountSeq, availableSeq);
     }
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options, bool binary = false) const;
 
     // Information used to locate a transaction.
@@ -325,19 +299,17 @@ public:
     // at the time of search.
     struct Locator
     {
-        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>>
-            locator;
+        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator;
 
         // @return true if transaction was found, false otherwise
         //
         // Call this function first to determine the type of the contained info.
         // Calling the wrong getter function will throw an exception.
         // See documentation for the getter functions for more details
-        bool
-        isFound()
+        [[nodiscard]] bool
+        isFound() const
         {
-            return std::holds_alternative<std::pair<uint256, uint32_t>>(
-                locator);
+            return std::holds_alternative<std::pair<uint256, uint32_t>>(locator);
         }
 
         // @return key used to find transaction in nodestore
@@ -371,38 +343,35 @@ public:
     static Locator
     locate(uint256 const& id, Application& app);
 
-    static std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
-    load(uint256 const& id, Application& app, error_code_i& ec);
+    static std::
+        variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+        load(uint256 const& id, Application& app, ErrorCodeI& ec);
 
-    static std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
-    load(
-        uint256 const& id,
-        Application& app,
-        ClosedInterval<uint32_t> const& range,
-        error_code_i& ec);
+    static std::
+        variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+        load(
+            uint256 const& id,
+            Application& app,
+            ClosedInterval<uint32_t> const& range,
+            ErrorCodeI& ec);
 
 private:
-    static std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
-    load(
-        uint256 const& id,
-        Application& app,
-        std::optional<ClosedInterval<uint32_t>> const& range,
-        error_code_i& ec);
+    static std::
+        variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+        load(
+            uint256 const& id,
+            Application& app,
+            std::optional<ClosedInterval<uint32_t>> const& range,
+            ErrorCodeI& ec);
 
-    uint256 mTransactionID;
+    uint256 transactionID_;
 
-    LedgerIndex mLedgerIndex = 0;
-    std::optional<uint32_t> mTxnSeq;
-    std::optional<uint32_t> mNetworkID;
-    TransStatus mStatus = INVALID;
-    TER mResult = temUNCERTAIN;
-    /* Note that all access to mApplying are made by NetworkOPsImp,
+    LedgerIndex ledgerIndex_ = 0;
+    std::optional<uint32_t> txnSeq_;
+    std::optional<uint32_t> networkID_;
+    TransStatus status_ = TransStatus::INVALID;
+    TER result_ = temUNCERTAIN;
+    /* Note that all access to applying_ are made by NetworkOPsImp,
         and must be done under that class's lock. This avoids the overhead of
         taking a separate lock, and the consequences of a race condition are
         nearly-zero.
@@ -420,18 +389,16 @@ private:
             cleared, then it might get attempted again later as is the case with
             item 1.
     */
-    bool mApplying = false;
+    bool applying_ = false;
 
     /** different ways for transaction to be accepted */
     SubmitResult submitResult_;
 
     std::optional<CurrentLedgerState> currentLedgerState_;
 
-    std::shared_ptr<STTx const> mTransaction;
-    Application& mApp;
+    std::shared_ptr<STTx const> transaction_;
+    Application& app_;
     beast::Journal j_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

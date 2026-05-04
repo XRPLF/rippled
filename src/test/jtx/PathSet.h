@@ -1,32 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2015 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_LEDGER_TESTS_PATHSET_H_INCLUDED
-#define RIPPLE_LEDGER_TESTS_PATHSET_H_INCLUDED
+#pragma once
 
 #include <test/jtx.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 /** Count offer
  */
@@ -34,17 +14,15 @@ inline std::size_t
 countOffers(
     jtx::Env& env,
     jtx::Account const& account,
-    Issue const& takerPays,
-    Issue const& takerGets)
+    Asset const& takerPays,
+    Asset const& takerGets)
 {
     size_t count = 0;
-    forEachItem(
-        *env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
-            if (sle->getType() == ltOFFER &&
-                sle->getFieldAmount(sfTakerPays).issue() == takerPays &&
-                sle->getFieldAmount(sfTakerGets).issue() == takerGets)
-                ++count;
-        });
+    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays).asset() == takerPays &&
+            sle->getFieldAmount(sfTakerGets).asset() == takerGets)
+            ++count;
+    });
     return count;
 }
 
@@ -56,13 +34,11 @@ countOffers(
     STAmount const& takerGets)
 {
     size_t count = 0;
-    forEachItem(
-        *env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
-            if (sle->getType() == ltOFFER &&
-                sle->getFieldAmount(sfTakerPays) == takerPays &&
-                sle->getFieldAmount(sfTakerGets) == takerGets)
-                ++count;
-        });
+    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays) == takerPays &&
+            sle->getFieldAmount(sfTakerGets) == takerGets)
+            ++count;
+    });
     return count;
 }
 
@@ -81,40 +57,38 @@ isOffer(
 /** An offer exists
  */
 inline bool
-isOffer(
-    jtx::Env& env,
-    jtx::Account const& account,
-    Issue const& takerPays,
-    Issue const& takerGets)
+isOffer(jtx::Env& env, jtx::Account const& account, Asset const& takerPays, Asset const& takerGets)
 {
     return countOffers(env, account, takerPays, takerGets) > 0;
 }
 
-class Path
+class TestPath
 {
 public:
     STPath path;
 
-    Path() = default;
-    Path(Path const&) = default;
-    Path&
-    operator=(Path const&) = default;
-    Path(Path&&) = default;
-    Path&
-    operator=(Path&&) = default;
+    TestPath() = default;
+    TestPath(TestPath const&) = default;
+    TestPath&
+    operator=(TestPath const&) = default;
+    TestPath(TestPath&&) = default;
+    TestPath&
+    operator=(TestPath&&) = default;
 
     template <class First, class... Rest>
-    explicit Path(First&& first, Rest&&... rest)
+    explicit TestPath(First&& first, Rest&&... rest)
     {
         addHelper(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
-    Path&
-    push_back(Issue const& iss);
-    Path&
-    push_back(jtx::Account const& acc);
-    Path&
-    push_back(STPathElement const& pe);
-    Json::Value
+    TestPath&
+    pushBack(Issue const& iss);
+    TestPath&
+    pushBack(MPTIssue const& iss);
+    TestPath&
+    pushBack(jtx::Account const& acc);
+    TestPath&
+    pushBack(STPathElement const& pe);
+    [[nodiscard]] json::Value
     json() const;
 
 private:
@@ -123,44 +97,55 @@ private:
     addHelper(First&& first, Rest&&... rest);
 };
 
-inline Path&
-Path::push_back(STPathElement const& pe)
+inline TestPath&
+TestPath::pushBack(STPathElement const& pe)
 {
-    path.emplace_back(pe);
+    path.emplaceBack(pe);
     return *this;
 }
 
-inline Path&
-Path::push_back(Issue const& iss)
+inline TestPath&
+TestPath::pushBack(Issue const& iss)
 {
-    path.emplace_back(
-        STPathElement::typeCurrency | STPathElement::typeIssuer,
-        beast::zero,
+    path.emplaceBack(
+        STPathElement::TypeCurrency | STPathElement::TypeIssuer,
+        beast::kZERO,
         iss.currency,
         iss.account);
     return *this;
 }
 
-inline Path&
-Path::push_back(jtx::Account const& account)
+inline TestPath&
+TestPath::pushBack(MPTIssue const& iss)
 {
-    path.emplace_back(account.id(), beast::zero, beast::zero);
+    path.emplaceBack(
+        STPathElement::TypeMpt | STPathElement::TypeIssuer,
+        beast::kZERO,
+        iss.getMptID(),
+        iss.getIssuer());
+    return *this;
+}
+
+inline TestPath&
+TestPath::pushBack(jtx::Account const& account)
+{
+    path.emplaceBack(account.id(), Currency{beast::kZERO}, beast::kZERO);
     return *this;
 }
 
 template <class First, class... Rest>
 void
-Path::addHelper(First&& first, Rest&&... rest)
+TestPath::addHelper(First&& first, Rest&&... rest)
 {
-    push_back(std::forward<First>(first));
+    pushBack(std::forward<First>(first));
     if constexpr (sizeof...(rest) > 0)
         addHelper(std::forward<Rest>(rest)...);
 }
 
-inline Json::Value
-Path::json() const
+inline json::Value
+TestPath::json() const
 {
-    return path.getJson(JsonOptions::none);
+    return path.getJson(JsonOptions::KNone);
 }
 
 class PathSet
@@ -181,11 +166,11 @@ public:
     {
         addHelper(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
-    Json::Value
+    [[nodiscard]] json::Value
     json() const
     {
-        Json::Value v;
-        v["Paths"] = paths.getJson(JsonOptions::none);
+        json::Value v;
+        v["Paths"] = paths.getJson(JsonOptions::KNone);
         return v;
     }
 
@@ -194,13 +179,10 @@ private:
     void
     addHelper(First first, Rest... rest)
     {
-        paths.emplace_back(std::move(first.path));
+        paths.emplaceBack(std::move(first.path));
         if constexpr (sizeof...(rest) > 0)
             addHelper(std::move(rest)...);
     }
 };
 
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test

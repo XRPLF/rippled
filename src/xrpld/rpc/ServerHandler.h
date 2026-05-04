@@ -1,30 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_RPC_SERVERHANDLER_H_INCLUDED
-#define RIPPLE_RPC_SERVERHANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/CollectorManager.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
 
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/server/Server.h>
 #include <xrpl/server/Session.h>
@@ -39,7 +19,7 @@
 #include <mutex>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 inline bool
 operator<(Port const& lhs, Port const& rhs)
@@ -57,9 +37,9 @@ public:
         std::vector<Port> ports;
 
         // Memberspace
-        struct client_t
+        struct ClientT
         {
-            explicit client_t() = default;
+            explicit ClientT() = default;
 
             bool secure = false;
             std::string ip;
@@ -71,7 +51,7 @@ public:
         };
 
         // Configuration when acting in client role
-        client_t client;
+        ClientT client;
 
         // Configuration for the Overlay
         boost::asio::ip::tcp::endpoint overlay;
@@ -85,13 +65,13 @@ private:
     using stream_type = boost::beast::ssl_stream<socket_type>;
 
     Application& app_;
-    Resource::Manager& m_resourceManager;
-    beast::Journal m_journal;
-    NetworkOPs& m_networkOPs;
-    std::unique_ptr<Server> m_server;
+    Resource::Manager& resourceManager_;
+    beast::Journal journal_;
+    NetworkOPs& networkOPs_;
+    std::unique_ptr<Server> server_;
     Setup setup_;
     Endpoints endpoints_;
-    JobQueue& m_jobQueue;
+    JobQueue& jobQueue_;
     beast::insight::Counter rpc_requests_;
     beast::insight::Event rpc_size_;
     beast::insight::Event rpc_time_;
@@ -109,9 +89,9 @@ private:
     // Friend declaration that allows make_ServerHandler to access the
     // private type that restricts access to the ServerHandler ctor.
     friend std::unique_ptr<ServerHandler>
-    make_ServerHandler(
+    makeServerHandler(
         Application& app,
-        boost::asio::io_service&,
+        boost::asio::io_context&,
         JobQueue&,
         NetworkOPs&,
         Resource::Manager&,
@@ -122,7 +102,7 @@ public:
     ServerHandler(
         ServerHandlerCreator const&,
         Application& app,
-        boost::asio::io_service& io_service,
+        boost::asio::io_context& ioContext,
         JobQueue& jobQueue,
         NetworkOPs& networkOPs,
         Resource::Manager& resourceManager,
@@ -130,18 +110,18 @@ public:
 
     ~ServerHandler();
 
-    using Output = Json::Output;
+    using Output = json::Output;
 
     void
     setup(Setup const& setup, beast::Journal journal);
 
-    Setup const&
+    [[nodiscard]] Setup const&
     setup() const
     {
         return setup_;
     }
 
-    Endpoints const&
+    [[nodiscard]] Endpoints const&
     endpoints() const
     {
         return endpoints_;
@@ -162,19 +142,15 @@ public:
         Session& session,
         std::unique_ptr<stream_type>&& bundle,
         http_request_type&& request,
-        boost::asio::ip::tcp::endpoint const& remote_address);
+        boost::asio::ip::tcp::endpoint const& remoteAddress);
 
     Handoff
     onHandoff(
         Session& session,
-        http_request_type&& request,
-        boost::asio::ip::tcp::endpoint const& remote_address)
+        http_request_type&& request,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        boost::asio::ip::tcp::endpoint const& remoteAddress)
     {
-        return onHandoff(
-            session,
-            {},
-            std::forward<http_request_type>(request),
-            remote_address);
+        return onHandoff(session, {}, std::forward<http_request_type>(request), remoteAddress);
     }
 
     void
@@ -192,43 +168,39 @@ public:
     onStopped(Server&);
 
 private:
-    Json::Value
+    json::Value
     processSession(
         std::shared_ptr<WSSession> const& session,
         std::shared_ptr<JobQueue::Coro> const& coro,
-        Json::Value const& jv);
+        json::Value const& jv);
 
     void
-    processSession(
-        std::shared_ptr<Session> const&,
-        std::shared_ptr<JobQueue::Coro> coro);
+    processSession(std::shared_ptr<Session> const&, std::shared_ptr<JobQueue::Coro> coro);
 
     void
     processRequest(
         Port const& port,
         std::string const& request,
         beast::IP::Endpoint const& remoteIPAddress,
-        Output&&,
+        Output const&,
         std::shared_ptr<JobQueue::Coro> coro,
         std::string_view forwardedFor,
         std::string_view user);
 
-    Handoff
+    [[nodiscard]] Handoff
     statusResponse(http_request_type const& request) const;
 };
 
 ServerHandler::Setup
-setup_ServerHandler(Config const& c, std::ostream&& log);
+setupServerHandler(Config const& c, std::ostream& log);
 
 std::unique_ptr<ServerHandler>
-make_ServerHandler(
+makeServerHandler(
     Application& app,
-    boost::asio::io_service&,
+    boost::asio::io_context&,
     JobQueue&,
     NetworkOPs&,
     Resource::Manager&,
     CollectorManager& cm);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

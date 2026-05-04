@@ -1,26 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2015 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_VALIDATORLIST_H_INCLUDED
-#define RIPPLE_APP_MISC_VALIDATORLIST_H_INCLUDED
-
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Message.h>
 
@@ -29,6 +8,7 @@
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/server/Manifest.h>
 
 #include <boost/thread/shared_mutex.hpp>
 
@@ -40,7 +20,7 @@ class TMValidatorList;
 class TMValidatorListCollection;
 }  // namespace protocol
 
-namespace ripple {
+namespace xrpl {
 
 class Overlay;
 class HashRouter;
@@ -54,31 +34,31 @@ class STValidation;
    "worse" dispositions */
 enum class ListDisposition {
     /// List is valid
-    accepted = 0,
+    Accepted = 0,
 
     /// List is expired, but has the largest non-pending sequence seen so far
-    expired,
+    Expired,
 
     /// List will be valid in the future
-    pending,
+    Pending,
 
     /// Same sequence as current list
-    same_sequence,
+    SameSequence,
 
     /// Future sequence already seen
-    known_sequence,
+    KnownSequence,
 
     /// Trusted publisher key, but seq is too old
-    stale,
+    Stale,
 
     /// List signed by untrusted publisher key
-    untrusted,
+    Untrusted,
 
     /// List version is not supported
-    unsupported_version,
+    UnsupportedVersion,
 
     /// Invalid format or signature
-    invalid
+    Invalid
 };
 
 /* Entries in this enum are ordered by "desirability".
@@ -86,16 +66,16 @@ enum class ListDisposition {
    "worse" dispositions */
 enum class PublisherStatus {
     // Publisher has provided a valid file
-    available = 0,
+    Available = 0,
 
     // Current list is expired without replacement
-    expired,
+    Expired,
 
     // No file seen yet
-    unavailable,
+    Unavailable,
 
     // Publisher has revoked their manifest key
-    revoked,
+    Revoked,
 
 };
 
@@ -128,11 +108,11 @@ struct ValidatorBlobInfo
     Trusted Validators List
     -----------------------
 
-    Rippled accepts ledger proposals and validations from trusted validator
+    Xrpld accepts ledger proposals and validations from trusted validator
     nodes. A ledger is considered fully-validated once the number of received
     trusted validations for a ledger meets or exceeds a quorum value.
 
-    This class manages the set of validation public keys the local rippled node
+    This class manages the set of validation public keys the local xrpld node
     trusts. The list of trusted keys is populated using the keys listed in the
     configuration file as well as lists signed by trusted publishers. The
     trusted publisher public keys are specified in the config.
@@ -141,9 +121,9 @@ struct ValidatorBlobInfo
 
     @li @c "blob": Base64-encoded JSON string containing a @c "sequence", @c
         "validFrom", @c "validUntil", and @c "validators" field. @c "validFrom"
-        contains the Ripple timestamp (seconds since January 1st, 2000 (00:00
+        contains the XRPL timestamp (seconds since January 1st, 2000 (00:00
         UTC)) for when the list becomes valid. @c "validUntil" contains the
-        Ripple timestamp for when the list expires. @c "validators" contains
+        XRPL timestamp for when the list expires. @c "validators" contains
         an array of objects with a @c "validation_public_key" and optional
         @c "manifest" field. @c "validation_public_key" should be the
         hex-encoded master public key. @c "manifest" should be the
@@ -177,7 +157,7 @@ class ValidatorList
 
         std::vector<PublicKey> list;
         std::vector<std::string> manifests;
-        std::size_t sequence;
+        std::size_t sequence{};
         TimeKeeper::time_point validFrom;
         TimeKeeper::time_point validUntil;
         std::string siteUri;
@@ -193,7 +173,7 @@ class ValidatorList
 
     struct PublisherListCollection
     {
-        PublisherStatus status;
+        PublisherStatus status = PublisherStatus::Unavailable;
         /*
         The `current` VL is the one which
          1. Has the largest sequence number that
@@ -227,7 +207,7 @@ class ValidatorList
     boost::filesystem::path const dataPath_;
     beast::Journal const j_;
     std::shared_mutex mutable mutex_;
-    using lock_guard = std::lock_guard<decltype(mutex_)>;
+    using scoped_lock = std::scoped_lock<decltype(mutex_)>;
     using shared_lock = std::shared_lock<decltype(mutex_)>;
 
     std::atomic<std::size_t> quorum_;
@@ -243,7 +223,7 @@ class ValidatorList
     hash_set<PublicKey> trustedMasterKeys_;
 
     // Minimum number of lists on which a trusted validator must appear on
-    std::size_t listThreshold_;
+    std::size_t listThreshold_{1};
 
     // The current list of trusted signing keys. For those validators using
     // a manifest, the signing key is the ephemeral key. For the ones using
@@ -256,22 +236,22 @@ class ValidatorList
     // config file under the title of SECTION_VALIDATORS or [validators].
     // This list is not associated with the masterKey of any publisher.
 
-    // Appropos PublisherListCollection fields, localPublisherList does not
+    // Apropos PublisherListCollection fields, localPublisherList does not
     // have any "remaining" manifests. It is assumed to be perennially
     // "available". The "validUntil" field is set to the highest possible
     // value of the field, hence this list is always valid.
-    PublisherList localPublisherList;
+    PublisherList localPublisherList_;
 
     // The master public keys of the current negative UNL
     hash_set<PublicKey> negativeUNL_;
 
     // Currently supported versions of publisher list format
-    static constexpr std::uint32_t supportedListVersions[]{1, 2};
+    static constexpr std::uint32_t kSUPPORTED_LIST_VERSIONS[]{1, 2};
     // In the initial release, to prevent potential abuse and attacks, any VL
     // collection with more than 5 entries will be considered malformed.
-    static constexpr std::size_t maxSupportedBlobs = 5;
+    static constexpr std::size_t kMAX_SUPPORTED_BLOBS = 5;
     // Prefix of the file name used to store cache files.
-    static std::string const filePrefix_;
+    static std::string const kFILE_PREFIX;
 
 public:
     ValidatorList(
@@ -292,15 +272,11 @@ public:
     {
         explicit PublisherListStats() = default;
         explicit PublisherListStats(ListDisposition d);
-        PublisherListStats(
-            ListDisposition d,
-            PublicKey key,
-            PublisherStatus stat,
-            std::size_t seq);
+        PublisherListStats(ListDisposition d, PublicKey key, PublisherStatus stat, std::size_t seq);
 
-        ListDisposition
+        [[nodiscard]] ListDisposition
         bestDisposition() const;
-        ListDisposition
+        [[nodiscard]] ListDisposition
         worstDisposition() const;
         void
         mergeDispositions(PublisherListStats const& src);
@@ -309,7 +285,7 @@ public:
         // occurred
         std::map<ListDisposition, std::size_t> dispositions;
         std::optional<PublicKey> publisherKey;
-        PublisherStatus status = PublisherStatus::unavailable;
+        PublisherStatus status = PublisherStatus::Unavailable;
         std::size_t sequence = 0;
     };
 
@@ -317,9 +293,9 @@ public:
     {
         explicit MessageWithHash() = default;
         explicit MessageWithHash(
-            std::shared_ptr<Message> const& message_,
-            uint256 hash_,
-            std::size_t num_);
+            std::shared_ptr<Message> const& message,
+            uint256 hash,
+            std::size_t num);
         std::shared_ptr<Message> message;
         uint256 hash;
         std::size_t numVLs = 0;
@@ -355,7 +331,7 @@ public:
         @return An empty vector indicates malformed Json.
      */
     static std::vector<ValidatorBlobInfo>
-    parseBlobs(std::uint32_t version, Json::Value const& body);
+    parseBlobs(std::uint32_t version, json::Value const& body);
 
     static std::vector<ValidatorBlobInfo>
     parseBlobs(protocol::TMValidatorList const& body);
@@ -384,7 +360,7 @@ public:
         std::string const& rawManifest,
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         std::vector<MessageWithHash>& messages,
-        std::size_t maxSize = maximiumMessageSize);
+        std::size_t maxSize = kMAXIMUM_MESSAGE_SIZE);
 
     /** Apply multiple published lists of public keys, then broadcast it to all
         peers that have not seen it or sent it.
@@ -408,7 +384,7 @@ public:
         @param networkOPs NetworkOPs object which will be informed if there
             is a valid VL
 
-        @return `ListDisposition::accepted`, plus some of the publisher
+        @return `ListDisposition::Accepted`, plus some of the publisher
             information, if list was successfully applied
 
         @par Thread Safety
@@ -439,7 +415,7 @@ public:
 
         @param hash Optional hash of the data parameters
 
-        @return `ListDisposition::accepted`, plus some of the publisher
+        @return `ListDisposition::Accepted`, plus some of the publisher
         information, if list was successfully applied
 
         @par Thread Safety
@@ -593,7 +569,7 @@ public:
         May be called concurrently
     */
     void
-    for_each_listed(std::function<void(PublicKey const&, bool)> func) const;
+    forEachListed(std::function<void(PublicKey const&, bool)> func) const;
 
     /** Invokes the callback once for every available publisher list's raw
         data members
@@ -623,7 +599,7 @@ public:
         May be called concurrently
     */
     void
-    for_each_available(
+    forEachAvailable(
         std::function<void(
             std::string const& manifest,
             std::uint32_t version,
@@ -635,10 +611,8 @@ public:
     /** Returns the current valid list for the given publisher key,
         if available, as a Json object.
     */
-    std::optional<Json::Value>
-    getAvailable(
-        std::string_view pubKey,
-        std::optional<std::uint32_t> forceVersion = {});
+    std::optional<json::Value>
+    getAvailable(std::string_view pubKey, std::optional<std::uint32_t> forceVersion = {});
 
     /** Return the number of configured validator list sites. */
     std::size_t
@@ -661,7 +635,7 @@ public:
         @par Thread Safety
         May be called concurrently
     */
-    Json::Value
+    json::Value
     getJson() const;
 
     using QuorumKeys = std::pair<std::size_t const, hash_set<PublicKey>>;
@@ -672,7 +646,7 @@ public:
     QuorumKeys
     getQuorumKeys() const
     {
-        shared_lock read_lock{mutex_};
+        shared_lock const readLock{mutex_};
         return {quorum_, trustedSigningKeys_};
     }
 
@@ -711,8 +685,7 @@ public:
      * @return a filtered copy of the validations
      */
     std::vector<std::shared_ptr<STValidation>>
-    negativeUNLFilter(
-        std::vector<std::shared_ptr<STValidation>>&& validations) const;
+    negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& validations) const;
 
 private:
     /** Return the number of configured validator list sites. */
@@ -770,7 +743,7 @@ private:
         @param hash Optional hash of the data parameters.
             Defaults to uninitialized
 
-        @return `ListDisposition::accepted`, plus some of the publisher
+        @return `ListDisposition::Accepted`, plus some of the publisher
             information, if list was successfully applied
 
         @par Thread Safety
@@ -786,7 +759,7 @@ private:
         std::uint32_t version,
         std::string siteUri,
         std::optional<uint256> const& hash,
-        lock_guard const&);
+        scoped_lock const&);
 
     // This function updates the keyListings_ counts for all the trusted
     // master keys
@@ -795,7 +768,7 @@ private:
         PublicKey const& pubKey,
         PublisherList const& current,
         std::vector<PublicKey> const& oldList,
-        lock_guard const&);
+        scoped_lock const&);
 
     static void
     buildBlobInfos(
@@ -831,12 +804,12 @@ private:
     /** Get the filename used for caching UNLs
      */
     boost::filesystem::path
-    getCacheFileName(lock_guard const&, PublicKey const& pubKey) const;
+    getCacheFileName(scoped_lock const&, PublicKey const& pubKey) const;
 
     /** Build a Json representation of the collection, suitable for
         writing to a cache file, or serving to a /vl/ query
     */
-    static Json::Value
+    static json::Value
     buildFileData(
         std::string const& pubKey,
         PublisherListCollection const& pubCollection,
@@ -845,7 +818,7 @@ private:
     /** Build a Json representation of the collection, suitable for
     writing to a cache file, or serving to a /vl/ query
     */
-    static Json::Value
+    static json::Value
     buildFileData(
         std::string const& pubKey,
         PublisherListCollection const& pubCollection,
@@ -863,11 +836,11 @@ private:
     /** Write a JSON UNL to a cache file
      */
     void
-    cacheValidatorFile(lock_guard const& lock, PublicKey const& pubKey) const;
+    cacheValidatorFile(scoped_lock const& lock, PublicKey const& pubKey) const;
 
     /** Check response for trusted valid published list
 
-        @return `ListDisposition::accepted` if list can be applied
+        @return `ListDisposition::Accepted` if list can be applied
 
         @par Thread Safety
 
@@ -875,9 +848,9 @@ private:
     */
     std::pair<ListDisposition, std::optional<PublicKey>>
     verify(
-        lock_guard const&,
-        Json::Value& list,
-        std::string const& manifest,
+        scoped_lock const&,
+        json::Value& list,
+        Manifest manifest,
         std::string const& blob,
         std::string const& signature);
 
@@ -892,10 +865,7 @@ private:
         Calling public member function is expected to lock mutex
     */
     bool
-    removePublisherList(
-        lock_guard const&,
-        PublicKey const& publisherKey,
-        PublisherStatus reason);
+    removePublisherList(scoped_lock const&, PublicKey const& publisherKey, PublisherStatus reason);
 
     /** Return quorum for trusted validator set
 
@@ -908,10 +878,7 @@ private:
         recently received validations
     */
     std::size_t
-    calculateQuorum(
-        std::size_t unlSize,
-        std::size_t effectiveUnlSize,
-        std::size_t seenSize);
+    calculateQuorum(std::size_t unlSize, std::size_t effectiveUnlSize, std::size_t seenSize);
 };
 
 // hashing helpers
@@ -946,7 +913,7 @@ hash_append(Hasher& h, std::map<std::size_t, ValidatorBlobInfo> const& blobs)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 namespace protocol {
 
@@ -963,13 +930,7 @@ void
 hash_append(Hasher& h, TMValidatorListCollection const& msg)
 {
     using beast::hash_append;
-    hash_append(
-        h,
-        msg.manifest(),
-        ripple::ValidatorList::parseBlobs(msg),
-        msg.version());
+    hash_append(h, msg.manifest(), xrpl::ValidatorList::parseBlobs(msg), msg.version());
 }
 
 }  // namespace protocol
-
-#endif

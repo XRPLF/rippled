@@ -1,31 +1,13 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
-#define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
-
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-namespace ripple {
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
+
+namespace xrpl {
 
 // Forward declarations
 class Application;
@@ -35,16 +17,16 @@ class TxQ;
 
 namespace RPC {
 
-Json::Value
+json::Value
 getCurrentNetworkFee(
     Role const role,
     Config const& config,
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
     Application const& app,
-    Json::Value const& tx,
-    int mult = Tuning::defaultAutoFillFeeMultiplier,
-    int div = Tuning::defaultAutoFillFeeDivisor);
+    json::Value const& tx,
+    int mult = Tuning::kDEFAULT_AUTO_FILL_FEE_MULTIPLIER,
+    int div = Tuning::kDEFAULT_AUTO_FILL_FEE_DIVISOR);
 
 /** Fill in the fee on behalf of the client.
     This is called when the client does not explicitly specify the fee.
@@ -73,9 +55,9 @@ getCurrentNetworkFee(
 
     @return         A JSON object containing the error results, if any
 */
-Json::Value
+json::Value
 checkFee(
-    Json::Value& request,
+    json::Value& request,
     Role const role,
     bool doAutoFill,
     Config const& config,
@@ -102,20 +84,20 @@ getProcessTxnFn(NetworkOPs& netOPs)
     };
 }
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSign(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    json::Value params,  // Passed by value so it can be modified locally.
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSubmit(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    json::Value params,  // Passed by value so it can be modified locally.
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
@@ -123,20 +105,20 @@ transactionSubmit(
     Application& app,
     ProcessTransactionFn const& processTransaction);
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSignFor(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    json::Value params,  // Passed by value so it can be modified locally.
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSubmitMultiSigned(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    json::Value params,  // Passed by value so it can be modified locally.
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
@@ -145,6 +127,4 @@ transactionSubmitMultiSigned(
     ProcessTransactionFn const& processTransaction);
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

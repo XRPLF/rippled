@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_TAGGEDCACHE_H_INCLUDED
-#define RIPPLE_BASICS_TAGGEDCACHE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/Log.h>
@@ -35,7 +15,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Map/cache combination.
     This class implements a cache and a map. The cache keeps objects alive
@@ -55,7 +35,7 @@ template <
     bool IsKeyCache = false,
     class SharedWeakUnionPointerType = SharedWeakCachePointer<T>,
     class SharedPointerType = std::shared_ptr<T>,
-    class Hash = hardened_hash<>,
+    class Hash = HardenedHash<>,
     class KeyEqual = std::equal_to<Key>,
     class Mutex = std::recursive_mutex>
 class TaggedCache
@@ -64,7 +44,7 @@ public:
     using mutex_type = Mutex;
     using key_type = Key;
     using mapped_type = T;
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
     using shared_weak_combo_pointer_type = SharedWeakUnionPointerType;
     using shared_pointer_type = SharedPointerType;
 
@@ -75,8 +55,7 @@ public:
         clock_type::duration expiration,
         clock_type& clock,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector =
-            beast::insight::NullCollector::New());
+        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make());
 
 public:
     /** Return the clock associated with the cache. */
@@ -107,7 +86,7 @@ public:
     */
     template <class KeyComparable>
     bool
-    touch_if_exists(KeyComparable const& key);
+    touchIfExists(KeyComparable const& key);
 
     using SweptPointersVector = std::vector<SharedWeakUnionPointerType>;
 
@@ -133,18 +112,13 @@ public:
     */
     template <class R>
     bool
-    canonicalize(
-        key_type const& key,
-        SharedPointerType& data,
-        R&& replaceCallback);
+    canonicalize(key_type const& key, SharedPointerType& data, R&& replaceCallback);
 
     bool
-    canonicalize_replace_cache(
-        key_type const& key,
-        SharedPointerType const& data);
+    canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data);
 
     bool
-    canonicalize_replace_client(key_type const& key, SharedPointerType& data);
+    canonicalizeReplaceClient(key_type const& key, SharedPointerType& data);
 
     SharedPointerType
     fetch(key_type const& key);
@@ -155,8 +129,7 @@ public:
     */
     template <class ReturnType = bool>
     auto
-    insert(key_type const& key, T const& value)
-        -> std::enable_if_t<!IsKeyCache, ReturnType>;
+    insert(key_type const& key, T const& value) -> std::enable_if_t<!IsKeyCache, ReturnType>;
 
     template <class ReturnType = bool>
     auto
@@ -193,10 +166,10 @@ public:
 
 private:
     SharedPointerType
-    initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l);
+    initialFetch(key_type const& key, std::scoped_lock<mutex_type> const& l);
 
     void
-    collect_metrics();
+    collectMetrics();
 
 private:
     struct Stats
@@ -206,11 +179,10 @@ private:
             std::string const& prefix,
             Handler const& handler,
             beast::insight::Collector::ptr const& collector)
-            : hook(collector->make_hook(handler))
-            , size(collector->make_gauge(prefix, "size"))
-            , hit_rate(collector->make_gauge(prefix, "hit_rate"))
-            , hits(0)
-            , misses(0)
+            : hook(collector->makeHook(handler))
+            , size(collector->makeGauge(prefix, "size"))
+            , hit_rate(collector->makeGauge(prefix, "hit_rate"))
+
         {
         }
 
@@ -218,8 +190,8 @@ private:
         beast::insight::Gauge size;
         beast::insight::Gauge hit_rate;
 
-        std::size_t hits;
-        std::size_t misses;
+        std::size_t hits{0};
+        std::size_t misses{0};
     };
 
     class KeyOnlyEntry
@@ -227,8 +199,7 @@ private:
     public:
         clock_type::time_point last_access;
 
-        explicit KeyOnlyEntry(clock_type::time_point const& last_access_)
-            : last_access(last_access_)
+        explicit KeyOnlyEntry(clock_type::time_point const& lastAccess) : last_access(lastAccess)
         {
         }
 
@@ -245,26 +216,24 @@ private:
         shared_weak_combo_pointer_type ptr;
         clock_type::time_point last_access;
 
-        ValueEntry(
-            clock_type::time_point const& last_access_,
-            shared_pointer_type const& ptr_)
-            : ptr(ptr_), last_access(last_access_)
+        ValueEntry(clock_type::time_point const& lastAccess, shared_pointer_type const& ptr)
+            : ptr(ptr), last_access(lastAccess)
         {
         }
 
-        bool
+        [[nodiscard]] bool
         isWeak() const
         {
             if (!ptr)
                 return true;
             return ptr.isWeak();
         }
-        bool
+        [[nodiscard]] bool
         isCached() const
         {
             return ptr && ptr.isStrong();
         }
-        bool
+        [[nodiscard]] bool
         isExpired() const
         {
             return ptr.expired();
@@ -281,59 +250,52 @@ private:
         }
     };
 
-    typedef
-        typename std::conditional<IsKeyCache, KeyOnlyEntry, ValueEntry>::type
-            Entry;
+    using Entry = std::conditional_t<IsKeyCache, KeyOnlyEntry, ValueEntry>;
 
-    using KeyOnlyCacheType =
-        hardened_partitioned_hash_map<key_type, KeyOnlyEntry, Hash, KeyEqual>;
+    using KeyOnlyCacheType = hardened_partitioned_hash_map<key_type, KeyOnlyEntry, Hash, KeyEqual>;
 
-    using KeyValueCacheType =
-        hardened_partitioned_hash_map<key_type, ValueEntry, Hash, KeyEqual>;
+    using KeyValueCacheType = hardened_partitioned_hash_map<key_type, ValueEntry, Hash, KeyEqual>;
 
-    using cache_type =
-        hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
+    using cache_type = hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
 
     [[nodiscard]] std::thread
     sweepHelper(
-        clock_type::time_point const& when_expire,
+        clock_type::time_point const& whenExpire,
         [[maybe_unused]] clock_type::time_point const& now,
         typename KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);
+        std::scoped_lock<std::recursive_mutex> const&);
 
     [[nodiscard]] std::thread
     sweepHelper(
-        clock_type::time_point const& when_expire,
+        clock_type::time_point const& whenExpire,
         clock_type::time_point const& now,
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);
+        std::scoped_lock<std::recursive_mutex> const&);
 
-    beast::Journal m_journal;
-    clock_type& m_clock;
-    Stats m_stats;
+    beast::Journal journal_;
+    clock_type& clock_;
+    Stats stats_;
 
-    mutex_type mutable m_mutex;
+    mutex_type mutable mutex_;
 
     // Used for logging
-    std::string m_name;
+    std::string name_;
 
     // Desired number of cache entries (0 = ignore)
-    int const m_target_size;
+    int const target_size_;
 
     // Desired maximum cache age
-    clock_type::duration const m_target_age;
+    clock_type::duration const target_age_;
 
     // Number of items cached
-    int m_cache_count;
-    cache_type m_cache;  // Hold strong reference to recent objects
-    std::uint64_t m_hits;
-    std::uint64_t m_misses;
+    int cache_count_{0};
+    cache_type cache_;  // Hold strong reference to recent objects
+    std::uint64_t hits_{0};
+    std::uint64_t misses_{0};
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

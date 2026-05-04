@@ -1,34 +1,23 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
+#include <test/jtx/TestHelpers.h>
 
 #include <xrpld/rpc/detail/Handler.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <algorithm>
+#include <array>
+#include <cassert>
 #include <chrono>
+#include <cmath>
+#include <cstddef>
 #include <iostream>
-#include <limits>
 #include <random>
+#include <tuple>
+#include <vector>
+// cspell: words stdev
 
-namespace ripple::test {
+namespace xrpl::test {
 
 // NOTE: there should be no need for this function;
 // `std::cout << some_duration` should just work if built with a compliant
@@ -43,10 +32,10 @@ operator<<(std::ostream& os, std::chrono::nanoseconds ns)
 // NOTE This is a rather naive effort at a microbenchmark. Ideally we want
 // Google Benchmark, or something similar. Also, this actually does not belong
 // to unit tests, as it makes little sense to run it in conditions very
-// dissimilar to how rippled will normally work.
+// dissimilar to how xrpld will normally work.
 // TODO as https://github.com/XRPLF/rippled/issues/4765
 
-class Handler_test : public beast::unit_test::suite
+class Handler_test : public beast::unit_test::Suite
 {
     auto
     time(std::size_t n, auto f, auto prng) -> auto
@@ -54,7 +43,7 @@ class Handler_test : public beast::unit_test::suite
         using clock = std::chrono::steady_clock;
         assert(n > 0);
         double sum = 0;
-        double sum_squared = 0;
+        double sumSquared = 0;
         std::size_t j = 0;
         while (j < n)
         {
@@ -75,20 +64,19 @@ class Handler_test : public beast::unit_test::suite
                 samples[k] = (std::chrono::steady_clock::now() - start).count();
             }
 
-            std::sort(samples.begin(), samples.end());
+            std::ranges::sort(samples);
             for (std::size_t k = 35; k < 65; ++k)
             {
                 j += 1;
                 sum += samples[k];
-                sum_squared += (samples[k] * samples[k]);
+                sumSquared += (samples[k] * samples[k]);
             }
         }
 
-        double const mean_squared = (sum * sum) / (j * j);
+        double const meanSquared = (sum * sum) / (j * j);
         return std::make_tuple(
             clock::duration{static_cast<long>(sum / j)},
-            clock::duration{
-                static_cast<long>(std::sqrt((sum_squared / j) - mean_squared))},
+            clock::duration{static_cast<long>(std::sqrt((sumSquared / j) - meanSquared))},
             j);
     }
 
@@ -100,8 +88,7 @@ class Handler_test : public beast::unit_test::suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        std::vector<char const*> names =
-            test::jtx::make_vector(ripple::RPC::getHandlerNames());
+        std::vector<char const*> names = test::jtx::makeVector(xrpl::RPC::getHandlerNames());
 
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};
 
@@ -110,12 +97,11 @@ class Handler_test : public beast::unit_test::suite
             1'000'000,
             [&](std::size_t i) {
                 auto const d = RPC::getHandler(1, false, names[i]);
-                dummy = dummy + i + (int)d->role_;
+                dummy = dummy + i + (int)d->role;
             },
             [&]() -> std::size_t { return distr(prng); });
 
-        std::cout << "mean=" << mean << " stdev=" << stdev << " N=" << n
-                  << '\n';
+        std::cout << "mean=" << mean << " stdev=" << stdev << " N=" << n << '\n';
 
         BEAST_EXPECT(dummy != 0);
     }
@@ -128,6 +114,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Handler, test, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(Handler, rpc, xrpl);
 
-}  // namespace ripple::test
+}  // namespace xrpl::test

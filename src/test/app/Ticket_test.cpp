@@ -1,34 +1,53 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2016 Ripple Labs Inc.
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/deposit.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpld/app/misc/Transaction.h>
 
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
 
-class Ticket_test : public beast::unit_test::suite
+namespace xrpl {
+
+class Ticket_test : public beast::unit_test::Suite
 {
-    /// @brief Validate metadata for a successful CreateTicket transaction.
+    /// @brief Validate metadata for a successful TicketCreate transaction.
     ///
     /// @param env current jtx env (tx and meta are extracted using it)
     void
@@ -36,31 +55,26 @@ class Ticket_test : public beast::unit_test::suite
     {
         using namespace std::string_literals;
 
-        Json::Value const& tx{env.tx()->getJson(JsonOptions::none)};
+        json::Value const& tx{env.tx()->getJson(JsonOptions::KNone)};
         {
-            std::string const txType =
-                tx[sfTransactionType.jsonName].asString();
+            std::string const txType = tx[sfTransactionType.jsonName].asString();
 
             if (!BEAST_EXPECTS(
-                    txType == jss::TicketCreate,
-                    "Unexpected TransactionType: "s + txType))
+                    txType == jss::TicketCreate, "Unexpected TransactionType: "s + txType))
                 return;
         }
 
         std::uint32_t const count = {tx[sfTicketCount.jsonName].asUInt()};
-        if (!BEAST_EXPECTS(
-                count >= 1,
-                "Unexpected ticket count: "s + std::to_string(count)))
+        if (!BEAST_EXPECTS(count >= 1, "Unexpected ticket count: "s + std::to_string(count)))
             return;
 
         std::uint32_t const txSeq = {tx[sfSequence.jsonName].asUInt()};
         std::string const account = tx[sfAccount.jsonName].asString();
 
-        Json::Value const& metadata = env.meta()->getJson(JsonOptions::none);
+        json::Value const& metadata = env.meta()->getJson(JsonOptions::KNone);
         if (!BEAST_EXPECTS(
                 metadata.isMember(sfTransactionResult.jsonName) &&
-                    metadata[sfTransactionResult.jsonName].asString() ==
-                        "tesSUCCESS",
+                    metadata[sfTransactionResult.jsonName].asString() == "tesSUCCESS",
                 "Not metadata for successful TicketCreate."))
             return;
 
@@ -71,25 +85,21 @@ class Ticket_test : public beast::unit_test::suite
         std::uint32_t acctRootFinalSeq = {0};
         std::vector<std::uint32_t> ticketSeqs;
         ticketSeqs.reserve(count);
-        for (Json::Value const& node : metadata[sfAffectedNodes.jsonName])
+        for (json::Value const& node : metadata[sfAffectedNodes.jsonName])
         {
             if (node.isMember(sfModifiedNode.jsonName))
             {
-                Json::Value const& modified = node[sfModifiedNode.jsonName];
-                std::string const entryType =
-                    modified[sfLedgerEntryType.jsonName].asString();
+                json::Value const& modified = node[sfModifiedNode.jsonName];
+                std::string const entryType = modified[sfLedgerEntryType.jsonName].asString();
                 if (entryType == jss::AccountRoot)
                 {
-                    auto const& previousFields =
-                        modified[sfPreviousFields.jsonName];
+                    auto const& previousFields = modified[sfPreviousFields.jsonName];
                     auto const& finalFields = modified[sfFinalFields.jsonName];
                     {
                         // Verify the account root Sequence did the right thing.
-                        std::uint32_t const prevSeq =
-                            previousFields[sfSequence.jsonName].asUInt();
+                        std::uint32_t const prevSeq = previousFields[sfSequence.jsonName].asUInt();
 
-                        acctRootFinalSeq =
-                            finalFields[sfSequence.jsonName].asUInt();
+                        acctRootFinalSeq = finalFields[sfSequence.jsonName].asUInt();
 
                         if (txSeq == 0)
                         {
@@ -100,13 +110,11 @@ class Ticket_test : public beast::unit_test::suite
                         {
                             // Transaction used a (plain) Sequence.
                             BEAST_EXPECT(prevSeq == txSeq);
-                            BEAST_EXPECT(
-                                acctRootFinalSeq == prevSeq + count + 1);
+                            BEAST_EXPECT(acctRootFinalSeq == prevSeq + count + 1);
                         }
                     }
 
-                    std::uint32_t const consumedTickets = {
-                        txSeq == 0u ? 1u : 0u};
+                    std::uint32_t const consumedTickets = {txSeq == 0u ? 1u : 0u};
 
                     // If...
                     //  1. The TicketCount is 1 and
@@ -115,16 +123,14 @@ class Ticket_test : public beast::unit_test::suite
                     //     previous TicketCount is not reported.
                     // But, since the count did not change, we know it equals
                     // the final Ticket count.
-                    bool const unreportedPrevTicketCount = {
-                        count == 1 && txSeq == 0};
+                    bool const unreportedPrevTicketCount = {count == 1 && txSeq == 0};
 
                     // Verify the OwnerCount did the right thing
                     if (unreportedPrevTicketCount)
                     {
                         // The number of Tickets should not have changed, so
                         // the previous OwnerCount should not be reported.
-                        BEAST_EXPECT(
-                            !previousFields.isMember(sfOwnerCount.jsonName));
+                        BEAST_EXPECT(!previousFields.isMember(sfOwnerCount.jsonName));
                     }
                     else
                     {
@@ -135,8 +141,7 @@ class Ticket_test : public beast::unit_test::suite
                         std::uint32_t const finalCount = {
                             finalFields[sfOwnerCount.jsonName].asUInt()};
 
-                        BEAST_EXPECT(
-                            prevCount + count - consumedTickets == finalCount);
+                        BEAST_EXPECT(prevCount + count - consumedTickets == finalCount);
                     }
 
                     // Verify TicketCount metadata.
@@ -146,8 +151,7 @@ class Ticket_test : public beast::unit_test::suite
                     {
                         // The number of Tickets should not have changed, so
                         // the previous TicketCount should not be reported.
-                        BEAST_EXPECT(
-                            !previousFields.isMember(sfTicketCount.jsonName));
+                        BEAST_EXPECT(!previousFields.isMember(sfTicketCount.jsonName));
                     }
                     else
                     {
@@ -155,13 +159,11 @@ class Ticket_test : public beast::unit_test::suite
                         // should have been greater than zero.
                         std::uint32_t const startCount = {
                             previousFields.isMember(sfTicketCount.jsonName)
-                                ? previousFields[sfTicketCount.jsonName]
-                                      .asUInt()
+                                ? previousFields[sfTicketCount.jsonName].asUInt()
                                 : 0u};
 
                         BEAST_EXPECT(
-                            (startCount == 0u) ^
-                            previousFields.isMember(sfTicketCount.jsonName));
+                            (startCount == 0u) ^ previousFields.isMember(sfTicketCount.jsonName));
 
                         BEAST_EXPECT(
                             startCount + count - consumedTickets ==
@@ -174,25 +176,19 @@ class Ticket_test : public beast::unit_test::suite
                 }
                 else
                 {
-                    fail(
-                        "Unexpected modified node: "s + entryType,
-                        __FILE__,
-                        __LINE__);
+                    fail("Unexpected modified node: "s + entryType, __FILE__, __LINE__);
                 }
             }
             else if (node.isMember(sfCreatedNode.jsonName))
             {
-                Json::Value const& created = node[sfCreatedNode.jsonName];
-                std::string const entryType =
-                    created[sfLedgerEntryType.jsonName].asString();
+                json::Value const& created = node[sfCreatedNode.jsonName];
+                std::string const entryType = created[sfLedgerEntryType.jsonName].asString();
                 if (entryType == jss::Ticket)
                 {
                     auto const& newFields = created[sfNewFields.jsonName];
 
-                    BEAST_EXPECT(
-                        newFields[sfAccount.jsonName].asString() == account);
-                    ticketSeqs.push_back(
-                        newFields[sfTicketSequence.jsonName].asUInt());
+                    BEAST_EXPECT(newFields[sfAccount.jsonName].asString() == account);
+                    ticketSeqs.push_back(newFields[sfTicketSequence.jsonName].asUInt());
                 }
                 else if (entryType == jss::DirectoryNode)
                 {
@@ -200,17 +196,13 @@ class Ticket_test : public beast::unit_test::suite
                 }
                 else
                 {
-                    fail(
-                        "Unexpected created node: "s + entryType,
-                        __FILE__,
-                        __LINE__);
+                    fail("Unexpected created node: "s + entryType, __FILE__, __LINE__);
                 }
             }
             else if (node.isMember(sfDeletedNode.jsonName))
             {
-                Json::Value const& deleted = node[sfDeletedNode.jsonName];
-                std::string const entryType =
-                    deleted[sfLedgerEntryType.jsonName].asString();
+                json::Value const& deleted = node[sfDeletedNode.jsonName];
+                std::string const entryType = deleted[sfLedgerEntryType.jsonName].asString();
 
                 if (entryType == jss::Ticket)
                 {
@@ -219,8 +211,7 @@ class Ticket_test : public beast::unit_test::suite
 
                     // Verify the account of the deleted ticket.
                     auto const& finalFields = deleted[sfFinalFields.jsonName];
-                    BEAST_EXPECT(
-                        finalFields[sfAccount.jsonName].asString() == account);
+                    BEAST_EXPECT(finalFields[sfAccount.jsonName].asString() == account);
 
                     // Verify the deleted ticket has the right TicketSequence.
                     BEAST_EXPECT(
@@ -230,20 +221,15 @@ class Ticket_test : public beast::unit_test::suite
             }
             else
             {
-                fail(
-                    "Unexpected node type in TicketCreate metadata.",
-                    __FILE__,
-                    __LINE__);
+                fail("Unexpected node type in TicketCreate metadata.", __FILE__, __LINE__);
             }
         }
         BEAST_EXPECT(directoryChanged);
 
         // Verify that all the expected Tickets were created.
         BEAST_EXPECT(ticketSeqs.size() == count);
-        std::sort(ticketSeqs.begin(), ticketSeqs.end());
-        BEAST_EXPECT(
-            std::adjacent_find(ticketSeqs.begin(), ticketSeqs.end()) ==
-            ticketSeqs.end());
+        std::ranges::sort(ticketSeqs);
+        BEAST_EXPECT(std::ranges::adjacent_find(ticketSeqs) == ticketSeqs.end());
         BEAST_EXPECT(*ticketSeqs.rbegin() == acctRootFinalSeq - 1);
     }
 
@@ -255,7 +241,7 @@ class Ticket_test : public beast::unit_test::suite
     void
     checkTicketConsumeMeta(test::jtx::Env& env)
     {
-        Json::Value const& tx{env.tx()->getJson(JsonOptions::none)};
+        json::Value const& tx{env.tx()->getJson(JsonOptions::KNone)};
 
         // Verify that the transaction includes a TicketSequence.
 
@@ -288,15 +274,14 @@ class Ticket_test : public beast::unit_test::suite
 
         std::uint32_t const ticketSeq{tx[sfTicketSequence.jsonName].asUInt()};
 
-        Json::Value const& metadata{env.meta()->getJson(JsonOptions::none)};
+        json::Value const& metadata{env.meta()->getJson(JsonOptions::KNone)};
         if (!BEAST_EXPECTS(
                 metadata.isMember(sfTransactionResult.jsonName),
                 "Metadata is missing TransactionResult."))
             return;
 
         {
-            std::string const transactionResult{
-                metadata[sfTransactionResult.jsonName].asString()};
+            std::string const transactionResult{metadata[sfTransactionResult.jsonName].asString()};
             if (!BEAST_EXPECTS(
                     transactionResult == "tesSUCCESS" ||
                         transactionResult.compare(0, 3, "tec") == 0,
@@ -310,21 +295,18 @@ class Ticket_test : public beast::unit_test::suite
         bool acctRootFound{false};
         std::uint32_t acctRootSeq{0};
         int ticketsRemoved{0};
-        for (Json::Value const& node : metadata[sfAffectedNodes.jsonName])
+        for (json::Value const& node : metadata[sfAffectedNodes.jsonName])
         {
             if (node.isMember(sfModifiedNode.jsonName))
             {
-                Json::Value const& modified{node[sfModifiedNode.jsonName]};
-                std::string const entryType =
-                    modified[sfLedgerEntryType.jsonName].asString();
+                json::Value const& modified{node[sfModifiedNode.jsonName]};
+                std::string const entryType = modified[sfLedgerEntryType.jsonName].asString();
                 if (entryType == "AccountRoot" &&
-                    modified[sfFinalFields.jsonName][sfAccount.jsonName]
-                            .asString() == account)
+                    modified[sfFinalFields.jsonName][sfAccount.jsonName].asString() == account)
                 {
                     acctRootFound = true;
 
-                    auto const& previousFields =
-                        modified[sfPreviousFields.jsonName];
+                    auto const& previousFields = modified[sfPreviousFields.jsonName];
                     auto const& finalFields = modified[sfFinalFields.jsonName];
 
                     acctRootSeq = finalFields[sfSequence.jsonName].asUInt();
@@ -342,33 +324,32 @@ class Ticket_test : public beast::unit_test::suite
 
                     BEAST_EXPECT(prevTicketCount > 0);
                     if (prevTicketCount == 1)
-                        BEAST_EXPECT(
-                            !finalFields.isMember(sfTicketCount.jsonName));
+                    {
+                        BEAST_EXPECT(!finalFields.isMember(sfTicketCount.jsonName));
+                    }
                     else
+                    {
                         BEAST_EXPECT(
                             finalFields.isMember(sfTicketCount.jsonName) &&
-                            finalFields[sfTicketCount.jsonName].asUInt() ==
-                                prevTicketCount - 1);
+                            finalFields[sfTicketCount.jsonName].asUInt() == prevTicketCount - 1);
+                    }
                 }
             }
             else if (node.isMember(sfDeletedNode.jsonName))
             {
-                Json::Value const& deleted{node[sfDeletedNode.jsonName]};
-                std::string const entryType{
-                    deleted[sfLedgerEntryType.jsonName].asString()};
+                json::Value const& deleted{node[sfDeletedNode.jsonName]};
+                std::string const entryType{deleted[sfLedgerEntryType.jsonName].asString()};
 
                 if (entryType == jss::Ticket)
                 {
                     // Verify the account of the deleted ticket.
                     BEAST_EXPECT(
-                        deleted[sfFinalFields.jsonName][sfAccount.jsonName]
-                            .asString() == account);
+                        deleted[sfFinalFields.jsonName][sfAccount.jsonName].asString() == account);
 
                     // Verify the deleted ticket has the right TicketSequence.
                     BEAST_EXPECT(
-                        deleted[sfFinalFields.jsonName]
-                               [sfTicketSequence.jsonName]
-                                   .asUInt() == ticketSeq);
+                        deleted[sfFinalFields.jsonName][sfTicketSequence.jsonName].asUInt() ==
+                        ticketSeq);
 
                     ++ticketsRemoved;
                 }
@@ -377,52 +358,6 @@ class Ticket_test : public beast::unit_test::suite
         BEAST_EXPECT(acctRootFound);
         BEAST_EXPECT(ticketsRemoved == 1);
         BEAST_EXPECT(ticketSeq < acctRootSeq);
-    }
-
-    void
-    testTicketNotEnabled()
-    {
-        testcase("Feature Not Enabled");
-
-        using namespace test::jtx;
-        Env env{*this, testable_amendments() - featureTicketBatch};
-
-        env(ticket::create(env.master, 1), ter(temDISABLED));
-        env.close();
-        env.require(owners(env.master, 0), tickets(env.master, 0));
-
-        env(noop(env.master), ticket::use(1), ter(temMALFORMED));
-        env(noop(env.master),
-            ticket::use(1),
-            seq(env.seq(env.master)),
-            ter(temMALFORMED));
-
-        // Close enough ledgers that the previous transactions are no
-        // longer retried.
-        for (int i = 0; i < 8; ++i)
-            env.close();
-
-        env.enableFeature(featureTicketBatch);
-        env.close();
-        env.require(owners(env.master, 0), tickets(env.master, 0));
-
-        std::uint32_t ticketSeq{env.seq(env.master) + 1};
-        env(ticket::create(env.master, 2));
-        checkTicketCreateMeta(env);
-        env.close();
-        env.require(owners(env.master, 2), tickets(env.master, 2));
-
-        env(noop(env.master), ticket::use(ticketSeq++));
-        checkTicketConsumeMeta(env);
-        env.close();
-        env.require(owners(env.master, 1), tickets(env.master, 1));
-
-        env(fset(env.master, asfDisableMaster),
-            ticket::use(ticketSeq++),
-            ter(tecNO_ALTERNATIVE_KEY));
-        checkTicketConsumeMeta(env);
-        env.close();
-        env.require(owners(env.master, 0), tickets(env.master, 0));
     }
 
     void
@@ -436,40 +371,40 @@ class Ticket_test : public beast::unit_test::suite
         Account const master{env.master};
 
         // Exercise boundaries on count.
-        env(ticket::create(master, 0), ter(temINVALID_COUNT));
-        env(ticket::create(master, 251), ter(temINVALID_COUNT));
+        env(ticket::create(master, 0), Ter(temINVALID_COUNT));
+        env(ticket::create(master, 251), Ter(temINVALID_COUNT));
 
         // Exercise fees.
-        std::uint32_t const ticketSeq_A{env.seq(master) + 1};
-        env(ticket::create(master, 1), fee(XRP(10)));
+        std::uint32_t const ticketSeqA{env.seq(master) + 1};
+        env(ticket::create(master, 1), Fee(XRP(10)));
         checkTicketCreateMeta(env);
         env.close();
-        env.require(owners(master, 1), tickets(master, 1));
+        env.require(Owners(master, 1), tickets(master, 1));
 
-        env(ticket::create(master, 1), fee(XRP(-1)), ter(temBAD_FEE));
+        env(ticket::create(master, 1), Fee(XRP(-1)), Ter(temBAD_FEE));
 
         // Exercise flags.
-        std::uint32_t const ticketSeq_B{env.seq(master) + 1};
-        env(ticket::create(master, 1), txflags(tfFullyCanonicalSig));
+        std::uint32_t const ticketSeqB{env.seq(master) + 1};
+        env(ticket::create(master, 1), Txflags(tfFullyCanonicalSig));
         checkTicketCreateMeta(env);
         env.close();
-        env.require(owners(master, 2), tickets(master, 2));
+        env.require(Owners(master, 2), tickets(master, 2));
 
-        env(ticket::create(master, 1), txflags(tfSell), ter(temINVALID_FLAG));
+        env(ticket::create(master, 1), Txflags(tfSell), Ter(temINVALID_FLAG));
         env.close();
-        env.require(owners(master, 2), tickets(master, 2));
+        env.require(Owners(master, 2), tickets(master, 2));
 
         // We successfully created 1 ticket earlier.  Verify that we can
         // create 250 tickets in one shot.  We must consume one ticket first.
-        env(noop(master), ticket::use(ticketSeq_A));
+        env(noop(master), ticket::Use(ticketSeqA));
         checkTicketConsumeMeta(env);
         env.close();
-        env.require(owners(master, 1), tickets(master, 1));
+        env.require(Owners(master, 1), tickets(master, 1));
 
-        env(ticket::create(master, 250), ticket::use(ticketSeq_B));
+        env(ticket::create(master, 250), ticket::Use(ticketSeqB));
         checkTicketCreateMeta(env);
         env.close();
-        env.require(owners(master, 250), tickets(master, 250));
+        env.require(Owners(master, 250), tickets(master, 250));
     }
 
     void
@@ -481,86 +416,80 @@ class Ticket_test : public beast::unit_test::suite
         {
             // Create tickets on a non-existent account.
             Env env{*this};
-            Account alice{"alice"};
+            Account const alice{"alice"};
             env.memoize(alice);
 
-            env(ticket::create(alice, 1),
-                json(jss::Sequence, 1),
-                ter(terNO_ACCOUNT));
+            env(ticket::create(alice, 1), Json(jss::Sequence, 1), Ter(terNO_ACCOUNT));
         }
         {
             // Exceed the threshold where tickets can no longer be
             // added to an account.
             Env env{*this};
-            Account alice{"alice"};
+            Account const alice{"alice"};
 
             env.fund(XRP(100000), alice);
 
-            std::uint32_t ticketSeq{env.seq(alice) + 1};
+            std::uint32_t const ticketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 250));
             checkTicketCreateMeta(env);
             env.close();
-            env.require(owners(alice, 250), tickets(alice, 250));
+            env.require(Owners(alice, 250), tickets(alice, 250));
 
             // Note that we can add one more ticket while consuming a ticket
             // because the final result is still 250 tickets.
-            env(ticket::create(alice, 1), ticket::use(ticketSeq + 0));
+            env(ticket::create(alice, 1), ticket::Use(ticketSeq + 0));
             checkTicketCreateMeta(env);
             env.close();
-            env.require(owners(alice, 250), tickets(alice, 250));
+            env.require(Owners(alice, 250), tickets(alice, 250));
 
             // Adding one more ticket will exceed the threshold.
-            env(ticket::create(alice, 2),
-                ticket::use(ticketSeq + 1),
-                ter(tecDIR_FULL));
+            env(ticket::create(alice, 2), ticket::Use(ticketSeq + 1), Ter(tecDIR_FULL));
             env.close();
-            env.require(owners(alice, 249), tickets(alice, 249));
+            env.require(Owners(alice, 249), tickets(alice, 249));
 
             // Now we can successfully add one more ticket.
-            env(ticket::create(alice, 2), ticket::use(ticketSeq + 2));
+            env(ticket::create(alice, 2), ticket::Use(ticketSeq + 2));
             checkTicketCreateMeta(env);
             env.close();
-            env.require(owners(alice, 250), tickets(alice, 250));
+            env.require(Owners(alice, 250), tickets(alice, 250));
 
             // Since we're at 250, we can't add another ticket using a
             // sequence.
-            env(ticket::create(alice, 1), ter(tecDIR_FULL));
+            env(ticket::create(alice, 1), Ter(tecDIR_FULL));
             env.close();
-            env.require(owners(alice, 250), tickets(alice, 250));
+            env.require(Owners(alice, 250), tickets(alice, 250));
         }
         {
             // Explore exceeding the ticket threshold from another angle.
             Env env{*this};
-            Account alice{"alice"};
+            Account const alice{"alice"};
 
             env.fund(XRP(100000), alice);
             env.close();
 
-            std::uint32_t ticketSeq_AB{env.seq(alice) + 1};
+            std::uint32_t const ticketSeqAb{env.seq(alice) + 1};
             env(ticket::create(alice, 2));
             checkTicketCreateMeta(env);
             env.close();
-            env.require(owners(alice, 2), tickets(alice, 2));
+            env.require(Owners(alice, 2), tickets(alice, 2));
 
             // Adding 250 tickets (while consuming one) will exceed the
             // threshold.
-            env(ticket::create(alice, 250),
-                ticket::use(ticketSeq_AB + 0),
-                ter(tecDIR_FULL));
+            env(ticket::create(alice, 250), ticket::Use(ticketSeqAb + 0), Ter(tecDIR_FULL));
             env.close();
-            env.require(owners(alice, 1), tickets(alice, 1));
+            env.require(Owners(alice, 1), tickets(alice, 1));
 
             // Adding 250 tickets (without consuming one) will exceed the
             // threshold.
-            env(ticket::create(alice, 250), ter(tecDIR_FULL));
+            env(ticket::create(alice, 250), Ter(tecDIR_FULL));
             env.close();
-            env.require(owners(alice, 1), tickets(alice, 1));
+            env.require(Owners(alice, 1), tickets(alice, 1));
 
             // Alice can now add 250 tickets while consuming one.
-            env(ticket::create(alice, 250), ticket::use(ticketSeq_AB + 1));
+            env(ticket::create(alice, 250), ticket::Use(ticketSeqAb + 1));
             checkTicketCreateMeta(env);
             env.close();
-            env.require(owners(alice, 250), tickets(alice, 250));
+            env.require(Owners(alice, 250), tickets(alice, 250));
         }
     }
 
@@ -571,56 +500,49 @@ class Ticket_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         // Fund alice not quite enough to make the reserve for a Ticket.
         env.fund(env.current()->fees().accountReserve(1) - drops(1), alice);
         env.close();
 
-        env(ticket::create(alice, 1), ter(tecINSUFFICIENT_RESERVE));
+        env(ticket::create(alice, 1), Ter(tecINSUFFICIENT_RESERVE));
         env.close();
-        env.require(owners(alice, 0), tickets(alice, 0));
+        env.require(Owners(alice, 0), tickets(alice, 0));
 
         // Give alice enough to exactly meet the reserve for one Ticket.
-        env(
-            pay(env.master,
-                alice,
-                env.current()->fees().accountReserve(1) - env.balance(alice)));
+        env(pay(env.master, alice, env.current()->fees().accountReserve(1) - env.balance(alice)));
         env.close();
 
         env(ticket::create(alice, 1));
         checkTicketCreateMeta(env);
         env.close();
-        env.require(owners(alice, 1), tickets(alice, 1));
+        env.require(Owners(alice, 1), tickets(alice, 1));
 
         // Give alice not quite enough to make the reserve for a total of
         // 250 Tickets.
         env(
             pay(env.master,
                 alice,
-                env.current()->fees().accountReserve(250) - drops(1) -
-                    env.balance(alice)));
+                env.current()->fees().accountReserve(250) - drops(1) - env.balance(alice)));
         env.close();
 
         // alice doesn't quite have the reserve for a total of 250
         // Tickets, so the transaction fails.
-        env(ticket::create(alice, 249), ter(tecINSUFFICIENT_RESERVE));
+        env(ticket::create(alice, 249), Ter(tecINSUFFICIENT_RESERVE));
         env.close();
-        env.require(owners(alice, 1), tickets(alice, 1));
+        env.require(Owners(alice, 1), tickets(alice, 1));
 
         // Give alice enough so she can make the reserve for all 250
         // Tickets.
-        env(pay(
-            env.master,
-            alice,
-            env.current()->fees().accountReserve(250) - env.balance(alice)));
+        env(pay(env.master, alice, env.current()->fees().accountReserve(250) - env.balance(alice)));
         env.close();
 
         std::uint32_t const ticketSeq{env.seq(alice) + 1};
         env(ticket::create(alice, 249));
         checkTicketCreateMeta(env);
         env.close();
-        env.require(owners(alice, 250), tickets(alice, 250));
+        env.require(Owners(alice, 250), tickets(alice, 250));
         BEAST_EXPECT(ticketSeq + 249 == env.seq(alice));
     }
 
@@ -631,83 +553,83 @@ class Ticket_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         env.fund(XRP(10000), alice);
         env.close();
 
         // Successfully create tickets (using a sequence)
-        std::uint32_t const ticketSeq_AB{env.seq(alice) + 1};
+        std::uint32_t const ticketSeqAb{env.seq(alice) + 1};
         env(ticket::create(alice, 2));
         checkTicketCreateMeta(env);
         env.close();
-        env.require(owners(alice, 2), tickets(alice, 2));
-        BEAST_EXPECT(ticketSeq_AB + 2 == env.seq(alice));
+        env.require(Owners(alice, 2), tickets(alice, 2));
+        BEAST_EXPECT(ticketSeqAb + 2 == env.seq(alice));
 
         // You can use a ticket to create one ticket ...
-        std::uint32_t const ticketSeq_C{env.seq(alice)};
-        env(ticket::create(alice, 1), ticket::use(ticketSeq_AB + 0));
+        std::uint32_t const ticketSeqC{env.seq(alice)};
+        env(ticket::create(alice, 1), ticket::Use(ticketSeqAb + 0));
         checkTicketCreateMeta(env);
         env.close();
-        env.require(owners(alice, 2), tickets(alice, 2));
-        BEAST_EXPECT(ticketSeq_C + 1 == env.seq(alice));
+        env.require(Owners(alice, 2), tickets(alice, 2));
+        BEAST_EXPECT(ticketSeqC + 1 == env.seq(alice));
 
         // ... you can use a ticket to create multiple tickets ...
-        std::uint32_t const ticketSeq_DE{env.seq(alice)};
-        env(ticket::create(alice, 2), ticket::use(ticketSeq_AB + 1));
+        std::uint32_t const ticketSeqDe{env.seq(alice)};
+        env(ticket::create(alice, 2), ticket::Use(ticketSeqAb + 1));
         checkTicketCreateMeta(env);
         env.close();
-        env.require(owners(alice, 3), tickets(alice, 3));
-        BEAST_EXPECT(ticketSeq_DE + 2 == env.seq(alice));
+        env.require(Owners(alice, 3), tickets(alice, 3));
+        BEAST_EXPECT(ticketSeqDe + 2 == env.seq(alice));
 
         // ... and you can use a ticket for other things.
-        env(noop(alice), ticket::use(ticketSeq_DE + 0));
+        env(noop(alice), ticket::Use(ticketSeqDe + 0));
         checkTicketConsumeMeta(env);
         env.close();
-        env.require(owners(alice, 2), tickets(alice, 2));
-        BEAST_EXPECT(ticketSeq_DE + 2 == env.seq(alice));
+        env.require(Owners(alice, 2), tickets(alice, 2));
+        BEAST_EXPECT(ticketSeqDe + 2 == env.seq(alice));
 
-        env(pay(alice, env.master, XRP(20)), ticket::use(ticketSeq_DE + 1));
+        env(pay(alice, env.master, XRP(20)), ticket::Use(ticketSeqDe + 1));
         checkTicketConsumeMeta(env);
         env.close();
-        env.require(owners(alice, 1), tickets(alice, 1));
-        BEAST_EXPECT(ticketSeq_DE + 2 == env.seq(alice));
+        env.require(Owners(alice, 1), tickets(alice, 1));
+        BEAST_EXPECT(ticketSeqDe + 2 == env.seq(alice));
 
-        env(trust(alice, env.master["USD"](20)), ticket::use(ticketSeq_C));
+        env(trust(alice, env.master["USD"](20)), ticket::Use(ticketSeqC));
         checkTicketConsumeMeta(env);
         env.close();
-        env.require(owners(alice, 1), tickets(alice, 0));
-        BEAST_EXPECT(ticketSeq_DE + 2 == env.seq(alice));
+        env.require(Owners(alice, 1), tickets(alice, 0));
+        BEAST_EXPECT(ticketSeqDe + 2 == env.seq(alice));
 
         // Attempt to use a ticket that has already been used.
-        env(noop(alice), ticket::use(ticketSeq_C), ter(tefNO_TICKET));
+        env(noop(alice), ticket::Use(ticketSeqC), Ter(tefNO_TICKET));
         env.close();
 
         // Attempt to use a ticket from the future.
-        std::uint32_t const ticketSeq_F{env.seq(alice) + 1};
-        env(noop(alice), ticket::use(ticketSeq_F), ter(terPRE_TICKET));
+        std::uint32_t const ticketSeqF{env.seq(alice) + 1};
+        env(noop(alice), ticket::Use(ticketSeqF), Ter(terPRE_TICKET));
         env.close();
 
         // Now create the ticket.  The retry will consume the new ticket.
         env(ticket::create(alice, 1));
         checkTicketCreateMeta(env);
         env.close();
-        env.require(owners(alice, 1), tickets(alice, 0));
-        BEAST_EXPECT(ticketSeq_F + 1 == env.seq(alice));
+        env.require(Owners(alice, 1), tickets(alice, 0));
+        BEAST_EXPECT(ticketSeqF + 1 == env.seq(alice));
 
         // Try a transaction that combines consuming a ticket with
         // AccountTxnID.
-        std::uint32_t const ticketSeq_G{env.seq(alice) + 1};
+        std::uint32_t const ticketSeqG{env.seq(alice) + 1};
         env(ticket::create(alice, 1));
         checkTicketCreateMeta(env);
         env.close();
 
         env(noop(alice),
-            ticket::use(ticketSeq_G),
-            json(R"({"AccountTxnID": "0"})"),
-            ter(temINVALID));
+            ticket::Use(ticketSeqG),
+            Json(R"({"AccountTxnID": "0"})"),
+            Ter(temINVALID));
         env.close();
-        env.require(owners(alice, 2), tickets(alice, 1));
+        env.require(Owners(alice, 2), tickets(alice, 1));
     }
 
     void
@@ -727,14 +649,14 @@ class Ticket_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         env.fund(XRP(10000), alice);
         env.close();
 
         // Lambda that returns the hash of the most recent transaction.
         auto getTxID = [&env, this]() -> uint256 {
-            std::shared_ptr<STTx const> tx{env.tx()};
+            std::shared_ptr<STTx const> const tx{env.tx()};
             if (!BEAST_EXPECTS(tx, "Transaction not found"))
                 Throw<std::invalid_argument>("Invalid transaction ID");
 
@@ -751,36 +673,36 @@ class Ticket_test : public beast::unit_test::suite
 
         // Successfully create several tickets (using a sequence).
         std::uint32_t ticketSeq{env.seq(alice)};
-        static constexpr std::uint32_t ticketCount{10};
-        env(ticket::create(alice, ticketCount));
-        uint256 const txHash_1{getTxID()};
+        static constexpr std::uint32_t kTICKET_COUNT{10};
+        env(ticket::create(alice, kTICKET_COUNT));
+        uint256 const txHash1{getTxID()};
 
         // Just for grins use the tickets in reverse from largest to smallest.
-        ticketSeq += ticketCount;
-        env(noop(alice), ticket::use(--ticketSeq));
-        uint256 const txHash_2{getTxID()};
+        ticketSeq += kTICKET_COUNT;
+        env(noop(alice), ticket::Use(--ticketSeq));
+        uint256 const txHash2{getTxID()};
 
-        env(pay(alice, env.master, XRP(200)), ticket::use(--ticketSeq));
-        uint256 const txHash_3{getTxID()};
+        env(pay(alice, env.master, XRP(200)), ticket::Use(--ticketSeq));
+        uint256 const txHash3{getTxID()};
 
-        env(deposit::auth(alice, env.master), ticket::use(--ticketSeq));
-        uint256 const txHash_4{getTxID()};
+        env(deposit::auth(alice, env.master), ticket::Use(--ticketSeq));
+        uint256 const txHash4{getTxID()};
 
         // Close the ledger so we look at transactions from a couple of
         // different ledgers.
         env.close();
 
-        env(pay(alice, env.master, XRP(300)), ticket::use(--ticketSeq));
-        uint256 const txHash_5{getTxID()};
+        env(pay(alice, env.master, XRP(300)), ticket::Use(--ticketSeq));
+        uint256 const txHash5{getTxID()};
 
-        env(pay(alice, env.master, XRP(400)), ticket::use(--ticketSeq));
-        uint256 const txHash_6{getTxID()};
+        env(pay(alice, env.master, XRP(400)), ticket::Use(--ticketSeq));
+        uint256 const txHash6{getTxID()};
 
-        env(deposit::unauth(alice, env.master), ticket::use(--ticketSeq));
-        uint256 const txHash_7{getTxID()};
+        env(deposit::unauth(alice, env.master), ticket::Use(--ticketSeq));
+        uint256 const txHash7{getTxID()};
 
-        env(noop(alice), ticket::use(--ticketSeq));
-        uint256 const txHash_8{getTxID()};
+        env(noop(alice), ticket::Use(--ticketSeq));
+        uint256 const txHash8{getTxID()};
 
         env.close();
 
@@ -796,17 +718,16 @@ class Ticket_test : public beast::unit_test::suite
                                  std::uint32_t txSeq,
                                  std::optional<std::uint32_t> ticketSeq,
                                  TxType txType) {
-            error_code_i txErrCode{rpcSUCCESS};
+            ErrorCodeI txErrCode{RpcSuccess};
 
-            using TxPair = std::
-                pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+            using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
             std::variant<TxPair, TxSearched> maybeTx =
                 Transaction::load(txID, env.app(), txErrCode);
 
-            BEAST_EXPECT(txErrCode == rpcSUCCESS);
+            BEAST_EXPECT(txErrCode == RpcSuccess);
             if (auto txPtr = std::get_if<TxPair>(&maybeTx))
             {
-                std::shared_ptr<Transaction>& tx = txPtr->first;
+                std::shared_ptr<Transaction> const& tx = txPtr->first;
                 BEAST_EXPECT(tx->getLedger() == ledgerSeq);
                 std::shared_ptr<STTx const> const& sttx = tx->getSTransaction();
                 BEAST_EXPECT((*sttx)[sfSequence] == txSeq);
@@ -821,29 +742,29 @@ class Ticket_test : public beast::unit_test::suite
         };
 
         //   txID ledgerSeq txSeq ticketSeq          txType
-        checkTxFromDB(txHash_1, 4, 4, {}, ttTICKET_CREATE);
-        checkTxFromDB(txHash_2, 4, 0, 13, ttACCOUNT_SET);
-        checkTxFromDB(txHash_3, 4, 0, 12, ttPAYMENT);
-        checkTxFromDB(txHash_4, 4, 0, 11, ttDEPOSIT_PREAUTH);
+        checkTxFromDB(txHash1, 4, 4, {}, ttTICKET_CREATE);
+        checkTxFromDB(txHash2, 4, 0, 13, ttACCOUNT_SET);
+        checkTxFromDB(txHash3, 4, 0, 12, ttPAYMENT);
+        checkTxFromDB(txHash4, 4, 0, 11, ttDEPOSIT_PREAUTH);
 
-        checkTxFromDB(txHash_5, 5, 0, 10, ttPAYMENT);
-        checkTxFromDB(txHash_6, 5, 0, 9, ttPAYMENT);
-        checkTxFromDB(txHash_7, 5, 0, 8, ttDEPOSIT_PREAUTH);
-        checkTxFromDB(txHash_8, 5, 0, 7, ttACCOUNT_SET);
+        checkTxFromDB(txHash5, 5, 0, 10, ttPAYMENT);
+        checkTxFromDB(txHash6, 5, 0, 9, ttPAYMENT);
+        checkTxFromDB(txHash7, 5, 0, 8, ttDEPOSIT_PREAUTH);
+        checkTxFromDB(txHash8, 5, 0, 7, ttACCOUNT_SET);
     }
 
     void
     testSignWithTicketSequence()
     {
         // The sign and the submit RPC commands automatically fill in the
-        // Sequence field of a transaction if none is provided.  If a
+        // Sequence field of a transaction if kNONE is provided.  If a
         // TicketSequence is provided in the transaction, then the
         // auto-filled Sequence should be zero.
         testcase("Sign with TicketSequence");
 
         using namespace test::jtx;
         Env env{*this};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         env.fund(XRP(10000), alice);
         env.close();
@@ -853,16 +774,16 @@ class Ticket_test : public beast::unit_test::suite
         env(ticket::create(alice, 2));
         checkTicketCreateMeta(env);
         env.close();
-        env.require(owners(alice, 2), tickets(alice, 2));
+        env.require(Owners(alice, 2), tickets(alice, 2));
         BEAST_EXPECT(ticketSeq + 2 == env.seq(alice));
 
         {
             // Test that the "sign" RPC command fills in a "Sequence": 0 field
-            // if none is provided.
+            // if kNONE is provided.
 
             // Create a noop transaction using a TicketSequence but don't fill
             // in the Sequence field.
-            Json::Value tx = Json::objectValue;
+            json::Value tx = json::ObjectValue;
             tx[jss::tx_json] = noop(alice);
             tx[jss::tx_json][sfTicketSequence.jsonName] = ticketSeq;
             tx[jss::secret] = toBase58(generateSeed("alice"));
@@ -872,32 +793,30 @@ class Ticket_test : public beast::unit_test::suite
 
             // Call the "sign" RPC command and see the "Sequence": 0 field
             // filled in.
-            Json::Value jr = env.rpc("json", "sign", to_string(tx));
+            json::Value jr = env.rpc("json", "sign", to_string(tx));
 
             // Verify that "sign" inserted a "Sequence": 0 field.
-            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(
-                    sfSequence.jsonName)))
+            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(sfSequence.jsonName)))
             {
-                BEAST_EXPECT(
-                    jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
+                BEAST_EXPECT(jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
             }
 
             // "sign" should not have consumed any of alice's tickets.
             env.close();
-            env.require(owners(alice, 2), tickets(alice, 2));
+            env.require(Owners(alice, 2), tickets(alice, 2));
 
             // "submit" the signed blob and see one of alice's tickets consumed.
             env.rpc("submit", jr[jss::result][jss::tx_blob].asString());
             env.close();
-            env.require(owners(alice, 1), tickets(alice, 1));
+            env.require(Owners(alice, 1), tickets(alice, 1));
         }
         {
             // Test that the "submit" RPC command fills in a "Sequence": 0
-            // field if none is provided.
+            // field if kNONE is provided.
 
             // Create a noop transaction using a TicketSequence but don't fill
             // in the Sequence field.
-            Json::Value tx = Json::objectValue;
+            json::Value tx = json::ObjectValue;
             tx[jss::tx_json] = noop(alice);
             tx[jss::tx_json][sfTicketSequence.jsonName] = ticketSeq + 1;
             tx[jss::secret] = toBase58(generateSeed("alice"));
@@ -907,89 +826,57 @@ class Ticket_test : public beast::unit_test::suite
 
             // Call the "submit" RPC command and see the "Sequence": 0 field
             // filled in.
-            Json::Value jr = env.rpc("json", "submit", to_string(tx));
+            json::Value jr = env.rpc("json", "submit", to_string(tx));
 
             // Verify that "submit" inserted a "Sequence": 0 field.
-            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(
-                    sfSequence.jsonName)))
+            if (BEAST_EXPECT(jr[jss::result][jss::tx_json].isMember(sfSequence.jsonName)))
             {
-                BEAST_EXPECT(
-                    jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
+                BEAST_EXPECT(jr[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
             }
 
             // "submit" should have consumed the last of alice's tickets.
             env.close();
-            env.require(owners(alice, 0), tickets(alice, 0));
+            env.require(Owners(alice, 0), tickets(alice, 0));
         }
     }
 
     void
     testFixBothSeqAndTicket()
     {
+        using namespace test::jtx;
+
         // It is an error if a transaction contains a non-zero Sequence field
         // and a TicketSequence field.  Verify that the error is detected.
         testcase("Fix both Seq and Ticket");
 
-        // Try the test without featureTicketBatch enabled.
-        using namespace test::jtx;
-        {
-            Env env{*this, testable_amendments() - featureTicketBatch};
-            Account alice{"alice"};
+        Env env{*this, testableAmendments()};
+        Account const alice{"alice"};
 
-            env.fund(XRP(10000), alice);
-            env.close();
+        env.fund(XRP(10000), alice);
+        env.close();
 
-            // Fail to create a ticket.
-            std::uint32_t const ticketSeq = env.seq(alice) + 1;
-            env(ticket::create(alice, 1), ter(temDISABLED));
-            env.close();
-            env.require(owners(alice, 0), tickets(alice, 0));
-            BEAST_EXPECT(ticketSeq == env.seq(alice) + 1);
+        // Create a ticket.
+        std::uint32_t const ticketSeq = env.seq(alice) + 1;
+        env(ticket::create(alice, 1));
+        env.close();
+        env.require(Owners(alice, 1), tickets(alice, 1));
+        BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
 
-            // Create a transaction that includes both a ticket and a non-zero
-            // sequence number.  Since a ticket is used and tickets are not yet
-            // enabled the transaction should be malformed.
-            env(noop(alice),
-                ticket::use(ticketSeq),
-                seq(env.seq(alice)),
-                ter(temMALFORMED));
-            env.close();
-        }
-        // Try the test with featureTicketBatch enabled.
-        {
-            Env env{*this, testable_amendments()};
-            Account alice{"alice"};
+        // Create a transaction that includes both a ticket and a non-zero
+        // sequence number.  The transaction fails with temSEQ_AND_TICKET.
+        env(noop(alice), ticket::Use(ticketSeq), Seq(env.seq(alice)), Ter(temSEQ_AND_TICKET));
+        env.close();
 
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // Create a ticket.
-            std::uint32_t const ticketSeq = env.seq(alice) + 1;
-            env(ticket::create(alice, 1));
-            env.close();
-            env.require(owners(alice, 1), tickets(alice, 1));
-            BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
-
-            // Create a transaction that includes both a ticket and a non-zero
-            // sequence number.  The transaction fails with temSEQ_AND_TICKET.
-            env(noop(alice),
-                ticket::use(ticketSeq),
-                seq(env.seq(alice)),
-                ter(temSEQ_AND_TICKET));
-            env.close();
-
-            // Verify that the transaction failed by looking at alice's
-            // sequence number and tickets.
-            env.require(owners(alice, 1), tickets(alice, 1));
-            BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
-        }
+        // Verify that the transaction failed by looking at alice's
+        // sequence number and tickets.
+        env.require(Owners(alice, 1), tickets(alice, 1));
+        BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
     }
 
 public:
     void
     run() override
     {
-        testTicketNotEnabled();
         testTicketCreatePreflightFail();
         testTicketCreatePreclaimFail();
         testTicketInsufficientReserve();
@@ -1000,6 +887,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Ticket, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Ticket, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

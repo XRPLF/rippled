@@ -1,23 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2021, Howard Hinnant <howard.hinnant@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/clock/basic_seconds_clock.h>
+
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <atomic>
@@ -31,19 +13,19 @@ namespace beast {
 namespace {
 
 // Updates the clock
-class seconds_clock_thread
+class SecondsClockThread
 {
-    using Clock = basic_seconds_clock::Clock;
+    using Clock = BasicSecondsClock::Clock;
 
-    bool stop_;
+    bool stop_{false};
     std::mutex mut_;
     std::condition_variable cv_;
     std::thread thread_;
     std::atomic<Clock::time_point::rep> tp_;
 
 public:
-    ~seconds_clock_thread();
-    seconds_clock_thread();
+    ~SecondsClockThread();
+    SecondsClockThread();
 
     Clock::time_point
     now();
@@ -55,33 +37,31 @@ private:
 
 static_assert(std::atomic<std::chrono::steady_clock::rep>::is_always_lock_free);
 
-seconds_clock_thread::~seconds_clock_thread()
+SecondsClockThread::~SecondsClockThread()
 {
     XRPL_ASSERT(
-        thread_.joinable(),
-        "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable");
+        thread_.joinable(), "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable");
     {
-        std::lock_guard lock(mut_);
+        std::scoped_lock const lock(mut_);
         stop_ = true;
     }  // publish stop_ asap so if waiting thread times-out, it will see it
     cv_.notify_one();
     thread_.join();
 }
 
-seconds_clock_thread::seconds_clock_thread()
-    : stop_{false}, tp_{Clock::now().time_since_epoch().count()}
+SecondsClockThread::SecondsClockThread() : tp_{Clock::now().time_since_epoch().count()}
 {
-    thread_ = std::thread(&seconds_clock_thread::run, this);
+    thread_ = std::thread(&SecondsClockThread::run, this);
 }
 
-seconds_clock_thread::Clock::time_point
-seconds_clock_thread::now()
+SecondsClockThread::Clock::time_point
+SecondsClockThread::now()
 {
     return Clock::time_point{Clock::duration{tp_.load()}};
 }
 
 void
-seconds_clock_thread::run()
+SecondsClockThread::run()
 {
     std::unique_lock lock(mut_);
     while (true)
@@ -98,11 +78,11 @@ seconds_clock_thread::run()
 
 }  // unnamed namespace
 
-basic_seconds_clock::time_point
-basic_seconds_clock::now()
+BasicSecondsClock::time_point
+BasicSecondsClock::now()
 {
-    static seconds_clock_thread clk;
-    return clk.now();
+    static SecondsClockThread kCLK;
+    return kCLK.now();
 }
 
 }  // namespace beast

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_SCHEDULER_H_INCLUDED
-#define RIPPLE_TEST_CSF_SCHEDULER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/clock/manual_clock.h>
@@ -29,9 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Simulated discrete-event scheduler.
 
@@ -41,61 +19,61 @@ namespace csf {
     specific time. Events may be canceled using a token returned when the
     event is scheduled.
 
-    The caller uses one or more of the step, step_one, step_for, step_until and
-    step_while functions to process scheduled events.
+    The caller uses one or more of the step, stepOne, stepFor, stepUntil and
+    stepWhile functions to process scheduled events.
 */
 class Scheduler
 {
 public:
-    using clock_type = beast::manual_clock<std::chrono::steady_clock>;
+    using clock_type = beast::ManualClock<std::chrono::steady_clock>;
 
     using duration = typename clock_type::duration;
 
     using time_point = typename clock_type::time_point;
 
 private:
-    using by_when_hook = boost::intrusive::set_base_hook<
-        boost::intrusive::link_mode<boost::intrusive::normal_link>>;
+    using by_when_hook =
+        boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
-    struct event : by_when_hook
+    struct Event : by_when_hook
     {
         time_point when;
 
-        event(event const&) = delete;
-        event&
-        operator=(event const&) = delete;
+        Event(Event const&) = delete;
+        Event&
+        operator=(Event const&) = delete;
 
-        virtual ~event() = default;
+        virtual ~Event() = default;
 
         // Called to perform the event
         virtual void
         operator()() const = 0;
 
-        event(time_point when_) : when(when_)
+        Event(time_point when) : when(when)
         {
         }
 
         bool
-        operator<(event const& other) const
+        operator<(Event const& other) const
         {
             return when < other.when;
         }
     };
 
     template <class Handler>
-    class event_impl : public event
+    class EventImpl : public Event
     {
         Handler const h_;
 
     public:
-        event_impl(event_impl const&) = delete;
+        EventImpl(EventImpl const&) = delete;
 
-        event_impl&
-        operator=(event_impl const&) = delete;
+        EventImpl&
+        operator=(EventImpl const&) = delete;
 
         template <class DeducedHandler>
-        event_impl(time_point when_, DeducedHandler&& h)
-            : event(when_), h_(std::forward<DeducedHandler>(h))
+        EventImpl(time_point when, DeducedHandler&& h)
+            : Event(when), h_(std::forward<DeducedHandler>(h))
         {
         }
 
@@ -106,12 +84,11 @@ private:
         }
     };
 
-    class queue_type
+    class QueueType
     {
     private:
-        using by_when_set = typename boost::intrusive::make_multiset<
-            event,
-            boost::intrusive::constant_time_size<false>>::type;
+        using by_when_set = typename boost::intrusive::
+            make_multiset<Event, boost::intrusive::constant_time_size<false>>::type;
         // alloc_ is owned by the scheduler
         boost::container::pmr::monotonic_buffer_resource* alloc_;
         by_when_set by_when_;
@@ -119,16 +96,15 @@ private:
     public:
         using iterator = typename by_when_set::iterator;
 
-        queue_type(queue_type const&) = delete;
-        queue_type&
-        operator=(queue_type const&) = delete;
+        QueueType(QueueType const&) = delete;
+        QueueType&
+        operator=(QueueType const&) = delete;
 
-        explicit queue_type(
-            boost::container::pmr::monotonic_buffer_resource* alloc);
+        explicit QueueType(boost::container::pmr::monotonic_buffer_resource* alloc);
 
-        ~queue_type();
+        ~QueueType();
 
-        bool
+        [[nodiscard]] bool
         empty() const;
 
         iterator
@@ -146,7 +122,7 @@ private:
     };
 
     boost::container::pmr::monotonic_buffer_resource alloc_{kilobytes(256)};
-    queue_type queue_;
+    QueueType queue_;
 
     // Aged containers that rely on this clock take a non-const reference =(
     mutable clock_type clock_;
@@ -170,7 +146,7 @@ public:
     now() const;
 
     // Used to cancel timers
-    struct cancel_token;
+    struct CancelToken;
 
     /** Schedule an event at a specific time
 
@@ -181,7 +157,7 @@ public:
             no arguments.
     */
     template <class Function>
-    cancel_token
+    CancelToken
     at(time_point const& when, Function&& f);
 
     /** Schedule an event after a specified duration passes
@@ -193,7 +169,7 @@ public:
             no arguments.
     */
     template <class Function>
-    cancel_token
+    CancelToken
     in(duration const& delay, Function&& f);
 
     /** Cancel a timer.
@@ -204,7 +180,7 @@ public:
             timer() which has not yet been invoked.
     */
     void
-    cancel(cancel_token const& token);
+    cancel(CancelToken const& token);
 
     /** Run the scheduler for up to one event.
 
@@ -216,7 +192,7 @@ public:
         @return `true` if an event was processed.
     */
     bool
-    step_one();
+    stepOne();
 
     /** Run the scheduler until no events remain.
 
@@ -245,7 +221,7 @@ public:
     */
     template <class Function>
     bool
-    step_while(Function&& func);
+    stepWhile(Function&& func);
 
     /** Run the scheduler until the specified time.
 
@@ -257,7 +233,7 @@ public:
         @return `true` if any event remain.
     */
     bool
-    step_until(time_point const& until);
+    stepUntil(time_point const& until);
 
     /** Run the scheduler until time has elapsed.
 
@@ -270,82 +246,80 @@ public:
     */
     template <class Period, class Rep>
     bool
-    step_for(std::chrono::duration<Period, Rep> const& amount);
+    stepFor(std::chrono::duration<Period, Rep> const& amount);
 };
 
 //------------------------------------------------------------------------------
 
-inline Scheduler::queue_type::queue_type(
-    boost::container::pmr::monotonic_buffer_resource* alloc)
+inline Scheduler::QueueType::QueueType(boost::container::pmr::monotonic_buffer_resource* alloc)
     : alloc_(alloc)
 {
 }
 
-inline Scheduler::queue_type::~queue_type()
+inline Scheduler::QueueType::~QueueType()
 {
     for (auto iter = by_when_.begin(); iter != by_when_.end();)
     {
         auto e = &*iter;
         ++iter;
-        e->~event();
-        alloc_->deallocate(e, sizeof(e));
+        e->~Event();
+        alloc_->deallocate(e, sizeof(e));  // NOLINT(bugprone-sizeof-expression)
     }
 }
 
 inline bool
-Scheduler::queue_type::empty() const
+Scheduler::QueueType::empty() const
 {
     return by_when_.empty();
 }
 
 inline auto
-Scheduler::queue_type::begin() -> iterator
+Scheduler::QueueType::begin() -> iterator
 {
     return by_when_.begin();
 }
 
 inline auto
-Scheduler::queue_type::end() -> iterator
+Scheduler::QueueType::end() -> iterator
 {
     return by_when_.end();
 }
 
 template <class Handler>
 inline auto
-Scheduler::queue_type::emplace(time_point when, Handler&& h) ->
-    typename by_when_set::iterator
+Scheduler::QueueType::emplace(time_point when, Handler&& h) -> typename by_when_set::iterator
 {
-    using event_type = event_impl<std::decay_t<Handler>>;
+    using event_type = EventImpl<std::decay_t<Handler>>;
     auto const p = alloc_->allocate(sizeof(event_type));
     auto& e = *new (p) event_type(when, std::forward<Handler>(h));
     return by_when_.insert(e);
 }
 
 inline auto
-Scheduler::queue_type::erase(iterator iter) -> typename by_when_set::iterator
+Scheduler::QueueType::erase(iterator iter) -> typename by_when_set::iterator
 {
     auto& e = *iter;
     auto next = by_when_.erase(iter);
-    e.~event();
+    e.~Event();
     alloc_->deallocate(&e, sizeof(e));
     return next;
 }
 
 //-----------------------------------------------------------------------------
-struct Scheduler::cancel_token
+struct Scheduler::CancelToken
 {
 private:
-    typename queue_type::iterator iter_;
+    typename QueueType::iterator iter_;
 
 public:
-    cancel_token() = delete;
-    cancel_token(cancel_token const&) = default;
-    cancel_token&
-    operator=(cancel_token const&) = default;
+    CancelToken() = delete;
+    CancelToken(CancelToken const&) = default;
+    CancelToken&
+    operator=(CancelToken const&) = default;
 
 private:
     friend class Scheduler;
-    cancel_token(typename queue_type::iterator iter) : iter_(iter)
+    CancelToken(typename QueueType::iterator iter) : iter_(iter)
     {
     }
 };
@@ -369,26 +343,26 @@ Scheduler::now() const -> time_point
 
 template <class Function>
 inline auto
-Scheduler::at(time_point const& when, Function&& f) -> cancel_token
+Scheduler::at(time_point const& when, Function&& f) -> CancelToken
 {
     return queue_.emplace(when, std::forward<Function>(f));
 }
 
 template <class Function>
 inline auto
-Scheduler::in(duration const& delay, Function&& f) -> cancel_token
+Scheduler::in(duration const& delay, Function&& f) -> CancelToken
 {
     return at(clock_.now() + delay, std::forward<Function>(f));
 }
 
 inline void
-Scheduler::cancel(cancel_token const& token)
+Scheduler::cancel(CancelToken const& token)
 {
     queue_.erase(token.iter_);
 }
 
 inline bool
-Scheduler::step_one()
+Scheduler::stepOne()
 {
     if (queue_.empty())
         return false;
@@ -402,26 +376,28 @@ Scheduler::step_one()
 inline bool
 Scheduler::step()
 {
-    if (!step_one())
+    if (!stepOne())
         return false;
     for (;;)
-        if (!step_one())
+    {
+        if (!stepOne())
             break;
+    }
     return true;
 }
 
 template <class Function>
 inline bool
-Scheduler::step_while(Function&& f)
+Scheduler::stepWhile(Function&& f)
 {
     bool ran = false;
-    while (f() && step_one())
+    while (f() && stepOne())
         ran = true;
     return ran;
 }
 
 inline bool
-Scheduler::step_until(time_point const& until)
+Scheduler::stepUntil(time_point const& until)
 {
     // VFALCO This routine needs optimizing
     if (queue_.empty())
@@ -437,7 +413,7 @@ Scheduler::step_until(time_point const& until)
     }
     do
     {
-        step_one();
+        stepOne();
         iter = queue_.begin();
     } while (iter != queue_.end() && iter->when <= until);
     clock_.set(until);
@@ -446,13 +422,9 @@ Scheduler::step_until(time_point const& until)
 
 template <class Period, class Rep>
 inline bool
-Scheduler::step_for(std::chrono::duration<Period, Rep> const& amount)
+Scheduler::stepFor(std::chrono::duration<Period, Rep> const& amount)
 {
-    return step_until(now() + amount);
+    return stepUntil(now() + amount);
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::csf

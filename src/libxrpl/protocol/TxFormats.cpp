@@ -1,62 +1,49 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#include <xrpl/protocol/TxFormats.h>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
+#include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
-#include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/jss.h>  // IWYU pragma: keep
 
-#include <initializer_list>
+#include <vector>
 
-namespace ripple {
+namespace xrpl {
+
+std::vector<SOElement> const&
+TxFormats::getCommonFields()
+{
+    static auto const kCOMMON_FIELDS = std::vector<SOElement>{
+        {sfTransactionType, SoeRequired},
+        {sfFlags, SoeOptional},
+        {sfSourceTag, SoeOptional},
+        {sfAccount, SoeRequired},
+        {sfSequence, SoeRequired},
+        {sfPreviousTxnID, SoeOptional},  // emulate027
+        {sfLastLedgerSequence, SoeOptional},
+        {sfAccountTxnID, SoeOptional},
+        {sfFee, SoeRequired},
+        {sfOperationLimit, SoeOptional},
+        {sfMemos, SoeOptional},
+        {sfSigningPubKey, SoeRequired},
+        {sfTicketSequence, SoeOptional},
+        {sfTxnSignature, SoeOptional},
+        {sfSigners, SoeOptional},  // submit_multisigned
+        {sfNetworkID, SoeOptional},
+        {sfDelegate, SoeOptional},
+    };
+    return kCOMMON_FIELDS;
+}
 
 TxFormats::TxFormats()
 {
-    // Fields shared by all txFormats:
-    static std::initializer_list<SOElement> const commonFields{
-        {sfTransactionType, soeREQUIRED},
-        {sfFlags, soeOPTIONAL},
-        {sfSourceTag, soeOPTIONAL},
-        {sfAccount, soeREQUIRED},
-        {sfSequence, soeREQUIRED},
-        {sfPreviousTxnID, soeOPTIONAL},  // emulate027
-        {sfLastLedgerSequence, soeOPTIONAL},
-        {sfAccountTxnID, soeOPTIONAL},
-        {sfFee, soeREQUIRED},
-        {sfOperationLimit, soeOPTIONAL},
-        {sfMemos, soeOPTIONAL},
-        {sfSigningPubKey, soeREQUIRED},
-        {sfTicketSequence, soeOPTIONAL},
-        {sfTxnSignature, soeOPTIONAL},
-        {sfSigners, soeOPTIONAL},  // submit_multisigned
-        {sfNetworkID, soeOPTIONAL},
-        {sfDelegate, soeOPTIONAL},
-    };
-
 #pragma push_macro("UNWRAP")
 #undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
 #define UNWRAP(...) __VA_ARGS__
-#define TRANSACTION(tag, value, name, delegatable, fields) \
-    add(jss::name, tag, UNWRAP fields, commonFields);
+#define TRANSACTION(tag, value, name, delegable, amendment, privileges, fields) \
+    add(jss::name, tag, UNWRAP fields, getCommonFields());
 
 #include <xrpl/protocol/detail/transactions.macro>
 
@@ -69,8 +56,8 @@ TxFormats::TxFormats()
 TxFormats const&
 TxFormats::getInstance()
 {
-    static TxFormats const instance;
-    return instance;
+    static TxFormats const kINSTANCE;
+    return kINSTANCE;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

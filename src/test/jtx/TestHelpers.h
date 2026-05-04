@@ -1,48 +1,282 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_JTX_TESTHELPERS_H_INCLUDED
-#define RIPPLE_TEST_JTX_TESTHELPERS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
+#include <xrpld/app/misc/TxQ.h>
+
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
+#include <algorithm>
+#include <source_location>
+#include <utility>
 #include <vector>
 
-#if (defined(__clang_major__) && __clang_major__ < 15)
-#include <experimental/source_location>
-using source_location = std::experimental::source_location;
-#else
-#include <source_location>
-using std::source_location;
-#endif
+namespace xrpl::test::jtx {
 
-namespace ripple {
-namespace test {
-namespace jtx {
+/** Generic helper class for helper classes that set a field on a JTx.
+
+ Not every helper will be able to use this because of conversions and other
+ issues, but for classes where it's straightforward, this can simplify things.
+*/
+template <
+    class SField,
+    class StoredValue = typename SField::type::value_type,
+    class OutputValue = StoredValue>
+struct JTxField
+{
+    using SF = SField;
+    using SV = StoredValue;
+    using OV = OutputValue;
+
+protected:
+    SF const& sfield_;
+    SV value_;
+
+public:
+    explicit JTxField(SF const& sfield, SV value) : sfield_(sfield), value_(std::move(value))
+    {
+    }
+
+    virtual ~JTxField() = default;
+
+    [[nodiscard]] virtual OV
+    value() const = 0;
+
+    virtual void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfield_.jsonName] = value();
+    }
+};
+
+template <class SField, class StoredValue>
+struct JTxField<SField, StoredValue, StoredValue>
+{
+    using SF = SField;
+    using SV = StoredValue;
+    using OV = SV;
+
+protected:
+    SF const& sfield_;
+    SV value_;
+
+public:
+    explicit JTxField(SF const& sfield, SV value) : sfield_(sfield), value_(std::move(value))
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfield_.jsonName] = value_;
+    }
+};
+
+struct TimePointField : public JTxField<SF_UINT32, NetClock::time_point, NetClock::rep>
+{
+    using SF = SF_UINT32;
+    using SV = NetClock::time_point;
+    using OV = NetClock::rep;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit TimePointField(SF const& sfield, SV const& value) : JTxField(sfield, value)
+    {
+    }
+
+    [[nodiscard]] OV
+    value() const override
+    {
+        return value_.time_since_epoch().count();
+    }
+};
+
+struct Uint256Field : public JTxField<SF_UINT256, uint256, std::string>
+{
+    using SF = SF_UINT256;
+    using SV = uint256;
+    using OV = std::string;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit Uint256Field(SF const& sfield, SV const& value) : JTxField(sfield, value)
+    {
+    }
+
+    [[nodiscard]] OV
+    value() const override
+    {
+        return to_string(value_);
+    }
+};
+
+struct AccountIdField : public JTxField<SF_ACCOUNT, AccountID, std::string>
+{
+    using SF = SF_ACCOUNT;
+    using SV = AccountID;
+    using OV = std::string;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit AccountIdField(SF const& sfield, SV const& value) : JTxField(sfield, value)
+    {
+    }
+
+    [[nodiscard]] OV
+    value() const override
+    {
+        return toBase58(value_);
+    }
+};
+
+struct StAmountField : public JTxField<SF_AMOUNT, STAmount, json::Value>
+{
+    using SF = SF_AMOUNT;
+    using SV = STAmount;
+    using OV = json::Value;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit StAmountField(SF const& sfield, SV const& value) : JTxField(sfield, value)
+    {
+    }
+
+    [[nodiscard]] OV
+    value() const override
+    {
+        return value_.getJson(JsonOptions::KNone);
+    }
+};
+
+struct BlobField : public JTxField<SF_VL, std::string>
+{
+    using SF = SF_VL;
+    using SV = std::string;
+    using base = JTxField<SF, SV, SV>;
+
+    using JTxField::JTxField;
+
+    explicit BlobField(SF const& sfield, Slice const& cond) : JTxField(sfield, strHex(cond))
+    {
+    }
+
+    template <size_t N>
+    explicit BlobField(SF const& sfield, std::array<std::uint8_t, N> const& c)
+        : BlobField(sfield, makeSlice(c))
+    {
+    }
+};
+
+template <class SField, class UnitTag, class ValueType>
+struct ValueUnitField : public JTxField<SField, unit::ValueUnit<UnitTag, ValueType>, ValueType>
+{
+    using SF = SField;
+    using SV = unit::ValueUnit<UnitTag, ValueType>;
+    using OV = ValueType;
+    using base = JTxField<SF, SV, OV>;
+
+    static_assert(std::is_same_v<OV, typename SField::type::value_type>);
+
+protected:
+    using base::value_;
+
+public:
+    using JTxField<SF, SV, OV>::JTxField;
+
+    [[nodiscard]] OV
+    value() const override
+    {
+        return value_.value();
+    }
+};
+
+template <class JTxField>
+struct JTxFieldWrapper
+{
+    using JF = JTxField;
+    using SF = typename JF::SF;
+    using SV = typename JF::SV;
+
+protected:
+    SF const& sfield_;
+
+public:
+    explicit JTxFieldWrapper(SF const& sfield) : sfield_(sfield)
+    {
+    }
+
+    JF
+    operator()(SV const& value) const
+    {
+        return JTxField(sfield_, value);
+    }
+};
+
+template <>
+struct JTxFieldWrapper<BlobField>
+{
+    using JF = BlobField;
+    using SF = JF::SF;
+    using SV = JF::SV;
+
+protected:
+    SF const& sfield_;
+
+public:
+    explicit JTxFieldWrapper(SF const& sfield) : sfield_(sfield)
+    {
+    }
+
+    JF
+    operator()(SV const& cond) const
+    {
+        return JF(sfield_, makeSlice(cond));
+    }
+
+    JF
+    operator()(Slice const& cond) const
+    {
+        return JF(sfield_, cond);
+    }
+
+    template <size_t N>
+    JF
+    operator()(std::array<std::uint8_t, N> const& c) const
+    {
+        return operator()(makeSlice(c));
+    }
+};
+
+template <class SField, class UnitTag, class ValueType = typename SField::type::value_type>
+using valueUnitWrapper = JTxFieldWrapper<ValueUnitField<SField, UnitTag, ValueType>>;
+
+template <class SField, class StoredValue = typename SField::type::value_type>
+using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
+
+/** General field definitions, or fields used in multiple transaction namespaces
+ */
+auto const kDATA = JTxFieldWrapper<BlobField>(sfData);
+
+auto const kAMOUNT = JTxFieldWrapper<StAmountField>(sfAmount);
 
 // TODO We only need this long "requires" clause as polyfill, for C++20
 // implementations which are missing <ranges> header. Replace with
@@ -50,7 +284,7 @@ namespace jtx {
 // when we have moved to better compilers.
 template <typename Input>
 auto
-make_vector(Input const& input)
+makeVector(Input const& input)
     requires requires(Input& v) {
         std::begin(v);
         std::end(v);
@@ -60,37 +294,37 @@ make_vector(Input const& input)
 }
 
 // Functions used in debugging
-Json::Value
+json::Value
 getAccountOffers(Env& env, AccountID const& acct, bool current = false);
 
-inline Json::Value
+inline json::Value
 getAccountOffers(Env& env, Account const& acct, bool current = false)
 {
     return getAccountOffers(env, acct.id(), current);
 }
 
-Json::Value
+json::Value
 getAccountLines(Env& env, AccountID const& acctId);
 
-inline Json::Value
+inline json::Value
 getAccountLines(Env& env, Account const& acct)
 {
     return getAccountLines(env, acct.id());
 }
 
 template <typename... IOU>
-Json::Value
+json::Value
 getAccountLines(Env& env, AccountID const& acctId, IOU... ious)
 {
-    auto const jrr = getAccountLines(env, acctId);
-    Json::Value res;
+    auto jrr = getAccountLines(env, acctId);
+    json::Value res;
     for (auto const& line : jrr[jss::lines])
     {
         for (auto const& iou : {ious...})
         {
             if (line[jss::currency].asString() == to_string(iou.currency))
             {
-                Json::Value v;
+                json::Value v;
                 v[jss::currency] = line[jss::currency];
                 v[jss::balance] = line[jss::balance];
                 v[jss::limit] = line[jss::limit];
@@ -105,58 +339,70 @@ getAccountLines(Env& env, AccountID const& acctId, IOU... ious)
 }
 
 [[nodiscard]] bool
-checkArraySize(Json::Value const& val, unsigned int size);
+checkArraySize(json::Value const& val, unsigned int size);
 
 // Helper function that returns the owner count on an account.
 std::uint32_t
 ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
 
+[[nodiscard]]
+inline bool
+checkVL(Slice const& result, std::string const& expected)
+{
+    Serializer s;
+    s.addRaw(result);
+    return s.getString() == expected;
+}
+
+[[nodiscard]]
+inline bool
+checkVL(std::shared_ptr<SLE const> const& sle, SField const& field, std::string const& expected)
+{
+    return strHex(expected) == strHex(sle->getFieldVL(field));
+}
+
 /* Path finding */
 /******************************************************************************/
 void
-stpath_append_one(STPath& st, Account const& account);
+stpathAppendOne(STPath& st, Account const& account);
 
 template <class T>
-std::enable_if_t<std::is_constructible<Account, T>::value>
-stpath_append_one(STPath& st, T const& t)
+std::enable_if_t<std::is_constructible_v<Account, T>>
+stpathAppendOne(STPath& st, T const& t)
 {
-    stpath_append_one(st, Account{t});
+    stpathAppendOne(st, Account{t});
 }
 
 void
-stpath_append_one(STPath& st, STPathElement const& pe);
+stpathAppendOne(STPath& st, STPathElement const& pe);
 
 template <class T, class... Args>
 void
-stpath_append(STPath& st, T const& t, Args const&... args)
+stpathAppend(STPath& st, T const& t, Args const&... args)
 {
-    stpath_append_one(st, t);
+    stpathAppendOne(st, t);
     if constexpr (sizeof...(args) > 0)
-        stpath_append(st, args...);
+        stpathAppend(st, args...);
 }
 
 template <class... Args>
 void
-stpathset_append(STPathSet& st, STPath const& p, Args const&... args)
+stpathsetAppend(STPathSet& st, STPath const& p, Args const&... args)
 {
-    st.push_back(p);
+    st.pushBack(p);
     if constexpr (sizeof...(args) > 0)
-        stpathset_append(st, args...);
+        stpathsetAppend(st, args...);
 }
 
 bool
 equal(STAmount const& sa1, STAmount const& sa2);
-
-// Issue path element
-STPathElement
-IPE(Issue const& iss);
 
 template <class... Args>
 STPath
 stpath(Args const&... args)
 {
     STPath st;
-    stpath_append(st, args...);
+    stpathAppend(st, args...);
     return st;
 }
 
@@ -165,28 +411,101 @@ bool
 same(STPathSet const& st1, Args const&... args)
 {
     STPathSet st2;
-    stpathset_append(st2, args...);
+    stpathsetAppend(st2, args...);
     if (st1.size() != st2.size())
         return false;
 
     for (auto const& p : st2)
     {
-        if (std::find(st1.begin(), st1.end(), p) == st1.end())
+        if (std::ranges::find(st1, p) == st1.end())
             return false;
     }
     return true;
 }
 
+json::Value
+rpf(jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& dstAmount,
+    std::optional<STAmount> const& sendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt);
+
+jtx::Env
+pathTestEnv(beast::unit_test::Suite& suite);
+
+class Gate
+{
+private:
+    std::condition_variable cv_;
+    std::mutex mutex_;
+    bool signaled_ = false;
+
+public:
+    // Thread safe, blocks until signaled or period expires.
+    // Returns `true` if signaled.
+    template <class Rep, class Period>
+    bool
+    waitFor(std::chrono::duration<Rep, Period> const& relTime)
+    {
+        std::unique_lock<std::mutex> lk(mutex_);
+        auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
+        signaled_ = false;
+        return b;
+    }
+
+    void
+    signal()
+    {
+        std::scoped_lock const lk(mutex_);
+        signaled_ = true;
+        cv_.notify_all();
+    }
+};
+
+json::Value
+findPathsRequest(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
+
+std::tuple<STPathSet, STAmount, STAmount>
+findPaths(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
+
+std::tuple<STPathSet, STAmount, STAmount>
+findPathsByElement(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<STPathElement> const& srcElement = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
+
 /******************************************************************************/
 
 XRPAmount
-txfee(Env const& env, std::uint16_t n);
+txFee(Env const& env, std::uint16_t n);
 
 PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount);
 
 bool
-expectLine(
+expectHolding(
     Env& env,
     AccountID const& account,
     STAmount const& value,
@@ -194,18 +513,16 @@ expectLine(
 
 template <typename... Amts>
 bool
-expectLine(
-    Env& env,
-    AccountID const& account,
-    STAmount const& value,
-    Amts const&... amts)
+expectHolding(Env& env, AccountID const& account, STAmount const& value, Amts const&... amts)
 {
-    return expectLine(env, account, value, false) &&
-        expectLine(env, account, amts...);
+    return expectHolding(env, account, value, false) && expectHolding(env, account, amts...);
 }
 
 bool
-expectLine(Env& env, AccountID const& account, None const& value);
+expectHolding(Env& env, AccountID const& account, None const& value);
+
+bool
+expectMPT(Env& env, AccountID const& account, STAmount const& value);
 
 bool
 expectOffers(
@@ -214,29 +531,32 @@ expectOffers(
     std::uint16_t size,
     std::vector<Amounts> const& toMatch = {});
 
-Json::Value
+json::Value
 ledgerEntryRoot(Env& env, Account const& acct);
 
-Json::Value
-ledgerEntryState(
-    Env& env,
-    Account const& acct_a,
-    Account const& acct_b,
-    std::string const& currency);
+json::Value
+ledgerEntryState(Env& env, Account const& acctA, Account const& acctB, std::string const& currency);
 
-Json::Value
+json::Value
+ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offerSeq);
+
+json::Value
+ledgerEntryMPT(jtx::Env& env, jtx::Account const& acct, MPTID const& mptID);
+
+json::Value
+getBookOffers(jtx::Env& env, Asset const& takerPays, Asset const& takerGets);
+
+json::Value
 accountBalance(Env& env, Account const& acct);
 
 [[nodiscard]] bool
-expectLedgerEntryRoot(
-    Env& env,
-    Account const& acct,
-    STAmount const& expectedValue);
+expectLedgerEntryRoot(Env& env, Account const& acct, STAmount const& expectedValue);
 
 /* Payment Channel */
 /******************************************************************************/
+namespace paychan {
 
-Json::Value
+json::Value
 create(
     AccountID const& account,
     AccountID const& to,
@@ -246,7 +566,7 @@ create(
     std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
     std::optional<std::uint32_t> const& dstTag = std::nullopt);
 
-inline Json::Value
+inline json::Value
 create(
     Account const& account,
     Account const& to,
@@ -256,18 +576,17 @@ create(
     std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
     std::optional<std::uint32_t> const& dstTag = std::nullopt)
 {
-    return create(
-        account.id(), to.id(), amount, settleDelay, pk, cancelAfter, dstTag);
+    return create(account.id(), to.id(), amount, settleDelay, pk, cancelAfter, dstTag);
 }
 
-Json::Value
+json::Value
 fund(
     AccountID const& account,
     uint256 const& channel,
     STAmount const& amount,
     std::optional<NetClock::time_point> const& expiration = std::nullopt);
 
-Json::Value
+json::Value
 claim(
     AccountID const& account,
     uint256 const& channel,
@@ -277,10 +596,7 @@ claim(
     std::optional<PublicKey> const& pk = std::nullopt);
 
 uint256
-channel(
-    AccountID const& account,
-    AccountID const& dst,
-    std::uint32_t seqProxyValue);
+channel(AccountID const& account, AccountID const& dst, std::uint32_t seqProxyValue);
 
 inline uint256
 channel(Account const& account, Account const& dst, std::uint32_t seqProxyValue)
@@ -294,27 +610,96 @@ channelBalance(ReadView const& view, uint256 const& chan);
 bool
 channelExists(ReadView const& view, uint256 const& chan);
 
+}  // namespace paychan
+
 /* Crossing Limits */
 /******************************************************************************/
 
 void
-n_offers(
-    Env& env,
-    std::size_t n,
-    Account const& account,
-    STAmount const& in,
-    STAmount const& out);
+nOffers(Env& env, std::size_t n, Account const& account, STAmount const& in, STAmount const& out);
 
 /* Pay Strand */
 /***************************************************************/
 
-// Currency path element
+struct DirectStepInfo
+{
+    AccountID src;
+    AccountID dst;
+    Currency currency;
+};
+
+struct MPTEndpointStepInfo
+{
+    AccountID src;
+    AccountID dst;
+    MPTID mptid;
+};
+
+struct XRPEndpointStepInfo
+{
+    AccountID acc;
+};
+
+// Currency/MPTID path element
 STPathElement
-cpe(Currency const& c);
+cpe(PathAsset const& pa);
+
+// Currency/MPTID and issuer path element
+STPathElement
+ipe(Asset const& asset);
+
+// Issuer path element
+STPathElement
+iape(AccountID const& account);
+
+// Account path element
+STPathElement
+ape(AccountID const& a);
 
 // All path element
 STPathElement
-allpe(AccountID const& a, Issue const& iss);
+allPathElements(AccountID const& a, Asset const& asset);
+
+bool
+equal(std::unique_ptr<Step> const& s1, DirectStepInfo const& dsi);
+
+bool
+equal(std::unique_ptr<Step> const& s1, MPTEndpointStepInfo const& dsi);
+
+bool
+equal(std::unique_ptr<Step> const& s1, XRPEndpointStepInfo const& xrpStepInfo);
+
+bool
+equal(std::unique_ptr<Step> const& s1, xrpl::Book const& bsi);
+
+template <class Iter>
+bool
+strandEqualHelper(Iter i)
+{
+    // base case. all args processed and found equal.
+    return true;
+}
+
+template <class Iter, class StepInfo, class... Args>
+bool
+strandEqualHelper(Iter i, StepInfo&& si, Args&&... args)
+{
+    if (!jtx::equal(*i, std::forward<StepInfo>(si)))
+        return false;
+    return strandEqualHelper(++i, std::forward<Args>(args)...);
+}
+
+template <class... Args>
+bool
+equal(Strand const& strand, Args&&... args)
+{
+    if (strand.size() != sizeof...(Args))
+        return false;
+    if (strand.empty())
+        return true;
+    return strandEqualHelper(strand.begin(), std::forward<Args>(args)...);
+}
+
 /***************************************************************/
 
 /* Check */
@@ -322,34 +707,35 @@ allpe(AccountID const& a, Issue const& iss);
 namespace check {
 
 /** Create a check. */
-// clang-format off
 template <typename A>
     requires std::is_same_v<A, AccountID>
-Json::Value
+json::Value
 create(A const& account, A const& dest, STAmount const& sendMax)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = to_string(account);
-    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::none);
+    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::KNone);
     jv[sfDestination.jsonName] = to_string(dest);
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
     return jv;
 }
-// clang-format on
 
-inline Json::Value
-create(
-    jtx::Account const& account,
-    jtx::Account const& dest,
-    STAmount const& sendMax)
+inline json::Value
+create(jtx::Account const& account, jtx::Account const& dest, STAmount const& sendMax)
 {
     return create(account.id(), dest.id(), sendMax);
 }
 
 }  // namespace check
 
-static constexpr FeeLevel64 baseFeeLevel{256};
-static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
+static constexpr FeeLevel64 kBASE_FEE_LEVEL{TxQ::kBASE_LEVEL};
+static constexpr FeeLevel64 kMIN_ESCALATION_FEE_LEVEL = kBASE_FEE_LEVEL * 500;
+
+inline uint256
+getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+{
+    return keylet::check(account, uSequence).key;
+}
 
 template <class Suite>
 void
@@ -360,39 +746,37 @@ checkMetrics(
     std::optional<std::size_t> expectedMaxCount,
     std::size_t expectedInLedger,
     std::size_t expectedPerLedger,
-    std::uint64_t expectedMinFeeLevel = baseFeeLevel.fee(),
-    std::uint64_t expectedMedFeeLevel = minEscalationFeeLevel.fee(),
-    source_location const location = source_location::current())
+    std::uint64_t expectedMinFeeLevel = kBASE_FEE_LEVEL.fee(),
+    std::uint64_t expectedMedFeeLevel = kMIN_ESCALATION_FEE_LEVEL.fee(),
+    std::source_location const location = std::source_location::current())
 {
-    int line = location.line();
+    int const line = location.line();
     char const* file = location.file_name();
     FeeLevel64 const expectedMin{expectedMinFeeLevel};
     FeeLevel64 const expectedMed{expectedMedFeeLevel};
     auto const metrics = env.app().getTxQ().getMetrics(*env.current());
     using namespace std::string_literals;
 
-    metrics.referenceFeeLevel == baseFeeLevel
+    metrics.referenceFeeLevel == kBASE_FEE_LEVEL
         ? test.pass()
         : test.fail(
-              "reference: "s +
-                  std::to_string(metrics.referenceFeeLevel.value()) + "/" +
-                  std::to_string(baseFeeLevel.value()),
+              "reference: "s + std::to_string(metrics.referenceFeeLevel.value()) + "/" +
+                  std::to_string(kBASE_FEE_LEVEL.value()),
               file,
               line);
 
     metrics.txCount == expectedCount
         ? test.pass()
         : test.fail(
-              "txCount: "s + std::to_string(metrics.txCount) + "/" +
-                  std::to_string(expectedCount),
+              "txCount: "s + std::to_string(metrics.txCount) + "/" + std::to_string(expectedCount),
               file,
               line);
 
     metrics.txQMaxSize == expectedMaxCount
         ? test.pass()
         : test.fail(
-              "txQMaxSize: "s + std::to_string(metrics.txQMaxSize.value_or(0)) +
-                  "/" + std::to_string(expectedMaxCount.value_or(0)),
+              "txQMaxSize: "s + std::to_string(metrics.txQMaxSize.value_or(0)) + "/" +
+                  std::to_string(expectedMaxCount.value_or(0)),
               file,
               line);
 
@@ -415,17 +799,16 @@ checkMetrics(
     metrics.minProcessingFeeLevel == expectedMin
         ? test.pass()
         : test.fail(
-              "minProcessingFeeLevel: "s +
-                  std::to_string(metrics.minProcessingFeeLevel.value()) + "/" +
-                  std::to_string(expectedMin.value()),
+              "minProcessingFeeLevel: "s + std::to_string(metrics.minProcessingFeeLevel.value()) +
+                  "/" + std::to_string(expectedMin.value()),
               file,
               line);
 
     metrics.medFeeLevel == expectedMed
         ? test.pass()
         : test.fail(
-              "medFeeLevel: "s + std::to_string(metrics.medFeeLevel.value()) +
-                  "/" + std::to_string(expectedMed.value()),
+              "medFeeLevel: "s + std::to_string(metrics.medFeeLevel.value()) + "/" +
+                  std::to_string(expectedMed.value()),
               file,
               line);
 
@@ -437,15 +820,212 @@ checkMetrics(
     metrics.openLedgerFeeLevel == expectedCurFeeLevel
         ? test.pass()
         : test.fail(
-              "openLedgerFeeLevel: "s +
-                  std::to_string(metrics.openLedgerFeeLevel.value()) + "/" +
+              "openLedgerFeeLevel: "s + std::to_string(metrics.openLedgerFeeLevel.value()) + "/" +
                   std::to_string(expectedCurFeeLevel.value()),
               file,
               line);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+/* LoanBroker */
+/******************************************************************************/
 
-#endif  // RIPPLE_TEST_JTX_TESTHELPERS_H_INCLUDED
+namespace loanBroker {
+
+json::Value
+set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
+
+// Use "del" because "delete" is a reserved word in C++.
+json::Value
+del(AccountID const& account, uint256 const& brokerID, std::uint32_t flags = 0);
+
+json::Value
+coverDeposit(
+    AccountID const& account,
+    uint256 const& brokerID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
+json::Value
+coverWithdraw(
+    AccountID const& account,
+    uint256 const& brokerID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
+// Must specify at least one of loanBrokerID or amount.
+json::Value
+coverClawback(AccountID const& account, std::uint32_t flags = 0);
+
+auto const kLOAN_BROKER_ID = JTxFieldWrapper<Uint256Field>(sfLoanBrokerID);
+
+auto const kMANAGEMENT_FEE_RATE =
+    valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
+
+auto const kDEBT_MAXIMUM = simpleField<SF_NUMBER>(sfDebtMaximum);
+
+auto const kCOVER_RATE_MINIMUM =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
+
+auto const kCOVER_RATE_LIQUIDATION =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
+
+auto const kDESTINATION = JTxFieldWrapper<AccountIdField>(sfDestination);
+
+}  // namespace loanBroker
+
+/* Loan */
+/******************************************************************************/
+namespace loan {
+
+json::Value
+set(AccountID const& account,
+    uint256 const& loanBrokerID,
+    Number principalRequested,
+    std::uint32_t flags = 0);
+
+auto const kCOUNTERPARTY = JTxFieldWrapper<AccountIdField>(sfCounterparty);
+
+// For `CounterPartySignature`, use `Sig(sfCounterpartySignature, ...)`
+
+auto const kLOAN_ORIGINATION_FEE = simpleField<SF_NUMBER>(sfLoanOriginationFee);
+
+auto const kLOAN_SERVICE_FEE = simpleField<SF_NUMBER>(sfLoanServiceFee);
+
+auto const kLATE_PAYMENT_FEE = simpleField<SF_NUMBER>(sfLatePaymentFee);
+
+auto const kCLOSE_PAYMENT_FEE = simpleField<SF_NUMBER>(sfClosePaymentFee);
+
+auto const kOVERPAYMENT_FEE = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentFee);
+
+auto const kINTEREST_RATE = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfInterestRate);
+
+auto const kLATE_INTEREST_RATE =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfLateInterestRate);
+
+auto const kCLOSE_INTEREST_RATE =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
+
+auto const kOVERPAYMENT_INTEREST_RATE =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);
+
+auto const kPAYMENT_TOTAL = simpleField<SF_UINT32>(sfPaymentTotal);
+
+auto const kPAYMENT_INTERVAL = simpleField<SF_UINT32>(sfPaymentInterval);
+
+auto const kGRACE_PERIOD = simpleField<SF_UINT32>(sfGracePeriod);
+
+json::Value
+manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
+
+json::Value
+del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
+
+json::Value
+pay(AccountID const& account,
+    uint256 const& loanID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
+}  // namespace loan
+
+/** Set Expiration on a JTx. */
+class Expiration
+{
+private:
+    std::uint32_t const expiry_;
+
+public:
+    explicit Expiration(NetClock::time_point const& expiry)
+        : expiry_{expiry.time_since_epoch().count()}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfExpiration.jsonName] = expiry_;
+    }
+};
+
+/** Set SourceTag on a JTx. */
+class SourceTag
+{
+private:
+    std::uint32_t const tag_;
+
+public:
+    explicit SourceTag(std::uint32_t tag) : tag_{tag}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfSourceTag.jsonName] = tag_;
+    }
+};
+
+/** Set DestinationTag on a JTx. */
+class DestTag
+{
+private:
+    std::uint32_t const tag_;
+
+public:
+    explicit DestTag(std::uint32_t tag) : tag_{tag}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfDestinationTag.jsonName] = tag_;
+    }
+};
+
+struct IssuerArgs
+{
+    jtx::Env& env;
+    // 3-letter currency if Issue, ignored if MPT
+    std::string token;
+    jtx::Account issuer;
+    std::vector<jtx::Account> holders = {};  // NOLINT(readability-redundant-member-init)
+    // trust-limit if Issue, maxAmount if MPT
+    std::optional<std::uint64_t> limit = std::nullopt;
+    // 0-50'000 (0-50%)
+    std::uint16_t transferFee = 0;
+};
+
+namespace detail {
+
+IOU
+issueHelperIOU(IssuerArgs const& args);
+
+MPT
+issueHelperMPT(IssuerArgs const& args);
+
+}  // namespace detail
+
+template <typename TTester>
+void
+testHelper2TokensMix(TTester&& tester)
+{
+    tester(detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(detail::issueHelperIOU, detail::issueHelperMPT);
+    tester(detail::issueHelperMPT, detail::issueHelperIOU);
+}
+
+template <typename TTester>
+void
+testHelper3TokensMix(TTester&& tester)
+{
+    tester(detail::issueHelperMPT, detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(detail::issueHelperMPT, detail::issueHelperMPT, detail::issueHelperIOU);
+    tester(detail::issueHelperMPT, detail::issueHelperIOU, detail::issueHelperMPT);
+    tester(detail::issueHelperMPT, detail::issueHelperIOU, detail::issueHelperIOU);
+    tester(detail::issueHelperIOU, detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(detail::issueHelperIOU, detail::issueHelperMPT, detail::issueHelperIOU);
+    tester(detail::issueHelperIOU, detail::issueHelperIOU, detail::issueHelperMPT);
+}
+
+}  // namespace xrpl::test::jtx

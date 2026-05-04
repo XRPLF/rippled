@@ -1,71 +1,93 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpld/app/ledger/LedgerMaster.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
+#include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/ledger/OrderBookDB.h>
-#include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/app/paths/PathRequests.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <boost/icl/concept/interval_set.hpp>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <cstdlib>
+#include <exception>
+#include <functional>
+#include <iostream>
+#include <iterator>
+#include <map>
 #include <memory>
+#include <mutex>
+#include <optional>
+#include <ostream>
+#include <sstream>
+#include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 // Don't catch up more than 100 ledgers (cannot exceed 256)
-static constexpr int MAX_LEDGER_GAP{100};
+static constexpr int kMAX_LEDGER_GAP{100};
 
 // Don't acquire history if ledger is too old
-static constexpr std::chrono::minutes MAX_LEDGER_AGE_ACQUIRE{1};
+static constexpr std::chrono::minutes kMAX_LEDGER_AGE_ACQUIRE{1};
 
 // Don't acquire history if write load is too high
-static constexpr int MAX_WRITE_LOAD_ACQUIRE{8192};
+static constexpr int kMAX_WRITE_LOAD_ACQUIRE{8192};
 
 // Helper function for LedgerMaster::doAdvance()
 // Return true if candidateLedger should be fetched from the network.
@@ -91,8 +113,8 @@ shouldAcquire(
         return minimumOnline.has_value() && candidateLedger >= *minimumOnline;
     }();
 
-    JLOG(j.trace()) << "Missing ledger " << candidateLedger
-                    << (ret ? " should" : " should NOT") << " be acquired";
+    JLOG(j.trace()) << "Missing ledger " << candidateLedger << (ret ? " should" : " should NOT")
+                    << " be acquired";
     return ret;
 }
 
@@ -102,40 +124,36 @@ LedgerMaster::LedgerMaster(
     beast::insight::Collector::ptr const& collector,
     beast::Journal journal)
     : app_(app)
-    , m_journal(journal)
-    , mLedgerHistory(collector, app)
+    , journal_(journal)
+    , ledgerHistory_(collector, app)
     , standalone_(app_.config().standalone())
-    , fetch_depth_(
-          app_.getSHAMapStore().clampFetchDepth(app_.config().FETCH_DEPTH))
+    , fetch_depth_(app_.getSHAMapStore().clampFetchDepth(app_.config().FETCH_DEPTH))
     , ledger_history_(app_.config().LEDGER_HISTORY)
-    , ledger_fetch_size_(app_.config().getValueFor(SizedItem::ledgerFetch))
+    , ledger_fetch_size_(app_.config().getValueFor(SizedItem::LedgerFetch))
     , fetch_packs_(
           "FetchPack",
           65536,
           std::chrono::seconds{45},
           stopwatch,
-          app_.journal("TaggedCache"))
-    , m_stats(std::bind(&LedgerMaster::collect_metrics, this), collector)
+          app_.getJournal("TaggedCache"))
+    , stats_(std::bind(&LedgerMaster::collectMetrics, this), collector)
 {
 }
 
 LedgerIndex
 LedgerMaster::getCurrentLedgerIndex()
 {
-    return app_.openLedger().current()->info().seq;
+    return app_.getOpenLedger().current()->header().seq;
 }
 
 LedgerIndex
 LedgerMaster::getValidLedgerIndex()
 {
-    return mValidLedgerSeq;
+    return validLedgerSeq_;
 }
 
 bool
-LedgerMaster::isCompatible(
-    ReadView const& view,
-    beast::Journal::Stream s,
-    char const* reason)
+LedgerMaster::isCompatible(ReadView const& view, beast::Journal::Stream s, char const* reason)
 {
     auto validLedger = getValidatedLedger();
 
@@ -145,15 +163,10 @@ LedgerMaster::isCompatible(
     }
 
     {
-        std::lock_guard sl(m_mutex);
+        std::scoped_lock const sl(mutex_);
 
-        if ((mLastValidLedger.second != 0) &&
-            !areCompatible(
-                mLastValidLedger.first,
-                mLastValidLedger.second,
-                view,
-                s,
-                reason))
+        if ((lastValidLedger_.second != 0) &&
+            !areCompatible(lastValidLedger_.first, lastValidLedger_.second, view, s, reason))
         {
             return false;
         }
@@ -166,22 +179,22 @@ std::chrono::seconds
 LedgerMaster::getPublishedLedgerAge()
 {
     using namespace std::chrono_literals;
-    std::chrono::seconds pubClose{mPubLedgerClose.load()};
+    std::chrono::seconds const pubClose{pubLedgerClose_.load()};
     if (pubClose == 0s)
     {
-        JLOG(m_journal.debug()) << "No published ledger";
+        JLOG(journal_.debug()) << "No published ledger";
         return weeks{2};
     }
 
-    std::chrono::seconds ret = app_.timeKeeper().closeTime().time_since_epoch();
+    std::chrono::seconds ret = app_.getTimeKeeper().closeTime().time_since_epoch();
     ret -= pubClose;
     ret = (ret > 0s) ? ret : 0s;
-    static std::chrono::seconds lastRet = -1s;
+    static std::chrono::seconds kLAST_RET = -1s;
 
-    if (ret != lastRet)
+    if (ret != kLAST_RET)
     {
-        JLOG(m_journal.trace()) << "Published ledger age is " << ret.count();
-        lastRet = ret;
+        JLOG(journal_.trace()) << "Published ledger age is " << ret.count();
+        kLAST_RET = ret;
     }
     return ret;
 }
@@ -191,22 +204,22 @@ LedgerMaster::getValidatedLedgerAge()
 {
     using namespace std::chrono_literals;
 
-    std::chrono::seconds valClose{mValidLedgerSign.load()};
+    std::chrono::seconds const valClose{validLedgerSign_.load()};
     if (valClose == 0s)
     {
-        JLOG(m_journal.debug()) << "No validated ledger";
+        JLOG(journal_.debug()) << "No validated ledger";
         return weeks{2};
     }
 
-    std::chrono::seconds ret = app_.timeKeeper().closeTime().time_since_epoch();
+    std::chrono::seconds ret = app_.getTimeKeeper().closeTime().time_since_epoch();
     ret -= valClose;
     ret = (ret > 0s) ? ret : 0s;
-    static std::chrono::seconds lastRet = -1s;
+    static std::chrono::seconds kLAST_RET = -1s;
 
-    if (ret != lastRet)
+    if (ret != kLAST_RET)
     {
-        JLOG(m_journal.trace()) << "Validated ledger age is " << ret.count();
-        lastRet = ret;
+        JLOG(journal_.trace()) << "Validated ledger age is " << ret.count();
+        kLAST_RET = ret;
     }
     return ret;
 }
@@ -221,9 +234,9 @@ LedgerMaster::isCaughtUp(std::string& reason)
         reason = "No recently-published ledger";
         return false;
     }
-    std::uint32_t validClose = mValidLedgerSign.load();
-    std::uint32_t pubClose = mPubLedgerClose.load();
-    if (!validClose || !pubClose)
+    std::uint32_t const validClose = validLedgerSign_.load();
+    std::uint32_t const pubClose = pubLedgerClose_.load();
+    if ((validClose == 0u) || (pubClose == 0u))
     {
         reason = "No published ledger";
         return false;
@@ -244,9 +257,8 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 
     if (!standalone_)
     {
-        auto validations = app_.validators().negativeUNLFilter(
-            app_.getValidations().getTrustedForLedger(
-                l->info().hash, l->info().seq));
+        auto validations = app_.getValidators().negativeUNLFilter(
+            app_.getValidations().getTrustedForLedger(l->header().hash, l->header().seq));
         times.reserve(validations.size());
         for (auto const& val : validations)
             times.push_back(val->getSignTime());
@@ -257,39 +269,38 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 
     NetClock::time_point signTime;
 
-    if (!times.empty() && times.size() >= app_.validators().quorum())
+    if (!times.empty() && times.size() >= app_.getValidators().quorum())
     {
         // Calculate the sample median
-        std::sort(times.begin(), times.end());
+        std::ranges::sort(times);
         auto const t0 = times[(times.size() - 1) / 2];
         auto const t1 = times[times.size() / 2];
         signTime = t0 + (t1 - t0) / 2;
     }
     else
     {
-        signTime = l->info().closeTime;
+        signTime = l->header().closeTime;
     }
 
-    mValidLedger.set(l);
-    mValidLedgerSign = signTime.time_since_epoch().count();
+    validLedger_.set(l);
+    validLedgerSign_ = signTime.time_since_epoch().count();
     XRPL_ASSERT(
-        mValidLedgerSeq || !app_.getMaxDisallowedLedger() ||
-            l->info().seq + max_ledger_difference_ >
-                app_.getMaxDisallowedLedger(),
-        "ripple::LedgerMaster::setValidLedger : valid ledger sequence");
+        validLedgerSeq_ || !app_.getMaxDisallowedLedger() ||
+            l->header().seq + max_ledger_difference_ > app_.getMaxDisallowedLedger(),
+        "xrpl::LedgerMaster::setValidLedger : valid ledger sequence");
     (void)max_ledger_difference_;
-    mValidLedgerSeq = l->info().seq;
+    validLedgerSeq_ = l->header().seq;
 
     app_.getOPs().updateLocalTx(*l);
     app_.getSHAMapStore().onLedgerClosed(getValidatedLedger());
-    mLedgerHistory.validatedLedger(l, consensusHash);
+    ledgerHistory_.validatedLedger(l, consensusHash);
     app_.getAmendmentTable().doValidatedLedger(l);
     if (!app_.getOPs().isBlocked())
     {
         if (app_.getAmendmentTable().hasUnsupportedEnabled())
         {
-            JLOG(m_journal.error()) << "One or more unsupported amendments "
-                                       "activated: server blocked.";
+            JLOG(journal_.error()) << "One or more unsupported amendments "
+                                      "activated: server blocked.";
             app_.getOPs().setAmendmentBlocked();
         }
         else if (!app_.getOPs().isAmendmentWarned() || l->isFlagLedger())
@@ -303,18 +314,19 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
             // this message may be logged more than once per session, because
             // the node will otherwise function normally, and this gives
             // operators an opportunity to see and resolve the warning.
-            if (auto const first =
-                    app_.getAmendmentTable().firstUnsupportedExpected())
+            if (auto const first = app_.getAmendmentTable().firstUnsupportedExpected())
             {
-                JLOG(m_journal.error()) << "One or more unsupported amendments "
-                                           "reached majority. Upgrade before "
-                                        << to_string(*first)
-                                        << " to prevent your server from "
-                                           "becoming amendment blocked.";
+                JLOG(journal_.error()) << "One or more unsupported amendments "
+                                          "reached majority. Upgrade before "
+                                       << to_string(*first)
+                                       << " to prevent your server from "
+                                          "becoming amendment blocked.";
                 app_.getOPs().setAmendmentWarned();
             }
             else
+            {
                 app_.getOPs().clearAmendmentWarned();
+            }
         }
     }
 }
@@ -322,17 +334,16 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 void
 LedgerMaster::setPubLedger(std::shared_ptr<Ledger const> const& l)
 {
-    mPubLedger = l;
-    mPubLedgerClose = l->info().closeTime.time_since_epoch().count();
-    mPubLedgerSeq = l->info().seq;
+    pubLedger_ = l;
+    pubLedgerClose_ = l->header().closeTime.time_since_epoch().count();
+    pubLedgerSeq_ = l->header().seq;
 }
 
 void
-LedgerMaster::addHeldTransaction(
-    std::shared_ptr<Transaction> const& transaction)
+LedgerMaster::addHeldTransaction(std::shared_ptr<Transaction> const& transaction)
 {
-    std::lock_guard ml(m_mutex);
-    mHeldTransactions.insert(transaction->getSTransaction());
+    std::scoped_lock const ml(mutex_);
+    heldTransactions_.insert(transaction->getSTransaction());
 }
 
 // Validate a ledger's close time and sequence number if we're considering
@@ -341,17 +352,16 @@ LedgerMaster::addHeldTransaction(
 bool
 LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 {
-    XRPL_ASSERT(ledger, "ripple::LedgerMaster::canBeCurrent : non-null input");
+    XRPL_ASSERT(ledger, "xrpl::LedgerMaster::canBeCurrent : non-null input");
 
     // Never jump to a candidate ledger that precedes our
     // last validated ledger
 
     auto validLedger = getValidatedLedger();
-    if (validLedger && (ledger->info().seq < validLedger->info().seq))
+    if (validLedger && (ledger->header().seq < validLedger->header().seq))
     {
-        JLOG(m_journal.trace())
-            << "Candidate for current ledger has low seq " << ledger->info().seq
-            << " < " << validLedger->info().seq;
+        JLOG(journal_.trace()) << "Candidate for current ledger has low seq "
+                               << ledger->header().seq << " < " << validLedger->header().seq;
         return false;
     }
 
@@ -360,18 +370,16 @@ LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
     // we perform this check. Otherwise, we only do it if we've built a
     // few ledgers as our clock can be off when we first start up
 
-    auto closeTime = app_.timeKeeper().closeTime();
-    auto ledgerClose = ledger->info().parentCloseTime;
+    auto closeTime = app_.getTimeKeeper().closeTime();
+    auto ledgerClose = ledger->header().parentCloseTime;
 
     using namespace std::chrono_literals;
-    if ((validLedger || (ledger->info().seq > 10)) &&
-        ((std::max(closeTime, ledgerClose) - std::min(closeTime, ledgerClose)) >
-         5min))
+    if ((validLedger || (ledger->header().seq > 10)) &&
+        ((std::max(closeTime, ledgerClose) - std::min(closeTime, ledgerClose)) > 5min))
     {
-        JLOG(m_journal.warn())
-            << "Candidate for current ledger has close time "
-            << to_string(ledgerClose) << " at network time "
-            << to_string(closeTime) << " seq " << ledger->info().seq;
+        JLOG(journal_.warn()) << "Candidate for current ledger has close time "
+                              << to_string(ledgerClose) << " at network time "
+                              << to_string(closeTime) << " seq " << ledger->header().seq;
         return false;
     }
 
@@ -382,25 +390,25 @@ LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
         // every two seconds. The goal is to prevent a malicious ledger
         // from increasing our sequence unreasonably high
 
-        LedgerIndex maxSeq = validLedger->info().seq + 10;
+        LedgerIndex maxSeq = validLedger->header().seq + 10;
 
-        if (closeTime > validLedger->info().parentCloseTime)
+        if (closeTime > validLedger->header().parentCloseTime)
+        {
             maxSeq += std::chrono::duration_cast<std::chrono::seconds>(
-                          closeTime - validLedger->info().parentCloseTime)
+                          closeTime - validLedger->header().parentCloseTime)
                           .count() /
                 2;
+        }
 
-        if (ledger->info().seq > maxSeq)
+        if (ledger->header().seq > maxSeq)
         {
-            JLOG(m_journal.warn())
-                << "Candidate for current ledger has high seq "
-                << ledger->info().seq << " > " << maxSeq;
+            JLOG(journal_.warn()) << "Candidate for current ledger has high seq "
+                                  << ledger->header().seq << " > " << maxSeq;
             return false;
         }
 
-        JLOG(m_journal.trace())
-            << "Acceptable seq range: " << validLedger->info().seq
-            << " <= " << ledger->info().seq << " <= " << maxSeq;
+        JLOG(journal_.trace()) << "Acceptable seq range: " << validLedger->header().seq
+                               << " <= " << ledger->header().seq << " <= " << maxSeq;
     }
 
     return true;
@@ -409,16 +417,16 @@ LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 void
 LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
 {
-    XRPL_ASSERT(lastClosed, "ripple::LedgerMaster::switchLCL : non-null input");
+    XRPL_ASSERT(lastClosed, "xrpl::LedgerMaster::switchLCL : non-null input");
     if (!lastClosed->isImmutable())
-        LogicError("mutable ledger in switchLCL");
+        logicError("mutable ledger in switchLCL");
 
     if (lastClosed->open())
-        LogicError("The new last closed ledger is open!");
+        logicError("The new last closed ledger is open!");
 
     {
-        std::lock_guard ml(m_mutex);
-        mClosedLedger.set(lastClosed);
+        std::scoped_lock const ml(mutex_);
+        closedLedger_.set(lastClosed);
     }
 
     if (standalone_)
@@ -435,15 +443,15 @@ LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
 bool
 LedgerMaster::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    return mLedgerHistory.fixIndex(ledgerIndex, ledgerHash);
+    return ledgerHistory_.fixIndex(ledgerIndex, ledgerHash);
 }
 
 bool
 LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
-    bool validated = ledger->info().validated;
+    bool const validated = ledger->header().validated;
     // Returns true if we already had the ledger
-    return mLedgerHistory.insert(std::move(ledger), validated);
+    return ledgerHistory_.insert(ledger, validated);
 }
 
 /** Apply held transactions to the open ledger
@@ -455,11 +463,11 @@ void
 LedgerMaster::applyHeldTransactions()
 {
     CanonicalTXSet const set = [this]() {
-        std::lock_guard sl(m_mutex);
+        std::scoped_lock const sl(mutex_);
         // VFALCO NOTE The hash for an open ledger is undefined so we use
         // something that is a reasonable substitute.
-        CanonicalTXSet set(app_.openLedger().current()->info().parentHash);
-        std::swap(mHeldTransactions, set);
+        CanonicalTXSet set(app_.getOpenLedger().current()->header().parentHash);
+        std::swap(heldTransactions_, set);
         return set;
     }();
 
@@ -470,29 +478,29 @@ LedgerMaster::applyHeldTransactions()
 std::shared_ptr<STTx const>
 LedgerMaster::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
 {
-    std::lock_guard sl(m_mutex);
+    std::scoped_lock const sl(mutex_);
 
-    return mHeldTransactions.popAcctTransaction(tx);
+    return heldTransactions_.popAcctTransaction(tx);
 }
 
 void
 LedgerMaster::setBuildingLedger(LedgerIndex i)
 {
-    mBuildingLedgerSeq.store(i);
+    buildingLedgerSeq_.store(i);
 }
 
 bool
 LedgerMaster::haveLedger(std::uint32_t seq)
 {
-    std::lock_guard sl(mCompleteLock);
-    return boost::icl::contains(mCompleteLedgers, seq);
+    std::scoped_lock const sl(completeLock_);
+    return boost::icl::contains(completeLedgers_, seq);
 }
 
 void
 LedgerMaster::clearLedger(std::uint32_t seq)
 {
-    std::lock_guard sl(mCompleteLock);
-    mCompleteLedgers.erase(seq);
+    std::scoped_lock const sl(completeLock_);
+    completeLedgers_.erase(seq);
 }
 
 bool
@@ -501,10 +509,10 @@ LedgerMaster::isValidated(ReadView const& ledger)
     if (ledger.open())
         return false;
 
-    if (ledger.info().validated)
+    if (ledger.header().validated)
         return true;
 
-    auto const seq = ledger.info().seq;
+    auto const seq = ledger.header().seq;
     try
     {
         // Use the skip list in the last validated ledger to see if ledger
@@ -512,17 +520,14 @@ LedgerMaster::isValidated(ReadView const& ledger)
         // validated).
         auto const hash = walkHashBySeq(seq, InboundLedger::Reason::GENERIC);
 
-        if (!hash || ledger.info().hash != *hash)
+        if (!hash || ledger.header().hash != *hash)
         {
             // This ledger's hash is not the hash of the validated ledger
             if (hash)
             {
-                XRPL_ASSERT(
-                    hash->isNonZero(),
-                    "ripple::LedgerMaster::isValidated : nonzero hash");
-                uint256 valHash =
-                    app_.getRelationalDatabase().getHashByIndex(seq);
-                if (valHash == ledger.info().hash)
+                XRPL_ASSERT(hash->isNonZero(), "xrpl::LedgerMaster::isValidated : nonzero hash");
+                uint256 const valHash = app_.getRelationalDatabase().getHashByIndex(seq);
+                if (valHash == ledger.header().hash)
                 {
                     // SQL database doesn't match ledger chain
                     clearLedger(seq);
@@ -533,38 +538,40 @@ LedgerMaster::isValidated(ReadView const& ledger)
     }
     catch (SHAMapMissingNode const& mn)
     {
-        JLOG(m_journal.warn()) << "Ledger #" << seq << ": " << mn.what();
+        JLOG(journal_.warn()) << "Ledger #" << seq << ": " << mn.what();
         return false;
     }
 
     // Mark ledger as validated to save time if we see it again.
-    ledger.info().validated = true;
+    ledger.header().validated = true;
     return true;
 }
 
 // returns Ledgers we have all the nodes for
 bool
-LedgerMaster::getFullValidatedRange(
-    std::uint32_t& minVal,
-    std::uint32_t& maxVal)
+LedgerMaster::getFullValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
 {
     // Validated ledger is likely not stored in the DB yet so we use the
     // published ledger which is.
-    maxVal = mPubLedgerSeq.load();
+    maxVal = pubLedgerSeq_.load();
 
-    if (!maxVal)
+    if (maxVal == 0u)
         return false;
 
     std::optional<std::uint32_t> maybeMin;
     {
-        std::lock_guard sl(mCompleteLock);
-        maybeMin = prevMissing(mCompleteLedgers, maxVal);
+        std::scoped_lock const sl(completeLock_);
+        maybeMin = prevMissing(completeLedgers_, maxVal);
     }
 
     if (maybeMin == std::nullopt)
+    {
         minVal = maxVal;
+    }
     else
+    {
         minVal = 1 + *maybeMin;
+    }
 
     return true;
 }
@@ -579,16 +586,16 @@ LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
     // Remove from the validated range any ledger sequences that may not be
     // fully updated in the database yet
 
-    auto const pendingSaves = app_.pendingSaves().getSnapshot();
+    auto const pendingSaves = app_.getPendingSaves().getSnapshot();
 
     if (!pendingSaves.empty() && ((minVal != 0) || (maxVal != 0)))
     {
         // Ensure we shrink the tips as much as possible. If we have 7-9 and
         // 8,9 are invalid, we don't want to see the 8 and shrink to just 9
         // because then we'll have nothing when we could have 7.
-        while (pendingSaves.count(maxVal) > 0)
+        while (pendingSaves.contains(maxVal))
             --maxVal;
-        while (pendingSaves.count(minVal) > 0)
+        while (pendingSaves.contains(minVal))
             ++minVal;
 
         // Best effort for remaining exclusions
@@ -597,9 +604,13 @@ LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
             if ((v.first >= minVal) && (v.first <= maxVal))
             {
                 if (v.first > ((minVal + maxVal) / 2))
+                {
                     maxVal = v.first - 1;
+                }
                 else
+                {
                     minVal = v.first + 1;
+                }
             }
         }
 
@@ -616,20 +627,24 @@ LedgerMaster::getEarliestFetch()
 {
     // The earliest ledger we will let people fetch is ledger zero,
     // unless that creates a larger range than allowed
-    std::uint32_t e = getClosedLedger()->info().seq;
+    std::uint32_t e = getClosedLedger()->header().seq;
 
     if (e > fetch_depth_)
+    {
         e -= fetch_depth_;
+    }
     else
+    {
         e = 0;
+    }
     return e;
 }
 
 void
 LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
 {
-    std::uint32_t seq = ledger->info().seq;
-    uint256 prevHash = ledger->info().parentHash;
+    std::uint32_t seq = ledger->header().seq;
+    uint256 prevHash = ledger->header().parentHash;
 
     std::map<std::uint32_t, LedgerHashPair> ledgerHashes;
 
@@ -640,7 +655,7 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
     while (!app_.getJobQueue().isStopping() && seq > 0)
     {
         {
-            std::lock_guard ml(m_mutex);
+            std::scoped_lock const ml(mutex_);
             minHas = seq;
             --seq;
 
@@ -656,24 +671,23 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
                 return;
 
             {
-                std::lock_guard ml(mCompleteLock);
-                mCompleteLedgers.insert(range(minHas, maxHas));
+                std::scoped_lock const ml(completeLock_);
+                completeLedgers_.insert(range(minHas, maxHas));
             }
             maxHas = minHas;
-            ledgerHashes = app_.getRelationalDatabase().getHashesByIndex(
-                (seq < 500) ? 0 : (seq - 499), seq);
+            ledgerHashes =
+                app_.getRelationalDatabase().getHashesByIndex((seq < 500) ? 0 : (seq - 499), seq);
             it = ledgerHashes.find(seq);
 
             if (it == ledgerHashes.end())
                 break;
 
             if (!nodeStore.fetchNodeObject(
-                    ledgerHashes.begin()->second.ledgerHash,
-                    ledgerHashes.begin()->first))
+                    ledgerHashes.begin()->second.ledgerHash, ledgerHashes.begin()->first))
             {
                 // The ledger is not backed by the node store
-                JLOG(m_journal.warn()) << "SQL DB ledger sequence " << seq
-                                       << " mismatches node store";
+                JLOG(journal_.warn())
+                    << "SQL DB ledger sequence " << seq << " mismatches node store";
                 break;
             }
         }
@@ -685,12 +699,12 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
     }
 
     {
-        std::lock_guard ml(mCompleteLock);
-        mCompleteLedgers.insert(range(minHas, maxHas));
+        std::scoped_lock const ml(completeLock_);
+        completeLedgers_.insert(range(minHas, maxHas));
     }
     {
-        std::lock_guard ml(m_mutex);
-        mFillInProgress = 0;
+        std::scoped_lock const ml(mutex_);
+        fillInProgress_ = 0;
         tryAdvance();
     }
 }
@@ -705,8 +719,7 @@ LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
     auto const haveHash{getLedgerHashForHistory(ledgerIndex, reason)};
     if (!haveHash || haveHash->isZero())
     {
-        JLOG(m_journal.error())
-            << "No hash for fetch pack. Missing Index " << missing;
+        JLOG(journal_.error()) << "No hash for fetch pack. Missing Index " << missing;
         return;
     }
 
@@ -715,12 +728,12 @@ LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
     std::shared_ptr<Peer> target;
     {
         int maxScore = 0;
-        auto peerList = app_.overlay().getActivePeers();
+        auto peerList = app_.getOverlay().getActivePeers();
         for (auto const& peer : peerList)
         {
             if (peer->hasRange(missing, missing + 1))
             {
-                int score = peer->getScore(true);
+                int const score = peer->getScore(true);
                 if (!target || (score > maxScore))
                 {
                     target = peer;
@@ -739,10 +752,10 @@ LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
         auto packet = std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS);
 
         target->send(packet);
-        JLOG(m_journal.trace()) << "Requested fetch pack for " << missing;
+        JLOG(journal_.trace()) << "Requested fetch pack for " << missing;
     }
     else
-        JLOG(m_journal.debug()) << "No peer for fetch pack";
+        JLOG(journal_.debug()) << "No peer for fetch pack";
 }
 
 void
@@ -751,19 +764,18 @@ LedgerMaster::fixMismatch(ReadView const& ledger)
     int invalidate = 0;
     std::optional<uint256> hash;
 
-    for (std::uint32_t lSeq = ledger.info().seq - 1; lSeq > 0; --lSeq)
+    for (std::uint32_t lSeq = ledger.header().seq - 1; lSeq > 0; --lSeq)
     {
         if (haveLedger(lSeq))
         {
             try
             {
-                hash = hashOfSeq(ledger, lSeq, m_journal);
+                hash = hashOfSeq(ledger, lSeq, journal_);
             }
             catch (std::exception const& ex)
             {
-                JLOG(m_journal.warn())
-                    << "fixMismatch encounters partial ledger. Exception: "
-                    << ex.what();
+                JLOG(journal_.warn())
+                    << "fixMismatch encounters partial ledger. Exception: " << ex.what();
                 clearLedger(lSeq);
                 return;
             }
@@ -773,14 +785,13 @@ LedgerMaster::fixMismatch(ReadView const& ledger)
                 // try to close the seam
                 auto otherLedger = getLedgerBySeq(lSeq);
 
-                if (otherLedger && (otherLedger->info().hash == *hash))
+                if (otherLedger && (otherLedger->header().hash == *hash))
                 {
                     // we closed the seam
                     if (invalidate != 0)
                     {
-                        JLOG(m_journal.warn())
-                            << "Match at " << lSeq << ", " << invalidate
-                            << " prior ledgers invalidated";
+                        JLOG(journal_.warn()) << "Match at " << lSeq << ", " << invalidate
+                                              << " prior ledgers invalidated";
                     }
 
                     return;
@@ -795,8 +806,7 @@ LedgerMaster::fixMismatch(ReadView const& ledger)
     // all prior ledgers invalidated
     if (invalidate != 0)
     {
-        JLOG(m_journal.warn())
-            << "All " << invalidate << " prior ledgers invalidated";
+        JLOG(journal_.warn()) << "All " << invalidate << " prior ledgers invalidated";
     }
 }
 
@@ -807,56 +817,54 @@ LedgerMaster::setFullLedger(
     bool isCurrent)
 {
     // A new ledger has been accepted as part of the trusted chain
-    JLOG(m_journal.debug()) << "Ledger " << ledger->info().seq
-                            << " accepted :" << ledger->info().hash;
+    JLOG(journal_.debug()) << "Ledger " << ledger->header().seq
+                           << " accepted :" << ledger->header().hash;
     XRPL_ASSERT(
         ledger->stateMap().getHash().isNonZero(),
-        "ripple::LedgerMaster::setFullLedger : nonzero ledger state hash");
+        "xrpl::LedgerMaster::setFullLedger : nonzero ledger state hash");
 
     ledger->setValidated();
     ledger->setFull();
 
     if (isCurrent)
-        mLedgerHistory.insert(ledger, true);
+        ledgerHistory_.insert(ledger, true);
 
     {
         // Check the SQL database's entry for the sequence before this
         // ledger, if it's not this ledger's parent, invalidate it
-        uint256 prevHash =
-            app_.getRelationalDatabase().getHashByIndex(ledger->info().seq - 1);
-        if (prevHash.isNonZero() && prevHash != ledger->info().parentHash)
-            clearLedger(ledger->info().seq - 1);
+        uint256 const prevHash =
+            app_.getRelationalDatabase().getHashByIndex(ledger->header().seq - 1);
+        if (prevHash.isNonZero() && prevHash != ledger->header().parentHash)
+            clearLedger(ledger->header().seq - 1);
     }
 
     pendSaveValidated(app_, ledger, isSynchronous, isCurrent);
 
     {
-        std::lock_guard ml(mCompleteLock);
-        mCompleteLedgers.insert(ledger->info().seq);
+        std::scoped_lock const ml(completeLock_);
+        completeLedgers_.insert(ledger->header().seq);
     }
 
     {
-        std::lock_guard ml(m_mutex);
+        std::scoped_lock const ml(mutex_);
 
-        if (ledger->info().seq > mValidLedgerSeq)
+        if (ledger->header().seq > validLedgerSeq_)
             setValidLedger(ledger);
-        if (!mPubLedger)
+        if (!pubLedger_)
         {
             setPubLedger(ledger);
             app_.getOrderBookDB().setup(ledger);
         }
 
-        if (ledger->info().seq != 0 && haveLedger(ledger->info().seq - 1))
+        if (ledger->header().seq != 0 && haveLedger(ledger->header().seq - 1))
         {
             // we think we have the previous ledger, double check
-            auto prevLedger = getLedgerBySeq(ledger->info().seq - 1);
+            auto prevLedger = getLedgerBySeq(ledger->header().seq - 1);
 
-            if (!prevLedger ||
-                (prevLedger->info().hash != ledger->info().parentHash))
+            if (!prevLedger || (prevLedger->header().hash != ledger->header().parentHash))
             {
-                JLOG(m_journal.warn())
-                    << "Acquired ledger invalidates previous ledger: "
-                    << (prevLedger ? "hashMismatch" : "missingLedger");
+                JLOG(journal_.warn()) << "Acquired ledger invalidates previous ledger: "
+                                      << (prevLedger ? "hashMismatch" : "missingLedger");
                 fixMismatch(*ledger);
             }
         }
@@ -880,42 +888,41 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
     if (seq != 0)
     {
         // Ledger is too old
-        if (seq < mValidLedgerSeq)
+        if (seq < validLedgerSeq_)
             return;
 
-        auto validations = app_.validators().negativeUNLFilter(
+        auto validations = app_.getValidators().negativeUNLFilter(
             app_.getValidations().getTrustedForLedger(hash, seq));
         valCount = validations.size();
-        if (valCount >= app_.validators().quorum())
+        if (valCount >= app_.getValidators().quorum())
         {
-            std::lock_guard ml(m_mutex);
-            if (seq > mLastValidLedger.second)
-                mLastValidLedger = std::make_pair(hash, seq);
+            std::scoped_lock const ml(mutex_);
+            if (seq > lastValidLedger_.second)
+                lastValidLedger_ = std::make_pair(hash, seq);
         }
 
-        if (seq == mValidLedgerSeq)
+        if (seq == validLedgerSeq_)
             return;
 
         // Ledger could match the ledger we're already building
-        if (seq == mBuildingLedgerSeq)
+        if (seq == buildingLedgerSeq_)
             return;
     }
 
-    auto ledger = mLedgerHistory.getLedgerByHash(hash);
+    auto ledger = ledgerHistory_.getLedgerByHash(hash);
 
     if (!ledger)
     {
         if ((seq != 0) && (getValidLedgerIndex() == 0))
         {
             // Set peers converged early if we can
-            if (valCount >= app_.validators().quorum())
-                app_.overlay().checkTracking(seq);
+            if (valCount >= app_.getValidators().quorum())
+                app_.getOverlay().checkTracking(seq);
         }
 
         // FIXME: We may not want to fetch a ledger with just one
         // trusted validation
-        ledger = app_.getInboundLedgers().acquire(
-            hash, seq, InboundLedger::Reason::GENERIC);
+        ledger = app_.getInboundLedgers().acquire(hash, seq, InboundLedger::Reason::GENERIC);
     }
 
     if (ledger)
@@ -930,7 +937,7 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
 std::size_t
 LedgerMaster::getNeededValidations()
 {
-    return standalone_ ? 0 : app_.validators().quorum();
+    return standalone_ ? 0 : app_.getValidators().quorum();
 }
 
 void
@@ -943,31 +950,28 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 
     // Can we advance the last fully-validated ledger? If so, can we
     // publish?
-    std::lock_guard ml(m_mutex);
+    std::scoped_lock const ml(mutex_);
 
-    if (ledger->info().seq <= mValidLedgerSeq)
+    if (ledger->header().seq <= validLedgerSeq_)
         return;
 
     auto const minVal = getNeededValidations();
-    auto validations = app_.validators().negativeUNLFilter(
-        app_.getValidations().getTrustedForLedger(
-            ledger->info().hash, ledger->info().seq));
+    auto validations = app_.getValidators().negativeUNLFilter(
+        app_.getValidations().getTrustedForLedger(ledger->header().hash, ledger->header().seq));
     auto const tvc = validations.size();
     if (tvc < minVal)  // nothing we can do
     {
-        JLOG(m_journal.trace())
-            << "Only " << tvc << " validations for " << ledger->info().hash;
+        JLOG(journal_.trace()) << "Only " << tvc << " validations for " << ledger->header().hash;
         return;
     }
 
-    JLOG(m_journal.info()) << "Advancing accepted ledger to "
-                           << ledger->info().seq << " with >= " << minVal
-                           << " validations";
+    JLOG(journal_.info()) << "Advancing accepted ledger to " << ledger->header().seq
+                          << " with >= " << minVal << " validations";
 
     ledger->setValidated();
     ledger->setFull();
     setValidLedger(ledger);
-    if (!mPubLedger)
+    if (!pubLedger_)
     {
         pendSaveValidated(app_, ledger, true, true);
         setPubLedger(ledger);
@@ -975,18 +979,17 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     }
 
     std::uint32_t const base = app_.getFeeTrack().getLoadBase();
-    auto fees = app_.getValidations().fees(ledger->info().hash, base);
+    auto fees = app_.getValidations().fees(ledger->header().hash, base);
     {
-        auto fees2 =
-            app_.getValidations().fees(ledger->info().parentHash, base);
+        auto fees2 = app_.getValidations().fees(ledger->header().parentHash, base);
         fees.reserve(fees.size() + fees2.size());
-        std::copy(fees2.begin(), fees2.end(), std::back_inserter(fees));
+        std::ranges::copy(fees2, std::back_inserter(fees));
     }
-    std::uint32_t fee;
+    std::uint32_t fee = 0;
     if (!fees.empty())
     {
-        std::sort(fees.begin(), fees.end());
-        if (auto stream = m_journal.debug())
+        std::ranges::sort(fees);
+        if (auto stream = journal_.debug())
         {
             std::stringstream s;
             s << "Received fees from validations: (" << fees.size() << ") ";
@@ -1009,15 +1012,15 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 
     if (ledger->seq() % 256 == 0)
     {
-        // Check if the majority of validators run a higher version rippled
+        // Check if the majority of validators run a higher version xrpld
         // software. If so print a warning.
         //
-        // Once the HardenedValidations amendment is enabled, validators include
-        // their rippled software version in the validation messages of every
-        // (flag - 1) ledger. We wait for one ledger time before checking the
-        // version information to accumulate more validation messages.
+        // Validators include their xrpld software version in the validation
+        // messages of every (flag - 1) ledger. We wait for one ledger time
+        // before checking the version information to accumulate more validation
+        // messages.
 
-        auto currentTime = app_.timeKeeper().now();
+        auto currentTime = app_.getTimeKeeper().now();
         bool needPrint = false;
 
         // The variable upgradeWarningPrevTime_ will be set when and only when
@@ -1026,35 +1029,30 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         {
             // Have not printed the warning before, check if need to print.
             auto const vals = app_.getValidations().getTrustedForLedger(
-                ledger->info().parentHash, ledger->info().seq - 1);
+                ledger->header().parentHash, ledger->header().seq - 1);
             std::size_t higherVersionCount = 0;
-            std::size_t rippledCount = 0;
+            std::size_t xrpldCount = 0;
             for (auto const& v : vals)
             {
                 if (v->isFieldPresent(sfServerVersion))
                 {
                     auto version = v->getFieldU64(sfServerVersion);
-                    higherVersionCount +=
-                        BuildInfo::isNewerVersion(version) ? 1 : 0;
-                    rippledCount +=
-                        BuildInfo::isRippledVersion(version) ? 1 : 0;
+                    higherVersionCount += BuildInfo::isNewerVersion(version) ? 1 : 0;
+                    xrpldCount += BuildInfo::isXrpldVersion(version) ? 1 : 0;
                 }
             }
             // We report only if (1) we have accumulated validation messages
             // from 90% validators from the UNL, (2) 60% of validators
-            // running the rippled implementation have higher version numbers,
+            // running the xrpld implementation have higher version numbers,
             // and (3) the calculation won't cause divide-by-zero.
-            if (higherVersionCount > 0 && rippledCount > 0)
+            if (higherVersionCount > 0 && xrpldCount > 0)
             {
-                constexpr std::size_t reportingPercent = 90;
-                constexpr std::size_t cutoffPercent = 60;
-                auto const unlSize{
-                    app_.validators().getQuorumKeys().second.size()};
+                constexpr std::size_t kREPORTING_PERCENT = 90;
+                constexpr std::size_t kCUTOFF_PERCENT = 60;
+                auto const unlSize{app_.getValidators().getQuorumKeys().second.size()};
                 needPrint = unlSize > 0 &&
-                    calculatePercent(vals.size(), unlSize) >=
-                        reportingPercent &&
-                    calculatePercent(higherVersionCount, rippledCount) >=
-                        cutoffPercent;
+                    calculatePercent(vals.size(), unlSize) >= kREPORTING_PERCENT &&
+                    calculatePercent(higherVersionCount, xrpldCount) >= kCUTOFF_PERCENT;
             }
         }
         // To throttle the warning messages, instead of printing a warning
@@ -1075,7 +1073,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
                 "A majority of trusted validators are "
                 "running a newer version.";
             std::cerr << upgradeMsg << std::endl;
-            JLOG(m_journal.error()) << upgradeMsg;
+            JLOG(journal_.error()) << upgradeMsg;
         }
     }
 }
@@ -1085,7 +1083,7 @@ void
 LedgerMaster::consensusBuilt(
     std::shared_ptr<Ledger const> const& ledger,
     uint256 const& consensusHash,
-    Json::Value consensus)
+    json::Value consensus)
 {
     // Because we just built a ledger, we are no longer building one
     setBuildingLedger(0);
@@ -1094,22 +1092,22 @@ LedgerMaster::consensusBuilt(
     if (standalone_)
         return;
 
-    mLedgerHistory.builtLedger(ledger, consensusHash, std::move(consensus));
+    ledgerHistory_.builtLedger(ledger, consensusHash, std::move(consensus));
 
-    if (ledger->info().seq <= mValidLedgerSeq)
+    if (ledger->header().seq <= validLedgerSeq_)
     {
-        auto stream = app_.journal("LedgerConsensus").info();
-        JLOG(stream) << "Consensus built old ledger: " << ledger->info().seq
-                     << " <= " << mValidLedgerSeq;
+        auto stream = app_.getJournal("LedgerConsensus").info();
+        JLOG(stream) << "Consensus built old ledger: " << ledger->header().seq
+                     << " <= " << validLedgerSeq_;
         return;
     }
 
     // See if this ledger can be the new fully-validated ledger
     checkAccept(ledger);
 
-    if (ledger->info().seq <= mValidLedgerSeq)
+    if (ledger->header().seq <= validLedgerSeq_)
     {
-        auto stream = app_.journal("LedgerConsensus").debug();
+        auto stream = app_.getJournal("LedgerConsensus").debug();
         JLOG(stream) << "Consensus ledger fully validated";
         return;
     }
@@ -1117,83 +1115,80 @@ LedgerMaster::consensusBuilt(
     // This ledger cannot be the new fully-validated ledger, but
     // maybe we saved up validations for some other ledger that can be
 
-    auto validations = app_.validators().negativeUNLFilter(
-        app_.getValidations().currentTrusted());
+    auto validations =
+        app_.getValidators().negativeUNLFilter(app_.getValidations().currentTrusted());
 
     // Track validation counts with sequence numbers
-    class valSeq
+    class ValSeq
     {
     public:
-        valSeq() : valCount_(0), ledgerSeq_(0)
-        {
-            ;
-        }
+        ValSeq() = default;
 
         void
         mergeValidation(LedgerIndex seq)
         {
-            valCount_++;
+            valCount++;
 
             // If we didn't already know the sequence, now we do
-            if (ledgerSeq_ == 0)
-                ledgerSeq_ = seq;
+            if (ledgerSeq == 0)
+                ledgerSeq = seq;
         }
 
-        std::size_t valCount_;
-        LedgerIndex ledgerSeq_;
+        std::size_t valCount{0};
+        LedgerIndex ledgerSeq{0};
     };
 
     // Count the number of current, trusted validations
-    hash_map<uint256, valSeq> count;
+    hash_map<uint256, ValSeq> count;
     for (auto const& v : validations)
     {
-        valSeq& vs = count[v->getLedgerHash()];
+        ValSeq& vs = count[v->getLedgerHash()];
         vs.mergeValidation(v->getFieldU32(sfLedgerSequence));
     }
 
     auto const neededValidations = getNeededValidations();
-    auto maxSeq = mValidLedgerSeq.load();
-    auto maxLedger = ledger->info().hash;
+    auto maxSeq = validLedgerSeq_.load();
+    auto maxLedger = ledger->header().hash;
 
     // Of the ledgers with sufficient validations,
     // find the one with the highest sequence
     for (auto& v : count)
-        if (v.second.valCount_ > neededValidations)
+    {
+        if (v.second.valCount > neededValidations)
         {
             // If we still don't know the sequence, get it
-            if (v.second.ledgerSeq_ == 0)
+            if (v.second.ledgerSeq == 0)
             {
                 if (auto l = getLedgerByHash(v.first))
-                    v.second.ledgerSeq_ = l->info().seq;
+                    v.second.ledgerSeq = l->header().seq;
             }
 
-            if (v.second.ledgerSeq_ > maxSeq)
+            if (v.second.ledgerSeq > maxSeq)
             {
-                maxSeq = v.second.ledgerSeq_;
+                maxSeq = v.second.ledgerSeq;
                 maxLedger = v.first;
             }
         }
+    }
 
-    if (maxSeq > mValidLedgerSeq)
+    if (maxSeq > validLedgerSeq_)
     {
-        auto stream = app_.journal("LedgerConsensus").debug();
+        auto stream = app_.getJournal("LedgerConsensus").debug();
         JLOG(stream) << "Consensus triggered check of ledger";
         checkAccept(maxLedger, maxSeq);
     }
 }
 
 std::optional<LedgerHash>
-LedgerMaster::getLedgerHashForHistory(
-    LedgerIndex index,
-    InboundLedger::Reason reason)
+LedgerMaster::getLedgerHashForHistory(LedgerIndex index, InboundLedger::Reason reason)
 {
     // Try to get the hash of a ledger we need to fetch for history
     std::optional<LedgerHash> ret;
-    auto const& l{mHistLedger};
+    auto const& l{histLedger_};
 
-    if (l && l->info().seq >= index)
+    if (l && l->header().seq >= index)
     {
-        ret = hashOfSeq(*l, index, m_journal);
+        ret = hashOfSeq(*l, index, journal_);
         if (!ret)
             ret = walkHashBySeq(index, l, reason);
     }
@@ -1205,33 +1200,31 @@ LedgerMaster::getLedgerHashForHistory(
 }
 
 std::vector<std::shared_ptr<Ledger const>>
-LedgerMaster::findNewLedgersToPublish(
-    std::unique_lock<std::recursive_mutex>& sl)
+LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl)
 {
     std::vector<std::shared_ptr<Ledger const>> ret;
 
-    JLOG(m_journal.trace()) << "findNewLedgersToPublish<";
+    JLOG(journal_.trace()) << "findNewLedgersToPublish<";
 
     // No valid ledger, nothing to do
-    if (mValidLedger.empty())
+    if (validLedger_.empty())
     {
-        JLOG(m_journal.trace()) << "No valid journal, nothing to publish.";
+        JLOG(journal_.trace()) << "No valid journal, nothing to publish.";
         return {};
     }
 
-    if (!mPubLedger)
+    if (!pubLedger_)
     {
-        JLOG(m_journal.info())
-            << "First published ledger will be " << mValidLedgerSeq;
-        return {mValidLedger.get()};
+        JLOG(journal_.info()) << "First published ledger will be " << validLedgerSeq_;
+        return {validLedger_.get()};
     }
 
-    if (mValidLedgerSeq > (mPubLedgerSeq + MAX_LEDGER_GAP))
+    if (validLedgerSeq_ > (pubLedgerSeq_ + kMAX_LEDGER_GAP))
     {
-        JLOG(m_journal.warn()) << "Gap in validated ledger stream "
-                               << mPubLedgerSeq << " - " << mValidLedgerSeq - 1;
+        JLOG(journal_.warn()) << "Gap in validated ledger stream " << pubLedgerSeq_ << " - "
+                              << validLedgerSeq_ - 1;
 
-        auto valLedger = mValidLedger.get();
+        auto valLedger = validLedger_.get();
         ret.push_back(valLedger);
         setPubLedger(valLedger);
         app_.getOrderBookDB().setup(valLedger);
@@ -1239,33 +1232,32 @@ LedgerMaster::findNewLedgersToPublish(
         return {valLedger};
     }
 
-    if (mValidLedgerSeq <= mPubLedgerSeq)
+    if (validLedgerSeq_ <= pubLedgerSeq_)
     {
-        JLOG(m_journal.trace()) << "No valid journal, nothing to publish.";
+        JLOG(journal_.trace()) << "No valid journal, nothing to publish.";
         return {};
     }
 
     int acqCount = 0;
 
-    auto pubSeq = mPubLedgerSeq + 1;  // Next sequence to publish
-    auto valLedger = mValidLedger.get();
-    std::uint32_t valSeq = valLedger->info().seq;
+    auto pubSeq = pubLedgerSeq_ + 1;  // Next sequence to publish
+    auto valLedger = validLedger_.get();
+    std::uint32_t const valSeq = valLedger->header().seq;
 
-    scope_unlock sul{sl};
+    ScopeUnlock const sul{sl};
     try
     {
         for (std::uint32_t seq = pubSeq; seq <= valSeq; ++seq)
         {
-            JLOG(m_journal.trace())
-                << "Trying to fetch/publish valid ledger " << seq;
+            JLOG(journal_.trace()) << "Trying to fetch/publish valid ledger " << seq;
 
             std::shared_ptr<Ledger const> ledger;
             // This can throw
-            auto hash = hashOfSeq(*valLedger, seq, m_journal);
+            auto hash = hashOfSeq(*valLedger, seq, journal_);
             // VFALCO TODO Restructure this code so that zero is not
             // used.
             if (!hash)
-                hash = beast::zero;  // kludge
+                hash = beast::kZERO;  // kludge
             if (seq == valSeq)
             {
                 // We need to publish the ledger we just fully validated
@@ -1273,27 +1265,30 @@ LedgerMaster::findNewLedgersToPublish(
             }
             else if (hash->isZero())
             {
-                JLOG(m_journal.fatal()) << "Ledger: " << valSeq
-                                        << " does not have hash for " << seq;
+                // LCOV_EXCL_START
+                JLOG(journal_.fatal()) << "Ledger: " << valSeq << " does not have hash for " << seq;
                 UNREACHABLE(
-                    "ripple::LedgerMaster::findNewLedgersToPublish : ledger "
+                    "xrpl::LedgerMaster::findNewLedgersToPublish : ledger "
                     "not found");
+                // LCOV_EXCL_STOP
             }
             else
             {
-                ledger = mLedgerHistory.getLedgerByHash(*hash);
+                ledger = ledgerHistory_.getLedgerByHash(*hash);
             }
 
             if (!app_.config().LEDGER_REPLAY)
             {
                 // Can we try to acquire the ledger we need?
                 if (!ledger && (++acqCount < ledger_fetch_size_))
+                {
                     ledger = app_.getInboundLedgers().acquire(
                         *hash, seq, InboundLedger::Reason::GENERIC);
+                }
             }
 
             // Did we acquire the next ledger we need to publish?
-            if (ledger && (ledger->info().seq == pubSeq))
+            if (ledger && (ledger->header().seq == pubSeq))
             {
                 ledger->setValidated();
                 ret.push_back(ledger);
@@ -1301,14 +1296,12 @@ LedgerMaster::findNewLedgersToPublish(
             }
         }
 
-        JLOG(m_journal.trace())
-            << "ready to publish " << ret.size() << " ledgers.";
+        JLOG(journal_.trace()) << "ready to publish " << ret.size() << " ledgers.";
     }
     catch (std::exception const& ex)
     {
-        JLOG(m_journal.error())
-            << "Exception while trying to find ledgers to publish: "
-            << ex.what();
+        JLOG(journal_.error()) << "Exception while trying to find ledgers to publish: "
+                               << ex.what();
     }
 
     if (app_.config().LEDGER_REPLAY)
@@ -1319,30 +1312,26 @@ LedgerMaster::findNewLedgersToPublish(
          * acquire. If the local node has the finish ledger, it
          * saves a skip list acquire.
          */
-        auto const& startLedger = ret.empty() ? mPubLedger : ret.back();
+        auto const& startLedger = ret.empty() ? pubLedger_ : ret.back();
         auto finishLedger = valLedger;
         while (startLedger->seq() + 1 < finishLedger->seq())
         {
-            if (auto const parent = mLedgerHistory.getLedgerByHash(
-                    finishLedger->info().parentHash);
+            if (auto const parent =
+                    ledgerHistory_.getLedgerByHash(finishLedger->header().parentHash);
                 parent)
             {
                 finishLedger = parent;
             }
             else
             {
-                auto numberLedgers =
-                    finishLedger->seq() - startLedger->seq() + 1;
-                JLOG(m_journal.debug())
+                auto numberLedgers = finishLedger->seq() - startLedger->seq() + 1;
+                JLOG(journal_.debug())
                     << "Publish LedgerReplays " << numberLedgers
-                    << " ledgers, from seq=" << startLedger->info().seq << ", "
-                    << startLedger->info().hash
-                    << " to seq=" << finishLedger->info().seq << ", "
-                    << finishLedger->info().hash;
+                    << " ledgers, from seq=" << startLedger->header().seq << ", "
+                    << startLedger->header().hash << " to seq=" << finishLedger->header().seq
+                    << ", " << finishLedger->header().hash;
                 app_.getLedgerReplayer().replay(
-                    InboundLedger::Reason::GENERIC,
-                    finishLedger->info().hash,
-                    numberLedgers);
+                    InboundLedger::Reason::GENERIC, finishLedger->header().hash, numberLedgers);
                 break;
             }
         }
@@ -1354,21 +1343,21 @@ LedgerMaster::findNewLedgersToPublish(
 void
 LedgerMaster::tryAdvance()
 {
-    std::lock_guard ml(m_mutex);
+    std::scoped_lock const ml(mutex_);
 
     // Can't advance without at least one fully-valid ledger
-    mAdvanceWork = true;
-    if (!mAdvanceThread && !mValidLedger.empty())
+    advanceWork_ = true;
+    if (!advanceThread_ && !validLedger_.empty())
     {
-        mAdvanceThread = true;
-        app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this]() {
-            std::unique_lock sl(m_mutex);
+        advanceThread_ = true;
+        app_.getJobQueue().addJob(JtAdvance, "AdvanceLedger", [this]() {
+            std::unique_lock sl(mutex_);
 
             XRPL_ASSERT(
-                !mValidLedger.empty() && mAdvanceThread,
-                "ripple::LedgerMaster::tryAdvance : has valid ledger");
+                !validLedger_.empty() && advanceThread_,
+                "xrpl::LedgerMaster::tryAdvance : has valid ledger");
 
-            JLOG(m_journal.trace()) << "advanceThread<";
+            JLOG(journal_.trace()) << "advanceThread<";
 
             try
             {
@@ -1376,11 +1365,11 @@ LedgerMaster::tryAdvance()
             }
             catch (std::exception const& ex)
             {
-                JLOG(m_journal.fatal()) << "doAdvance throws: " << ex.what();
+                JLOG(journal_.fatal()) << "doAdvance throws: " << ex.what();
             }
 
-            mAdvanceThread = false;
-            JLOG(m_journal.trace()) << "advanceThread>";
+            advanceThread_ = false;
+            JLOG(journal_.trace()) << "advanceThread>";
         });
     }
 }
@@ -1389,38 +1378,38 @@ void
 LedgerMaster::updatePaths()
 {
     {
-        std::lock_guard ml(m_mutex);
+        std::scoped_lock const ml(mutex_);
         if (app_.getOPs().isNeedNetworkLedger())
         {
-            --mPathFindThread;
-            mPathLedger.reset();
-            JLOG(m_journal.debug()) << "Need network ledger for updating paths";
+            --pathFindThread_;
+            pathLedger_.reset();
+            JLOG(journal_.debug()) << "Need network ledger for updating paths";
             return;
         }
     }
 
     while (!app_.getJobQueue().isStopping())
     {
-        JLOG(m_journal.debug()) << "updatePaths running";
+        JLOG(journal_.debug()) << "updatePaths running";
         std::shared_ptr<ReadView const> lastLedger;
         {
-            std::lock_guard ml(m_mutex);
+            std::scoped_lock const ml(mutex_);
 
-            if (!mValidLedger.empty() &&
-                (!mPathLedger || (mPathLedger->info().seq != mValidLedgerSeq)))
+            if (!validLedger_.empty() &&
+                (!pathLedger_ || (pathLedger_->header().seq != validLedgerSeq_)))
             {  // We have a new valid ledger since the last full pathfinding
-                mPathLedger = mValidLedger.get();
-                lastLedger = mPathLedger;
+                pathLedger_ = validLedger_.get();
+                lastLedger = pathLedger_;
             }
-            else if (mPathFindNewRequest)
+            else if (pathFindNewRequest_)
             {  // We have a new request but no new ledger
-                lastLedger = app_.openLedger().current();
+                lastLedger = app_.getOpenLedger().current();
             }
             else
             {  // Nothing to do
-                --mPathFindThread;
-                mPathLedger.reset();
-                JLOG(m_journal.debug()) << "Nothing to do for updating paths";
+                --pathFindThread_;
+                pathLedger_.reset();
+                JLOG(journal_.debug()) << "Nothing to do for updating paths";
                 return;
             }
         }
@@ -1428,66 +1417,63 @@ LedgerMaster::updatePaths()
         if (!standalone_)
         {  // don't pathfind with a ledger that's more than 60 seconds old
             using namespace std::chrono;
-            auto age = time_point_cast<seconds>(app_.timeKeeper().closeTime()) -
-                lastLedger->info().closeTime;
+            auto age = time_point_cast<seconds>(app_.getTimeKeeper().closeTime()) -
+                lastLedger->header().closeTime;
             if (age > 1min)
             {
-                JLOG(m_journal.debug())
-                    << "Published ledger too old for updating paths";
-                std::lock_guard ml(m_mutex);
-                --mPathFindThread;
-                mPathLedger.reset();
+                JLOG(journal_.debug()) << "Published ledger too old for updating paths";
+                std::scoped_lock const ml(mutex_);
+                --pathFindThread_;
+                pathLedger_.reset();
                 return;
             }
         }
 
         try
         {
-            auto& pathRequests = app_.getPathRequests();
+            auto& pathRequests = app_.getPathRequestManager();
             {
-                std::lock_guard ml(m_mutex);
+                std::scoped_lock const ml(mutex_);
                 if (!pathRequests.requestsPending())
                 {
-                    --mPathFindThread;
-                    mPathLedger.reset();
-                    JLOG(m_journal.debug())
-                        << "No path requests found. Nothing to do for updating "
-                           "paths. "
-                        << mPathFindThread << " jobs remaining";
+                    --pathFindThread_;
+                    pathLedger_.reset();
+                    JLOG(journal_.debug()) << "No path requests found. Nothing to do for updating "
+                                              "paths. "
+                                           << pathFindThread_ << " jobs remaining";
                     return;
                 }
             }
-            JLOG(m_journal.debug()) << "Updating paths";
+            JLOG(journal_.debug()) << "Updating paths";
             pathRequests.updateAll(lastLedger);
 
-            std::lock_guard ml(m_mutex);
+            std::scoped_lock const ml(mutex_);
             if (!pathRequests.requestsPending())
             {
-                JLOG(m_journal.debug())
-                    << "No path requests left. No need for further updating "
-                       "paths";
-                --mPathFindThread;
-                mPathLedger.reset();
+                JLOG(journal_.debug()) << "No path requests left. No need for further updating "
+                                          "paths";
+                --pathFindThread_;
+                pathLedger_.reset();
                 return;
             }
         }
         catch (SHAMapMissingNode const& mn)
         {
-            JLOG(m_journal.info()) << "During pathfinding: " << mn.what();
+            JLOG(journal_.info()) << "During pathfinding: " << mn.what();
             if (lastLedger->open())
             {
                 // our parent is the problem
                 app_.getInboundLedgers().acquire(
-                    lastLedger->info().parentHash,
-                    lastLedger->info().seq - 1,
+                    lastLedger->header().parentHash,
+                    lastLedger->header().seq - 1,
                     InboundLedger::Reason::GENERIC);
             }
             else
             {
                 // this ledger is the problem
                 app_.getInboundLedgers().acquire(
-                    lastLedger->info().hash,
-                    lastLedger->info().seq,
+                    lastLedger->header().hash,
+                    lastLedger->header().seq,
                     InboundLedger::Reason::GENERIC);
             }
         }
@@ -1497,17 +1483,17 @@ LedgerMaster::updatePaths()
 bool
 LedgerMaster::newPathRequest()
 {
-    std::unique_lock ml(m_mutex);
-    mPathFindNewRequest = newPFWork("pf:newRequest", ml);
-    return mPathFindNewRequest;
+    std::unique_lock ml(mutex_);
+    pathFindNewRequest_ = newPFWork("PthFindNewReq", ml);
+    return pathFindNewRequest_;
 }
 
 bool
 LedgerMaster::isNewPathRequest()
 {
-    std::lock_guard ml(m_mutex);
-    bool const ret = mPathFindNewRequest;
-    mPathFindNewRequest = false;
+    std::scoped_lock const ml(mutex_);
+    bool const ret = pathFindNewRequest_;
+    pathFindNewRequest_ = false;
     return ret;
 }
 
@@ -1516,53 +1502,47 @@ LedgerMaster::isNewPathRequest()
 bool
 LedgerMaster::newOrderBookDB()
 {
-    std::unique_lock ml(m_mutex);
-    mPathLedger.reset();
+    std::unique_lock ml(mutex_);
+    pathLedger_.reset();
 
-    return newPFWork("pf:newOBDB", ml);
+    return newPFWork("PthFindOBDB", ml);
 }
 
 /** A thread needs to be dispatched to handle pathfinding work of some kind.
  */
 bool
-LedgerMaster::newPFWork(
-    char const* name,
-    std::unique_lock<std::recursive_mutex>&)
+LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&)
 {
-    if (!app_.isStopping() && mPathFindThread < 2 &&
-        app_.getPathRequests().requestsPending())
+    if (!app_.isStopping() && pathFindThread_ < 2 && app_.getPathRequestManager().requestsPending())
     {
-        JLOG(m_journal.debug())
-            << "newPFWork: Creating job. path find threads: "
-            << mPathFindThread;
-        if (app_.getJobQueue().addJob(
-                jtUPDATE_PF, name, [this]() { updatePaths(); }))
+        JLOG(journal_.debug()) << "newPFWork: Creating job. path find threads: " << pathFindThread_;
+        if (app_.getJobQueue().addJob(JtUpdatePf, name, [this]() { updatePaths(); }))
         {
-            ++mPathFindThread;
+            ++pathFindThread_;
         }
     }
     // If we're stopping don't give callers the expectation that their
     // request will be fulfilled, even if it may be serviced.
-    return mPathFindThread > 0 && !app_.isStopping();
+    return pathFindThread_ > 0 && !app_.isStopping();
 }
 
 std::recursive_mutex&
 LedgerMaster::peekMutex()
 {
-    return m_mutex;
+    return mutex_;
 }
 
 // The current ledger is the ledger we believe new transactions should go in
 std::shared_ptr<ReadView const>
 LedgerMaster::getCurrentLedger()
 {
-    return app_.openLedger().current();
+    return app_.getOpenLedger().current();
 }
 
 std::shared_ptr<Ledger const>
 LedgerMaster::getValidatedLedger()
 {
-    return mValidLedger.get();
+    return validLedger_.get();
 }
 
 Rules
@@ -1583,36 +1563,32 @@ LedgerMaster::getValidatedRules()
 std::shared_ptr<ReadView const>
 LedgerMaster::getPublishedLedger()
 {
-    std::lock_guard lock(m_mutex);
-    return mPubLedger;
+    std::scoped_lock const lock(mutex_);
+    return pubLedger_;
 }
 
 std::string
 LedgerMaster::getCompleteLedgers()
 {
-    std::lock_guard sl(mCompleteLock);
-    return to_string(mCompleteLedgers);
+    std::scoped_lock const sl(completeLock_);
+    return to_string(completeLedgers_);
 }
 
 std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeBySeq(LedgerIndex ledgerIndex)
 {
-    uint256 hash = getHashBySeq(ledgerIndex);
-    return hash.isNonZero() ? getCloseTimeByHash(hash, ledgerIndex)
-                            : std::nullopt;
+    uint256 const hash = getHashBySeq(ledgerIndex);
+    return hash.isNonZero() ? getCloseTimeByHash(hash, ledgerIndex) : std::nullopt;
 }
 
 std::optional<NetClock::time_point>
-LedgerMaster::getCloseTimeByHash(
-    LedgerHash const& ledgerHash,
-    std::uint32_t index)
+LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t index)
 {
     auto nodeObject = app_.getNodeStore().fetchNodeObject(ledgerHash, index);
     if (nodeObject && (nodeObject->getData().size() >= 120))
     {
-        SerialIter it(
-            nodeObject->getData().data(), nodeObject->getData().size());
-        if (safe_cast<HashPrefix>(it.get32()) == HashPrefix::ledgerMaster)
+        SerialIter it(nodeObject->getData().data(), nodeObject->getData().size());
+        if (safeCast<HashPrefix>(it.get32()) == HashPrefix::LedgerMaster)
         {
             it.skip(
                 4 + 8 + 32 +   // seq drops parentHash
@@ -1627,7 +1603,7 @@ LedgerMaster::getCloseTimeByHash(
 uint256
 LedgerMaster::getHashBySeq(std::uint32_t index)
 {
-    uint256 hash = mLedgerHistory.getLedgerHash(index);
+    uint256 hash = ledgerHistory_.getLedgerHash(index);
 
     if (hash.isNonZero())
         return hash;
@@ -1640,7 +1616,7 @@ LedgerMaster::walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason)
 {
     std::optional<LedgerHash> ledgerHash;
 
-    if (auto referenceLedger = mValidLedger.get())
+    if (auto referenceLedger = validLedger_.get())
         ledgerHash = walkHashBySeq(index, referenceLedger, reason);
 
     return ledgerHash;
@@ -1652,32 +1628,32 @@ LedgerMaster::walkHashBySeq(
     std::shared_ptr<ReadView const> const& referenceLedger,
     InboundLedger::Reason reason)
 {
-    if (!referenceLedger || (referenceLedger->info().seq < index))
+    if (!referenceLedger || (referenceLedger->header().seq < index))
     {
         // Nothing we can do. No validated ledger.
         return std::nullopt;
     }
 
     // See if the hash for the ledger we need is in the reference ledger
-    auto ledgerHash = hashOfSeq(*referenceLedger, index, m_journal);
+    auto ledgerHash = hashOfSeq(*referenceLedger, index, journal_);
     if (ledgerHash)
         return ledgerHash;
 
     // The hash is not in the reference ledger. Get another ledger which can
     // be located easily and should contain the hash.
-    LedgerIndex refIndex = getCandidateLedger(index);
-    auto const refHash = hashOfSeq(*referenceLedger, refIndex, m_journal);
-    XRPL_ASSERT(refHash, "ripple::LedgerMaster::walkHashBySeq : found ledger");
+    LedgerIndex const refIndex = getCandidateLedger(index);
+    auto const refHash = hashOfSeq(*referenceLedger, refIndex, journal_);
+    XRPL_ASSERT(refHash, "xrpl::LedgerMaster::walkHashBySeq : found ledger");
     if (refHash)
     {
         // Try the hash and sequence of a better reference ledger just found
-        auto ledger = mLedgerHistory.getLedgerByHash(*refHash);
+        auto ledger = ledgerHistory_.getLedgerByHash(*refHash);
 
         if (ledger)
         {
             try
             {
-                ledgerHash = hashOfSeq(*ledger, index, m_journal);
+                ledgerHash = hashOfSeq(*ledger, index, journal_);
             }
             catch (SHAMapMissingNode const&)
             {
@@ -1688,13 +1664,12 @@ LedgerMaster::walkHashBySeq(
         // Try to acquire the complete ledger
         if (!ledger)
         {
-            if (auto const l = app_.getInboundLedgers().acquire(
-                    *refHash, refIndex, reason))
+            if (auto const l = app_.getInboundLedgers().acquire(*refHash, refIndex, reason))
             {
-                ledgerHash = hashOfSeq(*l, index, m_journal);
+                ledgerHash = hashOfSeq(*l, index, journal_);
                 XRPL_ASSERT(
                     ledgerHash,
-                    "ripple::LedgerMaster::walkHashBySeq : has complete "
+                    "xrpl::LedgerMaster::walkHashBySeq : has complete "
                     "ledger");
             }
         }
@@ -1705,33 +1680,33 @@ LedgerMaster::walkHashBySeq(
 std::shared_ptr<Ledger const>
 LedgerMaster::getLedgerBySeq(std::uint32_t index)
 {
-    if (index <= mValidLedgerSeq)
+    if (index <= validLedgerSeq_)
     {
         // Always prefer a validated ledger
-        if (auto valid = mValidLedger.get())
+        if (auto valid = validLedger_.get())
         {
-            if (valid->info().seq == index)
+            if (valid->header().seq == index)
                 return valid;
 
             try
             {
-                auto const hash = hashOfSeq(*valid, index, m_journal);
+                auto const hash = hashOfSeq(*valid, index, journal_);
 
                 if (hash)
-                    return mLedgerHistory.getLedgerByHash(*hash);
+                    return ledgerHistory_.getLedgerByHash(*hash);
             }
-            catch (std::exception const&)
+            catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
             {
                 // Missing nodes are already handled
             }
         }
     }
 
-    if (auto ret = mLedgerHistory.getLedgerBySeq(index))
+    if (auto ret = ledgerHistory_.getLedgerBySeq(index))
         return ret;
 
-    auto ret = mClosedLedger.get();
-    if (ret && (ret->info().seq == index))
+    auto ret = closedLedger_.get();
+    if (ret && (ret->header().seq == index))
         return ret;
 
     clearLedger(index);
@@ -1741,11 +1716,11 @@ LedgerMaster::getLedgerBySeq(std::uint32_t index)
 std::shared_ptr<Ledger const>
 LedgerMaster::getLedgerByHash(uint256 const& hash)
 {
-    if (auto ret = mLedgerHistory.getLedgerByHash(hash))
+    if (auto ret = ledgerHistory_.getLedgerByHash(hash))
         return ret;
 
-    auto ret = mClosedLedger.get();
-    if (ret && (ret->info().hash == hash))
+    auto ret = closedLedger_.get();
+    if (ret && (ret->header().hash == hash))
         return ret;
 
     return {};
@@ -1754,47 +1729,47 @@ LedgerMaster::getLedgerByHash(uint256 const& hash)
 void
 LedgerMaster::setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV)
 {
-    std::lock_guard sl(mCompleteLock);
-    mCompleteLedgers.insert(range(minV, maxV));
+    std::scoped_lock const sl(completeLock_);
+    completeLedgers_.insert(range(minV, maxV));
 }
 
 void
 LedgerMaster::sweep()
 {
-    mLedgerHistory.sweep();
+    ledgerHistory_.sweep();
     fetch_packs_.sweep();
 }
 
 float
 LedgerMaster::getCacheHitRate()
 {
-    return mLedgerHistory.getCacheHitRate();
+    return ledgerHistory_.getCacheHitRate();
 }
 
 void
 LedgerMaster::clearPriorLedgers(LedgerIndex seq)
 {
-    std::lock_guard sl(mCompleteLock);
+    std::scoped_lock const sl(completeLock_);
     if (seq > 0)
-        mCompleteLedgers.erase(range(0u, seq - 1));
+        completeLedgers_.erase(range(0u, seq - 1));
 }
 
 void
 LedgerMaster::clearLedgerCachePrior(LedgerIndex seq)
 {
-    mLedgerHistory.clearLedgerCachePrior(seq);
+    ledgerHistory_.clearLedgerCachePrior(seq);
 }
 
 void
 LedgerMaster::takeReplay(std::unique_ptr<LedgerReplay> replay)
 {
-    replayData = std::move(replay);
+    replayData_ = std::move(replay);
 }
 
 std::unique_ptr<LedgerReplay>
 LedgerMaster::releaseReplay()
 {
-    return std::move(replayData);
+    return std::move(replayData_);
 }
 
 void
@@ -1804,84 +1779,72 @@ LedgerMaster::fetchForHistory(
     InboundLedger::Reason reason,
     std::unique_lock<std::recursive_mutex>& sl)
 {
-    scope_unlock sul{sl};
+    ScopeUnlock const sul{sl};
     if (auto hash = getLedgerHashForHistory(missing, reason))
     {
-        XRPL_ASSERT(
-            hash->isNonZero(),
-            "ripple::LedgerMaster::fetchForHistory : found ledger");
+        XRPL_ASSERT(hash->isNonZero(), "xrpl::LedgerMaster::fetchForHistory : found ledger");
         auto ledger = getLedgerByHash(*hash);
         if (!ledger)
         {
             if (!app_.getInboundLedgers().isFailure(*hash))
             {
-                ledger =
-                    app_.getInboundLedgers().acquire(*hash, missing, reason);
+                ledger = app_.getInboundLedgers().acquire(*hash, missing, reason);
                 if (!ledger && missing != fetch_seq_ &&
                     missing > app_.getNodeStore().earliestLedgerSeq())
                 {
-                    JLOG(m_journal.trace())
-                        << "fetchForHistory want fetch pack " << missing;
+                    JLOG(journal_.trace()) << "fetchForHistory want fetch pack " << missing;
                     fetch_seq_ = missing;
                     getFetchPack(missing, reason);
                 }
                 else
-                    JLOG(m_journal.trace())
-                        << "fetchForHistory no fetch pack for " << missing;
+                    JLOG(journal_.trace()) << "fetchForHistory no fetch pack for " << missing;
             }
             else
-                JLOG(m_journal.debug())
-                    << "fetchForHistory found failed acquire";
+                JLOG(journal_.debug()) << "fetchForHistory found failed acquire";
         }
         if (ledger)
         {
-            auto seq = ledger->info().seq;
-            XRPL_ASSERT(
-                seq == missing,
-                "ripple::LedgerMaster::fetchForHistory : sequence match");
-            JLOG(m_journal.trace()) << "fetchForHistory acquired " << seq;
+            auto seq = ledger->header().seq;
+            XRPL_ASSERT(seq == missing, "xrpl::LedgerMaster::fetchForHistory : sequence match");
+            JLOG(journal_.trace()) << "fetchForHistory acquired " << seq;
             setFullLedger(ledger, false, false);
-            int fillInProgress;
+            int fillInProgress = 0;
             {
-                std::lock_guard lock(m_mutex);
-                mHistLedger = ledger;
-                fillInProgress = mFillInProgress;
+                std::scoped_lock const lock(mutex_);
+                histLedger_ = ledger;
+                fillInProgress = fillInProgress_;
             }
             if (fillInProgress == 0 &&
-                app_.getRelationalDatabase().getHashByIndex(seq - 1) ==
-                    ledger->info().parentHash)
+                app_.getRelationalDatabase().getHashByIndex(seq - 1) == ledger->header().parentHash)
             {
                 {
                     // Previous ledger is in DB
-                    std::lock_guard lock(m_mutex);
-                    mFillInProgress = seq;
+                    std::scoped_lock const lock(mutex_);
+                    fillInProgress_ = seq;
                 }
                 app_.getJobQueue().addJob(
-                    jtADVANCE, "tryFill", [this, ledger]() {
-                        tryFill(ledger);
-                    });
+                    JtAdvance, "TryFill", [this, ledger]() { tryFill(ledger); });
             }
             progress = true;
         }
         else
         {
-            std::uint32_t fetchSz;
+            std::uint32_t fetchSz = 0;
             // Do not fetch ledger sequences lower
             // than the earliest ledger sequence
             fetchSz = app_.getNodeStore().earliestLedgerSeq();
-            fetchSz = missing >= fetchSz
-                ? std::min(ledger_fetch_size_, (missing - fetchSz) + 1)
-                : 0;
+            fetchSz =
+                missing >= fetchSz ? std::min(ledger_fetch_size_, (missing - fetchSz) + 1) : 0;
             try
             {
                 for (std::uint32_t i = 0; i < fetchSz; ++i)
                 {
-                    std::uint32_t seq = missing - i;
+                    std::uint32_t const seq = missing - i;
                     if (auto h = getLedgerHashForHistory(seq, reason))
                     {
                         XRPL_ASSERT(
                             h->isNonZero(),
-                            "ripple::LedgerMaster::fetchForHistory : "
+                            "xrpl::LedgerMaster::fetchForHistory : "
                             "prefetched ledger");
                         app_.getInboundLedgers().acquire(*h, seq, reason);
                     }
@@ -1889,23 +1852,18 @@ LedgerMaster::fetchForHistory(
             }
             catch (std::exception const& ex)
             {
-                JLOG(m_journal.warn())
-                    << "Threw while prefetching: " << ex.what();
+                JLOG(journal_.warn()) << "Threw while prefetching: " << ex.what();
             }
         }
     }
     else
     {
-        JLOG(m_journal.fatal())
-            << "Can't find ledger following prevMissing " << missing;
-        JLOG(m_journal.fatal())
-            << "Pub:" << mPubLedgerSeq << " Val:" << mValidLedgerSeq;
-        JLOG(m_journal.fatal())
-            << "Ledgers: " << app_.getLedgerMaster().getCompleteLedgers();
-        JLOG(m_journal.fatal())
-            << "Acquire reason: "
-            << (reason == InboundLedger::Reason::HISTORY ? "HISTORY"
-                                                         : "NOT HISTORY");
+        JLOG(journal_.fatal()) << "Can't find ledger following prevMissing " << missing;
+        JLOG(journal_.fatal()) << "Pub:" << pubLedgerSeq_ << " Val:" << validLedgerSeq_;
+        JLOG(journal_.fatal()) << "Ledgers: " << app_.getLedgerMaster().getCompleteLedgers();
+        JLOG(journal_.fatal()) << "Acquire reason: "
+                               << (reason == InboundLedger::Reason::HISTORY ? "HISTORY"
+                                                                            : "NOT HISTORY");
         clearLedger(missing + 1);
         progress = true;
     }
@@ -1917,96 +1875,94 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
 {
     do
     {
-        mAdvanceWork = false;  // If there's work to do, we'll make progress
+        advanceWork_ = false;  // If there's work to do, we'll make progress
         bool progress = false;
 
         auto const pubLedgers = findNewLedgersToPublish(sl);
         if (pubLedgers.empty())
         {
             if (!standalone_ && !app_.getFeeTrack().isLoadedLocal() &&
-                (app_.getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
-                (mValidLedgerSeq == mPubLedgerSeq) &&
-                (getValidatedLedgerAge() < MAX_LEDGER_AGE_ACQUIRE) &&
-                (app_.getNodeStore().getWriteLoad() < MAX_WRITE_LOAD_ACQUIRE))
+                (app_.getJobQueue().getJobCount(JtPuboldledger) < 10) &&
+                (validLedgerSeq_ == pubLedgerSeq_) &&
+                (getValidatedLedgerAge() < kMAX_LEDGER_AGE_ACQUIRE) &&
+                (app_.getNodeStore().getWriteLoad() < kMAX_WRITE_LOAD_ACQUIRE))
             {
                 // We are in sync, so can acquire
-                InboundLedger::Reason reason = InboundLedger::Reason::HISTORY;
+                InboundLedger::Reason const reason = InboundLedger::Reason::HISTORY;
                 std::optional<std::uint32_t> missing;
                 {
-                    std::lock_guard sll(mCompleteLock);
+                    std::scoped_lock const sll(completeLock_);
                     missing = prevMissing(
-                        mCompleteLedgers,
-                        mPubLedger->info().seq,
+                        completeLedgers_,
+                        pubLedger_->header().seq,
                         app_.getNodeStore().earliestLedgerSeq());
                 }
                 if (missing)
                 {
-                    JLOG(m_journal.trace())
-                        << "tryAdvance discovered missing " << *missing;
-                    if ((mFillInProgress == 0 || *missing > mFillInProgress) &&
+                    JLOG(journal_.trace()) << "tryAdvance discovered missing " << *missing;
+                    if ((fillInProgress_ == 0 || *missing > fillInProgress_) &&
                         shouldAcquire(
-                            mValidLedgerSeq,
+                            validLedgerSeq_,
                             ledger_history_,
                             app_.getSHAMapStore().minimumOnline(),
                             *missing,
-                            m_journal))
+                            journal_))
                     {
-                        JLOG(m_journal.trace())
-                            << "advanceThread should acquire";
+                        JLOG(journal_.trace()) << "advanceThread should acquire";
                     }
                     else
+                    {
                         missing = std::nullopt;
+                    }
                 }
                 if (missing)
                 {
                     fetchForHistory(*missing, progress, reason, sl);
-                    if (mValidLedgerSeq != mPubLedgerSeq)
+                    if (validLedgerSeq_ != pubLedgerSeq_)
                     {
-                        JLOG(m_journal.debug())
-                            << "tryAdvance found last valid changed";
+                        JLOG(journal_.debug()) << "tryAdvance found last valid changed";
                         progress = true;
                     }
                 }
             }
             else
             {
-                mHistLedger.reset();
-                JLOG(m_journal.trace()) << "tryAdvance not fetching history";
+                histLedger_.reset();
+                JLOG(journal_.trace()) << "tryAdvance not fetching history";
             }
         }
         else
         {
-            JLOG(m_journal.trace()) << "tryAdvance found " << pubLedgers.size()
-                                    << " ledgers to publish";
+            JLOG(journal_.trace())
+                << "tryAdvance found " << pubLedgers.size() << " ledgers to publish";
             for (auto const& ledger : pubLedgers)
             {
                 {
-                    scope_unlock sul{sl};
-                    JLOG(m_journal.debug())
-                        << "tryAdvance publishing seq " << ledger->info().seq;
+                    ScopeUnlock const sul{sl};
+                    JLOG(journal_.debug()) << "tryAdvance publishing seq " << ledger->header().seq;
                     setFullLedger(ledger, true, true);
                 }
 
                 setPubLedger(ledger);
 
                 {
-                    scope_unlock sul{sl};
+                    ScopeUnlock const sul{sl};
                     app_.getOPs().pubLedger(ledger);
                 }
             }
 
             app_.getOPs().clearNeedNetworkLedger();
-            progress = newPFWork("pf:newLedger", sl);
+            progress = newPFWork("PthFindNewLed", sl);
         }
         if (progress)
-            mAdvanceWork = true;
-    } while (mAdvanceWork);
+            advanceWork_ = true;
+    } while (advanceWork_);
 }
 
 void
 LedgerMaster::addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data)
 {
-    fetch_packs_.canonicalize_replace_client(hash, data);
+    fetch_packs_.canonicalizeReplaceClient(hash, data);
 }
 
 std::optional<Blob>
@@ -2025,11 +1981,11 @@ LedgerMaster::getFetchPack(uint256 const& hash)
 void
 LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
 {
-    if (!mGotFetchPackThread.test_and_set(std::memory_order_acquire))
+    if (!gotFetchPackThread_.test_and_set(std::memory_order_acquire))
     {
-        app_.getJobQueue().addJob(jtLEDGER_DATA, "gotFetchPack", [&]() {
+        app_.getJobQueue().addJob(JtLedgerData, "GotFetchPack", [&]() {
             app_.getInboundLedgers().gotFetchPack();
-            mGotFetchPackThread.clear(std::memory_order_release);
+            gotFetchPackThread_.clear(std::memory_order_release);
         });
     }
 }
@@ -2068,28 +2024,26 @@ populateFetchPack(
     std::uint32_t seq,
     bool withLeaves = true)
 {
-    XRPL_ASSERT(cnt, "ripple::populateFetchPack : nonzero count input");
+    XRPL_ASSERT(cnt, "xrpl::populateFetchPack : nonzero count input");
 
     Serializer s(1024);
 
-    want.visitDifferences(
-        have,
-        [&s, withLeaves, &cnt, into, seq](SHAMapTreeNode const& n) -> bool {
-            if (!withLeaves && n.isLeaf())
-                return true;
+    want.visitDifferences(have, [&s, withLeaves, &cnt, into, seq](SHAMapTreeNode const& n) -> bool {
+        if (!withLeaves && n.isLeaf())
+            return true;
 
-            s.erase();
-            n.serializeWithPrefix(s);
+        s.erase();
+        n.serializeWithPrefix(s);
 
-            auto const& hash = n.getHash().as_uint256();
+        auto const& hash = n.getHash().asUint256();
 
-            protocol::TMIndexedObject* obj = into->add_objects();
-            obj->set_ledgerseq(seq);
-            obj->set_hash(hash.data(), hash.size());
-            obj->set_data(s.getDataPtr(), s.getLength());
+        protocol::TMIndexedObject* obj = into->add_objects();
+        obj->set_ledgerseq(seq);
+        obj->set_hash(hash.data(), hash.size());
+        obj->set_data(s.getDataPtr(), s.getLength());
 
-            return --cnt != 0;
-        });
+        return --cnt != 0;
+    });
 }
 
 void
@@ -2102,13 +2056,13 @@ LedgerMaster::makeFetchPack(
     using namespace std::chrono_literals;
     if (UptimeClock::now() > uptime + 1s)
     {
-        JLOG(m_journal.info()) << "Fetch pack request got stale";
+        JLOG(journal_.info()) << "Fetch pack request got stale";
         return;
     }
 
     if (app_.getFeeTrack().isLoadedLocal() || (getValidatedLedgerAge() > 40s))
     {
-        JLOG(m_journal.info()) << "Too busy to make fetch pack";
+        JLOG(journal_.info()) << "Too busy to make fetch pack";
         return;
     }
 
@@ -2121,36 +2075,32 @@ LedgerMaster::makeFetchPack(
 
     if (!have)
     {
-        JLOG(m_journal.info())
-            << "Peer requests fetch pack for ledger we don't have: " << have;
-        peer->charge(Resource::feeRequestNoReply, "get_object ledger");
+        JLOG(journal_.info()) << "Peer requests fetch pack for ledger we don't have: " << have;
+        peer->charge(Resource::kFEE_REQUEST_NO_REPLY, "get_object ledger");
         return;
     }
 
     if (have->open())
     {
-        JLOG(m_journal.warn())
-            << "Peer requests fetch pack from open ledger: " << have;
-        peer->charge(Resource::feeMalformedRequest, "get_object ledger open");
+        JLOG(journal_.warn()) << "Peer requests fetch pack from open ledger: " << have;
+        peer->charge(Resource::kFEE_MALFORMED_REQUEST, "get_object ledger open");
         return;
     }
 
-    if (have->info().seq < getEarliestFetch())
+    if (have->header().seq < getEarliestFetch())
     {
-        JLOG(m_journal.debug()) << "Peer requests fetch pack that is too early";
-        peer->charge(Resource::feeMalformedRequest, "get_object ledger early");
+        JLOG(journal_.debug()) << "Peer requests fetch pack that is too early";
+        peer->charge(Resource::kFEE_MALFORMED_REQUEST, "get_object ledger early");
         return;
     }
 
-    auto want = getLedgerByHash(have->info().parentHash);
+    auto want = getLedgerByHash(have->header().parentHash);
 
     if (!want)
     {
-        JLOG(m_journal.info())
-            << "Peer requests fetch pack for ledger whose predecessor we "
-            << "don't have: " << have;
-        peer->charge(
-            Resource::feeRequestNoReply, "get_object ledger no parent");
+        JLOG(journal_.info()) << "Peer requests fetch pack for ledger whose predecessor we "
+                              << "don't have: " << have;
+        peer->charge(Resource::kFEE_REQUEST_NO_REPLY, "get_object ledger no parent");
         return;
     }
 
@@ -2160,9 +2110,6 @@ LedgerMaster::makeFetchPack(
 
         protocol::TMGetObjectByHash reply;
         reply.set_query(false);
-
-        if (request->has_seq())
-            reply.set_seq(request->seq());
 
         reply.set_ledgerhash(request->ledgerhash());
         reply.set_type(protocol::TMGetObjectByHash::otFETCH_PACK);
@@ -2177,50 +2124,46 @@ LedgerMaster::makeFetchPack(
         //     the same process adding the previous ledger to the FetchPack.
         do
         {
-            std::uint32_t lSeq = want->info().seq;
+            std::uint32_t const lSeq = want->header().seq;
 
             {
                 // Serialize the ledger header:
                 hdr.erase();
 
-                hdr.add32(HashPrefix::ledgerMaster);
-                addRaw(want->info(), hdr);
+                hdr.add32(HashPrefix::LedgerMaster);
+                addRaw(want->header(), hdr);
 
                 // Add the data
                 protocol::TMIndexedObject* obj = reply.add_objects();
-                obj->set_hash(
-                    want->info().hash.data(), want->info().hash.size());
+                obj->set_hash(want->header().hash.data(), want->header().hash.size());
                 obj->set_data(hdr.getDataPtr(), hdr.getLength());
                 obj->set_ledgerseq(lSeq);
             }
 
-            populateFetchPack(
-                want->stateMap(), &have->stateMap(), 16384, &reply, lSeq);
+            populateFetchPack(want->stateMap(), &have->stateMap(), 16384, &reply, lSeq);
 
             // We use nullptr here because transaction maps are per ledger
             // and so the requestor is unlikely to already have it.
-            if (want->info().txHash.isNonZero())
+            if (want->header().txHash.isNonZero())
                 populateFetchPack(want->txMap(), nullptr, 512, &reply, lSeq);
 
             if (reply.objects().size() >= 512)
                 break;
 
             have = std::move(want);
-            want = getLedgerByHash(have->info().parentHash);
+            want = getLedgerByHash(have->header().parentHash);
         } while (want && UptimeClock::now() <= uptime + 1s);
 
         auto msg = std::make_shared<Message>(reply, protocol::mtGET_OBJECTS);
 
-        JLOG(m_journal.info())
-            << "Built fetch pack with " << reply.objects().size() << " nodes ("
-            << msg->getBufferSize() << " bytes)";
+        JLOG(journal_.info()) << "Built fetch pack with " << reply.objects().size() << " nodes ("
+                              << msg->getBufferSize() << " bytes)";
 
         peer->send(msg);
     }
     catch (std::exception const& ex)
     {
-        JLOG(m_journal.warn())
-            << "Exception building fetch pach. Exception: " << ex.what();
+        JLOG(journal_.warn()) << "Exception building fetch pack. Exception: " << ex.what();
     }
 }
 
@@ -2250,12 +2193,13 @@ LedgerMaster::txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
         return {};
 
     for (auto it = lgr->txs.begin(); it != lgr->txs.end(); ++it)
-        if (it->first && it->second &&
-            it->second->isFieldPresent(sfTransactionIndex) &&
+    {
+        if (it->first && it->second && it->second->isFieldPresent(sfTransactionIndex) &&
             it->second->getFieldU32(sfTransactionIndex) == txnIndex)
             return it->first->getTransactionID();
+    }
 
     return {};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

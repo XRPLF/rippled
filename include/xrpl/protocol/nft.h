@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_NFT_H_INCLUDED
-#define RIPPLE_PROTOCOL_NFT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/tagged_integer.h>
@@ -29,14 +9,13 @@
 #include <cstdint>
 #include <cstring>
 
-namespace ripple {
-namespace nft {
+namespace xrpl::nft {
 
 // Separate taxons from regular integers.
 struct TaxonTag
 {
 };
-using Taxon = tagged_integer<std::uint32_t, TaxonTag>;
+using Taxon = TaggedInteger<std::uint32_t, TaxonTag>;
 
 inline Taxon
 toTaxon(std::uint32_t i)
@@ -50,16 +29,16 @@ toUInt32(Taxon t)
     return static_cast<std::uint32_t>(t);
 }
 
-constexpr std::uint16_t const flagBurnable = 0x0001;
-constexpr std::uint16_t const flagOnlyXRP = 0x0002;
-constexpr std::uint16_t const flagCreateTrustLines = 0x0004;
-constexpr std::uint16_t const flagTransferable = 0x0008;
-constexpr std::uint16_t const flagMutable = 0x0010;
+constexpr std::uint16_t const kFLAG_BURNABLE = 0x0001;
+constexpr std::uint16_t const kFLAG_ONLY_XRP = 0x0002;
+constexpr std::uint16_t const kFLAG_CREATE_TRUST_LINES = 0x0004;
+constexpr std::uint16_t const kFLAG_TRANSFERABLE = 0x0008;
+constexpr std::uint16_t const kFLAG_MUTABLE = 0x0010;
 
 inline std::uint16_t
 getFlags(uint256 const& id)
 {
-    std::uint16_t flags;
+    std::uint16_t flags = 0;
     memcpy(&flags, id.begin(), 2);
     return boost::endian::big_to_native(flags);
 }
@@ -67,7 +46,7 @@ getFlags(uint256 const& id)
 inline std::uint16_t
 getTransferFee(uint256 const& id)
 {
-    std::uint16_t fee;
+    std::uint16_t fee = 0;
     memcpy(&fee, id.begin() + 2, 2);
     return boost::endian::big_to_native(fee);
 }
@@ -75,7 +54,7 @@ getTransferFee(uint256 const& id)
 inline std::uint32_t
 getSerial(uint256 const& id)
 {
-    std::uint32_t seq;
+    std::uint32_t seq = 0;
     memcpy(&seq, id.begin() + 28, 4);
     return boost::endian::big_to_native(seq);
 }
@@ -107,7 +86,7 @@ cipheredTaxon(std::uint32_t tokenSeq, Taxon taxon)
 inline Taxon
 getTaxon(uint256 const& id)
 {
-    std::uint32_t taxon;
+    std::uint32_t taxon = 0;
     memcpy(&taxon, id.begin() + 24, 4);
     taxon = boost::endian::big_to_native(taxon);
 
@@ -122,7 +101,4 @@ getIssuer(uint256 const& id)
     return AccountID::fromVoid(id.data() + 4);
 }
 
-}  // namespace nft
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::nft

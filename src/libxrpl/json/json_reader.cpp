@@ -1,24 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/json/json_reader.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 
 #include <algorithm>
@@ -30,7 +12,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace Json {
+namespace json {
 // Implementation of class Reader
 // ////////////////////////////////
 
@@ -112,20 +94,18 @@ Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
         nodes_.pop();
 
     nodes_.push(&root);
-    bool successful = readValue(0);
-    Token token;
+    bool const successful = readValue(0);
+    Token token{};
     skipCommentTokens(token);
 
     if (!root.isNull() && !root.isArray() && !root.isObject())
     {
         // Set error location to start of doc, ideally should be first token
         // found in doc
-        token.type_ = tokenError;
-        token.start_ = beginDoc;
-        token.end_ = endDoc;
-        addError(
-            "A valid JSON document must be either an array or an object value.",
-            token);
+        token.type = TokenError;
+        token.start = beginDoc;
+        token.end = endDoc;
+        addError("A valid JSON document must be either an array or an object value.", token);
         return false;
     }
 
@@ -135,49 +115,48 @@ Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
 bool
 Reader::readValue(unsigned depth)
 {
-    Token token;
+    Token token{};
     skipCommentTokens(token);
-    if (depth > nest_limit)
+    if (depth > kNEST_LIMIT)
         return addError("Syntax error: maximum nesting depth exceeded", token);
     bool successful = true;
 
-    switch (token.type_)
+    switch (token.type)
     {
-        case tokenObjectBegin:
+        case TokenObjectBegin:
             successful = readObject(token, depth);
             break;
 
-        case tokenArrayBegin:
+        case TokenArrayBegin:
             successful = readArray(token, depth);
             break;
 
-        case tokenInteger:
+        case TokenInteger:
             successful = decodeNumber(token);
             break;
 
-        case tokenDouble:
+        case TokenDouble:
             successful = decodeDouble(token);
             break;
 
-        case tokenString:
+        case TokenString:
             successful = decodeString(token);
             break;
 
-        case tokenTrue:
+        case TokenTrue:
             currentValue() = true;
             break;
 
-        case tokenFalse:
+        case TokenFalse:
             currentValue() = false;
             break;
 
-        case tokenNull:
+        case TokenNull:
             currentValue() = Value();
             break;
 
         default:
-            return addError(
-                "Syntax error: value, object or array expected.", token);
+            return addError("Syntax error: value, object or array expected.", token);
     }
 
     return successful;
@@ -189,7 +168,7 @@ Reader::skipCommentTokens(Token& token)
     do
     {
         readToken(token);
-    } while (token.type_ == tokenComment);
+    } while (token.type == TokenComment);
 }
 
 bool
@@ -197,7 +176,7 @@ Reader::expectToken(TokenType type, Token& token, char const* message)
 {
     readToken(token);
 
-    if (token.type_ != type)
+    if (token.type != type)
         return addError(message, token);
 
     return true;
@@ -207,35 +186,35 @@ bool
 Reader::readToken(Token& token)
 {
     skipSpaces();
-    token.start_ = current_;
-    Char c = getNextChar();
+    token.start = current_;
+    Char const c = getNextChar();
     bool ok = true;
 
     switch (c)
     {
         case '{':
-            token.type_ = tokenObjectBegin;
+            token.type = TokenObjectBegin;
             break;
 
         case '}':
-            token.type_ = tokenObjectEnd;
+            token.type = TokenObjectEnd;
             break;
 
         case '[':
-            token.type_ = tokenArrayBegin;
+            token.type = TokenArrayBegin;
             break;
 
         case ']':
-            token.type_ = tokenArrayEnd;
+            token.type = TokenArrayEnd;
             break;
 
         case '"':
-            token.type_ = tokenString;
+            token.type = TokenString;
             ok = readString();
             break;
 
         case '/':
-            token.type_ = tokenComment;
+            token.type = TokenComment;
             ok = readComment();
             break;
 
@@ -250,34 +229,34 @@ Reader::readToken(Token& token)
         case '8':
         case '9':
         case '-':
-            token.type_ = readNumber();
+            token.type = readNumber();
             break;
 
         case 't':
-            token.type_ = tokenTrue;
+            token.type = TokenTrue;
             ok = match("rue", 3);
             break;
 
         case 'f':
-            token.type_ = tokenFalse;
-            ok = match("alse", 4);
+            token.type = TokenFalse;
+            ok = match("alse", 4);  // cspell:disable-line
             break;
 
         case 'n':
-            token.type_ = tokenNull;
+            token.type = TokenNull;
             ok = match("ull", 3);
             break;
 
         case ',':
-            token.type_ = tokenArraySeparator;
+            token.type = TokenArraySeparator;
             break;
 
         case ':':
-            token.type_ = tokenMemberSeparator;
+            token.type = TokenMemberSeparator;
             break;
 
         case 0:
-            token.type_ = tokenEndOfStream;
+            token.type = TokenEndOfStream;
             break;
 
         default:
@@ -286,9 +265,9 @@ Reader::readToken(Token& token)
     }
 
     if (!ok)
-        token.type_ = tokenError;
+        token.type = TokenError;
 
-    token.end_ = current_;
+    token.end = current_;
     return true;
 }
 
@@ -297,12 +276,16 @@ Reader::skipSpaces()
 {
     while (current_ != end_)
     {
-        Char c = *current_;
+        Char const c = *current_;
 
         if (c == ' ' || c == '\t' || c == '\r' || c == '\n')
+        {
             ++current_;
+        }
         else
+        {
             break;
+        }
     }
 }
 
@@ -314,9 +297,11 @@ Reader::match(Location pattern, int patternLength)
 
     int index = patternLength;
 
-    while (index--)
+    while ((index--) != 0)
+    {
         if (current_[index] != pattern[index])
             return false;
+    }
 
     current_ += patternLength;
     return true;
@@ -325,7 +310,7 @@ Reader::match(Location pattern, int patternLength)
 bool
 Reader::readComment()
 {
-    Char c = getNextChar();
+    Char const c = getNextChar();
 
     if (c == '*')
         return readCStyleComment();
@@ -341,7 +326,7 @@ Reader::readCStyleComment()
 {
     while (current_ != end_)
     {
-        Char c = getNextChar();
+        Char const c = getNextChar();
 
         if (c == '*' && *current_ == '/')
             break;
@@ -355,7 +340,7 @@ Reader::readCppStyleComment()
 {
     while (current_ != end_)
     {
-        Char c = getNextChar();
+        Char const c = getNextChar();
 
         if (c == '\r' || c == '\n')
             break;
@@ -367,9 +352,9 @@ Reader::readCppStyleComment()
 Reader::TokenType
 Reader::readNumber()
 {
-    static char const extended_tokens[] = {'.', 'e', 'E', '+', '-'};
+    static char const kEXTENDED_TOKENS[] = {'.', 'e', 'E', '+', '-'};
 
-    TokenType type = tokenInteger;
+    TokenType type = TokenInteger;
 
     if (current_ != end_)
     {
@@ -378,17 +363,14 @@ Reader::readNumber()
 
         while (current_ != end_)
         {
-            if (!std::isdigit(static_cast<unsigned char>(*current_)))
+            if (std::isdigit(static_cast<unsigned char>(*current_)) == 0)
             {
-                auto ret = std::find(
-                    std::begin(extended_tokens),
-                    std::end(extended_tokens),
-                    *current_);
+                auto ret = std::ranges::find(kEXTENDED_TOKENS, *current_);
 
-                if (ret == std::end(extended_tokens))
+                if (ret == std::end(kEXTENDED_TOKENS))
                     break;
 
-                type = tokenDouble;
+                type = TokenDouble;
             }
 
             ++current_;
@@ -408,9 +390,13 @@ Reader::readString()
         c = getNextChar();
 
         if (c == '\\')
+        {
             getNextChar();
+        }
         else if (c == '"')
+        {
             break;
+        }
     }
 
     return c == '"';
@@ -419,37 +405,37 @@ Reader::readString()
 bool
 Reader::readObject(Token& tokenStart, unsigned depth)
 {
-    Token tokenName;
+    Token tokenName{};
     std::string name;
-    currentValue() = Value(objectValue);
+    currentValue() = Value(ObjectValue);
 
     while (readToken(tokenName))
     {
         bool initialTokenOk = true;
 
-        while (tokenName.type_ == tokenComment && initialTokenOk)
+        while (tokenName.type == TokenComment && initialTokenOk)
             initialTokenOk = readToken(tokenName);
 
         if (!initialTokenOk)
             break;
 
-        if (tokenName.type_ == tokenObjectEnd && name.empty())  // empty object
+        if (tokenName.type == TokenObjectEnd && name.empty())  // empty object
             return true;
 
-        if (tokenName.type_ != tokenString)
+        if (tokenName.type != TokenString)
             break;
 
         name = "";
 
         if (!decodeString(tokenName, name))
-            return recoverFromError(tokenObjectEnd);
+            return recoverFromError(TokenObjectEnd);
 
-        Token colon;
+        Token colon{};
 
-        if (!readToken(colon) || colon.type_ != tokenMemberSeparator)
+        if (!readToken(colon) || colon.type != TokenMemberSeparator)
         {
             return addErrorAndRecover(
-                "Missing ':' after object member name", colon, tokenObjectEnd);
+                "Missing ':' after object member name", colon, TokenObjectEnd);
         }
 
         // Reject duplicate names
@@ -458,46 +444,43 @@ Reader::readObject(Token& tokenStart, unsigned depth)
 
         Value& value = currentValue()[name];
         nodes_.push(&value);
-        bool ok = readValue(depth + 1);
+        bool const ok = readValue(depth + 1);
         nodes_.pop();
 
         if (!ok)  // error already set
-            return recoverFromError(tokenObjectEnd);
+            return recoverFromError(TokenObjectEnd);
 
-        Token comma;
+        Token comma{};
 
         if (!readToken(comma) ||
-            (comma.type_ != tokenObjectEnd &&
-             comma.type_ != tokenArraySeparator && comma.type_ != tokenComment))
+            (comma.type != TokenObjectEnd && comma.type != TokenArraySeparator &&
+             comma.type != TokenComment))
         {
             return addErrorAndRecover(
-                "Missing ',' or '}' in object declaration",
-                comma,
-                tokenObjectEnd);
+                "Missing ',' or '}' in object declaration", comma, TokenObjectEnd);
         }
 
         bool finalizeTokenOk = true;
 
-        while (comma.type_ == tokenComment && finalizeTokenOk)
+        while (comma.type == TokenComment && finalizeTokenOk)
             finalizeTokenOk = readToken(comma);
 
-        if (comma.type_ == tokenObjectEnd)
+        if (comma.type == TokenObjectEnd)
             return true;
     }
 
-    return addErrorAndRecover(
-        "Missing '}' or object member name", tokenName, tokenObjectEnd);
+    return addErrorAndRecover("Missing '}' or object member name", tokenName, TokenObjectEnd);
 }
 
 bool
 Reader::readArray(Token& tokenStart, unsigned depth)
 {
-    currentValue() = Value(arrayValue);
+    currentValue() = Value(ArrayValue);
     skipSpaces();
 
     if (*current_ == ']')  // empty array
     {
-        Token endArray;
+        Token endArray{};
         readToken(endArray);
         return true;
     }
@@ -512,30 +495,27 @@ Reader::readArray(Token& tokenStart, unsigned depth)
         nodes_.pop();
 
         if (!ok)  // error already set
-            return recoverFromError(tokenArrayEnd);
+            return recoverFromError(TokenArrayEnd);
 
-        Token token;
+        Token token{};
         // Accept Comment after last item in the array.
         ok = readToken(token);
 
-        while (token.type_ == tokenComment && ok)
+        while (token.type == TokenComment && ok)
         {
             ok = readToken(token);
         }
 
-        bool badTokenType =
-            (token.type_ != tokenArraySeparator &&
-             token.type_ != tokenArrayEnd);
+        bool const badTokenType =
+            (token.type != TokenArraySeparator && token.type != TokenArrayEnd);
 
         if (!ok || badTokenType)
         {
             return addErrorAndRecover(
-                "Missing ',' or ']' in array declaration",
-                token,
-                tokenArrayEnd);
+                "Missing ',' or ']' in array declaration", token, TokenArrayEnd);
         }
 
-        if (token.type_ == tokenArrayEnd)
+        if (token.type == TokenArrayEnd)
             break;
     }
 
@@ -545,18 +525,16 @@ Reader::readArray(Token& tokenStart, unsigned depth)
 bool
 Reader::decodeNumber(Token& token)
 {
-    Location current = token.start_;
-    bool isNegative = *current == '-';
+    Location current = token.start;
+    bool const isNegative = *current == '-';
 
     if (isNegative)
         ++current;
 
-    if (current == token.end_)
+    if (current == token.end)
     {
         return addError(
-            "'" + std::string(token.start_, token.end_) +
-                "' is not a valid number.",
-            token);
+            "'" + std::string(token.start, token.end) + "' is not a valid number.", token);
     }
 
     // The existing Json integers are 32-bit so using a 64-bit value here avoids
@@ -564,42 +542,37 @@ Reader::decodeNumber(Token& token)
     std::int64_t value = 0;
 
     static_assert(
-        sizeof(value) > sizeof(Value::maxUInt),
+        sizeof(value) > sizeof(Value::kMAX_U_INT),
         "The JSON integer overflow logic will need to be reworked.");
 
-    while (current < token.end_ && (value <= Value::maxUInt))
+    while (current < token.end && (value <= Value::kMAX_U_INT))
     {
-        Char c = *current++;
+        Char const c = *current++;
 
         if (c < '0' || c > '9')
         {
             return addError(
-                "'" + std::string(token.start_, token.end_) +
-                    "' is not a number.",
-                token);
+                "'" + std::string(token.start, token.end) + "' is not a number.", token);
         }
 
         value = (value * 10) + (c - '0');
     }
 
     // More tokens left -> input is larger than largest possible return value
-    if (current != token.end_)
+    if (current != token.end)
     {
         return addError(
-            "'" + std::string(token.start_, token.end_) +
-                "' exceeds the allowable range.",
-            token);
+            "'" + std::string(token.start, token.end) + "' exceeds the allowable range.", token);
     }
 
     if (isNegative)
     {
         value = -value;
 
-        if (value < Value::minInt || value > Value::maxInt)
+        if (value < Value::kMIN_INT || value > Value::kMAX_INT)
         {
             return addError(
-                "'" + std::string(token.start_, token.end_) +
-                    "' exceeds the allowable range.",
+                "'" + std::string(token.start, token.end) + "' exceeds the allowable range.",
                 token);
         }
 
@@ -607,19 +580,22 @@ Reader::decodeNumber(Token& token)
     }
     else
     {
-        if (value > Value::maxUInt)
+        if (value > Value::kMAX_U_INT)
         {
             return addError(
-                "'" + std::string(token.start_, token.end_) +
-                    "' exceeds the allowable range.",
+                "'" + std::string(token.start, token.end) + "' exceeds the allowable range.",
                 token);
         }
 
         // If it's representable as a signed integer, construct it as one.
-        if (value <= Value::maxInt)
+        if (value <= Value::kMAX_INT)
+        {
             currentValue() = static_cast<Value::Int>(value);
+        }
         else
+        {
             currentValue() = static_cast<Value::UInt>(value);
+        }
     }
 
     return true;
@@ -630,8 +606,8 @@ Reader::decodeDouble(Token& token)
 {
     double value = 0;
     int const bufferSize = 32;
-    int count;
-    int length = int(token.end_ - token.start_);
+    int count = 0;
+    int const length = int(token.end - token.start);
     // Sanity check to avoid buffer overflow exploits.
     if (length < 0)
     {
@@ -646,19 +622,17 @@ Reader::decodeDouble(Token& token)
     if (length <= bufferSize)
     {
         Char buffer[bufferSize + 1];
-        memcpy(buffer, token.start_, length);
+        memcpy(buffer, token.start, length);
         buffer[length] = 0;
         count = sscanf(buffer, format, &value);
     }
     else
     {
-        std::string buffer(token.start_, token.end_);
+        std::string const buffer(token.start, token.end);
         count = sscanf(buffer.c_str(), format, &value);
     }
     if (count != 1)
-        return addError(
-            "'" + std::string(token.start_, token.end_) + "' is not a number.",
-            token);
+        return addError("'" + std::string(token.start, token.end) + "' is not a number.", token);
     currentValue() = value;
     return true;
 }
@@ -678,23 +652,24 @@ Reader::decodeString(Token& token)
 bool
 Reader::decodeString(Token& token, std::string& decoded)
 {
-    decoded.reserve(token.end_ - token.start_ - 2);
-    Location current = token.start_ + 1;  // skip '"'
-    Location end = token.end_ - 1;        // do not include '"'
+    decoded.reserve(token.end - token.start - 2);
+    Location current = token.start + 1;  // skip '"'
+    Location end = token.end - 1;        // do not include '"'
 
     while (current != end)
     {
-        Char c = *current++;
+        Char const c = *current++;
 
         if (c == '"')
+        {
             break;
-        else if (c == '\\')
+        }
+        if (c == '\\')
         {
             if (current == end)
-                return addError(
-                    "Empty escape sequence in string", token, current);
+                return addError("Empty escape sequence in string", token, current);
 
-            Char escape = *current++;
+            Char const escape = *current++;
 
             switch (escape)
             {
@@ -731,7 +706,7 @@ Reader::decodeString(Token& token, std::string& decoded)
                     break;
 
                 case 'u': {
-                    unsigned int unicode;
+                    unsigned int unicode = 0;
 
                     if (!decodeUnicodeCodePoint(token, current, end, unicode))
                         return false;
@@ -741,8 +716,7 @@ Reader::decodeString(Token& token, std::string& decoded)
                 break;
 
                 default:
-                    return addError(
-                        "Bad escape sequence in string", token, current);
+                    return addError("Bad escape sequence in string", token, current);
             }
         }
         else
@@ -755,11 +729,7 @@ Reader::decodeString(Token& token, std::string& decoded)
 }
 
 bool
-Reader::decodeUnicodeCodePoint(
-    Token& token,
-    Location& current,
-    Location end,
-    unsigned int& unicode)
+Reader::decodeUnicodeCodePoint(Token& token, Location& current, Location end, unsigned int& unicode)
 {
     if (!decodeUnicodeEscapeSequence(token, current, end, unicode))
         return false;
@@ -768,30 +738,30 @@ Reader::decodeUnicodeCodePoint(
     {
         // surrogate pairs
         if (end - current < 6)
+        {
             return addError(
                 "additional six characters expected to parse unicode surrogate "
                 "pair.",
                 token,
                 current);
-
-        unsigned int surrogatePair;
-
-        if (*(current++) == '\\' && *(current++) == 'u')
-        {
-            if (decodeUnicodeEscapeSequence(token, current, end, surrogatePair))
-            {
-                unicode = 0x10000 + ((unicode & 0x3FF) << 10) +
-                    (surrogatePair & 0x3FF);
-            }
-            else
-                return false;
         }
-        else
+
+        unsigned int surrogatePair = 0;
+
+        if (*current != '\\' || *(current + 1) != 'u')
+        {
             return addError(
-                "expecting another \\u token to begin the second half of a "
-                "unicode surrogate pair",
+                "expecting another \\u token to begin the second half of a unicode surrogate pair",
                 token,
                 current);
+        }
+
+        current += 2;  // skip two characters checked above
+
+        if (!decodeUnicodeEscapeSequence(token, current, end, surrogatePair))
+            return false;
+
+        unicode = 0x10000 + ((unicode & 0x3FF) << 10) + (surrogatePair & 0x3FF);
     }
 
     return true;
@@ -805,30 +775,38 @@ Reader::decodeUnicodeEscapeSequence(
     unsigned int& unicode)
 {
     if (end - current < 4)
+    {
         return addError(
-            "Bad unicode escape sequence in string: four digits expected.",
-            token,
-            current);
+            "Bad unicode escape sequence in string: four digits expected.", token, current);
+    }
 
     unicode = 0;
 
     for (int index = 0; index < 4; ++index)
     {
-        Char c = *current++;
+        Char const c = *current++;
         unicode *= 16;
 
         if (c >= '0' && c <= '9')
+        {
             unicode += c - '0';
+        }
         else if (c >= 'a' && c <= 'f')
+        {
             unicode += c - 'a' + 10;
+        }
         else if (c >= 'A' && c <= 'F')
+        {
             unicode += c - 'A' + 10;
+        }
         else
+        {
             return addError(
                 "Bad unicode escape sequence in string: hexadecimal digit "
                 "expected.",
                 token,
                 current);
+        }
     }
 
     return true;
@@ -838,9 +816,9 @@ bool
 Reader::addError(std::string const& message, Token& token, Location extra)
 {
     ErrorInfo info;
-    info.token_ = token;
-    info.message_ = message;
-    info.extra_ = extra;
+    info.token = token;
+    info.message = message;
+    info.extra = extra;
     errors_.push_back(info);
     return false;
 }
@@ -848,15 +826,15 @@ Reader::addError(std::string const& message, Token& token, Location extra)
 bool
 Reader::recoverFromError(TokenType skipUntilToken)
 {
-    int errorCount = int(errors_.size());
-    Token skip;
+    int const errorCount = int(errors_.size());
+    Token skip{};
 
     while (true)
     {
         if (!readToken(skip))
             errors_.resize(errorCount);  // discard errors caused by recovery
 
-        if (skip.type_ == skipUntilToken || skip.type_ == tokenEndOfStream)
+        if (skip.type == skipUntilToken || skip.type == TokenEndOfStream)
             break;
     }
 
@@ -865,10 +843,7 @@ Reader::recoverFromError(TokenType skipUntilToken)
 }
 
 bool
-Reader::addErrorAndRecover(
-    std::string const& message,
-    Token& token,
-    TokenType skipUntilToken)
+Reader::addErrorAndRecover(std::string const& message, Token& token, TokenType skipUntilToken)
 {
     addError(message, token);
     return recoverFromError(skipUntilToken);
@@ -890,8 +865,7 @@ Reader::getNextChar()
 }
 
 void
-Reader::getLocationLineAndColumn(Location location, int& line, int& column)
-    const
+Reader::getLocationLineAndColumn(Location location, int& line, int& column) const
 {
     Location current = begin_;
     Location lastLineStart = current;
@@ -899,7 +873,7 @@ Reader::getLocationLineAndColumn(Location location, int& line, int& column)
 
     while (current < location && current != end_)
     {
-        Char c = *current++;
+        Char const c = *current++;
 
         if (c == '\r')
         {
@@ -924,29 +898,24 @@ Reader::getLocationLineAndColumn(Location location, int& line, int& column)
 std::string
 Reader::getLocationLineAndColumn(Location location) const
 {
-    int line, column;
+    int line = 0, column = 0;
     getLocationLineAndColumn(location, line, column);
-    return "Line " + std::to_string(line) + ", Column " +
-        std::to_string(column);
+    return "Line " + std::to_string(line) + ", Column " + std::to_string(column);
 }
 
 std::string
-Reader::getFormatedErrorMessages() const
+Reader::getFormattedErrorMessages() const
 {
     std::string formattedMessage;
 
-    for (Errors::const_iterator itError = errors_.begin();
-         itError != errors_.end();
-         ++itError)
+    for (Errors::const_iterator itError = errors_.begin(); itError != errors_.end(); ++itError)
     {
         ErrorInfo const& error = *itError;
-        formattedMessage +=
-            "* " + getLocationLineAndColumn(error.token_.start_) + "\n";
-        formattedMessage += "  " + error.message_ + "\n";
+        formattedMessage += "* " + getLocationLineAndColumn(error.token.start) + "\n";
+        formattedMessage += "  " + error.message + "\n";
 
-        if (error.extra_)
-            formattedMessage += "See " +
-                getLocationLineAndColumn(error.extra_) + " for detail.\n";
+        if (error.extra != nullptr)
+            formattedMessage += "See " + getLocationLineAndColumn(error.extra) + " for detail.\n";
     }
 
     return formattedMessage;
@@ -955,14 +924,14 @@ Reader::getFormatedErrorMessages() const
 std::istream&
 operator>>(std::istream& sin, Value& root)
 {
-    Json::Reader reader;
-    bool ok = reader.parse(sin, root);
+    json::Reader reader;
+    bool const ok = reader.parse(sin, root);
 
-    // XRPL_ASSERT(ok, "Json::operator>>() : parse succeeded");
+    // XRPL_ASSERT(ok, "json::operator>>() : parse succeeded");
     if (!ok)
-        ripple::Throw<std::runtime_error>(reader.getFormatedErrorMessages());
+        xrpl::Throw<std::runtime_error>(reader.getFormattedErrorMessages());
 
     return sin;
 }
 
-}  // namespace Json
+}  // namespace json

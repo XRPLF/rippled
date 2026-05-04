@@ -1,45 +1,34 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
+#include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-namespace ripple {
-namespace PeerFinder {
+#include <xrpl/beast/utility/PropertyStream.h>
 
-Config::Config()
-    : maxPeers(Tuning::defaultMaxPeers)
-    , outPeers(calcOutPeers())
-    , inPeers(0)
-    , wantIncoming(true)
-    , autoConnect(true)
-    , listeningPort(0)
-    , ipLimit(0)
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+
+namespace xrpl::PeerFinder {
+
+Config::Config() : outPeers(calcOutPeers())
+
 {
+}
+
+bool
+operator==(Config const& lhs, Config const& rhs)
+{
+    return lhs.autoConnect == rhs.autoConnect && lhs.peerPrivate == rhs.peerPrivate &&
+        lhs.wantIncoming == rhs.wantIncoming && lhs.inPeers == rhs.inPeers &&
+        lhs.maxPeers == rhs.maxPeers && lhs.outPeers == rhs.outPeers &&
+        lhs.features == rhs.features && lhs.ipLimit == rhs.ipLimit &&
+        lhs.listeningPort == rhs.listeningPort;
 }
 
 std::size_t
 Config::calcOutPeers() const
 {
-    return std::max(
-        (maxPeers * Tuning::outPercent + 50) / 100,
-        std::size_t(Tuning::minOutCount));
+    return std::max((maxPeers * Tuning::OutPercent + 50) / 100, std::size_t(Tuning::MinOutCount));
 }
 
 void
@@ -52,9 +41,8 @@ Config::applyTuning()
         // IP addresses.
         ipLimit = 2;
 
-        if (inPeers > Tuning::defaultMaxPeers)
-            ipLimit += std::min(
-                5, static_cast<int>(inPeers / Tuning::defaultMaxPeers));
+        if (inPeers > Tuning::DefaultMaxPeers)
+            ipLimit += std::min(5, static_cast<int>(inPeers / Tuning::DefaultMaxPeers));
     }
 
     // We don't allow a single IP to consume all incoming slots,
@@ -63,7 +51,7 @@ Config::applyTuning()
 }
 
 void
-Config::onWrite(beast::PropertyStream::Map& map)
+Config::onWrite(beast::PropertyStream::Map& map) const
 {
     map["max_peers"] = maxPeers;
     map["out_peers"] = outPeers;
@@ -76,7 +64,7 @@ Config::onWrite(beast::PropertyStream::Map& map)
 
 Config
 Config::makeConfig(
-    ripple::Config const& cfg,
+    xrpl::Config const& cfg,
     std::uint16_t port,
     bool validationPublicKey,
     int ipLimit)
@@ -88,13 +76,12 @@ Config::makeConfig(
     // Servers with peer privacy don't want to allow incoming connections
     config.wantIncoming = (!config.peerPrivate) && (port != 0);
 
-    if (!cfg.PEERS_OUT_MAX && !cfg.PEERS_IN_MAX)
+    if ((cfg.PEERS_OUT_MAX == 0u) && (cfg.PEERS_IN_MAX == 0u))
     {
         if (cfg.PEERS_MAX != 0)
             config.maxPeers = cfg.PEERS_MAX;
 
-        if (config.maxPeers < Tuning::minOutCount)
-            config.maxPeers = Tuning::minOutCount;
+        config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::MinOutCount);
         config.outPeers = config.calcOutPeers();
 
         // Calculate the number of outbound peers we want. If we dont want
@@ -105,9 +92,13 @@ Config::makeConfig(
         // Calculate the largest number of inbound connections we could
         // take.
         if (config.maxPeers >= config.outPeers)
+        {
             config.inPeers = config.maxPeers - config.outPeers;
+        }
         else
+        {
             config.inPeers = 0;
+        }
     }
     else
     {
@@ -136,5 +127,4 @@ Config::makeConfig(
     return config;
 }
 
-}  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl::PeerFinder

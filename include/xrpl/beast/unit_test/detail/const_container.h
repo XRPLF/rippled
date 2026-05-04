@@ -1,40 +1,34 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_DETAIL_CONST_CONTAINER_HPP
-#define BEAST_UNIT_TEST_DETAIL_CONST_CONTAINER_HPP
+#pragma once
 
-namespace beast {
-namespace unit_test {
-namespace detail {
+namespace beast::unit_test::detail {
 
 /** Adapter to constrain a container interface.
     The interface allows for limited read only operations. Derived classes
     provide additional behavior.
 */
 template <class Container>
-class const_container
+class ConstContainer
 {
 private:
     using cont_type = Container;
 
-    cont_type m_cont;
+    cont_type cont_;
 
 protected:
     cont_type&
     cont()
     {
-        return m_cont;
+        return cont_;
     }
 
-    cont_type const&
+    [[nodiscard]] cont_type const&
     cont() const
     {
-        return m_cont;
+        return cont_;
     }
 
 public:
@@ -45,49 +39,45 @@ public:
     using const_iterator = typename cont_type::const_iterator;
 
     /** Returns `true` if the container is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
-        return m_cont.empty();
+        return cont_.empty();
     }
 
     /** Returns the number of items in the container. */
-    size_type
+    [[nodiscard]] size_type
     size() const
     {
-        return m_cont.size();
+        return cont_.size();
     }
 
     /** Returns forward iterators for traversal. */
     /** @{ */
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
-        return m_cont.cbegin();
+        return cont_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
-        return m_cont.cbegin();
+        return cont_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
-        return m_cont.cend();
+        return cont_.cend();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
-        return m_cont.cend();
+        return cont_.cend();
     }
     /** @} */
 };
 
-}  // namespace detail
-}  // namespace unit_test
-}  // namespace beast
-
-#endif
+}  // namespace beast::unit_test::detail

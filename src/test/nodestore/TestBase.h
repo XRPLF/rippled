@@ -1,41 +1,19 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_NODESTORE_BASE_H_INCLUDED
-#define RIPPLE_NODESTORE_BASE_H_INCLUDED
-
-#include <xrpld/nodestore/Backend.h>
-#include <xrpld/nodestore/Database.h>
-#include <xrpld/nodestore/Types.h>
+#pragma once
 
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Types.h>
 
 #include <boost/algorithm/string.hpp>
 
 #include <iomanip>
 
-namespace ripple {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Binary function that satisfies the strict-weak-ordering requirement.
 
@@ -47,9 +25,8 @@ namespace NodeStore {
 struct LessThan
 {
     bool
-    operator()(
-        std::shared_ptr<NodeObject> const& lhs,
-        std::shared_ptr<NodeObject> const& rhs) const noexcept
+    operator()(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs)
+        const noexcept
     {
         return lhs->getHash() < rhs->getHash();
     }
@@ -57,25 +34,22 @@ struct LessThan
 
 /** Returns `true` if objects are identical. */
 inline bool
-isSame(
-    std::shared_ptr<NodeObject> const& lhs,
-    std::shared_ptr<NodeObject> const& rhs)
+isSame(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs)
 {
-    return (lhs->getType() == rhs->getType()) &&
-        (lhs->getHash() == rhs->getHash()) &&
+    return (lhs->getType() == rhs->getType()) && (lhs->getHash() == rhs->getHash()) &&
         (lhs->getData() == rhs->getData());
 }
 
 // Some common code for the unit tests
 //
-class TestBase : public beast::unit_test::suite
+class TestBase : public beast::unit_test::Suite
 {
 public:
     // Tunable parameters
     //
-    static std::size_t const minPayloadBytes = 1;
-    static std::size_t const maxPayloadBytes = 2000;
-    static int const numObjectsToTest = 2000;
+    static std::size_t const kMIN_PAYLOAD_BYTES = 1;
+    static std::size_t const kMAX_PAYLOAD_BYTES = 2000;
+    static int const kNUM_OBJECTS_TO_TEST = 2000;
 
 public:
     // Create a predictable batch of objects
@@ -90,29 +64,29 @@ public:
         for (int i = 0; i < numObjects; ++i)
         {
             NodeObjectType const type = [&] {
-                switch (rand_int(rng, 3))
+                switch (randInt(rng, 3))
                 {
                     case 0:
-                        return hotLEDGER;
+                        return NodeObjectType::Ledger;
                     case 1:
-                        return hotACCOUNT_NODE;
+                        return NodeObjectType::AccountNode;
                     case 2:
-                        return hotTRANSACTION_NODE;
+                        return NodeObjectType::TransactionNode;
                     case 3:
-                        return hotUNKNOWN;
+                        return NodeObjectType::Unknown;
+                    default:
+                        // will never happen, but make static analysis tool happy.
+                        return NodeObjectType::Unknown;
                 }
-                // will never happen, but make static analysys tool happy.
-                return hotUNKNOWN;
             }();
 
             uint256 hash;
             beast::rngfill(hash.begin(), hash.size(), rng);
 
-            Blob blob(rand_int(rng, minPayloadBytes, maxPayloadBytes));
+            Blob blob(randInt(rng, kMIN_PAYLOAD_BYTES, kMAX_PAYLOAD_BYTES));
             beast::rngfill(blob.data(), blob.size(), rng);
 
-            batch.push_back(
-                NodeObject::createObject(type, std::move(blob), hash));
+            batch.push_back(NodeObject::createObject(type, std::move(blob), hash));
         }
 
         return batch;
@@ -144,7 +118,7 @@ public:
     }
 
     // Store a batch in a backend
-    void
+    static void
     storeBatch(Backend& backend, Batch const& batch)
     {
         for (int i = 0; i < batch.size(); ++i)
@@ -164,12 +138,11 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status =
-                backend.fetch(batch[i]->getHash().cbegin(), &object);
+            Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == ok);
+            BEAST_EXPECT(status == Status::Ok);
 
-            if (status == ok)
+            if (status == Status::Ok)
             {
                 BEAST_EXPECT(object != nullptr);
 
@@ -185,10 +158,9 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status =
-                backend.fetch(batch[i]->getHash().cbegin(), &object);
+            Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == notFound);
+            BEAST_EXPECT(status == Status::NotFound);
         }
     }
 
@@ -202,11 +174,7 @@ public:
 
             Blob data(object->getData());
 
-            db.store(
-                object->getType(),
-                std::move(data),
-                object->getHash(),
-                db.earliestLedgerSeq());
+            db.store(object->getType(), std::move(data), object->getHash(), db.earliestLedgerSeq());
         }
     }
 
@@ -219,8 +187,7 @@ public:
 
         for (int i = 0; i < batch.size(); ++i)
         {
-            std::shared_ptr<NodeObject> object =
-                db.fetchNodeObject(batch[i]->getHash(), 0);
+            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(batch[i]->getHash(), 0);
 
             if (object != nullptr)
                 pCopy->push_back(object);
@@ -228,7 +195,4 @@ public:
     }
 };
 
-}  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::NodeStore

@@ -1,97 +1,101 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2022 Ripple Labs Inc.
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/txflags.h>
 
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
-
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
-
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <initializer_list>
+#include <iostream>
+#include <ostream>
+#include <set>
+#include <string_view>
+#include <vector>
 
-namespace ripple {
+namespace xrpl {
 
-class NFTokenDir_test : public beast::unit_test::suite
+class NFTokenDir_test : public beast::unit_test::Suite
 {
     // printNFTPages is a helper function that may be used for debugging.
     //
     // It uses the ledger RPC command to show the NFT pages in the ledger.
     // This parameter controls how noisy the output is.
-    enum Volume : bool {
-        quiet = false,
-        noisy = true,
+    enum class Volume : bool {
+        Quiet = false,
+        Noisy = true,
     };
 
-    void
+    static void
     printNFTPages(test::jtx::Env& env, Volume vol)
     {
-        Json::Value jvParams;
+        json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = false;
         {
-            Json::Value jrr = env.rpc(
-                "json",
-                "ledger_data",
-                boost::lexical_cast<std::string>(jvParams));
+            json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
 
             // Iterate the state and print all NFTokenPages.
-            if (!jrr.isMember(jss::result) ||
-                !jrr[jss::result].isMember(jss::state))
+            if (!jrr.isMember(jss::result) || !jrr[jss::result].isMember(jss::state))
             {
                 std::cout << "No ledger state found!" << std::endl;
                 return;
             }
-            Json::Value& state = jrr[jss::result][jss::state];
+            json::Value& state = jrr[jss::result][jss::state];
             if (!state.isArray())
             {
                 std::cout << "Ledger state is not array!" << std::endl;
                 return;
             }
-            for (Json::UInt i = 0; i < state.size(); ++i)
+            for (json::UInt i = 0; i < state.size(); ++i)
             {
                 if (state[i].isMember(sfNFTokens.jsonName) &&
                     state[i][sfNFTokens.jsonName].isArray())
                 {
-                    std::uint32_t tokenCount =
-                        state[i][sfNFTokens.jsonName].size();
+                    std::uint32_t const tokenCount = state[i][sfNFTokens.jsonName].size();
                     std::cout << tokenCount << " NFtokens in page "
                               << state[i][jss::index].asString() << std::endl;
 
-                    if (vol == noisy)
+                    if (vol == Volume::Noisy)
                     {
                         std::cout << state[i].toStyledString() << std::endl;
                     }
                     else
                     {
                         if (tokenCount > 0)
-                            std::cout << "first: "
-                                      << state[i][sfNFTokens.jsonName][0u]
-                                             .toStyledString()
-                                      << std::endl;
+                        {
+                            std::cout
+                                << "first: " << state[i][sfNFTokens.jsonName][0u].toStyledString()
+                                << std::endl;
+                        }
                         if (tokenCount > 1)
+                        {
                             std::cout
                                 << "last: "
-                                << state[i][sfNFTokens.jsonName][tokenCount - 1]
-                                       .toStyledString()
+                                << state[i][sfNFTokens.jsonName][tokenCount - 1].toStyledString()
                                 << std::endl;
+                        }
                     }
                 }
             }
@@ -122,16 +126,14 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Mint 100 sequential NFTs.  Tweak the taxon so zero is always stored.
         // That's what makes them sequential.
-        constexpr std::size_t nftCount = 100;
+        constexpr std::size_t kNFT_COUNT = 100;
         std::vector<uint256> nftIDs;
-        nftIDs.reserve(nftCount);
-        for (int i = 0; i < nftCount; ++i)
+        nftIDs.reserve(kNFT_COUNT);
+        for (int i = 0; i < kNFT_COUNT; ++i)
         {
-            std::uint32_t taxon =
-                toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
-            nftIDs.emplace_back(
-                token::getNextID(env, issuer, taxon, tfTransferable));
-            env(token::mint(issuer, taxon), txflags(tfTransferable));
+            std::uint32_t const taxon = toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
+            nftIDs.emplace_back(token::getNextID(env, issuer, taxon, tfTransferable));
+            env(token::mint(issuer, taxon), Txflags(tfTransferable));
             env.close();
         }
 
@@ -141,13 +143,12 @@ class NFTokenDir_test : public beast::unit_test::suite
         for (uint256 const& nftID : nftIDs)
         {
             offers.emplace_back(keylet::nftoffer(issuer, env.seq(issuer)).key);
-            env(token::createOffer(issuer, nftID, XRP(0)),
-                txflags((tfSellNFToken)));
+            env(token::createOffer(issuer, nftID, XRP(0)), Txflags((tfSellNFToken)));
             env.close();
         }
 
         // Buyer accepts all of the offers in reverse order.
-        std::reverse(offers.begin(), offers.end());
+        std::ranges::reverse(offers);
         for (uint256 const& offer : offers)
         {
             env(token::acceptSellOffer(buyer, offer));
@@ -174,216 +175,202 @@ class NFTokenDir_test : public beast::unit_test::suite
         // with identical 96-low-bits are all kept on the same page.
 
         // Lambda that exercises the lopsided splits.
-        auto exerciseLopsided =
-            [this,
-             &features](std::initializer_list<std::string_view const> seeds) {
-                Env env{*this, features};
+        auto exerciseLopsided = [this,
+                                 &features](std::initializer_list<std::string_view const> seeds) {
+            Env env{*this, features};
 
-                // Eventually all of the NFTokens will be owned by buyer.
-                Account const buyer{"buyer"};
-                env.fund(XRP(10000), buyer);
+            // Eventually all of the NFTokens will be owned by buyer.
+            Account const buyer{"buyer"};
+            env.fund(XRP(10000), buyer);
+            env.close();
+
+            // Create accounts for all of the seeds and fund those accounts.
+            std::vector<Account> accounts;
+            accounts.reserve(seeds.size());
+            for (std::string_view const seed : seeds)
+            {
+                Account const& account =
+                    accounts.emplace_back(Account::AcctStringType::Base58Seed, std::string(seed));
+                env.fund(XRP(10000), account);
+
+                // Do not close the ledger inside the loop.  If accounts are
+                // initialized at different ledgers, they will have
+                // different account sequences.  That would cause the
+                // accounts to have different NFTokenID sequence numbers.
+            }
+            env.close();
+
+            // All of the accounts create one NFT and and offer that NFT to
+            // buyer.
+            std::vector<uint256> nftIDs;
+            std::vector<uint256> offers;
+            offers.reserve(accounts.size());
+            for (Account const& account : accounts)
+            {
+                // Mint the NFT.
+                uint256 const& nftID =
+                    nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
+                env(token::mint(account, 0), Txflags(tfTransferable));
                 env.close();
 
-                // Create accounts for all of the seeds and fund those accounts.
-                std::vector<Account> accounts;
-                accounts.reserve(seeds.size());
-                for (std::string_view seed : seeds)
-                {
-                    Account const& account = accounts.emplace_back(
-                        Account::base58Seed, std::string(seed));
-                    env.fund(XRP(10000), account);
+                // Create an offer to give the NFT to buyer for free.
+                offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
+                env(token::createOffer(account, nftID, XRP(0)),
+                    token::Destination(buyer),
+                    Txflags((tfSellNFToken)));
+            }
+            env.close();
 
-                    // Do not close the ledger inside the loop.  If
-                    // fixNFTokenRemint is enabled and accounts are initialized
-                    // at different ledgers, they will have different account
-                    // sequences.  That would cause the accounts to have
-                    // different NFTokenID sequence numbers.
-                }
+            // buyer accepts all of the offers.
+            for (uint256 const& offer : offers)
+            {
+                env(token::acceptSellOffer(buyer, offer));
+                env.close();
+            }
+
+            // This can be a good time to look at the NFT pages.
+            // printNFTPages(env, noisy);
+
+            // Verify that all NFTs are owned by buyer and findable in the
+            // ledger by having buyer create sell offers for all of their
+            // NFTs. Attempting to sell an offer that the ledger can't find
+            // generates a non-tesSUCCESS error code.
+            for (uint256 const& nftID : nftIDs)
+            {
+                uint256 const offerID = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
                 env.close();
 
-                // All of the accounts create one NFT and and offer that NFT to
-                // buyer.
-                std::vector<uint256> nftIDs;
-                std::vector<uint256> offers;
-                offers.reserve(accounts.size());
-                for (Account const& account : accounts)
-                {
-                    // Mint the NFT.
-                    uint256 const& nftID = nftIDs.emplace_back(
-                        token::getNextID(env, account, 0, tfTransferable));
-                    env(token::mint(account, 0), txflags(tfTransferable));
-                    env.close();
+                env(token::cancelOffer(buyer, {offerID}));
+            }
 
-                    // Create an offer to give the NFT to buyer for free.
-                    offers.emplace_back(
-                        keylet::nftoffer(account, env.seq(account)).key);
-                    env(token::createOffer(account, nftID, XRP(0)),
-                        token::destination(buyer),
-                        txflags((tfSellNFToken)));
-                }
-                env.close();
+            // Verify that all the NFTs are owned by buyer.
+            json::Value buyerNFTs = [&env, &buyer]() {
+                json::Value params;
+                params[jss::account] = buyer.human();
+                params[jss::type] = "state";
+                return env.rpc("json", "account_nfts", to_string(params));
+            }();
 
-                // buyer accepts all of the offers.
-                for (uint256 const& offer : offers)
-                {
-                    env(token::acceptSellOffer(buyer, offer));
-                    env.close();
-                }
+            BEAST_EXPECT(buyerNFTs[jss::result][jss::account_nfts].size() == nftIDs.size());
+            for (json::Value const& ownedNFT : buyerNFTs[jss::result][jss::account_nfts])
+            {
+                uint256 ownedID;
+                BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
+                auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
-                // This can be a good time to look at the NFT pages.
-                // printNFTPages(env, noisy);
+                // Assuming we find the NFT, erase it so we know it's been
+                // found and can't be found again.
+                if (BEAST_EXPECT(foundIter != nftIDs.end()))
+                    nftIDs.erase(foundIter);
+            }
 
-                // Verify that all NFTs are owned by buyer and findable in the
-                // ledger by having buyer create sell offers for all of their
-                // NFTs. Attempting to sell an offer that the ledger can't find
-                // generates a non-tesSUCCESS error code.
-                for (uint256 const& nftID : nftIDs)
-                {
-                    uint256 const offerID =
-                        keylet::nftoffer(buyer, env.seq(buyer)).key;
-                    env(token::createOffer(buyer, nftID, XRP(100)),
-                        txflags(tfSellNFToken));
-                    env.close();
-
-                    env(token::cancelOffer(buyer, {offerID}));
-                }
-
-                // Verify that all the NFTs are owned by buyer.
-                Json::Value buyerNFTs = [&env, &buyer]() {
-                    Json::Value params;
-                    params[jss::account] = buyer.human();
-                    params[jss::type] = "state";
-                    return env.rpc("json", "account_nfts", to_string(params));
-                }();
-
-                BEAST_EXPECT(
-                    buyerNFTs[jss::result][jss::account_nfts].size() ==
-                    nftIDs.size());
-                for (Json::Value const& ownedNFT :
-                     buyerNFTs[jss::result][jss::account_nfts])
-                {
-                    uint256 ownedID;
-                    BEAST_EXPECT(ownedID.parseHex(
-                        ownedNFT[sfNFTokenID.jsonName].asString()));
-                    auto const foundIter =
-                        std::find(nftIDs.begin(), nftIDs.end(), ownedID);
-
-                    // Assuming we find the NFT, erase it so we know it's been
-                    // found and can't be found again.
-                    if (BEAST_EXPECT(foundIter != nftIDs.end()))
-                        nftIDs.erase(foundIter);
-                }
-
-                // All NFTs should now be accounted for, so nftIDs should be
-                // empty.
-                BEAST_EXPECT(nftIDs.empty());
-            };
+            // All NFTs should now be accounted for, so nftIDs should be
+            // empty.
+            BEAST_EXPECT(nftIDs.empty());
+        };
 
         // These seeds cause a lopsided split where the new NFT is added
         // to the upper page.
-        static std::initializer_list<std::string_view const> const
-            splitAndAddToHi{
-                "sp6JS7f14BuwFY8Mw5p3b8jjQBBTK",  //  0. 0x1d2932ea
-                "sp6JS7f14BuwFY8Mw6F7X3EiGKazu",  //  1. 0x1d2932ea
-                "sp6JS7f14BuwFY8Mw6FxjntJJfKXq",  //  2. 0x1d2932ea
-                "sp6JS7f14BuwFY8Mw6eSF1ydEozJg",  //  3. 0x1d2932ea
-                "sp6JS7f14BuwFY8Mw6koPB91um2ej",  //  4. 0x1d2932ea
-                "sp6JS7f14BuwFY8Mw6m6D64iwquSe",  //  5. 0x1d2932ea
+        static std::initializer_list<std::string_view const> const kSPLIT_AND_ADD_TO_HI{
+            "sp6JS7f14BuwFY8Mw5p3b8jjQBBTK",  //  0. 0x1d2932ea
+            "sp6JS7f14BuwFY8Mw6F7X3EiGKazu",  //  1. 0x1d2932ea
+            "sp6JS7f14BuwFY8Mw6FxjntJJfKXq",  //  2. 0x1d2932ea
+            "sp6JS7f14BuwFY8Mw6eSF1ydEozJg",  //  3. 0x1d2932ea
+            "sp6JS7f14BuwFY8Mw6koPB91um2ej",  //  4. 0x1d2932ea
+            "sp6JS7f14BuwFY8Mw6m6D64iwquSe",  //  5. 0x1d2932ea
 
-                "sp6JS7f14BuwFY8Mw5rC43sN4adC2",  //  6. 0x208dbc24
-                "sp6JS7f14BuwFY8Mw65L9DDQqgebz",  //  7. 0x208dbc24
-                "sp6JS7f14BuwFY8Mw65nKvU8pPQNn",  //  8. 0x208dbc24
-                "sp6JS7f14BuwFY8Mw6bxZLyTrdipw",  //  9. 0x208dbc24
-                "sp6JS7f14BuwFY8Mw6d5abucntSoX",  // 10. 0x208dbc24
-                "sp6JS7f14BuwFY8Mw6qXK5awrRRP8",  // 11. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw5rC43sN4adC2",  //  6. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw65L9DDQqgebz",  //  7. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw65nKvU8pPQNn",  //  8. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw6bxZLyTrdipw",  //  9. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw6d5abucntSoX",  // 10. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw6qXK5awrRRP8",  // 11. 0x208dbc24
 
-                // These eight need to be kept together by the implementation.
-                "sp6JS7f14BuwFY8Mw66EBtMxoMcCa",  // 12. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw66dGfE9jVfGv",  // 13. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6APdZa7PH566",  // 14. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6C3QX5CZyET5",  // 15. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6CSysFf8GvaR",  // 16. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6c7QSDmoAeRV",  // 17. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6mvonveaZhW7",  // 18. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6vtHHG7dYcXi",  // 19. 0x309b67ed
+            // These eight need to be kept together by the implementation.
+            "sp6JS7f14BuwFY8Mw66EBtMxoMcCa",  // 12. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw66dGfE9jVfGv",  // 13. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6APdZa7PH566",  // 14. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6C3QX5CZyET5",  // 15. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6CSysFf8GvaR",  // 16. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6c7QSDmoAeRV",  // 17. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6mvonveaZhW7",  // 18. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6vtHHG7dYcXi",  // 19. 0x309b67ed
 
-                "sp6JS7f14BuwFY8Mw66yppUNxESaw",  // 20. 0x40d4b96f
-                "sp6JS7f14BuwFY8Mw6ATYQvobXiDT",  // 21. 0x40d4b96f
-                "sp6JS7f14BuwFY8Mw6bis8D1Wa9Uy",  // 22. 0x40d4b96f
-                "sp6JS7f14BuwFY8Mw6cTiGCWA8Wfa",  // 23. 0x40d4b96f
-                "sp6JS7f14BuwFY8Mw6eAy2fpXmyYf",  // 24. 0x40d4b96f
-                "sp6JS7f14BuwFY8Mw6icn58TRs8YG",  // 25. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw66yppUNxESaw",  // 20. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw6ATYQvobXiDT",  // 21. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw6bis8D1Wa9Uy",  // 22. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw6cTiGCWA8Wfa",  // 23. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw6eAy2fpXmyYf",  // 24. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw6icn58TRs8YG",  // 25. 0x40d4b96f
 
-                "sp6JS7f14BuwFY8Mw68tj2eQEWoJt",  // 26. 0x503b6ba9
-                "sp6JS7f14BuwFY8Mw6AjnAinNnMHT",  // 27. 0x503b6ba9
-                "sp6JS7f14BuwFY8Mw6CKDUwB4LrhL",  // 28. 0x503b6ba9
-                "sp6JS7f14BuwFY8Mw6d2yPszEFA6J",  // 29. 0x503b6ba9
-                "sp6JS7f14BuwFY8Mw6jcBQBH3PfnB",  // 30. 0x503b6ba9
-                "sp6JS7f14BuwFY8Mw6qxx19KSnN1w",  // 31. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw68tj2eQEWoJt",  // 26. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw6AjnAinNnMHT",  // 27. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw6CKDUwB4LrhL",  // 28. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw6d2yPszEFA6J",  // 29. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw6jcBQBH3PfnB",  // 30. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw6qxx19KSnN1w",  // 31. 0x503b6ba9
 
-                // Adding this NFT splits the page.  It is added to the upper
-                // page.
-                "sp6JS7f14BuwFY8Mw6ut1hFrqWoY5",  // 32. 0x503b6ba9
-            };
+            // Adding this NFT splits the page.  It is added to the upper
+            // page.
+            "sp6JS7f14BuwFY8Mw6ut1hFrqWoY5",  // 32. 0x503b6ba9
+        };
 
         // These seeds cause a lopsided split where the new NFT is added
         // to the lower page.
-        static std::initializer_list<std::string_view const> const
-            splitAndAddToLo{
-                "sp6JS7f14BuwFY8Mw5p3b8jjQBBTK",  //  0. 0x1d2932ea
-                "sp6JS7f14BuwFY8Mw6F7X3EiGKazu",  //  1. 0x1d2932ea
-                "sp6JS7f14BuwFY8Mw6FxjntJJfKXq",  //  2. 0x1d2932ea
-                "sp6JS7f14BuwFY8Mw6eSF1ydEozJg",  //  3. 0x1d2932ea
-                "sp6JS7f14BuwFY8Mw6koPB91um2ej",  //  4. 0x1d2932ea
-                "sp6JS7f14BuwFY8Mw6m6D64iwquSe",  //  5. 0x1d2932ea
+        static std::initializer_list<std::string_view const> const kSPLIT_AND_ADD_TO_LO{
+            "sp6JS7f14BuwFY8Mw5p3b8jjQBBTK",  //  0. 0x1d2932ea
+            "sp6JS7f14BuwFY8Mw6F7X3EiGKazu",  //  1. 0x1d2932ea
+            "sp6JS7f14BuwFY8Mw6FxjntJJfKXq",  //  2. 0x1d2932ea
+            "sp6JS7f14BuwFY8Mw6eSF1ydEozJg",  //  3. 0x1d2932ea
+            "sp6JS7f14BuwFY8Mw6koPB91um2ej",  //  4. 0x1d2932ea
+            "sp6JS7f14BuwFY8Mw6m6D64iwquSe",  //  5. 0x1d2932ea
 
-                "sp6JS7f14BuwFY8Mw5rC43sN4adC2",  //  6. 0x208dbc24
-                "sp6JS7f14BuwFY8Mw65L9DDQqgebz",  //  7. 0x208dbc24
-                "sp6JS7f14BuwFY8Mw65nKvU8pPQNn",  //  8. 0x208dbc24
-                "sp6JS7f14BuwFY8Mw6bxZLyTrdipw",  //  9. 0x208dbc24
-                "sp6JS7f14BuwFY8Mw6d5abucntSoX",  // 10. 0x208dbc24
-                "sp6JS7f14BuwFY8Mw6qXK5awrRRP8",  // 11. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw5rC43sN4adC2",  //  6. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw65L9DDQqgebz",  //  7. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw65nKvU8pPQNn",  //  8. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw6bxZLyTrdipw",  //  9. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw6d5abucntSoX",  // 10. 0x208dbc24
+            "sp6JS7f14BuwFY8Mw6qXK5awrRRP8",  // 11. 0x208dbc24
 
-                // These eight need to be kept together by the implementation.
-                "sp6JS7f14BuwFY8Mw66EBtMxoMcCa",  // 12. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw66dGfE9jVfGv",  // 13. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6APdZa7PH566",  // 14. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6C3QX5CZyET5",  // 15. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6CSysFf8GvaR",  // 16. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6c7QSDmoAeRV",  // 17. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6mvonveaZhW7",  // 18. 0x309b67ed
-                "sp6JS7f14BuwFY8Mw6vtHHG7dYcXi",  // 19. 0x309b67ed
+            // These eight need to be kept together by the implementation.
+            "sp6JS7f14BuwFY8Mw66EBtMxoMcCa",  // 12. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw66dGfE9jVfGv",  // 13. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6APdZa7PH566",  // 14. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6C3QX5CZyET5",  // 15. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6CSysFf8GvaR",  // 16. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6c7QSDmoAeRV",  // 17. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6mvonveaZhW7",  // 18. 0x309b67ed
+            "sp6JS7f14BuwFY8Mw6vtHHG7dYcXi",  // 19. 0x309b67ed
 
-                "sp6JS7f14BuwFY8Mw66yppUNxESaw",  // 20. 0x40d4b96f
-                "sp6JS7f14BuwFY8Mw6ATYQvobXiDT",  // 21. 0x40d4b96f
-                "sp6JS7f14BuwFY8Mw6bis8D1Wa9Uy",  // 22. 0x40d4b96f
-                "sp6JS7f14BuwFY8Mw6cTiGCWA8Wfa",  // 23. 0x40d4b96f
-                "sp6JS7f14BuwFY8Mw6eAy2fpXmyYf",  // 24. 0x40d4b96f
-                "sp6JS7f14BuwFY8Mw6icn58TRs8YG",  // 25. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw66yppUNxESaw",  // 20. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw6ATYQvobXiDT",  // 21. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw6bis8D1Wa9Uy",  // 22. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw6cTiGCWA8Wfa",  // 23. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw6eAy2fpXmyYf",  // 24. 0x40d4b96f
+            "sp6JS7f14BuwFY8Mw6icn58TRs8YG",  // 25. 0x40d4b96f
 
-                "sp6JS7f14BuwFY8Mw68tj2eQEWoJt",  // 26. 0x503b6ba9
-                "sp6JS7f14BuwFY8Mw6AjnAinNnMHT",  // 27. 0x503b6ba9
-                "sp6JS7f14BuwFY8Mw6CKDUwB4LrhL",  // 28. 0x503b6ba9
-                "sp6JS7f14BuwFY8Mw6d2yPszEFA6J",  // 29. 0x503b6ba9
-                "sp6JS7f14BuwFY8Mw6jcBQBH3PfnB",  // 30. 0x503b6ba9
-                "sp6JS7f14BuwFY8Mw6qxx19KSnN1w",  // 31. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw68tj2eQEWoJt",  // 26. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw6AjnAinNnMHT",  // 27. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw6CKDUwB4LrhL",  // 28. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw6d2yPszEFA6J",  // 29. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw6jcBQBH3PfnB",  // 30. 0x503b6ba9
+            "sp6JS7f14BuwFY8Mw6qxx19KSnN1w",  // 31. 0x503b6ba9
 
-                // Adding this NFT splits the page.  It is added to the lower
-                // page.
-                "sp6JS7f14BuwFY8Mw6xCigaMwC6Dp",  // 32. 0x309b67ed
-            };
+            // Adding this NFT splits the page.  It is added to the lower
+            // page.
+            "sp6JS7f14BuwFY8Mw6xCigaMwC6Dp",  // 32. 0x309b67ed
+        };
 
         // Run the test cases.
-        exerciseLopsided(splitAndAddToHi);
-        exerciseLopsided(splitAndAddToLo);
+        exerciseLopsided(kSPLIT_AND_ADD_TO_HI);
+        exerciseLopsided(kSPLIT_AND_ADD_TO_LO);
     }
 
     void
-    testFixNFTokenDirV1(FeatureBitset features)
+    testNFTokenDir(FeatureBitset features)
     {
-        // Exercise a fix for an off-by-one in the creation of an NFTokenPage
-        // index.
-        testcase("fixNFTokenDirV1");
+        testcase("NFTokenDir");
 
         using namespace test::jtx;
 
@@ -393,133 +380,107 @@ class NFTokenDir_test : public beast::unit_test::suite
         // the index for the new page.  This test recreates the problem.
 
         // Lambda that exercises the split.
-        auto exerciseFixNFTokenDirV1 =
-            [this,
-             &features](std::initializer_list<std::string_view const> seeds) {
-                Env env{
-                    *this,
-                    envconfig(),
-                    features,
-                    nullptr,
-                    beast::severities::kDisabled};
+        auto exercise = [this, &features](std::initializer_list<std::string_view const> seeds) {
+            Env env{*this, envconfig(), features, nullptr, beast::severities::KDisabled};
 
-                // Eventually all of the NFTokens will be owned by buyer.
-                Account const buyer{"buyer"};
-                env.fund(XRP(10000), buyer);
+            // Eventually all of the NFTokens will be owned by buyer.
+            Account const buyer{"buyer"};
+            env.fund(XRP(10000), buyer);
+            env.close();
+
+            // Create accounts for all of the seeds and fund those accounts.
+            std::vector<Account> accounts;
+            accounts.reserve(seeds.size());
+            for (std::string_view const seed : seeds)
+            {
+                Account const& account =
+                    accounts.emplace_back(Account::AcctStringType::Base58Seed, std::string(seed));
+                env.fund(XRP(10000), account);
+
+                // Do not close the ledger inside the loop.  If accounts are
+                // initialized at different ledgers, they will have
+                // different account sequences.  That would cause the
+                // accounts to have different NFTokenID sequence numbers.
+            }
+            env.close();
+
+            // All of the accounts create one NFT and and offer that NFT to
+            // buyer.
+            std::vector<uint256> nftIDs;
+            std::vector<uint256> offers;
+            offers.reserve(accounts.size());
+            for (Account const& account : accounts)
+            {
+                // Mint the NFT.
+                uint256 const& nftID =
+                    nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
+                env(token::mint(account, 0), Txflags(tfTransferable));
                 env.close();
 
-                // Create accounts for all of the seeds and fund those accounts.
-                std::vector<Account> accounts;
-                accounts.reserve(seeds.size());
-                for (std::string_view seed : seeds)
-                {
-                    Account const& account = accounts.emplace_back(
-                        Account::base58Seed, std::string(seed));
-                    env.fund(XRP(10000), account);
+                // Create an offer to give the NFT to buyer for free.
+                offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
+                env(token::createOffer(account, nftID, XRP(0)),
+                    token::Destination(buyer),
+                    Txflags((tfSellNFToken)));
+            }
+            env.close();
 
-                    // Do not close the ledger inside the loop.  If
-                    // fixNFTokenRemint is enabled and accounts are initialized
-                    // at different ledgers, they will have different account
-                    // sequences.  That would cause the accounts to have
-                    // different NFTokenID sequence numbers.
-                }
+            // buyer accepts all of the but the last.  The last offer
+            // causes the page to split.
+            for (std::size_t i = 0; i < offers.size() - 1; ++i)
+            {
+                env(token::acceptSellOffer(buyer, offers[i]));
+                env.close();
+            }
+
+            env(token::acceptSellOffer(buyer, offers.back()));
+            env.close();
+
+            // This can be a good time to look at the NFT pages.
+            // printNFTPages(env, noisy);
+
+            // Verify that all NFTs are owned by buyer and findable in the
+            // ledger by having buyer create sell offers for all of their
+            // NFTs. Attempting to sell an offer that the ledger can't find
+            // generates a non-tesSUCCESS error code.
+            for (uint256 const& nftID : nftIDs)
+            {
+                uint256 const offerID = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
                 env.close();
 
-                // All of the accounts create one NFT and and offer that NFT to
-                // buyer.
-                std::vector<uint256> nftIDs;
-                std::vector<uint256> offers;
-                offers.reserve(accounts.size());
-                for (Account const& account : accounts)
-                {
-                    // Mint the NFT.
-                    uint256 const& nftID = nftIDs.emplace_back(
-                        token::getNextID(env, account, 0, tfTransferable));
-                    env(token::mint(account, 0), txflags(tfTransferable));
-                    env.close();
+                env(token::cancelOffer(buyer, {offerID}));
+            }
 
-                    // Create an offer to give the NFT to buyer for free.
-                    offers.emplace_back(
-                        keylet::nftoffer(account, env.seq(account)).key);
-                    env(token::createOffer(account, nftID, XRP(0)),
-                        token::destination(buyer),
-                        txflags((tfSellNFToken)));
-                }
-                env.close();
+            // Verify that all the NFTs are owned by buyer.
+            json::Value buyerNFTs = [&env, &buyer]() {
+                json::Value params;
+                params[jss::account] = buyer.human();
+                params[jss::type] = "state";
+                return env.rpc("json", "account_nfts", to_string(params));
+            }();
 
-                // buyer accepts all of the but the last.  The last offer
-                // causes the page to split.
-                for (std::size_t i = 0; i < offers.size() - 1; ++i)
-                {
-                    env(token::acceptSellOffer(buyer, offers[i]));
-                    env.close();
-                }
+            BEAST_EXPECT(buyerNFTs[jss::result][jss::account_nfts].size() == nftIDs.size());
+            for (json::Value const& ownedNFT : buyerNFTs[jss::result][jss::account_nfts])
+            {
+                uint256 ownedID;
+                BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
+                auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
-                // Here is the last offer.  Without the fix accepting this
-                // offer causes tecINVARIANT_FAILED.  With the fix the offer
-                // accept succeeds.
-                if (!features[fixNFTokenDirV1])
-                {
-                    env(token::acceptSellOffer(buyer, offers.back()),
-                        ter(tecINVARIANT_FAILED));
-                    env.close();
-                    return;
-                }
-                env(token::acceptSellOffer(buyer, offers.back()));
-                env.close();
+                // Assuming we find the NFT, erase it so we know it's been
+                // found and can't be found again.
+                if (BEAST_EXPECT(foundIter != nftIDs.end()))
+                    nftIDs.erase(foundIter);
+            }
 
-                // This can be a good time to look at the NFT pages.
-                // printNFTPages(env, noisy);
-
-                // Verify that all NFTs are owned by buyer and findable in the
-                // ledger by having buyer create sell offers for all of their
-                // NFTs. Attempting to sell an offer that the ledger can't find
-                // generates a non-tesSUCCESS error code.
-                for (uint256 const& nftID : nftIDs)
-                {
-                    uint256 const offerID =
-                        keylet::nftoffer(buyer, env.seq(buyer)).key;
-                    env(token::createOffer(buyer, nftID, XRP(100)),
-                        txflags(tfSellNFToken));
-                    env.close();
-
-                    env(token::cancelOffer(buyer, {offerID}));
-                }
-
-                // Verify that all the NFTs are owned by buyer.
-                Json::Value buyerNFTs = [&env, &buyer]() {
-                    Json::Value params;
-                    params[jss::account] = buyer.human();
-                    params[jss::type] = "state";
-                    return env.rpc("json", "account_nfts", to_string(params));
-                }();
-
-                BEAST_EXPECT(
-                    buyerNFTs[jss::result][jss::account_nfts].size() ==
-                    nftIDs.size());
-                for (Json::Value const& ownedNFT :
-                     buyerNFTs[jss::result][jss::account_nfts])
-                {
-                    uint256 ownedID;
-                    BEAST_EXPECT(ownedID.parseHex(
-                        ownedNFT[sfNFTokenID.jsonName].asString()));
-                    auto const foundIter =
-                        std::find(nftIDs.begin(), nftIDs.end(), ownedID);
-
-                    // Assuming we find the NFT, erase it so we know it's been
-                    // found and can't be found again.
-                    if (BEAST_EXPECT(foundIter != nftIDs.end()))
-                        nftIDs.erase(foundIter);
-                }
-
-                // All NFTs should now be accounted for, so nftIDs should be
-                // empty.
-                BEAST_EXPECT(nftIDs.empty());
-            };
+            // All NFTs should now be accounted for, so nftIDs should be
+            // empty.
+            BEAST_EXPECT(nftIDs.empty());
+        };
 
         // These seeds fill the last 17 entries of the initial page with
         // equivalent NFTs.  The split should keep these together.
-        static std::initializer_list<std::string_view const> const seventeenHi{
+        static std::initializer_list<std::string_view const> const kSEVENTEEN_HI{
             // These 16 need to be kept together by the implementation.
             "sp6JS7f14BuwFY8Mw5EYu5z86hKDL",  //  0. 0x399187e9
             "sp6JS7f14BuwFY8Mw5PUAMwc5ygd7",  //  1. 0x399187e9
@@ -560,7 +521,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // These seeds fill the first entries of the initial page with
         // equivalent NFTs.  The split should keep these together.
-        static std::initializer_list<std::string_view const> const seventeenLo{
+        static std::initializer_list<std::string_view const> const kSEVENTEEN_LO{
             // These 17 need to be kept together by the implementation.
             "sp6JS7f14BuwFY8Mw5EYu5z86hKDL",  //  0. 0x399187e9
             "sp6JS7f14BuwFY8Mw5PUAMwc5ygd7",  //  1. 0x399187e9
@@ -600,8 +561,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         };
 
         // Run the test cases.
-        exerciseFixNFTokenDirV1(seventeenHi);
-        exerciseFixNFTokenDirV1(seventeenLo);
+        exercise(kSEVENTEEN_HI);
+        exercise(kSEVENTEEN_LO);
     }
 
     void
@@ -622,7 +583,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Here are 33 seeds that produce identical low 32-bits in their
         // corresponding AccountIDs.
-        static std::initializer_list<std::string_view const> const seeds{
+        static std::initializer_list<std::string_view const> const kSEEDS{
             "sp6JS7f14BuwFY8Mw5FnqmbciPvH6",  //  0. 0x9a8ebed3
             "sp6JS7f14BuwFY8Mw5MBGbyMSsXLp",  //  1. 0x9a8ebed3
             "sp6JS7f14BuwFY8Mw5S4PnDyBdKKm",  //  2. 0x9a8ebed3
@@ -660,17 +621,16 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
-        accounts.reserve(seeds.size());
-        for (std::string_view seed : seeds)
+        accounts.reserve(kSEEDS.size());
+        for (std::string_view const seed : kSEEDS)
         {
             Account const& account =
-                accounts.emplace_back(Account::base58Seed, std::string(seed));
+                accounts.emplace_back(Account::AcctStringType::Base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
-            // Do not close the ledger inside the loop.  If
-            // fixNFTokenRemint is enabled and accounts are initialized
-            // at different ledgers, they will have different account
-            // sequences.  That would cause the accounts to have
+            // Do not close the ledger inside the loop.  If accounts are
+            // initialized at different ledgers, they will have different
+            // account sequences.  That would cause the accounts to have
             // different NFTokenID sequence numbers.
         }
         env.close();
@@ -682,25 +642,24 @@ class NFTokenDir_test : public beast::unit_test::suite
         for (Account const& account : accounts)
         {
             // Mint the NFT.
-            uint256 const& nftID = nftIDs.emplace_back(
-                token::getNextID(env, account, 0, tfTransferable));
-            env(token::mint(account, 0), txflags(tfTransferable));
+            uint256 const& nftID =
+                nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
+            env(token::mint(account, 0), Txflags(tfTransferable));
             env.close();
 
             // Create an offer to give the NFT to buyer for free.
-            offers.emplace_back(
-                keylet::nftoffer(account, env.seq(account)).key);
+            offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
             env(token::createOffer(account, nftID, XRP(0)),
-                token::destination(buyer),
-                txflags((tfSellNFToken)));
+                token::Destination(buyer),
+                Txflags((tfSellNFToken)));
         }
         env.close();
 
         // Verify that the low 96 bits of all generated NFTs is identical.
-        uint256 const expectLowBits = nftIDs.front() & nft::pageMask;
+        uint256 const expectLowBits = nftIDs.front() & nft::kPAGE_MASK;
         for (uint256 const& nftID : nftIDs)
         {
-            BEAST_EXPECT(expectLowBits == (nftID & nft::pageMask));
+            BEAST_EXPECT(expectLowBits == (nftID & nft::kPAGE_MASK));
         }
 
         // Remove one NFT and offer from the vectors.  This offer is the one
@@ -717,8 +676,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         }
 
         // buyer accepts the last offer which causes a page overflow.
-        env(token::acceptSellOffer(buyer, offerForPageOverflow),
-            ter(tecNO_SUITABLE_NFTOKEN_PAGE));
+        env(token::acceptSellOffer(buyer, offerForPageOverflow), Ter(tecNO_SUITABLE_NFTOKEN_PAGE));
 
         // Verify that all expected NFTs are owned by buyer and findable in
         // the ledger by having buyer create sell offers for all of their NFTs.
@@ -727,31 +685,26 @@ class NFTokenDir_test : public beast::unit_test::suite
         for (uint256 const& nftID : nftIDs)
         {
             uint256 const offerID = keylet::nftoffer(buyer, env.seq(buyer)).key;
-            env(token::createOffer(buyer, nftID, XRP(100)),
-                txflags(tfSellNFToken));
+            env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
             env.close();
 
             env(token::cancelOffer(buyer, {offerID}));
         }
 
         // Verify that all the NFTs are owned by buyer.
-        Json::Value buyerNFTs = [&env, &buyer]() {
-            Json::Value params;
+        json::Value buyerNFTs = [&env, &buyer]() {
+            json::Value params;
             params[jss::account] = buyer.human();
             params[jss::type] = "state";
             return env.rpc("json", "account_nfts", to_string(params));
         }();
 
-        BEAST_EXPECT(
-            buyerNFTs[jss::result][jss::account_nfts].size() == nftIDs.size());
-        for (Json::Value const& ownedNFT :
-             buyerNFTs[jss::result][jss::account_nfts])
+        BEAST_EXPECT(buyerNFTs[jss::result][jss::account_nfts].size() == nftIDs.size());
+        for (json::Value const& ownedNFT : buyerNFTs[jss::result][jss::account_nfts])
         {
             uint256 ownedID;
-            BEAST_EXPECT(
-                ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
-            auto const foundIter =
-                std::find(nftIDs.begin(), nftIDs.end(), ownedID);
+            BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
+            auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
             // Assuming we find the NFT, erase it so we know it's been found
             // and can't be found again.
@@ -762,12 +715,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         // All NFTs should now be accounted for, so nftIDs should be empty.
         BEAST_EXPECT(nftIDs.empty());
 
-        // Show that Without fixNFTokenDirV1 no more NFTs can be added to
-        // buyer.  Also show that fixNFTokenDirV1 fixes the problem.
-        TER const expect = features[fixNFTokenDirV1]
-            ? static_cast<TER>(tesSUCCESS)
-            : static_cast<TER>(tecNO_SUITABLE_NFTOKEN_PAGE);
-        env(token::mint(buyer, 0), txflags(tfTransferable), ter(expect));
+        TER const expect = tesSUCCESS;
+        env(token::mint(buyer, 0), Txflags(tfTransferable), Ter(expect));
         env.close();
     }
 
@@ -782,13 +731,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         //
         // All of the NFTs should be acquired by the buyer.
         //
-        // Lastly, none of the remaining NFTs should be acquirable by the
+        // Lastly, kNONE of the remaining NFTs should be acquirable by the
         // buyer.  They would cause page overflow.
-
-        // This test collapses in a heap if fixNFTokenDirV1 is not enabled.
-        // If it is enabled just return so we skip the test.
-        if (!features[fixNFTokenDirV1])
-            return;
 
         testcase("NFToken consecutive packing");
 
@@ -803,7 +747,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Here are 33 seeds that produce identical low 32-bits in their
         // corresponding AccountIDs.
-        static std::initializer_list<std::string_view const> const seeds{
+        static std::initializer_list<std::string_view const> const kSEEDS{
             "sp6JS7f14BuwFY8Mw56vZeiBuhePx",  //  0. 0x115d0525
             "sp6JS7f14BuwFY8Mw5BodF9tGuTUe",  //  1. 0x115d0525
             "sp6JS7f14BuwFY8Mw5EnhC1cg84J7",  //  2. 0x115d0525
@@ -841,17 +785,16 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
-        accounts.reserve(seeds.size());
-        for (std::string_view seed : seeds)
+        accounts.reserve(kSEEDS.size());
+        for (std::string_view const seed : kSEEDS)
         {
             Account const& account =
-                accounts.emplace_back(Account::base58Seed, std::string(seed));
+                accounts.emplace_back(Account::AcctStringType::Base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
-            // Do not close the ledger inside the loop.  If
-            // fixNFTokenRemint is enabled and accounts are initialized
-            // at different ledgers, they will have different account
-            // sequences.  That would cause the accounts to have
+            // Do not close the ledger inside the loop.  If accounts are
+            // initialized at different ledgers, they will have different
+            // account sequences.  That would cause the accounts to have
             // different NFTokenID sequence numbers.
         }
         env.close();
@@ -869,20 +812,18 @@ class NFTokenDir_test : public beast::unit_test::suite
             for (Account const& account : accounts)
             {
                 // Mint the NFT.  Tweak the taxon so zero is always stored.
-                std::uint32_t taxon =
-                    toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
+                std::uint32_t const taxon = toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
 
                 uint256 const& nftID = nftIDsByPage[i].emplace_back(
                     token::getNextID(env, account, taxon, tfTransferable));
-                env(token::mint(account, taxon), txflags(tfTransferable));
+                env(token::mint(account, taxon), Txflags(tfTransferable));
                 env.close();
 
                 // Create an offer to give the NFT to buyer for free.
-                offers[i].emplace_back(
-                    keylet::nftoffer(account, env.seq(account)).key);
+                offers[i].emplace_back(keylet::nftoffer(account, env.seq(account)).key);
                 env(token::createOffer(account, nftID, XRP(0)),
-                    token::destination(buyer),
-                    txflags((tfSellNFToken)));
+                    token::Destination(buyer),
+                    Txflags((tfSellNFToken)));
             }
         }
         env.close();
@@ -891,10 +832,10 @@ class NFTokenDir_test : public beast::unit_test::suite
         // sequence is identical.
         for (auto const& vec : nftIDsByPage)
         {
-            uint256 const expectLowBits = vec.front() & nft::pageMask;
+            uint256 const expectLowBits = vec.front() & nft::kPAGE_MASK;
             for (uint256 const& nftID : vec)
             {
-                BEAST_EXPECT(expectLowBits == (nftID & nft::pageMask));
+                BEAST_EXPECT(expectLowBits == (nftID & nft::kPAGE_MASK));
             }
         }
 
@@ -909,17 +850,17 @@ class NFTokenDir_test : public beast::unit_test::suite
         {
             overflowNFTs.push_back(nftIDsByPage[i].back());
             nftIDsByPage[i].pop_back();
-            BEAST_EXPECT(nftIDsByPage[i].size() == seeds.size() - 1);
+            BEAST_EXPECT(nftIDsByPage[i].size() == kSEEDS.size() - 1);
 
             overflowOffers.push_back(offers[i].back());
             offers[i].pop_back();
-            BEAST_EXPECT(offers[i].size() == seeds.size() - 1);
+            BEAST_EXPECT(offers[i].size() == kSEEDS.size() - 1);
         }
 
         // buyer accepts all of the offers that won't cause an overflow.
         // Fill the center and outsides first to exercise different boundary
         // cases.
-        for (int i : std::initializer_list<int>{3, 6, 0, 1, 2, 5, 4})
+        for (int const i : std::initializer_list<int>{3, 6, 0, 1, 2, 5, 4})
         {
             for (uint256 const& offer : offers[i])
             {
@@ -932,8 +873,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         // the transaction succeeded.
         for (uint256 const& offer : overflowOffers)
         {
-            env(token::acceptSellOffer(buyer, offer),
-                ter(tecNO_SUITABLE_NFTOKEN_PAGE));
+            env(token::acceptSellOffer(buyer, offer), Ter(tecNO_SUITABLE_NFTOKEN_PAGE));
             env.close();
         }
 
@@ -945,40 +885,38 @@ class NFTokenDir_test : public beast::unit_test::suite
         {
             for (uint256 const& nftID : vec)
             {
-                env(token::createOffer(buyer, nftID, XRP(100)),
-                    txflags(tfSellNFToken));
+                env(token::createOffer(buyer, nftID, XRP(100)), Txflags(tfSellNFToken));
                 env.close();
             }
         }
 
         // See what the account_objects command does with "nft_offer".
         {
-            Json::Value ownedNftOffers(Json::arrayValue);
+            json::Value ownedNftOffers(json::ArrayValue);
             std::string marker;
             do
             {
-                Json::Value buyerOffers = [&env, &buyer, &marker]() {
-                    Json::Value params;
+                json::Value buyerOffers = [&env, &buyer, &marker]() {
+                    json::Value params;
                     params[jss::account] = buyer.human();
                     params[jss::type] = jss::nft_offer;
 
                     if (!marker.empty())
                         params[jss::marker] = marker;
-                    return env.rpc(
-                        "json", "account_objects", to_string(params));
+                    return env.rpc("json", "account_objects", to_string(params));
                 }();
 
                 marker.clear();
                 if (buyerOffers.isMember(jss::result))
                 {
-                    Json::Value& result = buyerOffers[jss::result];
+                    json::Value& result = buyerOffers[jss::result];
 
                     if (result.isMember(jss::marker))
                         marker = result[jss::marker].asString();
 
                     if (result.isMember(jss::account_objects))
                     {
-                        Json::Value& someOffers = result[jss::account_objects];
+                        json::Value& someOffers = result[jss::account_objects];
                         for (std::size_t i = 0; i < someOffers.size(); ++i)
                             ownedNftOffers.append(someOffers[i]);
                     }
@@ -1012,8 +950,8 @@ class NFTokenDir_test : public beast::unit_test::suite
             }
 
             // account_objects should no longer return any "nft_offer"s.
-            Json::Value remainingOffers = [&env, &buyer]() {
-                Json::Value params;
+            json::Value remainingOffers = [&env, &buyer]() {
+                json::Value params;
                 params[jss::account] = buyer.human();
                 params[jss::type] = jss::nft_offer;
 
@@ -1027,12 +965,12 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Verify that the ledger reports all of the NFTs owned by buyer.
         // Use the account_nfts rpc call to get the values.
-        Json::Value ownedNFTs(Json::arrayValue);
+        json::Value ownedNFTs(json::ArrayValue);
         std::string marker;
         do
         {
-            Json::Value buyerNFTs = [&env, &buyer, &marker]() {
-                Json::Value params;
+            json::Value buyerNFTs = [&env, &buyer, &marker]() {
+                json::Value params;
                 params[jss::account] = buyer.human();
                 params[jss::type] = "state";
 
@@ -1044,14 +982,14 @@ class NFTokenDir_test : public beast::unit_test::suite
             marker.clear();
             if (buyerNFTs.isMember(jss::result))
             {
-                Json::Value& result = buyerNFTs[jss::result];
+                json::Value& result = buyerNFTs[jss::result];
 
                 if (result.isMember(jss::marker))
                     marker = result[jss::marker].asString();
 
                 if (result.isMember(jss::account_nfts))
                 {
-                    Json::Value& someNFTs = result[jss::account_nfts];
+                    json::Value& someNFTs = result[jss::account_nfts];
                     for (std::size_t i = 0; i < someNFTs.size(); ++i)
                         ownedNFTs.append(someNFTs[i]);
                 }
@@ -1065,13 +1003,12 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         BEAST_EXPECT(ownedNFTs.size() == allNftIDs.size());
 
-        for (Json::Value const& ownedNFT : ownedNFTs)
+        for (json::Value const& ownedNFT : ownedNFTs)
         {
             if (ownedNFT.isMember(sfNFTokenID.jsonName))
             {
                 uint256 ownedID;
-                BEAST_EXPECT(ownedID.parseHex(
-                    ownedNFT[sfNFTokenID.jsonName].asString()));
+                BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
                 auto const foundIter = allNftIDs.find(ownedID);
 
                 // Assuming we find the NFT, erase it so we know it's been found
@@ -1090,7 +1027,7 @@ class NFTokenDir_test : public beast::unit_test::suite
     {
         testConsecutiveNFTs(features);
         testLopsidedSplits(features);
-        testFixNFTokenDirV1(features);
+        testNFTokenDir(features);
         testTooManyEquivalent(features);
         testConsecutivePacking(features);
     }
@@ -1100,19 +1037,15 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
-        FeatureBitset const fixNFTDir{
-            fixNFTokenDirV1, featureNonFungibleTokensV1_1};
+        FeatureBitset const all{testableAmendments()};
 
-        testWithFeats(all - fixNFTDir - fixNFTokenRemint);
-        testWithFeats(all - fixNFTokenRemint);
         testWithFeats(all);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDir, tx, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDir, app, xrpl, 1);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 // Seed that produces an account with the low-32 bits == 0xFFFFFFFF in
 // case it is needed for future testing:

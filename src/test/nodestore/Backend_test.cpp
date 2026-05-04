@@ -1,37 +1,22 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/nodestore/DummyScheduler.h>
-#include <xrpld/nodestore/Manager.h>
-#include <xrpld/unity/rocksdb.h>
-
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Types.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <string>
 
-namespace ripple {
-
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 // Tests the Backend interface
 //
@@ -39,17 +24,14 @@ class Backend_test : public TestBase
 {
 public:
     void
-    testBackend(
-        std::string const& type,
-        std::uint64_t const seedValue,
-        int numObjsToTest = 2000)
+    testBackend(std::string const& type, std::uint64_t const seedValue, int numObjsToTest = 2000)
     {
         DummyScheduler scheduler;
 
         testcase("Backend type=" + type);
 
         Section params;
-        beast::temp_dir tempDir;
+        beast::TempDir const tempDir;
         params.set("type", type);
         params.set("path", tempDir.path());
 
@@ -63,8 +45,8 @@ public:
 
         {
             // Open the backend
-            std::unique_ptr<Backend> backend = Manager::instance().make_Backend(
-                params, megabytes(4), scheduler, journal);
+            std::unique_ptr<Backend> backend =
+                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             backend->open();
 
             // Write the batch
@@ -88,16 +70,16 @@ public:
 
         {
             // Re-open the backend
-            std::unique_ptr<Backend> backend = Manager::instance().make_Backend(
-                params, megabytes(4), scheduler, journal);
+            std::unique_ptr<Backend> backend =
+                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             backend->open();
 
             // Read it back in
             Batch copy;
             fetchCopyOfBatch(*backend, &copy, batch);
             // Canonicalize the source and destination batches
-            std::sort(batch.begin(), batch.end(), LessThan{});
-            std::sort(copy.begin(), copy.end(), LessThan{});
+            std::ranges::sort(batch, LessThan{});
+            std::ranges::sort(copy, LessThan{});
             BEAST_EXPECT(areBatchesEqual(batch, copy));
         }
     }
@@ -111,17 +93,16 @@ public:
 
         testBackend("nudb", seedValue);
 
-#if RIPPLE_ROCKSDB_AVAILABLE
+#if XRPL_ROCKSDB_AVAILABLE
         testBackend("rocksdb", seedValue);
 #endif
 
-#ifdef RIPPLE_ENABLE_SQLITE_BACKEND_TESTS
+#ifdef XRPL_ENABLE_SQLITE_BACKEND_TESTS
         testBackend("sqlite", seedValue);
 #endif
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Backend, ripple_core, ripple);
+BEAST_DEFINE_TESTSUITE(Backend, nodestore, xrpl);
 
-}  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl::NodeStore

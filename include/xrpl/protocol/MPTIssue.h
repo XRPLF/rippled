@@ -1,29 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_MPTISSUE_H_INCLUDED
-#define RIPPLE_PROTOCOL_MPTISSUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 /* Adapt MPTID to provide the same interface as Issue. Enables using static
  * polymorphism by Asset and other classes. MPTID is a 192-bit concatenation
@@ -37,22 +17,29 @@ private:
 public:
     MPTIssue() = default;
 
-    explicit MPTIssue(MPTID const& issuanceID);
+    MPTIssue(MPTID const& issuanceID);
 
-    AccountID const&
+    MPTIssue(std::uint32_t sequence, AccountID const& account);
+
+    operator MPTID const&() const
+    {
+        return mptID_;
+    }
+
+    [[nodiscard]] AccountID const&
     getIssuer() const;
 
-    constexpr MPTID const&
+    [[nodiscard]] constexpr MPTID const&
     getMptID() const
     {
         return mptID_;
     }
 
-    std::string
+    [[nodiscard]] std::string
     getText() const;
 
     void
-    setJson(Json::Value& jv) const;
+    setJson(json::Value& jv) const;
 
     friend constexpr bool
     operator==(MPTIssue const& lhs, MPTIssue const& rhs);
@@ -60,10 +47,16 @@ public:
     friend constexpr std::weak_ordering
     operator<=>(MPTIssue const& lhs, MPTIssue const& rhs);
 
-    bool
-    native() const
+    static bool
+    native()
     {
         return false;
+    }
+
+    static bool
+    integral()
+    {
+        return true;
     }
 };
 
@@ -87,15 +80,67 @@ isXRP(MPTID const&)
     return false;
 }
 
-Json::Value
-to_json(MPTIssue const& mptIssue);
+inline AccountID
+getMPTIssuer(MPTID const& mptid)
+{
+    static_assert(sizeof(MPTID) == (sizeof(std::uint32_t) + sizeof(AccountID)));
+    // Extract the 20 bytes for the AccountID
+    std::array<std::uint8_t, sizeof(AccountID)> bytes{};
+    std::copy_n(mptid.data() + sizeof(std::uint32_t), sizeof(AccountID), bytes.begin());
+
+    // bit_cast is a "magic" compiler intrinsic that is
+    // usually optimized away to nothing in the final assembly.
+    return std::bit_cast<AccountID>(bytes);
+}
+
+// Disallow temporary
+AccountID const&
+getMPTIssuer(MPTID const&&) = delete;
+AccountID const&
+getMPTIssuer(MPTID&&) = delete;
+
+inline MPTID
+noMPT()
+{
+    static MPTIssue const kMPT{0, noAccount()};
+    return kMPT.getMptID();
+}
+
+inline MPTID
+badMPT()
+{
+    static MPTIssue const kMPT{0, xrpAccount()};
+    return kMPT.getMptID();
+}
+
+template <class Hasher>
+void
+hash_append(Hasher& h, MPTIssue const& r)
+{
+    using beast::hash_append;
+    hash_append(h, r.getMptID());
+}
+
+json::Value
+toJson(MPTIssue const& mptIssue);
 
 std::string
 to_string(MPTIssue const& mptIssue);
 
 MPTIssue
-mptIssueFromJson(Json::Value const& jv);
+mptIssueFromJson(json::Value const& jv);
 
-}  // namespace ripple
+std::ostream&
+operator<<(std::ostream& os, MPTIssue const& x);
 
-#endif  // RIPPLE_PROTOCOL_MPTISSUE_H_INCLUDED
+}  // namespace xrpl
+
+namespace std {
+
+template <>
+struct hash<xrpl::MPTID> : xrpl::MPTID::hasher
+{
+    explicit hash() = default;
+};
+
+}  // namespace std

@@ -1,6 +1,107 @@
-# .pre-commit-config.yaml
+# To run pre-commit hooks, first install pre-commit:
+# - `pip install pre-commit==${PRE_COMMIT_VERSION}`
+#
+# Then, run the following command to install the git hook scripts:
+# - `pre-commit install`
+# You can run all configured hooks against all files with:
+# - `pre-commit run --all-files`
+# To manually run a specific hook, use:
+# - `pre-commit run <hook_id> --all-files`
+# To run the hooks against only the staged files, use:
+# - `pre-commit run`
 repos:
-- repo: https://github.com/pre-commit/mirrors-clang-format
-  rev: v18.1.8
-  hooks:
-  - id: clang-format
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=400, --enforce-all]
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+        args: [--assume-in-merge]
+
+  - repo: local
+    hooks:
+      - id: clang-tidy
+        name: "clang-tidy (enable with: TIDY=1)"
+        entry: ./bin/pre-commit/clang_tidy_check.py
+        language: python
+        types_or: [c++, c]
+        exclude: ^include/xrpl/protocol_autogen
+        pass_filenames: false # script determines the staged files itself
+      - id: fix-include-style
+        name: fix include style
+        entry: ./bin/pre-commit/fix_include_style.py
+        language: python
+        types_or: [c++, c]
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: cd481d7b0bfb5c7b3090c21846317f9a8262e891 # frozen: v22.1.0
+    hooks:
+      - id: clang-format
+        args: [--style=file]
+        "types_or": [c++, c, proto]
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
+
+  - repo: https://github.com/BlankSpruce/gersemi
+    rev: 0.26.0
+    hooks:
+      - id: gersemi
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: c2bc67fe8f8f549cc489e00ba8b45aa18ee713b1 # frozen: v3.8.1
+    hooks:
+      - id: prettier
+        args: [--end-of-line=auto]
+
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: ea488cebbfd88a5f50b8bd95d5c829d0bb76feb8 # frozen: 26.1.0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/openstack/bashate
+    rev: 5798d24d571676fc407e81df574c1ef57b520f23 # frozen: 2.1.1
+    hooks:
+      - id: bashate
+        args: ["--ignore=E006"]
+
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: a42085ade523f591dca134379a595e7859986445 # frozen: v9.7.0
+    hooks:
+      - id: cspell # Spell check changed files
+        exclude: (.config/cspell.config.yaml|^include/xrpl/protocol_autogen/(transactions|ledger_entries)/)
+      - id: cspell # Spell check the commit message
+        name: check commit message spelling
+        args:
+          - --no-must-find-files
+          - --no-progress
+          - --no-summary
+          - --files
+          - .git/COMMIT_EDITMSG
+        stages: [commit-msg]
+
+  - repo: local
+    hooks:
+      - id: nix-fmt
+        name: Format Nix files
+        entry: |
+          bash -c '
+            if command -v nix &> /dev/null || [ "$GITHUB_ACTIONS" = "true" ]; then
+              nix --extra-experimental-features "nix-command flakes" fmt "$@"
+            else
+              echo "Skipping nix-fmt: nix not installed and not in GitHub Actions"
+              exit 0
+            fi
+          ' --
+        language: system
+        types:
+          - nix
+        pass_filenames: true
+
+exclude: |
+  (?x)^(
+      external/.*|
+      .github/scripts/levelization/results/.*\.txt|
+      src/tests/libxrpl/protocol_autogen/(transactions|ledger_entries)/.*
+  )$

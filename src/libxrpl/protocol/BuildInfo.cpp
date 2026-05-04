@@ -1,102 +1,101 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/BuildInfo.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
-#include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/git/Git.h>  // IWYU pragma: keep
+#include <xrpl/protocol/SystemParameters.h>
+
+#include <boost/preprocessor/stringize.hpp>  // IWYU pragma: keep
 
 #include <algorithm>
 #include <cstdint>
 #include <string>
 #include <string_view>
 
-namespace ripple {
+namespace xrpl::BuildInfo {
 
-namespace BuildInfo {
+namespace {
 
 //--------------------------------------------------------------------------
 //  The build version number. You must edit this for each release
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
-char const* const versionString = "2.5.0"
-// clang-format on
-
-#if defined(DEBUG) || defined(SANITIZER)
-    "+"
-#ifdef GIT_COMMIT_HASH
-    GIT_COMMIT_HASH
-    "."
-#endif
-#ifdef DEBUG
-    "DEBUG"
-#ifdef SANITIZER
-    "."
-#endif
-#endif
-
-#ifdef SANITIZER
-    BOOST_PP_STRINGIZE(SANITIZER)
-#endif
-#endif
-
-    //--------------------------------------------------------------------------
+// NOLINTNEXTLINE(readability-identifier-naming)
+char const* const versionString = "3.2.0-b0"
+    // clang-format on
     ;
 
 //
 // Don't touch anything below this line
 //
 
+std::string
+buildVersionString()
+{
+    std::string version = versionString;
+
+#if defined(DEBUG) || defined(SANITIZERS)
+    std::string metadata;
+
+    std::string const& commitHash = xrpl::git::getCommitHash();
+    if (!commitHash.empty())
+        metadata += commitHash + ".";
+
+#ifdef DEBUG
+    metadata += "DEBUG";
+#endif
+
+#if defined(DEBUG) && defined(SANITIZERS)
+    metadata += ".";
+#endif
+
+#ifdef SANITIZERS
+    metadata += BOOST_PP_STRINGIZE(SANITIZERS);  // cspell: disable-line
+#endif
+
+    if (!metadata.empty())
+        version += "+" + metadata;
+#endif
+
+    return version;
+}
+
+}  // namespace
+
 std::string const&
 getVersionString()
 {
-    static std::string const value = [] {
-        std::string const s = versionString;
+    static std::string const kVALUE = [] {
+        std::string const s = buildVersionString();
+
         beast::SemanticVersion v;
         if (!v.parse(s) || v.print() != s)
-            LogicError(s + ": Bad server version string");
+            logicError(s + ": Bad server version string");
         return s;
     }();
-    return value;
+    return kVALUE;
 }
 
 std::string const&
 getFullVersionString()
 {
-    static std::string const value = "rippled-" + getVersionString();
-    return value;
+    static std::string const kVALUE = systemName() + "-" + getVersionString();
+    return kVALUE;
 }
 
-static constexpr std::uint64_t implementationVersionIdentifier =
-    0x183B'0000'0000'0000LLU;
-static constexpr std::uint64_t implementationVersionIdentifierMask =
-    0xFFFF'0000'0000'0000LLU;
+static constexpr std::uint64_t kIMPLEMENTATION_VERSION_IDENTIFIER = 0x183B'0000'0000'0000LLU;
+static constexpr std::uint64_t kIMPLEMENTATION_VERSION_IDENTIFIER_MASK = 0xFFFF'0000'0000'0000LLU;
 
 std::uint64_t
-encodeSoftwareVersion(char const* const versionStr)
+encodeSoftwareVersion(std::string_view versionStr)
 {
-    std::uint64_t c = implementationVersionIdentifier;
+    std::uint64_t c = kIMPLEMENTATION_VERSION_IDENTIFIER;
 
     beast::SemanticVersion v;
 
-    if (v.parse(std::string(versionStr)))
+    if (v.parse(versionStr))
     {
         if (v.majorVersion >= 0 && v.majorVersion <= 255)
             c |= static_cast<std::uint64_t>(v.majorVersion) << 40;
@@ -114,7 +113,7 @@ encodeSoftwareVersion(char const* const versionStr)
         {
             std::uint8_t x = 0;
 
-            for (auto id : v.preReleaseIdentifiers)
+            for (auto const& id : v.preReleaseIdentifiers)
             {
                 auto parsePreRelease = [](std::string_view identifier,
                                           std::string_view prefix,
@@ -123,12 +122,11 @@ encodeSoftwareVersion(char const* const versionStr)
                                           std::uint8_t hik) -> std::uint8_t {
                     std::uint8_t ret = 0;
 
-                    if (prefix != identifier.substr(0, prefix.length()))
+                    if (!identifier.starts_with(prefix))
                         return 0;
 
                     if (!beast::lexicalCastChecked(
-                            ret,
-                            std::string(identifier.substr(prefix.length()))))
+                            ret, std::string(identifier.substr(prefix.length()))))
                         return 0;
 
                     if (std::clamp(ret, lok, hik) != ret)
@@ -142,7 +140,7 @@ encodeSoftwareVersion(char const* const versionStr)
                 if (x == 0)
                     x = parsePreRelease(id, "b", 0x40, 0, 63);
 
-                if (x & 0xC0)
+                if ((x & 0xC0) != 0)
                 {
                     c |= static_cast<std::uint64_t>(x) << 16;
                     break;
@@ -157,25 +155,23 @@ encodeSoftwareVersion(char const* const versionStr)
 std::uint64_t
 getEncodedVersion()
 {
-    static std::uint64_t const cookie = {encodeSoftwareVersion(versionString)};
-    return cookie;
+    static std::uint64_t const kCOOKIE = {encodeSoftwareVersion(getVersionString())};
+    return kCOOKIE;
 }
 
 bool
-isRippledVersion(std::uint64_t version)
+isXrpldVersion(std::uint64_t version)
 {
-    return (version & implementationVersionIdentifierMask) ==
-        implementationVersionIdentifier;
+    return (version & kIMPLEMENTATION_VERSION_IDENTIFIER_MASK) ==
+        kIMPLEMENTATION_VERSION_IDENTIFIER;
 }
 
 bool
 isNewerVersion(std::uint64_t version)
 {
-    if (isRippledVersion(version))
+    if (isXrpldVersion(version))
         return version > getEncodedVersion();
     return false;
 }
 
-}  // namespace BuildInfo
-
-}  // namespace ripple
+}  // namespace xrpl::BuildInfo

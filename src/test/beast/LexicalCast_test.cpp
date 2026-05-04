@@ -1,29 +1,15 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/xor_shift_engine.h>
+
+#include <cstdint>
+#include <limits>
+#include <sstream>
+#include <string>
 
 namespace beast {
 
-class LexicalCast_test : public unit_test::suite
+class LexicalCast_test : public unit_test::Suite
 {
 public:
     template <class IntType>
@@ -38,7 +24,7 @@ public:
     testInteger(IntType in)
     {
         std::string s;
-        IntType out(in + 1);
+        IntType out = static_cast<IntType>(~in);  // Ensure out != in
 
         expect(lexicalCastChecked(s, in));
         expect(lexicalCastChecked(out, s));
@@ -217,7 +203,7 @@ public:
         testcase("zero conversion");
 
         {
-            std::int32_t out;
+            std::int32_t out = 0;
 
             expect(lexicalCastChecked(out, "-0"), "0");
             expect(lexicalCastChecked(out, "0"), "0");
@@ -225,7 +211,7 @@ public:
         }
 
         {
-            std::uint32_t out;
+            std::uint32_t out = 0;
 
             expect(!lexicalCastChecked(out, "-0"), "0");
             expect(lexicalCastChecked(out, "0"), "0");
@@ -239,11 +225,11 @@ public:
         testcase("entire range");
 
         std::int32_t i = std::numeric_limits<std::int16_t>::min();
-        std::string const empty("");
+        std::string const empty;
 
         while (i <= std::numeric_limits<std::int16_t>::max())
         {
-            std::int16_t j = static_cast<std::int16_t>(i);
+            std::int16_t const j = static_cast<std::int16_t>(i);
 
             auto actual = std::to_string(j);
 
@@ -289,6 +275,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LexicalCast, beast_core, beast);
+BEAST_DEFINE_TESTSUITE(LexicalCast, beast, beast);
 
 }  // namespace beast

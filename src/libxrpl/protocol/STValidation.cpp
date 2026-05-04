@@ -1,21 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/STValidation.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
@@ -29,13 +12,12 @@
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STBase*
 STValidation::copy(std::size_t n, void* buf) const
@@ -56,38 +38,37 @@ STValidation::validationFormat()
     // it relies on the SField's below being initialized, and we can't
     // guarantee the initialization order.
     // clang-format off
-    static SOTemplate const format{
-        {sfFlags,               soeREQUIRED},
-        {sfLedgerHash,          soeREQUIRED},
-        {sfLedgerSequence,      soeREQUIRED},
-        {sfCloseTime,           soeOPTIONAL},
-        {sfLoadFee,             soeOPTIONAL},
-        {sfAmendments,          soeOPTIONAL},
-        {sfBaseFee,             soeOPTIONAL},
-        {sfReserveBase,         soeOPTIONAL},
-        {sfReserveIncrement,    soeOPTIONAL},
-        {sfSigningTime,         soeREQUIRED},
-        {sfSigningPubKey,       soeREQUIRED},
-        {sfSignature,           soeREQUIRED},
-        {sfConsensusHash,       soeOPTIONAL},
-        // featureHardenedValidations
-        {sfCookie,              soeDEFAULT},
-        {sfValidatedHash,       soeOPTIONAL},
-        {sfServerVersion,       soeOPTIONAL},
+    static SOTemplate const kFORMAT{
+        {sfFlags,               SoeRequired},
+        {sfLedgerHash,          SoeRequired},
+        {sfLedgerSequence,      SoeRequired},
+        {sfCloseTime,           SoeOptional},
+        {sfLoadFee,             SoeOptional},
+        {sfAmendments,          SoeOptional},
+        {sfBaseFee,             SoeOptional},
+        {sfReserveBase,         SoeOptional},
+        {sfReserveIncrement,    SoeOptional},
+        {sfSigningTime,         SoeRequired},
+        {sfSigningPubKey,       SoeRequired},
+        {sfSignature,           SoeRequired},
+        {sfConsensusHash,       SoeOptional},
+        {sfCookie,              SoeDefault},
+        {sfValidatedHash,       SoeOptional},
+        {sfServerVersion,       SoeOptional},
         // featureXRPFees
-        {sfBaseFeeDrops,          soeOPTIONAL},
-        {sfReserveBaseDrops,      soeOPTIONAL},
-        {sfReserveIncrementDrops, soeOPTIONAL},
+        {sfBaseFeeDrops,          SoeOptional},
+        {sfReserveBaseDrops,      SoeOptional},
+        {sfReserveIncrementDrops, SoeOptional},
     };
     // clang-format on
 
-    return format;
+    return kFORMAT;
 };
 
 uint256
 STValidation::getSigningHash() const
 {
-    return STObject::getSigningHash(HashPrefix::validation);
+    return STObject::getSigningHash(HashPrefix::Validation);
 }
 
 uint256
@@ -120,14 +101,14 @@ STValidation::isValid() const noexcept
     if (!valid_)
     {
         XRPL_ASSERT(
-            publicKeyType(getSignerPublic()) == KeyType::secp256k1,
-            "ripple::STValidation::isValid : valid key type");
+            publicKeyType(getSignerPublic()) == KeyType::Secp256k1,
+            "xrpl::STValidation::isValid : valid key type");
 
         valid_ = verifyDigest(
             getSignerPublic(),
             getSigningHash(),
             makeSlice(getFieldVL(sfSignature)),
-            getFlags() & vfFullyCanonicalSig);
+            (getFlags() & kVF_FULLY_CANONICAL_SIG) != 0u);
     }
 
     return valid_.value();
@@ -136,7 +117,7 @@ STValidation::isValid() const noexcept
 bool
 STValidation::isFull() const noexcept
 {
-    return (getFlags() & vfFullValidation) != 0;
+    return (getFlags() & kVF_FULL_VALIDATION) != 0;
 }
 
 Blob
@@ -153,4 +134,4 @@ STValidation::getSerialized() const
     return s.peekData();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

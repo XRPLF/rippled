@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_LOG_H_INCLUDED
-#define RIPPLE_BASICS_LOG_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -32,19 +12,20 @@
 #include <mutex>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // DEPRECATED use beast::severities::Severity instead
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LogSeverity {
-    lsINVALID = -1,  // used to indicate an invalid severity
-    lsTRACE = 0,     // Very low-level progress information, details inside
+    LSInvalid = -1,  // used to indicate an invalid severity
+    LSTrace = 0,     // Very low-level progress information, details inside
                      // an operation
-    lsDEBUG = 1,     // Function-level progress information, operations
-    lsINFO = 2,      // Server-level progress information, major operations
-    lsWARNING = 3,   // Conditions that warrant human attention, may indicate
+    LSDebug = 1,     // Function-level progress information, operations
+    LSInfo = 2,      // Server-level progress information, major operations
+    LSWarning = 3,   // Conditions that warrant human attention, may indicate
                      // a problem
-    lsERROR = 4,     // A condition that indicates a problem
-    lsFATAL = 5      // A severe condition that indicates a server problem
+    LSError = 4,     // A condition that indicates a problem
+    LSFatal = 5      // A severe condition that indicates a server problem
 };
 
 /** Manages partitions for logging. */
@@ -58,22 +39,17 @@ private:
         std::string partition_;
 
     public:
-        Sink(
-            std::string const& partition,
-            beast::severities::Severity thresh,
-            Logs& logs);
+        Sink(std::string partition, beast::severities::Severity thresh, Logs& logs);
 
         Sink(Sink const&) = delete;
         Sink&
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string const& text)
-            override;
+        write(beast::severities::Severity level, std::string const& text) override;
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text)
-            override;
+        writeAlways(beast::severities::Severity level, std::string const& text) override;
     };
 
     /** Manages a system file containing logged output.
@@ -101,7 +77,7 @@ private:
             @return `true` if a system file is associated and opened for
             writing.
         */
-        bool
+        [[nodiscard]] bool
         isOpen() const noexcept;
 
         /** Associate a system file with the log.
@@ -154,16 +130,12 @@ private:
         /** @} */
 
     private:
-        std::unique_ptr<std::ofstream> m_stream;
-        boost::filesystem::path m_path;
+        std::unique_ptr<std::ofstream> stream_;
+        boost::filesystem::path path_;
     };
 
     std::mutex mutable mutex_;
-    std::map<
-        std::string,
-        std::unique_ptr<beast::Journal::Sink>,
-        boost::beast::iless>
-        sinks_;
+    std::map<std::string, std::unique_ptr<beast::Journal::Sink>, boost::beast::iless> sinks_;
     beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;
@@ -196,7 +168,7 @@ public:
     threshold(beast::severities::Severity thresh);
 
     std::vector<std::pair<std::string, std::string>>
-    partition_severities() const;
+    partitionSeverities() const;
 
     void
     write(
@@ -220,9 +192,7 @@ public:
     }
 
     virtual std::unique_ptr<beast::Journal::Sink>
-    makeSink(
-        std::string const& partition,
-        beast::severities::Severity startingLevel);
+    makeSink(std::string const& partition, beast::severities::Severity startingLevel);
 
 public:
     static LogSeverity
@@ -238,10 +208,13 @@ public:
     fromString(std::string const& s);
 
 private:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // Maximum line length for log messages.
-        // If the message exceeds this length it will be truncated with elipses.
-        maximumMessageCharacters = 12 * 1024
+        // If the message exceeds this length it will be truncated with
+        // ellipses.
+        MaximumMessageCharacters = 12 * 1024
     };
 
     static void
@@ -256,7 +229,7 @@ private:
 // expensive argument lists if the stream is not active.
 #ifndef JLOG
 #define JLOG(x) \
-    if (!x)     \
+    if (!(x))   \
     {           \
     }           \
     else        \
@@ -265,7 +238,7 @@ private:
 
 #ifndef CLOG
 #define CLOG(ss) \
-    if (!ss)     \
+    if (!(ss))   \
         ;        \
     else         \
         *ss
@@ -290,6 +263,4 @@ setDebugLogSink(std::unique_ptr<beast::Journal::Sink> sink);
 beast::Journal
 debugLog();
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

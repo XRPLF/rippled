@@ -1,29 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Portions of this file are from JUCE.
-    Copyright (c) 2013 - Raw Material Software Ltd.
-    Please visit http://www.juce.com
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/core/CurrentThreadName.h>
-
-#include <boost/predef.h>
 
 #include <string>
 #include <string_view>
@@ -66,8 +41,7 @@ setCurrentThreadNameImpl(std::string_view name)
 #pragma warning(disable : 6320 6322)
     __try
     {
-        RaiseException(
-            0x406d1388, 0, sizeof(ni) / sizeof(ULONG_PTR), (ULONG_PTR*)&ni);
+        RaiseException(0x406d1388, 0, sizeof(ni) / sizeof(ULONG_PTR), (ULONG_PTR*)&ni);
     }
     __except (EXCEPTION_CONTINUE_EXECUTION)
     {
@@ -87,7 +61,8 @@ namespace beast::detail {
 inline void
 setCurrentThreadNameImpl(std::string_view name)
 {
-    pthread_setname_np(name.data());
+    // The string is assumed to be null terminated
+    pthread_setname_np(name.data());  // NOLINT(bugprone-suspicious-stringview-data-usage)
 }
 
 }  // namespace beast::detail
@@ -96,12 +71,31 @@ setCurrentThreadNameImpl(std::string_view name)
 #if BOOST_OS_LINUX
 #include <pthread.h>
 
+#include <cstdio>
+#include <iostream>  // IWYU pragma: keep
+
 namespace beast::detail {
 
 inline void
 setCurrentThreadNameImpl(std::string_view name)
 {
-    pthread_setname_np(pthread_self(), name.data());
+    // truncate and set the thread name.
+    char boundedName[kMAX_THREAD_NAME_LENGTH + 1];
+    auto const boundedSize =
+        name.size() < kMAX_THREAD_NAME_LENGTH ? name.size() : kMAX_THREAD_NAME_LENGTH;
+    name.copy(boundedName, boundedSize);
+    boundedName[boundedSize] = '\0';
+
+    pthread_setname_np(pthread_self(), boundedName);
+
+#ifdef TRUNCATED_THREAD_NAME_LOGS
+    if (name.size() > kMAX_THREAD_NAME_LENGTH)
+    {
+        std::cerr << "WARNING: Thread name \"" << name << "\" (length " << name.size()
+                  << ") exceeds maximum of " << kMAX_THREAD_NAME_LENGTH
+                  << " characters on Linux.\n";
+    }
+#endif
 }
 
 }  // namespace beast::detail
@@ -110,19 +104,19 @@ setCurrentThreadNameImpl(std::string_view name)
 namespace beast {
 
 namespace detail {
-thread_local std::string threadName;
+thread_local std::string gThreadName;
 }  // namespace detail
 
 std::string
 getCurrentThreadName()
 {
-    return detail::threadName;
+    return detail::gThreadName;
 }
 
 void
 setCurrentThreadName(std::string_view name)
 {
-    detail::threadName = name;
+    detail::gThreadName = name;
     detail::setCurrentThreadNameImpl(name);
 }
 

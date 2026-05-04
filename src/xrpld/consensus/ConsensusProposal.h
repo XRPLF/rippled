@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVID_tED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
-#define RIPPLE_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -31,7 +11,7 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 /** Represents a proposed position taken during a round of consensus.
 
     During consensus, peers seek agreement on a set of transactions to
@@ -46,26 +26,26 @@ namespace ripple {
     As consensus proceeds, peers may change their position on the transaction,
     or choose to abstain. Each successive proposal includes a strictly
     monotonically increasing number (or, if a peer is choosing to abstain,
-    the special value `seqLeave`).
+    the special value `kSEQ_LEAVE`).
 
     Refer to @ref Consensus for requirements of the template arguments.
 
-    @tparam NodeID_t Type used to uniquely identify nodes/peers
-    @tparam LedgerID_t Type used to uniquely identify ledgers
-    @tparam Position_t Type used to represent the position taken on transactions
+    @tparam NodeId Type used to uniquely identify nodes/peers
+    @tparam LedgerId Type used to uniquely identify ledgers
+    @tparam Position Type used to represent the position taken on transactions
                        under consideration during this round of consensus
  */
-template <class NodeID_t, class LedgerID_t, class Position_t>
+template <class NodeId, class LedgerId, class Position>
 class ConsensusProposal
 {
 public:
-    using NodeID = NodeID_t;
+    using NodeID = NodeId;
 
     //< Sequence value when a peer initially joins consensus
-    static std::uint32_t const seqJoin = 0;
+    static std::uint32_t const kSEQ_JOIN = 0;
 
     //< Sequence number when  a peer wants to bow out and leave consensus
-    static std::uint32_t const seqLeave = 0xffffffff;
+    static std::uint32_t const kSEQ_LEAVE = 0xffffffff;
 
     /** Constructor
 
@@ -77,12 +57,12 @@ public:
         @param nodeID ID of node/peer taking this position.
     */
     ConsensusProposal(
-        LedgerID_t const& prevLedger,
+        LedgerId const& prevLedger,
         std::uint32_t seq,
-        Position_t const& position,
+        Position const& position,
         NetClock::time_point closeTime,
         NetClock::time_point now,
-        NodeID_t const& nodeID)
+        NodeId const& nodeID)
         : previousLedger_(prevLedger)
         , position_(position)
         , closeTime_(closeTime)
@@ -93,21 +73,21 @@ public:
     }
 
     //! Identifying which peer took this position.
-    NodeID_t const&
+    NodeId const&
     nodeID() const
     {
         return nodeID_;
     }
 
     //! Get the proposed position.
-    Position_t const&
+    Position const&
     position() const
     {
         return position_;
     }
 
     //! Get the prior accepted ledger this position is based on.
-    LedgerID_t const&
+    LedgerId const&
     prevLedger() const
     {
         return previousLedger_;
@@ -115,7 +95,7 @@ public:
 
     /** Get the sequence number of this proposal
 
-        Starting with an initial sequence number of `seqJoin`, successive
+        Starting with an initial sequence number of `kSEQ_JOIN`, successive
         proposals from a peer will increase the sequence number.
 
         @return the sequence number
@@ -146,14 +126,14 @@ public:
     bool
     isInitial() const
     {
-        return proposeSeq_ == seqJoin;
+        return proposeSeq_ == kSEQ_JOIN;
     }
 
     //! Get whether this node left the consensus process
     bool
     isBowOut() const
     {
-        return proposeSeq_ == seqLeave;
+        return proposeSeq_ == kSEQ_LEAVE;
     }
 
     //! Get whether this position is stale relative to the provided cutoff
@@ -172,7 +152,7 @@ public:
      */
     void
     changePosition(
-        Position_t const& newPosition,
+        Position const& newPosition,
         NetClock::time_point newCloseTime,
         NetClock::time_point now)
     {
@@ -180,7 +160,7 @@ public:
         position_ = newPosition;
         closeTime_ = newCloseTime;
         time_ = now;
-        if (proposeSeq_ != seqLeave)
+        if (proposeSeq_ != kSEQ_LEAVE)
             ++proposeSeq_;
     }
 
@@ -195,28 +175,27 @@ public:
     {
         signingHash_.reset();
         time_ = now;
-        proposeSeq_ = seqLeave;
+        proposeSeq_ = kSEQ_LEAVE;
     }
 
     std::string
     render() const
     {
         std::stringstream ss;
-        ss << "proposal: previous_ledger: " << previousLedger_
-           << " proposal_seq: " << proposeSeq_ << " position: " << position_
-           << " close_time: " << to_string(closeTime_)
+        ss << "proposal: previous_ledger: " << previousLedger_ << " proposal_seq: " << proposeSeq_
+           << " position: " << position_ << " close_time: " << to_string(closeTime_)
            << " now: " << to_string(time_) << " is_bow_out:" << isBowOut()
            << " node_id: " << nodeID_;
         return ss.str();
     }
 
     //! Get JSON representation for debugging
-    Json::Value
+    json::Value
     getJson() const
     {
         using std::to_string;
 
-        Json::Value ret = Json::objectValue;
+        json::Value ret = json::ObjectValue;
         ret[jss::previous_ledger] = to_string(prevLedger());
 
         if (!isBowOut())
@@ -225,8 +204,7 @@ public:
             ret[jss::propose_seq] = proposeSeq();
         }
 
-        ret[jss::close_time] =
-            to_string(closeTime().time_since_epoch().count());
+        ret[jss::close_time] = to_string(closeTime().time_since_epoch().count());
 
         return ret;
     }
@@ -238,7 +216,7 @@ public:
         if (!signingHash_)
         {
             signingHash_ = sha512Half(
-                HashPrefix::proposal,
+                HashPrefix::Proposal,
                 std::uint32_t(proposeSeq()),
                 closeTime().time_since_epoch().count(),
                 prevLedger(),
@@ -250,10 +228,10 @@ public:
 
 private:
     //! Unique identifier of prior ledger this proposal is based on
-    LedgerID_t previousLedger_;
+    LedgerId previousLedger_;
 
     //! Unique identifier of the position this proposal is taking
-    Position_t position_;
+    Position position_;
 
     //! The ledger close time this position is taking
     NetClock::time_point closeTime_;
@@ -265,21 +243,20 @@ private:
     std::uint32_t proposeSeq_;
 
     //! The identifier of the node taking this position
-    NodeID_t nodeID_;
+    NodeId nodeID_;
 
     //! The signing hash for this proposal
     mutable std::optional<uint256> signingHash_;
 };
 
-template <class NodeID_t, class LedgerID_t, class Position_t>
+template <class NodeId, class LedgerId, class Position>
 bool
 operator==(
-    ConsensusProposal<NodeID_t, LedgerID_t, Position_t> const& a,
-    ConsensusProposal<NodeID_t, LedgerID_t, Position_t> const& b)
+    ConsensusProposal<NodeId, LedgerId, Position> const& a,
+    ConsensusProposal<NodeId, LedgerId, Position> const& b)
 {
     return a.nodeID() == b.nodeID() && a.proposeSeq() == b.proposeSeq() &&
         a.prevLedger() == b.prevLedger() && a.position() == b.position() &&
         a.closeTime() == b.closeTime() && a.seenTime() == b.seenTime();
 }
-}  // namespace ripple
-#endif
+}  // namespace xrpl

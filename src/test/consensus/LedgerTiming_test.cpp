@@ -1,58 +1,48 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <chrono>
+#include <cstdint>
+#include <utility>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+namespace xrpl::test {
 
-#include <xrpld/consensus/LedgerTiming.h>
-
-#include <xrpl/beast/unit_test.h>
-
-namespace ripple {
-namespace test {
-
-class LedgerTiming_test : public beast::unit_test::suite
+class LedgerTiming_test : public beast::unit_test::Suite
 {
     void
     testGetNextLedgerTimeResolution()
     {
         // helper to iteratively call into getNextLedgerTimeResolution
-        struct test_res
+        struct TestRes
         {
             std::uint32_t decrease = 0;
             std::uint32_t equal = 0;
             std::uint32_t increase = 0;
 
-            static test_res
+            static TestRes
             run(bool previousAgree, std::uint32_t rounds)
             {
-                test_res res;
-                auto closeResolution = ledgerDefaultTimeResolution;
+                TestRes res;
+                auto closeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
                 auto nextCloseResolution = closeResolution;
                 std::uint32_t round = 0;
                 do
                 {
-                    nextCloseResolution = getNextLedgerTimeResolution(
-                        closeResolution, previousAgree, ++round);
+                    nextCloseResolution =
+                        getNextLedgerTimeResolution(closeResolution, previousAgree, ++round);
                     if (nextCloseResolution < closeResolution)
+                    {
                         ++res.decrease;
+                    }
                     else if (nextCloseResolution > closeResolution)
+                    {
                         ++res.increase;
+                    }
                     else
+                    {
                         ++res.equal;
+                    }
                     std::swap(nextCloseResolution, closeResolution);
                 } while (round < rounds);
                 return res;
@@ -61,14 +51,14 @@ class LedgerTiming_test : public beast::unit_test::suite
 
         // If we never agree on close time, only can increase resolution
         // until hit the max
-        auto decreases = test_res::run(false, 10);
+        auto decreases = TestRes::run(false, 10);
         BEAST_EXPECT(decreases.increase == 3);
         BEAST_EXPECT(decreases.decrease == 0);
         BEAST_EXPECT(decreases.equal == 7);
 
         // If we always agree on close time, only can decrease resolution
         // until hit the min
-        auto increases = test_res::run(false, 100);
+        auto increases = TestRes::run(false, 100);
         BEAST_EXPECT(increases.increase == 3);
         BEAST_EXPECT(increases.decrease == 0);
         BEAST_EXPECT(increases.equal == 97);
@@ -80,7 +70,7 @@ class LedgerTiming_test : public beast::unit_test::suite
         using namespace std::chrono_literals;
         // A closeTime equal to the epoch is not modified
         using tp = NetClock::time_point;
-        tp def;
+        tp const def;
         BEAST_EXPECT(def == roundCloseTime(def, 30s));
 
         // Otherwise, the closeTime is rounded to the nearest
@@ -124,6 +114,5 @@ class LedgerTiming_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, ripple);
-}  // namespace test
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, xrpl);
+}  // namespace xrpl::test

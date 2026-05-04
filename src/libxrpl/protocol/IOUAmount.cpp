@@ -1,29 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/IOUAmount.h>
 
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/protocol/IOUAmount.h>
-
-#include <boost/multiprecision/cpp_int.hpp>
+#include <xrpl/protocol/STAmount.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -31,18 +12,19 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
-// Use a static inside a function to help prevent order-of-initialzation issues
+// Use a static inside a function to help prevent order-of-initialization issues
 LocalValue<bool>&
 getStaticSTNumberSwitchover()
 {
-    static LocalValue<bool> r{true};
-    return r;
+    static LocalValue<bool> kR{true};
+    return kR;
 }
 }  // namespace
 
@@ -59,16 +41,29 @@ setSTNumberSwitchover(bool v)
 }
 
 /* The range for the mantissa when normalized */
-static std::int64_t constexpr minMantissa = 1000000000000000ull;
-static std::int64_t constexpr maxMantissa = 9999999999999999ull;
+// log(2^63,10) ~ 18.96
+//
+static std::int64_t constexpr kMIN_MANTISSA = STAmount::kMIN_VALUE;
+static std::int64_t constexpr kMAX_MANTISSA = STAmount::kMAX_VALUE;
 /* The range for the exponent when normalized */
-static int constexpr minExponent = -96;
-static int constexpr maxExponent = 80;
+static int constexpr kMIN_EXPONENT = STAmount::kMIN_OFFSET;
+static int constexpr kMAX_EXPONENT = STAmount::kMAX_OFFSET;
+
+IOUAmount
+IOUAmount::fromNumber(Number const& number)
+{
+    // Need to create a default IOUAmount and assign directly so it doesn't try
+    // to normalize, which calls fromNumber
+    IOUAmount result{};
+    std::tie(result.mantissa_, result.exponent_) =
+        number.normalizeToRange(kMIN_MANTISSA, kMAX_MANTISSA);
+    return result;
+}
 
 IOUAmount
 IOUAmount::minPositiveAmount()
 {
-    return IOUAmount(minMantissa, minExponent);
+    return IOUAmount(kMIN_MANTISSA, kMIN_EXPONENT);
 }
 
 void
@@ -76,19 +71,18 @@ IOUAmount::normalize()
 {
     if (mantissa_ == 0)
     {
-        *this = beast::zero;
+        *this = beast::kZERO;
         return;
     }
 
     if (getSTNumberSwitchover())
     {
         Number const v{mantissa_, exponent_};
-        mantissa_ = v.mantissa();
-        exponent_ = v.exponent();
-        if (exponent_ > maxExponent)
+        *this = fromNumber(v);
+        if (exponent_ > kMAX_EXPONENT)
             Throw<std::overflow_error>("value overflow");
-        if (exponent_ < minExponent)
-            *this = beast::zero;
+        if (exponent_ < kMIN_EXPONENT)
+            *this = beast::kZERO;
         return;
     }
 
@@ -97,50 +91,49 @@ IOUAmount::normalize()
     if (negative)
         mantissa_ = -mantissa_;
 
-    while ((mantissa_ < minMantissa) && (exponent_ > minExponent))
+    while ((mantissa_ < kMIN_MANTISSA) && (exponent_ > kMIN_EXPONENT))
     {
         mantissa_ *= 10;
         --exponent_;
     }
 
-    while (mantissa_ > maxMantissa)
+    while (mantissa_ > kMAX_MANTISSA)
     {
-        if (exponent_ >= maxExponent)
+        if (exponent_ >= kMAX_EXPONENT)
             Throw<std::overflow_error>("IOUAmount::normalize");
 
         mantissa_ /= 10;
         ++exponent_;
     }
 
-    if ((exponent_ < minExponent) || (mantissa_ < minMantissa))
+    if ((exponent_ < kMIN_EXPONENT) || (mantissa_ < kMIN_MANTISSA))
     {
-        *this = beast::zero;
+        *this = beast::kZERO;
         return;
     }
 
-    if (exponent_ > maxExponent)
+    if (exponent_ > kMAX_EXPONENT)
         Throw<std::overflow_error>("value overflow");
 
     if (negative)
         mantissa_ = -mantissa_;
 }
 
-IOUAmount::IOUAmount(Number const& other)
-    : mantissa_(other.mantissa()), exponent_(other.exponent())
+IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
 {
-    if (exponent_ > maxExponent)
+    if (exponent_ > kMAX_EXPONENT)
         Throw<std::overflow_error>("value overflow");
-    if (exponent_ < minExponent)
-        *this = beast::zero;
+    if (exponent_ < kMIN_EXPONENT)
+        *this = beast::kZERO;
 }
 
 IOUAmount&
 IOUAmount::operator+=(IOUAmount const& other)
 {
-    if (other == beast::zero)
+    if (other == beast::kZERO)
         return *this;
 
-    if (*this == beast::zero)
+    if (*this == beast::kZERO)
     {
         *this = other;
         return *this;
@@ -172,7 +165,7 @@ IOUAmount::operator+=(IOUAmount const& other)
 
     if (mantissa_ >= -10 && mantissa_ <= 10)
     {
-        *this = beast::zero;
+        *this = beast::kZERO;
         return *this;
     }
 
@@ -187,21 +180,17 @@ to_string(IOUAmount const& amount)
 }
 
 IOUAmount
-mulRatio(
-    IOUAmount const& amt,
-    std::uint32_t num,
-    std::uint32_t den,
-    bool roundUp)
+mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
 {
     using namespace boost::multiprecision;
 
-    if (!den)
+    if (den == 0u)
         Throw<std::runtime_error>("division by zero");
 
     // A vector with the value 10^index for indexes from 0 to 29
     // The largest intermediate value we expect is 2^96, which
     // is less than 10^29
-    static auto const powerTable = [] {
+    static auto const kPOWER_TABLE = [] {
         std::vector<uint128_t> result;
         result.reserve(30);  // 2^96 is largest intermediate result size
         uint128_t cur(1);
@@ -215,12 +204,11 @@ mulRatio(
 
     // Return floor(log10(v))
     // Note: Returns -1 for v == 0
-    static auto log10Floor = [](uint128_t const& v) {
+    static auto kLOG10_FLOOR = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l =
-            std::lower_bound(powerTable.begin(), powerTable.end(), v);
-        int index = std::distance(powerTable.begin(), l);
+        auto const l = std::ranges::lower_bound(kPOWER_TABLE, v);
+        int index = std::distance(kPOWER_TABLE.begin(), l);
         // If we're not equal, subtract to get the floor
         if (*l != v)
             --index;
@@ -228,23 +216,20 @@ mulRatio(
     };
 
     // Return ceil(log10(v))
-    static auto log10Ceil = [](uint128_t const& v) {
+    static auto kLOG10_CEIL = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l =
-            std::lower_bound(powerTable.begin(), powerTable.end(), v);
-        return int(std::distance(powerTable.begin(), l));
+        auto const l = std::ranges::lower_bound(kPOWER_TABLE, v);
+        return int(std::distance(kPOWER_TABLE.begin(), l));
     };
 
-    static auto const fl64 =
-        log10Floor(std::numeric_limits<std::int64_t>::max());
+    static auto const kFL64 = kLOG10_FLOOR(std::numeric_limits<std::int64_t>::max());
 
     bool const neg = amt.mantissa() < 0;
     uint128_t const den128(den);
     // a 32 value * a 64 bit value and stored in a 128 bit value. This will
     // never overflow
-    uint128_t const mul =
-        uint128_t(neg ? -amt.mantissa() : amt.mantissa()) * uint128_t(num);
+    uint128_t const mul = uint128_t(neg ? -amt.mantissa() : amt.mantissa()) * uint128_t(num);
 
     auto low = mul / den128;
     uint128_t rem(mul - low * den128);
@@ -259,12 +244,12 @@ mulRatio(
         // and (rem/den128) is as large as possible. Scale by multiplying low
         // and rem by 10 and subtracting one from the exponent. We could do this
         // with a loop, but it's more efficient to use logarithms.
-        auto const roomToGrow = fl64 - log10Ceil(low);
+        auto const roomToGrow = kFL64 - kLOG10_CEIL(low);
         if (roomToGrow > 0)
         {
             exponent -= roomToGrow;
-            low *= powerTable[roomToGrow];
-            rem *= powerTable[roomToGrow];
+            low *= kPOWER_TABLE[roomToGrow];
+            rem *= kPOWER_TABLE[roomToGrow];
         }
         auto const addRem = rem / den128;
         low += addRem;
@@ -276,14 +261,14 @@ mulRatio(
     // and adding one to the exponent until the low will fit in the 64-bit
     // mantissa. Use logarithms to avoid looping.
     bool hasRem = bool(rem);
-    auto const mustShrink = log10Ceil(low) - fl64;
+    auto const mustShrink = kLOG10_CEIL(low) - kFL64;
     if (mustShrink > 0)
     {
         uint128_t const sav(low);
         exponent += mustShrink;
-        low /= powerTable[mustShrink];
+        low /= kPOWER_TABLE[mustShrink];
         if (!hasRem)
-            hasRem = bool(sav - low * powerTable[mustShrink]);
+            hasRem = bool(sav - low * kPOWER_TABLE[mustShrink]);
     }
 
     std::int64_t mantissa = low.convert_to<std::int64_t>();
@@ -312,7 +297,7 @@ mulRatio(
         {
             if (!result)
             {
-                return IOUAmount(-minMantissa, minExponent);
+                return IOUAmount(-kMIN_MANTISSA, kMIN_EXPONENT);
             }
             // This subtraction cannot underflow because `result` is not zero
             return IOUAmount(result.mantissa() - 1, result.exponent());
@@ -322,4 +307,4 @@ mulRatio(
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

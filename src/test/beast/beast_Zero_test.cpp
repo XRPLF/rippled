@@ -1,52 +1,33 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2014, Nikolaos D. Bougalis <nikb@bougalis.net>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 
 namespace beast {
 
-struct adl_tester
+struct AdlTester
 {
 };
 
 int
-signum(adl_tester)
+signum(AdlTester)
 {
     return 0;
 }
 
 namespace inner_adl_test {
 
-struct adl_tester2
+struct AdlTester2
 {
 };
 
 int
-signum(adl_tester2)
+signum(AdlTester2)
 {
     return 0;
 }
 
 }  // namespace inner_adl_test
 
-class Zero_test : public beast::unit_test::suite
+class Zero_test : public beast::unit_test::Suite
 {
 private:
     struct IntegerWrapper
@@ -57,7 +38,7 @@ private:
         {
         }
 
-        int
+        [[nodiscard]] int
         signum() const
         {
             return value;
@@ -66,69 +47,69 @@ private:
 
 public:
     void
-    expect_same(bool result, bool correct, char const* message)
+    expectSame(bool result, bool correct, char const* message)
     {
         expect(result == correct, message);
     }
 
     void
-    test_lhs_zero(IntegerWrapper x)
+    testLhsZero(IntegerWrapper x)
     {
-        expect_same(x >= zero, x.signum() >= 0, "lhs greater-than-or-equal-to");
-        expect_same(x > zero, x.signum() > 0, "lhs greater than");
-        expect_same(x == zero, x.signum() == 0, "lhs equal to");
-        expect_same(x != zero, x.signum() != 0, "lhs not equal to");
-        expect_same(x < zero, x.signum() < 0, "lhs less than");
-        expect_same(x <= zero, x.signum() <= 0, "lhs less-than-or-equal-to");
+        expectSame(x >= kZERO, x.signum() >= 0, "lhs greater-than-or-equal-to");
+        expectSame(x > kZERO, x.signum() > 0, "lhs greater than");
+        expectSame(x == kZERO, x.signum() == 0, "lhs equal to");
+        expectSame(x != kZERO, x.signum() != 0, "lhs not equal to");
+        expectSame(x < kZERO, x.signum() < 0, "lhs less than");
+        expectSame(x <= kZERO, x.signum() <= 0, "lhs less-than-or-equal-to");
     }
 
     void
-    test_lhs_zero()
+    testLhsZero()
     {
         testcase("lhs zero");
 
-        test_lhs_zero(-7);
-        test_lhs_zero(0);
-        test_lhs_zero(32);
+        testLhsZero(-7);
+        testLhsZero(0);
+        testLhsZero(32);
     }
 
     void
-    test_rhs_zero(IntegerWrapper x)
+    testRhsZero(IntegerWrapper x)
     {
-        expect_same(zero >= x, 0 >= x.signum(), "rhs greater-than-or-equal-to");
-        expect_same(zero > x, 0 > x.signum(), "rhs greater than");
-        expect_same(zero == x, 0 == x.signum(), "rhs equal to");
-        expect_same(zero != x, 0 != x.signum(), "rhs not equal to");
-        expect_same(zero < x, 0 < x.signum(), "rhs less than");
-        expect_same(zero <= x, 0 <= x.signum(), "rhs less-than-or-equal-to");
+        expectSame(kZERO >= x, 0 >= x.signum(), "rhs greater-than-or-equal-to");
+        expectSame(kZERO > x, 0 > x.signum(), "rhs greater than");
+        expectSame(kZERO == x, 0 == x.signum(), "rhs equal to");
+        expectSame(kZERO != x, 0 != x.signum(), "rhs not equal to");
+        expectSame(kZERO < x, 0 < x.signum(), "rhs less than");
+        expectSame(kZERO <= x, 0 <= x.signum(), "rhs less-than-or-equal-to");
     }
 
     void
-    test_rhs_zero()
+    testRhsZero()
     {
         testcase("rhs zero");
 
-        test_rhs_zero(-4);
-        test_rhs_zero(0);
-        test_rhs_zero(64);
+        testRhsZero(-4);
+        testRhsZero(0);
+        testRhsZero(64);
     }
 
     void
-    test_adl()
+    testAdl()
     {
-        expect(adl_tester{} == zero, "ADL failure!");
-        expect(inner_adl_test::adl_tester2{} == zero, "ADL failure!");
+        expect(AdlTester{} == kZERO, "ADL failure!");
+        expect(inner_adl_test::AdlTester2{} == kZERO, "ADL failure!");
     }
 
     void
     run() override
     {
-        test_lhs_zero();
-        test_rhs_zero();
-        test_adl();
+        testLhsZero();
+        testRhsZero();
+        testAdl();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Zero, types, beast);
+BEAST_DEFINE_TESTSUITE(Zero, beast, beast);
 
 }  // namespace beast

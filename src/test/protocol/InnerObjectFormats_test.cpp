@@ -1,31 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/json/json_reader.h>       // Json::Reader
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_reader.h>  // json::Reader
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>    // RPC::containsError
 #include <xrpl/protocol/STParsedJSON.h>  // STParsedJSONObject
 
-namespace ripple {
+#include <stdexcept>
+#include <string>
+
+namespace xrpl {
 
 namespace InnerObjectFormatsUnitTestDetail {
 
@@ -35,10 +21,10 @@ struct TestJSONTxt
     bool const expectFail;
 };
 
-static TestJSONTxt const testArray[] = {
+static TestJSONTxt const kTEST_ARRAY[] = {
 
     // Valid SignerEntry
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -60,10 +46,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     false},
+     .expectFail = false},
 
     // SignerEntry missing Account
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -84,10 +70,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
     // SignerEntry missing SignerWeight
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -108,10 +94,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
     // SignerEntry with unexpected Amount
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -134,10 +120,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
     // SignerEntry with no Account and unexpected Amount
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -159,13 +145,13 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
 };
 
 }  // namespace InnerObjectFormatsUnitTestDetail
 
-class InnerObjectFormatsParsedJSON_test : public beast::unit_test::suite
+class InnerObjectFormatsParsedJSON_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -174,18 +160,18 @@ public:
         using namespace InnerObjectFormatsUnitTestDetail;
 
         // Instantiate a jtx::Env so debugLog writes are exercised.
-        test::jtx::Env env(*this);
+        test::jtx::Env const env(*this);
 
-        for (auto const& test : testArray)
+        for (auto const& test : kTEST_ARRAY)
         {
-            Json::Value req;
-            Json::Reader().parse(test.txt, req);
-            if (RPC::contains_error(req))
+            json::Value req;
+            json::Reader().parse(test.txt, req);
+            if (RPC::containsError(req))
             {
                 Throw<std::runtime_error>(
                     "Internal InnerObjectFormatsParsedJSON error.  Bad JSON.");
             }
-            STParsedJSONObject parsed("request", req);
+            STParsedJSONObject const parsed("request", req);
             bool const noObj = !parsed.object.has_value();
             if (noObj == test.expectFail)
             {
@@ -201,6 +187,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(InnerObjectFormatsParsedJSON, ripple_app, ripple);
+BEAST_DEFINE_TESTSUITE(InnerObjectFormatsParsedJSON, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

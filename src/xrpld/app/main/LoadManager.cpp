@@ -1,38 +1,26 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpld/app/main/LoadManager.h>
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/main/LoadManager.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
 
+#include <chrono>
+#include <exception>
 #include <memory>
 #include <mutex>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 
 LoadManager::LoadManager(Application& app, beast::Journal journal)
-    : app_(app), journal_(journal), lastHeartbeat_(), armed_(false)
+    : app_(app), journal_(journal), armed_(false)
 {
 }
 
@@ -45,8 +33,7 @@ LoadManager::~LoadManager()
     catch (std::exception const& ex)
     {
         // Swallow the exception in a destructor.
-        JLOG(journal_.warn())
-            << "std::exception in ~LoadManager.  " << ex.what();
+        JLOG(journal_.warn()) << "std::exception in ~LoadManager.  " << ex.what();
     }
 }
 
@@ -55,7 +42,7 @@ LoadManager::~LoadManager()
 void
 LoadManager::activateStallDetector()
 {
-    std::lock_guard sl(mutex_);
+    std::scoped_lock const sl(mutex_);
     armed_ = true;
     lastHeartbeat_ = std::chrono::steady_clock::now();
 }
@@ -64,7 +51,7 @@ void
 LoadManager::heartbeat()
 {
     auto const heartbeat = std::chrono::steady_clock::now();
-    std::lock_guard sl(mutex_);
+    std::scoped_lock const sl(mutex_);
     lastHeartbeat_ = heartbeat;
 }
 
@@ -74,9 +61,7 @@ void
 LoadManager::start()
 {
     JLOG(journal_.debug()) << "Starting";
-    XRPL_ASSERT(
-        !thread_.joinable(),
-        "ripple::LoadManager::start : thread not joinable");
+    XRPL_ASSERT(!thread_.joinable(), "xrpl::LoadManager::start : thread not joinable");
 
     thread_ = std::thread{&LoadManager::run, this};
 }
@@ -85,7 +70,7 @@ void
 LoadManager::stop()
 {
     {
-        std::lock_guard lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         stop_ = true;
         // There is at most one thread waiting on this condition.
         cv_.notify_all();
@@ -124,51 +109,44 @@ LoadManager::run()
 
         // Measure the amount of time we have been stalled, in seconds.
         using namespace std::chrono;
-        auto const timeSpentStalled =
-            duration_cast<seconds>(steady_clock::now() - lastHeartbeat);
+        auto const timeSpentStalled = duration_cast<seconds>(steady_clock::now() - lastHeartbeat);
 
-        constexpr auto reportingIntervalSeconds = 10s;
-        constexpr auto stallFatalLogMessageTimeLimit = 90s;
-        constexpr auto stallLogicErrorTimeLimit = 600s;
+        constexpr auto kREPORTING_INTERVAL_SECONDS = 10s;
+        constexpr auto kSTALL_FATAL_LOG_MESSAGE_TIME_LIMIT = 90s;
+        constexpr auto kSTALL_LOGIC_ERROR_TIME_LIMIT = 600s;
 
-        if (armed && (timeSpentStalled >= reportingIntervalSeconds))
+        if (armed && (timeSpentStalled >= kREPORTING_INTERVAL_SECONDS))
         {
             // Report the stalled condition every reportingIntervalSeconds
-            if ((timeSpentStalled % reportingIntervalSeconds) == 0s)
+            if ((timeSpentStalled % kREPORTING_INTERVAL_SECONDS) == 0s)
             {
-                if (timeSpentStalled < stallFatalLogMessageTimeLimit)
+                if (timeSpentStalled < kSTALL_FATAL_LOG_MESSAGE_TIME_LIMIT)
                 {
                     JLOG(journal_.warn())
-                        << "Server stalled for " << timeSpentStalled.count()
-                        << " seconds.";
+                        << "Server stalled for " << timeSpentStalled.count() << " seconds.";
 
                     if (app_.getJobQueue().isOverloaded())
                     {
-                        JLOG(journal_.warn())
-                            << "JobQueue: " << app_.getJobQueue().getJson(0);
+                        JLOG(journal_.warn()) << "JobQueue: " << app_.getJobQueue().getJson(0);
                     }
                 }
                 else
                 {
                     JLOG(journal_.fatal())
-                        << "Server stalled for " << timeSpentStalled.count()
-                        << " seconds.";
-                    JLOG(journal_.fatal())
-                        << "JobQueue: " << app_.getJobQueue().getJson(0);
+                        << "Server stalled for " << timeSpentStalled.count() << " seconds.";
+                    JLOG(journal_.fatal()) << "JobQueue: " << app_.getJobQueue().getJson(0);
                 }
             }
 
             // If we go over the stallLogicErrorTimeLimit spent stalled, it
             // means that the stall resolution code has failed, which qualifies
             // as a LogicError
-            if (timeSpentStalled >= stallLogicErrorTimeLimit)
+            if (timeSpentStalled >= kSTALL_LOGIC_ERROR_TIME_LIMIT)
             {
-                JLOG(journal_.fatal())
-                    << "LogicError: Fatal server stall detected. Stalled time: "
-                    << timeSpentStalled.count() << "s";
-                JLOG(journal_.fatal())
-                    << "JobQueue: " << app_.getJobQueue().getJson(0);
-                LogicError("Fatal server stall detected");
+                JLOG(journal_.fatal()) << "LogicError: Fatal server stall detected. Stalled time: "
+                                       << timeSpentStalled.count() << "s";
+                JLOG(journal_.fatal()) << "JobQueue: " << app_.getJobQueue().getJson(0);
+                logicError("Fatal server stall detected");
             }
         }
     }
@@ -196,9 +174,9 @@ LoadManager::run()
 //------------------------------------------------------------------------------
 
 std::unique_ptr<LoadManager>
-make_LoadManager(Application& app, beast::Journal journal)
+makeLoadManager(Application& app, beast::Journal journal)
 {
     return std::unique_ptr<LoadManager>{new LoadManager{app, journal}};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

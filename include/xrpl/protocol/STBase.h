@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STBASE_H_INCLUDED
-#define RIPPLE_PROTOCOL_STBASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
@@ -30,7 +10,7 @@
 #include <typeinfo>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /// Note, should be treated as flags that can be | and &
 struct JsonOptions
@@ -38,14 +18,16 @@ struct JsonOptions
     using underlying_t = unsigned int;
     underlying_t value;
 
-    enum values : underlying_t {
+    // Bitwise flags with operator~
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+    enum Values : underlying_t {
         // clang-format off
-        none                        = 0b0000'0000,
-        include_date                = 0b0000'0001,
-        disable_API_prior_V2        = 0b0000'0010,
+        KNone                       = 0b0000'0000,
+        KIncludeDate               = 0b0000'0001,
+        KDisableApiPriorV2       = 0b0000'0010,
 
-        // IMPORTANT `_all` must be union of all of the above; see also operator~
-        _all                        = 0b0000'0011
+        // IMPORTANT `kALL` must be union of all of the above; see also operator~
+        KAll                        = 0b0000'0011
         // clang-format on
     };
 
@@ -83,27 +65,27 @@ struct JsonOptions
     }
 
     /// Returns JsonOptions binary negation, can be used with & (above) for set
-    /// difference e.g. `(options & ~JsonOptions::include_date)`
+    /// difference e.g. `(options & ~JsonOptions::kINCLUDE_DATE)`
     [[nodiscard]] constexpr JsonOptions friend
     operator~(JsonOptions v) noexcept
     {
-        return {~v.value & static_cast<underlying_t>(_all)};
+        return {~v.value & static_cast<underlying_t>(KAll)};
     }
 };
 
 template <typename T>
     requires requires(T const& t) {
-        { t.getJson(JsonOptions::none) } -> std::convertible_to<Json::Value>;
+        { t.getJson(JsonOptions::KNone) } -> std::convertible_to<json::Value>;
     }
-Json::Value
-to_json(T const& t)
+json::Value
+toJson(T const& t)
 {
-    return t.getJson(JsonOptions::none);
+    return t.getJson(JsonOptions::KNone);
 }
 
 namespace detail {
 class STVar;
-}
+}  // namespace detail
 
 // VFALCO TODO fix this restriction on copy assignment.
 //
@@ -133,7 +115,7 @@ class STVar;
 */
 class STBase
 {
-    SField const* fName;
+    SField const* fName_;
 
 public:
     virtual ~STBase() = default;
@@ -157,24 +139,24 @@ public:
     D const&
     downcast() const;
 
-    virtual SerializedTypeID
+    [[nodiscard]] virtual SerializedTypeID
     getSType() const;
 
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getFullText() const;
 
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getText() const;
 
-    virtual Json::Value getJson(JsonOptions = JsonOptions::none) const;
+    [[nodiscard]] virtual json::Value getJson(JsonOptions = JsonOptions::KNone) const;
 
     virtual void
     add(Serializer& s) const;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     isEquivalent(STBase const& t) const;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     isDefault() const;
 
     /** A STBase is a field.
@@ -183,7 +165,7 @@ public:
     void
     setFName(SField const& n);
 
-    SField const&
+    [[nodiscard]] SField const&
     getFName() const;
 
     void
@@ -219,7 +201,7 @@ STBase::downcast()
 }
 
 template <class D>
-D const&
+[[nodiscard]] D const&
 STBase::downcast() const
 {
     D const* ptr = dynamic_cast<D const*>(this);
@@ -238,6 +220,4 @@ STBase::emplace(std::size_t n, void* buf, T&& val)
     return new (buf) U(std::forward<T>(val));
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

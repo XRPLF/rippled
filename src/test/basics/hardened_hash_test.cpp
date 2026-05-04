@@ -1,179 +1,158 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/hardened_hash.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <iomanip>
+#include <ios>
+#include <ostream>
+#include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 
-namespace ripple {
-namespace detail {
+namespace xrpl::detail {
 
 template <class T>
-class test_user_type_member
+class TestUserTypeMember
 {
 private:
-    T t;
+    T t_;
 
 public:
-    explicit test_user_type_member(T const& t_ = T()) : t(t_)
+    explicit TestUserTypeMember(T const& t = T()) : t_(t)
     {
     }
 
     template <class Hasher>
     friend void
-    hash_append(Hasher& h, test_user_type_member const& a) noexcept
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    hash_append(Hasher& h, TestUserTypeMember const& a) noexcept
     {
         using beast::hash_append;
-        hash_append(h, a.t);
+        hash_append(h, a.t_);
     }
 };
 
 template <class T>
-class test_user_type_free
+class TestUserTypeFree
 {
 private:
-    T t;
+    T t_;
 
 public:
-    explicit test_user_type_free(T const& t_ = T()) : t(t_)
+    explicit TestUserTypeFree(T const& t = T()) : t_(t)
     {
     }
 
     template <class Hasher>
     friend void
-    hash_append(Hasher& h, test_user_type_free const& a) noexcept
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    hash_append(Hasher& h, TestUserTypeFree const& a) noexcept
     {
         using beast::hash_append;
-        hash_append(h, a.t);
+        hash_append(h, a.t_);
     }
 };
 
-}  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl::detail
 
 //------------------------------------------------------------------------------
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
 template <class T>
-using test_hardened_unordered_set = std::unordered_set<T, hardened_hash<>>;
+using test_hardened_unordered_set = std::unordered_set<T, HardenedHash<>>;
 
 template <class T>
-using test_hardened_unordered_map = std::unordered_map<T, int, hardened_hash<>>;
+using test_hardened_unordered_map = std::unordered_map<T, int, HardenedHash<>>;
 
 template <class T>
-using test_hardened_unordered_multiset =
-    std::unordered_multiset<T, hardened_hash<>>;
+using test_hardened_unordered_multiset = std::unordered_multiset<T, HardenedHash<>>;
 
 template <class T>
-using test_hardened_unordered_multimap =
-    std::unordered_multimap<T, int, hardened_hash<>>;
+using test_hardened_unordered_multimap = std::unordered_multimap<T, int, HardenedHash<>>;
 
 }  // namespace detail
 
 template <std::size_t Bits, class UInt = std::uint64_t>
-class unsigned_integer
+class UnsignedInteger
 {
 private:
     static_assert(
-        std::is_integral<UInt>::value && std::is_unsigned<UInt>::value,
+        std::is_integral_v<UInt> && std::is_unsigned_v<UInt>,
         "UInt must be an unsigned integral type");
 
-    static_assert(
-        Bits % (8 * sizeof(UInt)) == 0,
-        "Bits must be a multiple of 8*sizeof(UInt)");
+    static_assert(Bits % (8 * sizeof(UInt)) == 0, "Bits must be a multiple of 8*sizeof(UInt)");
 
-    static_assert(
-        Bits >= (8 * sizeof(UInt)),
-        "Bits must be at least 8*sizeof(UInt)");
+    static_assert(Bits >= (8 * sizeof(UInt)), "Bits must be at least 8*sizeof(UInt)");
 
-    static std::size_t const size = Bits / (8 * sizeof(UInt));
+    static std::size_t const kSIZE = Bits / (8 * sizeof(UInt));
 
-    std::array<UInt, size> m_vec;
+    std::array<UInt, kSIZE> vec_;
 
 public:
     using value_type = UInt;
 
-    static std::size_t const bits = Bits;
-    static std::size_t const bytes = bits / 8;
+    static std::size_t const kBITS = Bits;
+    static std::size_t const kBYTES = kBITS / 8;
 
     template <class Int>
-    static unsigned_integer
-    from_number(Int v)
+    static UnsignedInteger
+    fronumber(Int v)
     {
-        unsigned_integer result;
-        for (std::size_t i(1); i < size; ++i)
-            result.m_vec[i] = 0;
-        result.m_vec[0] = v;
+        UnsignedInteger result;
+        for (std::size_t i(1); i < kSIZE; ++i)
+            result.vec_[i] = 0;
+        result.vec_[0] = v;
         return result;
     }
 
     void*
     data() noexcept
     {
-        return &m_vec[0];
+        return &vec_[0];
     }
 
-    void const*
+    [[nodiscard]] void const*
     data() const noexcept
     {
-        return &m_vec[0];
+        return &vec_[0];
     }
 
     template <class Hasher>
     friend void
-    hash_append(Hasher& h, unsigned_integer const& a) noexcept
+    hash_append(Hasher& h, UnsignedInteger const& a) noexcept
     {
         using beast::hash_append;
-        hash_append(h, a.m_vec);
+        hash_append(h, a.vec_);
     }
 
     friend std::ostream&
-    operator<<(std::ostream& s, unsigned_integer const& v)
+    operator<<(std::ostream& s, UnsignedInteger const& v)
     {
-        for (std::size_t i(0); i < size; ++i)
-            s << std::hex << std::setfill('0') << std::setw(2 * sizeof(UInt))
-              << v.m_vec[i];
+        for (std::size_t i(0); i < kSIZE; ++i)
+            s << std::hex << std::setfill('0') << std::setw(2 * sizeof(UInt)) << v.vec_[i];
         return s;
     }
 };
 
-using sha256_t = unsigned_integer<256, std::size_t>;
+using sha256_t = UnsignedInteger<256, std::size_t>;
 
 #ifndef __INTELLISENSE__
-static_assert(sha256_t::bits == 256, "sha256_t must have 256 bits");
+static_assert(sha256_t::kBITS == 256, "sha256_t must have 256 bits");
 #endif
 
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
-namespace ripple {
+namespace xrpl {
 
-class hardened_hash_test : public beast::unit_test::suite
+class hardened_hash_test : public beast::unit_test::Suite
 {
 public:
     template <class T>
@@ -181,13 +160,13 @@ public:
     check()
     {
         T t{};
-        hardened_hash<>()(t);
+        HardenedHash<>()(t);
         pass();
     }
 
     template <template <class T> class U>
     void
-    check_user_type()
+    checkUserType()
     {
         check<U<bool>>();
         check<U<char>>();
@@ -212,47 +191,47 @@ public:
 
     template <template <class T> class C>
     void
-    check_container()
+    checkContainer()
     {
         {
-            C<detail::test_user_type_member<std::string>> c;
+            C<detail::TestUserTypeMember<std::string>> const c;
         }
 
         pass();
 
         {
-            C<detail::test_user_type_free<std::string>> c;
+            C<detail::TestUserTypeFree<std::string>> const c;
         }
 
         pass();
     }
 
     void
-    test_user_types()
+    testUserTypes()
     {
         testcase("user types");
-        check_user_type<detail::test_user_type_member>();
-        check_user_type<detail::test_user_type_free>();
+        checkUserType<detail::TestUserTypeMember>();
+        checkUserType<detail::TestUserTypeFree>();
     }
 
     void
-    test_containers()
+    testContainers()
     {
         testcase("containers");
-        check_container<detail::test_hardened_unordered_set>();
-        check_container<detail::test_hardened_unordered_map>();
-        check_container<detail::test_hardened_unordered_multiset>();
-        check_container<detail::test_hardened_unordered_multimap>();
+        checkContainer<detail::test_hardened_unordered_set>();
+        checkContainer<detail::test_hardened_unordered_map>();
+        checkContainer<detail::test_hardened_unordered_multiset>();
+        checkContainer<detail::test_hardened_unordered_multimap>();
     }
 
     void
     run() override
     {
-        test_user_types();
-        test_containers();
+        testUserTypes();
+        testContainers();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(hardened_hash, basics, ripple);
+BEAST_DEFINE_TESTSUITE(hardened_hash, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,46 +1,38 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
-
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
-namespace test {
+#include <string>
 
-struct SetAuth_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+struct SetAuth_test : public beast::unit_test::Suite
 {
     // Set just the tfSetfAuth flag on a trust line
     // If the trust line does not exist, then it should
     // be created under the new rules.
-    static Json::Value
-    auth(
-        jtx::Account const& account,
-        jtx::Account const& dest,
-        std::string const& currency)
+    static json::Value
+    auth(jtx::Account const& account, jtx::Account const& dest, std::string const& currency)
     {
         using namespace jtx;
-        Json::Value jv;
+        json::Value jv;
         jv[jss::Account] = account.human();
-        jv[jss::LimitAmount] = STAmount(Issue{to_currency(currency), dest})
-                                   .getJson(JsonOptions::none);
+        jv[jss::LimitAmount] =
+            STAmount(Issue{toCurrency(currency), dest}).getJson(JsonOptions::KNone);
         jv[jss::TransactionType] = jss::TrustSet;
         jv[jss::Flags] = tfSetfAuth;
         return jv;
@@ -51,7 +43,7 @@ struct SetAuth_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const gw = Account("gw");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         Env env(*this);
 
@@ -59,28 +51,26 @@ struct SetAuth_test : public beast::unit_test::suite
         env(fset(gw, asfRequireAuth));
         env.close();
         env(auth(gw, "alice", "USD"));
-        BEAST_EXPECT(
-            env.le(keylet::line(Account("alice").id(), gw.id(), USD.currency)));
-        env(trust("alice", USD(1000)));
-        env(trust("bob", USD(1000)));
-        env(pay(gw, "alice", USD(100)));
-        env(pay(gw, "bob", USD(100)),
-            ter(tecPATH_DRY));  // Should be terNO_AUTH
-        env(pay("alice", "bob", USD(50)),
-            ter(tecPATH_DRY));  // Should be terNO_AUTH
+        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(), gw.id(), usd.currency)));
+        env(trust("alice", usd(1000)));
+        env(trust("bob", usd(1000)));
+        env(pay(gw, "alice", usd(100)));
+        env(pay(gw, "bob", usd(100)),
+            Ter(tecPATH_DRY));  // Should be terNO_AUTH
+        env(pay("alice", "bob", usd(50)),
+            Ter(tecPATH_DRY));  // Should be terNO_AUTH
     }
 
     void
     run() override
     {
         using namespace jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testAuth(sa - featurePermissionedDEX);
         testAuth(sa);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SetAuth, test, ripple);
+BEAST_DEFINE_TESTSUITE(SetAuth, app, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

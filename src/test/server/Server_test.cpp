@@ -1,65 +1,62 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/rfc2616.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/Server.h>
 #include <xrpl/server/Session.h>
+#include <xrpl/server/WSSession.h>
+#include <xrpl/server/detail/ServerImpl.h>
 
-#include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/streambuf.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
-#include <boost/utility/in_place_factory.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <chrono>
+#include <exception>
+#include <memory>
 #include <optional>
+#include <ostream>
 #include <stdexcept>
+#include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
 
-class Server_test : public beast::unit_test::suite
+class Server_test : public beast::unit_test::Suite
 {
 public:
     class TestThread
     {
     private:
-        boost::asio::io_service io_service_;
-        std::optional<boost::asio::io_service::work> work_;
+        boost::asio::io_context io_context_;
+        std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
+            work_;
         std::thread thread_;
 
     public:
         TestThread()
-            : work_(std::in_place, std::ref(io_service_))
-            , thread_([&]() { this->io_service_.run(); })
+            : work_(std::in_place, boost::asio::make_work_guard(io_context_))
+            , thread_([&]() { this->io_context_.run(); })
         {
         }
 
@@ -69,10 +66,10 @@ public:
             thread_.join();
         }
 
-        boost::asio::io_service&
-        get_io_service()
+        boost::asio::io_context&
+        getIoContext()
         {
-            return io_service_;
+            return io_context_;
         }
     };
 
@@ -80,17 +77,16 @@ public:
 
     class TestSink : public beast::Journal::Sink
     {
-        beast::unit_test::suite& suite_;
+        beast::unit_test::Suite& suite_;
 
     public:
-        explicit TestSink(beast::unit_test::suite& suite)
-            : Sink(beast::severities::kWarning, false), suite_(suite)
+        explicit TestSink(beast::unit_test::Suite& suite)
+            : Sink(beast::severities::KWarning, false), suite_(suite)
         {
         }
 
         void
-        write(beast::severities::Severity level, std::string const& text)
-            override
+        write(beast::severities::Severity level, std::string const& text) override
         {
             if (level < threshold())
                 return;
@@ -99,8 +95,7 @@ public:
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text)
-            override
+        writeAlways(beast::severities::Severity level, std::string const& text) override
         {
             suite_.log << text << std::endl;
         }
@@ -110,39 +105,43 @@ public:
 
     struct TestHandler
     {
-        bool
+        static bool
         onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
         {
             return true;
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
-            std::unique_ptr<stream_type>&& bundle,
-            http_request_type&& request,
-            boost::asio::ip::tcp::endpoint remote_address)
+            std::unique_ptr<stream_type> const& bundle,
+            http_request_type const& request,
+            boost::asio::ip::tcp::endpoint remoteAddress)
         {
             return Handoff{};
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
-            http_request_type&& request,
-            boost::asio::ip::tcp::endpoint remote_address)
+            http_request_type const& request,
+            boost::asio::ip::tcp::endpoint remoteAddress)
         {
             return Handoff{};
         }
 
-        void
+        static void
         onRequest(Session& session)
         {
             session.write(std::string("Hello, world!\n"));
-            if (beast::rfc2616::is_keep_alive(session.request()))
+            if (beast::rfc2616::isKeepAlive(session.request()))
+            {
                 session.complete();
+            }
             else
+            {
                 session.close(true);
+            }
         }
 
         void
@@ -205,7 +204,7 @@ public:
     // Expect that reading the stream produces a matching string
     template <class SyncReadStream>
     bool
-    expect_read(SyncReadStream& s, std::string const& match)
+    expectRead(SyncReadStream& s, std::string const& match)
     {
         boost::asio::streambuf b(1000);  // limit on read
         try
@@ -215,8 +214,7 @@ public:
             {
                 std::string got;
                 got.resize(n);
-                boost::asio::buffer_copy(
-                    boost::asio::buffer(&got[0], n), b.data());
+                boost::asio::buffer_copy(boost::asio::buffer(&got[0], n), b.data());
                 return BEAST_EXPECT(got == match);
             }
         }
@@ -232,9 +230,9 @@ public:
     }
 
     void
-    test_request(boost::asio::ip::tcp::endpoint const& ep)
+    testRequest(boost::asio::ip::tcp::endpoint const& ep)
     {
-        boost::asio::io_service ios;
+        boost::asio::io_context ios;
         using socket = boost::asio::ip::tcp::socket;
         socket s(ios);
 
@@ -248,19 +246,19 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         boost::system::error_code ec;
-        s.shutdown(socket::shutdown_both, ec);
+        s.shutdown(socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     void
-    test_keepalive(boost::asio::ip::tcp::endpoint const& ep)
+    testKeepalive(boost::asio::ip::tcp::endpoint const& ep)
     {
-        boost::asio::io_service ios;
+        boost::asio::io_context ios;
         using socket = boost::asio::ip::tcp::socket;
         socket s(ios);
 
@@ -274,7 +272,7 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         if (!write(
@@ -284,11 +282,11 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         boost::system::error_code ec;
-        s.shutdown(socket::shutdown_both, ec);
+        s.shutdown(socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
     }
 
     void
@@ -297,18 +295,17 @@ public:
         testcase("Basic client/server");
         TestSink sink{*this};
         TestThread thread;
-        sink.threshold(beast::severities::Severity::kAll);
-        beast::Journal journal{sink};
+        sink.threshold(beast::severities::Severity::KAll);
+        beast::Journal const journal{sink};
         TestHandler handler;
-        auto s = make_Server(handler, thread.get_io_service(), journal);
+        auto s = makeServer(handler, thread.getIoContext(), journal);
         std::vector<Port> serverPort(1);
-        serverPort.back().ip =
-            beast::IP::Address::from_string(getEnvLocalhostAddr()),
+        serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
-        test_request(eps.begin()->second);
-        test_keepalive(eps.begin()->second);
+        testRequest(eps.begin()->second);
+        testKeepalive(eps.begin()->second);
         // s->close();
         s = nullptr;
         pass();
@@ -320,27 +317,27 @@ public:
         testcase("stress test");
         struct NullHandler
         {
-            bool
+            static bool
             onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
             {
                 return true;
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
-                std::unique_ptr<stream_type>&& bundle,
-                http_request_type&& request,
-                boost::asio::ip::tcp::endpoint remote_address)
+                std::unique_ptr<stream_type> const& bundle,
+                http_request_type const& request,
+                boost::asio::ip::tcp::endpoint remoteAddress)
             {
                 return Handoff{};
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
-                http_request_type&& request,
-                boost::asio::ip::tcp::endpoint remote_address)
+                http_request_type const& request,
+                boost::asio::ip::tcp::endpoint remoteAddress)
             {
                 return Handoff{};
             }
@@ -375,10 +372,9 @@ public:
         for (int i = 0; i < 1000; ++i)
         {
             TestThread thread;
-            auto s = make_Server(h, thread.get_io_service(), journal);
+            auto s = makeServer(h, thread.getIoContext(), journal);
             std::vector<Port> serverPort(1);
-            serverPort.back().ip =
-                beast::IP::Address::from_string(getEnvLocalhostAddr()),
+            serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
             serverPort.back().port = 0;
             serverPort.back().protocol.insert("http");
             s->ports(serverPort);
@@ -395,7 +391,7 @@ public:
         std::string messages;
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -403,11 +399,10 @@ public:
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(
-            messages.find("Missing 'ip' in [port_rpc]") != std::string::npos);
+        BEAST_EXPECT(messages.find("Missing 'ip' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -416,11 +411,10 @@ public:
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(
-            messages.find("Missing 'port' in [port_rpc]") != std::string::npos);
+        BEAST_EXPECT(messages.find("Missing 'port' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -431,11 +425,10 @@ public:
                 std::make_unique<CaptureLogs>(&messages)};
         });
         BEAST_EXPECT(
-            messages.find("Invalid value '0' for key 'port' in [port_rpc]") ==
-            std::string::npos);
+            messages.find("Invalid value '0' for key 'port' in [port_rpc]") == std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg)["server"].set("port", "0");
@@ -444,11 +437,10 @@ public:
                 std::make_unique<CaptureLogs>(&messages)};
         });
         BEAST_EXPECT(
-            messages.find("Invalid value '0' for key 'port' in [server]") !=
-            std::string::npos);
+            messages.find("Invalid value '0' for key 'port' in [server]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -459,58 +451,47 @@ public:
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(
-            messages.find("Missing 'protocol' in [port_rpc]") !=
-            std::string::npos);
+        BEAST_EXPECT(messages.find("Missing 'protocol' in [port_rpc]") != std::string::npos);
 
-        except(
-            [&]  // this creates a standard test config without the server
-                 // section
-            {
-                Env env{
-                    *this,
-                    envconfig([](std::unique_ptr<Config> cfg) {
-                        cfg = std::make_unique<Config>();
-                        cfg->overwrite(
-                            ConfigSection::nodeDatabase(), "type", "memory");
-                        cfg->overwrite(
-                            ConfigSection::nodeDatabase(), "path", "main");
-                        cfg->deprecatedClearSection(
-                            ConfigSection::importNodeDatabase());
-                        cfg->legacy("database_path", "");
-                        cfg->setupControl(true, true, true);
-                        (*cfg)["port_peer"].set("ip", getEnvLocalhostAddr());
-                        (*cfg)["port_peer"].set("port", "8080");
-                        (*cfg)["port_peer"].set("protocol", "peer");
-                        (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
-                        (*cfg)["port_rpc"].set("port", "8081");
-                        (*cfg)["port_rpc"].set("protocol", "http,ws2");
-                        (*cfg)["port_rpc"].set("admin", getEnvLocalhostAddr());
-                        (*cfg)["port_ws"].set("ip", getEnvLocalhostAddr());
-                        (*cfg)["port_ws"].set("port", "8082");
-                        (*cfg)["port_ws"].set("protocol", "ws");
-                        (*cfg)["port_ws"].set("admin", getEnvLocalhostAddr());
-                        return cfg;
-                    }),
-                    std::make_unique<CaptureLogs>(&messages)};
-            });
-        BEAST_EXPECT(
-            messages.find("Required section [server] is missing") !=
-            std::string::npos);
+        except([&]  // this creates a standard test config without the server
+                    // section
+               {
+                   Env const env{
+                       *this,
+                       envconfig([](std::unique_ptr<Config> cfg) {
+                           cfg = std::make_unique<Config>();
+                           cfg->overwrite(ConfigSection::nodeDatabase(), "type", "memory");
+                           cfg->overwrite(ConfigSection::nodeDatabase(), "path", "main");
+                           cfg->deprecatedClearSection(ConfigSection::importNodeDatabase());
+                           cfg->legacy("database_path", "");
+                           cfg->setupControl(true, true, true);
+                           (*cfg)["port_peer"].set("ip", getEnvLocalhostAddr());
+                           (*cfg)["port_peer"].set("port", "8080");
+                           (*cfg)["port_peer"].set("protocol", "peer");
+                           (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
+                           (*cfg)["port_rpc"].set("port", "8081");
+                           (*cfg)["port_rpc"].set("protocol", "http,ws2");
+                           (*cfg)["port_rpc"].set("admin", getEnvLocalhostAddr());
+                           (*cfg)["port_ws"].set("ip", getEnvLocalhostAddr());
+                           (*cfg)["port_ws"].set("port", "8082");
+                           (*cfg)["port_ws"].set("protocol", "ws");
+                           (*cfg)["port_ws"].set("admin", getEnvLocalhostAddr());
+                           return cfg;
+                       }),
+                       std::make_unique<CaptureLogs>(&messages)};
+               });
+        BEAST_EXPECT(messages.find("Required section [server] is missing") != std::string::npos);
 
         except([&]  // this creates a standard test config without some of the
                     // port sections
                {
-                   Env env{
+                   Env const env{
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
-                           cfg->overwrite(
-                               ConfigSection::nodeDatabase(), "type", "memory");
-                           cfg->overwrite(
-                               ConfigSection::nodeDatabase(), "path", "main");
-                           cfg->deprecatedClearSection(
-                               ConfigSection::importNodeDatabase());
+                           cfg->overwrite(ConfigSection::nodeDatabase(), "type", "memory");
+                           cfg->overwrite(ConfigSection::nodeDatabase(), "path", "main");
+                           cfg->deprecatedClearSection(ConfigSection::importNodeDatabase());
                            cfg->legacy("database_path", "");
                            cfg->setupControl(true, true, true);
                            (*cfg)["server"].append("port_peer");
@@ -520,8 +501,7 @@ public:
                        }),
                        std::make_unique<CaptureLogs>(&messages)};
                });
-        BEAST_EXPECT(
-            messages.find("Missing section: [port_peer]") != std::string::npos);
+        BEAST_EXPECT(messages.find("Missing section: [port_peer]") != std::string::npos);
     }
 
     void
@@ -533,7 +513,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Server, http, ripple);
+BEAST_DEFINE_TESTSUITE(Server, server, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

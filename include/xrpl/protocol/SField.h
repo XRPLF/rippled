@@ -1,32 +1,13 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_SFIELD_H_INCLUDED
-#define RIPPLE_PROTOCOL_SFIELD_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 
@@ -53,6 +34,7 @@ class STXChainBridge;
 class STVector256;
 class STCurrency;
 
+// NOLINTBEGIN(readability-identifier-naming)
 #pragma push_macro("XMACRO")
 #undef XMACRO
 
@@ -71,8 +53,10 @@ class STCurrency;
     STYPE(STI_VL, 7)                              \
     STYPE(STI_ACCOUNT, 8)                         \
     STYPE(STI_NUMBER, 9)                          \
+    STYPE(STI_INT32, 10)                          \
+    STYPE(STI_INT64, 11)                          \
                                                   \
-    /* 10-13 are reserved */                      \
+    /* 12-13 are reserved */                      \
     STYPE(STI_OBJECT, 14)                         \
     STYPE(STI_ARRAY, 15)                          \
                                                   \
@@ -101,12 +85,14 @@ class STCurrency;
 #pragma push_macro("TO_MAP")
 #undef TO_MAP
 
-#define TO_ENUM(name, value) name = value,
+#define TO_ENUM(name, value) name = (value),
 #define TO_MAP(name, value) {#name, value},
 
+// Protocol infrastructure, 39+ files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SerializedTypeID { XMACRO(TO_ENUM) };
 
-static std::map<std::string, int> const sTypeMap = {XMACRO(TO_MAP)};
+static std::map<std::string, int> const kS_TYPE_MAP = {XMACRO(TO_MAP)};
 
 #undef XMACRO
 #undef TO_ENUM
@@ -114,17 +100,18 @@ static std::map<std::string, int> const sTypeMap = {XMACRO(TO_MAP)};
 #pragma pop_macro("XMACRO")
 #pragma pop_macro("TO_ENUM")
 #pragma pop_macro("TO_MAP")
+// NOLINTEND(readability-identifier-naming)
 
 // constexpr
 inline int
-field_code(SerializedTypeID id, int index)
+fieldCode(SerializedTypeID id, int index)
 {
-    return (safe_cast<int>(id) << 16) | index;
+    return (safeCast<int>(id) << 16) | index;
 }
 
 // constexpr
 inline int
-field_code(int id, int index)
+fieldCode(int id, int index)
 {
     return (id << 16) | index;
 }
@@ -136,35 +123,41 @@ field_code(int id, int index)
     SFields are created at compile time.
 
     Each SField, once constructed, lives until program termination, and there
-    is only one instance per fieldType/fieldValue pair which serves the entire
-    application.
+    is only one instance per fieldType/fieldValue pair which serves the
+    entire application.
 */
 class SField
 {
 public:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
-        sMD_Never = 0x00,
-        sMD_ChangeOrig = 0x01,   // original value when it changes
-        sMD_ChangeNew = 0x02,    // new value when it changes
-        sMD_DeleteFinal = 0x04,  // final value when it is deleted
-        sMD_Create = 0x08,       // value when it's created
-        sMD_Always = 0x10,  // value when node containing it is affected at all
-        sMD_BaseTen = 0x20,
-        sMD_Default =
-            sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create
+        SMdNever = 0x00,
+        SMdChangeOrig = 0x01,     // original value when it changes
+        SMdChangeNew = 0x02,      // new value when it changes
+        SMdDeleteFinal = 0x04,    // final value when it is deleted
+        SMdCreate = 0x08,         // value when it's created
+        SMdAlways = 0x10,         // value when node containing it is affected at all
+        SMdBaseTen = 0x20,        // value is treated as base 10, overriding behavior
+        SMdPseudoAccount = 0x40,  // if this field is set in an ACCOUNT_ROOT
+                                  // _only_, then it is a pseudo-account
+        SMdNeedsAsset = 0x80,     // This field needs to be associated with an
+                                  // asset before it is serialized as a ledger
+                                  // object. Intended for STNumber.
+        SMdDefault = SMdChangeOrig | SMdChangeNew | SMdDeleteFinal | SMdCreate
     };
 
-    enum class IsSigning : unsigned char { no, yes };
-    static IsSigning const notSigning = IsSigning::no;
+    enum class IsSigning : unsigned char { No, Yes };
+    static IsSigning const kNOT_SIGNING = IsSigning::No;
 
-    int const fieldCode;               // (type<<16)|index
+    int const fieldCodeMem;            // (type<<16)|index // TODO: rename, clashes with function
     SerializedTypeID const fieldType;  // STI_*
     int const fieldValue;              // Code number for protocol
     std::string const fieldName;
     int const fieldMeta;
     int const fieldNum;
     IsSigning const signingField;
-    Json::StaticString const jsonName;
+    json::StaticString const jsonName;
 
     SField(SField const&) = delete;
     SField&
@@ -174,17 +167,17 @@ public:
     operator=(SField&&) = delete;
 
 public:
-    struct private_access_tag_t;  // public, but still an implementation detail
+    struct PrivateAccessTagT;  // public, but still an implementation detail
 
     // These constructors can only be called from SField.cpp
     SField(
-        private_access_tag_t,
+        PrivateAccessTagT,
         SerializedTypeID tid,
         int fv,
         char const* fn,
-        int meta = sMD_Default,
-        IsSigning signing = IsSigning::yes);
-    explicit SField(private_access_tag_t, int fc);
+        int meta = SMdDefault,
+        IsSigning signing = IsSigning::Yes);
+    explicit SField(PrivateAccessTagT, int fc, char const* fn);
 
     static SField const&
     getField(int fieldCode);
@@ -193,51 +186,51 @@ public:
     static SField const&
     getField(int type, int value)
     {
-        return getField(field_code(type, value));
+        return getField(fieldCode(type, value));
     }
 
     static SField const&
     getField(SerializedTypeID type, int value)
     {
-        return getField(field_code(type, value));
+        return getField(fieldCode(type, value));
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     getName() const
     {
         return fieldName;
     }
 
-    bool
+    [[nodiscard]] bool
     hasName() const
     {
-        return fieldCode > 0;
+        return fieldCodeMem > 0;
     }
 
-    Json::StaticString const&
+    [[nodiscard]] json::StaticString const&
     getJsonName() const
     {
         return jsonName;
     }
 
-    operator Json::StaticString const&() const
+    operator json::StaticString const&() const
     {
         return jsonName;
     }
 
-    bool
+    [[nodiscard]] bool
     isInvalid() const
     {
-        return fieldCode == -1;
+        return fieldCodeMem == -1;
     }
 
-    bool
+    [[nodiscard]] bool
     isUseful() const
     {
-        return fieldCode > 0;
+        return fieldCodeMem > 0;
     }
 
-    bool
+    [[nodiscard]] bool
     isBinary() const
     {
         return fieldValue < 256;
@@ -247,18 +240,18 @@ public:
     // should be discarded during serialization,like 'hash'.
     // You cannot serialize an object's hash inside that object,
     // but you can have it in the JSON representation.
-    bool
+    [[nodiscard]] bool
     isDiscardable() const
     {
         return fieldValue > 256;
     }
 
-    int
+    [[nodiscard]] int
     getCode() const
     {
-        return fieldCode;
+        return fieldCodeMem;
     }
-    int
+    [[nodiscard]] int
     getNum() const
     {
         return fieldNum;
@@ -269,35 +262,34 @@ public:
         return num;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldMeta(int c) const
     {
         return (fieldMeta & c) != 0;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldInclude(bool withSigningField) const
     {
-        return (fieldValue < 256) &&
-            (withSigningField || (signingField == IsSigning::yes));
+        return (fieldValue < 256) && (withSigningField || (signingField == IsSigning::Yes));
     }
 
     bool
     operator==(SField const& f) const
     {
-        return fieldCode == f.fieldCode;
+        return fieldCodeMem == f.fieldCodeMem;
     }
 
     bool
     operator!=(SField const& f) const
     {
-        return fieldCode != f.fieldCode;
+        return fieldCodeMem != f.fieldCodeMem;
     }
 
     static int
     compare(SField const& f1, SField const& f2);
 
-    static std::map<int, SField const*> const&
+    static std::unordered_map<int, SField const*> const&
     getKnownCodeToField()
     {
         return knownCodeToField;
@@ -305,7 +297,8 @@ public:
 
 private:
     static int num;
-    static std::map<int, SField const*> knownCodeToField;
+    static std::unordered_map<int, SField const*> knownCodeToField;
+    static std::unordered_map<std::string, SField const*> knownNameToField;
 };
 
 /** A field with a type known at compile time. */
@@ -315,7 +308,7 @@ struct TypedField : SField
     using type = T;
 
     template <class... Args>
-    explicit TypedField(private_access_tag_t pat, Args&&... args);
+    explicit TypedField(PrivateAccessTagT pat, Args&&... args);
 };
 
 /** Indicate std::optional field semantics. */
@@ -324,7 +317,7 @@ struct OptionaledField
 {
     TypedField<T> const* f;
 
-    explicit OptionaledField(TypedField<T> const& f_) : f(&f_)
+    explicit OptionaledField(TypedField<T> const& f) : f(&f)
     {
     }
 };
@@ -352,6 +345,9 @@ using SF_UINT256 = TypedField<STBitString<256>>;
 using SF_UINT384 = TypedField<STBitString<384>>;
 using SF_UINT512 = TypedField<STBitString<512>>;
 
+using SF_INT32 = TypedField<STInteger<std::int32_t>>;
+using SF_INT64 = TypedField<STInteger<std::int64_t>>;
+
 using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;
 using SF_ISSUE = TypedField<STIssue>;
@@ -369,13 +365,11 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #pragma push_macro("TYPED_SFIELD")
 #undef TYPED_SFIELD
 
-#define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
-    extern SField const sfName;
-#define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
-    extern SF_##stiSuffix const sfName;
+#define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SField const sfName;
+#define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SF_##stiSuffix const sfName;
 
-extern SField const sfInvalid;
-extern SField const sfGeneric;
+extern SField const kSF_INVALID;
+extern SField const kSF_GENERIC;
 
 #include <xrpl/protocol/detail/sfields.macro>
 
@@ -384,6 +378,4 @@ extern SField const sfGeneric;
 #undef UNTYPED_SFIELD
 #pragma pop_macro("UNTYPED_SFIELD")
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

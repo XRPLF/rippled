@@ -1,38 +1,42 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Env_ss.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/trust.h>
 
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/core/ConfigSections.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
 
-namespace ripple {
+#include <array>
+#include <cassert>
+#include <chrono>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <tuple>
 
-namespace RPC {
+namespace xrpl::RPC {
 
 struct TxnTestData
 {
@@ -45,17 +49,17 @@ struct TxnTestData
     //   3. sign_for, and
     //   4. submit_multisigned.
     // The JSON is not valid for all of these interfaces, but it should
-    // crash none of them, and should provide reliable error messages.
+    // crash kNONE of them, and should provide reliable error messages.
     //
     // The expMsg array contains the expected error string for the above cases.
     std::array<char const* const, 4> const expMsg;
 
     constexpr TxnTestData(
-        char const* description_,
-        int line_,
-        char const* json_,
-        std::array<char const* const, 4> const& expMsg_)
-        : description(description_), line(line_), json(json_), expMsg{expMsg_}
+        char const* description,
+        int line,
+        char const* json,
+        std::array<char const* const, 4> const& expMsg)
+        : description(description), line(line), json(json), expMsg{expMsg}
     {
     }
 
@@ -68,12 +72,12 @@ struct TxnTestData
     operator=(TxnTestData&&) = delete;
 };
 
-static constexpr TxnTestData txnTestArray[] = {
+static constexpr TxnTestData kTXN_TEST_ARRAY[] = {
 
     {"Minimal payment, no Amount only DeliverMax",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -82,15 +86,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'account'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"Pass in Fee with minimal payment, both Amount and DeliverMax.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -102,15 +103,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"Pass in Sequence, no Amount only DeliverMax",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -121,16 +119,13 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+     {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}}},
 
     {"Pass in Sequence and Fee with minimal payment, both Amount and "
      "DeliverMax.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -152,7 +147,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Add 'fee_mult_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 7,
@@ -164,15 +159,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+     {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}}},
 
     {"Add 'fee_mult_max' and 'fee_div_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 7,
@@ -185,15 +177,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Fee'.",
-       "Missing field 'tx_json.SigningPubKey'."}}},
+     {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}}},
 
     {"fee_mult_max is ignored if 'Fee' is present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 0,
@@ -215,7 +204,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"fee_div_max is ignored if 'Fee' is present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 100,
@@ -238,7 +227,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid 'fee_mult_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": "NotAFeeMultiplier",
@@ -258,7 +247,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid 'fee_div_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 5,
@@ -279,7 +268,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid value for 'fee_mult_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 0,
@@ -299,7 +288,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid value for 'fee_div_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 4,
@@ -320,7 +309,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid zero value for 'fee_div_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 4,
@@ -341,7 +330,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Amount'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -358,7 +347,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid 'Amount'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -376,7 +365,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Destination'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -393,7 +382,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid 'Destination'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -411,7 +400,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Cannot create XRP to XRP paths.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "build_path": 1,
@@ -430,7 +419,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Successful 'build_path'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "build_path": 1,
@@ -445,15 +434,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"Not valid to include both 'Paths' and 'build_path'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "build_path": 1,
@@ -477,7 +463,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Successful 'SendMax'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "build_path": 1,
@@ -497,15 +483,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"'Amount' may not be XRP for pathfinding, but 'SendMax' may be XRP.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "build_path": 1,
@@ -521,15 +504,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"'secret' must be present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -546,7 +526,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'secret' must be non-empty.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "",
     "tx_json": {
@@ -564,7 +544,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Use 'seed' instead of 'secret'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
     "seed": "sh1yJfwoi98zCygwijUzuHmJDeVKd",
@@ -575,15 +555,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"Malformed 'seed'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
     "seed": "not a seed",
@@ -602,7 +579,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'tx_json' must be present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "rx_json": {
@@ -620,7 +597,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'TransactionType' must be present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -637,7 +614,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"The 'TransactionType' must be a pre-established transaction type.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -655,7 +632,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"The 'TransactionType' may be represented with an integer.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -665,15 +642,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": 0
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"'Account' must be present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -690,7 +664,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'Account' must be well formed.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -708,7 +682,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"The 'offline' tag may be added to the transaction.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 0,
@@ -719,15 +693,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"If 'offline' is true then a 'Sequence' field must be supplied.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 1,
@@ -747,7 +718,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"If 'offline' is true then a 'Fee' field must be supplied.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 1,
@@ -767,7 +738,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Valid transaction if 'offline' is true.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 1,
@@ -789,7 +760,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'offline' and 'build_path' are mutually exclusive.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 1,
@@ -811,7 +782,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"A 'Flags' field may be specified.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -822,15 +793,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"The 'Flags' field must be numeric.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -849,7 +817,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"It's okay to add a 'debug_signing' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "debug_signing": 0,
@@ -860,15 +828,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'tx_json.Sequence'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"Single-sign a multisigned transaction.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "a",
     "tx_json": {
@@ -890,15 +855,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType" : "Payment"
     }
 })",
-     {{"Already multisigned.",
-       "Already multisigned.",
-       "Secret does not match account.",
-       ""}}},
+     {{"Already multisigned.", "Already multisigned.", "Secret does not match account.", ""}}},
 
     {"Minimal sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -919,7 +881,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Minimal offline sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 1,
@@ -938,7 +900,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Offline sign_for using 'seed' instead of 'secret'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
     "seed": "sh1yJfwoi98zCygwijUzuHmJDeVKd",
@@ -958,7 +920,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Malformed seed in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
     "seed": "sh1yJfwoi98zCygwjUzuHmJDeVKd",
@@ -981,7 +943,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Account' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1001,7 +963,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Amount' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1021,7 +983,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Destination' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1041,7 +1003,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Destination' in sign_for, use DeliverMax",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1061,7 +1023,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Fee' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1081,7 +1043,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Sequence' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1101,7 +1063,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'SigningPubKey' in sign_for is automatically filled in.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1121,7 +1083,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"In sign_for, an account may not sign for itself.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "a",
     "tx_json": {
@@ -1142,7 +1104,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Cannot put duplicate accounts in Signers array",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1173,7 +1135,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Correctly append to pre-established Signers array",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
     "tx_json": {
@@ -1200,7 +1162,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Append to pre-established Signers array with bad signature",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
     "tx_json": {
@@ -1230,7 +1192,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Non-empty 'SigningPubKey' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1251,7 +1213,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'TransactionType' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1271,7 +1233,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"TxnSignature in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
     "tx_json": {
@@ -1302,7 +1264,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid field 'tx_json': string instead of object",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": ""
@@ -1315,7 +1277,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid field 'tx_json': integer instead of object",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": 20160331
@@ -1328,7 +1290,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid field 'tx_json': array instead of object",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": [ "hello", "world" ]
@@ -1341,7 +1303,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Pass in Fee with minimal payment, both Amount and DeliverMax.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "r9zN9x52FiCFAcicCLMQKbj1nxYhxJbbSy",
     "secret": "ssgN6zTvtM1q9XV8DvJpWm8LBYWiY",
     "tx_json": {
@@ -1381,10 +1343,7 @@ static constexpr TxnTestData txnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-     {{"Missing field 'secret'.",
-       "Missing field 'secret'.",
-       "Missing field 'account'.",
-       ""}}},
+     {{"Missing field 'secret'.", "Missing field 'secret'.", "Missing field 'account'.", ""}}},
 
     {"Minimal submit_multisigned with bad signature.",
      __LINE__,
@@ -2022,7 +1981,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Payment cannot specify different DeliverMax and Amount.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "debug_signing": 0,
@@ -2044,7 +2003,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Payment cannot specify bad DomainID.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "debug_signing": 0,
@@ -2067,7 +2026,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Minimal delegated transaction.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "secret": "a",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -2077,15 +2036,12 @@ static constexpr TxnTestData txnTestArray[] = {
         "Delegate": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
     }
 })",
-     {{"",
-       "",
-       "Missing field 'account'.",
-       "Missing field 'tx_json.Sequence'."}}},
+     {{"", "", "Missing field 'account'.", "Missing field 'tx_json.Sequence'."}}},
 
     {"Delegate not well formed.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "secret": "a",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -2103,7 +2059,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Delegate not in ledger.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "secret": "a",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -2121,7 +2077,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Delegate and secret not match.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "secret": "aa",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -2138,7 +2094,7 @@ static constexpr TxnTestData txnTestArray[] = {
 
 };
 
-class JSONRPC_test : public beast::unit_test::suite
+class JSONRPC_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -2146,12 +2102,10 @@ public:
     {
         testcase("bad RPC command");
         test::jtx::Env env(*this);
-        Json::Value const result{
-            env.rpc("bad_command", R"({"MakingThisUp": 0})")};
+        json::Value const result{env.rpc("bad_command", R"({"MakingThisUp": 0})")};
 
         BEAST_EXPECT(result[jss::result][jss::error] == "unknownCmd");
-        BEAST_EXPECT(
-            result[jss::result][jss::request][jss::command] == "bad_command");
+        BEAST_EXPECT(result[jss::result][jss::request][jss::command] == "bad_command");
     }
 
     void
@@ -2165,7 +2119,7 @@ public:
             Env env(*this);
             auto ledger = env.current();
             auto const& feeTrack = env.app().getFeeTrack();
-            Json::Value req;
+            json::Value req;
             Account const alice("alice");
             Account const bob("bob");
             env.fund(XRP(100000), alice);
@@ -2175,20 +2129,20 @@ public:
             auto const seq = env.seq(alice);
             auto jt = env.jtnofill(
                 batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                batch::inner(pay(alice, bob, XRP(3)), seq + 3),
-                batch::inner(pay(alice, bob, XRP(4)), seq + 4),
-                batch::inner(pay(alice, bob, XRP(5)), seq + 5),
-                batch::inner(pay(alice, bob, XRP(6)), seq + 6),
-                batch::inner(pay(alice, bob, XRP(7)), seq + 7),
-                batch::inner(pay(alice, bob, XRP(8)), seq + 8),
-                batch::inner(pay(alice, bob, XRP(9)), seq + 9));
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 2),
+                batch::Inner(pay(alice, bob, XRP(3)), seq + 3),
+                batch::Inner(pay(alice, bob, XRP(4)), seq + 4),
+                batch::Inner(pay(alice, bob, XRP(5)), seq + 5),
+                batch::Inner(pay(alice, bob, XRP(6)), seq + 6),
+                batch::Inner(pay(alice, bob, XRP(7)), seq + 7),
+                batch::Inner(pay(alice, bob, XRP(8)), seq + 8),
+                batch::Inner(pay(alice, bob, XRP(9)), seq + 9));
 
             jt.jv.removeMember(jss::Fee);
             jt.jv.removeMember(jss::TxnSignature);
             req[jss::tx_json] = jt.jv;
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2199,8 +2153,7 @@ public:
             BEAST_EXPECT(result.size() == 0);
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] ==
-                    env.current()->fees().base.jsonClipped());
+                req[jss::tx_json][jss::Fee] == env.current()->fees().base.jsonClipped());
         }
 
         // test signers max size
@@ -2208,7 +2161,7 @@ public:
             Env env(*this);
             auto ledger = env.current();
             auto const& feeTrack = env.app().getFeeTrack();
-            Json::Value req;
+            json::Value req;
             Account const alice("alice");
             Account const bob("bob");
             env.fund(XRP(100000), alice, bob);
@@ -2216,7 +2169,7 @@ public:
 
             auto jt = env.jtnofill(
                 noop(alice),
-                msig(
+                Msig(
                     alice,
                     alice,
                     alice,
@@ -2259,7 +2212,7 @@ public:
                     alice));
 
             req[jss::tx_json] = jt.jv;
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2270,8 +2223,7 @@ public:
             BEAST_EXPECT(result.size() == 0);
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] ==
-                    env.current()->fees().base.jsonClipped());
+                req[jss::tx_json][jss::Fee] == env.current()->fees().base.jsonClipped());
         }
     }
 
@@ -2280,16 +2232,14 @@ public:
     {
         testcase("autofill fees");
         test::jtx::Env env(*this);
-        auto const baseFee =
-            static_cast<int>(env.current()->fees().base.drops());
+        auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
         auto ledger = env.current();
         auto const& feeTrack = env.app().getFeeTrack();
 
         {
-            Json::Value req;
-            Json::Reader().parse(
-                "{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
-            Json::Value result = checkFee(
+            json::Value req;
+            json::Reader().parse("{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2298,19 +2248,18 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
-                req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == baseFee);
+                req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == baseFee);
         }
 
         {
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 2, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2319,17 +2268,15 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
-                req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == baseFee);
+                req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == baseFee);
         }
 
         {
-            Json::Value req;
-            Json::Reader().parse(
-                "{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
-            Json::Value result = checkFee(
+            json::Value req;
+            json::Reader().parse("{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2338,19 +2285,19 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
             // 3/6 = 1/2, but use the bigger number make sure
             // we're dividing.
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 6, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2359,17 +2306,17 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 "{ \"fee_mult_max\" : 0, \"fee_div_max\" : 2, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2378,17 +2325,17 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 "{ \"fee_mult_max\" : 10, \"fee_div_max\" : 0, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2397,17 +2344,16 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
             // transaction with a higher base fee
-            Json::Value req;
+            json::Value req;
             test::jtx::Account const alice("alice");
-            req[jss::tx_json] =
-                test::jtx::acctdelete(env.master.human(), alice.human());
-            Json::Value result = checkFee(
+            req[jss::tx_json] = test::jtx::acctdelete(env.master.human(), alice.human());
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2419,8 +2365,7 @@ public:
             BEAST_EXPECT(result.size() == 0);
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] ==
-                    env.current()->fees().increment.jsonClipped());
+                req[jss::tx_json][jss::Fee] == env.current()->fees().increment.jsonClipped());
         }
     }
 
@@ -2431,22 +2376,21 @@ public:
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
                     cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                    cfg->section("transaction_queue")
-                        .set("minimum_txn_in_ledger_standalone", "3");
+                    cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
                     return cfg;
                 })};
         LoadFeeTrack const& feeTrackOuter = env.app().getFeeTrack();
 
         {
             // high mult, no tx
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 1000,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2455,22 +2399,20 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
-            BEAST_EXPECT(
-                req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 10);
+            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 10);
         }
 
         {
             // low mult, no tx
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 5,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2479,10 +2421,8 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
-            BEAST_EXPECT(
-                req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 10);
+            BEAST_EXPECT(!RPC::containsError(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 10);
         }
 
         // put 4 transactions into the open ledger
@@ -2493,14 +2433,14 @@ public:
 
         {
             // high mult, 4 txs
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 1000,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2509,22 +2449,21 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
-                req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 8889);
+                req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 8889);
         }
 
         {
             // low mult, 4 tx
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 5,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2533,21 +2472,21 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
             // different low mult, 4 tx
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 1000,
                 "fee_div_max" : 3,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2556,21 +2495,21 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
             // high mult, 4 tx
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 8000,
                 "fee_div_max" : 3,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2579,22 +2518,21 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
-                req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 8889);
+                req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 8889);
         }
 
         {
             // negative mult
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : -5,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2603,19 +2541,19 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
         }
 
         {
             // negative div
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_div_max" : -2,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2624,20 +2562,20 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
         }
 
         {
             // negative mult & div
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : -2,
                 "fee_div_max" : -3,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2646,27 +2584,25 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
         }
 
         env.close();
 
         {
             // Call "sign" with nothing in the open ledger
-            Json::Value toSign;
+            json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
             toSign[jss::secret] = "masterpassphrase";
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
-                result[jss::tx_json].isMember(jss::Fee) &&
-                result[jss::tx_json][jss::Fee] == "10");
+                result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "10");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(
-                    Json::ValueType::uintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
         }
 
         {
@@ -2680,21 +2616,20 @@ public:
                 env(noop(env.master));
             }
 
-            Json::Value toSign;
+            json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
             toSign[jss::secret] = "masterpassphrase";
             toSign[jss::fee_mult_max] = 900;
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Fee) &&
                 result[jss::tx_json][jss::Fee] == "7813");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(
-                    Json::ValueType::uintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
 
             env.close();
         }
@@ -2709,20 +2644,18 @@ public:
                 BEAST_EXPECT(feeTrack.getLoadFactor() == 1220);
             }
 
-            Json::Value toSign;
+            json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
             toSign[jss::secret] = "masterpassphrase";
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
-                result[jss::tx_json].isMember(jss::Fee) &&
-                result[jss::tx_json][jss::Fee] == "47");
+                result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "47");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(
-                    Json::ValueType::uintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
         }
 
         {
@@ -2735,12 +2668,12 @@ public:
                 auto metrics = env.app().getTxQ().getMetrics(*env.current());
                 if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
                     break;
-                env(noop(env.master), fee(47));
+                env(noop(env.master), Fee(47));
             }
 
-            Env_ss envs(env);
+            EnvSs const envs(env);
 
-            Json::Value toSign;
+            json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
             toSign[jss::secret] = "masterpassphrase";
             // Max fee = 7000 drops
@@ -2748,14 +2681,13 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Fee) &&
                 result[jss::tx_json][jss::Fee] == "6806");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(
-                    Json::ValueType::uintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
         }
     }
 
@@ -2770,7 +2702,7 @@ public:
                 })};
 
         {
-            Json::Value toSign;
+            json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
 
             BEAST_EXPECT(!toSign[jss::tx_json].isMember(jss::NetworkID));
@@ -2778,7 +2710,7 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::NetworkID) &&
                 result[jss::tx_json][jss::NetworkID] == 1025);
@@ -2787,11 +2719,7 @@ public:
 
     // A function that can be called as though it would process a transaction.
     static void
-    fakeProcessTransaction(
-        std::shared_ptr<Transaction>&,
-        bool,
-        bool,
-        NetworkOPs::FailHard)
+    fakeProcessTransaction(std::shared_ptr<Transaction>&, bool, bool, NetworkOPs::FailHard)
     {
         ;
     }
@@ -2805,11 +2733,11 @@ public:
         // Use jtx to set up a ledger so the tests will do the right thing.
         Account const a{"a"};  // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
         Account const g{"g"};  // rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4
-        auto const USD = g["USD"];
+        auto const usd = g["USD"];
 
         // Account: rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi
         // seed:    sh1yJfwoi98zCygwijUzuHmJDeVKd
-        Account const ed{"ed", KeyType::ed25519};
+        Account const ed{"ed", KeyType::Ed25519};
         // master is rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh.
         // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
@@ -2821,25 +2749,25 @@ public:
         env.fund(XRP(100000), a, ed, g);
         env.close();
 
-        env(trust(a, USD(1000)));
-        env(trust(env.master, USD(1000)));
-        env(pay(g, a, USD(50)));
-        env(pay(g, env.master, USD(50)));
+        env(trust(a, usd(1000)));
+        env(trust(env.master, usd(1000)));
+        env(pay(g, a, usd(50)));
+        env(pay(g, env.master, usd(50)));
         env.close();
 
-        ProcessTransactionFn processTxn = fakeProcessTransaction;
+        ProcessTransactionFn const processTxn = fakeProcessTransaction;
 
         // A list of all the functions we want to test.
-        using signFunc = Json::Value (*)(
-            Json::Value params,
+        using signFunc = json::Value (*)(
+            json::Value params,
             unsigned int apiVersion,
             NetworkOPs::FailHard failType,
             Role role,
             std::chrono::seconds validatedLedgerAge,
             Application& app);
 
-        using submitFunc = Json::Value (*)(
-            Json::Value params,
+        using submitFunc = json::Value (*)(
+            json::Value params,
             unsigned int apiVersion,
             NetworkOPs::FailHard failType,
             Role role,
@@ -2847,64 +2775,46 @@ public:
             Application& app,
             ProcessTransactionFn const& processTransaction);
 
-        using TestStuff =
-            std::tuple<signFunc, submitFunc, char const*, unsigned int>;
+        using TestStuff = std::tuple<signFunc, submitFunc, char const*, unsigned int>;
 
-        static TestStuff const testFuncs[] = {
+        static TestStuff const kTEST_FUNCS[] = {
             TestStuff{transactionSign, nullptr, "sign", 0},
             TestStuff{nullptr, transactionSubmit, "submit", 1},
             TestStuff{transactionSignFor, nullptr, "sign_for", 2},
-            TestStuff{
-                nullptr,
-                transactionSubmitMultiSigned,
-                "submit_multisigned",
-                3}};
+            TestStuff{nullptr, transactionSubmitMultiSigned, "submit_multisigned", 3}};
 
-        for (auto testFunc : testFuncs)
+        for (auto testFunc : kTEST_FUNCS)
         {
             // For each JSON test.
-            for (auto const& txnTest : txnTestArray)
+            for (auto const& txnTest : kTXN_TEST_ARRAY)
             {
-                Json::Value req;
-                Json::Reader().parse(txnTest.json, req);
-                if (RPC::contains_error(req))
-                    Throw<std::runtime_error>(
-                        "Internal JSONRPC_test error.  Bad test JSON.");
+                json::Value req;
+                json::Reader().parse(txnTest.json, req);
+                if (RPC::containsError(req))
+                    Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
-                static Role const testedRoles[] = {
+                static Role const kTESTED_ROLES[] = {
                     Role::GUEST, Role::USER, Role::ADMIN, Role::FORBID};
 
-                for (Role testRole : testedRoles)
+                for (Role const testRole : kTESTED_ROLES)
                 {
-                    Json::Value result;
+                    json::Value result;
                     auto const signFn = get<0>(testFunc);
                     if (signFn != nullptr)
                     {
                         assert(get<1>(testFunc) == nullptr);
-                        result = signFn(
-                            req,
-                            1,
-                            NetworkOPs::FailHard::yes,
-                            testRole,
-                            1s,
-                            env.app());
+                        result = signFn(req, 1, NetworkOPs::FailHard::Yes, testRole, 1s, env.app());
                     }
                     else
                     {
                         auto const submitFn = get<1>(testFunc);
                         assert(submitFn != nullptr);
                         result = submitFn(
-                            req,
-                            1,
-                            NetworkOPs::FailHard::yes,
-                            testRole,
-                            1s,
-                            env.app(),
-                            processTxn);
+                            req, 1, NetworkOPs::FailHard::Yes, testRole, 1s, env.app(), processTxn);
                     }
 
                     std::string errStr;
-                    if (RPC::contains_error(result))
+                    if (RPC::containsError(result))
                         errStr = result["error_message"].asString();
 
                     if (errStr == txnTest.expMsg[get<3>(testFunc)])
@@ -2914,9 +2824,8 @@ public:
                     else
                     {
                         std::ostringstream description;
-                        description << txnTest.description << "  Called "
-                                    << get<2>(testFunc) << "().  Got \'"
-                                    << errStr << "\'";
+                        description << txnTest.description << "  Called " << get<2>(testFunc)
+                                    << "().  Got \'" << errStr << "\'";
                         fail(description.str(), __FILE__, txnTest.line);
                     }
                 }
@@ -2936,7 +2845,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(JSONRPC, ripple_app, ripple);
+BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, xrpl);
 
-}  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl::RPC

@@ -1,84 +1,74 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/hardened_hash.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
 
-#include <boost/endian/conversion.hpp>
+#include <boost/endian/detail/order.hpp>
 
+#include <array>
+#include <cassert>
 #include <complex>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <stdexcept>
+#include <string_view>
 #include <type_traits>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 // a non-hashing Hasher that just copies the bytes.
 // Used to test hash_append in base_uint
 template <std::size_t Bits>
-struct nonhash
+struct Nonhash
 {
-    static constexpr auto const endian = boost::endian::order::big;
-    static constexpr std::size_t WIDTH = Bits / 8;
+    static constexpr auto const kENDIAN = boost::endian::order::big;
+    static constexpr std::size_t kWIDTH = Bits / 8;
 
-    std::array<std::uint8_t, WIDTH> data_;
+    std::array<std::uint8_t, kWIDTH> data;
 
-    nonhash() = default;
+    Nonhash() = default;
 
     void
     operator()(void const* key, std::size_t len) noexcept
     {
-        assert(len == WIDTH);
-        memcpy(data_.data(), key, len);
+        assert(len == kWIDTH);
+        memcpy(data.data(), key, len);
     }
 
     explicit
     operator std::size_t() noexcept
     {
-        return WIDTH;
+        return kWIDTH;
     }
 };
 
-struct base_uint_test : beast::unit_test::suite
+struct base_uint_test : beast::unit_test::Suite
 {
-    using test96 = base_uint<96>;
-    static_assert(std::is_copy_constructible<test96>::value);
-    static_assert(std::is_copy_assignable<test96>::value);
+    using test96 = BaseUint<96>;
+    static_assert(std::is_copy_constructible_v<test96>);
+    static_assert(std::is_copy_assignable_v<test96>);
 
     void
     testComparisons()
     {
         {
-            static constexpr std::
-                array<std::pair<std::string_view, std::string_view>, 6>
-                    test_args{
-                        {{"0000000000000000", "0000000000000001"},
-                         {"0000000000000000", "ffffffffffffffff"},
-                         {"1234567812345678", "2345678923456789"},
-                         {"8000000000000000", "8000000000000001"},
-                         {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
-                         {"fffffffffffffffe", "ffffffffffffffff"}}};
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6>
+                kTEST_ARGS{
+                    {{"0000000000000000", "0000000000000001"},
+                     {"0000000000000000", "ffffffffffffffff"},
+                     {"1234567812345678", "2345678923456789"},
+                     {"8000000000000000", "8000000000000001"},
+                     {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
+                     {"fffffffffffffffe", "ffffffffffffffff"}}};
 
-            for (auto const& arg : test_args)
+            for (auto const& arg : kTEST_ARGS)
             {
-                ripple::base_uint<64> const u{arg.first}, v{arg.second};
+                xrpl::BaseUint<64> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -97,10 +87,8 @@ struct base_uint_test : beast::unit_test::suite
         }
 
         {
-            static constexpr std::array<
-                std::pair<std::string_view, std::string_view>,
-                6>
-                test_args{{
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6>
+                kTEST_ARGS{{
                     {"000000000000000000000000", "000000000000000000000001"},
                     {"000000000000000000000000", "ffffffffffffffffffffffff"},
                     {"0123456789ab0123456789ab", "123456789abc123456789abc"},
@@ -109,9 +97,9 @@ struct base_uint_test : beast::unit_test::suite
                     {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
                 }};
 
-            for (auto const& arg : test_args)
+            for (auto const& arg : kTEST_ARGS)
             {
-                ripple::base_uint<96> const u{arg.first}, v{arg.second};
+                xrpl::BaseUint<96> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -135,23 +123,22 @@ struct base_uint_test : beast::unit_test::suite
     {
         testcase("base_uint: general purpose tests");
 
-        static_assert(
-            !std::is_constructible<test96, std::complex<double>>::value);
-        static_assert(
-            !std::is_assignable<test96&, std::complex<double>>::value);
+        static_assert(!std::is_constructible_v<test96, std::complex<double>>);
+        static_assert(!std::is_assignable_v<test96&, std::complex<double>>);
 
         testComparisons();
 
         // used to verify set insertion (hashing required)
-        std::unordered_set<test96, hardened_hash<>> uset;
+        std::unordered_set<test96, HardenedHash<>> uset;
 
-        Blob raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-        BEAST_EXPECT(test96::bytes == raw.size());
+        Blob const raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+        BEAST_EXPECT(test96::kBYTES == raw.size());
 
         test96 u{raw};
         uset.insert(u);
         BEAST_EXPECT(raw.size() == u.size());
         BEAST_EXPECT(to_string(u) == "0102030405060708090A0B0C");
+        BEAST_EXPECT(toShortString(u) == "01020304...");
         BEAST_EXPECT(*u.data() == 1);
         BEAST_EXPECT(u.signum() == 1);
         BEAST_EXPECT(!!u);
@@ -166,14 +153,15 @@ struct base_uint_test : beast::unit_test::suite
         // Test hash_append by "hashing" with a no-op hasher (h)
         // and then extracting the bytes that were written during hashing
         // back into another base_uint (w) for comparison with the original
-        nonhash<96> h;
+        Nonhash<96> h{};
         hash_append(h, u);
-        test96 w{std::vector<std::uint8_t>(h.data_.begin(), h.data_.end())};
+        test96 const w{std::vector<std::uint8_t>(h.data.begin(), h.data.end())};
         BEAST_EXPECT(w == u);
 
         test96 v{~u};
         uset.insert(v);
         BEAST_EXPECT(to_string(v) == "FEFDFCFBFAF9F8F7F6F5F4F3");
+        BEAST_EXPECT(toShortString(v) == "FEFDFCFB...");
         BEAST_EXPECT(*v.data() == 0xfe);
         BEAST_EXPECT(v.signum() == 1);
         BEAST_EXPECT(!!v);
@@ -191,9 +179,10 @@ struct base_uint_test : beast::unit_test::suite
         v = u;
         BEAST_EXPECT(v == u);
 
-        test96 z{beast::zero};
+        test96 z{beast::kZERO};
         uset.insert(z);
         BEAST_EXPECT(to_string(z) == "000000000000000000000000");
+        BEAST_EXPECT(toShortString(z) == "00000000...");
         BEAST_EXPECT(*z.data() == 0);
         BEAST_EXPECT(*z.begin() == 0);
         BEAST_EXPECT(*std::prev(z.end(), 1) == 0);
@@ -210,20 +199,22 @@ struct base_uint_test : beast::unit_test::suite
         n++;
         BEAST_EXPECT(n == test96(1));
         n--;
-        BEAST_EXPECT(n == beast::zero);
+        BEAST_EXPECT(n == beast::kZERO);
         BEAST_EXPECT(n == z);
         n--;
         BEAST_EXPECT(to_string(n) == "FFFFFFFFFFFFFFFFFFFFFFFF");
-        n = beast::zero;
+        BEAST_EXPECT(toShortString(n) == "FFFFFFFF...");
+        n = beast::kZERO;
         BEAST_EXPECT(n == z);
 
         test96 zp1{z};
         zp1++;
         test96 zm1{z};
         zm1--;
-        test96 x{zm1 ^ zp1};
+        test96 const x{zm1 ^ zp1};
         uset.insert(x);
         BEAST_EXPECTS(to_string(x) == "FFFFFFFFFFFFFFFFFFFFFFFE", to_string(x));
+        BEAST_EXPECTS(toShortString(x) == "FFFFFFFF...", toShortString(x));
 
         BEAST_EXPECT(uset.size() == 4);
 
@@ -305,14 +296,12 @@ struct base_uint_test : beast::unit_test::suite
                 {
                     // Try to prevent constant evaluation.
                     std::vector<char> str(23, '7');
-                    std::string_view sView(str.data(), str.size());
-                    [[maybe_unused]] test96 t96(sView);
+                    std::string_view const sView(str.data(), str.size());
+                    [[maybe_unused]] test96 const t96(sView);
                 }
                 catch (std::invalid_argument const& e)
                 {
-                    BEAST_EXPECT(
-                        e.what() ==
-                        std::string("invalid length for hex string"));
+                    BEAST_EXPECT(e.what() == std::string("invalid length for hex string"));
                     caught = true;
                 }
                 BEAST_EXPECT(caught);
@@ -325,13 +314,12 @@ struct base_uint_test : beast::unit_test::suite
                     // Try to prevent constant evaluation.
                     std::vector<char> str(23, '7');
                     str.push_back('G');
-                    std::string_view sView(str.data(), str.size());
-                    [[maybe_unused]] test96 t96(sView);
+                    std::string_view const sView(str.data(), str.size());
+                    [[maybe_unused]] test96 const t96(sView);
                 }
                 catch (std::range_error const& e)
                 {
-                    BEAST_EXPECT(
-                        e.what() == std::string("invalid hex character"));
+                    BEAST_EXPECT(e.what() == std::string("invalid hex character"));
                     caught = true;
                 }
                 BEAST_EXPECT(caught);
@@ -348,7 +336,7 @@ struct base_uint_test : beast::unit_test::suite
                 {
                 }
             };
-            constexpr StrBaseUint testCases[] = {
+            constexpr StrBaseUint kTEST_CASES[] = {
                 "000000000000000000000000",
                 "000000000000000000000001",
                 "fedcba9876543210ABCDEF91",
@@ -356,7 +344,7 @@ struct base_uint_test : beast::unit_test::suite
                 "800000000000000000000000",
                 "fFfFfFfFfFfFfFfFfFfFfFfF"};
 
-            for (StrBaseUint const& t : testCases)
+            for (StrBaseUint const& t : kTEST_CASES)
             {
                 test96 t96;
                 BEAST_EXPECT(t96.parseHex(t.str));
@@ -366,7 +354,6 @@ struct base_uint_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(base_uint, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(base_uint, basics, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

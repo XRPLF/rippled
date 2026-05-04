@@ -1,0 +1,86 @@
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+
+#include <memory>
+#include <set>
+#include <string>
+
+namespace xrpl {
+
+json::Value
+doAccountCurrencies(RPC::JsonContext& context)
+{
+    auto& params = context.params;
+
+    if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
+        return RPC::missingFieldError(jss::account);
+
+    std::string strIdent;
+    if (params.isMember(jss::account))
+    {
+        if (!params[jss::account].isString())
+            return RPC::invalidFieldError(jss::account);
+        strIdent = params[jss::account].asString();
+    }
+    else if (params.isMember(jss::ident))
+    {
+        if (!params[jss::ident].isString())
+            return RPC::invalidFieldError(jss::ident);
+        strIdent = params[jss::ident].asString();
+    }
+
+    // Get the current ledger
+    std::shared_ptr<ReadView const> ledger;
+    auto result = RPC::lookupLedger(ledger, context);
+    if (!ledger)
+        return result;
+
+    // Get info on account.
+    auto id = parseBase58<AccountID>(strIdent);
+    if (!id)
+    {
+        RPC::injectError(RpcActMalformed, result);
+        return result;
+    }
+    auto const accountID{id.value()};
+
+    if (!ledger->exists(keylet::account(accountID)))
+        return rpcError(RpcActNotFound);
+
+    std::set<Currency> send, receive;
+    for (auto const& rspEntry : RPCTrustLine::getItems(accountID, *ledger))
+    {
+        STAmount const& saBalance = rspEntry.getBalance();
+
+        if (saBalance < rspEntry.getLimit())
+            receive.insert(saBalance.get<Issue>().currency);
+        if ((-saBalance) < rspEntry.getLimitPeer())
+            send.insert(saBalance.get<Issue>().currency);
+    }
+
+    send.erase(badCurrency());
+    receive.erase(badCurrency());
+
+    json::Value& sendCurrencies = (result[jss::send_currencies] = json::ArrayValue);
+    for (auto const& c : send)
+        sendCurrencies.append(to_string(c));
+
+    json::Value& recvCurrencies = (result[jss::receive_currencies] = json::ArrayValue);
+    for (auto const& c : receive)
+        recvCurrencies.append(to_string(c));
+
+    return result;
+}
+
+}  // namespace xrpl

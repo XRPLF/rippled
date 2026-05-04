@@ -1,35 +1,20 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Dev Null Productions, LLC
+// Copyright (c) 2020 Dev Null Productions
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
-
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 
+#include <memory>
 #include <string>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
-class ManifestRPC_test : public beast::unit_test::suite
+class ManifestRPC_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -42,19 +27,16 @@ public:
         {
             // manifest with no public key
             auto const info = env.rpc("json", "manifest", "{ }");
-            BEAST_EXPECT(
-                info[jss::result][jss::error_message] ==
-                "Missing field 'public_key'.");
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Missing field 'public_key'.");
         }
         {
-            // manifest with manlformed public key
+            // manifest with malformed public key
             auto const info = env.rpc(
                 "json",
                 "manifest",
                 "{ \"public_key\": "
                 "\"abcdef12345\"}");
-            BEAST_EXPECT(
-                info[jss::result][jss::error_message] == "Invalid parameters.");
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Invalid parameters.");
         }
     }
 
@@ -64,8 +46,7 @@ public:
         testcase("Lookup");
 
         using namespace jtx;
-        std::string const key =
-            "n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7";
+        std::string const key = "n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7";
         Env env{*this, envconfig([&key](std::unique_ptr<Config> cfg) {
                     cfg->section(SECTION_VALIDATORS).append(key);
                     return cfg;
@@ -90,6 +71,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ManifestRPC, rpc, ripple);
-}  // namespace test
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(ManifestRPC, rpc, xrpl);
+}  // namespace xrpl::test

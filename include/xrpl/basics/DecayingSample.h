@@ -1,29 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_DECAYINGSAMPLE_H_INCLUDED
-#define RIPPLE_BASICS_DECAYINGSAMPLE_H_INCLUDED
+#pragma once
 
 #include <chrono>
 #include <cmath>
 
-namespace ripple {
+namespace xrpl {
 
 /** Sampling function using exponential decay to provide a continuous value.
     @tparam The number of seconds in the decay window.
@@ -40,7 +20,7 @@ public:
     /**
         @param now Start time of DecayingSample.
     */
-    explicit DecayingSample(time_point now) : m_value(value_type()), m_when(now)
+    explicit DecayingSample(time_point now) : value_(value_type()), when_(now)
     {
     }
 
@@ -51,8 +31,8 @@ public:
     add(value_type value, time_point now)
     {
         decay(now);
-        m_value += value;
-        return m_value / Window;
+        value_ += value;
+        return value_ / Window;
     }
 
     /** Retrieve the current value in normalized units.
@@ -62,7 +42,7 @@ public:
     value(time_point now)
     {
         decay(now);
-        return m_value / Window;
+        return value_ / Window;
     }
 
 private:
@@ -70,37 +50,38 @@ private:
     void
     decay(time_point now)
     {
-        if (now == m_when)
+        if (now == when_)
             return;
 
-        if (m_value != value_type())
+        if (value_ != value_type())
         {
             std::size_t elapsed =
-                std::chrono::duration_cast<std::chrono::seconds>(now - m_when)
-                    .count();
+                std::chrono::duration_cast<std::chrono::seconds>(now - when_).count();
 
             // A span larger than four times the window decays the
             // value to an insignificant amount so just reset it.
             //
             if (elapsed > 4 * Window)
             {
-                m_value = value_type();
+                value_ = value_type();
             }
             else
             {
-                while (elapsed--)
-                    m_value -= (m_value + Window - 1) / Window;
+                for (; elapsed > 0; --elapsed)
+                {
+                    value_ -= (value_ + Window - 1) / Window;
+                }
             }
         }
 
-        m_when = now;
+        when_ = now;
     }
 
     // Current value in exponential units
-    value_type m_value;
+    value_type value_;
 
     // Last time the aging function was applied
-    time_point m_when;
+    time_point when_;
 };
 
 //------------------------------------------------------------------------------
@@ -114,7 +95,7 @@ class DecayWindow
 public:
     using time_point = typename Clock::time_point;
 
-    explicit DecayWindow(time_point now) : value_(0), when_(now)
+    explicit DecayWindow(time_point now) : when_(now)
     {
     }
 
@@ -146,10 +127,8 @@ private:
         when_ = now;
     }
 
-    double value_;
+    double value_{0};
     time_point when_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,86 +1,80 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_MATCH_HPP
-#define BEAST_UNIT_TEST_MATCH_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/suite_info.h>
 
 #include <string>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 // Predicate for implementing matches
-class selector
+class Selector
 {
 public:
-    enum mode_t {
+    enum class ModeT {
         // Run all tests except manual ones
-        all,
+        All,
 
         // Run tests that match in any field
-        automatch,
+        Automatch,
 
         // Match on suite
-        suite,
+        Suite,
 
         // Match on library
-        library,
+        Library,
 
         // Match on module (used internally)
-        module,
+        Module,
 
         // Match nothing (used internally)
-        none
+        None
     };
 
 private:
-    mode_t mode_;
+    ModeT mode_;
     std::string pat_;
     std::string library_;
 
 public:
     template <class = void>
-    explicit selector(mode_t mode, std::string const& pattern = "");
+    explicit Selector(ModeT mode, std::string const& pattern = "");
 
     template <class = void>
     bool
-    operator()(suite_info const& s);
+    operator()(SuiteInfo const& s);
 };
 
 //------------------------------------------------------------------------------
 
 template <class>
-selector::selector(mode_t mode, std::string const& pattern)
-    : mode_(mode), pat_(pattern)
+Selector::Selector(ModeT mode, std::string const& pattern) : mode_(mode), pat_(pattern)
 {
-    if (mode_ == automatch && pattern.empty())
-        mode_ = all;
+    if (mode_ == ModeT::Automatch && pattern.empty())
+        mode_ = ModeT::All;
 }
 
 template <class>
 bool
-selector::operator()(suite_info const& s)
+Selector::operator()(SuiteInfo const& s)
 {
     switch (mode_)
     {
-        case automatch:
+        case ModeT::Automatch:
             // suite or full name
-            if (s.name() == pat_ || s.full_name() == pat_)
+            if (s.name() == pat_ || s.fullName() == pat_)
             {
-                mode_ = none;
+                mode_ = ModeT::None;
                 return true;
             }
 
             // check module
             if (pat_ == s.module())
             {
-                mode_ = module;
+                mode_ = ModeT::Module;
                 library_ = s.library();
                 return !s.manual();
             }
@@ -88,12 +82,12 @@ selector::operator()(suite_info const& s)
             // check library
             if (pat_ == s.library())
             {
-                mode_ = library;
+                mode_ = ModeT::Library;
                 return !s.manual();
             }
 
             // check start of name
-            if (s.name().starts_with(pat_) || s.full_name().starts_with(pat_))
+            if (s.name().starts_with(pat_) || s.fullName().starts_with(pat_))
             {
                 // Don't change the mode so that the partial pattern can match
                 // more than once
@@ -102,19 +96,19 @@ selector::operator()(suite_info const& s)
 
             return false;
 
-        case suite:
+        case ModeT::Suite:
             return pat_ == s.name();
 
-        case module:
+        case ModeT::Module:
             return pat_ == s.module() && !s.manual();
 
-        case library:
+        case ModeT::Library:
             return pat_ == s.library() && !s.manual();
 
-        case none:
+        case ModeT::None:
             return false;
 
-        case all:
+        case ModeT::All:
         default:
             break;
     };
@@ -128,7 +122,7 @@ selector::operator()(suite_info const& s)
 
 /** Returns a predicate that implements a smart matching rule.
     The predicate checks the suite, module, and library fields of the
-    suite_info in that order. When it finds a match, it changes modes
+    SuiteInfo in that order. When it finds a match, it changes modes
     depending on what was found:
 
         If a suite is matched first, then only the suite is selected. The
@@ -141,34 +135,31 @@ selector::operator()(suite_info const& s)
         not marked manual are selected from then on.
 
 */
-inline selector
-match_auto(std::string const& name)
+inline Selector
+matchAuto(std::string const& name)
 {
-    return selector(selector::automatch, name);
+    return Selector(Selector::ModeT::Automatch, name);
 }
 
 /** Return a predicate that matches all suites not marked manual. */
-inline selector
-match_all()
+inline Selector
+matchAll()
 {
-    return selector(selector::all);
+    return Selector(Selector::ModeT::All);
 }
 
 /** Returns a predicate that matches a specific suite. */
-inline selector
-match_suite(std::string const& name)
+inline Selector
+matchSuite(std::string const& name)
 {
-    return selector(selector::suite, name);
+    return Selector(Selector::ModeT::Suite, name);
 }
 
 /** Returns a predicate that matches all suites in a library. */
-inline selector
-match_library(std::string const& name)
+inline Selector
+matchLibrary(std::string const& name)
 {
-    return selector(selector::library, name);
+    return Selector(Selector::ModeT::Library, name);
 }
 
-}  // namespace unit_test
-}  // namespace beast
-
-#endif
+}  // namespace beast::unit_test

@@ -1,78 +1,102 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <array>
+#include <cstdint>
+#include <limits>
+#include <map>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
-class Number_test : public beast::unit_test::suite
+class Number_test : public beast::unit_test::Suite
 {
 public:
     void
     testZero()
     {
-        testcase("zero");
+        testcase << "zero " << to_string(Number::getMantissaScale());
 
-        Number const z{0, 0};
+        for (Number const& z : {Number{0, 0}, Number{0}})
+        {
+            BEAST_EXPECT(z.mantissa() == 0);
+            BEAST_EXPECT(z.exponent() == Number{}.exponent());
 
-        BEAST_EXPECT(z.mantissa() == 0);
-        BEAST_EXPECT(z.exponent() == Number{}.exponent());
-
-        BEAST_EXPECT((z + z) == z);
-        BEAST_EXPECT((z - z) == z);
-        BEAST_EXPECT(z == -z);
+            BEAST_EXPECT((z + z) == z);
+            BEAST_EXPECT((z - z) == z);
+            BEAST_EXPECT(z == -z);
+        }
     }
 
     void
-    test_limits()
+    testLimits()
     {
-        testcase("test_limits");
+        auto const scale = Number::getMantissaScale();
+        testcase << "test_limits " << to_string(scale);
         bool caught = false;
+        auto const minMantissa = Number::minMantissa();
         try
         {
-            Number x{10'000'000'000'000'000, 32768};
+            [[maybe_unused]] Number const x =
+                Number{false, minMantissa * 10, 32768, Number::Normalized{}};
         }
         catch (std::overflow_error const&)
         {
             caught = true;
         }
         BEAST_EXPECT(caught);
-        Number x{10'000'000'000'000'000, 32767};
-        BEAST_EXPECT((x == Number{1'000'000'000'000'000, 32768}));
-        Number z{1'000'000'000'000'000, -32769};
-        BEAST_EXPECT(z == Number{});
-        Number y{1'000'000'000'000'001'500, 32000};
-        BEAST_EXPECT((y == Number{1'000'000'000'000'002, 32003}));
-        Number m{std::numeric_limits<std::int64_t>::min()};
-        BEAST_EXPECT((m == Number{-9'223'372'036'854'776, 3}));
-        Number M{std::numeric_limits<std::int64_t>::max()};
-        BEAST_EXPECT((M == Number{9'223'372'036'854'776, 3}));
+
+        auto test = [this](auto const& x, auto const& y, int line) {
+            auto const result = x == y;
+            std::stringstream ss;
+            ss << x << " == " << y << " -> " << (result ? "true" : "false");
+            expect(result, ss.str(), __FILE__, line);
+        };
+
+        test(
+            Number{false, minMantissa * 10, 32767, Number::Normalized{}},
+            Number{false, minMantissa, 32768, Number::Normalized{}},
+            __LINE__);
+        test(Number{false, minMantissa, -32769, Number::Normalized{}}, Number{}, __LINE__);
+        test(
+            Number{false, minMantissa, 32000, Number::Normalized{}} * 1'000 +
+                Number{false, 1'500, 32000, Number::Normalized{}},
+            Number{false, minMantissa + 2, 32003, Number::Normalized{}},
+            __LINE__);
+        // 9,223,372,036,854,775,808
+
+        test(
+            Number{std::numeric_limits<std::int64_t>::min()},
+            scale == MantissaRange::MantissaScale::Small
+                ? Number{-9'223'372'036'854'776, 3}
+                : Number{true, 9'223'372'036'854'775'808ULL, 0, Number::Normalized{}},
+            __LINE__);
+        test(
+            Number{std::numeric_limits<std::int64_t>::min() + 1},
+            scale == MantissaRange::MantissaScale::Small ? Number{-9'223'372'036'854'776, 3}
+                                                         : Number{-9'223'372'036'854'775'807},
+            __LINE__);
+        test(
+            Number{std::numeric_limits<std::int64_t>::max()},
+            Number{
+                scale == MantissaRange::MantissaScale::Small
+                    ? 9'223'372'036'854'776
+                    : std::numeric_limits<std::int64_t>::max(),
+                18 - Number::mantissaLog()},
+            __LINE__);
         caught = false;
         try
         {
-            Number q{99'999'999'999'999'999, 32767};
+            [[maybe_unused]]
+            Number const q = Number{false, minMantissa, 32767, Number::Normalized{}} * 100;
         }
         catch (std::overflow_error const&)
         {
@@ -82,78 +106,245 @@ public:
     }
 
     void
-    test_add()
+    testAdd()
     {
-        testcase("test_add");
+        auto const scale = Number::getMantissaScale();
+        testcase << "test_add " << to_string(scale);
+
         using Case = std::tuple<Number, Number, Number>;
-        Case c[]{
-            {Number{1'000'000'000'000'000, -15},
-             Number{6'555'555'555'555'555, -29},
-             Number{1'000'000'000'000'066, -15}},
-            {Number{-1'000'000'000'000'000, -15},
-             Number{-6'555'555'555'555'555, -29},
-             Number{-1'000'000'000'000'066, -15}},
-            {Number{-1'000'000'000'000'000, -15},
-             Number{6'555'555'555'555'555, -29},
-             Number{-9'999'999'999'999'344, -16}},
-            {Number{-6'555'555'555'555'555, -29},
-             Number{1'000'000'000'000'000, -15},
-             Number{9'999'999'999'999'344, -16}},
-            {Number{}, Number{5}, Number{5}},
-            {Number{5'555'555'555'555'555, -32768},
-             Number{-5'555'555'555'555'554, -32768},
-             Number{0}},
-            {Number{-9'999'999'999'999'999, -31},
-             Number{1'000'000'000'000'000, -15},
-             Number{9'999'999'999'999'990, -16}}};
-        for (auto const& [x, y, z] : c)
-            BEAST_EXPECT(x + y == z);
-        bool caught = false;
-        try
+        auto const cSmall = std::to_array<Case>(
+            {{Number{1'000'000'000'000'000, -15},
+              Number{6'555'555'555'555'555, -29},
+              Number{1'000'000'000'000'066, -15}},
+             {Number{-1'000'000'000'000'000, -15},
+              Number{-6'555'555'555'555'555, -29},
+              Number{-1'000'000'000'000'066, -15}},
+             {Number{-1'000'000'000'000'000, -15},
+              Number{6'555'555'555'555'555, -29},
+              Number{-9'999'999'999'999'344, -16}},
+             {Number{-6'555'555'555'555'555, -29},
+              Number{1'000'000'000'000'000, -15},
+              Number{9'999'999'999'999'344, -16}},
+             {Number{}, Number{5}, Number{5}},
+             {Number{5}, Number{}, Number{5}},
+             {Number{5'555'555'555'555'555, -32768},
+              Number{-5'555'555'555'555'554, -32768},
+              Number{0}},
+             {Number{-9'999'999'999'999'999, -31},
+              Number{1'000'000'000'000'000, -15},
+              Number{9'999'999'999'999'990, -16}}});
+        auto const cLarge = std::to_array<Case>(
+            // Note that items with extremely large mantissas need to be
+            // calculated, because otherwise they overflow uint64. Items from C
+            // with larger mantissa
+            {
+                {Number{1'000'000'000'000'000, -15},
+                 Number{6'555'555'555'555'555, -29},
+                 Number{1'000'000'000'000'065'556, -18}},
+                {Number{-1'000'000'000'000'000, -15},
+                 Number{-6'555'555'555'555'555, -29},
+                 Number{-1'000'000'000'000'065'556, -18}},
+                {Number{-1'000'000'000'000'000, -15},
+                 Number{6'555'555'555'555'555, -29},
+                 Number{true, 9'999'999'999'999'344'444ULL, -19, Number::Normalized{}}},
+                {Number{-6'555'555'555'555'555, -29},
+                 Number{1'000'000'000'000'000, -15},
+                 Number{false, 9'999'999'999'999'344'444ULL, -19, Number::Normalized{}}},
+                {Number{}, Number{5}, Number{5}},
+                {Number{5}, Number{}, Number{5}},
+                {Number{5'555'555'555'555'555'000, -32768},
+                 Number{-5'555'555'555'555'554'000, -32768},
+                 Number{0}},
+                {Number{-9'999'999'999'999'999, -31},
+                 Number{1'000'000'000'000'000, -15},
+                 Number{9'999'999'999'999'990, -16}},
+                // Items from cSmall expanded for the larger mantissa
+                {Number{1'000'000'000'000'000'000, -18},
+                 Number{6'555'555'555'555'555'555, -35},
+                 Number{1'000'000'000'000'000'066, -18}},
+                {Number{-1'000'000'000'000'000'000, -18},
+                 Number{-6'555'555'555'555'555'555, -35},
+                 Number{-1'000'000'000'000'000'066, -18}},
+                {Number{-1'000'000'000'000'000'000, -18},
+                 Number{6'555'555'555'555'555'555, -35},
+                 Number{true, 9'999'999'999'999'999'344ULL, -19, Number::Normalized{}}},
+                {Number{-6'555'555'555'555'555'555, -35},
+                 Number{1'000'000'000'000'000'000, -18},
+                 Number{false, 9'999'999'999'999'999'344ULL, -19, Number::Normalized{}}},
+                {Number{}, Number{5}, Number{5}},
+                {Number{5'555'555'555'555'555'555, -32768},
+                 Number{-5'555'555'555'555'555'554, -32768},
+                 Number{0}},
+                {Number{true, 9'999'999'999'999'999'999ULL, -37, Number::Normalized{}},
+                 Number{1'000'000'000'000'000'000, -18},
+                 Number{false, 9'999'999'999'999'999'990ULL, -19, Number::Normalized{}}},
+                {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP / 10, 1}},
+                {Number{Number::kMAX_REP - 1}, Number{1, 0}, Number{Number::kMAX_REP}},
+                // Test extremes
+                {
+                    // Each Number operand rounds up, so the actual mantissa is
+                    // minMantissa
+                    Number{false, 9'999'999'999'999'999'999ULL, 0, Number::Normalized{}},
+                    Number{false, 9'999'999'999'999'999'999ULL, 0, Number::Normalized{}},
+                    Number{2, 19},
+                },
+                {
+                    // Does not round. Mantissas are going to be > maxRep, so if
+                    // added together as uint64_t's, the result will overflow.
+                    // With addition using uint128_t, there's no problem. After
+                    // normalizing, the resulting mantissa ends up less than
+                    // maxRep.
+                    Number{false, 9'999'999'999'999'999'990ULL, 0, Number::Normalized{}},
+                    Number{false, 9'999'999'999'999'999'990ULL, 0, Number::Normalized{}},
+                    Number{false, 1'999'999'999'999'999'998ULL, 1, Number::Normalized{}},
+                },
+            });
+        auto test = [this](auto const& c) {
+            for (auto const& [x, y, z] : c)
+            {
+                auto const result = x + y;
+                std::stringstream ss;
+                ss << x << " + " << y << " = " << result << ". Expected: " << z;
+                BEAST_EXPECTS(result == z, ss.str());
+            }
+        };
+        if (scale == MantissaRange::MantissaScale::Small)
         {
-            Number{9'999'999'999'999'999, 32768} +
-                Number{5'000'000'000'000'000, 32767};
+            test(cSmall);
         }
-        catch (std::overflow_error const&)
+        else
         {
-            caught = true;
+            test(cLarge);
         }
-        BEAST_EXPECT(caught);
+        {
+            bool caught = false;
+            try
+            {
+                Number{false, Number::maxMantissa(), 32768, Number::Normalized{}} +
+                    Number{false, Number::minMantissa(), 32767, Number::Normalized{}} * 5;
+            }
+            catch (std::overflow_error const&)
+            {
+                caught = true;
+            }
+            BEAST_EXPECT(caught);
+        }
     }
 
     void
-    test_sub()
+    testSub()
     {
-        testcase("test_sub");
+        auto const scale = Number::getMantissaScale();
+        testcase << "test_sub " << to_string(scale);
+
         using Case = std::tuple<Number, Number, Number>;
-        Case c[]{
-            {Number{1'000'000'000'000'000, -15},
-             Number{6'555'555'555'555'555, -29},
-             Number{9'999'999'999'999'344, -16}},
-            {Number{6'555'555'555'555'555, -29},
-             Number{1'000'000'000'000'000, -15},
-             Number{-9'999'999'999'999'344, -16}},
-            {Number{1'000'000'000'000'000, -15},
-             Number{1'000'000'000'000'000, -15},
-             Number{0}},
-            {Number{1'000'000'000'000'000, -15},
-             Number{1'000'000'000'000'001, -15},
-             Number{-1'000'000'000'000'000, -30}},
-            {Number{1'000'000'000'000'001, -15},
-             Number{1'000'000'000'000'000, -15},
-             Number{1'000'000'000'000'000, -30}}};
-        for (auto const& [x, y, z] : c)
-            BEAST_EXPECT(x - y == z);
+        auto const cSmall = std::to_array<Case>(
+            {{Number{1'000'000'000'000'000, -15},
+              Number{6'555'555'555'555'555, -29},
+              Number{9'999'999'999'999'344, -16}},
+             {Number{6'555'555'555'555'555, -29},
+              Number{1'000'000'000'000'000, -15},
+              Number{-9'999'999'999'999'344, -16}},
+             {Number{1'000'000'000'000'000, -15}, Number{1'000'000'000'000'000, -15}, Number{0}},
+             {Number{1'000'000'000'000'000, -15},
+              Number{1'000'000'000'000'001, -15},
+              Number{-1'000'000'000'000'000, -30}},
+             {Number{1'000'000'000'000'001, -15},
+              Number{1'000'000'000'000'000, -15},
+              Number{1'000'000'000'000'000, -30}}});
+        auto const cLarge = std::to_array<Case>(
+            // Note that items with extremely large mantissas need to be
+            // calculated, because otherwise they overflow uint64. Items from C
+            // with larger mantissa
+            {
+                {Number{1'000'000'000'000'000, -15},
+                 Number{6'555'555'555'555'555, -29},
+                 Number{false, 9'999'999'999'999'344'444ULL, -19, Number::Normalized{}}},
+                {Number{6'555'555'555'555'555, -29},
+                 Number{1'000'000'000'000'000, -15},
+                 Number{true, 9'999'999'999'999'344'444ULL, -19, Number::Normalized{}}},
+                {Number{1'000'000'000'000'000, -15}, Number{1'000'000'000'000'000, -15}, Number{0}},
+                {Number{1'000'000'000'000'000, -15},
+                 Number{1'000'000'000'000'001, -15},
+                 Number{-1'000'000'000'000'000, -30}},
+                {Number{1'000'000'000'000'001, -15},
+                 Number{1'000'000'000'000'000, -15},
+                 Number{1'000'000'000'000'000, -30}},
+                // Items from cSmall expanded for the larger mantissa
+                {Number{1'000'000'000'000'000'000, -18},
+                 Number{6'555'555'555'555'555'555, -32},
+                 Number{false, 9'999'999'999'999'344'444ULL, -19, Number::Normalized{}}},
+                {Number{6'555'555'555'555'555'555, -32},
+                 Number{1'000'000'000'000'000'000, -18},
+                 Number{true, 9'999'999'999'999'344'444ULL, -19, Number::Normalized{}}},
+                {Number{1'000'000'000'000'000'000, -18},
+                 Number{1'000'000'000'000'000'000, -18},
+                 Number{0}},
+                {Number{1'000'000'000'000'000'000, -18},
+                 Number{1'000'000'000'000'000'001, -18},
+                 Number{-1'000'000'000'000'000'000, -36}},
+                {Number{1'000'000'000'000'000'001, -18},
+                 Number{1'000'000'000'000'000'000, -18},
+                 Number{1'000'000'000'000'000'000, -36}},
+                {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP - 1}},
+                {Number{false, Number::kMAX_REP + 1, 0, Number::Normalized{}},
+                 Number{1, 0},
+                 Number{(Number::kMAX_REP / 10) + 1, 1}},
+                {Number{false, Number::kMAX_REP + 1, 0, Number::Normalized{}},
+                 Number{3, 0},
+                 Number{Number::kMAX_REP}},
+                {power(2, 63), Number{3, 0}, Number{Number::kMAX_REP}},
+            });
+        auto test = [this](auto const& c) {
+            for (auto const& [x, y, z] : c)
+            {
+                auto const result = x - y;
+                std::stringstream ss;
+                ss << x << " - " << y << " = " << result << ". Expected: " << z;
+                BEAST_EXPECTS(result == z, ss.str());
+            }
+        };
+        if (scale == MantissaRange::MantissaScale::Small)
+        {
+            test(cSmall);
+        }
+        else
+        {
+            test(cLarge);
+        }
     }
 
     void
-    test_mul()
+    testMul()
     {
-        testcase("test_mul");
+        auto const scale = Number::getMantissaScale();
+        testcase << "test_mul " << to_string(scale);
+
         using Case = std::tuple<Number, Number, Number>;
-        saveNumberRoundMode save{Number::setround(Number::to_nearest)};
+        auto test = [this](auto const& c) {
+            for (auto const& [x, y, z] : c)
+            {
+                auto const result = x * y;
+                std::stringstream ss;
+                ss << x << " * " << y << " = " << result << ". Expected: " << z;
+                BEAST_EXPECTS(result == z, ss.str());
+            }
+        };
+        auto tests = [&](auto const& cSmall, auto const& cLarge) {
+            if (scale == MantissaRange::MantissaScale::Small)
+            {
+                test(cSmall);
+            }
+            else
+            {
+                test(cLarge);
+            }
+        };
+        auto const maxMantissa = Number::maxMantissa();
+
+        SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};
         {
-            Case c[]{
+            auto const cSmall = std::to_array<Case>({
                 {Number{7}, Number{8}, Number{56}},
                 {Number{1414213562373095, -15},
                  Number{1414213562373095, -15},
@@ -167,168 +358,452 @@ public:
                 {Number{3214285714285706, -15},
                  Number{3111111111111119, -15},
                  Number{1000000000000000, -14}},
-                {Number{1000000000000000, -32768},
-                 Number{1000000000000000, -32768},
-                 Number{0}}};
-            for (auto const& [x, y, z] : c)
-                BEAST_EXPECT(x * y == z);
-        }
-        Number::setround(Number::towards_zero);
-        {
-            Case c[]{
+                {Number{1000000000000000, -32768}, Number{1000000000000000, -32768}, Number{0}},
+                // Maximum mantissa range
+                {Number{9'999'999'999'999'999, 0},
+                 Number{9'999'999'999'999'999, 0},
+                 Number{9'999'999'999'999'998, 16}},
+            });
+            auto const cLarge = std::to_array<Case>({
+                // Note that items with extremely large mantissas need to be
+                // calculated, because otherwise they overflow uint64. Items
+                // from C with larger mantissa
                 {Number{7}, Number{8}, Number{56}},
                 {Number{1414213562373095, -15},
                  Number{1414213562373095, -15},
-                 Number{1999999999999999, -15}},
+                 Number{1999999999999999862, -18}},
                 {Number{-1414213562373095, -15},
                  Number{1414213562373095, -15},
-                 Number{-1999999999999999, -15}},
+                 Number{-1999999999999999862, -18}},
                 {Number{-1414213562373095, -15},
                  Number{-1414213562373095, -15},
-                 Number{1999999999999999, -15}},
+                 Number{1999999999999999862, -18}},
                 {Number{3214285714285706, -15},
                  Number{3111111111111119, -15},
-                 Number{9999999999999999, -15}},
-                {Number{1000000000000000, -32768},
-                 Number{1000000000000000, -32768},
-                 Number{0}}};
-            for (auto const& [x, y, z] : c)
-                BEAST_EXPECT(x * y == z);
+                 Number{false, 9'999'999'999'999'999'579ULL, -18, Number::Normalized{}}},
+                {Number{1000000000000000000, -32768},
+                 Number{1000000000000000000, -32768},
+                 Number{0}},
+                // Items from cSmall expanded for the larger mantissa,
+                // except duplicates. Sadly, it looks like sqrt(2)^2 != 2
+                // with higher precision
+                {Number{1414213562373095049, -18},
+                 Number{1414213562373095049, -18},
+                 Number{2000000000000000001, -18}},
+                {Number{-1414213562373095048, -18},
+                 Number{1414213562373095048, -18},
+                 Number{-1999999999999999998, -18}},
+                {Number{-1414213562373095048, -18},
+                 Number{-1414213562373095049, -18},
+                 Number{1999999999999999999, -18}},
+                {Number{3214285714285714278, -18}, Number{3111111111111111119, -18}, Number{10, 0}},
+                // Maximum mantissa range - rounds up to 1e19
+                {Number{false, maxMantissa, 0, Number::Normalized{}},
+                 Number{false, maxMantissa, 0, Number::Normalized{}},
+                 Number{1, 38}},
+                // Maximum int64 range
+                {Number{Number::kMAX_REP, 0},
+                 Number{Number::kMAX_REP, 0},
+                 Number{85'070'591'730'234'615'85, 19}},
+            });
+            tests(cSmall, cLarge);
         }
-        Number::setround(Number::downward);
+        Number::setround(Number::RoundingMode::TowardsZero);
+        testcase << "test_mul " << to_string(Number::getMantissaScale()) << " towards_zero";
         {
-            Case c[]{
-                {Number{7}, Number{8}, Number{56}},
-                {Number{1414213562373095, -15},
-                 Number{1414213562373095, -15},
-                 Number{1999999999999999, -15}},
-                {Number{-1414213562373095, -15},
-                 Number{1414213562373095, -15},
-                 Number{-2000000000000000, -15}},
-                {Number{-1414213562373095, -15},
-                 Number{-1414213562373095, -15},
-                 Number{1999999999999999, -15}},
-                {Number{3214285714285706, -15},
-                 Number{3111111111111119, -15},
-                 Number{9999999999999999, -15}},
-                {Number{1000000000000000, -32768},
-                 Number{1000000000000000, -32768},
-                 Number{0}}};
-            for (auto const& [x, y, z] : c)
-                BEAST_EXPECT(x * y == z);
+            auto const cSmall = std::to_array<Case>(
+                {{Number{7}, Number{8}, Number{56}},
+                 {Number{1414213562373095, -15},
+                  Number{1414213562373095, -15},
+                  Number{1999999999999999, -15}},
+                 {Number{-1414213562373095, -15},
+                  Number{1414213562373095, -15},
+                  Number{-1999999999999999, -15}},
+                 {Number{-1414213562373095, -15},
+                  Number{-1414213562373095, -15},
+                  Number{1999999999999999, -15}},
+                 {Number{3214285714285706, -15},
+                  Number{3111111111111119, -15},
+                  Number{9999999999999999, -15}},
+                 {Number{1000000000000000, -32768}, Number{1000000000000000, -32768}, Number{0}}});
+            auto const cLarge = std::to_array<Case>(
+                // Note that items with extremely large mantissas need to be
+                // calculated, because otherwise they overflow uint64. Items
+                // from C with larger mantissa
+                {
+                    {Number{7}, Number{8}, Number{56}},
+                    {Number{1414213562373095, -15},
+                     Number{1414213562373095, -15},
+                     Number{1999999999999999861, -18}},
+                    {Number{-1414213562373095, -15},
+                     Number{1414213562373095, -15},
+                     Number{-1999999999999999861, -18}},
+                    {Number{-1414213562373095, -15},
+                     Number{-1414213562373095, -15},
+                     Number{1999999999999999861, -18}},
+                    {Number{3214285714285706, -15},
+                     Number{3111111111111119, -15},
+                     Number{false, 9999999999999999579ULL, -18, Number::Normalized{}}},
+                    {Number{1000000000000000000, -32768},
+                     Number{1000000000000000000, -32768},
+                     Number{0}},
+                    // Items from cSmall expanded for the larger mantissa,
+                    // except duplicates. Sadly, it looks like sqrt(2)^2 != 2
+                    // with higher precision
+                    {Number{1414213562373095049, -18},
+                     Number{1414213562373095049, -18},
+                     Number{2, 0}},
+                    {Number{-1414213562373095048, -18},
+                     Number{1414213562373095048, -18},
+                     Number{-1999999999999999997, -18}},
+                    {Number{-1414213562373095048, -18},
+                     Number{-1414213562373095049, -18},
+                     Number{1999999999999999999, -18}},
+                    {Number{3214285714285714278, -18},
+                     Number{3111111111111111119, -18},
+                     Number{10, 0}},
+                    // Maximum mantissa range - rounds down to maxMantissa/10e1
+                    // 99'999'999'999'999'999'800'000'000'000'000'000'100
+                    {Number{false, maxMantissa, 0, Number::Normalized{}},
+                     Number{false, maxMantissa, 0, Number::Normalized{}},
+                     Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}},
+                    // Maximum int64 range
+                    // 85'070'591'730'234'615'847'396'907'784'232'501'249
+                    {Number{Number::kMAX_REP, 0},
+                     Number{Number::kMAX_REP, 0},
+                     Number{85'070'591'730'234'615'84, 19}},
+                });
+            tests(cSmall, cLarge);
         }
-        Number::setround(Number::upward);
+        Number::setround(Number::RoundingMode::Downward);
+        testcase << "test_mul " << to_string(Number::getMantissaScale()) << " downward";
         {
-            Case c[]{
-                {Number{7}, Number{8}, Number{56}},
-                {Number{1414213562373095, -15},
-                 Number{1414213562373095, -15},
-                 Number{2000000000000000, -15}},
-                {Number{-1414213562373095, -15},
-                 Number{1414213562373095, -15},
-                 Number{-1999999999999999, -15}},
-                {Number{-1414213562373095, -15},
-                 Number{-1414213562373095, -15},
-                 Number{2000000000000000, -15}},
-                {Number{3214285714285706, -15},
-                 Number{3111111111111119, -15},
-                 Number{1000000000000000, -14}},
-                {Number{1000000000000000, -32768},
-                 Number{1000000000000000, -32768},
-                 Number{0}}};
-            for (auto const& [x, y, z] : c)
-                BEAST_EXPECT(x * y == z);
+            auto const cSmall = std::to_array<Case>(
+                {{Number{7}, Number{8}, Number{56}},
+                 {Number{1414213562373095, -15},
+                  Number{1414213562373095, -15},
+                  Number{1999999999999999, -15}},
+                 {Number{-1414213562373095, -15},
+                  Number{1414213562373095, -15},
+                  Number{-2000000000000000, -15}},
+                 {Number{-1414213562373095, -15},
+                  Number{-1414213562373095, -15},
+                  Number{1999999999999999, -15}},
+                 {Number{3214285714285706, -15},
+                  Number{3111111111111119, -15},
+                  Number{9999999999999999, -15}},
+                 {Number{1000000000000000, -32768}, Number{1000000000000000, -32768}, Number{0}}});
+            auto const cLarge = std::to_array<Case>(
+                // Note that items with extremely large mantissas need to be
+                // calculated, because otherwise they overflow uint64. Items
+                // from C with larger mantissa
+                {
+                    {Number{7}, Number{8}, Number{56}},
+                    {Number{1414213562373095, -15},
+                     Number{1414213562373095, -15},
+                     Number{1999999999999999861, -18}},
+                    {Number{-1414213562373095, -15},
+                     Number{1414213562373095, -15},
+                     Number{-1999999999999999862, -18}},
+                    {Number{-1414213562373095, -15},
+                     Number{-1414213562373095, -15},
+                     Number{1999999999999999861, -18}},
+                    {Number{3214285714285706, -15},
+                     Number{3111111111111119, -15},
+                     Number{false, 9'999'999'999'999'999'579ULL, -18, Number::Normalized{}}},
+                    {Number{1000000000000000000, -32768},
+                     Number{1000000000000000000, -32768},
+                     Number{0}},
+                    // Items from cSmall expanded for the larger mantissa,
+                    // except duplicates. Sadly, it looks like sqrt(2)^2 != 2
+                    // with higher precision
+                    {Number{1414213562373095049, -18},
+                     Number{1414213562373095049, -18},
+                     Number{2, 0}},
+                    {Number{-1414213562373095048, -18},
+                     Number{1414213562373095048, -18},
+                     Number{-1999999999999999998, -18}},
+                    {Number{-1414213562373095048, -18},
+                     Number{-1414213562373095049, -18},
+                     Number{1999999999999999999, -18}},
+                    {Number{3214285714285714278, -18},
+                     Number{3111111111111111119, -18},
+                     Number{10, 0}},
+                    // Maximum mantissa range - rounds down to maxMantissa/10e1
+                    // 99'999'999'999'999'999'800'000'000'000'000'000'100
+                    {Number{false, maxMantissa, 0, Number::Normalized{}},
+                     Number{false, maxMantissa, 0, Number::Normalized{}},
+                     Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}},
+                    // Maximum int64 range
+                    // 85'070'591'730'234'615'847'396'907'784'232'501'249
+                    {Number{Number::kMAX_REP, 0},
+                     Number{Number::kMAX_REP, 0},
+                     Number{85'070'591'730'234'615'84, 19}},
+                });
+            tests(cSmall, cLarge);
         }
-        bool caught = false;
-        try
+        Number::setround(Number::RoundingMode::Upward);
+        testcase << "test_mul " << to_string(Number::getMantissaScale()) << " upward";
         {
-            Number{9'999'999'999'999'999, 32768} *
-                Number{5'000'000'000'000'000, 32767};
+            auto const cSmall = std::to_array<Case>(
+                {{Number{7}, Number{8}, Number{56}},
+                 {Number{1414213562373095, -15},
+                  Number{1414213562373095, -15},
+                  Number{2000000000000000, -15}},
+                 {Number{-1414213562373095, -15},
+                  Number{1414213562373095, -15},
+                  Number{-1999999999999999, -15}},
+                 {Number{-1414213562373095, -15},
+                  Number{-1414213562373095, -15},
+                  Number{2000000000000000, -15}},
+                 {Number{3214285714285706, -15},
+                  Number{3111111111111119, -15},
+                  Number{1000000000000000, -14}},
+                 {Number{1000000000000000, -32768}, Number{1000000000000000, -32768}, Number{0}}});
+            auto const cLarge = std::to_array<Case>(
+                // Note that items with extremely large mantissas need to be
+                // calculated, because otherwise they overflow uint64. Items
+                // from C with larger mantissa
+                {
+                    {Number{7}, Number{8}, Number{56}},
+                    {Number{1414213562373095, -15},
+                     Number{1414213562373095, -15},
+                     Number{1999999999999999862, -18}},
+                    {Number{-1414213562373095, -15},
+                     Number{1414213562373095, -15},
+                     Number{-1999999999999999861, -18}},
+                    {Number{-1414213562373095, -15},
+                     Number{-1414213562373095, -15},
+                     Number{1999999999999999862, -18}},
+                    {Number{3214285714285706, -15},
+                     Number{3111111111111119, -15},
+                     Number{999999999999999958, -17}},
+                    {Number{1000000000000000000, -32768},
+                     Number{1000000000000000000, -32768},
+                     Number{0}},
+                    // Items from cSmall expanded for the larger mantissa,
+                    // except duplicates. Sadly, it looks like sqrt(2)^2 != 2
+                    // with higher precision
+                    {Number{1414213562373095049, -18},
+                     Number{1414213562373095049, -18},
+                     Number{2000000000000000001, -18}},
+                    {Number{-1414213562373095048, -18},
+                     Number{1414213562373095048, -18},
+                     Number{-1999999999999999997, -18}},
+                    {Number{-1414213562373095048, -18},
+                     Number{-1414213562373095049, -18},
+                     Number{2, 0}},
+                    {Number{3214285714285714278, -18},
+                     Number{3111111111111111119, -18},
+                     Number{1000000000000000001, -17}},
+                    // Maximum mantissa range - rounds up to minMantissa*10
+                    // 1e19*1e19=1e38
+                    {Number{false, maxMantissa, 0, Number::Normalized{}},
+                     Number{false, maxMantissa, 0, Number::Normalized{}},
+                     Number{1, 38}},
+                    // Maximum int64 range
+                    // 85'070'591'730'234'615'847'396'907'784'232'501'249
+                    {Number{Number::kMAX_REP, 0},
+                     Number{Number::kMAX_REP, 0},
+                     Number{85'070'591'730'234'615'85, 19}},
+                });
+            tests(cSmall, cLarge);
         }
-        catch (std::overflow_error const&)
+        testcase << "test_mul " << to_string(Number::getMantissaScale()) << " overflow";
         {
-            caught = true;
+            bool caught = false;
+            try
+            {
+                Number{false, maxMantissa, 32768, Number::Normalized{}} *
+                    Number{false, Number::minMantissa() * 5, 32767, Number::Normalized{}};
+            }
+            catch (std::overflow_error const&)
+            {
+                caught = true;
+            }
+            BEAST_EXPECT(caught);
         }
-        BEAST_EXPECT(caught);
     }
 
     void
-    test_div()
+    testDiv()
     {
-        testcase("test_div");
+        auto const scale = Number::getMantissaScale();
+        testcase << "test_div " << to_string(scale);
+
         using Case = std::tuple<Number, Number, Number>;
-        saveNumberRoundMode save{Number::setround(Number::to_nearest)};
-        {
-            Case c[]{
-                {Number{1}, Number{2}, Number{5, -1}},
-                {Number{1}, Number{10}, Number{1, -1}},
-                {Number{1}, Number{-10}, Number{-1, -1}},
-                {Number{0}, Number{100}, Number{0}},
-                {Number{1414213562373095, -10},
-                 Number{1414213562373095, -10},
-                 Number{1}},
-                {Number{9'999'999'999'999'999},
-                 Number{1'000'000'000'000'000},
-                 Number{9'999'999'999'999'999, -15}},
-                {Number{2}, Number{3}, Number{6'666'666'666'666'667, -16}},
-                {Number{-2}, Number{3}, Number{-6'666'666'666'666'667, -16}}};
+        auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
-                BEAST_EXPECT(x / y == z);
-        }
-        Number::setround(Number::towards_zero);
+            {
+                auto const result = x / y;
+                std::stringstream ss;
+                ss << x << " / " << y << " = " << result << ". Expected: " << z;
+                BEAST_EXPECTS(result == z, ss.str());
+            }
+        };
+        auto const maxMantissa = Number::maxMantissa();
+        auto tests = [&](auto const& cSmall, auto const& cLarge) {
+            if (scale == MantissaRange::MantissaScale::Small)
+            {
+                test(cSmall);
+            }
+            else
+            {
+                test(cLarge);
+            }
+        };
+        SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};
         {
-            Case c[]{
-                {Number{1}, Number{2}, Number{5, -1}},
-                {Number{1}, Number{10}, Number{1, -1}},
-                {Number{1}, Number{-10}, Number{-1, -1}},
-                {Number{0}, Number{100}, Number{0}},
-                {Number{1414213562373095, -10},
-                 Number{1414213562373095, -10},
-                 Number{1}},
-                {Number{9'999'999'999'999'999},
-                 Number{1'000'000'000'000'000},
-                 Number{9'999'999'999'999'999, -15}},
-                {Number{2}, Number{3}, Number{6'666'666'666'666'666, -16}},
-                {Number{-2}, Number{3}, Number{-6'666'666'666'666'666, -16}}};
-            for (auto const& [x, y, z] : c)
-                BEAST_EXPECT(x / y == z);
+            auto const cSmall = std::to_array<Case>(
+                {{Number{1}, Number{2}, Number{5, -1}},
+                 {Number{1}, Number{10}, Number{1, -1}},
+                 {Number{1}, Number{-10}, Number{-1, -1}},
+                 {Number{0}, Number{100}, Number{0}},
+                 {Number{1414213562373095, -10}, Number{1414213562373095, -10}, Number{1}},
+                 {Number{9'999'999'999'999'999},
+                  Number{1'000'000'000'000'000},
+                  Number{9'999'999'999'999'999, -15}},
+                 {Number{2}, Number{3}, Number{6'666'666'666'666'667, -16}},
+                 {Number{-2}, Number{3}, Number{-6'666'666'666'666'667, -16}},
+                 {Number{1}, Number{7}, Number{1'428'571'428'571'428, -16}}});
+            auto const cLarge = std::to_array<Case>(
+                // Note that items with extremely large mantissas need to be
+                // calculated, because otherwise they overflow uint64. Items
+                // from C with larger mantissa
+                {{Number{1}, Number{2}, Number{5, -1}},
+                 {Number{1}, Number{10}, Number{1, -1}},
+                 {Number{1}, Number{-10}, Number{-1, -1}},
+                 {Number{0}, Number{100}, Number{0}},
+                 {Number{1414213562373095, -10}, Number{1414213562373095, -10}, Number{1}},
+                 {Number{9'999'999'999'999'999},
+                  Number{1'000'000'000'000'000},
+                  Number{9'999'999'999'999'999, -15}},
+                 {Number{2}, Number{3}, Number{6'666'666'666'666'666'667, -19}},
+                 {Number{-2}, Number{3}, Number{-6'666'666'666'666'666'667, -19}},
+                 {Number{1}, Number{7}, Number{1'428'571'428'571'428'571, -19}},
+                 // Items from cSmall expanded for the larger mantissa, except
+                 // duplicates.
+                 {Number{1414213562373095049, -13}, Number{1414213562373095049, -13}, Number{1}},
+                 {Number{false, maxMantissa, 0, Number::Normalized{}},
+                  Number{1'000'000'000'000'000'000},
+                  Number{false, maxMantissa, -18, Number::Normalized{}}}});
+            tests(cSmall, cLarge);
         }
-        Number::setround(Number::downward);
+        testcase << "test_div " << to_string(Number::getMantissaScale()) << " towards_zero";
+        Number::setround(Number::RoundingMode::TowardsZero);
         {
-            Case c[]{
-                {Number{1}, Number{2}, Number{5, -1}},
-                {Number{1}, Number{10}, Number{1, -1}},
-                {Number{1}, Number{-10}, Number{-1, -1}},
-                {Number{0}, Number{100}, Number{0}},
-                {Number{1414213562373095, -10},
-                 Number{1414213562373095, -10},
-                 Number{1}},
-                {Number{9'999'999'999'999'999},
-                 Number{1'000'000'000'000'000},
-                 Number{9'999'999'999'999'999, -15}},
-                {Number{2}, Number{3}, Number{6'666'666'666'666'666, -16}},
-                {Number{-2}, Number{3}, Number{-6'666'666'666'666'667, -16}}};
-            for (auto const& [x, y, z] : c)
-                BEAST_EXPECT(x / y == z);
+            auto const cSmall = std::to_array<Case>(
+                {{Number{1}, Number{2}, Number{5, -1}},
+                 {Number{1}, Number{10}, Number{1, -1}},
+                 {Number{1}, Number{-10}, Number{-1, -1}},
+                 {Number{0}, Number{100}, Number{0}},
+                 {Number{1414213562373095, -10}, Number{1414213562373095, -10}, Number{1}},
+                 {Number{9'999'999'999'999'999},
+                  Number{1'000'000'000'000'000},
+                  Number{9'999'999'999'999'999, -15}},
+                 {Number{2}, Number{3}, Number{6'666'666'666'666'666, -16}},
+                 {Number{-2}, Number{3}, Number{-6'666'666'666'666'666, -16}},
+                 {Number{1}, Number{7}, Number{1'428'571'428'571'428, -16}}});
+            auto const cLarge = std::to_array<Case>(
+                // Note that items with extremely large mantissas need to be
+                // calculated, because otherwise they overflow uint64. Items
+                // from C with larger mantissa
+                {{Number{1}, Number{2}, Number{5, -1}},
+                 {Number{1}, Number{10}, Number{1, -1}},
+                 {Number{1}, Number{-10}, Number{-1, -1}},
+                 {Number{0}, Number{100}, Number{0}},
+                 {Number{1414213562373095, -10}, Number{1414213562373095, -10}, Number{1}},
+                 {Number{9'999'999'999'999'999},
+                  Number{1'000'000'000'000'000},
+                  Number{9'999'999'999'999'999, -15}},
+                 {Number{2}, Number{3}, Number{6'666'666'666'666'666'666, -19}},
+                 {Number{-2}, Number{3}, Number{-6'666'666'666'666'666'666, -19}},
+                 {Number{1}, Number{7}, Number{1'428'571'428'571'428'571, -19}},
+                 // Items from cSmall expanded for the larger mantissa, except
+                 // duplicates.
+                 {Number{1414213562373095049, -13}, Number{1414213562373095049, -13}, Number{1}},
+                 {Number{false, maxMantissa, 0, Number::Normalized{}},
+                  Number{1'000'000'000'000'000'000},
+                  Number{false, maxMantissa, -18, Number::Normalized{}}}});
+            tests(cSmall, cLarge);
         }
-        Number::setround(Number::upward);
+        testcase << "test_div " << to_string(Number::getMantissaScale()) << " downward";
+        Number::setround(Number::RoundingMode::Downward);
         {
-            Case c[]{
-                {Number{1}, Number{2}, Number{5, -1}},
-                {Number{1}, Number{10}, Number{1, -1}},
-                {Number{1}, Number{-10}, Number{-1, -1}},
-                {Number{0}, Number{100}, Number{0}},
-                {Number{1414213562373095, -10},
-                 Number{1414213562373095, -10},
-                 Number{1}},
-                {Number{9'999'999'999'999'999},
-                 Number{1'000'000'000'000'000},
-                 Number{9'999'999'999'999'999, -15}},
-                {Number{2}, Number{3}, Number{6'666'666'666'666'667, -16}},
-                {Number{-2}, Number{3}, Number{-6'666'666'666'666'666, -16}}};
-            for (auto const& [x, y, z] : c)
-                BEAST_EXPECT(x / y == z);
+            auto const cSmall = std::to_array<Case>(
+                {{Number{1}, Number{2}, Number{5, -1}},
+                 {Number{1}, Number{10}, Number{1, -1}},
+                 {Number{1}, Number{-10}, Number{-1, -1}},
+                 {Number{0}, Number{100}, Number{0}},
+                 {Number{1414213562373095, -10}, Number{1414213562373095, -10}, Number{1}},
+                 {Number{9'999'999'999'999'999},
+                  Number{1'000'000'000'000'000},
+                  Number{9'999'999'999'999'999, -15}},
+                 {Number{2}, Number{3}, Number{6'666'666'666'666'666, -16}},
+                 {Number{-2}, Number{3}, Number{-6'666'666'666'666'667, -16}},
+                 {Number{1}, Number{7}, Number{1'428'571'428'571'428, -16}}});
+            auto const cLarge = std::to_array<Case>(
+                // Note that items with extremely large mantissas need to be
+                // calculated, because otherwise they overflow uint64. Items
+                // from C with larger mantissa
+                {{Number{1}, Number{2}, Number{5, -1}},
+                 {Number{1}, Number{10}, Number{1, -1}},
+                 {Number{1}, Number{-10}, Number{-1, -1}},
+                 {Number{0}, Number{100}, Number{0}},
+                 {Number{1414213562373095, -10}, Number{1414213562373095, -10}, Number{1}},
+                 {Number{9'999'999'999'999'999},
+                  Number{1'000'000'000'000'000},
+                  Number{9'999'999'999'999'999, -15}},
+                 {Number{2}, Number{3}, Number{6'666'666'666'666'666'666, -19}},
+                 {Number{-2}, Number{3}, Number{-6'666'666'666'666'666'667, -19}},
+                 {Number{1}, Number{7}, Number{1'428'571'428'571'428'571, -19}},
+                 // Items from cSmall expanded for the larger mantissa, except
+                 // duplicates.
+                 {Number{1414213562373095049, -13}, Number{1414213562373095049, -13}, Number{1}},
+                 {Number{false, maxMantissa, 0, Number::Normalized{}},
+                  Number{1'000'000'000'000'000'000},
+                  Number{false, maxMantissa, -18, Number::Normalized{}}}});
+            tests(cSmall, cLarge);
         }
+        testcase << "test_div " << to_string(Number::getMantissaScale()) << " upward";
+        Number::setround(Number::RoundingMode::Upward);
+        {
+            auto const cSmall = std::to_array<Case>(
+                {{Number{1}, Number{2}, Number{5, -1}},
+                 {Number{1}, Number{10}, Number{1, -1}},
+                 {Number{1}, Number{-10}, Number{-1, -1}},
+                 {Number{0}, Number{100}, Number{0}},
+                 {Number{1414213562373095, -10}, Number{1414213562373095, -10}, Number{1}},
+                 {Number{9'999'999'999'999'999},
+                  Number{1'000'000'000'000'000},
+                  Number{9'999'999'999'999'999, -15}},
+                 {Number{2}, Number{3}, Number{6'666'666'666'666'667, -16}},
+                 {Number{-2}, Number{3}, Number{-6'666'666'666'666'666, -16}},
+                 {Number{1}, Number{7}, Number{1'428'571'428'571'429, -16}}});
+            auto const cLarge = std::to_array<Case>(
+                // Note that items with extremely large mantissas need to be
+                // calculated, because otherwise they overflow uint64. Items
+                // from C with larger mantissa
+                {{Number{1}, Number{2}, Number{5, -1}},
+                 {Number{1}, Number{10}, Number{1, -1}},
+                 {Number{1}, Number{-10}, Number{-1, -1}},
+                 {Number{0}, Number{100}, Number{0}},
+                 {Number{1414213562373095, -10}, Number{1414213562373095, -10}, Number{1}},
+                 {Number{9'999'999'999'999'999},
+                  Number{1'000'000'000'000'000},
+                  Number{9'999'999'999'999'999, -15}},
+                 {Number{2}, Number{3}, Number{6'666'666'666'666'666'667, -19}},
+                 {Number{-2}, Number{3}, Number{-6'666'666'666'666'666'666, -19}},
+                 {Number{1}, Number{7}, Number{1'428'571'428'571'428'572, -19}},
+                 // Items from cSmall expanded for the larger mantissa, except
+                 // duplicates.
+                 {Number{1414213562373095049, -13}, Number{1414213562373095049, -13}, Number{1}},
+                 {Number{false, maxMantissa, 0, Number::Normalized{}},
+                  Number{1'000'000'000'000'000'000},
+                  Number{false, maxMantissa, -18, Number::Normalized{}}}});
+            tests(cSmall, cLarge);
+        }
+        testcase << "test_div " << to_string(Number::getMantissaScale()) << " overflow";
         bool caught = false;
         try
         {
@@ -342,22 +817,59 @@ public:
     }
 
     void
-    test_root()
+    testRoot()
     {
-        testcase("test_root");
+        auto const scale = Number::getMantissaScale();
+        testcase << "test_root " << to_string(scale);
+
         using Case = std::tuple<Number, unsigned, Number>;
-        Case c[]{
-            {Number{2}, 2, Number{1414213562373095, -15}},
-            {Number{2'000'000}, 2, Number{1414213562373095, -12}},
-            {Number{2, -30}, 2, Number{1414213562373095, -30}},
-            {Number{-27}, 3, Number{-3}},
-            {Number{1}, 5, Number{1}},
-            {Number{-1}, 0, Number{1}},
-            {Number{5, -1}, 0, Number{0}},
-            {Number{0}, 5, Number{0}},
-            {Number{5625, -4}, 2, Number{75, -2}}};
-        for (auto const& [x, y, z] : c)
-            BEAST_EXPECT((root(x, y) == z));
+        auto test = [this](auto const& c) {
+            for (auto const& [x, y, z] : c)
+            {
+                auto const result = root(x, y);
+                std::stringstream ss;
+                ss << "root(" << x << ", " << y << ") = " << result << ". Expected: " << z;
+                BEAST_EXPECTS(result == z, ss.str());
+            }
+        };
+        /*
+        auto tests = [&](auto const& cSmall, auto const& cLarge) {
+            test(cSmall);
+            if (scale != MantissaRange::mantissa_scale::small)
+                test(cLarge);
+        };
+        */
+
+        auto const cSmall = std::to_array<Case>(
+            {{Number{2}, 2, Number{1414213562373095049, -18}},
+             {Number{2'000'000}, 2, Number{1414213562373095049, -15}},
+             {Number{2, -30}, 2, Number{1414213562373095049, -33}},
+             {Number{-27}, 3, Number{-3}},
+             {Number{1}, 5, Number{1}},
+             {Number{-1}, 0, Number{1}},
+             {Number{5, -1}, 0, Number{0}},
+             {Number{0}, 5, Number{0}},
+             {Number{5625, -4}, 2, Number{75, -2}}});
+        auto const cLarge = std::to_array<Case>({
+            {Number{false, Number::maxMantissa() - 9, -1, Number::Normalized{}},
+             2,
+             Number{false, 999'999'999'999'999'999, -9, Number::Normalized{}}},
+            {Number{false, Number::maxMantissa() - 9, 0, Number::Normalized{}},
+             2,
+             Number{false, 3'162'277'660'168'379'330, -9, Number::Normalized{}}},
+            {Number{Number::kMAX_REP},
+             2,
+             Number{false, 3'037'000'499'976049692, -9, Number::Normalized{}}},
+            {Number{Number::kMAX_REP},
+             4,
+             Number{false, 55'108'98747006743627, -14, Number::Normalized{}}},
+        });
+        test(cSmall);
+        if (Number::getMantissaScale() != MantissaRange::MantissaScale::Small)
+        {
+            NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+            test(cLarge);
+        }
         bool caught = false;
         try
         {
@@ -381,27 +893,70 @@ public:
     }
 
     void
-    test_power1()
+    testRoot2()
     {
-        testcase("test_power1");
+        auto const scale = Number::getMantissaScale();
+        testcase << "test_root2 " << to_string(scale);
+
+        auto test = [this](auto const& c) {
+            for (auto const& x : c)
+            {
+                auto const expected = root(x, 2);
+                auto const result = root2(x);
+                std::stringstream ss;
+                ss << "root2(" << x << ") = " << result << ". Expected: " << expected;
+                BEAST_EXPECTS(result == expected, ss.str());
+            }
+        };
+
+        auto const cSmall = std::to_array<Number>({
+            Number{2},
+            Number{2'000'000},
+            Number{2, -30},
+            Number{27},
+            Number{1},
+            Number{5, -1},
+            Number{0},
+            Number{5625, -4},
+            Number{Number::kMAX_REP},
+        });
+        test(cSmall);
+        bool caught = false;
+        try
+        {
+            (void)root2(Number{-2});
+        }
+        catch (std::overflow_error const&)
+        {
+            caught = true;
+        }
+        BEAST_EXPECT(caught);
+    }
+
+    void
+    testPower1()
+    {
+        testcase << "test_power1 " << to_string(Number::getMantissaScale());
         using Case = std::tuple<Number, unsigned, Number>;
-        Case c[]{
+        Case const c[]{
             {Number{64}, 0, Number{1}},
             {Number{64}, 1, Number{64}},
             {Number{64}, 2, Number{4096}},
             {Number{-64}, 2, Number{4096}},
             {Number{64}, 3, Number{262144}},
-            {Number{-64}, 3, Number{-262144}}};
+            {Number{-64}, 3, Number{-262144}},
+            {Number{64}, 11, Number{false, 7378697629483820646ULL, 1, Number::Normalized{}}},
+            {Number{-64}, 11, Number{true, 7378697629483820646ULL, 1, Number::Normalized{}}}};
         for (auto const& [x, y, z] : c)
             BEAST_EXPECT((power(x, y) == z));
     }
 
     void
-    test_power2()
+    testPower2()
     {
-        testcase("test_power2");
+        testcase << "test_power2 " << to_string(Number::getMantissaScale());
         using Case = std::tuple<Number, unsigned, unsigned, Number>;
-        Case c[]{
+        Case const c[]{
             {Number{1}, 3, 7, Number{1}},
             {Number{-1}, 1, 0, Number{1}},
             {Number{-1, -1}, 1, 0, Number{0}},
@@ -445,37 +1000,37 @@ public:
     void
     testConversions()
     {
-        testcase("testConversions");
+        testcase << "testConversions " << to_string(Number::getMantissaScale());
 
-        IOUAmount x{5, 6};
-        Number y = x;
+        IOUAmount const x{5, 6};
+        Number const y = x;
         BEAST_EXPECT((y == Number{5, 6}));
-        IOUAmount z{y};
+        IOUAmount const z{y};
         BEAST_EXPECT(x == z);
-        XRPAmount xrp{500};
-        STAmount st = xrp;
-        Number n = st;
+        XRPAmount const xrp{500};
+        STAmount const st = xrp;
+        Number const n = st;
         BEAST_EXPECT(XRPAmount{n} == xrp);
-        IOUAmount x0{0, 0};
-        Number y0 = x0;
+        IOUAmount const x0{0, 0};
+        Number const y0 = x0;
         BEAST_EXPECT((y0 == Number{0}));
-        IOUAmount z0{y0};
+        IOUAmount const z0{y0};
         BEAST_EXPECT(x0 == z0);
-        XRPAmount xrp0{0};
-        Number n0 = xrp0;
+        XRPAmount const xrp0{0};
+        Number const n0 = xrp0;
         BEAST_EXPECT(n0 == Number{0});
-        XRPAmount xrp1{n0};
+        XRPAmount const xrp1{n0};
         BEAST_EXPECT(xrp1 == xrp0);
     }
 
     void
-    test_to_integer()
+    testToInteger()
     {
-        testcase("test_to_integer");
+        testcase << "test_to_integer " << to_string(Number::getMantissaScale());
         using Case = std::tuple<Number, std::int64_t>;
-        saveNumberRoundMode save{Number::setround(Number::to_nearest)};
+        SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};
         {
-            Case c[]{
+            Case const c[]{
                 {Number{0}, 0},
                 {Number{1}, 1},
                 {Number{2}, 2},
@@ -510,10 +1065,10 @@ public:
                 BEAST_EXPECT(j == y);
             }
         }
-        auto prev_mode = Number::setround(Number::towards_zero);
-        BEAST_EXPECT(prev_mode == Number::to_nearest);
+        auto prevMode = Number::setround(Number::RoundingMode::TowardsZero);
+        BEAST_EXPECT(prevMode == Number::RoundingMode::ToNearest);
         {
-            Case c[]{
+            Case const c[]{
                 {Number{0}, 0},
                 {Number{1}, 1},
                 {Number{2}, 2},
@@ -548,10 +1103,10 @@ public:
                 BEAST_EXPECT(j == y);
             }
         }
-        prev_mode = Number::setround(Number::downward);
-        BEAST_EXPECT(prev_mode == Number::towards_zero);
+        prevMode = Number::setround(Number::RoundingMode::Downward);
+        BEAST_EXPECT(prevMode == Number::RoundingMode::TowardsZero);
         {
-            Case c[]{
+            Case const c[]{
                 {Number{0}, 0},
                 {Number{1}, 1},
                 {Number{2}, 2},
@@ -586,10 +1141,10 @@ public:
                 BEAST_EXPECT(j == y);
             }
         }
-        prev_mode = Number::setround(Number::upward);
-        BEAST_EXPECT(prev_mode == Number::downward);
+        prevMode = Number::setround(Number::RoundingMode::Upward);
+        BEAST_EXPECT(prevMode == Number::RoundingMode::Downward);
         {
-            Case c[]{
+            Case const c[]{
                 {Number{0}, 0},
                 {Number{1}, 1},
                 {Number{2}, 2},
@@ -637,10 +1192,10 @@ public:
     }
 
     void
-    test_squelch()
+    testSquelch()
     {
-        testcase("test_squelch");
-        Number limit{1, -6};
+        testcase << "test_squelch " << to_string(Number::getMantissaScale());
+        Number const limit{1, -6};
         BEAST_EXPECT((squelch(Number{2, -6}, limit) == Number{2, -6}));
         BEAST_EXPECT((squelch(Number{1, -6}, limit) == Number{1, -6}));
         BEAST_EXPECT((squelch(Number{9, -7}, limit) == Number{0}));
@@ -652,22 +1207,113 @@ public:
     void
     testToString()
     {
-        testcase("testToString");
-        BEAST_EXPECT(to_string(Number(-2, 0)) == "-2");
-        BEAST_EXPECT(to_string(Number(0, 0)) == "0");
-        BEAST_EXPECT(to_string(Number(2, 0)) == "2");
-        BEAST_EXPECT(to_string(Number(25, -3)) == "0.025");
-        BEAST_EXPECT(to_string(Number(-25, -3)) == "-0.025");
-        BEAST_EXPECT(to_string(Number(25, 1)) == "250");
-        BEAST_EXPECT(to_string(Number(-25, 1)) == "-250");
-        BEAST_EXPECT(to_string(Number(2, 20)) == "2000000000000000e5");
-        BEAST_EXPECT(to_string(Number(-2, -20)) == "-2000000000000000e-35");
+        auto const scale = Number::getMantissaScale();
+        testcase << "testToString " << to_string(scale);
+
+        auto test = [this](Number const& n, std::string const& expected) {
+            auto const result = to_string(n);
+            std::stringstream ss;
+            ss << "to_string(" << result << "). Expected: " << expected;
+            BEAST_EXPECTS(result == expected, ss.str());
+        };
+
+        test(Number(-2, 0), "-2");
+        test(Number(0, 0), "0");
+        test(Number(2, 0), "2");
+        test(Number(25, -3), "0.025");
+        test(Number(-25, -3), "-0.025");
+        test(Number(25, 1), "250");
+        test(Number(-25, 1), "-250");
+        test(Number(2, 20), "2e20");
+        test(Number(-2, -20), "-2e-20");
+        // Test the edges
+        // ((exponent < -(25)) || (exponent > -(5)))))
+        // or ((exponent < -(28)) || (exponent > -(8)))))
+        test(Number(2, -10), "0.0000000002");
+        test(Number(2, -11), "2e-11");
+
+        test(Number(-2, 10), "-20000000000");
+        test(Number(-2, 11), "-2e11");
+
+        switch (scale)
+        {
+            case MantissaRange::MantissaScale::Small:
+
+                test(Number::min(), "1e-32753");
+                test(Number::max(), "9999999999999999e32768");
+                test(Number::lowest(), "-9999999999999999e32768");
+                {
+                    NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+
+                    auto const maxMantissa = Number::maxMantissa();
+                    BEAST_EXPECT(maxMantissa == 9'999'999'999'999'999);
+                    test(
+                        Number{false, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
+                        "9999999999999999");
+                    test(
+                        Number{true, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
+                        "-9999999999999999");
+
+                    test(Number{std::numeric_limits<std::int64_t>::max(), -3}, "9223372036854775");
+                    test(
+                        -(Number{std::numeric_limits<std::int64_t>::max(), -3}),
+                        "-9223372036854775");
+
+                    test(
+                        Number{std::numeric_limits<std::int64_t>::min(), 0}, "-9223372036854775e3");
+                    test(
+                        -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
+                        "9223372036854775e3");
+                }
+                break;
+            case MantissaRange::MantissaScale::Large:
+                // Test the edges
+                // ((exponent < -(28)) || (exponent > -(8)))))
+                test(Number::min(), "1e-32750");
+                test(Number::max(), "9223372036854775807e32768");
+                test(Number::lowest(), "-9223372036854775807e32768");
+                {
+                    NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+
+                    auto const maxMantissa = Number::maxMantissa();
+                    BEAST_EXPECT(maxMantissa == 9'999'999'999'999'999'999ULL);
+                    test(
+                        Number{false, maxMantissa, 0, Number::Normalized{}}, "9999999999999999990");
+                    test(
+                        Number{true, maxMantissa, 0, Number::Normalized{}}, "-9999999999999999990");
+
+                    test(
+                        Number{std::numeric_limits<std::int64_t>::max(), 0}, "9223372036854775807");
+                    test(
+                        -(Number{std::numeric_limits<std::int64_t>::max(), 0}),
+                        "-9223372036854775807");
+
+                    // Because the absolute value of min is larger than max, it
+                    // will be scaled down to fit under max. Since we're
+                    // rounding towards zero, the 8 at the end is dropped.
+                    test(
+                        Number{std::numeric_limits<std::int64_t>::min(), 0},
+                        "-9223372036854775800");
+                    test(
+                        -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
+                        "9223372036854775800");
+                }
+
+                test(
+                    Number{std::numeric_limits<std::int64_t>::max(), 0} + 1, "9223372036854775810");
+                test(
+                    -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 1),
+                    "-9223372036854775810");
+                break;
+            default:
+                BEAST_EXPECT(false);
+        }
     }
 
     void
-    test_relationals()
+    testRelationals()
     {
-        testcase("test_relationals");
+        testcase << "test_relationals " << to_string(Number::getMantissaScale());
         BEAST_EXPECT(!(Number{100} < Number{10}));
         BEAST_EXPECT(Number{100} > Number{10});
         BEAST_EXPECT(Number{100} >= Number{10});
@@ -675,21 +1321,21 @@ public:
     }
 
     void
-    test_stream()
+    testStream()
     {
-        testcase("test_stream");
-        Number x{100};
+        testcase << "test_stream " << to_string(Number::getMantissaScale());
+        Number const x{100};
         std::ostringstream os;
         os << x;
         BEAST_EXPECT(os.str() == to_string(x));
     }
 
     void
-    test_inc_dec()
+    testIncDec()
     {
-        testcase("test_inc_dec");
+        testcase << "test_inc_dec " << to_string(Number::getMantissaScale());
         Number x{100};
-        Number y = +x;
+        Number const y = +x;
         BEAST_EXPECT(x == y);
         BEAST_EXPECT(x++ == y);
         BEAST_EXPECT(x == Number{101});
@@ -698,51 +1344,245 @@ public:
     }
 
     void
-    test_toSTAmount()
+    testToStAmount()
     {
-        NumberSO stNumberSO{true};
+        NumberSO const stNumberSO{true};
         Issue const issue;
         Number const n{7'518'783'80596, -5};
-        saveNumberRoundMode const save{Number::setround(Number::to_nearest)};
-        auto res2 = STAmount{issue, n.mantissa(), n.exponent()};
+        SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};
+        auto res2 = STAmount{issue, n};
         BEAST_EXPECT(res2 == STAmount{7518784});
 
-        Number::setround(Number::towards_zero);
-        res2 = STAmount{issue, n.mantissa(), n.exponent()};
+        Number::setround(Number::RoundingMode::TowardsZero);
+        res2 = STAmount{issue, n};
         BEAST_EXPECT(res2 == STAmount{7518783});
 
-        Number::setround(Number::downward);
-        res2 = STAmount{issue, n.mantissa(), n.exponent()};
+        Number::setround(Number::RoundingMode::Downward);
+        res2 = STAmount{issue, n};
         BEAST_EXPECT(res2 == STAmount{7518783});
 
-        Number::setround(Number::upward);
-        res2 = STAmount{issue, n.mantissa(), n.exponent()};
+        Number::setround(Number::RoundingMode::Upward);
+        res2 = STAmount{issue, n};
         BEAST_EXPECT(res2 == STAmount{7518784});
+    }
+
+    void
+    testTruncate()
+    {
+        BEAST_EXPECT(Number(25, +1).truncate() == Number(250, 0));
+        BEAST_EXPECT(Number(25, 0).truncate() == Number(25, 0));
+        BEAST_EXPECT(Number(25, -1).truncate() == Number(2, 0));
+        BEAST_EXPECT(Number(25, -2).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(99, -2).truncate() == Number(0, 0));
+
+        BEAST_EXPECT(Number(-25, +1).truncate() == Number(-250, 0));
+        BEAST_EXPECT(Number(-25, 0).truncate() == Number(-25, 0));
+        BEAST_EXPECT(Number(-25, -1).truncate() == Number(-2, 0));
+        BEAST_EXPECT(Number(-25, -2).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(-99, -2).truncate() == Number(0, 0));
+
+        BEAST_EXPECT(Number(0, 0).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(0, 30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(0, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(100, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(100, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(-100, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(-100, -30000).truncate() == Number(0, 0));
+    }
+
+    void
+    testRounding()
+    {
+        // Test that rounding works as expected.
+        testcase("Rounding");
+
+        using NumberRoundings = std::map<Number::RoundingMode, std::int64_t>;
+
+        std::map<Number, NumberRoundings> const expected{
+            // Positive numbers
+            {Number{13, -1},
+             {{Number::RoundingMode::ToNearest, 1},
+              {Number::RoundingMode::TowardsZero, 1},
+              {Number::RoundingMode::Downward, 1},
+              {Number::RoundingMode::Upward, 2}}},
+            {Number{23, -1},
+             {{Number::RoundingMode::ToNearest, 2},
+              {Number::RoundingMode::TowardsZero, 2},
+              {Number::RoundingMode::Downward, 2},
+              {Number::RoundingMode::Upward, 3}}},
+            {Number{15, -1},
+             {{Number::RoundingMode::ToNearest, 2},
+              {Number::RoundingMode::TowardsZero, 1},
+              {Number::RoundingMode::Downward, 1},
+              {Number::RoundingMode::Upward, 2}}},
+            {Number{25, -1},
+             {{Number::RoundingMode::ToNearest, 2},
+              {Number::RoundingMode::TowardsZero, 2},
+              {Number::RoundingMode::Downward, 2},
+              {Number::RoundingMode::Upward, 3}}},
+            {Number{152, -2},
+             {{Number::RoundingMode::ToNearest, 2},
+              {Number::RoundingMode::TowardsZero, 1},
+              {Number::RoundingMode::Downward, 1},
+              {Number::RoundingMode::Upward, 2}}},
+            {Number{252, -2},
+             {{Number::RoundingMode::ToNearest, 3},
+              {Number::RoundingMode::TowardsZero, 2},
+              {Number::RoundingMode::Downward, 2},
+              {Number::RoundingMode::Upward, 3}}},
+            {Number{17, -1},
+             {{Number::RoundingMode::ToNearest, 2},
+              {Number::RoundingMode::TowardsZero, 1},
+              {Number::RoundingMode::Downward, 1},
+              {Number::RoundingMode::Upward, 2}}},
+            {Number{27, -1},
+             {{Number::RoundingMode::ToNearest, 3},
+              {Number::RoundingMode::TowardsZero, 2},
+              {Number::RoundingMode::Downward, 2},
+              {Number::RoundingMode::Upward, 3}}},
+
+            // Negative numbers
+            {Number{-13, -1},
+             {{Number::RoundingMode::ToNearest, -1},
+              {Number::RoundingMode::TowardsZero, -1},
+              {Number::RoundingMode::Downward, -2},
+              {Number::RoundingMode::Upward, -1}}},
+            {Number{-23, -1},
+             {{Number::RoundingMode::ToNearest, -2},
+              {Number::RoundingMode::TowardsZero, -2},
+              {Number::RoundingMode::Downward, -3},
+              {Number::RoundingMode::Upward, -2}}},
+            {Number{-15, -1},
+             {{Number::RoundingMode::ToNearest, -2},
+              {Number::RoundingMode::TowardsZero, -1},
+              {Number::RoundingMode::Downward, -2},
+              {Number::RoundingMode::Upward, -1}}},
+            {Number{-25, -1},
+             {{Number::RoundingMode::ToNearest, -2},
+              {Number::RoundingMode::TowardsZero, -2},
+              {Number::RoundingMode::Downward, -3},
+              {Number::RoundingMode::Upward, -2}}},
+            {Number{-152, -2},
+             {{Number::RoundingMode::ToNearest, -2},
+              {Number::RoundingMode::TowardsZero, -1},
+              {Number::RoundingMode::Downward, -2},
+              {Number::RoundingMode::Upward, -1}}},
+            {Number{-252, -2},
+             {{Number::RoundingMode::ToNearest, -3},
+              {Number::RoundingMode::TowardsZero, -2},
+              {Number::RoundingMode::Downward, -3},
+              {Number::RoundingMode::Upward, -2}}},
+            {Number{-17, -1},
+             {{Number::RoundingMode::ToNearest, -2},
+              {Number::RoundingMode::TowardsZero, -1},
+              {Number::RoundingMode::Downward, -2},
+              {Number::RoundingMode::Upward, -1}}},
+            {Number{-27, -1},
+             {{Number::RoundingMode::ToNearest, -3},
+              {Number::RoundingMode::TowardsZero, -2},
+              {Number::RoundingMode::Downward, -3},
+              {Number::RoundingMode::Upward, -2}}},
+        };
+
+        for (auto const& [num, roundings] : expected)
+        {
+            for (auto const& [mode, val] : roundings)
+            {
+                NumberRoundModeGuard const g{mode};
+                auto const res = static_cast<std::int64_t>(num);
+                BEAST_EXPECTS(
+                    res == val,
+                    to_string(num) + " with mode " + std::to_string(static_cast<int>(mode)) +
+                        " expected " + std::to_string(val) + " got " + std::to_string(res));
+            }
+        }
+    }
+
+    void
+    testInt64()
+    {
+        auto const scale = Number::getMantissaScale();
+        testcase << "std::int64_t " << to_string(scale);
+
+        // Control case
+        BEAST_EXPECT(Number::maxMantissa() > 10);
+        Number const ten{10};
+        BEAST_EXPECT(ten.exponent() <= 0);
+
+        if (scale == MantissaRange::MantissaScale::Small)
+        {
+            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kINITIAL_XRP.drops());
+            BEAST_EXPECT(Number::maxMantissa() < kINITIAL_XRP.drops());
+            Number const initalXrp{kINITIAL_XRP};
+            BEAST_EXPECT(initalXrp.exponent() > 0);
+
+            Number const maxInt64{Number::kMAX_REP};
+            BEAST_EXPECT(maxInt64.exponent() > 0);
+            // 85'070'591'730'234'615'865'843'651'857'942'052'864 - 38 digits
+            BEAST_EXPECT((power(maxInt64, 2) == Number{85'070'591'730'234'62, 22}));
+
+            Number const max = Number{false, Number::maxMantissa(), 0, Number::Normalized{}};
+            BEAST_EXPECT(max.exponent() <= 0);
+            // 99'999'999'999'999'980'000'000'000'000'001 - 32 digits
+            BEAST_EXPECT((power(max, 2) == Number{99'999'999'999'999'98, 16}));
+        }
+        else
+        {
+            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kINITIAL_XRP.drops());
+            BEAST_EXPECT(Number::maxMantissa() > kINITIAL_XRP.drops());
+            Number const initalXrp{kINITIAL_XRP};
+            BEAST_EXPECT(initalXrp.exponent() <= 0);
+
+            Number const maxInt64{Number::kMAX_REP};
+            BEAST_EXPECT(maxInt64.exponent() <= 0);
+            // 85'070'591'730'234'615'847'396'907'784'232'501'249 - 38 digits
+            BEAST_EXPECT((power(maxInt64, 2) == Number{85'070'591'730'234'615'85, 19}));
+
+            NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+
+            auto const maxMantissa = Number::maxMantissa();
+            Number const max = Number{false, maxMantissa, 0, Number::Normalized{}};
+            BEAST_EXPECT(max.mantissa() == maxMantissa / 10);
+            BEAST_EXPECT(max.exponent() == 1);
+            // 99'999'999'999'999'999'800'000'000'000'000'000'100 - also 38
+            // digits
+            BEAST_EXPECT(
+                (power(max, 2) == Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}));
+        }
     }
 
     void
     run() override
     {
-        testZero();
-        test_limits();
-        test_add();
-        test_sub();
-        test_mul();
-        test_div();
-        test_root();
-        test_power1();
-        test_power2();
-        testConversions();
-        test_to_integer();
-        test_squelch();
-        testToString();
-        test_relationals();
-        test_stream();
-        test_inc_dec();
-        test_toSTAmount();
+        for (auto const scale :
+             {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+        {
+            NumberMantissaScaleGuard const sg(scale);
+            testZero();
+            testLimits();
+            testToString();
+            testAdd();
+            testSub();
+            testMul();
+            testDiv();
+            testRoot();
+            testRoot2();
+            testPower1();
+            testPower2();
+            testConversions();
+            testToInteger();
+            testSquelch();
+            testRelationals();
+            testStream();
+            testIncDec();
+            testToStAmount();
+            testTruncate();
+            testRounding();
+            testInt64();
+        }
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Number, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(Number, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl
