@@ -774,21 +774,13 @@ scale(Number const& number, Asset const& asset)
  * precision → predicate degenerates to strict equality (which is exact
  * for those asset types).
  */
-[[nodiscard]] inline bool
+[[nodiscard]] bool
 equalAtAssetScale(
     Number const& a,
     Number const& b,
     Number const& referenceA,
     Number const& referenceB,
-    Asset const& asset)
-{
-    int const sa = scale(referenceA, asset);
-    int const sb = scale(referenceB, asset);
-    // Coarser grid = larger exponent. Quantize both operands to the
-    // coarser of the two reference grids before comparing.
-    int const coarserScale = sa > sb ? sa : sb;
-    return roundToAsset(asset, a, coarserScale) == roundToAsset(asset, b, coarserScale);
-}
+    Asset const& asset);
 
 }  // namespace xrpl
 

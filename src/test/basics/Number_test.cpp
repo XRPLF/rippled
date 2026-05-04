@@ -1205,9 +1205,9 @@ public:
     }
 
     void
-    test_firstNonzero()
+    testFirstNonzero()
     {
-        testcase << "test_firstNonzero " << to_string(Number::getMantissaScale());
+        testcase << "testFirstNonzero " << to_string(Number::getMantissaScale());
 
         Number const zero;
         Number const one{1};
@@ -1592,6 +1592,7 @@ public:
              {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
         {
             NumberMantissaScaleGuard const sg(scale);
+            testFirstNonzero();
             testZero();
             testLimits();
             testToString();

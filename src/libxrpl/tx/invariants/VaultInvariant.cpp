@@ -854,8 +854,9 @@ ValidVault::finalize(
                     // XRP and MPT remain strict: those asset types are integer-exact, so a zero
                     // destination delta on a non-zero withdrawal is unreachable as canonicalization
                     // and indicates an actual accounting bug.
-                    auto const invalidBalanceChange =
-                        view.rules().enabled(fixCleanup3_2_0) && vaultAsset.holds<Issue>()
+                    bool const tolerateZeroDelta =
+                        view.rules().enabled(fixCleanup3_2_0) && vaultAsset.holds<Issue>();
+                    auto const invalidBalanceChange = tolerateZeroDelta
                         ? roundedDestinationDelta < kZERO
                         : roundedDestinationDelta <= kZERO;
 

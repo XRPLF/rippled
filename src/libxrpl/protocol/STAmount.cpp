@@ -1739,4 +1739,20 @@ divRoundStrict(STAmount const& num, STAmount const& den, Asset const& asset, boo
     return divRoundImpl<NumberRoundModeGuard>(num, den, asset, roundUp);
 }
 
+bool
+equalAtAssetScale(
+    Number const& a,
+    Number const& b,
+    Number const& referenceA,
+    Number const& referenceB,
+    Asset const& asset)
+{
+    int const sa = scale(referenceA, asset);
+    int const sb = scale(referenceB, asset);
+    // Coarser grid = larger exponent. Quantize both operands to the
+    // coarser of the two reference grids before comparing.
+    int const coarserScale = sa > sb ? sa : sb;
+    return roundToAsset(asset, a, coarserScale) == roundToAsset(asset, b, coarserScale);
+}
+
 }  // namespace xrpl
