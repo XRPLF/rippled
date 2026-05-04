@@ -6160,7 +6160,7 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
         testcase("MPT vault: clearing CanTransfer/CanTrade after deposit");
 
-        Env env{*this, testable_amendments() | featureSingleAssetVault};
+        Env env{*this, testableAmendments() | featureSingleAssetVault};
 
         Account const issuer{"issuer"};
         Account const alice{"alice"};
@@ -6172,7 +6172,7 @@ class Vault_test : public beast::unit_test::Suite
         // MPT is transferable, tradable, lockable, and clawback-capable. Both
         // CanTransfer and CanTrade are mutable so the issuer can flip them
         // later via MPTokenIssuanceSet.
-        MPTTester mptt{env, issuer, mptInitNoFund};
+        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
         mptt.create(
             {.flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock | tfMPTCanClawback,
              .mutableFlags = tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanTrade});
@@ -6211,11 +6211,11 @@ class Vault_test : public beast::unit_test::Suite
         //    account is neither sender nor receiver = issuer, so
         //    canTransfer returns tecNO_AUTH.
         env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(1'000)}),
-            ter(tecNO_AUTH));
+            Ter(tecNO_AUTH));
         env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = asset(1'000)}),
-            ter(tecNO_AUTH));
+            Ter(tecNO_AUTH));
         env(vault.withdraw({.depositor = bob, .id = vaultKeylet.key, .amount = asset(1'000)}),
-            ter(tecNO_AUTH));
+            Ter(tecNO_AUTH));
         env.close();
 
         // 3. Issuer-as-depositor is exempt — `canTransfer` short-circuits
@@ -6253,7 +6253,7 @@ class Vault_test : public beast::unit_test::Suite
         // Holder ops still fail the same way (CanTransfer-driven), and the
         // issuer is still exempt.
         env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = asset(1'000)}),
-            ter(tecNO_AUTH));
+            Ter(tecNO_AUTH));
         env(vault.deposit({.depositor = issuer, .id = vaultKeylet.key, .amount = asset(1'000)}));
         env.close();
 

@@ -7097,7 +7097,7 @@ private:
         // Vaults rely on featureSingleAssetVault (which the AMM_test class
         // strips by default). MPT-AMM pairs require featureMPTokensV2.
         FeatureBitset const features{
-            jtx::testable_amendments() | featureSingleAssetVault | featureMPTokensV2};
+            jtx::testableAmendments() | featureSingleAssetVault | featureMPTokensV2};
 
         Env env{*this, features};
 
@@ -7177,7 +7177,7 @@ private:
         using namespace jtx;
 
         FeatureBitset const features{
-            jtx::testable_amendments() | featureSingleAssetVault | featureMPTokensV2};
+            jtx::testableAmendments() | featureSingleAssetVault | featureMPTokensV2};
 
         Env env{*this, features};
 
@@ -7188,14 +7188,14 @@ private:
         env.fund(XRP(1'000'000), issuer, owner, trader);
         env.close();
 
-        // Underlying MPT supports lock + clawback. MPTDEXFlags adds
+        // Underlying MPT supports lock + clawback. kMPT_DEX_FLAGS adds
         // CanTransfer + CanTrade so the vault and AMM can route it.
         MPTTester mpt(
             {.env = env,
              .issuer = issuer,
              .holders = {owner},
              .pay = 100'000,
-             .flags = tfMPTCanLock | tfMPTCanClawback | MPTDEXFlags});
+             .flags = tfMPTCanLock | tfMPTCanClawback | kMPT_DEX_FLAGS});
         PrettyAsset const asset = MPT(mpt);
 
         // Create the vault.
@@ -7256,7 +7256,7 @@ private:
         // cascades through the vault-share issuance via
         // isVaultPseudoAccountFrozen, so the AMM-routed Payment fails.
         STAmount const quarterLpt(lptIssue, lptOwner0.mantissa() / 4, lptOwner0.exponent());
-        env(pay(owner, trader, quarterLpt), ter(tecPATH_DRY));
+        env(pay(owner, trader, quarterLpt), Ter(tecPATH_DRY));
         env.close();
         // Trader's balance is still just the half from before the lock.
         BEAST_EXPECT(env.balance(trader, lptIssue) == halfLpt);
@@ -7264,7 +7264,7 @@ private:
         // Step 4: try to cash out the LP tokens. The AMM withdrawal must
         // touch the vault-share side, which is now treated as frozen
         // because its underlying is locked, so the withdrawal fails.
-        ammOwner.withdrawAll(trader, std::nullopt, ter(tecFROZEN));
+        ammOwner.withdrawAll(trader, std::nullopt, Ter(tecFROZEN));
         env.close();
         // Trader still holds the LP tokens; nothing was redeemed.
         BEAST_EXPECT(env.balance(trader, lptIssue) == halfLpt);
