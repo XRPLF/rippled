@@ -100,7 +100,7 @@ SField::SField(PrivateAccessTagT, int fc, char const* fn)
     , fieldName(fn)
     , fieldMeta(SMdNever)
     , fieldNum(++num)
-    , signingField(IsSigning::No)
+    , signingField(IsSigning::Yes)
     , jsonName(fieldName.c_str())
 {
     XRPL_ASSERT(
