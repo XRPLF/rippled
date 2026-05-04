@@ -17,23 +17,23 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doUnsubscribe(RPC::JsonContext& context)
 {
     InfoSub::pointer ispSub;
-    Json::Value jvResult(Json::objectValue);
+    json::Value jvResult(json::ObjectValue);
     bool removeUrl{false};
 
     if (!context.infoSub && !context.params.isMember(jss::url))
     {
         // Must be a JSON-RPC call.
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
     }
 
     if (context.params.isMember(jss::url))
     {
         if (context.role != Role::ADMIN)
-            return rpcError(rpcNO_PERMISSION);
+            return rpcError(RpcNoPermission);
 
         std::string const strUrl = context.params[jss::url].asString();
         ispSub = context.netOps.findRpcSub(strUrl);
@@ -49,12 +49,12 @@ doUnsubscribe(RPC::JsonContext& context)
     if (context.params.isMember(jss::streams))
     {
         if (!context.params[jss::streams].isArray())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         for (auto& it : context.params[jss::streams])
         {
             if (!it.isString())
-                return rpcError(rpcSTREAM_MALFORMED);
+                return rpcError(RpcStreamMalformed);
 
             std::string const streamName = it.asString();
             if (streamName == "server")
@@ -93,7 +93,7 @@ doUnsubscribe(RPC::JsonContext& context)
             }
             else
             {
-                return rpcError(rpcSTREAM_MALFORMED);
+                return rpcError(RpcStreamMalformed);
             }
         }
     }
@@ -104,22 +104,22 @@ doUnsubscribe(RPC::JsonContext& context)
     if (context.params.isMember(accountsProposed))
     {
         if (!context.params[accountsProposed].isArray())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         auto ids = RPC::parseAccountIds(context.params[accountsProposed]);
         if (ids.empty())
-            return rpcError(rpcACT_MALFORMED);
+            return rpcError(RpcActMalformed);
         context.netOps.unsubAccount(ispSub, ids, true);
     }
 
     if (context.params.isMember(jss::accounts))
     {
         if (!context.params[jss::accounts].isArray())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         auto ids = RPC::parseAccountIds(context.params[jss::accounts]);
         if (ids.empty())
-            return rpcError(rpcACT_MALFORMED);
+            return rpcError(RpcActMalformed);
         context.netOps.unsubAccount(ispSub, ids, false);
     }
 
@@ -127,17 +127,17 @@ doUnsubscribe(RPC::JsonContext& context)
     {
         auto const& req = context.params[jss::account_history_tx_stream];
         if (!req.isMember(jss::account) || !req[jss::account].isString())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         auto const id = parseBase58<AccountID>(req[jss::account].asString());
         if (!id)
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         bool stopHistoryOnly = false;
         if (req.isMember(jss::stop_history_tx_only))
         {
             if (!req[jss::stop_history_tx_only].isBool())
-                return rpcError(rpcINVALID_PARAMS);
+                return rpcError(RpcInvalidParams);
             stopHistoryOnly = req[jss::stop_history_tx_only].asBool();
         }
         context.netOps.unsubAccountHistory(ispSub, *id, stopHistoryOnly);
@@ -149,30 +149,30 @@ doUnsubscribe(RPC::JsonContext& context)
     if (context.params.isMember(jss::books))
     {
         if (!context.params[jss::books].isArray())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         for (auto& jv : context.params[jss::books])
         {
             if (!jv.isObject() || !jv.isMember(jss::taker_pays) || !jv.isMember(jss::taker_gets) ||
                 !jv[jss::taker_pays].isObjectOrNull() || !jv[jss::taker_gets].isObjectOrNull())
             {
-                return rpcError(rpcINVALID_PARAMS);
+                return rpcError(RpcInvalidParams);
             }
 
             Book book;
 
             if (auto const err = RPC::parseSubUnsubJson(book.in, jv, jss::taker_pays, context.j);
-                err != rpcSUCCESS)
+                err != RpcSuccess)
                 return rpcError(err);
 
             if (auto const err = RPC::parseSubUnsubJson(book.out, jv, jss::taker_gets, context.j);
-                err != rpcSUCCESS)
+                err != RpcSuccess)
                 return rpcError(err);
 
             if (book.in == book.out)
             {
                 JLOG(context.j.info()) << "taker_gets same as taker_pays.";
-                return rpcError(rpcBAD_MARKET);
+                return rpcError(RpcBadMarket);
             }
 
             if (jv.isMember(jss::domain))
@@ -180,7 +180,7 @@ doUnsubscribe(RPC::JsonContext& context)
                 uint256 domain;
                 if (!jv[jss::domain].isString() || !domain.parseHex(jv[jss::domain].asString()))
                 {
-                    return rpcError(rpcDOMAIN_MALFORMED);
+                    return rpcError(RpcDomainMalformed);
                 }
 
                 book.domain = domain;

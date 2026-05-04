@@ -29,18 +29,18 @@ namespace xrpl {
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::zero)
+    if (ctx.tx[sfVaultID] == beast::kZERO)
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty vault ID.";
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::zero)
+    if (ctx.tx[sfAmount] <= beast::kZERO)
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination])
     {
-        if (*destination == beast::zero)
+        if (*destination == beast::kZERO)
         {
             return temMALFORMED;
         }
@@ -72,7 +72,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     }
 
     // Enforce valid withdrawal policy
-    if (vault->at(sfWithdrawalPolicy) != vaultStrategyFirstComeFirstServe)
+    if (vault->at(sfWithdrawalPolicy) != kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultWithdraw: invalid withdrawal policy.";
@@ -187,7 +187,7 @@ VaultWithdraw::doApply()
                 sharesRedeemed = *maybeShares;
             }
 
-            if (sharesRedeemed == beast::zero)
+            if (sharesRedeemed == beast::kZERO)
                 return tecPRECISION_LOSS;
             auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
             if (!maybeAssets)
@@ -222,12 +222,8 @@ VaultWithdraw::doApply()
     }
 
     if (accountHolds(
-            view(),
-            account_,
-            share,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahIGNORE_AUTH,
-            j_) < sharesRedeemed)
+            view(), account_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <
+        sharesRedeemed)
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
         return tecINSUFFICIENT_FUNDS;

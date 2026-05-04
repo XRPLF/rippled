@@ -8,11 +8,11 @@
 namespace xrpl::test::jtx {
 
 /** Disable the regular key. */
-Json::Value
-regkey(Account const& account, disabled_t);
+json::Value
+regkey(Account const& account, DisabledT);
 
 /** Set a regular key. */
-Json::Value
+json::Value
 regkey(Account const& account, Account const& signer);
 
 }  // namespace xrpl::test::jtx

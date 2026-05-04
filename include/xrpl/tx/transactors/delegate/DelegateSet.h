@@ -7,7 +7,7 @@ namespace xrpl {
 class DelegateSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit DelegateSet(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -38,11 +38,7 @@ public:
 
     // Interface used by AccountDelete
     static TER
-    deleteDelegate(
-        ApplyView& view,
-        std::shared_ptr<SLE> const& sle,
-        AccountID const& account,
-        beast::Journal j);
+    deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j);
 };
 
 }  // namespace xrpl

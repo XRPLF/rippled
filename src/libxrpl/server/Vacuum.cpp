@@ -19,12 +19,12 @@ namespace xrpl {
 bool
 doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
-    std::filesystem::path const dbPath = setup.dataDir / TxDBName;
+    std::filesystem::path const dbPath = setup.dataDir / kTX_DB_NAME;
 
-    uintmax_t const dbSize = file_size(dbPath);
+    uintmax_t const dbSize = std::filesystem::file_size(dbPath);
     XRPL_ASSERT(dbSize != static_cast<uintmax_t>(-1), "xrpl::doVacuumDB : file_size succeeded");
 
-    if (auto available = space(dbPath.parent_path()).available; available < dbSize)
+    if (auto available = std::filesystem::space(dbPath.parent_path()).available; available < dbSize)
     {
         std::cerr << "The database filesystem must have at least as "
                      "much free space as the size of "
@@ -33,14 +33,14 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
         return false;
     }
 
-    auto txnDB = std::make_unique<DatabaseCon>(setup, TxDBName, setup.txPragma, TxDBInit, j);
+    auto txnDB = std::make_unique<DatabaseCon>(setup, kTX_DB_NAME, setup.txPragma, kTX_DB_INIT, j);
     auto& session = txnDB->getSession();
     std::uint32_t pageSize = 0;
 
     // Only the most trivial databases will fit in memory on typical
     // (recommended) hardware. Force temp files to be written to disk
     // regardless of the config settings.
-    session << boost::format(CommonDBPragmaTemp) % "file";
+    session << boost::format(kCOMMON_DB_PRAGMA_TEMP) % "file";
     session << "PRAGMA page_size;", soci::into(pageSize);
 
     std::cout << "VACUUM beginning. page_size: " << pageSize << std::endl;

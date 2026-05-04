@@ -34,10 +34,12 @@
      * -fsanitize=<types>: Links sanitizer runtime libraries
      * -mcmodel=large/medium: (GCC only) Matches compile-time code model
 
-   - SANITIZERS_RELOCATION_FLAGS: (GCC only) Code model flags for linking.
+   - SANITIZERS_RELOCATION_FLAGS: (GCC only, x86_64 only) Code model flags for linking.
      Used to handle large instrumented binaries on x86_64:
      * -mcmodel=large: For AddressSanitizer (prevents relocation errors)
      * -mcmodel=medium: For ThreadSanitizer (large model is incompatible)
+     On ARM64, these flags are omitted since GCC does not support
+     -mcmodel=large with -fPIC, and -mcmodel=medium does not exist.
 #]===================================================================]
 
 include(CompilationEnv)
@@ -151,9 +153,11 @@ if(is_gcc)
     elseif(enable_tsan)
         # GCC doesn't support atomic_thread_fence with tsan. Suppress warnings.
         list(APPEND SANITIZERS_COMPILE_FLAGS "-Wno-tsan")
-        message(STATUS "  Using medium code model (-mcmodel=medium)")
-        list(APPEND SANITIZERS_COMPILE_FLAGS "-mcmodel=medium")
-        list(APPEND SANITIZERS_RELOCATION_FLAGS "-mcmodel=medium")
+        if(is_amd64)
+            message(STATUS "  Using medium code model (-mcmodel=medium)")
+            list(APPEND SANITIZERS_COMPILE_FLAGS "-mcmodel=medium")
+            list(APPEND SANITIZERS_RELOCATION_FLAGS "-mcmodel=medium")
+        endif()
     endif()
 
     # Join sanitizer flags with commas for -fsanitize option

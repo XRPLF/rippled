@@ -10,7 +10,7 @@
 
 namespace xrpl::test {
 
-class LedgerTrie_test : public beast::unit_test::suite
+class LedgerTrie_test : public beast::unit_test::Suite
 {
     void
     testInsert()

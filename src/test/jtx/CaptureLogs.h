@@ -36,20 +36,20 @@ class CaptureLogs : public Logs
         void
         write(beast::severities::Severity level, std::string const& text) override
         {
-            std::lock_guard const lock(strmMutex_);
+            std::scoped_lock const lock(strmMutex_);
             strm_ << text;
         }
 
         void
         writeAlways(beast::severities::Severity level, std::string const& text) override
         {
-            std::lock_guard const lock(strmMutex_);
+            std::scoped_lock const lock(strmMutex_);
             strm_ << text;
         }
     };
 
 public:
-    explicit CaptureLogs(std::string* pResult) : Logs(beast::severities::kInfo), pResult_(pResult)
+    explicit CaptureLogs(std::string* pResult) : Logs(beast::severities::KInfo), pResult_(pResult)
     {
     }
 

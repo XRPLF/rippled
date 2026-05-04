@@ -48,7 +48,7 @@ DatabaseNodeImp::fetchNodeObject(
     bool duplicate)
 {
     std::shared_ptr<NodeObject> nodeObject = nullptr;
-    Status status = ok;
+    Status status = Status::Ok;
 
     try
     {
@@ -58,20 +58,20 @@ DatabaseNodeImp::fetchNodeObject(
     {
         JLOG(j_.fatal()) << "fetchNodeObject " << hash
                          << ": Exception fetching from backend: " << e.what();
-        Rethrow();
+        rethrow();
     }
 
     switch (status)
     {
-        case ok:
-        case notFound:
+        case Status::Ok:
+        case Status::NotFound:
             break;
-        case dataCorrupt:
+        case Status::DataCorrupt:
             JLOG(j_.fatal()) << "fetchNodeObject " << hash << ": nodestore data is corrupted";
             break;
         default:
             JLOG(j_.warn()) << "fetchNodeObject " << hash << ": backend returns unknown result "
-                            << status;
+                            << static_cast<int>(status);
             break;
     }
 

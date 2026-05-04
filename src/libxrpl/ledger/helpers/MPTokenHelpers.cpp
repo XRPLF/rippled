@@ -96,11 +96,11 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
         sle && sle->isFieldPresent(sfTransferFee))
     {
         auto const fee = sle->getFieldU16(sfTransferFee);
-        XRPL_ASSERT(fee <= maxTransferFee, "xrpl::transferRate : fee is too large");
+        XRPL_ASSERT(fee <= kMAX_TRANSFER_FEE, "xrpl::transferRate : fee is too large");
         return Rate{1'000'000'000u + (10'000 * fee)};
     }
 
-    return parityRate;
+    return kPARITY_RATE;
 }
 
 [[nodiscard]] TER
@@ -170,7 +170,7 @@ authorizeMPToken(
             auto const sleMpt = view.peek(mptokenKey);
             if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
                 (view.rules().enabled(fixSecurity3_1_3) &&
-                 (*sleMpt)[~sfLockedAmount].value_or(0) != 0))
+                 (*sleMpt)[~sfLockedAmount].valueOr(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             if (!view.dirRemove(
@@ -194,7 +194,7 @@ authorizeMPToken(
         // items. This is similar to the reserve requirements of trust lines.
         std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::zero)
+            (uOwnerCount < 2) ? XRPAmount(beast::kZERO)
                               : view.fees().accountReserve(uOwnerCount + 1));
 
         if (priorBalance < reserveCreate)
@@ -284,7 +284,7 @@ removeEmptyHolding(
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
     if (mptoken->at(sfMPTAmount) != 0 ||
-        (view.rules().enabled(fixSecurity3_1_3) && (*mptoken)[~sfLockedAmount].value_or(0) != 0))
+        (view.rules().enabled(fixSecurity3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
         return tecHAS_OBLIGATIONS;
 
     return authorizeMPToken(
@@ -320,7 +320,7 @@ requireAuth(
 
     if (featureSAVEnabled)
     {
-        if (depth >= maxAssetCheckDepth)
+        if (depth >= kMAX_ASSET_CHECK_DEPTH)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // requireAuth is recursive if the issuer is a vault pseudo-account
@@ -567,7 +567,7 @@ lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, 
         (*sle)[sfMPTAmount] = amt - pay;
 
         // Overflow check for addition
-        uint64_t const locked = (*sle)[~sfLockedAmount].value_or(0);
+        uint64_t const locked = (*sle)[~sfLockedAmount].valueOr(0);
 
         if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
@@ -591,7 +591,7 @@ lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, 
     // 1. Increase the Issuance EscrowedAmount
     // 2. DO NOT change the Issuance OutstandingAmount
     {
-        uint64_t const issuanceEscrowed = (*sleIssuance)[~sfLockedAmount].value_or(0);
+        uint64_t const issuanceEscrowed = (*sleIssuance)[~sfLockedAmount].valueOr(0);
         auto const pay = amount.mpt().value();
 
         // Overflow check for addition
@@ -839,7 +839,7 @@ checkCreateMPT(
 std::int64_t
 maxMPTAmount(SLE const& sleIssuance)
 {
-    return sleIssuance[~sfMaximumAmount].value_or(maxMPTokenAmount);
+    return sleIssuance[~sfMaximumAmount].value_or(kMAX_MP_TOKEN_AMOUNT);
 }
 
 std::int64_t

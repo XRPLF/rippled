@@ -24,7 +24,7 @@ template <>
 inline std::size_t
 extract(std::string const& key)
 {
-    return ::beast::uhash<>{}(key);
+    return ::beast::Uhash<>{}(key);
 }
 
 template <
@@ -33,7 +33,7 @@ template <
     typename Hash,
     typename Pred = std::equal_to<Key>,
     typename Alloc = std::allocator<std::pair<Key const, Value>>>
-class partitioned_unordered_map
+class PartitionedUnorderedMap
 {
     std::size_t partitions_;
 
@@ -53,46 +53,46 @@ public:
     using map_type = std::unordered_map<key_type, mapped_type, hasher, key_equal, allocator_type>;
     using partition_map_type = std::vector<map_type>;
 
-    struct iterator
+    struct Iterator
     {
         using iterator_category = std::forward_iterator_tag;
-        partition_map_type* map_{nullptr};
-        typename partition_map_type::iterator ait_{};
-        typename map_type::iterator mit_;
+        partition_map_type* map{nullptr};
+        typename partition_map_type::iterator ait{};
+        typename map_type::iterator mit;
 
-        iterator() = default;
+        Iterator() = default;
 
-        iterator(partition_map_type* map) : map_(map)
+        Iterator(partition_map_type* m) : map(m)
         {
         }
 
         reference
         operator*() const
         {
-            return *mit_;
+            return *mit;
         }
 
         pointer
         operator->() const
         {
-            return &(*mit_);
+            return &(*mit);
         }
 
         void
         inc()
         {
-            ++mit_;
-            while (mit_ == ait_->end())
+            ++mit;
+            while (mit == ait->end())
             {
-                ++ait_;
-                if (ait_ == map_->end())
+                ++ait;
+                if (ait == map->end())
                     return;
-                mit_ = ait_->begin();
+                mit = ait->begin();
             }
         }
 
         // ++it
-        iterator&
+        Iterator&
         operator++()
         {
             inc();
@@ -100,75 +100,75 @@ public:
         }
 
         // it++
-        iterator
+        Iterator
         operator++(int)
         {
-            iterator tmp(*this);
+            Iterator tmp(*this);
             inc();
             return tmp;
         }
 
         friend bool
-        operator==(iterator const& lhs, iterator const& rhs)
+        operator==(Iterator const& lhs, Iterator const& rhs)
         {
-            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ && lhs.mit_ == rhs.mit_;
+            return lhs.map == rhs.map && lhs.ait == rhs.ait && lhs.mit == rhs.mit;
         }
 
         friend bool
-        operator!=(iterator const& lhs, iterator const& rhs)
+        operator!=(Iterator const& lhs, Iterator const& rhs)
         {
             return !(lhs == rhs);
         }
     };
 
-    struct const_iterator
+    struct ConstIterator
     {
         using iterator_category = std::forward_iterator_tag;
 
-        partition_map_type* map_{nullptr};
-        typename partition_map_type::iterator ait_{};
-        typename map_type::iterator mit_;
+        partition_map_type* map{nullptr};
+        typename partition_map_type::iterator ait{};
+        typename map_type::iterator mit;
 
-        const_iterator() = default;
+        ConstIterator() = default;
 
-        const_iterator(partition_map_type* map) : map_(map)
+        ConstIterator(partition_map_type* m) : map(m)
         {
         }
 
-        const_iterator(iterator const& orig)
+        ConstIterator(Iterator const& orig)
         {
-            map_ = orig.map_;
-            ait_ = orig.ait_;
-            mit_ = orig.mit_;
+            map = orig.map;
+            ait = orig.ait;
+            mit = orig.mit;
         }
 
         const_reference
         operator*() const
         {
-            return *mit_;
+            return *mit;
         }
 
         const_pointer
         operator->() const
         {
-            return &(*mit_);
+            return &(*mit);
         }
 
         void
         inc()
         {
-            ++mit_;
-            while (mit_ == ait_->end())
+            ++mit;
+            while (mit == ait->end())
             {
-                ++ait_;
-                if (ait_ == map_->end())
+                ++ait;
+                if (ait == map->end())
                     return;
-                mit_ = ait_->begin();
+                mit = ait->begin();
             }
         }
 
         // ++it
-        const_iterator&
+        ConstIterator&
         operator++()
         {
             inc();
@@ -176,22 +176,22 @@ public:
         }
 
         // it++
-        const_iterator
+        ConstIterator
         operator++(int)
         {
-            const_iterator tmp(*this);
+            ConstIterator tmp(*this);
             inc();
             return tmp;
         }
 
         friend bool
-        operator==(const_iterator const& lhs, const_iterator const& rhs)
+        operator==(ConstIterator const& lhs, ConstIterator const& rhs)
         {
-            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ && lhs.mit_ == rhs.mit_;
+            return lhs.map == rhs.map && lhs.ait == rhs.ait && lhs.mit == rhs.mit;
         }
 
         friend bool
-        operator!=(const_iterator const& lhs, const_iterator const& rhs)
+        operator!=(ConstIterator const& lhs, ConstIterator const& rhs)
         {
             return !(lhs == rhs);
         }
@@ -208,26 +208,26 @@ private:
     static void
     end(T& it)
     {
-        it.ait_ = it.map_->end();
-        it.mit_ = it.map_->back().end();
+        it.ait = it.map->end();
+        it.mit = it.map->back().end();
     }
 
     template <class T>
     static void
     begin(T& it)
     {
-        for (it.ait_ = it.map_->begin(); it.ait_ != it.map_->end(); ++it.ait_)
+        for (it.ait = it.map->begin(); it.ait != it.map->end(); ++it.ait)
         {
-            if (it.ait_->begin() == it.ait_->end())
+            if (it.ait->begin() == it.ait->end())
                 continue;
-            it.mit_ = it.ait_->begin();
+            it.mit = it.ait->begin();
             return;
         }
         end(it);
     }
 
 public:
-    partitioned_unordered_map(std::optional<std::size_t> partitions = std::nullopt)
+    PartitionedUnorderedMap(std::optional<std::size_t> partitions = std::nullopt)
     {
         // Set partitions to the number of hardware threads if the parameter
         // is either empty or set to 0.
@@ -252,45 +252,45 @@ public:
         return map_;
     }
 
-    iterator
+    Iterator
     begin()
     {
-        iterator it(&map_);
+        Iterator it(&map_);
         begin(it);
         return it;
     }
 
-    const_iterator
+    ConstIterator
     cbegin() const
     {
-        const_iterator it(&map_);
+        ConstIterator it(&map_);
         begin(it);
         return it;
     }
 
-    const_iterator
+    ConstIterator
     begin() const
     {
         return cbegin();
     }
 
-    iterator
+    Iterator
     end()
     {
-        iterator it(&map_);
+        Iterator it(&map_);
         end(it);
         return it;
     }
 
-    const_iterator
+    ConstIterator
     cend() const
     {
-        const_iterator it(&map_);
+        ConstIterator it(&map_);
         end(it);
         return it;
     }
 
-    const_iterator
+    ConstIterator
     end() const
     {
         return cend();
@@ -301,50 +301,50 @@ private:
     void
     find(key_type const& key, T& it) const
     {
-        it.ait_ = it.map_->begin() + partitioner(key);
-        it.mit_ = it.ait_->find(key);
-        if (it.mit_ == it.ait_->end())
+        it.ait = it.map->begin() + partitioner(key);
+        it.mit = it.ait->find(key);
+        if (it.mit == it.ait->end())
             end(it);
     }
 
 public:
-    iterator
+    Iterator
     find(key_type const& key)
     {
-        iterator it(&map_);
+        Iterator it(&map_);
         find(key, it);
         return it;
     }
 
-    const_iterator
+    ConstIterator
     find(key_type const& key) const
     {
-        const_iterator it(&map_);
+        ConstIterator it(&map_);
         find(key, it);
         return it;
     }
 
     template <class T, class U>
-    std::pair<iterator, bool>
+    std::pair<Iterator, bool>
     emplace(std::piecewise_construct_t const&, T&& keyTuple, U&& valueTuple)
     {
         auto const& key = std::get<0>(keyTuple);
-        iterator it(&map_);
-        it.ait_ = it.map_->begin() + partitioner(key);
-        auto [eit, inserted] = it.ait_->emplace(
+        Iterator it(&map_);
+        it.ait = it.map->begin() + partitioner(key);
+        auto [eit, inserted] = it.ait->emplace(
             std::piecewise_construct, std::forward<T>(keyTuple), std::forward<U>(valueTuple));
-        it.mit_ = eit;
+        it.mit = eit;
         return {it, inserted};
     }
 
     template <class T, class U>
-    std::pair<iterator, bool>
+    std::pair<Iterator, bool>
     emplace(T&& key, U&& val)
     {
-        iterator it(&map_);
-        it.ait_ = it.map_->begin() + partitioner(key);
-        auto [eit, inserted] = it.ait_->emplace(std::forward<T>(key), std::forward<U>(val));
-        it.mit_ = eit;
+        Iterator it(&map_);
+        it.ait = it.map->begin() + partitioner(key);
+        auto [eit, inserted] = it.ait->emplace(std::forward<T>(key), std::forward<U>(val));
+        it.mit = eit;
         return {it, inserted};
     }
 
@@ -355,19 +355,19 @@ public:
             p.clear();
     }
 
-    iterator
-    erase(const_iterator position)
+    Iterator
+    erase(ConstIterator position)
     {
-        iterator it(&map_);
-        it.ait_ = position.ait_;
-        it.mit_ = position.ait_->erase(position.mit_);
+        Iterator it(&map_);
+        it.ait = position.ait;
+        it.mit = position.ait->erase(position.mit);
 
-        while (it.mit_ == it.ait_->end())
+        while (it.mit == it.ait->end())
         {
-            ++it.ait_;
-            if (it.ait_ == it.map_->end())
+            ++it.ait;
+            if (it.ait == it.map->end())
                 break;
-            it.mit_ = it.ait_->begin();
+            it.mit = it.ait->begin();
         }
 
         return it;

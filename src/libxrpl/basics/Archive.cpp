@@ -15,7 +15,7 @@ namespace xrpl {
 void
 extractTarLz4(std::filesystem::path const& src, std::filesystem::path const& dst)
 {
-    if (!is_regular_file(src))
+    if (!std::filesystem::is_regular_file(src))
         Throw<std::runtime_error>("Invalid source file");
 
     using archive_ptr = std::unique_ptr<struct archive, void (*)(struct archive*)>;

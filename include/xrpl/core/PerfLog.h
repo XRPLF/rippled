@@ -120,7 +120,7 @@ public:
      *
      * @return Counters Json object
      */
-    [[nodiscard]] virtual Json::Value
+    [[nodiscard]] virtual json::Value
     countersJson() const = 0;
 
     /**
@@ -128,7 +128,7 @@ public:
      *
      * @return Current executing jobs and RPC calls and durations
      */
-    [[nodiscard]] virtual Json::Value
+    [[nodiscard]] virtual json::Value
     currentJson() const = 0;
 
     /**
@@ -147,10 +147,10 @@ public:
 };
 
 PerfLog::Setup
-setup_PerfLog(Section const& section, std::filesystem::path const& configDir);
+setupPerfLog(Section const& section, std::filesystem::path const& configDir);
 
 std::unique_ptr<PerfLog>
-make_PerfLog(
+makePerfLog(
     PerfLog::Setup const& setup,
     Application& app,
     beast::Journal journal,
@@ -164,12 +164,12 @@ measureDurationAndLog(
     std::chrono::duration<Rep, Period> maxDelay,
     beast::Journal const& journal)
 {
-    auto start_time = std::chrono::high_resolution_clock::now();
+    auto startTime = std::chrono::high_resolution_clock::now();
 
     auto result = func();
 
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     if (duration > maxDelay)
     {
         JLOG(journal.warn()) << actionDescription << " took " << duration.count() << " ms";

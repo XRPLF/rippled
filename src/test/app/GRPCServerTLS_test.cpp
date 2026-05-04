@@ -263,11 +263,15 @@ public:
         constexpr std::size_t maxAttempts = 100;
         for (std::size_t attempt = 0; attempt < maxAttempts; ++attempt)
         {
-            std::error_code ec;
             std::ostringstream oss;
             oss << kCERTS_DIR_PREFIX << std::hex << std::setfill('0') << std::setw(8) << rd();
             tempDir_ = tmpDir / oss.str();
-            if (!std::filesystem::exists(tempDir_, ec) && !ec)
+            std::error_code ec;
+            bool const exists = std::filesystem::exists(tempDir_, ec);
+            if (ec)
+                throw std::runtime_error(
+                    "Unable to check path '" + tempDir_.string() + "': " + ec.message());
+            if (!exists)
                 break;
             tempDir_.clear();
         }
@@ -370,7 +374,7 @@ makeTestGRPCCall(std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub> 
     return status.ok();
 }
 
-class GRPCServerTLS_test : public beast::unit_test::suite, public TemporaryTLSCertificates
+class GRPCServerTLS_test : public beast::unit_test::Suite, public TemporaryTLSCertificates
 {
 public:
     void

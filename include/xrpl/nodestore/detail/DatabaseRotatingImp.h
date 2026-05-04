@@ -65,7 +65,7 @@ private:
         override;
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override;
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override;
 };
 
 }  // namespace xrpl::NodeStore
