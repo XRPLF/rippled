@@ -8,7 +8,7 @@ namespace xrpl::PeerFinder {
 class Fixed
 {
 public:
-    explicit Fixed(clock_type& clock) : m_when(clock.now())
+    explicit Fixed(clock_type& clock) : when_(clock.now())
     {
     }
 
@@ -18,28 +18,28 @@ public:
     [[nodiscard]] clock_type::time_point const&
     when() const
     {
-        return m_when;
+        return when_;
     }
 
     /** Updates metadata to reflect a failed connection. */
     void
     failure(clock_type::time_point const& now)
     {
-        m_failures = std::min(m_failures + 1, Tuning::connectionBackoff.size() - 1);
-        m_when = now + std::chrono::minutes(Tuning::connectionBackoff[m_failures]);
+        failures_ = std::min(failures_ + 1, Tuning::kCONNECTION_BACKOFF.size() - 1);
+        when_ = now + std::chrono::minutes(Tuning::kCONNECTION_BACKOFF[failures_]);
     }
 
     /** Updates metadata to reflect a successful connection. */
     void
     success(clock_type::time_point const& now)
     {
-        m_failures = 0;
-        m_when = now;
+        failures_ = 0;
+        when_ = now;
     }
 
 private:
-    clock_type::time_point m_when;
-    std::size_t m_failures{0};
+    clock_type::time_point when_;
+    std::size_t failures_{0};
 };
 
 }  // namespace xrpl::PeerFinder

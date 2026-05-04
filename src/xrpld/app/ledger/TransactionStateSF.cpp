@@ -22,15 +22,15 @@ TransactionStateSF::gotNode(
 
 {
     XRPL_ASSERT(
-        type != SHAMapNodeType::tnTRANSACTION_NM,
-        "xrpl::TransactionStateSF::gotNode : valid input");
-    db_.store(hotTRANSACTION_NODE, std::move(nodeData), nodeHash.as_uint256(), ledgerSeq);
+        type != SHAMapNodeType::TnTransactionNm, "xrpl::TransactionStateSF::gotNode : valid input");
+    db_.store(
+        NodeObjectType::TransactionNode, std::move(nodeData), nodeHash.asUint256(), ledgerSeq);
 }
 
 std::optional<Blob>
 TransactionStateSF::getNode(SHAMapHash const& nodeHash) const
 {
-    return fp_.getFetchPack(nodeHash.as_uint256());
+    return fp_.getFetchPack(nodeHash.asUint256());
 }
 
 }  // namespace xrpl

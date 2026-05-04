@@ -125,7 +125,7 @@ flow(
     // represented by different types, use templates to tell `flow` about the
     // amount types.
     return std::visit(
-        [&, &strands_ = strands]<typename TIn, typename TOut>(TIn const&, TOut const&) {
+        [&, &strands = strands]<typename TIn, typename TOut>(TIn const&, TOut const&) {
             using TIn_ = typename TIn::amount_type;
             using TOut_ = typename TOut::amount_type;
             return finishFlow(
@@ -134,7 +134,7 @@ flow(
                 dstAsset,
                 flow<TIn_, TOut_>(
                     sb,
-                    strands_,
+                    strands,
                     get<TOut_>(deliver),
                     partialPayment,
                     offerCrossing,

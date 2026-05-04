@@ -26,17 +26,17 @@ struct LocalValues
     template <class T>
     struct Value : BasicValue
     {
-        T t_;
+        T t;
 
         Value() = default;
-        explicit Value(T t) : t_(std::move(t))
+        explicit Value(T t) : t(std::move(t))
         {
         }
 
         void*
         get() override
         {
-            return &t_;
+            return &t;
         }
     };
 
@@ -55,8 +55,8 @@ template <class = void>
 boost::thread_specific_ptr<detail::LocalValues>&
 getLocalValues()
 {
-    static boost::thread_specific_ptr<detail::LocalValues> tsp(&detail::LocalValues::cleanup);
-    return tsp;
+    static boost::thread_specific_ptr<detail::LocalValues> kTSP(&detail::LocalValues::cleanup);
+    return kTSP;
 }
 
 }  // namespace detail

@@ -19,9 +19,9 @@ class AMMClawbackBuilder;
  * @brief Transaction: AMMClawback
  *
  * Type: ttAMM_CLAWBACK (31)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureAMMClawback
- * Privileges: mayDeleteAcct | overrideFreeze | mayAuthorizeMPT
+ * Privileges: MayDeleteAcct | OverrideFreeze | MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMClawbackBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfHolder (soeREQUIRED)
+     * @brief Get sfHolder (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -71,7 +71,7 @@ public:
     }
 
     /**
-     * @brief Get sfAsset2 (soeREQUIRED)
+     * @brief Get sfAsset2 (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -83,7 +83,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
+     * @brief Get sfAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
@@ -114,7 +114,7 @@ public:
  * @brief Builder for AMMClawback transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class AMMClawbackBuilder : public TransactionBuilderBase<AMMClawbackBuilder>
@@ -157,7 +157,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfHolder (soeREQUIRED)
+     * @brief Set sfHolder (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMClawbackBuilder&
@@ -168,7 +168,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -180,7 +180,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -192,7 +192,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */

@@ -19,6 +19,6 @@ public:
 };
 
 std::unique_ptr<CollectorManager>
-make_CollectorManager(Section const& params, beast::Journal journal);
+makeCollectorManager(Section const& params, beast::Journal journal);
 
 }  // namespace xrpl

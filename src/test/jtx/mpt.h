@@ -13,10 +13,10 @@ namespace xrpl::test::jtx {
 
 class MPTTester;
 
-auto const MPTDEXFlags = tfMPTCanTrade | tfMPTCanTransfer;
+auto const kMPT_DEX_FLAGS = tfMPTCanTrade | tfMPTCanTransfer;
 
 // Check flags settings on MPT create
-class mptflags
+class MptFlags
 {
 private:
     MPTTester& tester_;
@@ -24,7 +24,7 @@ private:
     std::optional<Account> holder_;
 
 public:
-    mptflags(
+    MptFlags(
         MPTTester& tester,
         std::uint32_t flags,
         std::optional<Account> const& holder = std::nullopt)
@@ -37,7 +37,7 @@ public:
 };
 
 // Check mptissuance or mptoken amount balances on payment
-class mptbalance
+class MptBalance
 {
 private:
     MPTTester const& tester_;
@@ -45,7 +45,7 @@ private:
     std::int64_t const amount_;
 
 public:
-    mptbalance(MPTTester& tester, Account const& account, std::int64_t amount)
+    MptBalance(MPTTester& tester, Account const& account, std::int64_t amount)
         : tester_(tester), account_(account), amount_(amount)
     {
     }
@@ -54,13 +54,13 @@ public:
     operator()(Env& env) const;
 };
 
-class requireAny
+class RequireAny
 {
 private:
     std::function<bool()> cb_;
 
 public:
-    requireAny(std::function<bool()> const& cb) : cb_(cb)
+    RequireAny(std::function<bool()> const& cb) : cb_(cb)
     {
     }
 
@@ -72,7 +72,7 @@ using Holders = std::vector<Account>;
 
 struct MPTCreate
 {
-    static inline std::vector<Account> AllHolders = {};
+    static inline std::vector<Account> allHolders = {};
     std::optional<Account> issuer = std::nullopt;
     std::optional<std::uint64_t> maxAmt = std::nullopt;
     std::optional<std::uint8_t> assetScale = std::nullopt;
@@ -103,7 +103,7 @@ struct MPTInit
     // create MPTIssuanceID if seated and follow rules for MPTCreate args
     std::optional<MPTCreate> create = std::nullopt;
 };
-static MPTInit const mptInitNoFund{.fund = false};
+static MPTInit const kMPT_INIT_NO_FUND{.fund = false};
 
 struct MPTInitDef
 {
@@ -112,7 +112,7 @@ struct MPTInitDef
     Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
-    std::uint32_t flags = MPTDEXFlags;
+    std::uint32_t flags = kMPT_DEX_FLAGS;
     std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
@@ -180,19 +180,19 @@ public:
     void
     create(MPTCreate const& arg = MPTCreate{});
 
-    static Json::Value
+    static json::Value
     createJV(MPTCreate const& arg = MPTCreate{});
 
     void
     destroy(MPTDestroy const& arg = MPTDestroy{});
 
-    static Json::Value
+    static json::Value
     destroyJV(MPTDestroy const& arg = MPTDestroy{});
 
     void
     authorize(MPTAuthorize const& arg = MPTAuthorize{});
 
-    static Json::Value
+    static json::Value
     authorizeJV(MPTAuthorize const& arg = MPTAuthorize{});
 
     void
@@ -201,7 +201,7 @@ public:
     void
     set(MPTSet const& set = {});
 
-    static Json::Value
+    static json::Value
     setJV(MPTSet const& set = {});
 
     [[nodiscard]] bool
@@ -288,18 +288,18 @@ private:
 
     template <typename A>
     TER
-    submit(A const& arg, Json::Value const& jv)
+    submit(A const& arg, json::Value const& jv)
     {
-        env_(jv, txflags(arg.flags.value_or(0)), ter(arg.err.value_or(tesSUCCESS)));
+        env_(jv, Txflags(arg.flags.value_or(0)), Ter(arg.err.value_or(tesSUCCESS)));
         auto const err = env_.ter();
         if (close_)
             env_.close();
         if (arg.ownerCount)
-            env_.require(owners(issuer_, *arg.ownerCount));
+            env_.require(Owners(issuer_, *arg.ownerCount));
         if (arg.holderCount)
         {
             for (auto const& it : holders_)
-                env_.require(owners(it.second, *arg.holderCount));
+                env_.require(Owners(it.second, *arg.holderCount));
         }
         return err;
     }

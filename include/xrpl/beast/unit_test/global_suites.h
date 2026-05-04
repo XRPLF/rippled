@@ -11,34 +11,34 @@ namespace beast::unit_test {
 namespace detail {
 
 /// Holds test suites registered during static initialization.
-inline suite_list&
-global_suites()
+inline SuiteList&
+globalSuites()
 {
-    static suite_list s;
-    return s;
+    static SuiteList kS;
+    return kS;
 }
 
 template <class Suite>
-struct insert_suite
+struct InsertSuite
 {
-    insert_suite(
+    InsertSuite(
         char const* name,
         char const* module,
         char const* library,
         bool manual,
         int priority)
     {
-        global_suites().insert<Suite>(name, module, library, manual, priority);
+        globalSuites().insert<Suite>(name, module, library, manual, priority);
     }
 };
 
 }  // namespace detail
 
 /// Holds test suites registered during static initialization.
-inline suite_list const&
-global_suites()
+inline SuiteList const&
+globalSuites()
 {
-    return detail::global_suites();
+    return detail::globalSuites();
 }
 
 }  // namespace beast::unit_test

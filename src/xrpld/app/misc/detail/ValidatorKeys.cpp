@@ -30,8 +30,8 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         // token is non-const so it can be moved from
         if (auto token = loadValidatorToken(config.section(SECTION_VALIDATOR_TOKEN).lines()))
         {
-            auto const pk = derivePublicKey(KeyType::secp256k1, token->validationSecret);
-            auto const m = deserializeManifest(base64_decode(token->manifest));
+            auto const pk = derivePublicKey(KeyType::Secp256k1, token->validationSecret);
+            auto const m = deserializeManifest(base64Decode(token->manifest));
 
             if (!m || pk != m->signingKey)
             {
@@ -63,8 +63,8 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         }
         else
         {
-            SecretKey const sk = generateSecretKey(KeyType::secp256k1, *seed);
-            PublicKey const pk = derivePublicKey(KeyType::secp256k1, sk);
+            SecretKey const sk = generateSecretKey(KeyType::Secp256k1, *seed);
+            PublicKey const pk = derivePublicKey(KeyType::Secp256k1, sk);
             keys.emplace(pk, pk, sk);
             nodeID = calcNodeID(pk);
             sequence = 0;
