@@ -2076,7 +2076,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), carol("carol");
-        ConfidentialEnv const confEnv{
+        ConfidentialEnv confEnv{
             env,
             alice,
             {{.account = bob, .payAmount = 100, .convertAmount = 60},
