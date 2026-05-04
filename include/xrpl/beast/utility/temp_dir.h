@@ -17,9 +17,7 @@ namespace beast {
     checking for existence.
 */
 inline std::filesystem::path
-uniqueRandomPath(
-    std::filesystem::path const& base,
-    std::size_t maxAttempts = 100)
+uniqueRandomPath(std::filesystem::path const& base, std::size_t maxAttempts = 100)
 {
     std::random_device rd;
     for (std::size_t attempt = 0; attempt < maxAttempts; ++attempt)
@@ -30,8 +28,10 @@ uniqueRandomPath(
         std::error_code ec;
         bool const exists = std::filesystem::exists(candidate, ec);
         if (ec)
+        {
             throw std::runtime_error(
                 "Unable to check path '" + candidate.string() + "': " + ec.message());
+        }
         if (!exists)
             return candidate;
     }

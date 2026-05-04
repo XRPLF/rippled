@@ -260,8 +260,8 @@ public:
     {
         auto tmpDir = std::filesystem::temp_directory_path();
         std::random_device rd;
-        constexpr std::size_t maxAttempts = 100;
-        for (std::size_t attempt = 0; attempt < maxAttempts; ++attempt)
+        constexpr std::size_t kMAX_ATTEMPTS = 100;
+        for (std::size_t attempt = 0; attempt < kMAX_ATTEMPTS; ++attempt)
         {
             std::ostringstream oss;
             oss << kCERTS_DIR_PREFIX << std::hex << std::setfill('0') << std::setw(8) << rd();
@@ -269,8 +269,10 @@ public:
             std::error_code ec;
             bool const exists = std::filesystem::exists(tempDir_, ec);
             if (ec)
+            {
                 throw std::runtime_error(
                     "Unable to check path '" + tempDir_.string() + "': " + ec.message());
+            }
             if (!exists)
                 break;
             tempDir_.clear();

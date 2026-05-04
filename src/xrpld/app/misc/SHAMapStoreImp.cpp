@@ -477,8 +477,8 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     {
         std::filesystem::path const p = get(section, "path");
         std::random_device rd;
-        constexpr std::size_t maxAttempts = 100;
-        for (std::size_t attempt = 0; attempt < maxAttempts; ++attempt)
+        constexpr std::size_t kMAX_ATTEMPTS = 100;
+        for (std::size_t attempt = 0; attempt < kMAX_ATTEMPTS; ++attempt)
         {
             std::ostringstream oss;
             oss << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8) << rd();
@@ -487,9 +487,11 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
             std::error_code existsEc;
             bool const candidateExists = std::filesystem::exists(candidate, existsEc);
             if (existsEc)
+            {
                 Throw<std::runtime_error>(
                     "Unable to check rotating backend path '" + candidate.string() +
                     "': " + existsEc.message());
+            }
             if (!candidateExists)
             {
                 newPath = candidate;
