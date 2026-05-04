@@ -19,9 +19,9 @@ class EscrowCreateBuilder;
  * @brief Transaction: EscrowCreate
  *
  * Type: ttESCROW_CREATE (1)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use EscrowCreateBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -71,7 +71,7 @@ public:
     }
 
     /**
-     * @brief Get sfCondition (soeOPTIONAL)
+     * @brief Get sfCondition (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -97,7 +97,7 @@ public:
     }
 
     /**
-     * @brief Get sfCancelAfter (soeOPTIONAL)
+     * @brief Get sfCancelAfter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -123,7 +123,7 @@ public:
     }
 
     /**
-     * @brief Get sfFinishAfter (soeOPTIONAL)
+     * @brief Get sfFinishAfter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -149,7 +149,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -179,7 +179,7 @@ public:
  * @brief Builder for EscrowCreate transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class EscrowCreateBuilder : public TransactionBuilderBase<EscrowCreateBuilder>
@@ -220,7 +220,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
@@ -231,7 +231,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -243,7 +243,7 @@ public:
     }
 
     /**
-     * @brief Set sfCondition (soeOPTIONAL)
+     * @brief Set sfCondition (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
@@ -254,7 +254,7 @@ public:
     }
 
     /**
-     * @brief Set sfCancelAfter (soeOPTIONAL)
+     * @brief Set sfCancelAfter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
@@ -265,7 +265,7 @@ public:
     }
 
     /**
-     * @brief Set sfFinishAfter (soeOPTIONAL)
+     * @brief Set sfFinishAfter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
@@ -276,7 +276,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&

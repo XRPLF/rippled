@@ -72,7 +72,7 @@ QualityFunction::QualityFunction(
     std::uint32_t tfee,
     QualityFunction::AMMTag)
 {
-    if (amounts.in <= beast::zero || amounts.out <= beast::zero)
+    if (amounts.in <= beast::kZERO || amounts.out <= beast::kZERO)
         Throw<std::runtime_error>("QualityFunction amounts are 0.");
     Number const cfee = feeMult(tfee);
     m_ = -cfee / amounts.in;

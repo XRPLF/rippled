@@ -23,34 +23,34 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
         9...end                     The body of the object data
     */
 
-    m_success = false;
-    m_key = key;
-    m_objectType = NodeObjectType::hotUNKNOWN;
-    m_objectData = nullptr;
-    m_dataBytes = std::max(0, valueBytes - 9);
+    success_ = false;
+    key_ = key;
+    objectType_ = NodeObjectType::Unknown;
+    objectData_ = nullptr;
+    dataBytes_ = std::max(0, valueBytes - 9);
 
     // VFALCO NOTE What about bytes 4 through 7 inclusive?
 
     if (valueBytes > 8)
     {
         unsigned char const* byte = static_cast<unsigned char const*>(value);
-        m_objectType = safe_cast<NodeObjectType>(byte[8]);
+        objectType_ = safeCast<NodeObjectType>(byte[8]);
     }
 
     if (valueBytes > 9)
     {
-        m_objectData = static_cast<unsigned char const*>(value) + 9;
+        objectData_ = static_cast<unsigned char const*>(value) + 9;
 
-        switch (m_objectType)
+        switch (objectType_)
         {
             default:
                 break;
 
-            case NodeObjectType::hotUNKNOWN:
-            case NodeObjectType::hotLEDGER:
-            case NodeObjectType::hotACCOUNT_NODE:
-            case NodeObjectType::hotTRANSACTION_NODE:
-                m_success = true;
+            case NodeObjectType::Unknown:
+            case NodeObjectType::Ledger:
+            case NodeObjectType::AccountNode:
+            case NodeObjectType::TransactionNode:
+                success_ = true;
                 break;
         }
     }
@@ -59,15 +59,15 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 std::shared_ptr<NodeObject>
 DecodedBlob::createObject()
 {
-    XRPL_ASSERT(m_success, "xrpl::NodeStore::DecodedBlob::createObject : valid object type");
+    XRPL_ASSERT(success_, "xrpl::NodeStore::DecodedBlob::createObject : valid object type");
 
     std::shared_ptr<NodeObject> object;
 
-    if (m_success)
+    if (success_)
     {
-        Blob data(m_objectData, m_objectData + m_dataBytes);
+        Blob data(objectData_, objectData_ + dataBytes_);
 
-        object = NodeObject::createObject(m_objectType, std::move(data), uint256::fromVoid(m_key));
+        object = NodeObject::createObject(objectType_, std::move(data), uint256::fromVoid(key_));
     }
 
     return object;

@@ -94,7 +94,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
     }
 
-    if (clawAmount && *clawAmount <= beast::zero)
+    if (clawAmount && *clawAmount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -191,7 +191,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     {
         // retrieve LP token balance inside the amendment gate to avoid inconsistent error behavior
         auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
-        if (lpTokenBalance == beast::zero)
+        if (lpTokenBalance == beast::kZERO)
             return tecAMM_BALANCE;
 
         if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokenBalance, ammSle, holder);
@@ -204,8 +204,8 @@ AMMClawback::applyGuts(Sandbox& sb)
         *ammSle,
         asset,
         asset2,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         ctx_.journal);
 
     if (!expected)
@@ -220,7 +220,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
     // the balance
     auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
-    if (holdLPtokens == beast::zero)
+    if (holdLPtokens == beast::kZERO)
         return tecAMM_BALANCE;
 
     if (!clawAmount)
@@ -239,8 +239,8 @@ AMMClawback::applyGuts(Sandbox& sb)
                 holdLPtokens,
                 holdLPtokens,
                 0,
-                FreezeHandling::fhIGNORE_FREEZE,
-                AuthHandling::ahIGNORE_AUTH,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 WithdrawAll::Yes,
                 preFeeBalance_,
                 ctx_.journal);
@@ -327,8 +327,8 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             holdLPtokens,
             holdLPtokens,
             0,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             WithdrawAll::Yes,
             preFeeBalance_,
             ctx_.journal);
@@ -340,7 +340,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         auto tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
 
         // LCOV_EXCL_START
-        if (tokensAdj == beast::zero)
+        if (tokensAdj == beast::kZERO)
             return {tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, std::nullopt};
         // LCOV_EXCL_STOP
 
@@ -360,8 +360,8 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             lptAMMBalance,
             tokensAdj,
             0,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             WithdrawAll::No,
             preFeeBalance_,
             ctx_.journal);
@@ -380,8 +380,8 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         lptAMMBalance,
         toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac),
         0,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         WithdrawAll::No,
         preFeeBalance_,
         ctx_.journal);

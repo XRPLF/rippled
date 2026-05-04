@@ -75,7 +75,7 @@ public:
     write(void const* buffer, std::size_t bytes) = 0;
 
     virtual void
-    write(std::shared_ptr<Writer> const& writer, bool keep_alive) = 0;
+    write(std::shared_ptr<Writer> const& writer, bool keepAlive) = 0;
 
     /** @} */
 

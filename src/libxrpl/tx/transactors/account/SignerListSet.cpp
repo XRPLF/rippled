@@ -37,7 +37,7 @@ namespace xrpl {
 // We're prepared for there to be multiple signer lists in the future,
 // but we don't need them yet.  So for the time being we're manually
 // setting the sfSignerListID to zero in all cases.
-static std::uint32_t const DEFAULT_SIGNER_LIST_ID = 0;
+static std::uint32_t const kDEFAULT_SIGNER_LIST_ID = 0;
 
 std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, SignerListSet::Operation>
 SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j)
@@ -46,7 +46,7 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
     // the list.  A zero quorum means we're destroying the list.
     auto const quorum = tx[sfSignerQuorum];
     std::vector<SignerEntries::SignerEntry> sign;
-    Operation op = Operation::unknown;
+    Operation op = Operation::Unknown;
 
     bool const hasSignerEntries(tx.isFieldPresent(sfSignerEntries));
     if ((quorum != 0u) && hasSignerEntries)
@@ -60,11 +60,11 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
 
         // Save deserialized list for later.
         sign = std::move(*signers);
-        op = Operation::set;
+        op = Operation::Set;
     }
     else if ((quorum == 0) && !hasSignerEntries)
     {
-        op = Operation::destroy;
+        op = Operation::Destroy;
     }
 
     return std::make_tuple(tesSUCCESS, quorum, sign, op);
@@ -85,14 +85,14 @@ SignerListSet::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(std::get<0>(result)))
         return std::get<0>(result);
 
-    if (std::get<3>(result) == Operation::unknown)
+    if (std::get<3>(result) == Operation::Unknown)
     {
         // Neither a set nor a destroy.  Malformed.
         JLOG(ctx.j.trace()) << "Malformed transaction: Invalid signer set list format.";
         return temMALFORMED;
     }
 
-    if (std::get<3>(result) == Operation::set)
+    if (std::get<3>(result) == Operation::Set)
     {
         // Validate our settings.
         auto const account = ctx.tx.getAccountID(sfAccount);
@@ -113,10 +113,10 @@ SignerListSet::doApply()
     // Perform the operation preCompute() decided on.
     switch (do_)
     {
-        case Operation::set:
+        case Operation::Set:
             return replaceSignerList();
 
-        case Operation::destroy:
+        case Operation::Destroy:
             return destroySignerList();
 
         default:
@@ -137,7 +137,7 @@ SignerListSet::preCompute()
         isTesSuccess(std::get<0>(result)),
         "xrpl::SignerListSet::preCompute : result is tesSUCCESS");
     XRPL_ASSERT(
-        std::get<3>(result) != Operation::unknown,
+        std::get<3>(result) != Operation::Unknown,
         "xrpl::SignerListSet::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);
@@ -168,10 +168,10 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // be in the range from 1 to 32.
     // We've got a lot of room to grow.
     XRPL_ASSERT(
-        entryCount >= STTx::minMultiSigners,
+        entryCount >= STTx::kMIN_MULTI_SIGNERS,
         "xrpl::signerCountBasedOwnerCountDelta : minimum signers");
     XRPL_ASSERT(
-        entryCount <= STTx::maxMultiSigners,
+        entryCount <= STTx::kMAX_MULTI_SIGNERS,
         "xrpl::signerCountBasedOwnerCountDelta : maximum signers");
     return 2 + static_cast<int>(entryCount);
 }
@@ -249,7 +249,7 @@ SignerListSet::validateQuorumAndSignerEntries(
     // Reject if there are too many or too few entries in the list.
     {
         std::size_t const signerCount = signers.size();
-        if (signerCount < STTx::minMultiSigners || signerCount > STTx::maxMultiSigners)
+        if (signerCount < STTx::kMIN_MULTI_SIGNERS || signerCount > STTx::kMAX_MULTI_SIGNERS)
         {
             JLOG(j.trace()) << "Too many or too few signers in signer list.";
             return temMALFORMED;
@@ -318,10 +318,10 @@ SignerListSet::replaceSignerList()
     // Compute new reserve.  Verify the account has funds to meet the reserve.
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
 
-    constexpr int addedOwnerCount = 1;
+    constexpr int kADDED_OWNER_COUNT = 1;
     std::uint32_t const flags{lsfOneOwnerCount};
 
-    XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
+    XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + kADDED_OWNER_COUNT)};
 
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
@@ -349,7 +349,7 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, addedOwnerCount, viewJ);
+    adjustOwnerCount(view(), sle, kADDED_OWNER_COUNT, viewJ);
     return tesSUCCESS;
 }
 
@@ -381,7 +381,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
         ledgerEntry->setAccountID(sfOwner, account_);
     }
     ledgerEntry->setFieldU32(sfSignerQuorum, quorum_);
-    ledgerEntry->setFieldU32(sfSignerListID, DEFAULT_SIGNER_LIST_ID);
+    ledgerEntry->setFieldU32(sfSignerListID, kDEFAULT_SIGNER_LIST_ID);
     if (flags != 0u)  // Only set flags if they are non-default (default is zero).
         ledgerEntry->setFieldU32(sfFlags, flags);
 
@@ -389,7 +389,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
     STArray toLedger(signers_.size());
     for (auto const& entry : signers_)
     {
-        toLedger.push_back(STObject::makeInnerObject(sfSignerEntry));
+        toLedger.pushBack(STObject::makeInnerObject(sfSignerEntry));
         STObject& obj = toLedger.back();
         obj.reserve(2);
         obj[sfAccount] = entry.account;

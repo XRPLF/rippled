@@ -10,7 +10,7 @@
 
 namespace xrpl::test {
 
-struct Buffer_test : beast::unit_test::suite
+struct Buffer_test : beast::unit_test::Suite
 {
     static bool
     sane(Buffer const& b)

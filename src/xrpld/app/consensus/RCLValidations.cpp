@@ -130,7 +130,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 
         Application* pApp = &app_;
 
-        app_.getJobQueue().addJob(jtADVANCE, "GetConsL2", [pApp, hash, this]() {
+        app_.getJobQueue().addJob(JtAdvance, "GetConsL2", [pApp, hash, this]() {
             JLOG(j_.debug()) << "JOB advanceLedger getConsensusLedger2 started";
             pApp->getInboundLedgers().acquireAsync(hash, 0, InboundLedger::Reason::CONSENSUS);
         });
@@ -173,11 +173,11 @@ handleNewValidation(
     // masterKey is seated only if validator is trusted or listed
     auto const outcome = validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
 
-    if (outcome == ValStatus::current)
+    if (outcome == ValStatus::Current)
     {
         if (val->isTrusted())
         {
-            if (bypassAccept == BypassAccept::yes)
+            if (bypassAccept == BypassAccept::Yes)
             {
                 XRPL_ASSERT(j, "xrpl::handleNewValidation : journal is available");
                 if (j.has_value())
@@ -215,14 +215,14 @@ handleNewValidation(
             return ret;
         }();
 
-        if (outcome == ValStatus::conflicting)
+        if (outcome == ValStatus::Conflicting)
         {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Conflicting validation for " << seq << "!\n["
                << val->getSerializer().slice() << "]";
         }
 
-        if (outcome == ValStatus::multiple)
+        if (outcome == ValStatus::Multiple)
         {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Multiple validations for " << seq << "/" << hash << "!\n["
