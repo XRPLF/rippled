@@ -83,6 +83,7 @@ foreach(PKG IN LISTS PKG_TYPES)
                 --cgroupns host \
                 --volume '${CMAKE_SOURCE_DIR}:/root:ro' \
                 --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
+                --tmpfs /run \
                 --tmpfs /run/lock \
                 ${IMAGE}"
     )

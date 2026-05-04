@@ -11,31 +11,39 @@ usage() {
 Usage: build_pkg.sh [options]
 
 Options (each can also be set via the env var shown):
-  --src-dir DIR             repo root                     [SRC_DIR;           default: $PWD]
-  --build-dir DIR           directory holding xrpld       [BUILD_DIR;         default: $PWD/build]
-  --pkg-version STR         version, e.g. 3.2.0-b1        [PKG_VERSION;       default: parsed from xrpld --version]
-  --pkg-release N           package release number        [PKG_RELEASE;       default: 1]
-  --pkg-type TYPE           deb or rpm                    [PKG_TYPE;          default: inferred from package manager]
-  --source-date-epoch SECS  reproducibility timestamp     [SOURCE_DATE_EPOCH; default: latest git commit ctime]
+  --src-dir DIR             repo root                  [SRC_DIR;           default: $PWD]
+  --build-dir DIR           directory holding xrpld    [BUILD_DIR;         default: $PWD/build]
+  --pkg-version STR         version, e.g. 3.2.0-b1     [PKG_VERSION;       default: parsed from xrpld --version]
+  --pkg-release N           package release number     [PKG_RELEASE;       default: 1]
+  --pkg-type TYPE           deb or rpm                 [PKG_TYPE;          default: inferred from package manager]
+  --source-date-epoch SECS  reproducibility timestamp  [SOURCE_DATE_EPOCH; default: latest git commit ctime]
   -h, --help                show this help and exit
 EOF
 }
 
-src_dir="${SRC_DIR:-}"
-build_dir="${BUILD_DIR:-}"
-pkg_version="${PKG_VERSION:-}"
-pkg_release="${PKG_RELEASE:-}"
-pkg_type="${PKG_TYPE:-}"
-source_date_epoch="${SOURCE_DATE_EPOCH:-}"
+need_arg() {
+    if [[ $# -lt 2 || "$2" == --* ]]; then
+        echo "Missing value for $1" >&2
+        exit 2
+    fi
+}
+
+# Seed from env. CLI parsing below overrides these directly.
+SRC_DIR="${SRC_DIR:-}"
+BUILD_DIR="${BUILD_DIR:-}"
+PKG_VERSION="${PKG_VERSION:-}"
+PKG_RELEASE="${PKG_RELEASE:-}"
+PKG_TYPE="${PKG_TYPE:-}"
+SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --src-dir)            src_dir="$2";           shift 2 ;;
-        --build-dir)          build_dir="$2";         shift 2 ;;
-        --pkg-version)        pkg_version="$2";       shift 2 ;;
-        --pkg-release)        pkg_release="$2";       shift 2 ;;
-        --pkg-type)           pkg_type="$2";          shift 2 ;;
-        --source-date-epoch)  source_date_epoch="$2"; shift 2 ;;
+        --src-dir)            need_arg "$@"; SRC_DIR="$2";           shift 2 ;;
+        --build-dir)          need_arg "$@"; BUILD_DIR="$2";         shift 2 ;;
+        --pkg-version)        need_arg "$@"; PKG_VERSION="$2";       shift 2 ;;
+        --pkg-release)        need_arg "$@"; PKG_RELEASE="$2";       shift 2 ;;
+        --pkg-type)           need_arg "$@"; PKG_TYPE="$2";          shift 2 ;;
+        --source-date-epoch)  need_arg "$@"; SOURCE_DATE_EPOCH="$2"; shift 2 ;;
         -h|--help)            usage; exit 0 ;;
         *)
             echo "Unknown argument: $1" >&2
@@ -45,12 +53,20 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-SRC_DIR="$(cd "${src_dir:-${PWD}}" && pwd)"
-BUILD_DIR="$(cd "${build_dir:-${PWD}/build}" && pwd)"
-VERSION="${pkg_version:-$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3}')}"
-PKG_RELEASE="${pkg_release:-1}"
-PKG_TYPE="${pkg_type}"
-SOURCE_DATE_EPOCH="${source_date_epoch}"
+SRC_DIR="$(cd "${SRC_DIR:-${PWD}}" && pwd)"
+BUILD_DIR="$(cd "${BUILD_DIR:-${PWD}/build}" && pwd)"
+PKG_RELEASE="${PKG_RELEASE:-1}"
+
+if [[ -z "${PKG_VERSION}" ]]; then
+    PKG_VERSION="$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3; exit}')"
+fi
+
+if [[ -z "${PKG_VERSION}" ]]; then
+    echo "PKG_VERSION is empty (not provided and could not be derived)." >&2
+    exit 1
+fi
+
+VERSION="${PKG_VERSION}"
 
 if [[ -z "${PKG_TYPE}" ]]; then
     if command -v apt-get >/dev/null 2>&1; then
@@ -63,6 +79,14 @@ if [[ -z "${PKG_TYPE}" ]]; then
     fi
 fi
 
+case "${PKG_TYPE}" in
+    deb|rpm) ;;
+    *)
+        echo "Invalid PKG_TYPE: ${PKG_TYPE}; expected deb or rpm." >&2
+        exit 2
+        ;;
+esac
+
 if [[ -z "${SOURCE_DATE_EPOCH}" ]]; then
     if git -C "$SRC_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         SOURCE_DATE_EPOCH="$(git -C "$SRC_DIR" log -1 --format=%ct)"
@@ -70,6 +94,7 @@ if [[ -z "${SOURCE_DATE_EPOCH}" ]]; then
         SOURCE_DATE_EPOCH="$(date +%s)"
     fi
 fi
+
 export SOURCE_DATE_EPOCH
 CHANGELOG_DATE="$(date -u -R -d "@$SOURCE_DATE_EPOCH")"
 
@@ -97,20 +122,20 @@ stage_common() {
     local dest="$1"
     mkdir -p "${dest}"
 
-    cp "${BUILD_DIR}/xrpld"                       "${dest}/xrpld"
-    cp "${SRC_DIR}/cfg/xrpld-example.cfg"         "${dest}/xrpld.cfg"
-    cp "${SRC_DIR}/cfg/validators-example.txt"    "${dest}/validators.txt"
-    cp "${SRC_DIR}/LICENSE.md"                    "${dest}/LICENSE.md"
-    cp "${SRC_DIR}/README.md"                     "${dest}/README.md"
+    cp "${BUILD_DIR}/xrpld"                     "${dest}/xrpld"
+    cp "${SRC_DIR}/cfg/xrpld-example.cfg"       "${dest}/xrpld.cfg"
+    cp "${SRC_DIR}/cfg/validators-example.txt"  "${dest}/validators.txt"
+    cp "${SRC_DIR}/LICENSE.md"                  "${dest}/LICENSE.md"
+    cp "${SRC_DIR}/README.md"                   "${dest}/README.md"
 
-    cp "${SHARED}/xrpld.service"                  "${dest}/xrpld.service"
-    cp "${SHARED}/xrpld.sysusers"                 "${dest}/xrpld.sysusers"
-    cp "${SHARED}/xrpld.tmpfiles"                 "${dest}/xrpld.tmpfiles"
-    cp "${SHARED}/xrpld.logrotate"                "${dest}/xrpld.logrotate"
-    cp "${SHARED}/update-xrpld.sh"                "${dest}/update-xrpld.sh"
-    cp "${SHARED}/update-xrpld.service"           "${dest}/update-xrpld.service"
-    cp "${SHARED}/update-xrpld.timer"             "${dest}/update-xrpld.timer"
-    cp "${SHARED}/50-xrpld.preset"                "${dest}/50-xrpld.preset"
+    cp "${SHARED}/xrpld.service"                "${dest}/xrpld.service"
+    cp "${SHARED}/xrpld.sysusers"               "${dest}/xrpld.sysusers"
+    cp "${SHARED}/xrpld.tmpfiles"               "${dest}/xrpld.tmpfiles"
+    cp "${SHARED}/xrpld.logrotate"              "${dest}/xrpld.logrotate"
+    cp "${SHARED}/update-xrpld.sh"              "${dest}/update-xrpld.sh"
+    cp "${SHARED}/update-xrpld.service"         "${dest}/update-xrpld.service"
+    cp "${SHARED}/update-xrpld.timer"           "${dest}/update-xrpld.timer"
+    cp "${SHARED}/50-xrpld.preset"              "${dest}/50-xrpld.preset"
 }
 
 build_rpm() {
@@ -148,6 +173,7 @@ build_deb() {
     cp "${staging}/xrpld.tmpfiles"       "${staging}/debian/xrpld.tmpfiles"
     cp "${staging}/update-xrpld.service" "${staging}/debian/xrpld.update-xrpld.service"
     cp "${staging}/update-xrpld.timer"   "${staging}/debian/xrpld.update-xrpld.timer"
+
     # Debian '~' marks a pre-release; 3.2.0~b1 sorts before 3.2.0.
     local deb_full_version="${VER_BASE}${VER_SUFFIX:+~${VER_SUFFIX}}-${PKG_RELEASE}"
 

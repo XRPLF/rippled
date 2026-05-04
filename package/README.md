@@ -25,7 +25,9 @@ package/
 
 Packaging targets and their container images are declared in
 [`.github/scripts/strategy-matrix/linux.json`](../.github/scripts/strategy-matrix/linux.json)
-via a `"package": true` field on specific os entries. The package format
+via a `"package": true` field on specific os entries. Today only
+`linux/amd64` is emitted; the architecture is hardcoded in `generate.py`
+and the workflow runner. The package format
 (deb or rpm) is inferred at build time from the container's package manager
 (`apt-get` -> deb, `dnf`/`yum` -> rpm). The image tag is composed as
 `ghcr.io/xrplf/ci/{distro}-{version}:{compiler}-{cver}-sha-{image_sha}` —
@@ -50,7 +52,7 @@ To print the exact image tags for the current `linux.json`:
 
 Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
 `reusable-strategy-matrix.yml` with `mode: packaging` to generate the matrix of
-`{artifact_name, container_image}` entries, then fan out to
+`{artifact_name, os}` entries, then fan out to
 `reusable-package.yml` per entry. That workflow downloads the pre-built `xrpld`
 binary artifact, detects the package format from the container, and calls
 `build_pkg.sh` directly — no CMake configure or build step is needed inside

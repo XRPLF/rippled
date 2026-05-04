@@ -1,10 +1,6 @@
-usr/bin/xrpld
+xrpld            usr/bin/
+xrpld.cfg        etc/xrpld/
+validators.txt   etc/xrpld/
 
-etc/xrpld/xrpld.cfg
-etc/xrpld/validators.txt
-etc/logrotate.d/xrpld
-
-usr/libexec/xrpld/update-xrpld.sh
-
-usr/share/doc/xrpld/README.md
-usr/share/doc/xrpld/LICENSE.md
+update-xrpld.sh  usr/libexec/xrpld/
+xrpld.logrotate  etc/logrotate.d/

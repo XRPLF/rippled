@@ -64,11 +64,7 @@ jobs:
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
             .github/workflows/reusable-clang-tidy.yml
-<<<<<<< HEAD
-=======
-            .github/workflows/reusable-clang-tidy-files.yml
             .github/workflows/reusable-package.yml
->>>>>>> 7721bda445 (feat: Build Linux packages in GitHub)
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
             .github/workflows/reusable-upload-recipe.yml
@@ -96,8 +92,11 @@ jobs:
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
-            package/**
+            cfg/**
             cmake/XrplPackaging.cmake
+            LICENSE.md
+            package/**
+            README.md
             .github/scripts/strategy-matrix/**
             .github/workflows/reusable-package.yml
 

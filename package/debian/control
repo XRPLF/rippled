@@ -18,6 +18,6 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends}
 Description: XRP Ledger daemon
- Reference implementation of the XRP Ledger protocol. Participates
- in the peer-to-peer network, processes transactions, and maintains
- a local ledger copy.
+ Reference implementation of the XRP Ledger protocol.
+ Participates in the peer-to-peer network, processes transactions,
+ and maintains a local ledger copy.

@@ -23,8 +23,6 @@ check -f /usr/share/doc/xrpld/LICENSE.md
 # Legacy compat symlinks (remove next major release)
 check -L /usr/local/bin/rippled
 check_resolves_to /usr/local/bin/rippled /usr/bin/xrpld
-check -L /etc/xrpld/rippled.cfg
-check_resolves_to /etc/xrpld/rippled.cfg /etc/xrpld/xrpld.cfg
 
 if systemctl is-system-running >/dev/null 2>&1; then
     # service file sanity check

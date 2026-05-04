@@ -4,15 +4,14 @@ import itertools
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 THIS_DIR = Path(__file__).parent.resolve()
 
 
 @dataclass
 class Config:
-    architecture: list[dict[str, Any]]
-    os: list[dict[str, Any]]
+    architecture: list[dict]
+    os: list[dict]
     build_type: list[str]
     cmake_args: list[str]
 
@@ -33,52 +32,32 @@ We will further set additional CMake arguments as follows:
 """
 
 
-def build_config_name(
-    os_entry: dict[str, Any], architecture: dict[str, Any], build_type: str
-) -> str:
+def build_config_name(os_entry: dict, platform: str, build_type: str) -> str:
     parts = [os_entry["distro_name"]]
     for key in ("distro_version", "compiler_name", "compiler_version"):
         if value := os_entry[key]:
             parts.append(value)
-    platform = architecture["platform"]
-    parts.append(platform[platform.find("/") + 1 :])
+    parts.append("arm64" if "arm64" in platform else "amd64")
     parts.append(build_type.lower())
     return "-".join(parts)
 
 
-def build_container_image(os_entry: dict[str, Any]) -> str:
-    image = f"ghcr.io/xrplf/ci/{os_entry['distro_name']}-{os_entry['distro_version']}"
-    tag = f"{os_entry['compiler_name']}-{os_entry['compiler_version']}-sha-{os_entry['image_sha']}"
-    return f"{image}:{tag}"
-
-
-def generate_packaging_matrix(config: Config) -> list[dict[str, str]]:
-    """Emit packaging entries for each os entry with `package: true`.
-    Packaging always uses Release build on linux/amd64. The package format
-    (deb or rpm) is inferred at runtime from the container's package manager.
+def generate_packaging_matrix(config: Config) -> list[dict]:
+    """Emit one entry per os entry with `package: true`. Architecture is
+    hardcoded to linux/amd64 here (and the runner is hardcoded at the
+    workflow level) until arm64 packaging is ready.
     """
-    architecture = next(
-        (a for a in config.architecture if a["platform"] == "linux/amd64"),
-        None,
-    )
-    if architecture is None:
-        raise Exception("linux/amd64 architecture required for packaging")
-
-    entries = []
-    for os_entry in config.os:
-        if not os_entry.get("package", False):
-            continue
-        config_name = build_config_name(os_entry, architecture, "Release")
-        entries.append(
-            {
-                "artifact_name": f"xrpld-{config_name}",
-                "container_image": build_container_image(os_entry),
-            }
-        )
-    return entries
+    return [
+        {
+            "artifact_name": f"xrpld-{build_config_name(os, 'linux/amd64', 'Release')}",
+            "os": os,
+        }
+        for os in config.os
+        if os.get("package", False)
+    ]
 
 
-def generate_strategy_matrix(all: bool, config: Config) -> list[dict[str, Any]]:
+def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
     configurations = []
     for architecture, os, build_type, cmake_args in itertools.product(
         config.architecture, config.os, config.build_type, config.cmake_args
@@ -270,7 +249,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict[str, Any]]:
 
         # Generate a unique name for the configuration, e.g. macos-arm64-debug
         # or debian-bookworm-gcc-12-amd64-release.
-        config_name = build_config_name(os, architecture, build_type)
+        config_name = build_config_name(os, architecture["platform"], build_type)
         if "-Dcoverage=ON" in cmake_args:
             config_name += "-coverage"
         if "-Dunity=ON" in cmake_args:
