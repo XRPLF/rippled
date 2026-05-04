@@ -7248,7 +7248,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -7278,13 +7278,13 @@ protected:
 
         using namespace loan;
 
-        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
         Number const principalRequest{100};
 
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
-            fee(loanSetFee),
-            json(sfCounterpartySignature, Json::objectValue));
+            Fee(loanSetFee),
+            Json(sfCounterpartySignature, json::ObjectValue));
 
         createJson["InterestRate"] = 1;  // minimum non-zero rate
         createJson["PaymentTotal"] = 3;
@@ -7294,8 +7294,8 @@ protected:
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
-        createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
-        env(createJson, ter(tesSUCCESS));
+        createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
+        env(createJson, Ter(tesSUCCESS));
         env.close();
 
         // For principal=100, n=3 the amortization schedule produces a
@@ -7303,7 +7303,7 @@ protected:
         // one period's worth — enough for the LoanPay path to enter
         // computePaymentComponents and reach the assertion that fires
         // when the bug is present. With the fix, the tx applies cleanly.
-        env(pay(borrower, keylet.key, iouAsset(35)), ter(tesSUCCESS));
+        env(pay(borrower, keylet.key, iouAsset(35)), Ter(tesSUCCESS));
         env.close();
     }
 
@@ -7324,7 +7324,7 @@ protected:
         using namespace jtx;
         using namespace jtx::loan;
         using namespace std::chrono_literals;
-        Env env(*this, all);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -7363,12 +7363,12 @@ protected:
         Number const vaultAvailableBefore = vaultBefore->at(sfAssetsAvailable);
 
         // Loan: $1B principal, 3 payments, 600s interval, rate=1 TenthBips32.
-        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
         Number const principalRequest{1, 9};
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
-            fee(loanSetFee),
-            json(sfCounterpartySignature, Json::objectValue));
+            Fee(loanSetFee),
+            Json(sfCounterpartySignature, json::ObjectValue));
         createJson["InterestRate"] = 1;
         createJson["PaymentTotal"] = 3;
         createJson["PaymentInterval"] = 600;
@@ -7376,8 +7376,8 @@ protected:
         auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
-        createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
-        env(createJson, ter(tesSUCCESS));
+        createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
+        env(createJson, Ter(tesSUCCESS));
         env.close();
 
         auto const loanSle = env.le(loanKeylet);
@@ -7385,7 +7385,7 @@ protected:
         Number const expectedTotalInterest =
             loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfPrincipalOutstanding);
 
-        env(pay(borrower, loanKeylet.key, iouAsset(1'500'000'000LL)), ter(tesSUCCESS));
+        env(pay(borrower, loanKeylet.key, iouAsset(1'500'000'000LL)), Ter(tesSUCCESS));
         env.close();
 
         auto const vaultAfter = env.le(broker.vaultKeylet());

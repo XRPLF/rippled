@@ -126,12 +126,12 @@ Number
 computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining)
 {
     XRPL_ASSERT_PARTS(
-        periodicRate >= beast::zero,
+        periodicRate >= beast::kZERO,
         "xrpl::detail::computePowerMinusOne",
         "periodicRate is non-negative");
 
-    if (paymentsRemaining == 0 || periodicRate == beast::zero)
-        return numZero;
+    if (paymentsRemaining == 0 || periodicRate == beast::kZERO)
+        return kNUM_ZERO;
 
     // k = 1 term: C(n, 1) * r = n * r
     Number term = paymentsRemaining * periodicRate;
@@ -165,12 +165,12 @@ Number
 computePowerMinusOneHybrid(Number const& periodicRate, std::uint32_t paymentsRemaining)
 {
     XRPL_ASSERT_PARTS(
-        periodicRate >= beast::zero,
+        periodicRate >= beast::kZERO,
         "xrpl::detail::computePowerMinusOneHybrid",
         "periodicRate is non-negative");
 
-    if (paymentsRemaining == 0 || periodicRate == beast::zero)
-        return numZero;
+    if (paymentsRemaining == 0 || periodicRate == beast::kZERO)
+        return kNUM_ZERO;
 
     // Threshold 1e-9 retains ~10 sig digits of (1+r)^n - 1 against
     // Number's 19-digit mantissa: the leading "1" of (1+r)^n consumes
