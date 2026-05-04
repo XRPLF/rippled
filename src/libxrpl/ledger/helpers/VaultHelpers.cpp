@@ -176,6 +176,21 @@ depositToVault(
     if (!view.rules().enabled(fixCleanup3_2_0))
         return tesSUCCESS;
 
+    // Sanity check
+    if (accountHolds(
+            view,
+            depositor,
+            assetsDeposited.asset(),
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            j) < beast::kZERO)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "depositToVault: negative balance of account assets.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
     // Trust-line value-transfer integrity is enforced by accountSendExact
     // above; this remaining check covers SLE-field rounding by
     // associateAsset on the vault's STNumber accounting fields.

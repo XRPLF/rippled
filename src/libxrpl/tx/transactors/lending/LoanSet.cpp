@@ -569,7 +569,7 @@ LoanSet::doApply()
             j_,
             WaiveTransferFee::Yes))
         return ter;
-    if (originationFee > beast::zero)
+    if (originationFee > beast::kZERO)
     {
         if (auto const ter = accountSendExact(
                 view,

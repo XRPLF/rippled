@@ -133,7 +133,7 @@ asfToLsf(std::uint32_t asf)
 
 /**
  * @brief Returns all testable amendments.
- * @note This is similar to jtx::testable_amendments() but for the TxTest framework.
+ * @note This is similar to jtx::testableAmendments() but for the TxTest framework.
  */
 FeatureBitset
 allFeatures();

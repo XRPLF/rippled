@@ -1232,7 +1232,7 @@ public:
         // zero IOU with a sentinel exponent (-100), and conversions /
         // arithmetic can leave a Number with mantissa=0 but a non-default
         // exponent; firstNonzero must treat such values as zero.
-        Number const nonCanonicalZero{false, std::uint64_t{0}, 5, Number::unchecked{}};
+        Number const nonCanonicalZero{false, std::uint64_t{0}, 5, Number::Unchecked{}};
         BEAST_EXPECT(nonCanonicalZero.signum() == 0);
         BEAST_EXPECT(nonCanonicalZero != zero);  // representations differ
         BEAST_EXPECT((firstNonzero(nonCanonicalZero, ten) == ten));

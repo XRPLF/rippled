@@ -1394,7 +1394,7 @@ accountSendExact(
 
     auto const balanceOf = [&](AccountID const& acct) -> Number {
         return accountHolds(
-            view, acct, asset, FreezeHandling::fhIGNORE_FREEZE, AuthHandling::ahIGNORE_AUTH, j);
+            view, acct, asset, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j);
     };
 
     Number const beforeFrom = balanceOf(from);

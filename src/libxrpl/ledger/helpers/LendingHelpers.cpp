@@ -1991,8 +1991,8 @@ depositToBrokerCover(
         view,
         brokerPseudoID,
         vaultAsset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         j);
 
     // Transfer assets from depositor to pseudo-account. accountSendExact
@@ -2017,8 +2017,8 @@ depositToBrokerCover(
         view,
         brokerPseudoID,
         vaultAsset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         j);
     Number const coverAfter = *broker->at(sfCoverAvailable);
     Number const coverDelta = coverAfter - coverBefore;
@@ -2075,8 +2075,8 @@ withdrawFromBrokerCover(
         view,
         brokerPseudoID,
         vaultAsset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         j);
 
     broker->at(sfCoverAvailable) -= amount;
@@ -2099,8 +2099,8 @@ withdrawFromBrokerCover(
         view,
         brokerPseudoID,
         vaultAsset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         j);
     Number const coverAfter = *broker->at(sfCoverAvailable);
     Number const coverDelta = coverBefore - coverAfter;
