@@ -33,7 +33,7 @@ public:
 
 private:
     Application& app_;
-    NodeCache& m_nodeCache;
+    NodeCache& nodeCache_;
     beast::Journal const j_;
 };
 

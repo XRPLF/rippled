@@ -17,7 +17,7 @@ namespace xrpl {
 //   feature : <feature>
 //   vetoed : true/false
 // }
-Json::Value
+json::Value
 doFeature(RPC::JsonContext& context)
 {
     if (context.params.isMember(jss::feature))
@@ -25,7 +25,7 @@ doFeature(RPC::JsonContext& context)
         // ensure that the `feature` param is a string
         if (!context.params[jss::feature].isString())
         {
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
         }
     }
 
@@ -47,7 +47,7 @@ doFeature(RPC::JsonContext& context)
             features[to_string(h)][jss::majority] = t.time_since_epoch().count();
         }
 
-        Json::Value jvReply = Json::objectValue;
+        json::Value jvReply = json::ObjectValue;
         jvReply[jss::features] = features;
         return jvReply;
     }
@@ -57,12 +57,12 @@ doFeature(RPC::JsonContext& context)
     // If the feature is not found by name, try to parse the `feature` param as
     // a feature ID. If that fails, return an error.
     if (!feature && !feature.parseHex(context.params[jss::feature].asString()))
-        return rpcError(rpcBAD_FEATURE);
+        return rpcError(RpcBadFeature);
 
     if (context.params.isMember(jss::vetoed))
     {
         if (!isAdmin)
-            return rpcError(rpcNO_PERMISSION);
+            return rpcError(RpcNoPermission);
 
         if (context.params[jss::vetoed].asBool())
         {
@@ -74,9 +74,9 @@ doFeature(RPC::JsonContext& context)
         }
     }
 
-    Json::Value jvReply = table.getJson(feature, isAdmin);
+    json::Value jvReply = table.getJson(feature, isAdmin);
     if (!jvReply)
-        return rpcError(rpcBAD_FEATURE);
+        return rpcError(RpcBadFeature);
 
     auto m = majorities.find(feature);
     if (m != majorities.end())

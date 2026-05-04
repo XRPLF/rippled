@@ -32,7 +32,7 @@ NotTEC
 TicketCreate::preflight(PreflightContext const& ctx)
 {
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
-        count < minValidCount || count > maxValidCount)
+        count < kMIN_VALID_COUNT || count > kMAX_VALID_COUNT)
         return temINVALID_COUNT;
 
     return tesSUCCESS;
@@ -58,7 +58,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
     //  o consumedTickets  <= 1
     // So in the worst case addedTickets == consumedTickets and the
     // computation yields curTicketCount.
-    if (curTicketCount + addedTickets - consumedTickets > maxTicketThreshold)
+    if (curTicketCount + addedTickets - consumedTickets > kMAX_TICKET_THRESHOLD)
         return tecDIR_FULL;
 
     return tesSUCCESS;
@@ -100,7 +100,7 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::ticket(account_, curTicketSeq);
+        Keylet const ticketKeylet = keylet::kTICKET(account_, curTicketSeq);
         SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, account_);
@@ -120,7 +120,7 @@ TicketCreate::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].value_or(0u);
+    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].valueOr(0u);
 
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 

@@ -7,7 +7,7 @@ namespace xrpl {
 class VaultWithdraw : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit VaultWithdraw(ApplyContext& ctx) : Transactor(ctx)
     {

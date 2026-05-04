@@ -22,15 +22,15 @@ CachedViewImpl::exists(Keylet const& k) const
 std::shared_ptr<SLE const>
 CachedViewImpl::read(Keylet const& k) const
 {
-    static CountedObjects::Counter hits{"CachedView::hit"};
-    static CountedObjects::Counter hitsexpired{"CachedView::hitExpired"};
-    static CountedObjects::Counter misses{"CachedView::miss"};
+    static CountedObjects::Counter kHITS{"CachedView::hit"};
+    static CountedObjects::Counter kHITSEXPIRED{"CachedView::hitExpired"};
+    static CountedObjects::Counter kMISSES{"CachedView::miss"};
     bool cacheHit = false;
     bool baseRead = false;
 
     auto const digest = [&]() -> std::optional<uint256> {
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             auto const iter = map_.find(k.key);
             if (iter != map_.end())
             {
@@ -50,15 +50,15 @@ CachedViewImpl::read(Keylet const& k) const
     XRPL_ASSERT(sle || baseRead, "xrpl::CachedView::read : null SLE result from base");
     if (cacheHit && baseRead)
     {
-        hitsexpired.increment();
+        kHITSEXPIRED.increment();
     }
     else if (cacheHit)
     {
-        hits.increment();
+        kHITS.increment();
     }
     else
     {
-        misses.increment();
+        kMISSES.increment();
     }
 
     if (!cacheHit)
@@ -66,7 +66,7 @@ CachedViewImpl::read(Keylet const& k) const
         // Avoid acquiring this lock unless necessary. It is only necessary if
         // the key was not found in the map_. The lock is needed to add the key
         // and digest.
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         map_.emplace(k.key, *digest);
     }
     if (!sle || !k.check(*sle))

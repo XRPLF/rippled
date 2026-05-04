@@ -11,10 +11,10 @@
 namespace xrpl::reduce_relay {
 
 /** Maintains squelching of relaying messages from validators */
-template <typename clock_type>
+template <typename ClockType>
 class Squelch
 {
-    using time_point = typename clock_type::time_point;
+    using time_point = typename ClockType::time_point;
 
 public:
     explicit Squelch(beast::Journal journal) : journal_(journal)
@@ -50,15 +50,15 @@ private:
     beast::Journal const journal_;
 };
 
-template <typename clock_type>
+template <typename ClockType>
 bool
-Squelch<clock_type>::addSquelch(
+Squelch<ClockType>::addSquelch(
     PublicKey const& validator,
     std::chrono::seconds const& squelchDuration)
 {
-    if (squelchDuration >= MIN_UNSQUELCH_EXPIRE && squelchDuration <= MAX_UNSQUELCH_EXPIRE_PEERS)
+    if (squelchDuration >= kMIN_UNSQUELCH_EXPIRE && squelchDuration <= kMAX_UNSQUELCH_EXPIRE_PEERS)
     {
-        squelched_[validator] = clock_type::now() + squelchDuration;
+        squelched_[validator] = ClockType::now() + squelchDuration;
         return true;
     }
 
@@ -70,18 +70,18 @@ Squelch<clock_type>::addSquelch(
     return false;
 }
 
-template <typename clock_type>
+template <typename ClockType>
 void
-Squelch<clock_type>::removeSquelch(PublicKey const& validator)
+Squelch<ClockType>::removeSquelch(PublicKey const& validator)
 {
     squelched_.erase(validator);
 }
 
-template <typename clock_type>
+template <typename ClockType>
 bool
-Squelch<clock_type>::expireSquelch(PublicKey const& validator)
+Squelch<ClockType>::expireSquelch(PublicKey const& validator)
 {
-    auto now = clock_type::now();
+    auto now = ClockType::now();
 
     auto const& it = squelched_.find(validator);
     if (it == squelched_.end())

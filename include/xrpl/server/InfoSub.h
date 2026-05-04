@@ -19,10 +19,10 @@ public:
 
     virtual ~InfoSubRequest() = default;
 
-    virtual Json::Value
+    virtual json::Value
     doClose() = 0;
-    virtual Json::Value
-    doStatus(Json::Value const&) = 0;
+    virtual json::Value
+    doStatus(json::Value const&) = 0;
 };
 
 /** Manages a client's subscription to data feeds.
@@ -72,7 +72,7 @@ public:
          * historical transactions
          * @return rpcSUCCESS if successful, otherwise an error code
          */
-        virtual error_code_i
+        virtual ErrorCodeI
         subAccountHistory(ref ispListener, AccountID const& account) = 0;
 
         /**
@@ -94,7 +94,7 @@ public:
 
         // VFALCO TODO Document the bool return value
         virtual bool
-        subLedger(ref ispListener, Json::Value& jvResult) = 0;
+        subLedger(ref ispListener, json::Value& jvResult) = 0;
         virtual bool
         unsubLedger(std::uint64_t uListener) = 0;
 
@@ -111,7 +111,7 @@ public:
         pubManifest(Manifest const&) = 0;
 
         virtual bool
-        subServer(ref ispListener, Json::Value& jvResult, bool admin) = 0;
+        subServer(ref ispListener, json::Value& jvResult, bool admin) = 0;
         virtual bool
         unsubServer(std::uint64_t uListener) = 0;
 
@@ -141,7 +141,7 @@ public:
         virtual bool
         unsubPeerStatus(std::uint64_t uListener) = 0;
         virtual void
-        pubPeerStatus(std::function<Json::Value(void)> const&) = 0;
+        pubPeerStatus(std::function<json::Value(void)> const&) = 0;
 
         virtual bool
         subConsensus(ref ispListener) = 0;
@@ -170,7 +170,7 @@ public:
     getConsumer();
 
     virtual void
-    send(Json::Value const& jvObj, bool broadcast) = 0;
+    send(json::Value const& jvObj, bool broadcast) = 0;
 
     [[nodiscard]] std::uint64_t
     getSeq() const;
@@ -207,23 +207,23 @@ public:
     getApiVersion() const noexcept;
 
 protected:
-    std::mutex mLock;
+    std::mutex lock_;
 
 private:
-    Consumer m_consumer;
-    Source& m_source;
+    Consumer consumer_;
+    Source& source_;
     hash_set<AccountID> realTimeSubscriptions_;
     hash_set<AccountID> normalSubscriptions_;
     std::shared_ptr<InfoSubRequest> request_;
-    std::uint64_t mSeq;
+    std::uint64_t seq_;
     hash_set<AccountID> accountHistorySubscriptions_;
     unsigned int apiVersion_ = 0;
 
     static int
-    assign_id()
+    assignId()
     {
-        static std::atomic<std::uint64_t> id(0);
-        return ++id;
+        static std::atomic<std::uint64_t> kID(0);
+        return ++kID;
     }
 };
 
