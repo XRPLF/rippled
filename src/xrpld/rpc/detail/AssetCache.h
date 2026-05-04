@@ -45,21 +45,21 @@ public:
     getMPTs(AccountID const& account);
 
 private:
-    std::mutex mLock;
+    std::mutex lock_;
 
-    xrpl::hardened_hash<> hasher_;
+    xrpl::HardenedHash<> hasher_;
     std::shared_ptr<ReadView const> ledger_;
 
     beast::Journal journal_;
 
     struct AccountKey final : public CountedObject<AccountKey>
     {
-        AccountID account_;
-        LineDirection direction_;
-        std::size_t hash_value_;
+        AccountID account;
+        LineDirection direction;
+        std::size_t hash_value;
 
         AccountKey(AccountID const& account, LineDirection direction, std::size_t hash)
-            : account_(account), direction_(direction), hash_value_(hash)
+            : account(account), direction(direction), hash_value(hash)
         {
         }
 
@@ -71,14 +71,14 @@ private:
         bool
         operator==(AccountKey const& lhs) const
         {
-            return hash_value_ == lhs.hash_value_ && account_ == lhs.account_ &&
-                direction_ == lhs.direction_;
+            return hash_value == lhs.hash_value && account == lhs.account &&
+                direction == lhs.direction;
         }
 
         [[nodiscard]] std::size_t
-        get_hash() const
+        getHash() const
         {
-            return hash_value_;
+            return hash_value;
         }
 
         struct Hash
@@ -88,7 +88,7 @@ private:
             std::size_t
             operator()(AccountKey const& key) const noexcept
             {
-                return key.get_hash();
+                return key.getHash();
             }
         };
     };

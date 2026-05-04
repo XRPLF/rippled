@@ -19,9 +19,9 @@ class SignerListSetBuilder;
  * @brief Transaction: SignerListSet
  *
  * Type: ttSIGNER_LIST_SET (12)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use SignerListSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfSignerQuorum (soeREQUIRED)
+     * @brief Get sfSignerQuorum (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -58,7 +58,7 @@ public:
         return this->tx_->at(sfSignerQuorum);
     }
     /**
-     * @brief Get sfSignerEntries (soeOPTIONAL)
+     * @brief Get sfSignerEntries (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -87,7 +87,7 @@ public:
  * @brief Builder for SignerListSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class SignerListSetBuilder : public TransactionBuilderBase<SignerListSetBuilder>
@@ -126,7 +126,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfSignerQuorum (soeREQUIRED)
+     * @brief Set sfSignerQuorum (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SignerListSetBuilder&
@@ -137,7 +137,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignerEntries (soeOPTIONAL)
+     * @brief Set sfSignerEntries (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SignerListSetBuilder&

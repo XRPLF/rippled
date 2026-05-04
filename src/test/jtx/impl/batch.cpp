@@ -38,13 +38,13 @@ calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t con
 }
 
 // Batch.
-Json::Value
+json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::Batch;
     jv[jss::Account] = account.human();
-    jv[jss::RawTransactions] = Json::Value{Json::arrayValue};
+    jv[jss::RawTransactions] = json::Value{json::ArrayValue};
     jv[jss::Sequence] = seq;
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);
@@ -52,18 +52,18 @@ outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint3
 }
 
 void
-inner::operator()(Env& env, JTx& jt) const
+Inner::operator()(Env& env, JTx& jt) const
 {
     auto const index = jt.jv[jss::RawTransactions].size();
-    Json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
+    json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
 
     // Initialize the batch transaction
-    batchTransaction = Json::Value{};
+    batchTransaction = json::Value{};
     batchTransaction[jss::RawTransaction] = txn_;
 }
 
 void
-sig::operator()(Env& env, JTx& jt) const
+Sig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     std::optional<STObject> st;
@@ -73,10 +73,10 @@ sig::operator()(Env& env, JTx& jt) const
         jt.jv[jss::SigningPubKey] = "";
         st = parse(jt.jv);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
     STTx const& stx = STTx{std::move(*st)};
     auto& js = jt[sfBatchSigners.getJsonName()];
@@ -96,7 +96,7 @@ sig::operator()(Env& env, JTx& jt) const
 }
 
 void
-msig::operator()(Env& env, JTx& jt) const
+Msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     std::optional<STObject> st;
@@ -106,10 +106,10 @@ msig::operator()(Env& env, JTx& jt) const
         jt.jv[jss::SigningPubKey] = "";
         st = parse(jt.jv);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
     STTx const& stx = STTx{std::move(*st)};
     auto& bs = jt[sfBatchSigners.getJsonName()];

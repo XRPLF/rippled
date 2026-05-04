@@ -5,25 +5,25 @@
 
 namespace xrpl {
 
-/** A PropertyStream::Sink which produces a Json::Value of type objectValue. */
+/** A PropertyStream::Sink which produces a json::Value of type objectValue. */
 class JsonPropertyStream : public beast::PropertyStream
 {
 public:
-    Json::Value m_top;
-    std::vector<Json::Value*> m_stack;
+    json::Value topValue;  // TODO: rename: clashes with top() method
+    std::vector<json::Value*> stack;
 
 public:
     JsonPropertyStream();
-    [[nodiscard]] Json::Value const&
+    [[nodiscard]] json::Value const&
     top() const;
 
 protected:
     void
-    map_begin() override;
+    mapBegin() override;
     void
-    map_begin(std::string const& key) override;
+    mapBegin(std::string const& key) override;
     void
-    map_end() override;
+    mapEnd() override;
     void
     add(std::string const& key, short value) override;
     void
@@ -41,11 +41,11 @@ protected:
     void
     add(std::string const& key, std::string const& v) override;
     void
-    array_begin() override;
+    arrayBegin() override;
     void
-    array_begin(std::string const& key) override;
+    arrayBegin(std::string const& key) override;
     void
-    array_end() override;
+    arrayEnd() override;
 
     void
     add(short value) override;

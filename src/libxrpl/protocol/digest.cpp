@@ -7,21 +7,21 @@
 
 namespace xrpl {
 
-openssl_ripemd160_hasher::openssl_ripemd160_hasher()
+OpensslRipemd160Hasher::OpensslRipemd160Hasher()
 {
-    static_assert(sizeof(decltype(openssl_ripemd160_hasher::ctx_)) == sizeof(RIPEMD160_CTX), "");
+    static_assert(sizeof(decltype(OpensslRipemd160Hasher::ctx_)) == sizeof(RIPEMD160_CTX), "");
     auto const ctx = reinterpret_cast<RIPEMD160_CTX*>(ctx_);
     RIPEMD160_Init(ctx);
 }
 
 void
-openssl_ripemd160_hasher::operator()(void const* data, std::size_t size) noexcept
+OpensslRipemd160Hasher::operator()(void const* data, std::size_t size) noexcept
 {
     auto const ctx = reinterpret_cast<RIPEMD160_CTX*>(ctx_);
     RIPEMD160_Update(ctx, data, size);
 }
 
-openssl_ripemd160_hasher::
+OpensslRipemd160Hasher::
 operator result_type() noexcept
 {
     auto const ctx = reinterpret_cast<RIPEMD160_CTX*>(ctx_);
@@ -32,21 +32,21 @@ operator result_type() noexcept
 
 //------------------------------------------------------------------------------
 
-openssl_sha512_hasher::openssl_sha512_hasher()
+OpensslSha512Hasher::OpensslSha512Hasher()
 {
-    static_assert(sizeof(decltype(openssl_sha512_hasher::ctx_)) == sizeof(SHA512_CTX), "");
+    static_assert(sizeof(decltype(OpensslSha512Hasher::ctx_)) == sizeof(SHA512_CTX), "");
     auto const ctx = reinterpret_cast<SHA512_CTX*>(ctx_);
     SHA512_Init(ctx);
 }
 
 void
-openssl_sha512_hasher::operator()(void const* data, std::size_t size) noexcept
+OpensslSha512Hasher::operator()(void const* data, std::size_t size) noexcept
 {
     auto const ctx = reinterpret_cast<SHA512_CTX*>(ctx_);
     SHA512_Update(ctx, data, size);
 }
 
-openssl_sha512_hasher::
+OpensslSha512Hasher::
 operator result_type() noexcept
 {
     auto const ctx = reinterpret_cast<SHA512_CTX*>(ctx_);
@@ -57,21 +57,21 @@ operator result_type() noexcept
 
 //------------------------------------------------------------------------------
 
-openssl_sha256_hasher::openssl_sha256_hasher()
+OpensslSha256Hasher::OpensslSha256Hasher()
 {
-    static_assert(sizeof(decltype(openssl_sha256_hasher::ctx_)) == sizeof(SHA256_CTX), "");
+    static_assert(sizeof(decltype(OpensslSha256Hasher::ctx_)) == sizeof(SHA256_CTX), "");
     auto const ctx = reinterpret_cast<SHA256_CTX*>(ctx_);
     SHA256_Init(ctx);
 }
 
 void
-openssl_sha256_hasher::operator()(void const* data, std::size_t size) noexcept
+OpensslSha256Hasher::operator()(void const* data, std::size_t size) noexcept
 {
     auto const ctx = reinterpret_cast<SHA256_CTX*>(ctx_);
     SHA256_Update(ctx, data, size);
 }
 
-openssl_sha256_hasher::
+OpensslSha256Hasher::
 operator result_type() noexcept
 {
     auto const ctx = reinterpret_cast<SHA256_CTX*>(ctx_);

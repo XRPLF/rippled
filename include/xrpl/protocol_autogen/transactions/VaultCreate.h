@@ -19,9 +19,9 @@ class VaultCreateBuilder;
  * @brief Transaction: VaultCreate
  *
  * Type: ttVAULT_CREATE (65)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: createPseudoAcct | createMPTIssuance | mustModifyVault
+ * Privileges: CreatePseudoAcct | CreateMptIssuance | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultCreateBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -60,7 +60,7 @@ public:
     }
 
     /**
-     * @brief Get sfAssetsMaximum (soeOPTIONAL)
+     * @brief Get sfAssetsMaximum (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -86,7 +86,7 @@ public:
     }
 
     /**
-     * @brief Get sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Get sfMPTokenMetadata (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -112,7 +112,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -138,7 +138,7 @@ public:
     }
 
     /**
-     * @brief Get sfWithdrawalPolicy (soeOPTIONAL)
+     * @brief Get sfWithdrawalPolicy (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -164,7 +164,7 @@ public:
     }
 
     /**
-     * @brief Get sfData (soeOPTIONAL)
+     * @brief Get sfData (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -190,7 +190,7 @@ public:
     }
 
     /**
-     * @brief Get sfScale (soeOPTIONAL)
+     * @brief Get sfScale (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -220,7 +220,7 @@ public:
  * @brief Builder for VaultCreate transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class VaultCreateBuilder : public TransactionBuilderBase<VaultCreateBuilder>
@@ -259,7 +259,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -271,7 +271,7 @@ public:
     }
 
     /**
-     * @brief Set sfAssetsMaximum (soeOPTIONAL)
+     * @brief Set sfAssetsMaximum (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -282,7 +282,7 @@ public:
     }
 
     /**
-     * @brief Set sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Set sfMPTokenMetadata (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -293,7 +293,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -304,7 +304,7 @@ public:
     }
 
     /**
-     * @brief Set sfWithdrawalPolicy (soeOPTIONAL)
+     * @brief Set sfWithdrawalPolicy (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -315,7 +315,7 @@ public:
     }
 
     /**
-     * @brief Set sfData (soeOPTIONAL)
+     * @brief Set sfData (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&
@@ -326,7 +326,7 @@ public:
     }
 
     /**
-     * @brief Set sfScale (soeOPTIONAL)
+     * @brief Set sfScale (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultCreateBuilder&

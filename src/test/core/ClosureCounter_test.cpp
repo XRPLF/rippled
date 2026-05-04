@@ -14,12 +14,12 @@ namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
-class ClosureCounter_test : public beast::unit_test::suite
+class ClosureCounter_test : public beast::unit_test::Suite
 {
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::severities::kDisabled};
-    beast::Journal j{env_.app().getJournal("ClosureCounter_test")};
+    test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::severities::KDisabled};
+    beast::Journal j_{env_.app().getJournal("ClosureCounter_test")};
 
     void
     testConstruction()
@@ -205,7 +205,7 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(strCounter.count() == 0);
 
             auto wrapped = strCounter.wrap([](TrackedString&& in) {
-                // Note that none of the compilers noticed that in was
+                // Note that kNONE of the compilers noticed that in was
                 // leaving scope.  So, without intervention, they would
                 // do a copy for the return (June 2017).  An explicit
                 // std::move() was required.
@@ -259,7 +259,7 @@ class ClosureCounter_test : public beast::unit_test::suite
 
         // Join with 0 count should not stall.
         using namespace std::chrono_literals;
-        voidCounter.join("testWrap", 1ms, j);
+        voidCounter.join("testWrap", 1ms, j_);
 
         // Wrapping a closure after join() should return std::nullopt.
         BEAST_EXPECT(voidCounter.wrap([]() {}) == std::nullopt);
@@ -280,7 +280,7 @@ class ClosureCounter_test : public beast::unit_test::suite
         std::thread localThread([&voidCounter, &threadExited, this]() {
             // Should stall after calling join.
             using namespace std::chrono_literals;
-            voidCounter.join("testWaitOnJoin", 1ms, j);
+            voidCounter.join("testWaitOnJoin", 1ms, j_);
             threadExited.store(true);
         });
 
