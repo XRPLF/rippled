@@ -447,10 +447,9 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
-    // Move the funds directly from the broker's pseudo-account to the
-    // dstAcct. accountSendExact verifies that source loss == destination
-    // gain so a destination trust line at the IOU 16-digit edge can't
-    // silently canonicalize the inflow and lose units.
+    // Move the funds directly from the pseudo-account to the dstAcct. accountSendExact verifies
+    // that source loss == destination gain so a destination trust line at the IOU 16-digit edge
+    // can't silently canonicalize the inflow and lose units.
     return accountSendExact(view, sourceAcct, dstAcct, amount, j, WaiveTransferFee::Yes);
 }
 

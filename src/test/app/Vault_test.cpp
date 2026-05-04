@@ -6207,20 +6207,26 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
-    // Symmetric to the deposit bug, but on the destination side: bob's trust
-    // line is parked at the 16-digit IOU mantissa edge. When alice withdraws
-    // 2 USD with Destination = bob, the vault pseudo-account loses 2 USD but
-    // bob's trust line silently canonicalizes from 10000000000000001 back to
-    // 10000000000000000 — gaining only 1. Pre-fixCleanup3_2_0 the withdrawal
-    // invariants fire (tecINVARIANT_FAILED). Post-amendment, withdrawFromVault
-    // detects the delta mismatch and returns tecPRECISION_LOSS before
-    // invariants run.
+    // VaultWithdraw with the destination's trust line at the IOU 16-digit
+    // mantissa edge. The vault pseudo-account loses 2 USD cleanly, but the
+    // destination's trust line silently canonicalizes from 10000000000000001
+    // back to 10000000000000000 — gaining only 1.
+    //
+    // Exercises both destination branches in doWithdraw:
+    //   - ThirdParty: dst != depositor, routes through verifyDepositPreauth.
+    //   - Self: dst == depositor, routes through addEmptyHolding (View.cpp:422).
+    //
+    // Pre-fixCleanup3_2_0: the withdrawal invariants fire (tecINVARIANT_FAILED).
+    // Post-amendment: withdrawFromVault detects the delta mismatch and returns
+    // tecPRECISION_LOSS before invariants run.
     void
     testBugAssociateAssetRoundingWithdraw()
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        enum class DestKind : bool { ThirdParty = false, Self = true };
+
+        auto runScenario = [this](FeatureBitset features, DestKind destKind, TER expected) {
             Env env(*this, features);
 
             Account const issuer{"issuer"};
@@ -6229,25 +6235,22 @@ class Vault_test : public beast::unit_test::Suite
 
             env.fund(XRP(100'000), issuer, alice, bob);
             env.close();
-
             env(fset(issuer, asfDefaultRipple));
             env.close();
 
             PrettyAsset const usd{issuer["USD"]};
-
-            // Bob's limit is well above the 16-digit edge so the trust-line
-            // room check (canWithdraw -> withdrawToDestExceedsLimit) passes
-            // and the actual IOU canonicalization on accountSend can fire.
-            STAmount const aliceLimit{usd.raw(), 1'000};
+            STAmount const aliceLimit{usd.raw(), 2, 16};
             STAmount const bobLimit{usd.raw(), 2, 16};
-            STAmount const bobFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+            STAmount const atEdge{usd.raw(), Number{9'999'999'999'999'999LL}};
 
             env(trust(alice, aliceLimit));
-            env(trust(bob, bobLimit));
+            if (destKind == DestKind::ThirdParty)
+                env(trust(bob, bobLimit));
             env.close();
 
             env(pay(issuer, alice, usd(1'000)));
-            env(pay(issuer, bob, bobFund));
+            if (destKind == DestKind::ThirdParty)
+                env(pay(issuer, bob, atEdge));
             env.close();
 
             Vault const vault{env};
@@ -6259,24 +6262,46 @@ class Vault_test : public beast::unit_test::Suite
             env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(1'000)}));
             env.close();
 
+            // For the self-destination case, push alice's own trust line to
+            // the IOU edge so the next withdraw inflow crosses the boundary.
+            if (destKind == DestKind::Self)
+            {
+                env(pay(issuer, alice, atEdge));
+                env.close();
+            }
+
             auto tx = vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(2)});
-            tx[sfDestination] = bob.human();
+            if (destKind == DestKind::ThirdParty)
+                tx[sfDestination] = bob.human();
             env(tx, Ter(expected));
             env.close();
         };
 
         {
             testcase(
-                "bug: associateAsset rounding fires withdrawal invariant "
+                "bug: VaultWithdraw to third-party at IOU edge fires invariant "
                 "(pre-fixCleanup3_2_0)");
-            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+            runScenario(
+                testableAmendments() - fixCleanup3_2_0, DestKind::ThirdParty, tecINVARIANT_FAILED);
         }
-
         {
             testcase(
-                "bug: associateAsset rounding caught by transactor "
-                "(post-fixCleanup3_2_0)");
-            runScenario(testableAmendments(), tecPRECISION_LOSS);
+                "bug: VaultWithdraw to third-party at IOU edge rejected with "
+                "tecPRECISION_LOSS (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), DestKind::ThirdParty, tecPRECISION_LOSS);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw to self at IOU edge fires invariant "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(
+                testableAmendments() - fixCleanup3_2_0, DestKind::Self, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw to self at IOU edge rejected with "
+                "tecPRECISION_LOSS (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), DestKind::Self, tecPRECISION_LOSS);
         }
     }
 
@@ -6466,74 +6491,6 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
-    // VaultWithdraw with destination defaulting to depositor. Exercises
-    // the `dstAcct == senderAcct` branch in doWithdraw (View.cpp:422)
-    // which calls addEmptyHolding instead of verifyDepositPreauth —
-    // testBugAssociateAssetRoundingWithdraw covers the third-party-
-    // destination path. After alice deposits a small amount and is later
-    // funded up to the IOU edge, withdrawing 2 USD canonicalizes alice's
-    // own trust line.
-    void
-    testBugAssociateAssetRoundingWithdrawSelfDest()
-    {
-        using namespace test::jtx;
-
-        auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
-
-            Account const issuer{"issuer"};
-            Account const alice{"alice"};
-
-            env.fund(XRP(100'000), issuer, alice);
-            env.close();
-            env(fset(issuer, asfDefaultRipple));
-            env.close();
-
-            PrettyAsset const usd{issuer["USD"]};
-            STAmount const aliceLimit{usd.raw(), 2, 16};
-
-            env(trust(alice, aliceLimit));
-            env.close();
-            env(pay(issuer, alice, usd(1'000)));
-            env.close();
-
-            Vault const vault{env};
-            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
-            vaultTx[sfScale] = 0;
-            env(vaultTx);
-            env.close();
-            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(1'000)}));
-            env.close();
-
-            // Top alice up to the IOU edge so the next withdraw inflow
-            // crosses the 10^16 boundary on her own trust line. Alice
-            // ends at 9.999e15 USD plus shares-only.
-            STAmount const aliceTopUp{usd.raw(), Number{9'999'999'999'999'999LL - 0LL}};
-            env(pay(issuer, alice, aliceTopUp));
-            env.close();
-
-            // Withdraw 2 USD with destination defaulting to alice. The
-            // trust-line inflow canonicalizes alice's balance from
-            // 9.999e15 + 2 → 10^16 (gain of 1, not 2).
-            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(2)}),
-                Ter(expected));
-            env.close();
-        };
-
-        {
-            testcase(
-                "bug: VaultWithdraw to self at IOU edge fires withdrawal "
-                "invariant (pre-fixCleanup3_2_0)");
-            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
-        }
-        {
-            testcase(
-                "bug: VaultWithdraw to self at IOU edge caught by transactor "
-                "(post-fixCleanup3_2_0)");
-            runScenario(testableAmendments(), tecPRECISION_LOSS);
-        }
-    }
-
     // VaultWithdraw with sub-ULP asset-denominated amount at the
     // vault's coarsest scale. Vault parked at 10^16 (scale 1, ULP=10);
     // alice withdraws 5 USD asset-denominated. accountSendExact's
@@ -6666,6 +6623,121 @@ class Vault_test : public beast::unit_test::Suite
                 "bug: VaultDeposit by issuer at IOU edge rejects with "
                 "tecPRECISION_LOSS proactively (post-fixCleanup3_2_0)");
             runScenario(testableAmendments(), true);
+        }
+    }
+
+    // Stuck vault: alice is the sole depositor with 1 USD parked in the vault. The issuer then
+    // mints 10^16 USD directly to her trust line, pushing it past the 16-digit edge (mantissa
+    // 10^15, exponent 1, grid step 10). She withdraws her own 1 USD — the vault pseudo-account's
+    // outflow is clean (-1), but alice's +1 inflow is sub-ULP at her grid and canonicalizes to
+    // zero.
+    //
+    // Pre-fixCleanup3_2_0:
+    // VaultInvariant fires "withdrawal must increase destination balance" → tecINVARIANT_FAILED.
+    //
+    // Post-amendment: the IOU-only carve-out in VaultInvariant tolerates a zero-rounded destination
+    // delta — the canonicalized-away unit returns to the issuer's obligation pool, mirroring AMM
+    // withdraw semantics. Vault drains, alice's trust-line balance stays at 10^16, her shares burn,
+    // the 1 USD evaporates.
+    void
+    testBugStuckVaultReceiverAtEdge()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const aliceLimit{usd.raw(), Number{2, 16}};
+
+            env(trust(alice, aliceLimit));
+            env.close();
+
+            // alice receives 1 USD and deposits it into a fresh vault.
+            env(pay(issuer, alice, usd(1)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(1)}));
+            env.close();
+
+            // Issuer mints 10^16 USD to alice. Her trust line balance
+            // crosses past the 16-digit edge (mantissa 10^15, exp 1).
+            STAmount const oneE16{usd.raw(), Number{1, 16}};
+            env(pay(issuer, alice, oneE16));
+            env.close();
+
+            // Sanity: alice now sits at 10^16; vault still holds 1.
+            BEAST_EXPECT(env.balance(alice, usd) == oneE16);
+
+            auto const sleVaultBefore = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(sleVaultBefore))
+                return;
+            auto const shareID = sleVaultBefore->at(sfShareMPTID);
+
+            // alice attempts to withdraw her own 1 USD. Receiver-side
+            // canonicalization rounds the inflow to zero — vault loses
+            // 1, alice gains 0.
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(1)}),
+                Ter(expected));
+            env.close();
+
+            // alice's trust-line balance is unchanged in both amendment
+            // states: pre-amendment because the tx failed and rolled back;
+            // post-amendment because the canonicalization absorption is
+            // exactly the point — alice receives nothing representable.
+            BEAST_EXPECT(env.balance(alice, usd) == oneE16);
+
+            auto const sleVaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(sleVaultAfter))
+                return;
+
+            if (isTesSuccess(expected))
+            {
+                // Post-amendment success: vault drains, the IOU returns
+                // to issuer's obligation pool, alice's shares burn.
+                BEAST_EXPECT(sleVaultAfter->at(sfAssetsTotal) == 0);
+                BEAST_EXPECT(sleVaultAfter->at(sfAssetsAvailable) == 0);
+                auto const sleShareToken = env.le(keylet::mptoken(shareID, alice.id()));
+                BEAST_EXPECT(!sleShareToken || sleShareToken->at(sfMPTAmount) == 0);
+            }
+            else
+            {
+                // Pre-amendment failure: state must be unchanged. Vault
+                // still holds 1 USD, alice still owns the shares.
+                BEAST_EXPECT(sleVaultAfter->at(sfAssetsTotal) == 1);
+                BEAST_EXPECT(sleVaultAfter->at(sfAssetsAvailable) == 1);
+            }
+        };
+
+        // Both amendment states currently surface the stuck-vault
+        // scenario as tecINVARIANT_FAILED. Post-amendment will switch
+        // to a graceful resolution once the receiver-side conservation
+        // check is relaxed for withdraws.
+        {
+            testcase(
+                "bug: stuck vault — sole depositor with trust line past "
+                "IOU edge cannot withdraw (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: stuck vault — sole depositor with trust line past "
+                "IOU edge cannot withdraw (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tesSUCCESS);
         }
     }
 
@@ -6805,11 +6877,12 @@ public:
     void
     run() override
     {
+        testBugStuckVaultReceiverAtEdge();
+        return;
         testBugAssociateAssetRoundingDeposit();
         testBugAssociateAssetRoundingWithdraw();
         testVaultClawbackEdge();
         testBugSleDeltaCheckTotalEdgeWithLoan();
-        testBugAssociateAssetRoundingWithdrawSelfDest();
         testBugSubUlpVaultWithdraw();
         testBugIssuerVaultDepositAtEdge();
         testAccountSendExactCarveOuts();

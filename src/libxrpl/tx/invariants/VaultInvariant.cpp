@@ -841,7 +841,25 @@ ValidVault::finalize(
                     auto const roundedDestinationDelta =
                         roundToAsset(vaultAsset, destinationDelta.delta, localMinScale);
 
-                    if (roundedDestinationDelta <= kZERO)
+                    // Post-fixCleanup3_2_0, IOU-only: tolerate a zero-rounded destination delta.
+                    // When the receiver's trust line sits in a coarser exponent band than the
+                    // requested amount, IOU canonicalization rounds the inflow back to the
+                    // receiver's pre-state — vault pseudo-account loses the asset cleanly, but the
+                    // destination "gains" nothing representable.
+                    //
+                    // The "by equal amount" check below remains the safety net: vault loss greater
+                    // than 1 ULP at localMinScale paired with a zero destination delta still fires
+                    // there as a genuine value-transfer mismatch.
+                    //
+                    // XRP and MPT remain strict: those asset types are integer-exact, so a zero
+                    // destination delta on a non-zero withdrawal is unreachable as canonicalization
+                    // and indicates an actual accounting bug.
+                    auto const invalidBalanceChange =
+                        view.rules().enabled(fixCleanup3_2_0) && vaultAsset.holds<Issue>()
+                        ? roundedDestinationDelta < kZERO
+                        : roundedDestinationDelta <= kZERO;
+
+                    if (invalidBalanceChange)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: withdrawal must increase "

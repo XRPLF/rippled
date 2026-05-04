@@ -230,8 +230,8 @@ VaultWithdraw::doApply()
     }
     catch (std::overflow_error const&)
     {
-        // It's easy to hit this exception from Number with large enough Scale
-        // so we avoid spamming the log and only use debug here.
+        // It's easy to hit this exception from Number with large enough Scale  so we avoid spamming
+        // the log and only use debug here.
         JLOG(j_.debug())  //
             << "VaultWithdraw: overflow error with"
             << " scale=" << (int)vault->at(sfScale).value()  //
@@ -251,6 +251,24 @@ VaultWithdraw::doApply()
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
 
+    // When the destination's IOU trust-line balance sits in a coarser exponent band than the
+    // requested amount (e.g. balance >= 10^16 with grid step 10, withdraw of 1 USD), the
+    // destination's +amount inflow rounds back to its pre-state and the receiver effectively gains
+    // nothing.
+    // Pre-fixCleanup3_2_0, this fired VaultInvariant's "withdrawal must increase
+    // destination balance" at finalize as tecINVARIANT_FAILED the same shape would also strand a
+    // sole depositor whose own trust line is past the edge, since the only path out is via the
+    // vault.
+    // Post-amendment, the IOU-only carve-out in VaultInvariant tolerates a zero-rounded
+    // destination delta paired with a vault loss that also rounds to zero at the comparison scale.
+    // The vault still drains, the depositor's shares burn. The "by equal amount" check
+    // remains the safety net: vault loss greater than 1 ULP at the comparison scale paired with a
+    // zero destination delta is still a genuine value-transfer mismatch and still fires.
+    //
+    // XRP and MPT are not affected — those asset types are integer-exact, so a zero-rounded
+    // destination delta on a non-zero withdrawal is unreachable under any rounding mode and
+    // continues to fire the strict invariant. The carve-out is gated to IOU at the invariant
+    // level (`vaultAsset.holds<Issue>()`).
     return withdrawFromVault(
         view(),
         ctx_.tx,
