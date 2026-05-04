@@ -42,7 +42,7 @@ uniqueRandomPath(
 /** RAII temporary directory.
 
     The directory and all its contents are deleted when
-    the instance of `temp_dir` is destroyed.
+    the instance of `TempDir` is destroyed.
 */
 class TempDir
 {
