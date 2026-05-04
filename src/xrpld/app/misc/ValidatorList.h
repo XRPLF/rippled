@@ -34,31 +34,31 @@ class STValidation;
    "worse" dispositions */
 enum class ListDisposition {
     /// List is valid
-    accepted = 0,
+    Accepted = 0,
 
     /// List is expired, but has the largest non-pending sequence seen so far
-    expired,
+    Expired,
 
     /// List will be valid in the future
-    pending,
+    Pending,
 
     /// Same sequence as current list
-    same_sequence,
+    SameSequence,
 
     /// Future sequence already seen
-    known_sequence,
+    KnownSequence,
 
     /// Trusted publisher key, but seq is too old
-    stale,
+    Stale,
 
     /// List signed by untrusted publisher key
-    untrusted,
+    Untrusted,
 
     /// List version is not supported
-    unsupported_version,
+    UnsupportedVersion,
 
     /// Invalid format or signature
-    invalid
+    Invalid
 };
 
 /* Entries in this enum are ordered by "desirability".
@@ -66,16 +66,16 @@ enum class ListDisposition {
    "worse" dispositions */
 enum class PublisherStatus {
     // Publisher has provided a valid file
-    available = 0,
+    Available = 0,
 
     // Current list is expired without replacement
-    expired,
+    Expired,
 
     // No file seen yet
-    unavailable,
+    Unavailable,
 
     // Publisher has revoked their manifest key
-    revoked,
+    Revoked,
 
 };
 
@@ -173,7 +173,7 @@ class ValidatorList
 
     struct PublisherListCollection
     {
-        PublisherStatus status = PublisherStatus::unavailable;
+        PublisherStatus status = PublisherStatus::Unavailable;
         /*
         The `current` VL is the one which
          1. Has the largest sequence number that
@@ -240,18 +240,18 @@ class ValidatorList
     // have any "remaining" manifests. It is assumed to be perennially
     // "available". The "validUntil" field is set to the highest possible
     // value of the field, hence this list is always valid.
-    PublisherList localPublisherList;
+    PublisherList localPublisherList_;
 
     // The master public keys of the current negative UNL
     hash_set<PublicKey> negativeUNL_;
 
     // Currently supported versions of publisher list format
-    static constexpr std::uint32_t supportedListVersions[]{1, 2};
+    static constexpr std::uint32_t kSUPPORTED_LIST_VERSIONS[]{1, 2};
     // In the initial release, to prevent potential abuse and attacks, any VL
     // collection with more than 5 entries will be considered malformed.
-    static constexpr std::size_t maxSupportedBlobs = 5;
+    static constexpr std::size_t kMAX_SUPPORTED_BLOBS = 5;
     // Prefix of the file name used to store cache files.
-    static std::string const filePrefix_;
+    static std::string const kFILE_PREFIX;
 
 public:
     ValidatorList(
@@ -285,7 +285,7 @@ public:
         // occurred
         std::map<ListDisposition, std::size_t> dispositions;
         std::optional<PublicKey> publisherKey;
-        PublisherStatus status = PublisherStatus::unavailable;
+        PublisherStatus status = PublisherStatus::Unavailable;
         std::size_t sequence = 0;
     };
 
@@ -293,9 +293,9 @@ public:
     {
         explicit MessageWithHash() = default;
         explicit MessageWithHash(
-            std::shared_ptr<Message> const& message_,
-            uint256 hash_,
-            std::size_t num_);
+            std::shared_ptr<Message> const& message,
+            uint256 hash,
+            std::size_t num);
         std::shared_ptr<Message> message;
         uint256 hash;
         std::size_t numVLs = 0;
@@ -331,7 +331,7 @@ public:
         @return An empty vector indicates malformed Json.
      */
     static std::vector<ValidatorBlobInfo>
-    parseBlobs(std::uint32_t version, Json::Value const& body);
+    parseBlobs(std::uint32_t version, json::Value const& body);
 
     static std::vector<ValidatorBlobInfo>
     parseBlobs(protocol::TMValidatorList const& body);
@@ -360,7 +360,7 @@ public:
         std::string const& rawManifest,
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         std::vector<MessageWithHash>& messages,
-        std::size_t maxSize = maximumMessageSize);
+        std::size_t maxSize = kMAXIMUM_MESSAGE_SIZE);
 
     /** Apply multiple published lists of public keys, then broadcast it to all
         peers that have not seen it or sent it.
@@ -384,7 +384,7 @@ public:
         @param networkOPs NetworkOPs object which will be informed if there
             is a valid VL
 
-        @return `ListDisposition::accepted`, plus some of the publisher
+        @return `ListDisposition::Accepted`, plus some of the publisher
             information, if list was successfully applied
 
         @par Thread Safety
@@ -415,7 +415,7 @@ public:
 
         @param hash Optional hash of the data parameters
 
-        @return `ListDisposition::accepted`, plus some of the publisher
+        @return `ListDisposition::Accepted`, plus some of the publisher
         information, if list was successfully applied
 
         @par Thread Safety
@@ -569,7 +569,7 @@ public:
         May be called concurrently
     */
     void
-    for_each_listed(std::function<void(PublicKey const&, bool)> func) const;
+    forEachListed(std::function<void(PublicKey const&, bool)> func) const;
 
     /** Invokes the callback once for every available publisher list's raw
         data members
@@ -599,7 +599,7 @@ public:
         May be called concurrently
     */
     void
-    for_each_available(
+    forEachAvailable(
         std::function<void(
             std::string const& manifest,
             std::uint32_t version,
@@ -611,7 +611,7 @@ public:
     /** Returns the current valid list for the given publisher key,
         if available, as a Json object.
     */
-    std::optional<Json::Value>
+    std::optional<json::Value>
     getAvailable(std::string_view pubKey, std::optional<std::uint32_t> forceVersion = {});
 
     /** Return the number of configured validator list sites. */
@@ -635,7 +635,7 @@ public:
         @par Thread Safety
         May be called concurrently
     */
-    Json::Value
+    json::Value
     getJson() const;
 
     using QuorumKeys = std::pair<std::size_t const, hash_set<PublicKey>>;
@@ -646,7 +646,7 @@ public:
     QuorumKeys
     getQuorumKeys() const
     {
-        shared_lock const read_lock{mutex_};
+        shared_lock const readLock{mutex_};
         return {quorum_, trustedSigningKeys_};
     }
 
@@ -743,7 +743,7 @@ private:
         @param hash Optional hash of the data parameters.
             Defaults to uninitialized
 
-        @return `ListDisposition::accepted`, plus some of the publisher
+        @return `ListDisposition::Accepted`, plus some of the publisher
             information, if list was successfully applied
 
         @par Thread Safety
@@ -809,7 +809,7 @@ private:
     /** Build a Json representation of the collection, suitable for
         writing to a cache file, or serving to a /vl/ query
     */
-    static Json::Value
+    static json::Value
     buildFileData(
         std::string const& pubKey,
         PublisherListCollection const& pubCollection,
@@ -818,7 +818,7 @@ private:
     /** Build a Json representation of the collection, suitable for
     writing to a cache file, or serving to a /vl/ query
     */
-    static Json::Value
+    static json::Value
     buildFileData(
         std::string const& pubKey,
         PublisherListCollection const& pubCollection,
@@ -840,7 +840,7 @@ private:
 
     /** Check response for trusted valid published list
 
-        @return `ListDisposition::accepted` if list can be applied
+        @return `ListDisposition::Accepted` if list can be applied
 
         @par Thread Safety
 
@@ -849,7 +849,7 @@ private:
     std::pair<ListDisposition, std::optional<PublicKey>>
     verify(
         scoped_lock const&,
-        Json::Value& list,
+        json::Value& list,
         Manifest manifest,
         std::string const& blob,
         std::string const& signature);

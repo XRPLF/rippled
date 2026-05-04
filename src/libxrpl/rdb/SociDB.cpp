@@ -32,7 +32,7 @@
 
 namespace xrpl {
 
-static auto checkpointPageCount = 1000;
+static auto gCheckpointPageCount = 1000;
 
 namespace detail {
 
@@ -246,7 +246,7 @@ public:
 
         // If the Job is not added to the JobQueue then we're not running_.
         if (!jobQueue_.addJob(
-                jtWAL,
+                JtWal,
                 "WAL",
                 // If the owning DatabaseCon is destroyed, no need to checkpoint
                 // or keep the checkpointer alive so use a weak_ptr to this.
@@ -305,7 +305,7 @@ protected:
     static int
     sqliteWALHook(void* cpId, sqlite_api::sqlite3* conn, char const* dbName, int walSize)
     {
-        if (walSize >= checkpointPageCount)
+        if (walSize >= gCheckpointPageCount)
         {
             if (auto checkpointer = checkpointerFromId(reinterpret_cast<std::uintptr_t>(cpId)))
             {

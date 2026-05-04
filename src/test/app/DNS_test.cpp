@@ -18,13 +18,13 @@
 
 namespace xrpl::test {
 
-class DNS_test : public beast::unit_test::suite
+class DNS_test : public beast::unit_test::Suite
 {
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using error_code = boost::system::error_code;
     std::weak_ptr<xrpl::detail::Work> work_;
     endpoint_type lastEndpoint_;
-    parsedURL pUrl_;
+    ParsedUrl pUrl_;
     std::string port_;
     jtx::Env env_;
     std::map<std::string, int> resolved_;

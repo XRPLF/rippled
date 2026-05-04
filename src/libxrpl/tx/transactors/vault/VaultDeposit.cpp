@@ -28,13 +28,13 @@ namespace xrpl {
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::zero)
+    if (ctx.tx[sfVaultID] == beast::kZERO)
     {
         JLOG(ctx.j.debug()) << "VaultDeposit: zero/empty vault ID.";
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::zero)
+    if (ctx.tx[sfAmount] <= beast::kZERO)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -125,10 +125,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             vaultAsset,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j,
-            SpendableHandling::shFULL_BALANCE) < assets)
+            SpendableHandling::FullBalance) < assets)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -204,7 +204,7 @@ VaultDeposit::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
         }
-        if (sharesCreated == beast::zero)
+        if (sharesCreated == beast::kZERO)
             return tecPRECISION_LOSS;
 
         auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
@@ -257,9 +257,9 @@ VaultDeposit::doApply()
             view(),
             account_,
             assetsDeposited.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_) < beast::zero)
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            j_) < beast::kZERO)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";

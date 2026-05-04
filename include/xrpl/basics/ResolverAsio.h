@@ -13,7 +13,7 @@ public:
     explicit ResolverAsio() = default;
 
     static std::unique_ptr<ResolverAsio>
-    New(boost::asio::io_context&, beast::Journal);
+    make(boost::asio::io_context&, beast::Journal);
 };
 
 }  // namespace xrpl

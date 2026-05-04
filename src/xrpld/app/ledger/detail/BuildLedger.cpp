@@ -13,8 +13,10 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/tx/apply.h>
 
 #include <cstddef>
@@ -63,15 +65,15 @@ buildLedgerImpl(
         // Write the final version of all modified SHAMap
         // nodes to the node store to preserve the new LCL
 
-        int const asf = built->stateMap().flushDirty(NodeObjectType::hotACCOUNT_NODE);
-        int const tmf = built->txMap().flushDirty(NodeObjectType::hotTRANSACTION_NODE);
+        int const asf = built->stateMap().flushDirty(NodeObjectType::AccountNode);
+        int const tmf = built->txMap().flushDirty(NodeObjectType::TransactionNode);
         JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf << " transaction nodes";
     }
     built->unshare();
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()),
+        built->header().seq < kXRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()),
         "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
@@ -121,7 +123,7 @@ applyTransactions(
                     continue;
                 }
 
-                switch (applyTransaction(app, view, *it->second, certainRetry, tapNONE, j))
+                switch (applyTransaction(app, view, *it->second, certainRetry, TapNone, j))
                 {
                     case ApplyTransactionResult::Success:
                         it = txns.erase(it);
@@ -223,7 +225,7 @@ buildLedger(
     return buildLedgerImpl(
         replayData.parent(),
         replayLedger->header().closeTime,
-        ((replayLedger->header().closeFlags & sLCF_NoConsensusTime) == 0),
+        ((replayLedger->header().closeFlags & kS_LCF_NO_CONSENSUS_TIME) == 0),
         replayLedger->header().closeTimeResolution,
         app,
         j,

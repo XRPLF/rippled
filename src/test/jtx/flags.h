@@ -11,14 +11,14 @@
 namespace xrpl {
 namespace detail {
 
-class flags_helper
+class FlagsHelper
 {
 protected:
     std::uint32_t mask_{0};
 
 private:
     void
-    set_args(std::uint32_t flag)
+    setArgs(std::uint32_t flag)
     {
         switch (flag)
         {
@@ -72,18 +72,18 @@ private:
 
     template <class Flag, class... Args>
     void
-    set_args(std::uint32_t flag, Args... args)
+    setArgs(std::uint32_t flag, Args... args)
     {
-        set_args(flag);
+        setArgs(flag);
         if constexpr (sizeof...(args))
-            set_args(args...);
+            setArgs(args...);
     }
 
 protected:
     template <class... Args>
-    flags_helper(Args... args)
+    FlagsHelper(Args... args)
     {
-        set_args(args...);
+        setArgs(args...);
     }
 };
 
@@ -94,25 +94,25 @@ namespace test::jtx {
 // JSON generators
 
 /** Add and/or remove flag. */
-Json::Value
+json::Value
 fset(Account const& account, std::uint32_t on, std::uint32_t off = 0);
 
 /** Remove account flag. */
-inline Json::Value
+inline json::Value
 fclear(Account const& account, std::uint32_t off)
 {
     return fset(account, 0, off);
 }
 
 /** Match set account flags */
-class flags : private xrpl::detail::flags_helper
+class Flags : private xrpl::detail::FlagsHelper
 {
 private:
     Account account_;
 
 public:
     template <class... Args>
-    flags(Account account, Args... args) : flags_helper(args...), account_(std::move(account))
+    Flags(Account account, Args... args) : FlagsHelper(args...), account_(std::move(account))
     {
     }
 
@@ -121,14 +121,14 @@ public:
 };
 
 /** Match clear account flags */
-class nflags : private xrpl::detail::flags_helper
+class Nflags : private xrpl::detail::FlagsHelper
 {
 private:
     Account account_;
 
 public:
     template <class... Args>
-    nflags(Account account, Args... args) : flags_helper(args...), account_(std::move(account))
+    Nflags(Account account, Args... args) : FlagsHelper(args...), account_(std::move(account))
     {
     }
 

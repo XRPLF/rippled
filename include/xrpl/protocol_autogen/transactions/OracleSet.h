@@ -19,9 +19,9 @@ class OracleSetBuilder;
  * @brief Transaction: OracleSet
  *
  * Type: ttORACLE_SET (51)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featurePriceOracle
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use OracleSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfOracleDocumentID (soeREQUIRED)
+     * @brief Get sfOracleDocumentID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfProvider (soeOPTIONAL)
+     * @brief Get sfProvider (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +85,7 @@ public:
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -111,7 +111,7 @@ public:
     }
 
     /**
-     * @brief Get sfAssetClass (soeOPTIONAL)
+     * @brief Get sfAssetClass (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -137,7 +137,7 @@ public:
     }
 
     /**
-     * @brief Get sfLastUpdateTime (soeREQUIRED)
+     * @brief Get sfLastUpdateTime (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -147,7 +147,7 @@ public:
         return this->tx_->at(sfLastUpdateTime);
     }
     /**
-     * @brief Get sfPriceDataSeries (soeREQUIRED)
+     * @brief Get sfPriceDataSeries (SoeRequired)
      * @note This is an untyped field.
      * @return The field value.
      */
@@ -163,7 +163,7 @@ public:
  * @brief Builder for OracleSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class OracleSetBuilder : public TransactionBuilderBase<OracleSetBuilder>
@@ -206,7 +206,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfOracleDocumentID (soeREQUIRED)
+     * @brief Set sfOracleDocumentID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -217,7 +217,7 @@ public:
     }
 
     /**
-     * @brief Set sfProvider (soeOPTIONAL)
+     * @brief Set sfProvider (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -228,7 +228,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -239,7 +239,7 @@ public:
     }
 
     /**
-     * @brief Set sfAssetClass (soeOPTIONAL)
+     * @brief Set sfAssetClass (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -250,7 +250,7 @@ public:
     }
 
     /**
-     * @brief Set sfLastUpdateTime (soeREQUIRED)
+     * @brief Set sfLastUpdateTime (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
@@ -261,7 +261,7 @@ public:
     }
 
     /**
-     * @brief Set sfPriceDataSeries (soeREQUIRED)
+     * @brief Set sfPriceDataSeries (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&

@@ -12,24 +12,24 @@ enum {
     // This is only used to pre-allocate the array for
     // batch objects and does not affect the amount written.
     //
-    batchWritePreallocationSize = 256,
+    BatchWritePreallocationSize = 256,
 
     // This sets a limit on the maximum number of writes
     // in a batch. Actual usage can be twice this since
     // we have a new batch growing as we write the old.
     //
-    batchWriteLimitSize = 65536
+    BatchWriteLimitSize = 65536
 };
 
 /** Return codes from Backend operations. */
 enum class Status {
-    ok = 0,
-    notFound = 1,
-    dataCorrupt = 2,
-    unknown = 3,
-    backendError = 4,
+    Ok = 0,
+    NotFound = 1,
+    DataCorrupt = 2,
+    Unknown = 3,
+    BackendError = 4,
 
-    customCode = 100
+    CustomCode = 100
 };
 
 /** A batch of NodeObjects to write at once. */

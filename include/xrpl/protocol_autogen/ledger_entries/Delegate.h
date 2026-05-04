@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuthorize (soeREQUIRED)
+     * @brief Get sfAuthorize (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfPermissions (soeREQUIRED)
+     * @brief Get sfPermissions (SoeRequired)
      * @note This is an untyped field (unknown).
      * @return The field value.
      */
@@ -80,7 +80,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -91,7 +91,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationNode (soeOPTIONAL)
+     * @brief Get sfDestinationNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -115,7 +115,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -141,7 +141,7 @@ public:
  * @brief Builder for Delegate ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class DelegateBuilder : public LedgerEntryBuilderBase<DelegateBuilder>
@@ -184,7 +184,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -195,7 +195,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuthorize (soeREQUIRED)
+     * @brief Set sfAuthorize (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -206,7 +206,7 @@ public:
     }
 
     /**
-     * @brief Set sfPermissions (soeREQUIRED)
+     * @brief Set sfPermissions (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -217,7 +217,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -228,7 +228,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationNode (soeOPTIONAL)
+     * @brief Set sfDestinationNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -239,7 +239,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -250,7 +250,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
