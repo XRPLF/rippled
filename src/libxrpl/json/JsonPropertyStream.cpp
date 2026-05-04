@@ -6,160 +6,160 @@
 
 namespace xrpl {
 
-JsonPropertyStream::JsonPropertyStream() : m_top(Json::objectValue)
+JsonPropertyStream::JsonPropertyStream() : topValue(json::ObjectValue)
 {
-    m_stack.reserve(64);
-    m_stack.push_back(&m_top);
+    stack.reserve(64);
+    stack.push_back(&topValue);
 }
 
-Json::Value const&
+json::Value const&
 JsonPropertyStream::top() const
 {
-    return m_top;
+    return topValue;
 }
 
 void
-JsonPropertyStream::map_begin()
+JsonPropertyStream::mapBegin()
 {
     // top is array
-    Json::Value& top(*m_stack.back());
-    Json::Value& map(top.append(Json::objectValue));
-    m_stack.push_back(&map);
+    json::Value& top(*stack.back());
+    json::Value& map(top.append(json::ObjectValue));
+    stack.push_back(&map);
 }
 
 void
-JsonPropertyStream::map_begin(std::string const& key)
+JsonPropertyStream::mapBegin(std::string const& key)
 {
     // top is a map
-    Json::Value& top(*m_stack.back());
-    Json::Value& map(top[key] = Json::objectValue);
-    m_stack.push_back(&map);
+    json::Value& top(*stack.back());
+    json::Value& map(top[key] = json::ObjectValue);
+    stack.push_back(&map);
 }
 
 void
-JsonPropertyStream::map_end()
+JsonPropertyStream::mapEnd()
 {
-    m_stack.pop_back();
+    stack.pop_back();
 }
 
 void
 JsonPropertyStream::add(std::string const& key, short v)
 {
-    (*m_stack.back())[key] = v;
+    (*stack.back())[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, unsigned short v)
 {
-    (*m_stack.back())[key] = v;
+    (*stack.back())[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, int v)
 {
-    (*m_stack.back())[key] = v;
+    (*stack.back())[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, unsigned int v)
 {
-    (*m_stack.back())[key] = v;
+    (*stack.back())[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, long v)
 {
-    (*m_stack.back())[key] = int(v);
+    (*stack.back())[key] = int(v);
 }
 
 void
 JsonPropertyStream::add(std::string const& key, float v)
 {
-    (*m_stack.back())[key] = v;
+    (*stack.back())[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, double v)
 {
-    (*m_stack.back())[key] = v;
+    (*stack.back())[key] = v;
 }
 
 void
 JsonPropertyStream::add(std::string const& key, std::string const& v)
 {
-    (*m_stack.back())[key] = v;
+    (*stack.back())[key] = v;
 }
 
 void
-JsonPropertyStream::array_begin()
+JsonPropertyStream::arrayBegin()
 {
     // top is array
-    Json::Value& top(*m_stack.back());
-    Json::Value& vec(top.append(Json::arrayValue));
-    m_stack.push_back(&vec);
+    json::Value& top(*stack.back());
+    json::Value& vec(top.append(json::ArrayValue));
+    stack.push_back(&vec);
 }
 
 void
-JsonPropertyStream::array_begin(std::string const& key)
+JsonPropertyStream::arrayBegin(std::string const& key)
 {
     // top is a map
-    Json::Value& top(*m_stack.back());
-    Json::Value& vec(top[key] = Json::arrayValue);
-    m_stack.push_back(&vec);
+    json::Value& top(*stack.back());
+    json::Value& vec(top[key] = json::ArrayValue);
+    stack.push_back(&vec);
 }
 
 void
-JsonPropertyStream::array_end()
+JsonPropertyStream::arrayEnd()
 {
-    m_stack.pop_back();
+    stack.pop_back();
 }
 
 void
 JsonPropertyStream::add(short v)
 {
-    m_stack.back()->append(v);
+    stack.back()->append(v);
 }
 
 void
 JsonPropertyStream::add(unsigned short v)
 {
-    m_stack.back()->append(v);
+    stack.back()->append(v);
 }
 
 void
 JsonPropertyStream::add(int v)
 {
-    m_stack.back()->append(v);
+    stack.back()->append(v);
 }
 
 void
 JsonPropertyStream::add(unsigned int v)
 {
-    m_stack.back()->append(v);
+    stack.back()->append(v);
 }
 
 void
 JsonPropertyStream::add(long v)
 {
-    m_stack.back()->append(int(v));
+    stack.back()->append(int(v));
 }
 
 void
 JsonPropertyStream::add(float v)
 {
-    m_stack.back()->append(v);
+    stack.back()->append(v);
 }
 
 void
 JsonPropertyStream::add(double v)
 {
-    m_stack.back()->append(v);
+    stack.back()->append(v);
 }
 
 void
 JsonPropertyStream::add(std::string const& v)
 {
-    m_stack.back()->append(v);
+    stack.back()->append(v);
 }
 
 }  // namespace xrpl

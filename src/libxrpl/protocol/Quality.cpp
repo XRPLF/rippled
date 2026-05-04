@@ -1,26 +1,28 @@
 #include <xrpl/protocol/Quality.h>
 
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STAmount.h>
 
 #include <cstdint>
+#include <limits>
 
 namespace xrpl {
 
-Quality::Quality(std::uint64_t value) : m_value(value)
+Quality::Quality(std::uint64_t value) : value_(value)
 {
 }
 
-Quality::Quality(Amounts const& amount) : m_value(getRate(amount.out, amount.in))
+Quality::Quality(Amounts const& amount) : value_(getRate(amount.out, amount.in))
 {
 }
 
 Quality&
 Quality::operator++()
 {
-    XRPL_ASSERT(m_value > 0, "xrpl::Quality::operator++() : minimum value");
-    --m_value;
+    XRPL_ASSERT(value_ > 0, "xrpl::Quality::operator++() : minimum value");
+    --value_;
     return *this;
 }
 
@@ -36,9 +38,9 @@ Quality&
 Quality::operator--()
 {
     XRPL_ASSERT(
-        m_value < std::numeric_limits<value_type>::max(),
+        value_ < std::numeric_limits<value_type>::max(),
         "xrpl::Quality::operator--() : maximum value");
-    ++m_value;
+    ++value_;
     return *this;
 }
 
@@ -52,7 +54,7 @@ Quality::operator--(int)
 
 template <STAmount (*DivRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
-ceil_in_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
+ceilInImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
     if (amount.in > limit)
     {
@@ -68,20 +70,20 @@ ceil_in_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality
 }
 
 Amounts
-Quality::ceil_in(Amounts const& amount, STAmount const& limit) const
+Quality::ceilIn(Amounts const& amount, STAmount const& limit) const
 {
-    return ceil_in_impl<divRound>(amount, limit, /* roundUp */ true, *this);
+    return ceilInImpl<divRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
-Quality::ceil_in_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const
+Quality::ceilInStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
-    return ceil_in_impl<divRoundStrict>(amount, limit, roundUp, *this);
+    return ceilInImpl<divRoundStrict>(amount, limit, roundUp, *this);
 }
 
 template <STAmount (*MulRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
-ceil_out_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
+ceilOutImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
     if (amount.out > limit)
     {
@@ -97,43 +99,42 @@ ceil_out_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Qualit
 }
 
 Amounts
-Quality::ceil_out(Amounts const& amount, STAmount const& limit) const
+Quality::ceilOut(Amounts const& amount, STAmount const& limit) const
 {
-    return ceil_out_impl<mulRound>(amount, limit, /* roundUp */ true, *this);
+    return ceilOutImpl<mulRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
-Quality::ceil_out_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const
+Quality::ceilOutStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
-    return ceil_out_impl<mulRoundStrict>(amount, limit, roundUp, *this);
+    return ceilOutImpl<mulRoundStrict>(amount, limit, roundUp, *this);
 }
 
 Quality
-composed_quality(Quality const& lhs, Quality const& rhs)
+composedQuality(Quality const& lhs, Quality const& rhs)
 {
-    STAmount const lhs_rate(lhs.rate());
-    XRPL_ASSERT(lhs_rate != beast::zero, "xrpl::composed_quality : nonzero left input");
+    STAmount const lhsRate(lhs.rate());
+    XRPL_ASSERT(lhsRate != beast::kZERO, "xrpl::composed_quality : nonzero left input");
 
-    STAmount const rhs_rate(rhs.rate());
-    XRPL_ASSERT(rhs_rate != beast::zero, "xrpl::composed_quality : nonzero right input");
+    STAmount const rhsRate(rhs.rate());
+    XRPL_ASSERT(rhsRate != beast::kZERO, "xrpl::composed_quality : nonzero right input");
 
-    STAmount const rate(mulRound(lhs_rate, rhs_rate, lhs_rate.asset(), true));
+    STAmount const rate(mulRound(lhsRate, rhsRate, lhsRate.asset(), true));
 
-    std::uint64_t const stored_exponent(rate.exponent() + 100);
-    std::uint64_t const stored_mantissa(rate.mantissa());
+    std::uint64_t const storedExponent(rate.exponent() + 100);
+    std::uint64_t const storedMantissa(rate.mantissa());
 
     XRPL_ASSERT(
-        (stored_exponent > 0) && (stored_exponent <= 255),
-        "xrpl::composed_quality : valid exponent");
+        (storedExponent > 0) && (storedExponent <= 255), "xrpl::composed_quality : valid exponent");
 
-    return Quality((stored_exponent << (64 - 8)) | stored_mantissa);
+    return Quality((storedExponent << (64 - 8)) | storedMantissa);
 }
 
 Quality
 Quality::round(int digits) const
 {
     // Modulus for mantissa
-    static std::uint64_t const mod[17] = {
+    static std::uint64_t const kMOD[17] = {
         /* 0 */ 10000000000000000,
         /* 1 */ 1000000000000000,
         /* 2 */ 100000000000000,
@@ -153,10 +154,10 @@ Quality::round(int digits) const
         /* 16 */ 1,
     };
 
-    auto exponent = m_value >> (64 - 8);
-    auto mantissa = m_value & 0x00ffffffffffffffULL;
-    mantissa += mod[digits] - 1;
-    mantissa -= (mantissa % mod[digits]);
+    auto exponent = value_ >> (64 - 8);
+    auto mantissa = value_ & 0x00ffffffffffffffULL;
+    mantissa += kMOD[digits] - 1;
+    mantissa -= (mantissa % kMOD[digits]);
 
     return Quality{(exponent << (64 - 8)) | mantissa};
 }

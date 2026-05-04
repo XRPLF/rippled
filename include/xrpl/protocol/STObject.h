@@ -57,7 +57,7 @@ class STObject : public STBase, public CountedObject<STObject>
     using list_type = std::vector<detail::STVar>;
 
     list_type v_;
-    SOTemplate const* mType{};
+    SOTemplate const* type_{};
 
 public:
     using iterator = boost::transform_iterator<Transform, STObject::list_type::const_iterator>;
@@ -132,7 +132,7 @@ public:
     getText() const override;
 
     // TODO(tom): options should be an enum.
-    [[nodiscard]] Json::Value getJson(JsonOptions = JsonOptions::none) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::KNone) const override;
 
     void
     addWithoutSigningFields(Serializer& s) const;
@@ -142,7 +142,7 @@ public:
 
     template <class... Args>
     std::size_t
-    emplace_back(Args&&... args);
+    emplaceBack(Args&&... args);
 
     [[nodiscard]] int
     getCount() const;
@@ -381,7 +381,7 @@ public:
 
     template <class Tag>
     void
-    setFieldH160(SField const& field, base_uint<160, Tag> const& v);
+    setFieldH160(SField const& field, BaseUint<160, Tag> const& v);
 
     STObject&
     peekFieldObject(SField const& field);
@@ -415,9 +415,9 @@ public:
 private:
     enum class WhichFields : bool {
         // These values are carefully chosen to do the right thing if passed
-        // to SField::shouldInclude (bool) via static_cast<bool>
-        omitSigningFields = false,
-        withAllFields = true
+        // to SField::shouldInclude (bool)
+        OmitSigningFields = false,
+        WithAllFields = true
     };
 
     void
@@ -667,7 +667,7 @@ public:
 
     // Emulate std::optional::value_or
     [[nodiscard]] value_type
-    value_or(value_type val) const;
+    valueOr(value_type val) const;
 
     OptionalProxy&
     operator=(std::nullopt_t const&);
@@ -692,7 +692,7 @@ private:
     disengage();
 
     [[nodiscard]] optional_type
-    optional_value() const;
+    optionalValue() const;
 };
 
 class STObject::FieldErr : public std::runtime_error
@@ -703,16 +703,16 @@ class STObject::FieldErr : public std::runtime_error
 template <class T>
 STObject::Proxy<T>::Proxy(STObject* st, TypedField<T> const* f) : st_(st), f_(f)
 {
-    if (st_->mType != nullptr)
+    if (st_->type_ != nullptr)
     {
         // STObject has associated template
         if (!st_->peekAtPField(*f_))
             Throw<STObject::FieldErr>("Template field error '" + this->f_->getName() + "'");
-        style_ = st_->mType->style(*f_);
+        style_ = st_->type_->style(*f_);
     }
     else
     {
-        style_ = soeINVALID;
+        style_ = SoeInvalid;
     }
 }
 
@@ -723,11 +723,11 @@ STObject::Proxy<T>::value() const -> value_type
     auto const t = find();
     if (t)
         return t->value();
-    if (style_ == soeINVALID)
+    if (style_ == SoeInvalid)
     {
         Throw<STObject::FieldErr>("Value requested from invalid STObject.");
     }
-    if (style_ != soeDEFAULT)
+    if (style_ != SoeDefault)
     {
         Throw<STObject::FieldErr>("Missing field '" + this->f_->getName() + "'");
     }
@@ -762,13 +762,13 @@ template <class U>
 void
 STObject::Proxy<T>::assign(U&& u)
 {
-    if (style_ == soeDEFAULT && u == value_type{})
+    if (style_ == SoeDefault && u == value_type{})
     {
         st_->makeFieldAbsent(*f_);
         return;
     }
     T* t = nullptr;
-    if (style_ == soeINVALID)
+    if (style_ == SoeInvalid)
     {
         t = dynamic_cast<T*>(st_->getPField(*f_, true));
     }
@@ -836,14 +836,14 @@ template <class T>
 STObject::OptionalProxy<T>::
 operator typename STObject::OptionalProxy<T>::optional_type() const
 {
-    return optional_value();
+    return optionalValue();
 }
 
 template <class T>
 typename STObject::OptionalProxy<T>::optional_type
 STObject::OptionalProxy<T>::operator~() const
 {
-    return optional_value();
+    return optionalValue();
 }
 
 template <class T>
@@ -904,16 +904,16 @@ template <class T>
 bool
 STObject::OptionalProxy<T>::engaged() const noexcept
 {
-    return this->style_ == soeDEFAULT || this->find() != nullptr;
+    return this->style_ == SoeDefault || this->find() != nullptr;
 }
 
 template <class T>
 void
 STObject::OptionalProxy<T>::disengage()
 {
-    if (this->style_ == soeREQUIRED || this->style_ == soeDEFAULT)
+    if (this->style_ == SoeRequired || this->style_ == SoeDefault)
         Throw<STObject::FieldErr>("Template field error '" + this->f_->getName() + "'");
-    if (this->style_ == soeINVALID)
+    if (this->style_ == SoeInvalid)
     {
         this->st_->delField(*this->f_);
     }
@@ -925,7 +925,7 @@ STObject::OptionalProxy<T>::disengage()
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::optional_value() const -> optional_type
+STObject::OptionalProxy<T>::optionalValue() const -> optional_type
 {
     if (!engaged())
         return std::nullopt;
@@ -934,7 +934,7 @@ STObject::OptionalProxy<T>::optional_value() const -> optional_type
 
 template <class T>
 typename STObject::OptionalProxy<T>::value_type
-STObject::OptionalProxy<T>::value_or(value_type val) const
+STObject::OptionalProxy<T>::valueOr(value_type val) const
 {
     return engaged() ? this->value() : val;
 }
@@ -981,13 +981,13 @@ STObject::reserve(std::size_t n)
 inline bool
 STObject::isFree() const
 {
-    return mType == nullptr;
+    return type_ == nullptr;
 }
 
 inline void
 STObject::addWithoutSigningFields(Serializer& s) const
 {
-    add(s, WhichFields::omitSigningFields);
+    add(s, WhichFields::OmitSigningFields);
 }
 
 // VFALCO NOTE does this return an expensive copy of an object with a
@@ -997,13 +997,13 @@ inline Serializer
 STObject::getSerializer() const
 {
     Serializer s;
-    add(s, WhichFields::withAllFields);
+    add(s, WhichFields::WithAllFields);
     return s;
 }
 
 template <class... Args>
 inline std::size_t
-STObject::emplace_back(Args&&... args)
+STObject::emplaceBack(Args&&... args)
 {
     v_.emplace_back(std::forward<Args>(args)...);
     return v_.size() - 1;
@@ -1082,21 +1082,21 @@ STObject::at(TypedField<T> const& f) const
     if (auto const u = dynamic_cast<T const*>(b))
         return u->value();
 
-    XRPL_ASSERT(mType, "xrpl::STObject::at(TypedField auto) : field template non-null");
+    XRPL_ASSERT(type_, "xrpl::STObject::at(TypedField auto) : field template non-null");
     XRPL_ASSERT(
         b->getSType() == STI_NOTPRESENT, "xrpl::STObject::at(TypedField auto) : type not present");
 
-    if (mType->style(f) == soeOPTIONAL)
+    if (type_->style(f) == SoeOptional)
         Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
 
     XRPL_ASSERT(
-        mType->style(f) == soeDEFAULT,
+        type_->style(f) == SoeDefault,
         "xrpl::STObject::at(TypedField auto) : template style is default");
 
     // Used to help handle the case where value_type is a const reference,
     // otherwise we would return the address of a temporary.
-    static std::decay_t<typename T::value_type> const dv{};
-    return dv;
+    static std::decay_t<typename T::value_type> const kDV{};
+    return kDV;
 }
 
 template <class T>
@@ -1110,16 +1110,16 @@ STObject::at(OptionaledField<T> const& of) const
     if (!u)
     {
         XRPL_ASSERT(
-            mType,
+            type_,
             "xrpl::STObject::at(OptionaledField auto) : field template "
             "non-null");
         XRPL_ASSERT(
             b->getSType() == STI_NOTPRESENT,
             "xrpl::STObject::at(OptionaledField auto) : type not present");
-        if (mType->style(*of.f) == soeOPTIONAL)
+        if (type_->style(*of.f) == SoeOptional)
             return std::nullopt;
         XRPL_ASSERT(
-            mType->style(*of.f) == soeDEFAULT,
+            type_->style(*of.f) == SoeDefault,
             "xrpl::STObject::at(OptionaledField auto) : template style is "
             "default");
         return typename T::value_type{};
@@ -1143,7 +1143,7 @@ STObject::at(OptionaledField<T> const& of) -> OptionalProxy<T>
 
 template <class Tag>
 void
-STObject::setFieldH160(SField const& field, base_uint<160, Tag> const& v)
+STObject::setFieldH160(SField const& field, BaseUint<160, Tag> const& v)
 {
     STBase* rf = getPField(field, true);
 

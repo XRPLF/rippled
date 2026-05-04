@@ -98,7 +98,7 @@ export LSAN_OPTIONS="include=sanitizers/suppressions/runtime-lsan-options.txt:su
 
 **Why `detect_container_overflow=0`?**
 
-- Boost intrusive containers (used in `aged_unordered_container`) trigger false positives
+- Boost intrusive containers (used in `AgedUnorderedContainer`) trigger false positives
 - Boost context switching (used in `Workers.cpp`) confuses ASAN's stack tracking
 - Since we usually don't build Boost (because we don't want to instrument Boost and detect issues in Boost code) with ASAN but use Boost containers in ASAN instrumented xrpld code, it generates false positives.
 - Building dependencies with ASAN instrumentation reduces false positives. But we don't want to instrument dependencies like Boost with ASAN because it is slow (to compile as well as run tests) and not necessary.

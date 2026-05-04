@@ -18,17 +18,17 @@
 namespace xrpl {
 
 // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
-Json::Value
+json::Value
 doCanDelete(RPC::JsonContext& context)
 {
     if (!context.app.getSHAMapStore().advisoryDelete())
-        return RPC::make_error(rpcNOT_ENABLED);
+        return RPC::makeError(RpcNotEnabled);
 
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ObjectValue);
 
     if (context.params.isMember(jss::can_delete))
     {
-        Json::Value const canDelete = context.params.get(jss::can_delete, 0);
+        json::Value const canDelete = context.params.get(jss::can_delete, 0);
         std::uint32_t canDeleteSeq = 0;
 
         if (canDelete.isUInt())
@@ -56,20 +56,20 @@ doCanDelete(RPC::JsonContext& context)
             {
                 canDeleteSeq = context.app.getSHAMapStore().getLastRotated();
                 if (canDeleteSeq == 0u)
-                    return RPC::make_error(rpcNOT_READY);
+                    return RPC::makeError(RpcNotReady);
             }
             else if (uint256 lh; lh.parseHex(canDeleteStr))
             {
                 auto ledger = context.ledgerMaster.getLedgerByHash(lh);
 
                 if (!ledger)
-                    return RPC::make_error(rpcLGR_NOT_FOUND, "ledgerNotFound");
+                    return RPC::makeError(RpcLgrNotFound, "ledgerNotFound");
 
                 canDeleteSeq = ledger->header().seq;
             }
             else
             {
-                return RPC::make_error(rpcINVALID_PARAMS);
+                return RPC::makeError(RpcInvalidParams);
             }
         }
 

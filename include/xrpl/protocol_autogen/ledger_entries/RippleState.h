@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfBalance (soeREQUIRED)
+     * @brief Get sfBalance (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowLimit (soeREQUIRED)
+     * @brief Get sfLowLimit (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighLimit (soeREQUIRED)
+     * @brief Get sfHighLimit (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -101,7 +101,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowNode (soeOPTIONAL)
+     * @brief Get sfLowNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -125,7 +125,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowQualityIn (soeOPTIONAL)
+     * @brief Get sfLowQualityIn (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -149,7 +149,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowQualityOut (soeOPTIONAL)
+     * @brief Get sfLowQualityOut (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -173,7 +173,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighNode (soeOPTIONAL)
+     * @brief Get sfHighNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -197,7 +197,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighQualityIn (soeOPTIONAL)
+     * @brief Get sfHighQualityIn (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -221,7 +221,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighQualityOut (soeOPTIONAL)
+     * @brief Get sfHighQualityOut (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -249,7 +249,7 @@ public:
  * @brief Builder for RippleState ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class RippleStateBuilder : public LedgerEntryBuilderBase<RippleStateBuilder>
@@ -290,7 +290,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfBalance (soeREQUIRED)
+     * @brief Set sfBalance (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -301,7 +301,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowLimit (soeREQUIRED)
+     * @brief Set sfLowLimit (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -312,7 +312,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighLimit (soeREQUIRED)
+     * @brief Set sfHighLimit (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -323,7 +323,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -334,7 +334,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -345,7 +345,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowNode (soeOPTIONAL)
+     * @brief Set sfLowNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -356,7 +356,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowQualityIn (soeOPTIONAL)
+     * @brief Set sfLowQualityIn (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -367,7 +367,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowQualityOut (soeOPTIONAL)
+     * @brief Set sfLowQualityOut (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -378,7 +378,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighNode (soeOPTIONAL)
+     * @brief Set sfHighNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -389,7 +389,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighQualityIn (soeOPTIONAL)
+     * @brief Set sfHighQualityIn (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -400,7 +400,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighQualityOut (soeOPTIONAL)
+     * @brief Set sfHighQualityOut (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&

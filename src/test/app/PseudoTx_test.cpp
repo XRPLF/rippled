@@ -20,7 +20,7 @@
 
 namespace xrpl::test {
 
-struct PseudoTx_test : public beast::unit_test::suite
+struct PseudoTx_test : public beast::unit_test::Suite
 {
     static std::vector<STTx>
     getPseudoTxs(Rules const& rules, std::uint32_t seq)
@@ -82,7 +82,7 @@ struct PseudoTx_test : public beast::unit_test::suite
             BEAST_EXPECT(!passesLocalChecks(stx, reason));
             BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-                auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
+                auto const result = xrpl::apply(env.app(), view, stx, TapNone, j);
                 BEAST_EXPECT(!result.applied && result.ter == temINVALID);
                 return result.applied;
             });
@@ -104,7 +104,7 @@ struct PseudoTx_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         FeatureBitset const xrpFees{featureXRPFees};
 
         testPrevented(all - featureXRPFees);

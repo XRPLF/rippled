@@ -20,7 +20,7 @@ then canonicalize a new object with the same key, make sure you get the
 original object.
 */
 
-class TaggedCache_test : public beast::unit_test::suite
+class TaggedCache_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -89,7 +89,7 @@ public:
             {
                 auto const p1 = c.fetch(3);
                 auto p2 = std::make_shared<Value>("three");
-                c.canonicalize_replace_client(3, p2);
+                c.canonicalizeReplaceClient(3, p2);
                 BEAST_EXPECT(p1.get() == p2.get());
             }
             ++clock;
@@ -120,7 +120,7 @@ public:
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Canonicalize a new object with the same key
                 auto p2 = std::make_shared<std::string>("four");
-                BEAST_EXPECT(c.canonicalize_replace_client(4, p2));
+                BEAST_EXPECT(c.canonicalizeReplaceClient(4, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Make sure we get the original object

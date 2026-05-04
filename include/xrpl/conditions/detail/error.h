@@ -4,39 +4,39 @@
 
 namespace xrpl::cryptoconditions {
 
-enum class error {
-    generic = 1,
-    unsupported_type,
-    unsupported_subtype,
-    unknown_type,
-    unknown_subtype,
-    fingerprint_size,
-    incorrect_encoding,
-    trailing_garbage,
-    buffer_empty,
-    buffer_overfull,
-    buffer_underfull,
-    malformed_encoding,
-    short_preamble,
-    unexpected_tag,
-    long_tag,
-    large_size,
-    preimage_too_long
+enum class Error {
+    Generic = 1,
+    UnsupportedType,
+    UnsupportedSubtype,
+    UnknownType,
+    UnknownSubtype,
+    FingerprintSize,
+    IncorrectEncoding,
+    TrailingGarbage,
+    BufferEmpty,
+    BufferOverfull,
+    BufferUnderfull,
+    MalformedEncoding,
+    ShortPreamble,
+    UnexpectedTag,
+    LongTag,
+    LargeSize,
+    PreimageTooLong
 };
 
 std::error_code
-make_error_code(error ev);
+make_error_code(Error ev);
 
 }  // namespace xrpl::cryptoconditions
 
 namespace std {
 
 template <>
-struct is_error_code_enum<xrpl::cryptoconditions::error>
+struct is_error_code_enum<xrpl::cryptoconditions::Error>
 {
     explicit is_error_code_enum() = default;
 
-    static bool const value = true;
+    static bool const value = true;  // NOLINT(readability-identifier-naming)
 };
 
 }  // namespace std
