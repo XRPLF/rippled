@@ -1,5 +1,6 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
@@ -35,6 +36,37 @@ getFailHard(RPC::JsonContext const& context)
     }
     return NetworkOPs::doFailHard(
         context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool());
+}
+
+json::Value
+doInject(RPC::JsonContext& context)
+{
+    if (context.role != Role::ADMIN)
+        return rpcError(RpcNoPermission);
+
+    json::Value jvResult;
+    auto ret = strUnHex(context.params[jss::tx_blob].asString());
+    if (!ret || !ret->size())
+        return rpcError(RpcInvalidParams);
+
+    SerialIter sitTrans(makeSlice(*ret));
+    std::shared_ptr<STTx const> stpTrans;
+    try
+    {
+        stpTrans = std::make_shared<STTx const>(std::ref(sitTrans));
+    }
+    catch (std::exception& e)
+    {
+        jvResult[jss::error] = "invalidTransaction";
+        jvResult[jss::error_exception] = e.what();
+        jvResult[jss::in_queue] = false;
+        return jvResult;
+    }
+
+    context.app.getTxQ().debugTxInject(*stpTrans);
+    jvResult[jss::tx_json] = stpTrans->getJson(JsonOptions::Values::None);
+    jvResult[jss::in_queue] = true;
+    return jvResult;
 }
 
 // {

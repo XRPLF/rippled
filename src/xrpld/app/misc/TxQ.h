@@ -12,6 +12,7 @@
 #include <boost/intrusive/set.hpp>
 
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -38,7 +39,14 @@ class Config;
 */
 class TxQ
 {
+private:
+    std::mutex debugTxInjectMutex;
+    std::vector<STTx> debugTxInjectQueue;
+
 public:
+    void
+    debugTxInject(STTx const& txn);
+
     /// Fee level for single-signed reference transaction.
     static constexpr FeeLevel64 kBaseLevel{256};
 

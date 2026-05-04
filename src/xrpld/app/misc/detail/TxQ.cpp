@@ -98,6 +98,13 @@ increase(FeeLevel64 level, std::uint32_t increasePercent)
 
 //////////////////////////////////////////////////////////////////////////
 
+void
+TxQ::debugTxInject(STTx const& txn)
+{
+    std::lock_guard<std::mutex> const _(debugTxInjectMutex);
+    debugTxInjectQueue.push_back(txn);
+}
+
 std::size_t
 TxQ::FeeMetrics::update(
     Application& app,
@@ -1417,6 +1424,21 @@ TxQ::accept(Application& app, OpenView& view)
     std::scoped_lock const lock(mutex_);
 
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
+
+    // try to inject any debug txns waiting in the debug queue
+    {
+        std::unique_lock<std::mutex> trylock(TxQ::debugTxInjectMutex, std::try_to_lock);
+        if (trylock.owns_lock() && !debugTxInjectQueue.empty())
+        {
+            for (STTx const& txn : debugTxInjectQueue)
+            {
+                auto const [result, didApply, metadata] = xrpl::apply(app, view, txn, TapNone, j_);
+                if (didApply)
+                    ledgerChanged = true;
+            }
+            debugTxInjectQueue.clear();
+        }
+    }
 
     for (auto candidateIter = byFee_.begin(); candidateIter != byFee_.end();)
     {

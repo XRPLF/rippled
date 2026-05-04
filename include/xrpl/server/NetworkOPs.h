@@ -223,8 +223,21 @@ public:
     virtual void
     consensusViewChange() = 0;
 
+    virtual void
+    setStall(std::chrono::milliseconds duration) = 0;
+    virtual bool
+    isStalled() const = 0;
+    virtual void
+    clearStall() = 0;
+
     virtual json::Value
     getConsensusInfo() = 0;
+    // Proposers and round time of the last consensus round, for out-of-band
+    // telemetry (DatagramMonitor) that cannot reach the private consensus object.
+    [[nodiscard]] virtual std::size_t
+    getPrevProposers() const = 0;
+    [[nodiscard]] virtual std::chrono::milliseconds
+    getPrevRoundTime() const = 0;
     virtual json::Value
     getServerInfo(bool human, bool admin, bool counters) = 0;
     virtual void

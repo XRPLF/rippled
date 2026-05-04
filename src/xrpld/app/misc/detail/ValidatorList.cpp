@@ -2078,6 +2078,48 @@ ValidatorList::getTrustedMasterKeys() const
     return trustedMasterKeys_;
 }
 
+void
+ValidatorList::debugSetTrusted(
+    std::vector<PublicKey> const& validators,
+    std::optional<std::size_t> quorumOverride)
+{
+    std::lock_guard const lock{mutex_};
+
+    trustedMasterKeys_.clear();
+    keyListings_.clear();
+    localPublisherList_.list.clear();
+
+    for (auto const& k : validators)
+    {
+        trustedMasterKeys_.insert(k);
+        keyListings_[k] = 1;
+        localPublisherList_.list.push_back(k);
+    }
+
+    trustedSigningKeys_.clear();
+    for (auto const& k : trustedMasterKeys_)
+    {
+        auto const signingKey = validatorManifests_.getSigningKey(k);
+        if (signingKey)
+            trustedSigningKeys_.insert(*signingKey);
+        else
+            trustedSigningKeys_.insert(k);
+    }
+
+    if (quorumOverride)
+    {
+        quorum_ = *quorumOverride;
+    }
+    else
+    {
+        auto const unlSize = trustedMasterKeys_.size();
+        quorum_ = calculateQuorum(unlSize, unlSize, unlSize);
+    }
+
+    JLOG(j_.warn()) << "debugSetTrusted: set " << trustedMasterKeys_.size()
+                    << " trusted validators, quorum=" << quorum_;
+}
+
 std::size_t
 ValidatorList::getListThreshold() const
 {

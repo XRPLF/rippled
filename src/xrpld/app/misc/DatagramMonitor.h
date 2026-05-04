@@ -6,35 +6,38 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpl/server/LoadFeeTrack.h>
-#include <xrpl/server/NetworkOPs.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/overlay/Overlay.h>
+
+#include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/mulDiv.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/CachedSLEs.h>
 #include <xrpl/nodestore/Database.h>
-#include <xrpld/overlay/Overlay.h>
-#include <xrpl/basics/UptimeClock.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/basics/mulDiv.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
+
 #include <arpa/inet.h>
+#include <sys/resource.h>
+#include <sys/socket.h>
+
+#include <netdb.h>
+
 #include <array>
 #include <atomic>
 #include <chrono>
 #include <cstring>
 #include <fstream>
-#include <netdb.h>
 #include <sstream>
 #include <string>
-#include <sys/resource.h>
-#include <sys/socket.h>
 #if defined(__linux__)
 #include <sys/statvfs.h>
 #include <sys/sysinfo.h>
 #elif defined(__APPLE__)
-#include <ifaddrs.h>
 #include <mach/host_info.h>
 #include <mach/mach.h>
 #include <net/if.h>
@@ -42,6 +45,8 @@
 #include <sys/mount.h>
 #include <sys/sysctl.h>
 #include <sys/types.h>
+
+#include <ifaddrs.h>
 #endif
 #include <thread>
 #include <vector>
@@ -99,9 +104,8 @@ struct [[gnu::packed]] DebugCounters
     std::int32_t historicalPerMinute{0};
 
     // Cache metrics
-    std::uint32_t sleHitRate{0};  // Stored as fixed point, multiplied by 1000
-    std::uint32_t ledgerHitRate{
-        0};  // Stored as fixed point, multiplied by 1000
+    std::uint32_t sleHitRate{0};     // Stored as fixed point, multiplied by 1000
+    std::uint32_t ledgerHitRate{0};  // Stored as fixed point, multiplied by 1000
     std::uint32_t alSize{0};
     std::uint32_t alHitRate{0};  // Stored as fixed point, multiplied by 1000
     std::int32_t fullbelowSize{0};
@@ -195,9 +199,9 @@ struct SystemMetrics
 class MetricsTracker
 {
 private:
-    static constexpr size_t SAMPLES_1M = 60;    // 1 sample/second for 1 minute
-    static constexpr size_t SAMPLES_5M = 300;   // 1 sample/second for 5 minutes
-    static constexpr size_t SAMPLES_1H = 3600;  // 1 sample/second for 1 hour
+    static constexpr size_t SAMPLES_1M = 60;     // 1 sample/second for 1 minute
+    static constexpr size_t SAMPLES_5M = 300;    // 1 sample/second for 5 minutes
+    static constexpr size_t SAMPLES_1H = 3600;   // 1 sample/second for 1 hour
     static constexpr size_t SAMPLES_24H = 1440;  // 1 sample/minute for 24 hours
 
     std::vector<SystemMetrics> samples_1m{SAMPLES_1M};
@@ -210,12 +214,12 @@ private:
 
     double
     calculateRate(
-        const SystemMetrics& current,
-        const std::vector<SystemMetrics>& samples,
+        SystemMetrics const& current,
+        std::vector<SystemMetrics> const& samples,
         size_t current_index,
         size_t max_samples,
         bool is_24h_window,
-        std::function<uint64_t(const SystemMetrics&)> metric_getter)
+        std::function<uint64_t(SystemMetrics const&)> metric_getter)
     {
         // If we don't have at least 2 samples, the rate is 0
         if (current_index < 2)
@@ -232,26 +236,22 @@ private:
         }
         else
         {
-            expected_window_micros = max_samples *
-                1000000ULL;  // window in seconds * 1,000,000 for microseconds
+            expected_window_micros =
+                max_samples * 1000000ULL;  // window in seconds * 1,000,000 for microseconds
         }
 
         // For any window where we don't have full data, we should scale the
         // rate based on the actual time we have data for
-        uint64_t actual_window_micros =
-            current.timestamp - samples[0].timestamp;
-        double window_scale = std::min(
-            1.0,
-            static_cast<double>(actual_window_micros) / expected_window_micros);
+        uint64_t actual_window_micros = current.timestamp - samples[0].timestamp;
+        double window_scale =
+            std::min(1.0, static_cast<double>(actual_window_micros) / expected_window_micros);
 
         // Get the oldest valid sample
-        size_t oldest_index = (current_index >= max_samples)
-            ? ((current_index + 1) % max_samples)
-            : 0;
-        const auto& oldest = samples[oldest_index];
+        size_t oldest_index =
+            (current_index >= max_samples) ? ((current_index + 1) % max_samples) : 0;
+        auto const& oldest = samples[oldest_index];
 
-        double elapsed = actual_window_micros /
-            1000000.0;  // Convert microseconds to seconds
+        double elapsed = actual_window_micros / 1000000.0;  // Convert microseconds to seconds
 
         // Ensure we have a meaningful time difference
         if (elapsed < 0.001)
@@ -265,8 +265,7 @@ private:
         // Handle counter wraparound
         uint64_t diff = (current_value >= oldest_value)
             ? (current_value - oldest_value)
-            : (std::numeric_limits<uint64_t>::max() - oldest_value +
-               current_value + 1);
+            : (std::numeric_limits<uint64_t>::max() - oldest_value + current_value + 1);
 
         // Calculate the rate and scale it based on our window coverage
         return (static_cast<double>(diff) / elapsed) * window_scale;
@@ -274,24 +273,24 @@ private:
 
     MetricRates
     calculateMetricRates(
-        const SystemMetrics& current,
-        std::function<uint64_t(const SystemMetrics&)> metric_getter)
+        SystemMetrics const& current,
+        std::function<uint64_t(SystemMetrics const&)> metric_getter)
     {
         MetricRates rates;
-        rates.rate_1m = calculateRate(
-            current, samples_1m, index_1m, SAMPLES_1M, false, metric_getter);
-        rates.rate_5m = calculateRate(
-            current, samples_5m, index_5m, SAMPLES_5M, false, metric_getter);
-        rates.rate_1h = calculateRate(
-            current, samples_1h, index_1h, SAMPLES_1H, false, metric_getter);
-        rates.rate_24h = calculateRate(
-            current, samples_24h, index_24h, SAMPLES_24H, true, metric_getter);
+        rates.rate_1m =
+            calculateRate(current, samples_1m, index_1m, SAMPLES_1M, false, metric_getter);
+        rates.rate_5m =
+            calculateRate(current, samples_5m, index_5m, SAMPLES_5M, false, metric_getter);
+        rates.rate_1h =
+            calculateRate(current, samples_1h, index_1h, SAMPLES_1H, false, metric_getter);
+        rates.rate_24h =
+            calculateRate(current, samples_24h, index_24h, SAMPLES_24H, true, metric_getter);
         return rates;
     }
 
 public:
     void
-    addSample(const SystemMetrics& metrics)
+    addSample(SystemMetrics const& metrics)
     {
         auto now = std::chrono::system_clock::now();
 
@@ -313,19 +312,17 @@ public:
     }
 
     AllRates
-    getRates(const SystemMetrics& current)
+    getRates(SystemMetrics const& current)
     {
         AllRates rates;
         rates.network_in = calculateMetricRates(
-            current, [](const SystemMetrics& m) { return m.network_bytes_in; });
+            current, [](SystemMetrics const& m) { return m.network_bytes_in; });
         rates.network_out = calculateMetricRates(
-            current,
-            [](const SystemMetrics& m) { return m.network_bytes_out; });
-        rates.disk_read = calculateMetricRates(
-            current, [](const SystemMetrics& m) { return m.disk_bytes_read; });
+            current, [](SystemMetrics const& m) { return m.network_bytes_out; });
+        rates.disk_read =
+            calculateMetricRates(current, [](SystemMetrics const& m) { return m.disk_bytes_read; });
         rates.disk_write = calculateMetricRates(
-            current,
-            [](const SystemMetrics& m) { return m.disk_bytes_written; });
+            current, [](SystemMetrics const& m) { return m.disk_bytes_written; });
         return rates;
     }
 };
@@ -369,18 +366,14 @@ private:
     }
 
     void
-    sendPacket(
-        int sock,
-        EndpointInfo const& endpoint,
-        std::vector<uint8_t> const& buffer)
+    sendPacket(int sock, EndpointInfo const& endpoint, std::vector<uint8_t> const& buffer)
     {
         struct sockaddr_storage addr;
         socklen_t addr_len;
 
         if (endpoint.is_ipv6)
         {
-            struct sockaddr_in6* addr6 =
-                reinterpret_cast<struct sockaddr_in6*>(&addr);
+            struct sockaddr_in6* addr6 = reinterpret_cast<struct sockaddr_in6*>(&addr);
             addr6->sin6_family = AF_INET6;
             addr6->sin6_port = htons(endpoint.port);
             inet_pton(AF_INET6, endpoint.ip.c_str(), &addr6->sin6_addr);
@@ -388,8 +381,7 @@ private:
         }
         else
         {
-            struct sockaddr_in* addr4 =
-                reinterpret_cast<struct sockaddr_in*>(&addr);
+            struct sockaddr_in* addr4 = reinterpret_cast<struct sockaddr_in*>(&addr);
             addr4->sin_family = AF_INET;
             addr4->sin_port = htons(endpoint.port);
             inet_pton(AF_INET, endpoint.ip.c_str(), &addr4->sin_addr);
@@ -410,14 +402,12 @@ private:
     getDebugCounters()
     {
         DebugCounters counters;
-        ObjectCountMap objectCounts =
-            CountedObjects::getInstance().getCounts(1);
+        ObjectCountMap objectCounts = CountedObjects::getInstance().getCounts(1);
 
         // Database metrics if applicable
         if (app_.config().useTxTables())
         {
-            auto const db =
-                dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase());
+            auto const db = dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase());
             if (!db)
                 Throw<std::runtime_error>("Failed to get relational database");
 
@@ -438,17 +428,15 @@ private:
 
         // Cache metrics - convert floating point rates to fixed point
         counters.sleHitRate = 0;  // TODO: SLE cache hit-rate accessor absent on this fork
-        counters.ledgerHitRate = static_cast<std::uint32_t>(
-            app_.getLedgerMaster().getCacheHitRate() * 1000);
+        counters.ledgerHitRate =
+            static_cast<std::uint32_t>(app_.getLedgerMaster().getCacheHitRate() * 1000);
         counters.alSize = app_.getAcceptedLedgerCache().size();
-        counters.alHitRate = static_cast<std::uint32_t>(
-            app_.getAcceptedLedgerCache().getHitRate() * 1000);
-        counters.fullbelowSize = static_cast<std::int32_t>(
-            app_.getNodeFamily().getFullBelowCache()->size());
-        counters.treenodeCacheSize =
-            app_.getNodeFamily().getTreeNodeCache()->getCacheSize();
-        counters.treenodeTrackSize =
-            app_.getNodeFamily().getTreeNodeCache()->getTrackSize();
+        counters.alHitRate =
+            static_cast<std::uint32_t>(app_.getAcceptedLedgerCache().getHitRate() * 1000);
+        counters.fullbelowSize =
+            static_cast<std::int32_t>(app_.getNodeFamily().getFullBelowCache()->size());
+        counters.treenodeCacheSize = app_.getNodeFamily().getTreeNodeCache()->getCacheSize();
+        counters.treenodeTrackSize = app_.getNodeFamily().getTreeNodeCache()->getTrackSize();
 
         // Get regular node store metrics
         counters.nodeWriteCount = app_.getNodeStore().getStoreCount();
@@ -473,8 +461,7 @@ private:
             std::ifstream cpuinfo("/proc/cpuinfo");
             if (!cpuinfo)
             {
-                JLOG(j_.error())
-                    << "Unable to open file: /proc/cpuinfo";
+                JLOG(j_.error()) << "Unable to open file: /proc/cpuinfo";
                 return count;
             }
             std::string line;
@@ -487,20 +474,17 @@ private:
                 {
                     current_physical_id = line.substr(line.find(":") + 1);
                     // Trim whitespace
-                    current_physical_id.erase(
-                        0, current_physical_id.find_first_not_of(" \t"));
-                    current_physical_id.erase(
-                        current_physical_id.find_last_not_of(" \t") + 1);
+                    current_physical_id.erase(0, current_physical_id.find_first_not_of(" \t"));
+                    current_physical_id.erase(current_physical_id.find_last_not_of(" \t") + 1);
                     physical_ids.insert(current_physical_id);
                 }
             }
 
             count = physical_ids.size();
         }
-        catch (const std::exception& e)
+        catch (std::exception const& e)
         {
-            JLOG(j_.error())
-                << "Error getting CPU count: " << e.what();
+            JLOG(j_.error()) << "Error getting CPU count: " << e.what();
         }
 
         // Return at least 1 if we couldn't determine the count
@@ -518,10 +502,9 @@ private:
     collectSystemMetrics()
     {
         SystemMetrics metrics{};
-        metrics.timestamp =
-            std::chrono::duration_cast<std::chrono::microseconds>(
-                std::chrono::system_clock::now().time_since_epoch())
-                .count();
+        metrics.timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
+                                std::chrono::system_clock::now().time_since_epoch())
+                                .count();
 
 #if defined(__linux__)
         // Network stats collection
@@ -530,8 +513,7 @@ private:
             std::ifstream net_file("/proc/net/dev");
             if (!net_file)
             {
-                JLOG(j_.error())
-                    << "Unable to open file /proc/net/dev";
+                JLOG(j_.error()) << "Unable to open file /proc/net/dev";
                 return metrics;
             }
 
@@ -547,10 +529,8 @@ private:
                 if (line.find(':') != std::string::npos)
                 {
                     std::string interface = line.substr(0, line.find(':'));
-                    interface =
-                        interface.substr(interface.find_first_not_of(" \t"));
-                    interface = interface.substr(
-                        0, interface.find_last_not_of(" \t") + 1);
+                    interface = interface.substr(interface.find_first_not_of(" \t"));
+                    interface = interface.substr(0, interface.find_last_not_of(" \t") + 1);
 
                     // Skip loopback interface
                     if (interface == "lo")
@@ -570,10 +550,9 @@ private:
             metrics.network_bytes_in = total_bytes_in;
             metrics.network_bytes_out = total_bytes_out;
         }
-        catch (const std::exception& e)
+        catch (std::exception const& e)
         {
-            JLOG(j_.error())
-                << "Error collecting network stats: " << e.what();
+            JLOG(j_.error()) << "Error collecting network stats: " << e.what();
         }
 
         // Disk stats collection
@@ -582,8 +561,7 @@ private:
             std::ifstream disk_file("/proc/diskstats");
             if (!disk_file)
             {
-                JLOG(j_.error())
-                    << "Unable to open file: /proc/diskstats";
+                JLOG(j_.error()) << "Unable to open file: /proc/diskstats";
                 return metrics;
             }
             std::string line;
@@ -608,8 +586,7 @@ private:
                 {
                     // Only process physical devices
                     std::string device_name(dev_name);
-                    if (device_name.substr(0, 3) == "dm-" ||
-                        device_name.substr(0, 4) == "loop" ||
+                    if (device_name.substr(0, 3) == "dm-" || device_name.substr(0, 4) == "loop" ||
                         device_name.substr(0, 3) == "ram")
                     {
                         continue;
@@ -631,10 +608,9 @@ private:
             metrics.disk_bytes_read = total_bytes_read;
             metrics.disk_bytes_written = total_bytes_written;
         }
-        catch (const std::exception& e)
+        catch (std::exception const& e)
         {
-            JLOG(j_.error())
-                << "Error collecting disk stats: " << e.what();
+            JLOG(j_.error()) << "Error collecting disk stats: " << e.what();
         }
 #elif defined(__APPLE__)
         // Network stats collection
@@ -646,8 +622,7 @@ private:
                 uint64_t total_bytes_in = 0, total_bytes_out = 0;
                 for (struct ifaddrs* ifa = ifap; ifa; ifa = ifa->ifa_next)
                 {
-                    if (ifa->ifa_addr != NULL &&
-                        ifa->ifa_addr->sa_family == AF_LINK)
+                    if (ifa->ifa_addr != NULL && ifa->ifa_addr->sa_family == AF_LINK)
                     {
                         struct if_data* ifd = (struct if_data*)ifa->ifa_data;
                         if (ifd != NULL)
@@ -667,10 +642,9 @@ private:
                 metrics.network_bytes_out = total_bytes_out;
             }
         }
-        catch (const std::exception& e)
+        catch (std::exception const& e)
         {
-            JLOG(j_.error())
-                << "Error collecting network stats: " << e.what();
+            JLOG(j_.error()) << "Error collecting network stats: " << e.what();
         }
 
         // Disk stats collection
@@ -701,18 +675,17 @@ private:
         header->magic = SERVER_INFO_MAGIC;
         header->version = SERVER_INFO_VERSION;
         header->network_id = app_.config().networkId;
-        header->timestamp =
-            std::chrono::duration_cast<std::chrono::microseconds>(
-                std::chrono::system_clock::now().time_since_epoch())
-                .count();
+        header->timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
+                                std::chrono::system_clock::now().time_since_epoch())
+                                .count();
         header->uptime = UptimeClock::now().time_since_epoch().count();
         header->io_latency_us = app_.getIOLatency().count();
-        header->validation_quorum = 0;  // TODO: fork validator-list accessor
+        header->validation_quorum = app_.getValidators().quorum();
+        header->server_state = static_cast<std::uint32_t>(ops.getOperatingMode());
         header->peer_count = app_.getOverlay().size();
         header->node_size = app_.config().nodeSize;
 
-        auto const [counters, mode, start, initialSync] =
-            ops.getStateAccountingData();
+        auto const [counters, mode, start, initialSync] = ops.getStateAccountingData();
         for (size_t i = 0; i < 5; ++i)
         {
             header->state_transitions[i] = counters[i].transitions;
@@ -729,28 +702,25 @@ private:
         if (ops.getOperatingMode() != OperatingMode::FULL)
             header->warning_flags |= WARNING_NOT_SYNCED;
 
-        // Consensus timing is private on this fork's NetworkOPs; zeroed.
-        header->proposer_count = 0;
-        header->converge_time_ms = 0;
+        header->proposer_count = ops.getPrevProposers();
+        header->converge_time_ms = ops.getPrevRoundTime().count();
 
         auto const fp = ledgerMaster.getFetchPackCacheSize();
         if (fp != 0)
             header->fetch_pack_size = fp;
 
         // Load factor (server only; fee-escalation term omitted on this fork).
-        header->load_factor =
-            static_cast<std::uint64_t>(app_.getFeeTrack().getLoadFactor());
+        header->load_factor = static_cast<std::uint64_t>(app_.getFeeTrack().getLoadFactor());
         header->load_base = app_.getFeeTrack().getLoadBase();
 
-        #if defined(__linux__)
+#if defined(__linux__)
         // Get system info using sysinfo
         struct sysinfo si;
         if (sysinfo(&si) == 0)
         {
             header->system_memory_total = si.totalram * si.mem_unit;
             header->system_memory_free = si.freeram * si.mem_unit;
-            header->system_memory_used =
-                header->system_memory_total - header->system_memory_free;
+            header->system_memory_used = header->system_memory_total - header->system_memory_free;
             header->load_avg_1min = si.loads[0] / (float)(1 << SI_LOAD_SHIFT);
             header->load_avg_5min = si.loads[1] / (float)(1 << SI_LOAD_SHIFT);
             header->load_avg_15min = si.loads[2] / (float)(1 << SI_LOAD_SHIFT);
@@ -767,20 +737,15 @@ private:
         // Get free and used memory
         vm_statistics_data_t vm_stats;
         mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
-        if (host_statistics(
-                mach_host_self(),
-                HOST_VM_INFO,
-                (host_info_t)&vm_stats,
-                &count) == KERN_SUCCESS)
+        if (host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vm_stats, &count) ==
+            KERN_SUCCESS)
         {
             uint64_t page_size;
             length = sizeof(page_size);
             sysctlbyname("hw.pagesize", &page_size, &length, NULL, 0);
 
-            header->system_memory_free =
-                (uint64_t)vm_stats.free_count * page_size;
-            header->system_memory_used =
-                header->system_memory_total - header->system_memory_free;
+            header->system_memory_free = (uint64_t)vm_stats.free_count * page_size;
+            header->system_memory_used = header->system_memory_total - header->system_memory_free;
         }
 
         // Get load averages
@@ -805,8 +770,7 @@ private:
         {
             header->system_disk_total = fs.f_blocks * fs.f_frsize;
             header->system_disk_free = fs.f_bfree * fs.f_frsize;
-            header->system_disk_used =
-                header->system_disk_total - header->system_disk_free;
+            header->system_disk_used = header->system_disk_total - header->system_disk_free;
         }
 #elif defined(__APPLE__)
         struct statfs fs;
@@ -814,8 +778,7 @@ private:
         {
             header->system_disk_total = fs.f_blocks * fs.f_bsize;
             header->system_disk_free = fs.f_bfree * fs.f_bsize;
-            header->system_disk_used =
-                header->system_disk_total - header->system_disk_free;
+            header->system_disk_used = header->system_disk_total - header->system_disk_free;
         }
 #endif
 
@@ -829,8 +792,13 @@ private:
         header->rates.disk_read = rates.disk_read;
         header->rates.disk_write = rates.disk_write;
 
-        // Ledger height via a stable accessor (this fork's Ledger lacks info()).
-        header->ledger_seq = ledgerMaster.getValidLedgerIndex();
+        // Ledger height + hash via stable accessors (this fork's Ledger lacks
+        // info()). The hash lets the collector detect a fork: divergent
+        // ledger_hash across nodes at the same ledger_seq.
+        std::uint32_t const validSeq = ledgerMaster.getValidLedgerIndex();
+        header->ledger_seq = validSeq;
+        uint256 const validHash = ledgerMaster.getHashBySeq(validSeq);
+        std::memcpy(header->ledger_hash, validHash.data(), 32);
         header->reserve_base = app_.config().fees.accountReserve.drops();
         header->reserve_inc = app_.config().fees.ownerReserve.drops();
 
@@ -841,9 +809,7 @@ private:
         memcpy(
             &header->version_string,
             BuildInfo::getVersionString().c_str(),
-            BuildInfo::getVersionString().size() > 32
-                ? 32
-                : BuildInfo::getVersionString().size());
+            BuildInfo::getVersionString().size() > 32 ? 32 : BuildInfo::getVersionString().size());
 
         header->ledger_range_count = 0;
         return buffer;
@@ -856,8 +822,7 @@ private:
         for (auto const& epStr : app_.config().DATAGRAM_MONITOR)
         {
             auto endpoint = parseEndpoint(epStr);
-            endpoints.push_back(
-                std::make_pair(endpoint, createSocket(endpoint)));
+            endpoints.push_back(std::make_pair(endpoint, createSocket(endpoint)));
         }
 
         while (running_)
@@ -871,11 +836,10 @@ private:
                 }
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-            catch (const std::exception& e)
+            catch (std::exception const& e)
             {
                 // Log error but continue monitoring
-                JLOG(j_.error())
-                    << "Server info monitor error: " << e.what();
+                JLOG(j_.error()) << "Server info monitor error: " << e.what();
             }
         }
 
@@ -895,8 +859,7 @@ public:
     {
         if (!running_.exchange(true))
         {
-            monitor_thread_ =
-                std::thread(&DatagramMonitor::monitorThread, this);
+            monitor_thread_ = std::thread(&DatagramMonitor::monitorThread, this);
         }
     }
 
