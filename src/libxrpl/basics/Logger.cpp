@@ -548,14 +548,14 @@ Logger::Logger(std::string_view const channel)
 Logger::~Logger()
 {
     // One reference is held by logger_ and the other by spdlog registry
-    static constexpr size_t LAST_LOGGER_REF_COUNT = 2;
+    static constexpr size_t kLAST_LOGGER_REF_COUNT = 2;
 
     if (logger_ == nullptr)
     {
         return;  // LCOV_EXCL_LINE
     }
 
-    if (logger_.use_count() == LAST_LOGGER_REF_COUNT)
+    if (logger_.use_count() == kLAST_LOGGER_REF_COUNT)
     {
         spdlog::drop(logger_->name());
     }
@@ -578,6 +578,7 @@ Logger::Pump::Pump(
 
 Logger::Pump::~Pump()
 {
+    using namespace std::literals;
     if (enabled_)
     {
         spdlog::source_loc const sourceLocation{
@@ -600,8 +601,8 @@ Logger::Pump::~Pump()
             bool const hasMessage = !messageParams_.empty();
             if (hasContext || hasMessage)
             {
-                static constexpr char valuesOpen[] = ", \"values\": {";
-                wrapped.append(valuesOpen, valuesOpen + sizeof(valuesOpen) - 1);
+                static constexpr auto kVALUES_OPEN = ", \"values\": {"sv;
+                wrapped.append(kVALUES_OPEN);
                 wrapped.append(
                     contextParams_.data(), contextParams_.data() + contextParams_.size());
                 if (hasContext && hasMessage)
@@ -624,8 +625,8 @@ Logger::Pump::~Pump()
                 fmt::memory_buffer buf;
                 buf.push_back('[');
                 buf.append(contextParams_.data(), contextParams_.data() + contextParams_.size());
-                static constexpr char close[] = "] ";
-                buf.append(close, close + 2);
+                static constexpr auto kCLOSE = "] "sv;
+                buf.append(kCLOSE);
                 buf.append(stream_.data(), stream_.data() + stream_.size());
                 logger_->log(
                     sourceLocation,
