@@ -1081,7 +1081,7 @@ struct Credentials_test : public beast::unit_test::Suite
         env(deposit::authCredentials(becky, {{subject, credType}}));
         env.close();
         // env();
-        auto jtx = env.jt(pay(subject, becky, XRP(100)), credentials::ids({credIdx}));
+        auto jtx = env.jt(pay(subject, becky, XRP(100)), credentials::Ids({credIdx}));
         if (!BEAST_EXPECT(jtx.stx))
             return;
         auto const stx = std::make_shared<STTx>(*jtx.stx);
@@ -1108,7 +1108,7 @@ struct Credentials_test : public beast::unit_test::Suite
         // Create an ApplyViewImpl on top of the current closed ledger
         // and corrupt it by erasing the issuer's account SLE
         auto const open = env.current();
-        ApplyViewImpl av(&*open, tapNONE);
+        ApplyViewImpl av(&*open, TapNone);
 
         // Erase the issuer's account to simulate ledger corruption
         auto sleIssuer = av.peek(keylet::account(issuer.id()));
@@ -1122,7 +1122,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
         // Call removeExpired on the corrupted view
         STVector256 credHashes;
-        credHashes.push_back(credKeylet.key);
+        credHashes.pushBack(credKeylet.key);
         beast::Journal const j{beast::Journal::getNullSink()};
 
         auto const dpTer = xrpl::verifyDepositPreauth(*stx, av, subject, becky, {}, j);
