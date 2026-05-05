@@ -188,7 +188,7 @@ protected:
     void
     TearDown() override
     {
-        spdlog::drop_all();
+        spdlog::shutdown();
         if (LogService::initialized())
             LogService::reset();
     }
