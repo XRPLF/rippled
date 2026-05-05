@@ -93,6 +93,11 @@ jobs:
           set -o pipefail
           run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" -quiet -fix -allow-no-checks ${TARGETS} 2>&1 | tee "${OUTPUT_FILE}"
 
+      - name: Print errors
+        if: ${{ steps.run_clang_tidy.outcome != 'success' }}
+        run: |
+          sed '/error\||/!d' "${OUTPUT_FILE}"
+
       - name: Upload clang-tidy output
         if: ${{ github.event.repository.visibility == 'public' && steps.run_clang_tidy.outcome != 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -101,13 +106,24 @@ jobs:
           archive: false
           retention-days: 30
 
+      - name: Check for changes
+        id: files_changed
+        continue-on-error: true
+        run: |
+          git diff --exit-code
+
+      - name: Fix style
+        if: ${{ steps.files_changed.outcome != 'success' }}
+        run: |
+          pre-commit run --all-files || true
+
       - name: Generate git diff
-        if: ${{ steps.run_clang_tidy.outcome != 'success' }}
+        if: ${{ steps.files_changed.outcome != 'success' }}
         run: |
           git diff | tee "${DIFF_FILE}"
 
       - name: Upload clang-tidy diff output
-        if: ${{ github.event.repository.visibility == 'public' && steps.run_clang_tidy.outcome != 'success' }}
+        if: ${{ github.event.repository.visibility == 'public' && steps.files_changed.outcome != 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           path: ${{ env.DIFF_FILE }}
