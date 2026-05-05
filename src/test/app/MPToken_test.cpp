@@ -3117,6 +3117,37 @@ class MPToken_test : public beast::unit_test::Suite
             // Setting RequireAuth (already set) is still allowed, though it has no effect.
             mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetRequireAuth});
         }
+
+        // Cannot set a DomainID and clear RequireAuth in the same transaction.
+        {
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const credIssuer{"credIssuer"};
+            pdomain::Credentials const credentials{
+                {.issuer = credIssuer, .credType = "credential"}};
+
+            Env env{*this, features};
+            env.fund(XRP(1000), credIssuer);
+            env.close();
+
+            env(pdomain::setTx(credIssuer, credentials));
+            env.close();
+            auto const domainId = pdomain::getNewDomain(env.meta());
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTRequireAuth,
+                .mutableFlags = tmfMPTCanMutateRequireAuth,
+            });
+
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTClearRequireAuth,
+                .domainID = domainId,
+                .err = tecNO_PERMISSION,
+            });
+        }
     }
 
     void

@@ -234,7 +234,8 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         return currentMutableFlags & mutableFlag;
     };
 
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
+    auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    if (mutableFlags)
     {
         if (std::ranges::any_of(
                 kMPT_MUTABILITY_FLAGS, [mutableFlags, &isMutableFlag](auto const& f) {
@@ -242,11 +243,28 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
                         ((*mutableFlags & (f.setFlag | f.clearFlag)));
                 }))
             return tecNO_PERMISSION;
+    }
 
-        // Clearing lsfMPTRequireAuth is invalid when the issuance already has
-        // a DomainID set, because a DomainID requires RequireAuth to be active.
-        if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u &&
-            sleMptIssuance->isFieldPresent(sfDomainID))
+    // Enforce invariant: sfDomainID requires lsfMPTRequireAuth.
+    // Check the combined post-apply state, not each field independently.
+    {
+        auto flagsOut = sleMptIssuance->getFieldU32(sfFlags);
+        if (mutableFlags)
+        {
+            if ((*mutableFlags & tmfMPTSetRequireAuth) != 0u)
+            {
+                flagsOut |= lsfMPTRequireAuth;
+            }
+            else if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u)
+            {
+                flagsOut &= ~lsfMPTRequireAuth;
+            }
+        }
+
+        auto const willHaveDomainID =
+            ctx.tx.isFieldPresent(sfDomainID) || sleMptIssuance->isFieldPresent(sfDomainID);
+
+        if (willHaveDomainID && (flagsOut & lsfMPTRequireAuth) == 0u)
             return tecNO_PERMISSION;
     }
 
