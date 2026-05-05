@@ -9,6 +9,7 @@ class LedgerStateFix : public Transactor
 public:
     enum class FixType : std::uint16_t {
         NfTokenPageLink = 1,
+        BookExchangeRate = 2,
     };
 
     static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
@@ -16,6 +17,9 @@ public:
     explicit LedgerStateFix(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);

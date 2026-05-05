@@ -22,4 +22,16 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
     return jv;
 }
 
+// Fix sfExchangeRate on a book directory.  acct pays fee.
+json::Value
+bookExchangeRate(jtx::Account const& acct, uint256 const& bookDir)
+{
+    json::Value jv;
+    jv[sfAccount.jsonName] = acct.human();
+    jv[sfLedgerFixType.jsonName] = static_cast<uint16_t>(LedgerStateFix::FixType::BookExchangeRate);
+    jv[sfBookDirectory.jsonName] = to_string(bookDir);
+    jv[sfTransactionType.jsonName] = jss::LedgerStateFix;
+    return jv;
+}
+
 }  // namespace xrpl::test::jtx::ledgerStateFix

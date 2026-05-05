@@ -7,6 +7,8 @@
 #include <test/jtx/balance.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/domain.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/ledgerStateFix.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/paths.h>
@@ -1540,6 +1542,84 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testBookExchangeRateFix(FeatureBitset features)
+    {
+        testcase("LedgerStateFix BookExchangeRate");
+
+        // Use the pre-fix path to create a hybrid offer with a mismatched
+        // sfExchangeRate, then apply LedgerStateFix to correct it.
+        //
+        // Steps:
+        //   - Create a partially-crossed hybrid offer (pre-fixCleanup3_2_0)
+        //     so the open-book directory has wrong sfExchangeRate.
+        //   - Re-enable fixCleanup3_2_0 and submit a LedgerStateFix to
+        //     repair the open-book directory's sfExchangeRate.
+        //
+        // Verify:
+        //   - Before fix: sfExchangeRate != getQuality(key).
+        //   - After fix: sfExchangeRate == getQuality(key).
+
+        {
+            Env disabledEnv(*this, features - fixCleanup3_2_0);
+            Account const carol{"carol"};
+
+            disabledEnv.fund(XRP(1000), carol);
+            disabledEnv.close();
+
+            disabledEnv(ledgerStateFix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
+        }
+
+        {
+            // Start without fixCleanup3_2_0 to produce the mismatch.
+            Env env(*this, features - fixCleanup3_2_0);
+            auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            // Bob places a hybrid offer.
+            env(offer(bob_, XRP(100), USD(40)), Txflags(tfHybrid), Domain(domainID));
+            env.close();
+
+            // Alice partially crosses Bob.
+            auto const aliceOfferSeq{env.seq(alice_)};
+            env(offer(alice_, USD(100), XRP(300)), Txflags(tfHybrid), Domain(domainID));
+            env.close();
+
+            auto const sle = env.le(keylet::offer(alice_.id(), aliceOfferSeq));
+            BEAST_EXPECT(sle);
+
+            auto const openDirKey =
+                sle->getFieldArray(sfAdditionalBooks)[0].getFieldH256(sfBookDirectory);
+
+            // Confirm mismatch exists.
+            {
+                auto const dirSle = env.le(Keylet(ltDIR_NODE, openDirKey));
+                BEAST_EXPECT(dirSle);
+                BEAST_EXPECT(dirSle->getFieldU64(sfExchangeRate) != getQuality(openDirKey));
+            }
+
+            // Enable fixCleanup3_2_0 and apply the LedgerStateFix.
+            env.enableFeature(fixCleanup3_2_0);
+            env.close();
+
+            auto const fixFee = drops(env.current()->fees().increment);
+            env(ledgerStateFix::bookExchangeRate(carol_, openDirKey), Fee(fixFee));
+            env.close();
+
+            // Confirm sfExchangeRate now matches the key quality.
+            {
+                auto const dirSle = env.le(Keylet(ltDIR_NODE, openDirKey));
+                BEAST_EXPECT(dirSle);
+                BEAST_EXPECT(dirSle->getFieldU64(sfExchangeRate) == getQuality(openDirKey));
+            }
+
+            // Submitting again should fail — nothing to fix.
+            env(ledgerStateFix::bookExchangeRate(carol_, openDirKey),
+                Fee(fixFee),
+                Ter(tecNO_PERMISSION));
+        }
+    }
+
 public:
     void
     run() override
@@ -1565,6 +1645,7 @@ public:
         testHybridMalformedOffer(all - fixSecurity3_1_3);
         testHybridOfferCrossingQuality(all);
         testHybridOfferCrossingQuality(all - fixCleanup3_2_0);
+        testBookExchangeRateFix(all);
     }
 };
 

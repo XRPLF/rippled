@@ -4,7 +4,9 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -16,6 +18,14 @@
 
 namespace xrpl {
 
+bool
+LedgerStateFix::checkExtraFeatures(PreflightContext const& ctx)
+{
+    if (static_cast<FixType>(ctx.tx[sfLedgerFixType]) == FixType::BookExchangeRate)
+        return ctx.rules.enabled(fixCleanup3_2_0);
+    return true;
+}
+
 NotTEC
 LedgerStateFix::preflight(PreflightContext const& ctx)
 {
@@ -23,6 +33,11 @@ LedgerStateFix::preflight(PreflightContext const& ctx)
     {
         case FixType::NfTokenPageLink:
             if (!ctx.tx.isFieldPresent(sfOwner))
+                return temINVALID;
+            break;
+
+        case FixType::BookExchangeRate:
+            if (!ctx.tx.isFieldPresent(sfBookDirectory))
                 return temINVALID;
             break;
 
@@ -53,6 +68,23 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
+    if (static_cast<FixType>(ctx.tx[sfLedgerFixType]) == FixType::BookExchangeRate)
+    {
+        auto const dirKey = ctx.tx.getFieldH256(sfBookDirectory);
+        auto const sle = ctx.view.read(Keylet(ltDIR_NODE, dirKey));
+        if (!sle)
+            return tecOBJECT_NOT_FOUND;
+
+        // Must be the first page of a book directory (has sfExchangeRate).
+        if (!sle->isFieldPresent(sfExchangeRate))
+            return tecNO_PERMISSION;
+
+        if (getQuality(sle->key()) == sle->getFieldU64(sfExchangeRate))
+            return tecNO_PERMISSION;
+
+        return tesSUCCESS;
+    }
+
     // preflight is supposed to verify that only valid FixTypes get to preclaim.
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
@@ -65,6 +97,18 @@ LedgerStateFix::doApply()
         if (!nft::repairNFTokenDirectoryLinks(view(), ctx_.tx[sfOwner]))
             return tecFAILED_PROCESSING;
 
+        return tesSUCCESS;
+    }
+
+    if (static_cast<FixType>(ctx_.tx[sfLedgerFixType]) == FixType::BookExchangeRate)
+    {
+        auto const dirKey = ctx_.tx.getFieldH256(sfBookDirectory);
+        auto sle = view().peek(Keylet(ltDIR_NODE, dirKey));
+        if (!sle)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        sle->setFieldU64(sfExchangeRate, getQuality(sle->key()));
+        view().update(sle);
         return tesSUCCESS;
     }
 
