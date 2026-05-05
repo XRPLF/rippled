@@ -530,15 +530,15 @@ stored inside the build directory, as either of:
 ## Sanitizers
 
 To build dependencies and xrpld with sanitizer instrumentation, set the
-`SANITIZERS` environment variable (only once before running conan and cmake) and use the `sanitizers` profile in conan:
+`SANITIZERS` environment variable when running `conan install` and use the `sanitizers` profile:
 
 ```bash
 export SANITIZERS=address,undefinedbehavior
 
 conan install .. --output-folder . --profile:all sanitizers --build missing --settings build_type=Debug
-
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Debug -Dxrpld=ON -Dtests=ON ..
 ```
+
+You can then build and test as usual, with the generated `xrpld` binary containing the sanitizer instrumentation. When you run it, it will report any sanitizer errors it detects in the console output.
 
 See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 
