@@ -33,7 +33,8 @@ protected:
     std::ostringstream output_;
 
     // Regex fragment matching the UTC timestamp produced by spdlog
-    static constexpr char kTS_RE[] = R"(\d{4}-[A-Z][a-z]{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} UTC)";
+    static constexpr std::string_view kTS_RE =
+        R"(\d{4}-[A-Z][a-z]{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} UTC)";
 
     void
     initLogging(bool jsonMode, Severity severity = Severity::TRC, bool isAsync = false)
@@ -76,7 +77,8 @@ protected:
     expectText(std::string_view channel, std::string_view sev, std::string_view message)
     {
         auto const& line = output_.str();
-        auto const re = fmt::format("{} {}:{} {}\n", kTS_RE, channel, sev, escapeRegex(message));
+        auto const re =
+            fmt::format("{} {}:{} {}\r?\n?", kTS_RE, channel, sev, escapeRegex(message));
         EXPECT_TRUE(std::regex_match(line, std::regex(re))) << "got: " << line;
     }
 
@@ -89,7 +91,7 @@ protected:
         auto const& line = output_.str();
         auto const re = fmt::format(
             R"(\{{"timestamp":"{}","channel":"{}","severity":"{}")"
-            R"(, "message": {} \}}\n)",
+            R"(, "message": {} \}}\r?\n?)",
             kTS_RE,
             channel,
             sev,
@@ -338,7 +340,7 @@ TEST_F(LoggerFixture, severity_codes_in_default_format)
 
     // Each line has the full default format; build a regex for all six.
     auto const line = [&](std::string_view sev, std::string_view msg) {
-        return fmt::format("{} Test:{} {}\n", kTS_RE, sev, msg);
+        return fmt::format("{} Test:{} {}\r?\n?", kTS_RE, sev, msg);
     };
     std::string re;
     re += line("TRC", "t");
@@ -508,11 +510,12 @@ TEST_F(LoggerFixture, create_file_sink_returns_correct_type_and_path)
 
 TEST_F(LoggerFixture, init_fails_for_invalid_directory)
 {
-    // Use a path where directory creation should fail —
-    // a deeply nested path under a non-existent root that can't be created.
+    // __FILE__ is a regular file on every platform, so creating a
+    // subdirectory under it always fails.
+    auto const badDir = std::filesystem::path(__FILE__) / "impossible_log_dir";
     LoggingConfiguration const config{
         .enableConsole = false,
-        .directory = std::string("/dev/null/impossible_log_dir"),
+        .directory = badDir,
         .isAsync = false,
         .defaultSeverity = Severity::TRC,
         .jsonMode = false,
