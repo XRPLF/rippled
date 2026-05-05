@@ -12,7 +12,7 @@ namespace xrpl {
  */
 template <class T>
 void
-SetUnion(boost::container::flat_set<T>& dst, boost::container::flat_set<T> const& src)
+setUnion(boost::container::flat_set<T>& dst, boost::container::flat_set<T> const& src)
 {
     if (src.empty())
         return;

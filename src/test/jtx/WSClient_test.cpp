@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-class WSClient_test : public beast::unit_test::suite
+class WSClient_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -19,8 +19,8 @@ public:
         Env env(*this);
         auto wsc = makeWSClient(env.app().config());
         {
-            Json::Value jv;
-            jv["streams"] = Json::arrayValue;
+            json::Value jv;
+            jv["streams"] = json::ArrayValue;
             jv["streams"].append("ledger");
         }
         env.fund(XRP(10000), "alice");

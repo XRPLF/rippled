@@ -8,10 +8,10 @@ class LedgerStateFix : public Transactor
 {
 public:
     enum class FixType : std::uint16_t {
-        nfTokenPageLink = 1,
+        NfTokenPageLink = 1,
     };
 
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit LedgerStateFix(ApplyContext& ctx) : Transactor(ctx)
     {

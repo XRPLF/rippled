@@ -17,20 +17,20 @@
 
 namespace xrpl::test {
 
-struct BookDirs_test : public beast::unit_test::suite
+struct BookDirs_test : public beast::unit_test::Suite
 {
     void
-    test_bookdir(FeatureBitset features)
+    testBookdir(FeatureBitset features)
     {
         using namespace jtx;
         Env env(*this, features);
         auto gw = Account("gw");
-        auto USD = gw["USD"];
+        auto usd = gw["USD"];
         env.fund(XRP(1000000), "alice", "bob", "gw");
         env.close();
 
         {
-            Book const book(xrpIssue(), USD, std::nullopt);
+            Book const book(xrpIssue(), usd, std::nullopt);
             {
                 auto d = BookDirs(*env.current(), book);
                 BEAST_EXPECT(std::begin(d) == std::end(d));
@@ -58,25 +58,25 @@ struct BookDirs_test : public beast::unit_test::suite
         {
             env.trust(Account("bob")["CNY"](10), "alice");
             env(pay("bob", "alice", Account("bob")["CNY"](10)));
-            env(offer("alice", USD(50), Account("bob")["CNY"](10)));
-            auto d = BookDirs(*env.current(), Book(USD, Account("bob")["CNY"], std::nullopt));
+            env(offer("alice", usd(50), Account("bob")["CNY"](10)));
+            auto d = BookDirs(*env.current(), Book(usd, Account("bob")["CNY"], std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
         {
-            auto AUD = gw["AUD"];
+            auto aud = gw["AUD"];
             for (auto i = 1, j = 3; i <= 3; ++i, --j)
             {
                 for (auto k = 0; k < 80; ++k)
-                    env(offer("alice", AUD(i), XRP(j)));
+                    env(offer("alice", aud(i), XRP(j)));
             }
 
-            auto d = BookDirs(*env.current(), Book(AUD, xrpIssue(), std::nullopt));
+            auto d = BookDirs(*env.current(), Book(aud, xrpIssue(), std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 240);
             auto i = 1, j = 3, k = 0;
             for (auto const& e : d)
             {
-                BEAST_EXPECT(e->getFieldAmount(sfTakerPays) == AUD(i));
+                BEAST_EXPECT(e->getFieldAmount(sfTakerPays) == aud(i));
                 BEAST_EXPECT(e->getFieldAmount(sfTakerGets) == XRP(j));
                 if (++k % 80 == 0)
                 {
@@ -91,9 +91,9 @@ struct BookDirs_test : public beast::unit_test::suite
     run() override
     {
         using namespace jtx;
-        auto const sa = testable_amendments();
-        test_bookdir(sa - featurePermissionedDEX);
-        test_bookdir(sa);
+        auto const sa = testableAmendments();
+        testBookdir(sa - featurePermissionedDEX);
+        testBookdir(sa);
     }
 };
 

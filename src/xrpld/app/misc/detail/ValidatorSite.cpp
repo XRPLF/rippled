@@ -44,11 +44,11 @@
 
 namespace xrpl {
 
-auto constexpr default_refresh_interval = std::chrono::minutes{5};
-auto constexpr error_retry_interval = std::chrono::seconds{30};
-unsigned short constexpr max_redirects = 3;
+auto constexpr kDEFAULT_REFRESH_INTERVAL = std::chrono::minutes{5};
+auto constexpr kERROR_RETRY_INTERVAL = std::chrono::seconds{30};
+unsigned short constexpr kMAX_REDIRECTS = 3;
 
-ValidatorSite::Site::Resource::Resource(std::string uri_) : uri{std::move(uri_)}
+ValidatorSite::Site::Resource::Resource(std::string inUri) : uri{std::move(inUri)}
 {
     if (!parseUrl(pUrl, uri))
         throw std::runtime_error("URI '" + uri + "' cannot be parsed");
@@ -92,7 +92,7 @@ ValidatorSite::Site::Resource::Resource(std::string uri_) : uri{std::move(uri_)}
 ValidatorSite::Site::Site(std::string uri)
     : loadedResource{std::make_shared<Resource>(std::move(uri))}
     , startingResource{loadedResource}
-    , refreshInterval{default_refresh_interval}
+    , refreshInterval{kDEFAULT_REFRESH_INTERVAL}
     , nextRefresh{clock_type::now()}
 
 {
@@ -130,10 +130,10 @@ ValidatorSite::~ValidatorSite()
 }
 
 bool
-ValidatorSite::missingSite(std::scoped_lock<std::mutex> const& lock_sites)
+ValidatorSite::missingSite(std::scoped_lock<std::mutex> const& lockSites)
 {
     auto const sites = app_.getValidators().loadLists();
-    return sites.empty() || load(sites, lock_sites);
+    return sites.empty() || load(sites, lockSites);
 }
 
 bool
@@ -149,12 +149,12 @@ ValidatorSite::load(std::vector<std::string> const& siteURIs)
 bool
 ValidatorSite::load(
     std::vector<std::string> const& siteURIs,
-    std::scoped_lock<std::mutex> const& lock_sites)
+    std::scoped_lock<std::mutex> const& lockSites)
 {
     // If no sites are provided, act as if a site failed to load.
     if (siteURIs.empty())
     {
-        return missingSite(lock_sites);
+        return missingSite(lockSites);
     }
 
     for (auto const& uri : siteURIs)
@@ -219,8 +219,8 @@ ValidatorSite::stop()
 
 void
 ValidatorSite::setTimer(
-    std::scoped_lock<std::mutex> const& site_lock,
-    std::scoped_lock<std::mutex> const& state_lock)
+    std::scoped_lock<std::mutex> const& siteLock,
+    std::scoped_lock<std::mutex> const& stateLock)
 {
     auto next = std::ranges::min_element(
         sites_, [](Site const& a, Site const& b) { return a.nextRefresh < b.nextRefresh; });
@@ -240,13 +240,13 @@ void
 ValidatorSite::makeRequest(
     std::shared_ptr<Site::Resource> resource,
     std::size_t siteIdx,
-    std::scoped_lock<std::mutex> const& sites_lock)
+    std::scoped_lock<std::mutex> const& sitesLock)
 {
     fetching_ = true;
     sites_[siteIdx].activeResource = resource;
     std::shared_ptr<detail::Work> sp;
     auto timeoutCancel = [this]() {
-        std::scoped_lock const lock_state{state_mutex_};
+        std::scoped_lock const lockState{state_mutex_};
         // docs indicate cancel_one() can throw, but this
         // should be reconsidered if it changes to noexcept
         try
@@ -312,7 +312,7 @@ ValidatorSite::makeRequest(
     sp->run();
     // start a timer for the request, which shouldn't take more
     // than requestTimeout_ to complete
-    std::scoped_lock const lock_state{state_mutex_};
+    std::scoped_lock const lockState{state_mutex_};
     timer_.expires_after(requestTimeout_);
     timer_.async_wait([this, siteIdx](boost::system::error_code const& ec) {
         this->onRequestTimeout(siteIdx, ec);
@@ -326,7 +326,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
         return;
 
     {
-        std::scoped_lock const lock_site{sites_mutex_};
+        std::scoped_lock const lockSite{sites_mutex_};
         // In some circumstances, both this function and the response
         // handler (onSiteFetch or onTextFetch) can get queued and
         // processed. In all observed cases, the response handler
@@ -343,7 +343,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
                                 "already been processed";
     }
 
-    std::scoped_lock const lock_state{state_mutex_};
+    std::scoped_lock const lockState{state_mutex_};
     if (auto sp = work_.lock())
         sp->cancel();
 }
@@ -383,11 +383,11 @@ void
 ValidatorSite::parseJsonResponse(
     std::string const& res,
     std::size_t siteIdx,
-    std::scoped_lock<std::mutex> const& sites_lock)
+    std::scoped_lock<std::mutex> const& sitesLock)
 {
-    Json::Value const body = [&res, siteIdx, this]() {
-        Json::Reader r;
-        Json::Value body;
+    json::Value const body = [&res, siteIdx, this]() {
+        json::Reader r;
+        json::Value body;
         if (!r.parse(res.data(), body))
         {
             JLOG(j_.warn()) << "Unable to parse JSON response from  "
@@ -447,36 +447,36 @@ ValidatorSite::parseJsonResponse(
     {
         switch (disp)
         {
-            case ListDisposition::accepted:
+            case ListDisposition::Accepted:
                 JLOG(j_.debug()) << "Applied " << count << " new validator list(s) from " << uri;
                 break;
-            case ListDisposition::expired:
+            case ListDisposition::Expired:
                 JLOG(j_.debug()) << "Applied " << count << " expired validator list(s) from "
                                  << uri;
                 break;
-            case ListDisposition::same_sequence:
+            case ListDisposition::SameSequence:
                 JLOG(j_.debug()) << "Ignored " << count
                                  << " validator list(s) with current sequence from " << uri;
                 break;
-            case ListDisposition::pending:
+            case ListDisposition::Pending:
                 JLOG(j_.debug()) << "Processed " << count << " future validator list(s) from "
                                  << uri;
                 break;
-            case ListDisposition::known_sequence:
+            case ListDisposition::KnownSequence:
                 JLOG(j_.debug()) << "Ignored " << count
                                  << " validator list(s) with future known sequence from " << uri;
                 break;
-            case ListDisposition::stale:
+            case ListDisposition::Stale:
                 JLOG(j_.warn()) << "Ignored " << count << "stale validator list(s) from " << uri;
                 break;
-            case ListDisposition::untrusted:
+            case ListDisposition::Untrusted:
                 JLOG(j_.warn()) << "Ignored " << count << " untrusted validator list(s) from "
                                 << uri;
                 break;
-            case ListDisposition::invalid:
+            case ListDisposition::Invalid:
                 JLOG(j_.warn()) << "Ignored " << count << " invalid validator list(s) from " << uri;
                 break;
-            case ListDisposition::unsupported_version:
+            case ListDisposition::UnsupportedVersion:
                 JLOG(j_.warn()) << "Ignored " << count
                                 << " unsupported version validator list(s) from " << uri;
                 break;
@@ -501,7 +501,7 @@ std::shared_ptr<ValidatorSite::Site::Resource>
 ValidatorSite::processRedirect(
     detail::response_type const& res,
     std::size_t siteIdx,
-    std::scoped_lock<std::mutex> const& sites_lock)
+    std::scoped_lock<std::mutex> const& sitesLock)
 {
     using namespace boost::beast::http;
     std::shared_ptr<Site::Resource> newLocation;
@@ -512,7 +512,7 @@ ValidatorSite::processRedirect(
         throw std::runtime_error{"missing location"};
     }
 
-    if (sites_[siteIdx].redirCount == max_redirects)
+    if (sites_[siteIdx].redirCount == kMAX_REDIRECTS)
     {
         JLOG(j_.warn()) << "Exceeded max redirects for validator list at "
                         << sites_[siteIdx].loadedResource->uri;
@@ -545,7 +545,7 @@ ValidatorSite::onSiteFetch(
     detail::response_type const& res,
     std::size_t siteIdx)
 {
-    std::scoped_lock lock_sites{sites_mutex_};
+    std::scoped_lock lockSites{sites_mutex_};
     {
         if (endpoint != endpoint_type{})
             sites_[siteIdx].lastRequestEndpoint = endpoint;
@@ -555,14 +555,14 @@ ValidatorSite::onSiteFetch(
             sites_[siteIdx].lastRefreshStatus.emplace(
                 Site::Status{
                     .refreshed = clock_type::now(),
-                    .disposition = ListDisposition::invalid,
+                    .disposition = ListDisposition::Invalid,
                     .message = errMsg});
             if (retry)
-                sites_[siteIdx].nextRefresh = clock_type::now() + error_retry_interval;
+                sites_[siteIdx].nextRefresh = clock_type::now() + kERROR_RETRY_INTERVAL;
 
             // See if there's a copy saved locally from last time we
             // saw the list.
-            missingSite(lock_sites);
+            missingSite(lockSites);
         };
         if (ec)
         {
@@ -579,13 +579,13 @@ ValidatorSite::onSiteFetch(
                 {
                     case status::ok:
                         sites_[siteIdx].lastRequestSuccessful = true;
-                        parseJsonResponse(res.body(), siteIdx, lock_sites);
+                        parseJsonResponse(res.body(), siteIdx, lockSites);
                         break;
                     case status::moved_permanently:
                     case status::permanent_redirect:
                     case status::found:
                     case status::temporary_redirect: {
-                        auto newLocation = processRedirect(res, siteIdx, lock_sites);
+                        auto newLocation = processRedirect(res, siteIdx, lockSites);
                         XRPL_ASSERT(
                             newLocation,
                             "xrpl::ValidatorSite::onSiteFetch : non-null "
@@ -596,7 +596,7 @@ ValidatorSite::onSiteFetch(
                         {
                             sites_[siteIdx].startingResource = newLocation;
                         }
-                        makeRequest(newLocation, siteIdx, lock_sites);
+                        makeRequest(newLocation, siteIdx, lockSites);
                         return;  // we are still fetching, so skip
                                  // state update/notify below
                     }
@@ -617,10 +617,10 @@ ValidatorSite::onSiteFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::scoped_lock const lock_state{state_mutex_};
+    std::scoped_lock const lockState{state_mutex_};
     fetching_ = false;
     if (!stopping_)
-        setTimer(lock_sites, lock_state);
+        setTimer(lockSites, lockState);
     cv_.notify_all();
 }
 
@@ -630,7 +630,7 @@ ValidatorSite::onTextFetch(
     std::string const& res,
     std::size_t siteIdx)
 {
-    std::scoped_lock const lock_sites{sites_mutex_};
+    std::scoped_lock const lockSites{sites_mutex_};
     {
         try
         {
@@ -643,7 +643,7 @@ ValidatorSite::onTextFetch(
 
             sites_[siteIdx].lastRequestSuccessful = true;
 
-            parseJsonResponse(res, siteIdx, lock_sites);
+            parseJsonResponse(res, siteIdx, lockSites);
         }
         catch (std::exception const& ex)
         {
@@ -651,32 +651,32 @@ ValidatorSite::onTextFetch(
             sites_[siteIdx].lastRefreshStatus.emplace(
                 Site::Status{
                     .refreshed = clock_type::now(),
-                    .disposition = ListDisposition::invalid,
+                    .disposition = ListDisposition::Invalid,
                     .message = ex.what()});
         }
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::scoped_lock const lock_state{state_mutex_};
+    std::scoped_lock const lockState{state_mutex_};
     fetching_ = false;
     if (!stopping_)
-        setTimer(lock_sites, lock_state);
+        setTimer(lockSites, lockState);
     cv_.notify_all();
 }
 
-Json::Value
+json::Value
 ValidatorSite::getJson() const
 {
     using namespace std::chrono;
-    using Int = Json::Value::Int;
+    using Int = json::Value::Int;
 
-    Json::Value jrr(Json::objectValue);
-    Json::Value& jSites = (jrr[jss::validator_sites] = Json::arrayValue);
+    json::Value jrr(json::ObjectValue);
+    json::Value& jSites = (jrr[jss::validator_sites] = json::ArrayValue);
     {
         std::scoped_lock const lock{sites_mutex_};
         for (Site const& site : sites_)
         {
-            Json::Value& v = jSites.append(Json::objectValue);
+            json::Value& v = jSites.append(json::ObjectValue);
             std::stringstream uri;
             uri << site.loadedResource->uri;
             if (site.loadedResource != site.startingResource)

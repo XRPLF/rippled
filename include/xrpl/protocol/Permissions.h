@@ -33,7 +33,7 @@ enum GranularPermissionType : std::uint32_t {
 // Injected bare enumerators (xrpl::delegable / xrpl::notDelegable) are required by preprocessor
 // tricks in tests and macro-generated code; enum class would break that.
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum Delegation { delegable, notDelegable };
+enum Delegation { Delegable, NotDelegable };
 
 class Permission
 {

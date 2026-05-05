@@ -19,9 +19,9 @@ class OfferCancelBuilder;
  * @brief Transaction: OfferCancel
  *
  * Type: ttOFFER_CANCEL (8)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use OfferCancelBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfOfferSequence (soeREQUIRED)
+     * @brief Get sfOfferSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -63,7 +63,7 @@ public:
  * @brief Builder for OfferCancel transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class OfferCancelBuilder : public TransactionBuilderBase<OfferCancelBuilder>
@@ -102,7 +102,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfOfferSequence (soeREQUIRED)
+     * @brief Set sfOfferSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OfferCancelBuilder&
