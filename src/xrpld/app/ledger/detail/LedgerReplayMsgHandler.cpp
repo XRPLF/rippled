@@ -160,7 +160,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
         return false;
     }
 
-    if (auto item = safe_downcast<SHAMapLeafNode*>(node.get())->peekItem())
+    if (auto item = safeDowncast<SHAMapLeafNode*>(node.get())->peekItem())
     {
         replayer_.gotSkipList(info, item);
         return true;
@@ -205,7 +205,7 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     });
 
     JLOG(journal_.debug()) << "getReplayDelta for ledger " << ledgerHash << " txMap hash "
-                           << txMap.getHash().as_uint256();
+                           << txMap.getHash().asUint256();
     return reply;
 }
 
@@ -258,7 +258,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             orderedTxns.emplace(meta[sfTransactionIndex], std::move(tx));
 
             if (!txMap.addGiveItem(
-                    SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(tid, shaMapItemData.slice())))
+                    SHAMapNodeType::TnTransactionMd, makeShamapitem(tid, shaMapItemData.slice())))
             {
                 JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
                 return false;
@@ -271,7 +271,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
         return false;
     }
 
-    if (txMap.getHash().as_uint256() != info.txHash)
+    if (txMap.getHash().asUint256() != info.txHash)
     {
         JLOG(journal_.debug()) << "Bad message: Transactions verify failed";
         return false;

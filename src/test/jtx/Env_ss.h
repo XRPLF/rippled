@@ -8,7 +8,7 @@ namespace xrpl::test::jtx {
     Transactions submitted in sign-and-submit mode
     by default.
 */
-class Env_ss
+class EnvSs
 {
 private:
     Env& env_;
@@ -27,9 +27,9 @@ private:
         }
 
         void
-        operator()(Json::Value const& params = Json::nullValue)
+        operator()(json::Value const& params = json::NullValue)
         {
-            env_.sign_and_submit(jt_, params, loc_);
+            env_.signAndSubmit(jt_, params, loc_);
         }
 
     private:
@@ -39,17 +39,17 @@ private:
     };
 
 public:
-    Env_ss(Env_ss const&) = delete;
-    Env_ss&
-    operator=(Env_ss const&) = delete;
+    EnvSs(EnvSs const&) = delete;
+    EnvSs&
+    operator=(EnvSs const&) = delete;
 
-    Env_ss(Env& env) : env_(env)
+    EnvSs(Env& env) : env_(env)
     {
     }
 
     template <class... FN>
     SignSubmitRunner
-    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    operator()(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         auto jtx = env_.jt(std::move(jv.value), fN...);
         return SignSubmitRunner(env_, std::move(jtx), jv.loc);

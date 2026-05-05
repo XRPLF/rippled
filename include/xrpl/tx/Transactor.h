@@ -23,31 +23,31 @@ public:
     beast::Journal const j;
 
     PreflightContext(
-        ServiceRegistry& registry_,
-        STTx const& tx_,
-        uint256 parentBatchId_,
-        Rules rules_,
-        ApplyFlags flags_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_)
-        , tx(tx_)
-        , rules(std::move(rules_))
-        , flags(flags_)
-        , parentBatchId(parentBatchId_)
-        , j(j_)
+        ServiceRegistry& registry,
+        STTx const& tx,
+        uint256 parentBatchId,
+        Rules rules,
+        ApplyFlags flags,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : registry(registry)
+        , tx(tx)
+        , rules(std::move(rules))
+        , flags(flags)
+        , parentBatchId(parentBatchId)
+        , j(j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
+        XRPL_ASSERT((flags & TapBatch) == TapBatch, "Batch apply flag should be set");
     }
 
     PreflightContext(
-        ServiceRegistry& registry_,
-        STTx const& tx_,
-        Rules rules_,
-        ApplyFlags flags_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_), tx(tx_), rules(std::move(rules_)), flags(flags_), j(j_)
+        ServiceRegistry& registry,
+        STTx const& tx,
+        Rules rules,
+        ApplyFlags flags,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : registry(registry), tx(tx), rules(std::move(rules)), flags(flags), j(j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
     }
 
     PreflightContext&
@@ -67,36 +67,36 @@ public:
     beast::Journal const j;
 
     PreclaimContext(
-        ServiceRegistry& registry_,
-        ReadView const& view_,
-        TER preflightResult_,
-        STTx const& tx_,
-        ApplyFlags flags_,
-        std::optional<uint256> parentBatchId_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_)
-        , view(view_)
-        , preflightResult(preflightResult_)
-        , flags(flags_)
-        , tx(tx_)
-        , parentBatchId(parentBatchId_)
-        , j(j_)
+        ServiceRegistry& registry,
+        ReadView const& view,
+        TER preflightResult,
+        STTx const& tx,
+        ApplyFlags flags,
+        std::optional<uint256> parentBatchId,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : registry(registry)
+        , view(view)
+        , preflightResult(preflightResult)
+        , flags(flags)
+        , tx(tx)
+        , parentBatchId(parentBatchId)
+        , j(j)
     {
         XRPL_ASSERT(
-            parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
+            parentBatchId.has_value() == ((flags & TapBatch) == TapBatch),
             "Parent Batch ID should be set if batch apply flag is set");
     }
 
     PreclaimContext(
-        ServiceRegistry& registry_,
-        ReadView const& view_,
-        TER preflightResult_,
-        STTx const& tx_,
-        ApplyFlags flags_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : PreclaimContext(registry_, view_, preflightResult_, tx_, flags_, std::nullopt, j_)
+        ServiceRegistry& registry,
+        ReadView const& view,
+        TER preflightResult,
+        STTx const& tx,
+        ApplyFlags flags,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : PreclaimContext(registry, view, preflightResult, tx, flags, std::nullopt, j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
     }
 
     PreclaimContext&

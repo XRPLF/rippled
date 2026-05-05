@@ -16,7 +16,7 @@ struct MPTAuthorizeArgs
 class MPTokenAuthorize : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit MPTokenAuthorize(ApplyContext& ctx) : Transactor(ctx)
     {

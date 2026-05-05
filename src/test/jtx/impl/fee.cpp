@@ -10,11 +10,11 @@
 namespace xrpl::test::jtx {
 
 void
-fee::operator()(Env& env, JTx& jt) const
+Fee::operator()(Env& env, JTx& jt) const
 {
     if (!manual_)
         return;
-    jt.fill_fee = false;
+    jt.fillFee = false;
     assert(!increment_ || !amount_);
     if (increment_)
     {
@@ -22,7 +22,7 @@ fee::operator()(Env& env, JTx& jt) const
     }
     else if (amount_)
     {
-        jt[sfFee] = amount_->getJson(JsonOptions::none);
+        jt[sfFee] = amount_->getJson(JsonOptions::KNone);
     }
 }
 

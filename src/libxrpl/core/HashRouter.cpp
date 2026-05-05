@@ -71,7 +71,7 @@ HashRouter::shouldProcess(
     uint256 const& key,
     PeerShortID peer,
     HashRouterFlags& flags,
-    std::chrono::seconds tx_interval)
+    std::chrono::seconds txInterval)
 {
     std::scoped_lock const lock(mutex_);
 
@@ -79,7 +79,7 @@ HashRouter::shouldProcess(
     auto& s = result.first;
     s.addPeer(peer);
     flags = s.getFlags();
-    return s.shouldProcess(suppressionMap_.clock().now(), tx_interval);
+    return s.shouldProcess(suppressionMap_.clock().now(), txInterval);
 }
 
 HashRouterFlags
