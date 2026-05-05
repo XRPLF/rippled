@@ -32,7 +32,7 @@ We will further set additional CMake arguments as follows:
 """
 
 
-def build_config_name(os_entry: dict, platform: str, build_type: str) -> str:
+def build_config_name(os_entry: dict[str, str], platform: str, build_type: str) -> str:
     parts = [os_entry["distro_name"]]
     for key in ("distro_version", "compiler_name", "compiler_version"):
         if value := os_entry[key]:
