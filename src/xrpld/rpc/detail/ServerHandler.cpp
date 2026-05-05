@@ -114,7 +114,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
         return false;
     std::string strUserPass64 = it->second.substr(6);
     boost::trim(strUserPass64);
-    std::string const strUserPass = base64_decode(strUserPass64);
+    std::string const strUserPass = base64Decode(strUserPass64);
     std::string::size_type const nColon = strUserPass.find(':');
     if (nColon == std::string::npos)
         return false;
@@ -126,34 +126,34 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
 ServerHandler::ServerHandler(
     ServerHandlerCreator const&,
     Application& app,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
     CollectorManager& cm)
     : app_(app)
-    , m_resourceManager(resourceManager)
-    , m_journal(app_.getJournal("Server"))
-    , m_networkOPs(networkOPs)
-    , m_server(make_Server(*this, io_context, app_.getJournal("Server")))
-    , m_jobQueue(jobQueue)
+    , resourceManager_(resourceManager)
+    , journal_(app_.getJournal("Server"))
+    , networkOPs_(networkOPs)
+    , server_(makeServer(*this, ioContext, app_.getJournal("Server")))
+    , jobQueue_(jobQueue)
 {
     auto const& group(cm.group("rpc"));
-    rpc_requests_ = group->make_counter("requests");
-    rpc_size_ = group->make_event("size");
-    rpc_time_ = group->make_event("time");
+    rpc_requests_ = group->makeCounter("requests");
+    rpc_size_ = group->makeEvent("size");
+    rpc_time_ = group->makeEvent("time");
 }
 
 ServerHandler::~ServerHandler()
 {
-    m_server = nullptr;
+    server_ = nullptr;
 }
 
 void
 ServerHandler::setup(Setup const& setup, beast::Journal journal)
 {
     setup_ = setup;
-    endpoints_ = m_server->ports(setup.ports);
+    endpoints_ = server_->ports(setup.ports);
 
     // fix auto ports
     for (auto& port : setup_.ports)
@@ -179,7 +179,7 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
 void
 ServerHandler::stop()
 {
-    m_server->close();
+    server_->close();
     {
         std::unique_lock lock(mutex_);
         condition_.wait(lock, [this] { return stopped_; });
@@ -200,7 +200,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
 
     if ((port.limit != 0) && c >= port.limit)
     {
-        JLOG(m_journal.trace()) << port.name << " is full; dropping " << endpoint;
+        JLOG(journal_.trace()) << port.name << " is full; dropping " << endpoint;
         return false;
     }
 
@@ -212,16 +212,16 @@ ServerHandler::onHandoff(
     Session& session,
     std::unique_ptr<stream_type>&& bundle,
     http_request_type&& request,
-    boost::asio::ip::tcp::endpoint const& remote_address)
+    boost::asio::ip::tcp::endpoint const& remoteAddress)
 {
     using namespace boost::beast;
     auto const& p{session.port().protocol};
-    bool const is_ws{
+    bool const isWs{
         p.count("ws") > 0 || p.count("ws2") > 0 || p.count("wss") > 0 || p.count("wss2") > 0};
 
     if (websocket::is_upgrade(request))
     {
-        if (!is_ws)
+        if (!isWs)
             return statusRequestResponse(request, http::status::unauthorized);
 
         std::shared_ptr<WSSession> ws;
@@ -231,19 +231,18 @@ ServerHandler::onHandoff(
         }
         catch (std::exception const& e)
         {
-            JLOG(m_journal.error()) << "Exception upgrading websocket: " << e.what() << "\n";
+            JLOG(journal_.error()) << "Exception upgrading websocket: " << e.what() << "\n";
             return statusRequestResponse(request, http::status::internal_server_error);
         }
 
-        auto is{std::make_shared<WSInfoSub>(m_networkOPs, ws)};
-        auto const beast_remote_address = beast::IPAddressConversion::from_asio(remote_address);
+        auto is{std::make_shared<WSInfoSub>(networkOPs_, ws)};
+        auto const beastRemoteAddress = beast::IPAddressConversion::fromAsio(remoteAddress);
         is->getConsumer() = requestInboundEndpoint(
-            m_resourceManager,
-            beast_remote_address,
-            requestRole(
-                Role::GUEST, session.port(), Json::Value(), beast_remote_address, is->user()),
+            resourceManager_,
+            beastRemoteAddress,
+            requestRole(Role::GUEST, session.port(), json::Value(), beastRemoteAddress, is->user()),
             is->user(),
-            is->forwarded_for());
+            is->forwardedFor());
         ws->appDefined = std::move(is);
         ws->run();
 
@@ -253,23 +252,23 @@ ServerHandler::onHandoff(
     }
 
     if (bundle && p.count("peer") > 0)
-        return app_.getOverlay().onHandoff(std::move(bundle), std::move(request), remote_address);
+        return app_.getOverlay().onHandoff(std::move(bundle), std::move(request), remoteAddress);
 
-    if (is_ws && isStatusRequest(request))
+    if (isWs && isStatusRequest(request))
         return statusResponse(request);
 
     // Otherwise pass to legacy onRequest or websocket
     return {};
 }
 
-static inline Json::Output
+static inline json::Output
 makeOutput(Session& session)
 {
     return [&](boost::beast::string_view const& b) { session.write(b.data(), b.size()); };
 }
 
 static std::map<std::string, std::string>
-build_map(boost::beast::http::fields const& h)
+buildMap(boost::beast::http::fields const& h)
 {
     std::map<std::string, std::string> c;
     for (auto const& e : h)
@@ -286,7 +285,7 @@ build_map(boost::beast::http::fields const& h)
 
 template <class ConstBufferSequence>
 static std::string
-buffers_to_string(ConstBufferSequence const& bs)
+buffersToString(ConstBufferSequence const& bs)
 {
     using boost::asio::buffer_size;
     std::string s;
@@ -304,28 +303,28 @@ ServerHandler::onRequest(Session& session)
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
     {
-        HTTPReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
+        httpReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
         session.close(true);
         return;
     }
 
     // Check user/password authorization
-    if (!authorized(session.port(), build_map(session.request())))
+    if (!authorized(session.port(), buildMap(session.request())))
     {
-        HTTPReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
+        httpReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
         session.close(true);
         return;
     }
 
     std::shared_ptr<Session> const detachedSession = session.detach();
-    auto const postResult = m_jobQueue.postCoro(
-        jtCLIENT_RPC, "RPC-Client", [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
+    auto const postResult = jobQueue_.postCoro(
+        JtClientRpc, "RPC-Client", [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
             processSession(detachedSession, coro);
         });
     if (postResult == nullptr)
     {
         // The coroutine was rejected, probably because we're shutting down.
-        HTTPReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.getJournal("RPC"));
+        httpReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.getJournal("RPC"));
         detachedSession->close(true);
         return;
     }
@@ -336,28 +335,29 @@ ServerHandler::onWSMessage(
     std::shared_ptr<WSSession> session,
     std::vector<boost::asio::const_buffer> const& buffers)
 {
-    Json::Value jv;
+    json::Value jv;
     auto const size = boost::asio::buffer_size(buffers);
-    if (size > RPC::Tuning::maxRequestSize || !Json::Reader{}.parse(jv, buffers) || !jv.isObject())
+    if (size > RPC::Tuning::kMAX_REQUEST_SIZE || !json::Reader{}.parse(jv, buffers) ||
+        !jv.isObject())
     {
-        Json::Value jvResult(Json::objectValue);
+        json::Value jvResult(json::ObjectValue);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
-        jvResult[jss::value] = buffers_to_string(buffers);
+        jvResult[jss::value] = buffersToString(buffers);
         boost::beast::multi_buffer sb;
-        Json::stream(jvResult, [&sb](auto const p, auto const n) {
+        json::stream(jvResult, [&sb](auto const p, auto const n) {
             sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(p, n)));
         });
-        JLOG(m_journal.trace()) << "Websocket sending '" << jvResult << "'";
+        JLOG(journal_.trace()) << "Websocket sending '" << jvResult << "'";
         session->send(std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
         session->complete();
         return;
     }
 
-    JLOG(m_journal.trace()) << "Websocket received '" << jv << "'";
+    JLOG(journal_.trace()) << "Websocket received '" << jv << "'";
 
-    auto const postResult = m_jobQueue.postCoro(
-        jtCLIENT_WEBSOCKET,
+    auto const postResult = jobQueue_.postCoro(
+        JtClientWebsocket,
         "WS-Client",
         [this, session, jv = std::move(jv)](std::shared_ptr<JobQueue::Coro> const& coro) {
             auto const jr = this->processSession(session, coro, jv);
@@ -394,7 +394,7 @@ ServerHandler::onStopped(Server&)
 
 template <class T>
 void
-logDuration(Json::Value const& request, T const& duration, beast::Journal& journal)
+logDuration(json::Value const& request, T const& duration, beast::Journal& journal)
 {
     using namespace std::chrono_literals;
     auto const level = [&]() {
@@ -410,28 +410,28 @@ logDuration(Json::Value const& request, T const& duration, beast::Journal& journ
                 << " microseconds. request = " << request;
 }
 
-Json::Value
+json::Value
 ServerHandler::processSession(
     std::shared_ptr<WSSession> const& session,
     std::shared_ptr<JobQueue::Coro> const& coro,
-    Json::Value const& jv)
+    json::Value const& jv)
 {
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
-    if (is->getConsumer().disconnect(m_journal))
+    if (is->getConsumer().disconnect(journal_))
     {
         session->close({boost::beast::websocket::policy_error, "threshold exceeded"});
         // FIX: This rpcError is not delivered since the session
         // was just closed.
-        return rpcError(rpcSLOW_DOWN);
+        return rpcError(RpcSlowDown);
     }
 
     // Requests without "command" are invalid.
-    Json::Value jr(Json::objectValue);
-    Resource::Charge loadType = Resource::feeReferenceRPC;
+    json::Value jr(json::ObjectValue);
+    Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
     try
     {
         auto apiVersion = RPC::getAPIVersionNumber(jv, app_.config().BETA_RPC_API);
-        if (apiVersion == RPC::apiInvalidVersion ||
+        if (apiVersion == RPC::kAPI_INVALID_VERSION ||
             (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
             (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
             (jv.isMember(jss::method) && !jv[jss::method].isString()) ||
@@ -440,8 +440,8 @@ ServerHandler::processSession(
         {
             jr[jss::type] = jss::response;
             jr[jss::status] = jss::error;
-            jr[jss::error] = apiVersion == RPC::apiInvalidVersion ? jss::invalid_API_version
-                                                                  : jss::missingCommand;
+            jr[jss::error] = apiVersion == RPC::kAPI_INVALID_VERSION ? jss::invalid_API_version
+                                                                     : jss::missingCommand;
             jr[jss::request] = jv;
             if (jv.isMember(jss::id))
                 jr[jss::id] = jv[jss::id];
@@ -452,7 +452,7 @@ ServerHandler::processSession(
             if (jv.isMember(jss::api_version))
                 jr[jss::api_version] = jv[jss::api_version];
 
-            is->getConsumer().charge(Resource::feeMalformedRPC);
+            is->getConsumer().charge(Resource::kFEE_MALFORMED_RPC);
             return jr;
         }
 
@@ -464,12 +464,12 @@ ServerHandler::processSession(
             required,
             session->port(),
             jv,
-            beast::IP::from_asio(session->remote_endpoint().address()),
+            beast::IP::fromAsio(session->remoteEndpoint().address()),
             is->user());
         if (Role::FORBID == role)
         {
-            loadType = Resource::feeMalformedRPC;
-            jr[jss::result] = rpcError(rpcFORBIDDEN);
+            loadType = Resource::kFEE_MALFORMED_RPC;
+            jr[jss::result] = rpcError(RpcForbidden);
         }
         else
         {
@@ -485,20 +485,20 @@ ServerHandler::processSession(
                  .infoSub = is,
                  .apiVersion = apiVersion},
                 jv,
-                {.user = is->user(), .forwardedFor = is->forwarded_for()}};
+                {.user = is->user(), .forwardedFor = is->forwardedFor()}};
 
             auto start = std::chrono::system_clock::now();
             RPC::doCommand(context, jr[jss::result]);
             auto end = std::chrono::system_clock::now();
-            logDuration(jv, end - start, m_journal);
+            logDuration(jv, end - start, journal_);
         }
     }
     catch (std::exception const& ex)
     {
         // LCOV_EXCL_START
-        jr[jss::result] = RPC::make_error(rpcINTERNAL);
-        JLOG(m_journal.error()) << "Exception while processing WS: " << ex.what() << "\n"
-                                << "Input JSON: " << Json::Compact{Json::Value{jv}};
+        jr[jss::result] = RPC::makeError(RpcInternal);
+        JLOG(journal_.error()) << "Exception while processing WS: " << ex.what() << "\n"
+                               << "Input JSON: " << json::Compact{json::Value{jv}};
         // LCOV_EXCL_STOP
     }
 
@@ -520,14 +520,14 @@ ServerHandler::processSession(
 
         if (rq.isObject())
         {
-            if (rq.isMember(jss::passphrase.c_str()))
-                rq[jss::passphrase.c_str()] = "<masked>";
-            if (rq.isMember(jss::secret.c_str()))
-                rq[jss::secret.c_str()] = "<masked>";
-            if (rq.isMember(jss::seed.c_str()))
-                rq[jss::seed.c_str()] = "<masked>";
-            if (rq.isMember(jss::seed_hex.c_str()))
-                rq[jss::seed_hex.c_str()] = "<masked>";
+            if (rq.isMember(jss::passphrase.cStr()))
+                rq[jss::passphrase.cStr()] = "<masked>";
+            if (rq.isMember(jss::secret.cStr()))
+                rq[jss::secret.cStr()] = "<masked>";
+            if (rq.isMember(jss::seed.cStr()))
+                rq[jss::seed.cStr()] = "<masked>";
+            if (rq.isMember(jss::seed_hex.cStr()))
+                rq[jss::seed_hex.cStr()] = "<masked>";
         }
 
         jr[jss::request] = rq;
@@ -560,8 +560,8 @@ ServerHandler::processSession(
 {
     processRequest(
         session->port(),
-        buffers_to_string(session->request().body().data()),
-        session->remoteAddress().at_port(0),
+        buffersToString(session->request().body().data()),
+        session->remoteAddress().atPort(0),
         makeOutput(*session),
         coro,
         forwardedFor(session->request()),
@@ -572,7 +572,7 @@ ServerHandler::processSession(
             return boost::beast::string_view{};
         }());
 
-    if (beast::rfc2616::is_keep_alive(session->request()))
+    if (beast::rfc2616::isKeepAlive(session->request()))
     {
         session->complete();
     }
@@ -582,21 +582,21 @@ ServerHandler::processSession(
     }
 }
 
-static Json::Value
-make_json_error(Json::Int code, Json::Value&& message)
+static json::Value
+makeJsonError(json::Int code, json::Value&& message)
 {
-    Json::Value sub{Json::objectValue};
+    json::Value sub{json::ObjectValue};
     sub["code"] = code;
     sub["message"] = std::move(message);
-    Json::Value r{Json::objectValue};
+    json::Value r{json::ObjectValue};
     r["error"] = sub;
     return r;
 }
 
-Json::Int constexpr method_not_found = -32601;
-Json::Int constexpr server_overloaded = -32604;
-Json::Int constexpr forbidden = -32605;
-Json::Int constexpr wrong_version = -32606;
+json::Int constexpr kMETHOD_NOT_FOUND = -32601;
+json::Int constexpr kSERVER_OVERLOADED = -32604;
+json::Int constexpr kFORBIDDEN = -32605;
+json::Int constexpr kWRONG_VERSION = -32606;
 
 void
 ServerHandler::processRequest(
@@ -610,13 +610,13 @@ ServerHandler::processRequest(
 {
     auto rpcJ = app_.getJournal("RPC");
 
-    Json::Value jsonOrig;
+    json::Value jsonOrig;
     {
-        Json::Reader reader;
-        if ((request.size() > RPC::Tuning::maxRequestSize) || !reader.parse(request, jsonOrig) ||
+        json::Reader reader;
+        if ((request.size() > RPC::Tuning::kMAX_REQUEST_SIZE) || !reader.parse(request, jsonOrig) ||
             !jsonOrig || !jsonOrig.isObject())
         {
-            HTTPReply(
+            httpReply(
                 400,
                 "Unable to parse request: " + reader.getFormattedErrorMessages(),
                 output,
@@ -632,51 +632,51 @@ ServerHandler::processRequest(
         batch = true;
         if (!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
         {
-            HTTPReply(400, "Malformed batch request", output, rpcJ);
+            httpReply(400, "Malformed batch request", output, rpcJ);
             return;
         }
         size = jsonOrig[jss::params].size();
     }
 
-    Json::Value reply(batch ? Json::arrayValue : Json::objectValue);
+    json::Value reply(batch ? json::ArrayValue : json::ObjectValue);
     auto const start(std::chrono::high_resolution_clock::now());
     for (unsigned i = 0; i < size; ++i)
     {
-        Json::Value const& jsonRPC = batch ? jsonOrig[jss::params][i] : jsonOrig;
+        json::Value const& jsonRPC = batch ? jsonOrig[jss::params][i] : jsonOrig;
 
         if (!jsonRPC.isObject())
         {
-            Json::Value r(Json::objectValue);
+            json::Value r(json::ObjectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] = make_json_error(method_not_found, "Method not found");
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "Method not found");
             reply.append(r);
             continue;
         }
 
-        unsigned apiVersion = RPC::apiVersionIfUnspecified;
+        unsigned apiVersion = RPC::kAPI_VERSION_IF_UNSPECIFIED;
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][0u].isObject())
         {
             apiVersion = RPC::getAPIVersionNumber(
-                jsonRPC[jss::params][Json::UInt(0)], app_.config().BETA_RPC_API);
+                jsonRPC[jss::params][json::UInt(0)], app_.config().BETA_RPC_API);
         }
 
-        if (apiVersion == RPC::apiVersionIfUnspecified && batch)
+        if (apiVersion == RPC::kAPI_VERSION_IF_UNSPECIFIED && batch)
         {
             // for batch request, api_version may be at a different level
             apiVersion = RPC::getAPIVersionNumber(jsonRPC, app_.config().BETA_RPC_API);
         }
 
-        if (apiVersion == RPC::apiInvalidVersion)
+        if (apiVersion == RPC::kAPI_INVALID_VERSION)
         {
             if (!batch)
             {
-                HTTPReply(400, jss::invalid_API_version.c_str(), output, rpcJ);
+                httpReply(400, jss::invalid_API_version.cStr(), output, rpcJ);
                 return;
             }
-            Json::Value r(Json::objectValue);
+            json::Value r(json::ObjectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] = make_json_error(wrong_version, jss::invalid_API_version.c_str());
+            r[jss::error] = makeJsonError(kWRONG_VERSION, jss::invalid_API_version.cStr());
             reply.append(r);
             continue;
         }
@@ -691,34 +691,34 @@ ServerHandler::processRequest(
         }
 
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
-            jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][Json::UInt(0)].isObjectOrNull())
+            jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][json::UInt(0)].isObjectOrNull())
         {
             role = requestRole(
-                required, port, jsonRPC[jss::params][Json::UInt(0)], remoteIPAddress, user);
+                required, port, jsonRPC[jss::params][json::UInt(0)], remoteIPAddress, user);
         }
         else
         {
-            role = requestRole(required, port, Json::objectValue, remoteIPAddress, user);
+            role = requestRole(required, port, json::ObjectValue, remoteIPAddress, user);
         }
 
         Resource::Consumer usage;
         if (isUnlimited(role))
         {
-            usage = m_resourceManager.newUnlimitedEndpoint(remoteIPAddress);
+            usage = resourceManager_.newUnlimitedEndpoint(remoteIPAddress);
         }
         else
         {
-            usage = m_resourceManager.newInboundEndpoint(
+            usage = resourceManager_.newInboundEndpoint(
                 remoteIPAddress, role == Role::PROXY, forwardedFor);
-            if (usage.disconnect(m_journal))
+            if (usage.disconnect(journal_))
             {
                 if (!batch)
                 {
-                    HTTPReply(503, "Server is overloaded", output, rpcJ);
+                    httpReply(503, "Server is overloaded", output, rpcJ);
                     return;
                 }
-                Json::Value r = jsonRPC;
-                r[jss::error] = make_json_error(server_overloaded, "Server is overloaded");
+                json::Value r = jsonRPC;
+                r[jss::error] = makeJsonError(kSERVER_OVERLOADED, "Server is overloaded");
                 reply.append(r);
                 continue;
             }
@@ -726,43 +726,43 @@ ServerHandler::processRequest(
 
         if (role == Role::FORBID)
         {
-            usage.charge(Resource::feeMalformedRPC);
+            usage.charge(Resource::kFEE_MALFORMED_RPC);
             if (!batch)
             {
-                HTTPReply(403, "Forbidden", output, rpcJ);
+                httpReply(403, "Forbidden", output, rpcJ);
                 return;
             }
-            Json::Value r = jsonRPC;
-            r[jss::error] = make_json_error(forbidden, "Forbidden");
+            json::Value r = jsonRPC;
+            r[jss::error] = makeJsonError(kFORBIDDEN, "Forbidden");
             reply.append(r);
             continue;
         }
 
         if (!jsonRPC.isMember(jss::method) || jsonRPC[jss::method].isNull())
         {
-            usage.charge(Resource::feeMalformedRPC);
+            usage.charge(Resource::kFEE_MALFORMED_RPC);
             if (!batch)
             {
-                HTTPReply(400, "Null method", output, rpcJ);
+                httpReply(400, "Null method", output, rpcJ);
                 return;
             }
-            Json::Value r = jsonRPC;
-            r[jss::error] = make_json_error(method_not_found, "Null method");
+            json::Value r = jsonRPC;
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "Null method");
             reply.append(r);
             continue;
         }
 
-        Json::Value const& method = jsonRPC[jss::method];
+        json::Value const& method = jsonRPC[jss::method];
         if (!method.isString())
         {
-            usage.charge(Resource::feeMalformedRPC);
+            usage.charge(Resource::kFEE_MALFORMED_RPC);
             if (!batch)
             {
-                HTTPReply(400, "method is not string", output, rpcJ);
+                httpReply(400, "method is not string", output, rpcJ);
                 return;
             }
-            Json::Value r = jsonRPC;
-            r[jss::error] = make_json_error(method_not_found, "method is not string");
+            json::Value r = jsonRPC;
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "method is not string");
             reply.append(r);
             continue;
         }
@@ -770,14 +770,14 @@ ServerHandler::processRequest(
         std::string const strMethod = method.asString();
         if (strMethod.empty())
         {
-            usage.charge(Resource::feeMalformedRPC);
+            usage.charge(Resource::kFEE_MALFORMED_RPC);
             if (!batch)
             {
-                HTTPReply(400, "method is empty", output, rpcJ);
+                httpReply(400, "method is empty", output, rpcJ);
                 return;
             }
-            Json::Value r = jsonRPC;
-            r[jss::error] = make_json_error(method_not_found, "method is empty");
+            json::Value r = jsonRPC;
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "method is empty");
             reply.append(r);
             continue;
         }
@@ -788,18 +788,18 @@ ServerHandler::processRequest(
         //
         // Otherwise, that field must be an array of length 1 (why?)
         // and we take that first entry and validate that it's an object.
-        Json::Value params;
+        json::Value params;
         if (!batch)
         {
             params = jsonRPC[jss::params];
             if (!params)
             {
-                params = Json::Value(Json::objectValue);
+                params = json::Value(json::ObjectValue);
             }
             else if (!params.isArray() || params.size() != 1)
             {
-                usage.charge(Resource::feeMalformedRPC);
-                HTTPReply(400, "params unparsable", output, rpcJ);
+                usage.charge(Resource::kFEE_MALFORMED_RPC);
+                httpReply(400, "params unparsable", output, rpcJ);
                 return;
             }
             else
@@ -807,8 +807,8 @@ ServerHandler::processRequest(
                 params = std::move(params[0u]);
                 if (!params.isObjectOrNull())
                 {
-                    usage.charge(Resource::feeMalformedRPC);
-                    HTTPReply(400, "params unparsable", output, rpcJ);
+                    usage.charge(Resource::kFEE_MALFORMED_RPC);
+                    httpReply(400, "params unparsable", output, rpcJ);
                     return;
                 }
             }
@@ -823,15 +823,15 @@ ServerHandler::processRequest(
         {
             if (!params[jss::ripplerpc].isString())
             {
-                usage.charge(Resource::feeMalformedRPC);
+                usage.charge(Resource::kFEE_MALFORMED_RPC);
                 if (!batch)
                 {
-                    HTTPReply(400, "ripplerpc is not a string", output, rpcJ);
+                    httpReply(400, "ripplerpc is not a string", output, rpcJ);
                     return;
                 }
 
-                Json::Value r = jsonRPC;
-                r[jss::error] = make_json_error(method_not_found, "ripplerpc is not a string");
+                json::Value r = jsonRPC;
+                r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "ripplerpc is not a string");
                 reply.append(r);
                 continue;
             }
@@ -840,7 +840,7 @@ ServerHandler::processRequest(
 
         /**
          * Clear header-assigned values if not positively identified from a
-         * secure_gateway.
+         * secureGateway.
          */
         if (role != Role::IDENTIFIED && role != Role::PROXY)
         {
@@ -848,19 +848,19 @@ ServerHandler::processRequest(
             user.remove_suffix(user.size());
         }
 
-        JLOG(m_journal.debug()) << "Query: " << strMethod << params;
+        JLOG(journal_.debug()) << "Query: " << strMethod << params;
 
         // Provide the JSON-RPC method as the field "command" in the request.
         params[jss::command] = strMethod;
-        JLOG(m_journal.trace()) << "doRpcCommand:" << strMethod << ":" << params;
+        JLOG(journal_.trace()) << "doRpcCommand:" << strMethod << ":" << params;
 
-        Resource::Charge loadType = Resource::feeReferenceRPC;
+        Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
 
         RPC::JsonContext context{
-            {.j = m_journal,
+            {.j = journal_,
              .app = app_,
              .loadType = loadType,
-             .netOps = m_networkOPs,
+             .netOps = networkOPs_,
              .ledgerMaster = app_.getLedgerMaster(),
              .consumer = usage,
              .role = role,
@@ -869,7 +869,7 @@ ServerHandler::processRequest(
              .apiVersion = apiVersion},
             params,
             {.user = user, .forwardedFor = forwardedFor}};
-        Json::Value result;
+        json::Value result;
 
         auto start = std::chrono::system_clock::now();
 
@@ -880,22 +880,22 @@ ServerHandler::processRequest(
         catch (std::exception const& ex)
         {
             // LCOV_EXCL_START
-            result = RPC::make_error(rpcINTERNAL);
-            JLOG(m_journal.error())
+            result = RPC::makeError(RpcInternal);
+            JLOG(journal_.error())
                 << "Internal error : " << ex.what()
-                << " when processing request: " << Json::Compact{Json::Value{params}};
+                << " when processing request: " << json::Compact{json::Value{params}};
             // LCOV_EXCL_STOP
         }
 
         auto end = std::chrono::system_clock::now();
 
-        logDuration(params, end - start, m_journal);
+        logDuration(params, end - start, journal_);
 
         usage.charge(loadType);
         if (usage.warn())
             result[jss::warning] = jss::load;
 
-        Json::Value r(Json::objectValue);
+        json::Value r(json::ObjectValue);
         if (ripplerpc >= "2.0")
         {
             if (result.isMember(jss::error))
@@ -904,7 +904,7 @@ ServerHandler::processRequest(
                 result["code"] = result[jss::error_code];
                 result["message"] = result[jss::error_message];
                 result.removeMember(jss::error_message);
-                JLOG(m_journal.debug())
+                JLOG(journal_.debug())
                     << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
                 r[jss::error] = std::move(result);
             }
@@ -924,20 +924,20 @@ ServerHandler::processRequest(
 
                 if (rq.isObject())
                 {  // But mask potentially sensitive information.
-                    if (rq.isMember(jss::passphrase.c_str()))
-                        rq[jss::passphrase.c_str()] = "<masked>";
-                    if (rq.isMember(jss::secret.c_str()))
-                        rq[jss::secret.c_str()] = "<masked>";
-                    if (rq.isMember(jss::seed.c_str()))
-                        rq[jss::seed.c_str()] = "<masked>";
-                    if (rq.isMember(jss::seed_hex.c_str()))
-                        rq[jss::seed_hex.c_str()] = "<masked>";
+                    if (rq.isMember(jss::passphrase.cStr()))
+                        rq[jss::passphrase.cStr()] = "<masked>";
+                    if (rq.isMember(jss::secret.cStr()))
+                        rq[jss::secret.cStr()] = "<masked>";
+                    if (rq.isMember(jss::seed.cStr()))
+                        rq[jss::seed.cStr()] = "<masked>";
+                    if (rq.isMember(jss::seed_hex.cStr()))
+                        rq[jss::seed_hex.cStr()] = "<masked>";
                 }
 
                 result[jss::status] = jss::error;
                 result[jss::request] = rq;
 
-                JLOG(m_journal.debug())
+                JLOG(journal_.debug())
                     << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
             }
             else
@@ -985,7 +985,7 @@ ServerHandler::processRequest(
                 reply[jss::error][jss::error_code].isInt())
             {
                 int const errCode = reply[jss::error][jss::error_code].asInt();
-                return RPC::error_code_http_status(static_cast<error_code_i>(errCode));
+                return RPC::errorCodeHttpStatus(static_cast<ErrorCodeI>(errCode));
             }
         }
         // Return OK.
@@ -1002,20 +1002,20 @@ ServerHandler::processRequest(
 
     response += '\n';
 
-    if (auto stream = m_journal.debug())
+    if (auto stream = journal_.debug())
     {
-        static int const maxSize = 10000;
-        if (response.size() <= maxSize)
+        static int const kMAX_SIZE = 10000;
+        if (response.size() <= kMAX_SIZE)
         {
             stream << "Reply: " << response;
         }
         else
         {
-            stream << "Reply: " << response.substr(0, maxSize);
+            stream << "Reply: " << response.substr(0, kMAX_SIZE);
         }
     }
 
-    HTTPReply(httpStatus, response, output, rpcJ);
+    httpReply(httpStatus, response, output, rpcJ);
 }
 
 //------------------------------------------------------------------------------
@@ -1063,12 +1063,11 @@ ServerHandler::Setup::makeContexts()
         {
             if (p.ssl_key.empty() && p.ssl_cert.empty() && p.ssl_chain.empty())
             {
-                p.context = make_SSLContext(p.ssl_ciphers);
+                p.context = makeSslContext(p.ssl_ciphers);
             }
             else
             {
-                p.context =
-                    make_SSLContextAuthed(p.ssl_key, p.ssl_cert, p.ssl_chain, p.ssl_ciphers);
+                p.context = makeSslContextAuthed(p.ssl_key, p.ssl_cert, p.ssl_chain, p.ssl_ciphers);
             }
         }
         else
@@ -1080,7 +1079,7 @@ ServerHandler::Setup::makeContexts()
 }
 
 static Port
-to_Port(ParsedPort const& parsed, std::ostream& log)
+toPort(ParsedPort const& parsed, std::ostream& log)
 {
     Port p;
     p.name = parsed.name;
@@ -1126,7 +1125,7 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
 }
 
 static std::vector<Port>
-parse_Ports(Config const& config, std::ostream& log)
+parsePorts(Config const& config, std::ostream& log)
 {
     std::vector<Port> result;
 
@@ -1137,7 +1136,7 @@ parse_Ports(Config const& config, std::ostream& log)
     }
 
     ParsedPort common;
-    parse_Port(common, config["server"], log);
+    parsePort(common, config["server"], log);
 
     auto const& names = config.section("server").values();
     result.reserve(names.size());
@@ -1155,8 +1154,8 @@ parse_Ports(Config const& config, std::ostream& log)
             continue;
 
         ParsedPort parsed = common;
-        parse_Port(parsed, config[name], log);
-        result.push_back(to_Port(parsed, log));
+        parsePort(parsed, config[name], log);
+        result.push_back(toPort(parsed, log));
     }
 
     if (config.standalone())
@@ -1200,7 +1199,7 @@ parse_Ports(Config const& config, std::ostream& log)
 
 // Fill out the client portion of the Setup
 static void
-setup_Client(ServerHandler::Setup& setup)
+setupClient(ServerHandler::Setup& setup)
 {
     decltype(setup.ports)::const_iterator iter;
     for (iter = setup.ports.cbegin(); iter != setup.ports.cend(); ++iter)
@@ -1211,7 +1210,7 @@ setup_Client(ServerHandler::Setup& setup)
     if (iter == setup.ports.cend())
         return;
     setup.client.secure = iter->protocol.count("https") > 0;
-    if (beast::IP::is_unspecified(iter->ip))
+    if (beast::IP::isUnspecified(iter->ip))
     {
         // VFALCO HACK! to make localhost work
         setup.client.ip = iter->ip.is_v6() ? "::1" : "127.0.0.1";
@@ -1229,7 +1228,7 @@ setup_Client(ServerHandler::Setup& setup)
 
 // Fill out the overlay portion of the Setup
 static void
-setup_Overlay(ServerHandler::Setup& setup)
+setupOverlay(ServerHandler::Setup& setup)
 {
     auto const iter = std::ranges::find_if(
         setup.ports, [](Port const& port) { return port.protocol.count("peer") != 0; });
@@ -1242,21 +1241,21 @@ setup_Overlay(ServerHandler::Setup& setup)
 }
 
 ServerHandler::Setup
-setup_ServerHandler(Config const& config, std::ostream& log)
+setupServerHandler(Config const& config, std::ostream& log)
 {
     ServerHandler::Setup setup;
-    setup.ports = parse_Ports(config, log);
+    setup.ports = parsePorts(config, log);
 
-    setup_Client(setup);
-    setup_Overlay(setup);
+    setupClient(setup);
+    setupOverlay(setup);
 
     return setup;
 }
 
 std::unique_ptr<ServerHandler>
-make_ServerHandler(
+makeServerHandler(
     Application& app,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
@@ -1265,7 +1264,7 @@ make_ServerHandler(
     return std::make_unique<ServerHandler>(
         ServerHandler::ServerHandlerCreator(),
         app,
-        io_context,
+        ioContext,
         jobQueue,
         networkOPs,
         resourceManager,

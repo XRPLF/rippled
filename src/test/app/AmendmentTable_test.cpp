@@ -41,7 +41,7 @@
 
 namespace xrpl {
 
-class AmendmentTable_test final : public beast::unit_test::suite
+class AmendmentTable_test final : public beast::unit_test::Suite
 {
 private:
     static uint256
@@ -137,12 +137,12 @@ private:
 
     template <class Arg, class... Args>
     static void
-    combine_arg(std::vector<Arg>& dest, std::vector<Arg> const& src, Args const&... args)
+    combineArg(std::vector<Arg>& dest, std::vector<Arg> const& src, Args const&... args)
     {
         assert(dest.capacity() >= dest.size() + src.size());
         std::copy(src.begin(), src.end(), std::back_inserter(dest));
         if constexpr (sizeof...(args) > 0)
-            combine_arg(dest, args...);
+            combineArg(dest, args...);
     }
 
     template <class Arg, class... Args>
@@ -156,7 +156,7 @@ private:
     {
         left.reserve(totalsize(left, right, args...));
 
-        combine_arg(left, right, args...);
+        combineArg(left, right, args...);
 
         return left;
     }
@@ -191,7 +191,7 @@ public:
         Section const& enabled,
         Section const& vetoed)
     {
-        return make_AmendmentTable(app, majorityTime, supported, enabled, vetoed, journal_);
+        return makeAmendmentTable(app, majorityTime, supported, enabled, vetoed, journal_);
     }
 
     std::unique_ptr<AmendmentTable>
@@ -208,7 +208,7 @@ public:
     std::unique_ptr<AmendmentTable>
     makeTable(test::jtx::Env& env, std::chrono::seconds majorityTime)
     {
-        static std::vector<AmendmentTable::FeatureInfo> const supported = combine(
+        static std::vector<AmendmentTable::FeatureInfo> const kSUPPORTED = combine(
             makeDefaultYes(yes_),
             // Use non-intuitive default votes for "enabled_" and "vetoed_"
             // so that when the tests later explicitly enable or veto them,
@@ -218,7 +218,7 @@ public:
             makeDefaultYes(vetoed_),
             makeObsolete(obsolete_));
         return makeTable(
-            env.app(), majorityTime, supported, makeSection(enabled_), makeSection(vetoed_));
+            env.app(), majorityTime, kSUPPORTED, makeSection(enabled_), makeSection(vetoed_));
     }
 
     void
@@ -275,7 +275,7 @@ public:
         // Verify that unsupportedID is not in table.
         uint256 const unsupportedID = amendmentId(unsupported_[0]);
         {
-            Json::Value const unsupp =
+            json::Value const unsupp =
                 table->getJson(unsupportedID, true)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp.size() == 0);
         }
@@ -283,7 +283,7 @@ public:
         // After vetoing unsupportedID verify that it is in table.
         table->veto(unsupportedID);
         {
-            Json::Value const unsupp =
+            json::Value const unsupp =
                 table->getJson(unsupportedID, true)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp[jss::vetoed].asBool());
         }
@@ -471,7 +471,7 @@ public:
         trustedValidators.reserve(num);
         for (int i = 0; i < num; ++i)
         {
-            auto const& back = ret.emplace_back(randomKeyPair(KeyType::secp256k1));
+            auto const& back = ret.emplace_back(randomKeyPair(KeyType::Secp256k1));
             trustedValidators.insert(back.first);
         }
         table->trustChanged(trustedValidators);
@@ -608,14 +608,14 @@ public:
 
         uint256 const unsupportedID = amendmentId(unsupported_[0]);
         {
-            Json::Value const unsupp =
+            json::Value const unsupp =
                 table->getJson(unsupportedID, false)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp.size() == 0);
         }
 
         table->veto(unsupportedID);
         {
-            Json::Value const unsupp =
+            json::Value const unsupp =
                 table->getJson(unsupportedID, false)[to_string(unsupportedID)];
             BEAST_EXPECT(!unsupp[jss::vetoed].asBool());
         }
@@ -968,7 +968,7 @@ public:
         }
 
         // Add one new validator to the UNL.
-        validators.emplace_back(randomKeyPair(KeyType::secp256k1));
+        validators.emplace_back(randomKeyPair(KeyType::Secp256k1));
 
         // A lambda that updates the AmendmentTable with the latest
         // trusted validators.
@@ -1165,9 +1165,9 @@ public:
         testcase("hasUnsupportedEnabled");
 
         using namespace std::chrono_literals;
-        weeks constexpr w(1);
+        weeks constexpr kW(1);
         test::jtx::Env env{*this, makeConfig()};
-        auto table = makeTable(env, w);
+        auto table = makeTable(env, kW);
         BEAST_EXPECT(!table->hasUnsupportedEnabled());
         BEAST_EXPECT(!table->firstUnsupportedExpected());
         BEAST_EXPECT(table->needValidatedLedger(1));
@@ -1190,7 +1190,7 @@ public:
         BEAST_EXPECT(table->hasUnsupportedEnabled());
         BEAST_EXPECT(
             table->firstUnsupportedExpected() &&
-            *table->firstUnsupportedExpected() == NetClock::time_point{t} + w);
+            *table->firstUnsupportedExpected() == NetClock::time_point{t} + kW);
 
         // Make sure the table knows when it needs an update.
         BEAST_EXPECT(!table->needValidatedLedger(256));
@@ -1212,7 +1212,7 @@ public:
     void
     run() override
     {
-        FeatureBitset const all{test::jtx::testable_amendments()};
+        FeatureBitset const all{test::jtx::testableAmendments()};
 
         testConstruct();
         testGet();

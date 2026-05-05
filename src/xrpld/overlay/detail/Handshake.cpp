@@ -68,7 +68,7 @@ isFeatureValue(
     std::string const& value)
 {
     if (auto const fvalue = getFeatureValue(headers, feature))
-        return beast::rfc2616::token_in_list(fvalue.value(), value);
+        return beast::rfc2616::tokenInList(fvalue.value(), value);
 
     return false;
 }
@@ -88,13 +88,13 @@ makeFeaturesRequestHeader(
 {
     std::stringstream str;
     if (comprEnabled)
-        str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
+        str << kFEATURE_COMPR << "=lz4" << kDELIM_FEATURE;
     if (ledgerReplayEnabled)
-        str << FEATURE_LEDGER_REPLAY << "=1" << DELIM_FEATURE;
+        str << kFEATURE_LEDGER_REPLAY << "=1" << kDELIM_FEATURE;
     if (txReduceRelayEnabled)
-        str << FEATURE_TXRR << "=1" << DELIM_FEATURE;
+        str << kFEATURE_TXRR << "=1" << kDELIM_FEATURE;
     if (vpReduceRelayEnabled)
-        str << FEATURE_VPRR << "=1" << DELIM_FEATURE;
+        str << kFEATURE_VPRR << "=1" << kDELIM_FEATURE;
     return str.str();
 }
 
@@ -107,14 +107,14 @@ makeFeaturesResponseHeader(
     bool vpReduceRelayEnabled)
 {
     std::stringstream str;
-    if (comprEnabled && isFeatureValue(headers, FEATURE_COMPR, "lz4"))
-        str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
-    if (ledgerReplayEnabled && featureEnabled(headers, FEATURE_LEDGER_REPLAY))
-        str << FEATURE_LEDGER_REPLAY << "=1" << DELIM_FEATURE;
-    if (txReduceRelayEnabled && featureEnabled(headers, FEATURE_TXRR))
-        str << FEATURE_TXRR << "=1" << DELIM_FEATURE;
-    if (vpReduceRelayEnabled && featureEnabled(headers, FEATURE_VPRR))
-        str << FEATURE_VPRR << "=1" << DELIM_FEATURE;
+    if (comprEnabled && isFeatureValue(headers, kFEATURE_COMPR, "lz4"))
+        str << kFEATURE_COMPR << "=lz4" << kDELIM_FEATURE;
+    if (ledgerReplayEnabled && featureEnabled(headers, kFEATURE_LEDGER_REPLAY))
+        str << kFEATURE_LEDGER_REPLAY << "=1" << kDELIM_FEATURE;
+    if (txReduceRelayEnabled && featureEnabled(headers, kFEATURE_TXRR))
+        str << kFEATURE_TXRR << "=1" << kDELIM_FEATURE;
+    if (vpReduceRelayEnabled && featureEnabled(headers, kFEATURE_VPRR))
+        str << kFEATURE_VPRR << "=1" << kDELIM_FEATURE;
     return str.str();
 }
 
@@ -132,20 +132,20 @@ makeFeaturesResponseHeader(
           this topic, see https://github.com/openssl/openssl/issues/5509 and
           https://github.com/XRPLF/rippled/issues/2413.
 */
-static std::optional<base_uint<512>>
+static std::optional<BaseUint<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
-    constexpr std::size_t sslMinimumFinishedLength = 12;
+    constexpr std::size_t kSSL_MINIMUM_FINISHED_LENGTH = 12;
 
     unsigned char buf[1024];
     size_t const len = get(ssl, buf, sizeof(buf));
 
-    if (len < sslMinimumFinishedLength)
+    if (len < kSSL_MINIMUM_FINISHED_LENGTH)
         return std::nullopt;
 
     sha512_hasher const h;
 
-    base_uint<512> cookie;
+    BaseUint<512> cookie;
     SHA512(buf, len, cookie.data());
     return cookie;
 }
@@ -171,7 +171,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 
     // Both messages hash to the same value and the cookie
     // is 0. Don't allow this.
-    if (result == beast::zero)
+    if (result == beast::kZERO)
     {
         JLOG(journal.error()) << "Cookie generation: identical finished messages";
         return std::nullopt;
@@ -185,8 +185,8 @@ buildHandshake(
     boost::beast::http::fields& h,
     xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address public_ip,
-    beast::IP::Address remote_ip,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     Application& app)
 {
     if (networkID)
@@ -204,7 +204,7 @@ buildHandshake(
     {
         auto const sig =
             signDigest(app.nodeIdentity().first, app.nodeIdentity().second, sharedValue);
-        h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
+        h.insert("Session-Signature", base64Encode(sig.data(), sig.size()));
     }
 
     h.insert("Instance-Cookie", std::to_string(app.instanceID()));
@@ -212,11 +212,11 @@ buildHandshake(
     if (!app.config().SERVER_DOMAIN.empty())
         h.insert("Server-Domain", app.config().SERVER_DOMAIN);
 
-    if (beast::IP::is_public(remote_ip))
-        h.insert("Remote-IP", remote_ip.to_string());
+    if (beast::IP::isPublic(remoteIp))
+        h.insert("Remote-IP", remoteIp.to_string());
 
-    if (!public_ip.is_unspecified())
-        h.insert("Local-IP", public_ip.to_string());
+    if (!publicIp.is_unspecified())
+        h.insert("Local-IP", publicIp.to_string());
 
     if (auto const cl = app.getLedgerMaster().getClosedLedger())
     {
@@ -230,7 +230,7 @@ verifyHandshake(
     boost::beast::http::fields const& headers,
     xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address public_ip,
+    beast::IP::Address publicIp,
     beast::IP::Address remote,
     Application& app)
 {
@@ -291,7 +291,7 @@ verifyHandshake(
 
             if (pk)
             {
-                if (publicKeyType(*pk) != KeyType::secp256k1)
+                if (publicKeyType(*pk) != KeyType::Secp256k1)
                     throw std::runtime_error("Unsupported public key type");
 
                 return *pk;
@@ -313,7 +313,7 @@ verifyHandshake(
         if (iter == headers.end())
             throw std::runtime_error("No session signature specified");
 
-        auto sig = base64_decode(iter->value());
+        auto sig = base64Decode(iter->value());
 
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
@@ -325,36 +325,35 @@ verifyHandshake(
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const local_ip = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
+        auto const localIp = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
 
-        if (beast::IP::is_public(remote) && remote != local_ip)
+        if (beast::IP::isPublic(remote) && remote != localIp)
         {
             throw std::runtime_error(
-                "Incorrect Local-IP: " + remote.to_string() + " instead of " +
-                local_ip.to_string());
+                "Incorrect Local-IP: " + remote.to_string() + " instead of " + localIp.to_string());
         }
     }
 
     if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const remote_ip = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
+        auto const remoteIp = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");
 
-        if (beast::IP::is_public(remote) && !beast::IP::is_unspecified(public_ip))
+        if (beast::IP::isPublic(remote) && !beast::IP::isUnspecified(publicIp))
         {
             // We know our public IP and peer reports our connection came
             // from some other IP.
-            if (remote_ip != public_ip)
+            if (remoteIp != publicIp)
             {
                 throw std::runtime_error(
-                    "Incorrect Remote-IP: " + public_ip.to_string() + " instead of " +
-                    remote_ip.to_string());
+                    "Incorrect Remote-IP: " + publicIp.to_string() + " instead of " +
+                    remoteIp.to_string());
             }
         }
     }
@@ -390,8 +389,8 @@ http_response_type
 makeResponse(
     bool crawlPublic,
     http_request_type const& req,
-    beast::IP::Address public_ip,
-    beast::IP::Address remote_ip,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion protocol,
@@ -414,7 +413,7 @@ makeResponse(
             app.config().TX_REDUCE_RELAY_ENABLE,
             app.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE));
 
-    buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
+    buildHandshake(resp, sharedValue, networkID, publicIp, remoteIp, app);
 
     return resp;
 }

@@ -19,9 +19,9 @@ class XChainCreateBridgeBuilder;
  * @brief Transaction: XChainCreateBridge
  *
  * Type: ttXCHAIN_CREATE_BRIDGE (48)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainCreateBridgeBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfSignatureReward (soeREQUIRED)
+     * @brief Get sfSignatureReward (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfMinAccountCreateAmount (soeOPTIONAL)
+     * @brief Get sfMinAccountCreateAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -100,7 +100,7 @@ public:
  * @brief Builder for XChainCreateBridge transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class XChainCreateBridgeBuilder : public TransactionBuilderBase<XChainCreateBridgeBuilder>
@@ -141,7 +141,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainCreateBridgeBuilder&
@@ -152,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignatureReward (soeREQUIRED)
+     * @brief Set sfSignatureReward (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainCreateBridgeBuilder&
@@ -163,7 +163,7 @@ public:
     }
 
     /**
-     * @brief Set sfMinAccountCreateAmount (soeOPTIONAL)
+     * @brief Set sfMinAccountCreateAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     XChainCreateBridgeBuilder&

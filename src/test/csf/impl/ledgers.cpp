@@ -15,12 +15,12 @@
 
 namespace xrpl::test::csf {
 
-Ledger::Instance const Ledger::genesis;
+Ledger::Instance const Ledger::kGENESIS;
 
-Json::Value
+json::Value
 Ledger::getJson() const
 {
-    Json::Value res(Json::objectValue);
+    json::Value res(json::ObjectValue);
     res["id"] = static_cast<ID::value_type>(id());
     res["seq"] = static_cast<Seq::value_type>(seq());
     return res;
@@ -76,7 +76,7 @@ mismatch(Ledger const& a, Ledger const& b)
 
 LedgerOracle::LedgerOracle()
 {
-    instances_.insert(InstanceEntry{Ledger::genesis, nextID()});
+    instances_.insert(InstanceEntry{Ledger::kGENESIS, nextID()});
 }
 
 Ledger::ID

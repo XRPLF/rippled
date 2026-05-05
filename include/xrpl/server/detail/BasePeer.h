@@ -17,7 +17,7 @@ namespace xrpl {
 
 // Common part of all peers
 template <class Handler, class Impl>
-class BasePeer : public io_list::work
+class BasePeer : public IoList::Work
 {
 protected:
     using clock_type = std::chrono::system_clock;
@@ -40,7 +40,7 @@ public:
         Port const& port,
         Handler& handler,
         boost::asio::executor const& executor,
-        endpoint_type remote_address,
+        endpoint_type remoteAddress,
         beast::Journal journal);
 
     void
@@ -61,16 +61,16 @@ BasePeer<Handler, Impl>::BasePeer(
     Port const& port,
     Handler& handler,
     boost::asio::executor const& executor,
-    endpoint_type remote_address,
+    endpoint_type remoteAddress,
     beast::Journal journal)
     : port_(port)
     , handler_(handler)
-    , remote_address_(std::move(remote_address))
+    , remote_address_(std::move(remoteAddress))
     , sink_(
           journal.sink(),
           [] {
-              static std::atomic<unsigned> id{0};
-              return "##" + std::to_string(++id) + " ";
+              static std::atomic<unsigned> kID{0};
+              return "##" + std::to_string(++kID) + " ";
           }())
     , j_(sink_)
     , work_(boost::asio::make_work_guard(executor))
@@ -85,7 +85,7 @@ BasePeer<Handler, Impl>::close()
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&BasePeer::close, impl().shared_from_this()));
     error_code ec;
-    xrpl::get_lowest_layer(impl().ws_).socket().close(ec);
+    xrpl::getLowestLayer(impl().ws_).socket().close(ec);
 }
 
 }  // namespace xrpl

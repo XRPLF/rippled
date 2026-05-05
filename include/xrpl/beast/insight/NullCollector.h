@@ -11,7 +11,7 @@ public:
     explicit NullCollector() = default;
 
     static std::shared_ptr<Collector>
-    New();
+    make();
 };
 
 }  // namespace beast::insight

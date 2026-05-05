@@ -26,25 +26,25 @@
 namespace xrpl {
 
 ApplyContext::ApplyContext(
-    ServiceRegistry& registry_,
+    ServiceRegistry& registry,
     OpenView& base,
     std::optional<uint256 const> const& parentBatchId,
-    STTx const& tx_,
-    TER preclaimResult_,
-    XRPAmount baseFee_,
+    STTx const& tx,
+    TER preclaimResult,
+    XRPAmount baseFee,
     ApplyFlags flags,
-    beast::Journal journal_)
-    : registry(registry_)
-    , tx(tx_)
-    , preclaimResult(preclaimResult_)
-    , baseFee(baseFee_)
-    , journal(journal_)
+    beast::Journal journal)
+    : registry(registry)
+    , tx(tx)
+    , preclaimResult(preclaimResult)
+    , baseFee(baseFee)
+    , journal(journal)
     , base_(base)
     , flags_(flags)
     , parentBatchId_(parentBatchId)
 {
     XRPL_ASSERT(
-        parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
+        parentBatchId.has_value() == ((flags_ & TapBatch) == TapBatch),
         "Parent Batch ID should be set if batch apply flag is set");
     view_.emplace(&base_, flags_);
 }
@@ -59,7 +59,7 @@ std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-    return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & tapDRY_RUN) != 0u, journal);
+    return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }
 
 std::size_t
@@ -124,7 +124,7 @@ ApplyContext::checkInvariantsHelper(
         if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
         {
             JLOG(journal.fatal()) << "Transaction has failed one or more global invariants: "
-                                  << to_string(tx.getJson(JsonOptions::none));
+                                  << to_string(tx.getJson(JsonOptions::KNone));
 
             return failInvariantCheck(result);
         }
@@ -133,7 +133,7 @@ ApplyContext::checkInvariantsHelper(
     {
         JLOG(journal.fatal()) << "Transaction caused an exception in a global invariant"
                               << ", ex: " << ex.what()
-                              << ", tx: " << to_string(tx.getJson(JsonOptions::none));
+                              << ", tx: " << to_string(tx.getJson(JsonOptions::KNone));
 
         return failInvariantCheck(result);
     }

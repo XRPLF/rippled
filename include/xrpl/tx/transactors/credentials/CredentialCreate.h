@@ -7,7 +7,7 @@ namespace xrpl {
 class CredentialCreate : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit CredentialCreate(ApplyContext& ctx) : Transactor(ctx)
     {

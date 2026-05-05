@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <iterator>
 #include <string>
+#include <system_error>
 
 namespace xrpl {
 
@@ -52,7 +53,7 @@ STUInt8::getText() const
 }
 
 template <>
-Json::Value
+json::Value
 STUInt8::getJson(JsonOptions) const
 {
     if (getFName() == sfTransactionResult)
@@ -91,7 +92,7 @@ STUInt16::getText() const
 {
     if (getFName() == sfLedgerEntryType)
     {
-        auto item = LedgerFormats::getInstance().findByType(safe_cast<LedgerEntryType>(value_));
+        auto item = LedgerFormats::getInstance().findByType(safeCast<LedgerEntryType>(value_));
 
         if (item != nullptr)
             return item->getName();
@@ -99,7 +100,7 @@ STUInt16::getText() const
 
     if (getFName() == sfTransactionType)
     {
-        auto item = TxFormats::getInstance().findByType(safe_cast<TxType>(value_));
+        auto item = TxFormats::getInstance().findByType(safeCast<TxType>(value_));
 
         if (item != nullptr)
             return item->getName();
@@ -109,12 +110,12 @@ STUInt16::getText() const
 }
 
 template <>
-Json::Value
+json::Value
 STUInt16::getJson(JsonOptions) const
 {
     if (getFName() == sfLedgerEntryType)
     {
-        auto item = LedgerFormats::getInstance().findByType(safe_cast<LedgerEntryType>(value_));
+        auto item = LedgerFormats::getInstance().findByType(safeCast<LedgerEntryType>(value_));
 
         if (item != nullptr)
             return item->getName();
@@ -122,7 +123,7 @@ STUInt16::getJson(JsonOptions) const
 
     if (getFName() == sfTransactionType)
     {
-        auto item = TxFormats::getInstance().findByType(safe_cast<TxType>(value_));
+        auto item = TxFormats::getInstance().findByType(safeCast<TxType>(value_));
 
         if (item != nullptr)
             return item->getName();
@@ -160,7 +161,7 @@ STUInt32::getText() const
 }
 
 template <>
-Json::Value
+json::Value
 STUInt32::getJson(JsonOptions) const
 {
     if (getFName() == sfPermissionValue)
@@ -196,7 +197,7 @@ STUInt64::getText() const
 }
 
 template <>
-Json::Value
+json::Value
 STUInt64::getJson(JsonOptions) const
 {
     auto convertToString = [](uint64_t const value, int const base) {
@@ -208,7 +209,7 @@ STUInt64::getJson(JsonOptions) const
         return str;
     };
 
-    if (auto const& fName = getFName(); fName.shouldMeta(SField::sMD_BaseTen))
+    if (auto const& fName = getFName(); fName.shouldMeta(SField::SMdBaseTen))
     {
         return convertToString(value_, 10);  // Convert to base 10
     }
@@ -239,7 +240,7 @@ STInt32::getText() const
 }
 
 template <>
-Json::Value
+json::Value
 STInt32::getJson(JsonOptions) const
 {
     return value_;

@@ -80,18 +80,20 @@ inline void
 setCurrentThreadNameImpl(std::string_view name)
 {
     // truncate and set the thread name.
-    char boundedName[maxThreadNameLength + 1];
-    auto const boundedSize = name.size() < maxThreadNameLength ? name.size() : maxThreadNameLength;
+    char boundedName[kMAX_THREAD_NAME_LENGTH + 1];
+    auto const boundedSize =
+        name.size() < kMAX_THREAD_NAME_LENGTH ? name.size() : kMAX_THREAD_NAME_LENGTH;
     name.copy(boundedName, boundedSize);
     boundedName[boundedSize] = '\0';
 
     pthread_setname_np(pthread_self(), boundedName);
 
 #ifdef TRUNCATED_THREAD_NAME_LOGS
-    if (name.size() > maxThreadNameLength)
+    if (name.size() > kMAX_THREAD_NAME_LENGTH)
     {
         std::cerr << "WARNING: Thread name \"" << name << "\" (length " << name.size()
-                  << ") exceeds maximum of " << maxThreadNameLength << " characters on Linux.\n";
+                  << ") exceeds maximum of " << kMAX_THREAD_NAME_LENGTH
+                  << " characters on Linux.\n";
     }
 #endif
 }
@@ -102,19 +104,19 @@ setCurrentThreadNameImpl(std::string_view name)
 namespace beast {
 
 namespace detail {
-thread_local std::string threadName;
+thread_local std::string gThreadName;
 }  // namespace detail
 
 std::string
 getCurrentThreadName()
 {
-    return detail::threadName;
+    return detail::gThreadName;
 }
 
 void
 setCurrentThreadName(std::string_view name)
 {
-    detail::threadName = name;
+    detail::gThreadName = name;
     detail::setCurrentThreadNameImpl(name);
 }
 

@@ -22,13 +22,13 @@ private:
     class SavedStateDB
     {
     public:
-        soci::session sqlDb_;
-        std::mutex mutex_;
-        beast::Journal const journal_;
+        soci::session sqlDb;
+        std::mutex mutex;
+        beast::Journal const journal;
 
         // Just instantiate without any logic in case online delete is not
         // configured
-        explicit SavedStateDB() : journal_{beast::Journal::getNullSink()}
+        explicit SavedStateDB() : journal{beast::Journal::getNullSink()}
         {
         }
 
@@ -57,9 +57,9 @@ private:
     // check health/stop status as records are copied
     std::uint64_t const checkHealthInterval_ = 1000;
     // minimum # of ledgers to maintain for health of network
-    static std::uint32_t const minimumDeletionInterval_ = 256;
+    static std::uint32_t const kMINIMUM_DELETION_INTERVAL = 256;
     // minimum # of ledgers required for standalone mode.
-    static std::uint32_t const minimumDeletionIntervalSA_ = 8;
+    static std::uint32_t const kMINIMUM_DELETION_INTERVAL_SA = 8;
     // minimum ledger to maintain online.
     std::atomic<LedgerIndex> minimumOnline_;
 
@@ -94,15 +94,15 @@ private:
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
 
-    static constexpr auto nodeStoreName_ = "NodeStore";
+    static constexpr auto kNODE_STORE_NAME = "NodeStore";
 
 public:
     SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
 
     std::uint32_t
-    clampFetchDepth(std::uint32_t fetch_depth) const override
+    clampFetchDepth(std::uint32_t fetchDepth) const override
     {
-        return (deleteInterval_ != 0u) ? std::min(fetch_depth, deleteInterval_) : fetch_depth;
+        return (deleteInterval_ != 0u) ? std::min(fetchDepth, deleteInterval_) : fetchDepth;
     }
 
     std::unique_ptr<NodeStore::Database>
@@ -169,8 +169,8 @@ private:
 
         for (auto const& key : cache.getKeys())
         {
-            dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::synchronous, true);
-            if (!(++check % checkHealthInterval_) && healthWait() == HealthResult::stopping)
+            dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::Synchronous, true);
+            if (!(++check % checkHealthInterval_) && healthWait() == HealthResult::Stopping)
                 return true;
         }
 
@@ -184,7 +184,7 @@ private:
     void
     clearSql(
         LedgerIndex lastRotated,
-        std::string const& TableName,
+        std::string const& tableName,
         std::function<std::optional<LedgerIndex>()> const& getMinSeq,
         std::function<void(LedgerIndex)> const& deleteBeforeSeq);
     void
@@ -201,7 +201,7 @@ private:
      *
      * @return Whether the server is stopping.
      */
-    enum class HealthResult { stopping, keepGoing };
+    enum class HealthResult { Stopping, KeepGoing };
     [[nodiscard]] HealthResult
     healthWait();
 

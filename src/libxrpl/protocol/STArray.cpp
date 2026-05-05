@@ -127,15 +127,15 @@ STArray::getText() const
     return r;
 }
 
-Json::Value
+json::Value
 STArray::getJson(JsonOptions p) const
 {
-    Json::Value v = Json::arrayValue;
+    json::Value v = json::ArrayValue;
     for (auto const& object : v_)
     {
         if (object.getSType() != STI_NOTPRESENT)
         {
-            Json::Value& inner = v.append(Json::objectValue);
+            json::Value& inner = v.append(json::ObjectValue);
             inner[object.getFName().getJsonName()] = object.getJson(p);
         }
     }

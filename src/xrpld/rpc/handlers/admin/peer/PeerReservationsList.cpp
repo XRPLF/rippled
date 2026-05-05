@@ -6,14 +6,14 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doPeerReservationsList(RPC::JsonContext& context)
 {
     auto const& reservations = context.app.getPeerReservations().list();
     // Enumerate the reservations in context.app.getPeerReservations()
-    // as a Json::Value.
-    Json::Value result{Json::objectValue};
-    Json::Value& jaReservations = result[jss::reservations] = Json::arrayValue;
+    // as a json::Value.
+    json::Value result{json::ObjectValue};
+    json::Value& jaReservations = result[jss::reservations] = json::ArrayValue;
     for (auto const& reservation : reservations)
     {
         jaReservations.append(reservation.toJson());

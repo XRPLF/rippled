@@ -24,7 +24,7 @@
 namespace xrpl {
 
 bool
-passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
+passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
 {
     XRPL_ASSERT(
         !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()),
@@ -77,7 +77,7 @@ ipAllowed(
 }
 
 bool
-isAdmin(Port const& port, Json::Value const& params, beast::IP::Address const& remoteIp)
+isAdmin(Port const& port, json::Value const& params, beast::IP::Address const& remoteIp)
 {
     return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
         passwordUnrequiredOrSentCorrect(port, params);
@@ -87,7 +87,7 @@ Role
 requestRole(
     Role const& required,
     Port const& port,
-    Json::Value const& params,
+    json::Value const& params,
     beast::IP::Endpoint const& remoteIp,
     std::string_view user)
 {
@@ -120,7 +120,7 @@ bool
 isUnlimited(
     Role const& required,
     Port const& port,
-    Json::Value const& params,
+    json::Value const& params,
     beast::IP::Endpoint const& remoteIp,
     std::string const& user)
 {
@@ -252,23 +252,23 @@ forwardedFor(http_request_type const& request)
     // Look for the Forwarded field in the request.
     if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())
     {
-        auto ascii_tolower = [](char c) -> char {
+        auto asciiTolower = [](char c) -> char {
             return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
         };
 
         // Look for the first (case insensitive) "for="
-        static std::string const forStr{"for="};
+        static std::string const kFOR_STR{"for="};
         char const* found = std::search(
             it->value().begin(),
             it->value().end(),
-            forStr.begin(),
-            forStr.end(),
-            [&ascii_tolower](char c1, char c2) { return ascii_tolower(c1) == ascii_tolower(c2); });
+            kFOR_STR.begin(),
+            kFOR_STR.end(),
+            [&asciiTolower](char c1, char c2) { return asciiTolower(c1) == asciiTolower(c2); });
 
         if (found == it->value().end())
             return {};
 
-        found += forStr.size();
+        found += kFOR_STR.size();
 
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {

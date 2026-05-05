@@ -42,7 +42,7 @@ namespace xrpl::test {
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
 
-class Server_test : public beast::unit_test::suite
+class Server_test : public beast::unit_test::Suite
 {
 public:
     class TestThread
@@ -67,7 +67,7 @@ public:
         }
 
         boost::asio::io_context&
-        get_io_context()
+        getIoContext()
         {
             return io_context_;
         }
@@ -77,11 +77,11 @@ public:
 
     class TestSink : public beast::Journal::Sink
     {
-        beast::unit_test::suite& suite_;
+        beast::unit_test::Suite& suite_;
 
     public:
-        explicit TestSink(beast::unit_test::suite& suite)
-            : Sink(beast::severities::kWarning, false), suite_(suite)
+        explicit TestSink(beast::unit_test::Suite& suite)
+            : Sink(beast::severities::KWarning, false), suite_(suite)
         {
         }
 
@@ -116,7 +116,7 @@ public:
             Session& session,
             std::unique_ptr<stream_type> const& bundle,
             http_request_type const& request,
-            boost::asio::ip::tcp::endpoint remote_address)
+            boost::asio::ip::tcp::endpoint remoteAddress)
         {
             return Handoff{};
         }
@@ -125,7 +125,7 @@ public:
         onHandoff(
             Session& session,
             http_request_type const& request,
-            boost::asio::ip::tcp::endpoint remote_address)
+            boost::asio::ip::tcp::endpoint remoteAddress)
         {
             return Handoff{};
         }
@@ -134,7 +134,7 @@ public:
         onRequest(Session& session)
         {
             session.write(std::string("Hello, world!\n"));
-            if (beast::rfc2616::is_keep_alive(session.request()))
+            if (beast::rfc2616::isKeepAlive(session.request()))
             {
                 session.complete();
             }
@@ -204,7 +204,7 @@ public:
     // Expect that reading the stream produces a matching string
     template <class SyncReadStream>
     bool
-    expect_read(SyncReadStream& s, std::string const& match)
+    expectRead(SyncReadStream& s, std::string const& match)
     {
         boost::asio::streambuf b(1000);  // limit on read
         try
@@ -230,7 +230,7 @@ public:
     }
 
     void
-    test_request(boost::asio::ip::tcp::endpoint const& ep)
+    testRequest(boost::asio::ip::tcp::endpoint const& ep)
     {
         boost::asio::io_context ios;
         using socket = boost::asio::ip::tcp::socket;
@@ -246,7 +246,7 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         boost::system::error_code ec;
@@ -256,7 +256,7 @@ public:
     }
 
     void
-    test_keepalive(boost::asio::ip::tcp::endpoint const& ep)
+    testKeepalive(boost::asio::ip::tcp::endpoint const& ep)
     {
         boost::asio::io_context ios;
         using socket = boost::asio::ip::tcp::socket;
@@ -272,7 +272,7 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         if (!write(
@@ -282,7 +282,7 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         boost::system::error_code ec;
@@ -295,17 +295,17 @@ public:
         testcase("Basic client/server");
         TestSink sink{*this};
         TestThread thread;
-        sink.threshold(beast::severities::Severity::kAll);
+        sink.threshold(beast::severities::Severity::KAll);
         beast::Journal const journal{sink};
         TestHandler handler;
-        auto s = make_Server(handler, thread.get_io_context(), journal);
+        auto s = makeServer(handler, thread.getIoContext(), journal);
         std::vector<Port> serverPort(1);
         serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
-        test_request(eps.begin()->second);
-        test_keepalive(eps.begin()->second);
+        testRequest(eps.begin()->second);
+        testKeepalive(eps.begin()->second);
         // s->close();
         s = nullptr;
         pass();
@@ -328,7 +328,7 @@ public:
                 Session& session,
                 std::unique_ptr<stream_type> const& bundle,
                 http_request_type const& request,
-                boost::asio::ip::tcp::endpoint remote_address)
+                boost::asio::ip::tcp::endpoint remoteAddress)
             {
                 return Handoff{};
             }
@@ -337,7 +337,7 @@ public:
             onHandoff(
                 Session& session,
                 http_request_type const& request,
-                boost::asio::ip::tcp::endpoint remote_address)
+                boost::asio::ip::tcp::endpoint remoteAddress)
             {
                 return Handoff{};
             }
@@ -372,7 +372,7 @@ public:
         for (int i = 0; i < 1000; ++i)
         {
             TestThread thread;
-            auto s = make_Server(h, thread.get_io_context(), journal);
+            auto s = makeServer(h, thread.getIoContext(), journal);
             std::vector<Port> serverPort(1);
             serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
             serverPort.back().port = 0;

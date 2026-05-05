@@ -15,7 +15,7 @@
 namespace xrpl {
 
 static std::optional<Seed>
-validationSeed(Json::Value const& params)
+validationSeed(json::Value const& params)
 {
     if (!params.isMember(jss::secret))
         return randomSeed();
@@ -29,22 +29,22 @@ validationSeed(Json::Value const& params)
 //
 // This command requires Role::ADMIN access because it makes
 // no sense to ask an untrusted server for this.
-Json::Value
+json::Value
 doValidationCreate(RPC::JsonContext& context)
 {
-    Json::Value obj(Json::objectValue);
+    json::Value obj(json::ObjectValue);
 
     auto seed = validationSeed(context.params);
 
     if (!seed)
-        return rpcError(rpcBAD_SEED);
+        return rpcError(RpcBadSeed);
 
-    auto const private_key = generateSecretKey(KeyType::secp256k1, *seed);
+    auto const privateKey = generateSecretKey(KeyType::Secp256k1, *seed);
 
     obj[jss::validation_public_key] =
-        toBase58(TokenType::NodePublic, derivePublicKey(KeyType::secp256k1, private_key));
+        toBase58(TokenType::NodePublic, derivePublicKey(KeyType::Secp256k1, privateKey));
 
-    obj[jss::validation_private_key] = toBase58(TokenType::NodePrivate, private_key);
+    obj[jss::validation_private_key] = toBase58(TokenType::NodePrivate, privateKey);
 
     obj[jss::validation_seed] = toBase58(*seed);
     obj[jss::validation_key] = seedAs1751(*seed);

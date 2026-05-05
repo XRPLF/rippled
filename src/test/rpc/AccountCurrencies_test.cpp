@@ -18,7 +18,7 @@
 
 namespace xrpl {
 
-class AccountCurrencies_test : public beast::unit_test::suite
+class AccountCurrencies_test : public beast::unit_test::Suite
 {
     void
     testBadInput()
@@ -33,7 +33,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         env.close();
 
         {  // invalid ledger (hash)
-            Json::Value params;
+            json::Value params;
             params[jss::account] = Account{"bob"}.human();
             params[jss::ledger_hash] = 1;
             auto const result =
@@ -52,7 +52,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         {
             // test account non-string
             auto testInvalidAccountParam = [&](auto const& param) {
-                Json::Value params;
+                json::Value params;
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -62,15 +62,15 @@ class AccountCurrencies_test : public beast::unit_test::suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::nullValue));
-            testInvalidAccountParam(Json::Value(Json::objectValue));
-            testInvalidAccountParam(Json::Value(Json::arrayValue));
+            testInvalidAccountParam(json::Value(json::NullValue));
+            testInvalidAccountParam(json::Value(json::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ArrayValue));
         }
 
         {
             // test ident non-string
             auto testInvalidIdentParam = [&](auto const& param) {
-                Json::Value params;
+                json::Value params;
                 params[jss::ident] = param;
                 auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -80,13 +80,13 @@ class AccountCurrencies_test : public beast::unit_test::suite
             testInvalidIdentParam(1);
             testInvalidIdentParam(1.1);
             testInvalidIdentParam(true);
-            testInvalidIdentParam(Json::Value(Json::nullValue));
-            testInvalidIdentParam(Json::Value(Json::objectValue));
-            testInvalidIdentParam(Json::Value(Json::arrayValue));
+            testInvalidIdentParam(json::Value(json::NullValue));
+            testInvalidIdentParam(json::Value(json::ObjectValue));
+            testInvalidIdentParam(json::Value(json::ArrayValue));
         }
 
         {
-            Json::Value params;
+            json::Value params;
             params[jss::account] = "llIIOO";  // these are invalid in bitcoin alphabet
             auto const result =
                 env.rpc("json", "account_currencies", to_string(params))[jss::result];
@@ -96,7 +96,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
 
         {
             // Cannot use a seed as account
-            Json::Value params;
+            json::Value params;
             params[jss::account] = "Bob";
             auto const result =
                 env.rpc("json", "account_currencies", to_string(params))[jss::result];
@@ -105,7 +105,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         }
 
         {  // ask for nonexistent account
-            Json::Value params;
+            json::Value params;
             params[jss::account] = Account{"bob"}.human();
             auto const result =
                 env.rpc("json", "account_currencies", to_string(params))[jss::result];
@@ -134,12 +134,12 @@ class AccountCurrencies_test : public beast::unit_test::suite
         });
         env.close();
 
-        Json::Value params;
+        json::Value params;
         params[jss::account] = alice.human();
         auto result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
 
         auto arrayCheck = [&result](
-                              Json::StaticString const& fld,
+                              json::StaticString const& fld,
                               std::vector<std::optional<IOU>> const& expected) -> bool {
             bool stat = result.isMember(fld) && result[fld].isArray() &&
                 result[fld].size() == expected.size();

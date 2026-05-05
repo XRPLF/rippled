@@ -8,9 +8,9 @@
 namespace xrpl::test::jtx {
 
 /** Create a payment. */
-Json::Value
+json::Value
 pay(AccountID const& account, AccountID const& to, AnyAmount amount);
-Json::Value
+json::Value
 pay(Account const& account, Account const& to, AnyAmount amount);
 
 }  // namespace xrpl::test::jtx

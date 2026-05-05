@@ -57,7 +57,7 @@ checkNear(IOUAmount const& expected, IOUAmount const& actual)
 static bool
 isXRPAccount(STPathElement const& pe)
 {
-    if (pe.getNodeType() != STPathElement::typeAccount)
+    if (pe.getNodeType() != STPathElement::TypeAccount)
         return false;
     return isXRP(pe.getAccountID());
 };
@@ -72,13 +72,13 @@ toStep(
     auto& j = ctx.j;
 
     if (ctx.isFirst && e1->isAccount() &&
-        ((e1->getNodeType() & STPathElement::typeCurrency) != 0u) && e1->getPathAsset().isXRP())
+        ((e1->getNodeType() & STPathElement::TypeCurrency) != 0u) && e1->getPathAsset().isXRP())
     {
-        return make_XRPEndpointStep(ctx, e1->getAccountID());
+        return makeXrpEndpointStep(ctx, e1->getAccountID());
     }
 
     if (ctx.isLast && isXRPAccount(*e1) && e2->isAccount())
-        return make_XRPEndpointStep(ctx, e2->getAccountID());
+        return makeXrpEndpointStep(ctx, e2->getAccountID());
 
     // MPTEndpointStep is created in following cases:
     // 1 Direct payment between an issuer and a holder
@@ -99,12 +99,11 @@ toStep(
     {
         return curAsset.visit(
             [&](MPTIssue const& issue) {
-                return make_MPTEndpointStep(
+                return makeMptEndpointStep(
                     ctx, e1->getAccountID(), e2->getAccountID(), issue.getMptID());
             },
             [&](Issue const& issue) {
-                return make_DirectStepI(
-                    ctx, e1->getAccountID(), e2->getAccountID(), issue.currency);
+                return makeDirectStepI(ctx, e1->getAccountID(), e2->getAccountID(), issue.currency);
             });
     }
 
@@ -119,12 +118,12 @@ toStep(
     }
 
     XRPL_ASSERT(
-        (e2->getNodeType() & STPathElement::typeAsset) ||
-            (e2->getNodeType() & STPathElement::typeIssuer),
+        (e2->getNodeType() & STPathElement::TypeAsset) ||
+            (e2->getNodeType() & STPathElement::TypeIssuer),
         "xrpl::toStep : currency or issuer");
     PathAsset const outAsset =
-        ((e2->getNodeType() & STPathElement::typeAsset) != 0u) ? e2->getPathAsset() : curAsset;
-    auto const outIssuer = ((e2->getNodeType() & STPathElement::typeIssuer) != 0u)
+        ((e2->getNodeType() & STPathElement::TypeAsset) != 0u) ? e2->getPathAsset() : curAsset;
+    auto const outIssuer = ((e2->getNodeType() & STPathElement::TypeIssuer) != 0u)
         ? e2->getIssuerID()
         : curAsset.getIssuer();
 
@@ -139,30 +138,30 @@ toStep(
     if (outAsset.isXRP())
     {
         return curAsset.visit(
-            [&](MPTIssue const& issue) { return make_BookStepMX(ctx, issue); },
-            [&](Issue const& issue) { return make_BookStepIX(ctx, issue); });
+            [&](MPTIssue const& issue) { return makeBookStepMx(ctx, issue); },
+            [&](Issue const& issue) { return makeBookStepIx(ctx, issue); });
     }
 
     if (isXRP(curAsset))
     {
         return outAsset.visit(
-            [&](MPTID const& mpt) { return make_BookStepXM(ctx, mpt); },
-            [&](Currency const& currency) { return make_BookStepXI(ctx, {currency, outIssuer}); });
+            [&](MPTID const& mpt) { return makeBookStepXm(ctx, mpt); },
+            [&](Currency const& currency) { return makeBookStepXi(ctx, {currency, outIssuer}); });
     }
 
     return curAsset.visit(
         [&](MPTIssue const& issue) {
             return outAsset.visit(
                 [&](Currency const& currency) {
-                    return make_BookStepMI(ctx, issue, {currency, outIssuer});
+                    return makeBookStepMi(ctx, issue, {currency, outIssuer});
                 },
-                [&](MPTID const& mpt) { return make_BookStepMM(ctx, issue, mpt); });
+                [&](MPTID const& mpt) { return makeBookStepMm(ctx, issue, mpt); });
         },
         [&](Issue const& issue) {
             return outAsset.visit(
-                [&](MPTID const& mpt) { return make_BookStepIM(ctx, issue, mpt); },
+                [&](MPTID const& mpt) { return makeBookStepIm(ctx, issue, mpt); },
                 [&](Currency const& currency) {
-                    return make_BookStepII(ctx, issue, {currency, outIssuer});
+                    return makeBookStepIi(ctx, issue, {currency, outIssuer});
                 });
         });
 }
@@ -190,9 +189,9 @@ toStrand(
         (dst == noAccount()) || (deliver.getIssuer() == noAccount()))
         return {temBAD_PATH, Strand{}};
 
-    if ((deliver.holds<MPTIssue>() && deliver.getIssuer() == beast::zero) ||
+    if ((deliver.holds<MPTIssue>() && deliver.getIssuer() == beast::kZERO) ||
         (sendMaxAsset && sendMaxAsset->holds<MPTIssue>() &&
-         sendMaxAsset->getIssuer() == beast::zero))
+         sendMaxAsset->getIssuer() == beast::kZERO))
         return {temBAD_PATH, Strand{}};
 
     for (std::size_t i = 0; i < path.size(); ++i)
@@ -200,14 +199,14 @@ toStrand(
         auto const& pe = path[i];
         auto const t = pe.getNodeType();
 
-        if (((t & ~STPathElement::typeAll) != 0u) || (t == 0u))
+        if (((t & ~STPathElement::TypeAll) != 0u) || (t == 0u))
             return {temBAD_PATH, Strand{}};
 
-        bool const hasAccount = (t & STPathElement::typeAccount) != 0u;
-        bool const hasIssuer = (t & STPathElement::typeIssuer) != 0u;
-        bool const hasCurrency = (t & STPathElement::typeCurrency) != 0u;
-        bool const hasMPT = (t & STPathElement::typeMPT) != 0u;
-        bool const hasAsset = (t & STPathElement::typeAsset) != 0u;
+        bool const hasAccount = (t & STPathElement::TypeAccount) != 0u;
+        bool const hasIssuer = (t & STPathElement::TypeIssuer) != 0u;
+        bool const hasCurrency = (t & STPathElement::TypeCurrency) != 0u;
+        bool const hasMPT = (t & STPathElement::TypeMpt) != 0u;
+        bool const hasAsset = (t & STPathElement::TypeAsset) != 0u;
 
         if (hasAccount && (hasIssuer || hasCurrency))
             return {temBAD_PATH, Strand{}};
@@ -252,7 +251,7 @@ toStrand(
 
     // Currency or MPT
     auto hasAsset = [](STPathElement const pe) {
-        return pe.getNodeType() & STPathElement::typeAsset;
+        return pe.getNodeType() & STPathElement::TypeAsset;
     };
 
     std::vector<STPathElement> normPath;
@@ -264,10 +263,10 @@ toStrand(
         // transaction, as defined by the transaction's Account field. The Asset
         // is either SendMax or Deliver.
         auto const t = [&]() {
-            auto const t = STPathElement::typeAccount | STPathElement::typeIssuer;
+            auto const t = STPathElement::TypeAccount | STPathElement::TypeIssuer;
             return curAsset.visit(
-                [&](MPTIssue const&) { return t | STPathElement::typeMPT; },
-                [&](Issue const&) { return t | STPathElement::typeCurrency; });
+                [&](MPTIssue const&) { return t | STPathElement::TypeMpt; },
+                [&](Issue const&) { return t | STPathElement::TypeCurrency; });
         }();
         // If MPT then the issuer is the actual issuer, it is never the source
         // account.
@@ -294,7 +293,7 @@ toStrand(
             STPathElement const& lastAsset =
                 *std::ranges::find_if(std::ranges::reverse_view(normPath), hasAsset);
             if (lastAsset.getPathAsset() != deliver ||
-                (offerCrossing != OfferCrossing::no &&
+                (offerCrossing != OfferCrossing::No &&
                  lastAsset.getIssuerID() != deliver.getIssuer()))
             {
                 normPath.emplace_back(std::nullopt, deliver, deliver.getIssuer());
@@ -409,16 +408,15 @@ toStrand(
         }
 
         using ImpliedStepRet = std::pair<TER, std::unique_ptr<Step>>;
-        auto getImpliedStep = [&](AccountID const& src_,
-                                  AccountID const& dst_,
-                                  Asset const& asset_) -> ImpliedStepRet {
-            return asset_.visit(
+        auto getImpliedStep =
+            [&](AccountID const& src, AccountID const& dst, Asset const& asset) -> ImpliedStepRet {
+            return asset.visit(
                 [&](MPTIssue const&) -> ImpliedStepRet {
                     JLOG(j.error()) << "MPT is invalid with rippling";
                     return {temBAD_PATH, nullptr};
                 },
                 [&](Issue const& issue) -> ImpliedStepRet {
-                    return make_DirectStepI(ctx(), src_, dst_, issue.currency);
+                    return makeDirectStepI(ctx(), src, dst, issue.currency);
                 });
         };
 
@@ -437,7 +435,7 @@ toStrand(
                     return {msr.first, Strand{}};
                 result.push_back(std::move(msr.second));
                 impliedPE.emplace(
-                    STPathElement::typeAccount, curAsset.getIssuer(), xrpCurrency(), xrpAccount());
+                    STPathElement::TypeAccount, curAsset.getIssuer(), xrpCurrency(), xrpAccount());
                 cur = &*impliedPE;
             }
         }
@@ -452,7 +450,7 @@ toStrand(
                     return {msr.first, Strand{}};
                 result.push_back(std::move(msr.second));
                 impliedPE.emplace(
-                    STPathElement::typeAccount, curAsset.getIssuer(), xrpCurrency(), xrpAccount());
+                    STPathElement::TypeAccount, curAsset.getIssuer(), xrpCurrency(), xrpAccount());
                 cur = &*impliedPE;
             }
         }
@@ -469,7 +467,7 @@ toStrand(
                         return {temBAD_PATH, Strand{}};
 
                     // Last step. insert xrp endpoint step
-                    auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
+                    auto msr = makeXrpEndpointStep(ctx(), next->getAccountID());
                     if (!isTesSuccess(msr.first))
                         return {msr.first, Strand{}};
                     result.push_back(std::move(msr.second));
@@ -664,7 +662,7 @@ toStrands(
         {
             lastFailTer = ter;
             JLOG(j.trace()) << "failed to add path: ter: " << ter
-                            << "path: " << p.getJson(JsonOptions::none);
+                            << "path: " << p.getJson(JsonOptions::KNone);
             if (isTemMalformed(ter))
                 return {ter, std::vector<Strand>{}};
         }
@@ -686,40 +684,40 @@ toStrands(
 }
 
 StrandContext::StrandContext(
-    ReadView const& view_,
-    std::vector<std::unique_ptr<Step>> const& strand_,
+    ReadView const& view,
+    std::vector<std::unique_ptr<Step>> const& strand,
     // A strand may not include an inner node that
     // replicates the source or destination.
-    AccountID const& strandSrc_,
-    AccountID const& strandDst_,
-    Asset const& strandDeliver_,
-    std::optional<Quality> const& limitQuality_,
-    bool isLast_,
-    bool ownerPaysTransferFee_,
-    OfferCrossing offerCrossing_,
-    bool isDefaultPath_,
-    std::array<boost::container::flat_set<Asset>, 2>& seenDirectAssets_,
-    boost::container::flat_set<Asset>& seenBookOuts_,
-    AMMContext& ammContext_,
-    std::optional<uint256> const& domainID_,
-    beast::Journal j_)
-    : view(view_)
-    , strandSrc(strandSrc_)
-    , strandDst(strandDst_)
-    , strandDeliver(strandDeliver_)
-    , limitQuality(limitQuality_)
-    , isFirst(strand_.empty())
-    , isLast(isLast_)
-    , ownerPaysTransferFee(ownerPaysTransferFee_)
-    , offerCrossing(offerCrossing_)
-    , isDefaultPath(isDefaultPath_)
-    , strandSize(strand_.size())
-    , prevStep(!strand_.empty() ? strand_.back().get() : nullptr)
-    , seenDirectAssets(seenDirectAssets_)
-    , seenBookOuts(seenBookOuts_)
-    , ammContext(ammContext_)
-    , domainID(domainID_)
-    , j(j_)
+    AccountID const& strandSrc,
+    AccountID const& strandDst,
+    Asset const& strandDeliver,
+    std::optional<Quality> const& limitQuality,
+    bool isLast,
+    bool ownerPaysTransferFee,
+    OfferCrossing offerCrossing,
+    bool isDefaultPath,
+    std::array<boost::container::flat_set<Asset>, 2>& seenDirectAssets,
+    boost::container::flat_set<Asset>& seenBookOuts,
+    AMMContext& ammContext,
+    std::optional<uint256> const& domainId,
+    beast::Journal j)
+    : view(view)
+    , strandSrc(strandSrc)
+    , strandDst(strandDst)
+    , strandDeliver(strandDeliver)
+    , limitQuality(limitQuality)
+    , isFirst(strand.empty())
+    , isLast(isLast)
+    , ownerPaysTransferFee(ownerPaysTransferFee)
+    , offerCrossing(offerCrossing)
+    , isDefaultPath(isDefaultPath)
+    , strandSize(strand.size())
+    , prevStep(!strand.empty() ? strand.back().get() : nullptr)
+    , seenDirectAssets(seenDirectAssets)
+    , seenBookOuts(seenBookOuts)
+    , ammContext(ammContext)
+    , domainID(domainId)
+    , j(j)
 {
 }
 

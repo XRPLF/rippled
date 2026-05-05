@@ -9,7 +9,7 @@
 
 namespace beast {
 
-class LexicalCast_test : public unit_test::suite
+class LexicalCast_test : public unit_test::Suite
 {
 public:
     template <class IntType>

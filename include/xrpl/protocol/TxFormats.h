@@ -51,16 +51,16 @@ enum TxType : std::uint16_t
 #pragma pop_macro("TRANSACTION")
 
     /** This transaction type is deprecated; it is retained for historical purposes. */
-    ttNICKNAME_SET [[deprecated("This transaction type is not supported and should not be used.")]] = 6,
+    TtNicknameSet [[deprecated("This transaction type is not supported and should not be used.")]] = 6,
 
     /** This transaction type is deprecated; it is retained for historical purposes. */
-    ttCONTRACT [[deprecated("This transaction type is not supported and should not be used.")]] = 9,
+    TtContract [[deprecated("This transaction type is not supported and should not be used.")]] = 9,
 
     /** This identifier was never used, but the slot is reserved for historical purposes. */
-    ttSPINAL_TAP [[deprecated("This transaction type is not supported and should not be used.")]] = 11,
+    TtSpinalTap [[deprecated("This transaction type is not supported and should not be used.")]] = 11,
 
     /** This transaction type installs a hook. */
-    ttHOOK_SET [[maybe_unused]] = 22,
+    TtHookSet [[maybe_unused]] = 22,
 };
 // clang-format on
 

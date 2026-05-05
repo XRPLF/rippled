@@ -12,7 +12,7 @@ class Sandbox;
 class OfferCreate : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Custom};
 
     /** Construct a Transactor subclass that creates an offer in the ledger. */
     explicit OfferCreate(ApplyContext& ctx) : Transactor(ctx)
@@ -56,7 +56,7 @@ public:
 
 private:
     std::pair<TER, bool>
-    applyGuts(Sandbox& view, Sandbox& view_cancel);
+    applyGuts(Sandbox& view, Sandbox& viewCancel);
 
     // Determine if we are authorized to hold the asset we want to get.
     static TER
@@ -76,13 +76,13 @@ private:
         std::optional<uint256> const& domainID);
 
     static std::string
-    format_amount(STAmount const& amount);
+    formatAmount(STAmount const& amount);
 
     TER
     applyHybrid(
         Sandbox& sb,
         std::shared_ptr<STLedgerEntry> sleOffer,
-        Keylet const& offer_index,
+        Keylet const& offerIndex,
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,
         std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);

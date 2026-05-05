@@ -27,53 +27,53 @@
 
 namespace xrpl {
 
-std::optional<Json::Value>
-validateTakerJSON(Json::Value const& taker, Json::StaticString const& name)
+std::optional<json::Value>
+validateTakerJSON(json::Value const& taker, json::StaticString const& name)
 {
     if (!taker.isMember(jss::currency) && !taker.isMember(jss::mpt_issuance_id))
     {
-        return RPC::missing_field_error((boost::format("%s.currency") % name.c_str()).str());
+        return RPC::missingFieldError((boost::format("%s.currency") % name.cStr()).str());
     }
 
     if (taker.isMember(jss::mpt_issuance_id) &&
         (taker.isMember(jss::currency) || taker.isMember(jss::issuer)))
     {
-        return RPC::invalid_field_error(name.c_str());
+        return RPC::invalidFieldError(name.cStr());
     }
 
     if ((taker.isMember(jss::currency) && !taker[jss::currency].isString()) ||
         (taker.isMember(jss::mpt_issuance_id) && !taker[jss::mpt_issuance_id].isString()))
     {
-        return RPC::expected_field_error(
-            (boost::format("%s.currency") % name.c_str()).str(), "string");
+        return RPC::expectedFieldError(
+            (boost::format("%s.currency") % name.cStr()).str(), "string");
     }
 
     return std::nullopt;
 }
 
-std::optional<Json::Value>
+std::optional<json::Value>
 parseTakerAssetJSON(
     Asset& asset,
-    Json::Value const& taker,
-    Json::StaticString const& name,
+    json::Value const& taker,
+    json::StaticString const& name,
     beast::Journal j)
 {
     auto const assetError = [&]() {
         if (name == jss::taker_pays)
-            return rpcSRC_CUR_MALFORMED;
-        return rpcDST_AMT_MALFORMED;
+            return RpcSrcCurMalformed;
+        return RpcDstAmtMalformed;
     }();
 
     if (taker.isMember(jss::currency))
     {
         Issue issue = xrpIssue();
 
-        if (!to_currency(issue.currency, taker[jss::currency].asString()))
+        if (!toCurrency(issue.currency, taker[jss::currency].asString()))
         {
-            JLOG(j.info()) << boost::format("Bad %s currency.") % name.c_str();
-            return RPC::make_error(
+            JLOG(j.info()) << boost::format("Bad %s currency.") % name.cStr();
+            return RPC::makeError(
                 assetError,
-                (boost::format("Invalid field '%s.currency', bad currency.") % name.c_str()).str());
+                (boost::format("Invalid field '%s.currency', bad currency.") % name.cStr()).str());
         }
         asset = issue;
     }
@@ -82,9 +82,9 @@ parseTakerAssetJSON(
         MPTID mptid;
         if (!mptid.parseHex(taker[jss::mpt_issuance_id].asString()))
         {
-            return RPC::make_error(
+            return RPC::makeError(
                 assetError,
-                (boost::format("Invalid field '%s.mpt_issuance_id'") % name.c_str()).str());
+                (boost::format("Invalid field '%s.mpt_issuance_id'") % name.cStr()).str());
         }
         asset = mptid;
     }
@@ -92,17 +92,17 @@ parseTakerAssetJSON(
     return std::nullopt;
 }
 
-std::optional<Json::Value>
+std::optional<json::Value>
 parseTakerIssuerJSON(
     Asset& asset,
-    Json::Value const& taker,
-    Json::StaticString const& name,
+    json::Value const& taker,
+    json::StaticString const& name,
     beast::Journal j)
 {
     auto const issuerError = [&]() {
         if (name == jss::taker_pays)
-            return rpcSRC_ISR_MALFORMED;
-        return rpcDST_ISR_MALFORMED;
+            return RpcSrcIsrMalformed;
+        return RpcDstIsrMalformed;
     }();
 
     if (taker.isMember(jss::currency))
@@ -113,23 +113,23 @@ parseTakerIssuerJSON(
         {
             if (!taker[jss::issuer].isString())
             {
-                return RPC::expected_field_error(
-                    (boost::format("%s.issuer") % name.c_str()).str(), "string");
+                return RPC::expectedFieldError(
+                    (boost::format("%s.issuer") % name.cStr()).str(), "string");
             }
 
-            if (!to_issuer(issue.account, taker[jss::issuer].asString()))
+            if (!toIssuer(issue.account, taker[jss::issuer].asString()))
             {
-                return RPC::make_error(
+                return RPC::makeError(
                     issuerError,
-                    (boost::format("Invalid field '%s.issuer', bad issuer.") % name.c_str()).str());
+                    (boost::format("Invalid field '%s.issuer', bad issuer.") % name.cStr()).str());
             }
 
             if (issue.account == noAccount())
             {
-                return RPC::make_error(
+                return RPC::makeError(
                     issuerError,
                     (boost::format("Invalid field '%s.issuer', bad issuer account one.") %
-                     name.c_str())
+                     name.cStr())
                         .str());
             }
         }
@@ -140,21 +140,20 @@ parseTakerIssuerJSON(
 
         if (isXRP(issue.currency) && !isXRP(issue.account))
         {
-            return RPC::make_error(
+            return RPC::makeError(
                 issuerError,
                 (boost::format(
                      "Unneeded field '%s.issuer' for XRP currency "
                      "specification.") %
-                 name.c_str())
+                 name.cStr())
                     .str());
         }
 
         if (!isXRP(issue.currency) && isXRP(issue.account))
         {
-            return RPC::make_error(
+            return RPC::makeError(
                 issuerError,
-                (boost::format("Invalid field '%s.issuer', expected non-XRP issuer.") %
-                 name.c_str())
+                (boost::format("Invalid field '%s.issuer', expected non-XRP issuer.") % name.cStr())
                     .str());
         }
     }
@@ -162,14 +161,14 @@ parseTakerIssuerJSON(
     return std::nullopt;
 }
 
-Json::Value
+json::Value
 doBookOffers(RPC::JsonContext& context)
 {
     // VFALCO TODO Here is a terrible place for this kind of business
     //             logic. It needs to be moved elsewhere and documented,
     //             and encapsulated into a function.
-    if (context.app.getJobQueue().getJobCountGE(jtCLIENT) > 200)
-        return rpcError(rpcTOO_BUSY);
+    if (context.app.getJobQueue().getJobCountGE(JtClient) > 200)
+        return rpcError(RpcTooBusy);
 
     std::shared_ptr<ReadView const> lpLedger;
     auto jvResult = RPC::lookupLedger(lpLedger, context);
@@ -178,49 +177,49 @@ doBookOffers(RPC::JsonContext& context)
         return jvResult;
 
     if (!context.params.isMember(jss::taker_pays))
-        return RPC::missing_field_error(jss::taker_pays);
+        return RPC::missingFieldError(jss::taker_pays);
 
     if (!context.params.isMember(jss::taker_gets))
-        return RPC::missing_field_error(jss::taker_gets);
+        return RPC::missingFieldError(jss::taker_gets);
 
-    Json::Value const& taker_pays = context.params[jss::taker_pays];
-    Json::Value const& taker_gets = context.params[jss::taker_gets];
+    json::Value const& takerPays = context.params[jss::taker_pays];
+    json::Value const& takerGets = context.params[jss::taker_gets];
 
-    if (!taker_pays.isObjectOrNull())
-        return RPC::object_field_error(jss::taker_pays);
+    if (!takerPays.isObjectOrNull())
+        return RPC::objectFieldError(jss::taker_pays);
 
-    if (!taker_gets.isObjectOrNull())
-        return RPC::object_field_error(jss::taker_gets);
+    if (!takerGets.isObjectOrNull())
+        return RPC::objectFieldError(jss::taker_gets);
 
-    if (auto const err = validateTakerJSON(taker_pays, jss::taker_pays))
+    if (auto const err = validateTakerJSON(takerPays, jss::taker_pays))
         return *err;
 
-    if (auto const err = validateTakerJSON(taker_gets, jss::taker_gets))
+    if (auto const err = validateTakerJSON(takerGets, jss::taker_gets))
         return *err;
 
     Book book;
 
-    if (auto const err = parseTakerAssetJSON(book.in, taker_pays, jss::taker_pays, context.j))
+    if (auto const err = parseTakerAssetJSON(book.in, takerPays, jss::taker_pays, context.j))
         return *err;
 
-    if (auto const err = parseTakerAssetJSON(book.out, taker_gets, jss::taker_gets, context.j))
+    if (auto const err = parseTakerAssetJSON(book.out, takerGets, jss::taker_gets, context.j))
         return *err;
 
-    if (auto const err = parseTakerIssuerJSON(book.in, taker_pays, jss::taker_pays, context.j))
+    if (auto const err = parseTakerIssuerJSON(book.in, takerPays, jss::taker_pays, context.j))
         return *err;
 
-    if (auto const err = parseTakerIssuerJSON(book.out, taker_gets, jss::taker_gets, context.j))
+    if (auto const err = parseTakerIssuerJSON(book.out, takerGets, jss::taker_gets, context.j))
         return *err;
 
     std::optional<AccountID> takerID;
     if (context.params.isMember(jss::taker))
     {
         if (!context.params[jss::taker].isString())
-            return RPC::expected_field_error(jss::taker, "string");
+            return RPC::expectedFieldError(jss::taker, "string");
 
         takerID = parseBase58<AccountID>(context.params[jss::taker].asString());
         if (!takerID)
-            return RPC::invalid_field_error(jss::taker);
+            return RPC::invalidFieldError(jss::taker);
     }
 
     std::optional<uint256> domain;
@@ -230,7 +229,7 @@ doBookOffers(RPC::JsonContext& context)
         if (!context.params[jss::domain].isString() ||
             !num.parseHex(context.params[jss::domain].asString()))
         {
-            return RPC::make_error(rpcDOMAIN_MALFORMED, "Unable to parse domain.");
+            return RPC::makeError(RpcDomainMalformed, "Unable to parse domain.");
         }
 
         domain = num;
@@ -239,29 +238,29 @@ doBookOffers(RPC::JsonContext& context)
     if (book.in == book.out)
     {
         JLOG(context.j.info()) << "taker_gets same as taker_pays.";
-        return RPC::make_error(rpcBAD_MARKET);
+        return RPC::makeError(RpcBadMarket);
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::bookOffers, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kBOOK_OFFERS, context))
         return *err;
 
     bool const bProof(context.params.isMember(jss::proof));
 
-    Json::Value const jvMarker(
+    json::Value const jvMarker(
         context.params.isMember(jss::marker) ? context.params[jss::marker]
-                                             : Json::Value(Json::nullValue));
+                                             : json::Value(json::NullValue));
 
     context.netOps.getBookPage(
         lpLedger,
         {book.in, book.out, domain},
-        takerID ? *takerID : beast::zero,
+        takerID ? *takerID : beast::kZERO,
         bProof,
         limit,
         jvMarker,
         jvResult);
 
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
     return jvResult;
 }

@@ -12,9 +12,9 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
-namespace Json {
+namespace json {
 class Object;
-}  // namespace Json
+}  // namespace json
 
 namespace xrpl::RPC {
 
@@ -35,23 +35,25 @@ public:
     check();
 
     void
-    writeResult(Json::Value&);
+    writeResult(json::Value&);
 
+    // NOLINTBEGIN(readability-identifier-naming)
     static constexpr char name[] = "ledger";
 
-    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
+    static constexpr unsigned minApiVer = RPC::kAPI_MINIMUM_SUPPORTED_VERSION;
 
-    static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
+    static constexpr unsigned maxApiVer = RPC::kAPI_MAXIMUM_VALID_VERSION;
 
     static constexpr Role role = Role::USER;
 
-    static constexpr Condition condition = NO_CONDITION;
+    static constexpr Condition condition = NoCondition;
+    // NOLINTEND(readability-identifier-naming)
 
 private:
     JsonContext& context_;
     std::shared_ptr<ReadView const> ledger_;
     std::vector<TxQ::TxDetails> queueTxs_;
-    Json::Value result_;
+    json::Value result_;
     int options_ = 0;
 };
 

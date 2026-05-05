@@ -15,24 +15,26 @@ public:
     static Status
     check()
     {
-        return Status::OK;
+        return Status::kOK;
     }
 
     void
-    writeResult(Json::Value& obj) const
+    writeResult(json::Value& obj) const
     {
         setVersion(obj, apiVersion_, betaEnabled_);
     }
 
+    // NOLINTBEGIN(readability-identifier-naming)
     static constexpr char const* name = "version";
 
-    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
+    static constexpr unsigned minApiVer = RPC::kAPI_MINIMUM_SUPPORTED_VERSION;
 
-    static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
+    static constexpr unsigned maxApiVer = RPC::kAPI_MAXIMUM_VALID_VERSION;
 
     static constexpr Role role = Role::USER;
 
-    static constexpr Condition condition = NO_CONDITION;
+    static constexpr Condition condition = NoCondition;
+    // NOLINTEND(readability-identifier-naming)
 
 private:
     unsigned int apiVersion_;

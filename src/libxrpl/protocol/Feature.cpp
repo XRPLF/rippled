@@ -23,6 +23,7 @@
 namespace xrpl {
 
 inline std::size_t
+// NOLINTNEXTLINE(readability-identifier-naming)
 hash_value(xrpl::uint256 const& feature)
 {
     std::size_t seed = 0;
@@ -34,7 +35,7 @@ hash_value(xrpl::uint256 const& feature)
 
 namespace {
 
-enum class Supported : bool { no = false, yes };
+enum class Supported : bool { No = false, Yes };
 
 // *NOTE*
 //
@@ -71,45 +72,45 @@ class FeatureCollections
         uint256 feature;
 
         Feature() = delete;
-        explicit Feature(std::string name_, uint256 const& feature_)
-            : name(std::move(name_)), feature(feature_)
+        explicit Feature(std::string name, uint256 const& feature)
+            : name(std::move(name)), feature(feature)
         {
         }
 
         // These structs are used by the `features` multi_index_container to
         // provide access to the features collection by size_t index, string
         // name, and uint256 feature identifier
-        struct byIndex
+        struct ByIndex
         {
         };
-        struct byName
+        struct ByName
         {
         };
-        struct byFeature
+        struct ByFeature
         {
         };
     };
 
     // Intermediate types to help with readability
-    template <class tag, typename Type, Type Feature::* PtrToMember>
+    template <class Tag, typename Type, Type Feature::* PtrToMember>
     using feature_hashed_unique = boost::multi_index::hashed_unique<
-        boost::multi_index::tag<tag>,
+        boost::multi_index::tag<Tag>,
         boost::multi_index::member<Feature, Type, PtrToMember>>;
 
     // Intermediate types to help with readability
     using feature_indexing = boost::multi_index::indexed_by<
-        boost::multi_index::random_access<boost::multi_index::tag<Feature::byIndex>>,
-        feature_hashed_unique<Feature::byFeature, uint256, &Feature::feature>,
-        feature_hashed_unique<Feature::byName, std::string, &Feature::name>>;
+        boost::multi_index::random_access<boost::multi_index::tag<Feature::ByIndex>>,
+        feature_hashed_unique<Feature::ByFeature, uint256, &Feature::feature>,
+        feature_hashed_unique<Feature::ByName, std::string, &Feature::name>>;
 
     // This multi_index_container provides access to the features collection by
     // name, index, and uint256 feature identifier
-    boost::multi_index::multi_index_container<Feature, feature_indexing> features;
-    std::map<std::string, AmendmentSupport> all;
-    std::map<std::string, VoteBehavior> supported;
-    std::size_t upVotes = 0;
-    std::size_t downVotes = 0;
-    mutable std::atomic<bool> readOnly = false;
+    boost::multi_index::multi_index_container<Feature, feature_indexing> features_;
+    std::map<std::string, AmendmentSupport> all_;
+    std::map<std::string, VoteBehavior> supported_;
+    std::size_t upVotes_ = 0;
+    std::size_t downVotes_ = 0;
+    mutable std::atomic<bool> readOnly_ = false;
 
     // These helper functions provide access to the features collection by name,
     // index, and uint256 feature identifier, so the details of
@@ -117,31 +118,31 @@ class FeatureCollections
     Feature const&
     getByIndex(size_t i) const
     {
-        if (i >= features.size())
-            LogicError("Invalid FeatureBitset index");
-        auto const& sequence = features.get<Feature::byIndex>();
+        if (i >= features_.size())
+            logicError("Invalid FeatureBitset index");
+        auto const& sequence = features_.get<Feature::ByIndex>();
         return sequence[i];
     }
     size_t
     getIndex(Feature const& feature) const
     {
-        auto const& sequence = features.get<Feature::byIndex>();
-        auto const it_to = sequence.iterator_to(feature);
-        return it_to - sequence.begin();
+        auto const& sequence = features_.get<Feature::ByIndex>();
+        auto const itTo = sequence.iterator_to(feature);
+        return itTo - sequence.begin();
     }
     Feature const*
     getByFeature(uint256 const& feature) const
     {
-        auto const& feature_index = features.get<Feature::byFeature>();
-        auto const feature_it = feature_index.find(feature);
-        return feature_it == feature_index.end() ? nullptr : &*feature_it;
+        auto const& featureIndex = features_.get<Feature::ByFeature>();
+        auto const featureIt = featureIndex.find(feature);
+        return featureIt == featureIndex.end() ? nullptr : &*featureIt;
     }
     Feature const*
     getByName(std::string const& name) const
     {
-        auto const& name_index = features.get<Feature::byName>();
-        auto const name_it = name_index.find(name);
-        return name_it == name_index.end() ? nullptr : &*name_it;
+        auto const& nameIndex = features_.get<Feature::ByName>();
+        auto const nameIt = nameIndex.find(name);
+        return nameIt == nameIndex.end() ? nullptr : &*nameIt;
     }
 
 public:
@@ -170,7 +171,7 @@ public:
     std::map<std::string, AmendmentSupport> const&
     allAmendments() const
     {
-        return all;
+        return all_;
     }
 
     /** Amendments that this server supports.
@@ -179,21 +180,21 @@ public:
     std::map<std::string, VoteBehavior> const&
     supportedAmendments() const
     {
-        return supported;
+        return supported_;
     }
 
     /** Amendments that this server WON'T vote for by default. */
     std::size_t
     numDownVotedAmendments() const
     {
-        return downVotes;
+        return downVotes_;
     }
 
     /** Amendments that this server WILL vote for by default. */
     std::size_t
     numUpVotedAmendments() const
     {
-        return upVotes;
+        return upVotes_;
     }
 };
 
@@ -201,14 +202,14 @@ public:
 
 FeatureCollections::FeatureCollections()
 {
-    features.reserve(xrpl::detail::numFeatures);
+    features_.reserve(xrpl::detail::kNUM_FEATURES);
 }
 
 std::optional<uint256>
 FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
     XRPL_ASSERT(
-        readOnly.load(), "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
+        readOnly_.load(), "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
     Feature const* feature = getByName(name);
     if (feature != nullptr)
         return feature->feature;
@@ -219,61 +220,62 @@ void
 check(bool condition, char const* logicErrorMessage)
 {
     if (!condition)
-        LogicError(logicErrorMessage);
+        logicError(logicErrorMessage);
 }
 
 uint256
 FeatureCollections::registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
-    check(!readOnly, "Attempting to register a feature after startup.");
+    check(!readOnly_, "Attempting to register a feature after startup.");
     check(
-        support == Supported::yes || vote == VoteBehavior::DefaultNo,
+        support == Supported::Yes || vote == VoteBehavior::DefaultNo,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
     if (i == nullptr)
     {
-        check(features.size() < detail::numFeatures, "More features defined than allocated.");
+        check(features_.size() < detail::kNUM_FEATURES, "More features defined than allocated.");
 
         auto const f = sha512Half(Slice(name.data(), name.size()));
 
-        features.emplace_back(name, f);
+        features_.emplace_back(name, f);
 
         auto const getAmendmentSupport = [=]() {
             if (vote == VoteBehavior::Obsolete)
                 return AmendmentSupport::Retired;
-            return support == Supported::yes ? AmendmentSupport::Supported
+            return support == Supported::Yes ? AmendmentSupport::Supported
                                              : AmendmentSupport::Unsupported;
         };
-        all.emplace(name, getAmendmentSupport());
+        all_.emplace(name, getAmendmentSupport());
 
-        if (support == Supported::yes)
+        if (support == Supported::Yes)
         {
-            supported.emplace(name, vote);
+            supported_.emplace(name, vote);
 
             if (vote == VoteBehavior::DefaultYes)
             {
-                ++upVotes;
+                ++upVotes_;
             }
             else
             {
-                ++downVotes;
+                ++downVotes_;
             }
         }
-        check(upVotes + downVotes == supported.size(), "Feature counting logic broke");
-        check(supported.size() <= features.size(), "More supported features than defined features");
-        check(features.size() == all.size(), "The 'all' features list is populated incorrectly");
+        check(upVotes_ + downVotes_ == supported_.size(), "Feature counting logic broke");
+        check(
+            supported_.size() <= features_.size(), "More supported features than defined features");
+        check(features_.size() == all_.size(), "The 'all' features list is populated incorrectly");
         return f;
     }
 
     // Each feature should only be registered once
-    LogicError("Duplicate feature registration");
+    logicError("Duplicate feature registration");
 }
 
 /** Tell FeatureCollections when registration is complete. */
 bool
 FeatureCollections::registrationIsDone()
 {
-    readOnly = true;
+    readOnly_ = true;
     return true;
 }
 
@@ -281,11 +283,11 @@ size_t
 FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
     XRPL_ASSERT(
-        readOnly.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
+        readOnly_.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
 
     Feature const* feature = getByFeature(f);
     if (feature == nullptr)
-        LogicError("Invalid Feature ID");
+        logicError("Invalid Feature ID");
 
     return getIndex(*feature);
 }
@@ -294,7 +296,7 @@ uint256 const&
 FeatureCollections::bitsetIndexToFeature(size_t i) const
 {
     XRPL_ASSERT(
-        readOnly.load(), "xrpl::FeatureCollections::bitsetIndexToFeature : startup completed");
+        readOnly_.load(), "xrpl::FeatureCollections::bitsetIndexToFeature : startup completed");
     Feature const& feature = getByIndex(i);
     return feature.feature;
 }
@@ -302,12 +304,12 @@ FeatureCollections::bitsetIndexToFeature(size_t i) const
 std::string
 FeatureCollections::featureToName(uint256 const& f) const
 {
-    XRPL_ASSERT(readOnly.load(), "xrpl::FeatureCollections::featureToName : startup completed");
+    XRPL_ASSERT(readOnly_.load(), "xrpl::FeatureCollections::featureToName : startup completed");
     Feature const* feature = getByFeature(f);
     return (feature != nullptr) ? feature->name : to_string(f);
 }
 
-FeatureCollections featureCollections;
+FeatureCollections gFeatureCollections;
 
 }  // namespace
 
@@ -315,7 +317,7 @@ FeatureCollections featureCollections;
 std::map<std::string, AmendmentSupport> const&
 allAmendments()
 {
-    return featureCollections.allAmendments();
+    return gFeatureCollections.allAmendments();
 }
 
 /** Amendments that this server supports.
@@ -324,21 +326,21 @@ allAmendments()
 std::map<std::string, VoteBehavior> const&
 detail::supportedAmendments()
 {
-    return featureCollections.supportedAmendments();
+    return gFeatureCollections.supportedAmendments();
 }
 
 /** Amendments that this server won't vote for by default. */
 std::size_t
 detail::numDownVotedAmendments()
 {
-    return featureCollections.numDownVotedAmendments();
+    return gFeatureCollections.numDownVotedAmendments();
 }
 
 /** Amendments that this server will vote for by default. */
 std::size_t
 detail::numUpVotedAmendments()
 {
-    return featureCollections.numUpVotedAmendments();
+    return gFeatureCollections.numUpVotedAmendments();
 }
 
 //------------------------------------------------------------------------------
@@ -346,13 +348,13 @@ detail::numUpVotedAmendments()
 std::optional<uint256>
 getRegisteredFeature(std::string const& name)
 {
-    return featureCollections.getRegisteredFeature(name);
+    return gFeatureCollections.getRegisteredFeature(name);
 }
 
 uint256
 registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
-    return featureCollections.registerFeature(name, support, vote);
+    return gFeatureCollections.registerFeature(name, support, vote);
 }
 
 // Retired features are in the ledger and have no code controlled by the
@@ -360,32 +362,32 @@ registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 uint256
 retireFeature(std::string const& name)
 {
-    return registerFeature(name, Supported::yes, VoteBehavior::Obsolete);
+    return registerFeature(name, Supported::Yes, VoteBehavior::Obsolete);
 }
 
 /** Tell FeatureCollections when registration is complete. */
 bool
 registrationIsDone()
 {
-    return featureCollections.registrationIsDone();
+    return gFeatureCollections.registrationIsDone();
 }
 
 size_t
 featureToBitsetIndex(uint256 const& f)
 {
-    return featureCollections.featureToBitsetIndex(f);
+    return gFeatureCollections.featureToBitsetIndex(f);
 }
 
 uint256
 bitsetIndexToFeature(size_t i)
 {
-    return featureCollections.bitsetIndexToFeature(i);
+    return gFeatureCollections.bitsetIndexToFeature(i);
 }
 
 std::string
 featureToName(uint256 const& f)
 {
-    return featureCollections.featureToName(f);
+    return gFeatureCollections.featureToName(f);
 }
 
 // All known amendments must be registered either here or below with the
@@ -443,8 +445,7 @@ enforceValidFeatureName(auto fn) -> char const*
 // All of the features should now be registered, since variables in a cpp file
 // are initialized from top to bottom.
 //
-// Use initialization of one final static variable to set
-// featureCollections::readOnly.
-[[maybe_unused]] static bool const readOnlySet = featureCollections.registrationIsDone();
+// Use initialization of one final static variable to set featureCollections::readOnly_.
+[[maybe_unused]] static bool const kREAD_ONLY_SET = gFeatureCollections.registrationIsDone();
 
 }  // namespace xrpl

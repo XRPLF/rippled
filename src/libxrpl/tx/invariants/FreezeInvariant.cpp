@@ -272,7 +272,7 @@ TransfersNotFrozen::validateFrozenState(
     }
 
     // AMMClawbacks are allowed to override some freeze rules
-    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, overrideFreeze))
+    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")

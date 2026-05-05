@@ -10,7 +10,7 @@ namespace xrpl {
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx);
 
-static constexpr std::uint32_t secondsInYear = 365 * 24 * 60 * 60;
+static constexpr std::uint32_t kSECONDS_IN_YEAR = 365 * 24 * 60 * 60;
 
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
@@ -19,7 +19,7 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 inline Number
 roundPeriodicPayment(Asset const& asset, Number const& periodicPayment, std::int32_t scale)
 {
-    return roundToAsset(asset, periodicPayment, scale, Number::rounding_mode::upward);
+    return roundToAsset(asset, periodicPayment, scale, Number::RoundingMode::Upward);
 }
 
 /* Represents the breakdown of amounts to be paid and changes applied to the
@@ -42,14 +42,14 @@ struct LoanPaymentParts
     // The amount of principal paid that reduces the loan balance.
     // This amount is subtracted from sfPrincipalOutstanding in the Loan object
     // and paid to the Vault
-    Number principalPaid = numZero;
+    Number principalPaid = kNUM_ZERO;
 
     // The total amount of interest paid to the Vault.
     // This includes:
     // - Tracked interest from the amortization schedule
     // - Untracked interest (e.g., late payment penalty interest)
     // This value is always non-negative.
-    Number interestPaid = numZero;
+    Number interestPaid = kNUM_ZERO;
 
     // The change in the loan's total value outstanding.
     // - If valueChange < 0: Loan value decreased
@@ -62,7 +62,7 @@ struct LoanPaymentParts
     // - Late payments add penalty interest to the loan value
     // - Early full payment may increase or decrease the loan value based on
     // terms
-    Number valueChange = numZero;
+    Number valueChange = kNUM_ZERO;
 
     /* The total amount of fees paid to the Broker.
      * This includes:
@@ -70,7 +70,7 @@ struct LoanPaymentParts
      * - Untracked fees (e.g., late payment fees, service fees, origination
      * fees) This value is always non-negative.
      */
-    Number feePaid = numZero;
+    Number feePaid = kNUM_ZERO;
 
     LoanPaymentParts&
     operator+=(LoanPaymentParts const& other);
@@ -161,7 +161,7 @@ adjustImpreciseNumber(
 {
     value = roundToAsset(asset, value + adjustment, vaultScale);
 
-    if (*value < beast::zero)
+    if (*value < beast::kZERO)
         value = 0;
 }
 
@@ -169,7 +169,7 @@ inline int
 getAssetsTotalScale(SLE::const_ref vaultSle)
 {
     if (!vaultSle)
-        return Number::minExponent - 1;  // LCOV_EXCL_LINE
+        return Number::kMIN_EXPONENT - 1;  // LCOV_EXCL_LINE
     return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
 }
 
@@ -222,7 +222,7 @@ namespace detail {
 // These classes and functions should only be accessed by LendingHelper
 // functions and unit tests
 
-enum class PaymentSpecialCase { none, final, extra };
+enum class PaymentSpecialCase { None, Final, Extra };
 
 /* Represents a single loan payment component parts.
 
@@ -258,7 +258,7 @@ struct PaymentComponents
     // - none: Regular scheduled payment
     // - final: The last payment that closes out the loan
     // - extra: An additional payment beyond the regular schedule (overpayment)
-    PaymentSpecialCase specialCase = PaymentSpecialCase::none;
+    PaymentSpecialCase specialCase = PaymentSpecialCase::None;
 
     // Calculates the tracked interest portion of this payment.
     // This is derived from the other components as:
@@ -310,7 +310,7 @@ struct ExtendedPaymentComponents : public PaymentComponents
     // borrower is sufficient to cover all components of the payment.
     Number totalDue;
 
-    ExtendedPaymentComponents(PaymentComponents const& p, Number fee, Number interest = numZero)
+    ExtendedPaymentComponents(PaymentComponents const& p, Number fee, Number interest = kNUM_ZERO)
         : PaymentComponents(p)
         , untrackedManagementFee(fee)
         , untrackedInterest(interest)
@@ -462,7 +462,7 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale);
 // regular, late, and full are mutually exclusive.
 // overpayment is an "add on" to a regular payment, and follows that path with
 // potential extra work at the end.
-enum class LoanPaymentType { regular = 0, late, full, overpayment };
+enum class LoanPaymentType { Regular = 0, Late, Full, Overpayment };
 
 Expected<LoanPaymentParts, TER>
 loanMakePayment(

@@ -5,8 +5,8 @@
 
 namespace xrpl::compression {
 
-std::size_t constexpr headerBytes = 6;
-std::size_t constexpr headerBytesCompressed = 10;
+std::size_t constexpr kHEADER_BYTES = 6;
+std::size_t constexpr kHEADER_BYTES_COMPRESSED = 10;
 
 // All values other than 'none' must have the high bit. The low order four bits
 // must be 0.

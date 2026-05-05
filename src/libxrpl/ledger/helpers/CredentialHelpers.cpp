@@ -126,7 +126,7 @@ checkFields(STTx const& tx, beast::Journal j)
         return tesSUCCESS;
 
     auto const& credentials = tx.getFieldV256(sfCredentialIDs);
-    if (credentials.empty() || (credentials.size() > maxCredentialsArraySize))
+    if (credentials.empty() || (credentials.size() > kMAX_CREDENTIALS_ARRAY_SIZE))
     {
         JLOG(j.trace()) << "Malformed transaction: Credentials array size is invalid: "
                         << credentials.size();
@@ -283,7 +283,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         }
 
         auto const ct = credential[sfCredentialType];
-        if (ct.empty() || (ct.size() > maxCredentialTypeLength))
+        if (ct.empty() || (ct.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
         {
             JLOG(j.trace()) << "Malformed transaction: "
                                "Invalid credentialType size: "
@@ -321,7 +321,7 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
         auto const type = h.getFieldVL(sfCredentialType);
         auto const keyletCredential = keylet::credential(account, issuer, makeSlice(type));
         if (view.exists(keyletCredential))
-            credentials.push_back(keyletCredential.key);
+            credentials.pushBack(keyletCredential.key);
     }
 
     bool const foundExpired = credentials::removeExpired(view, credentials, j);

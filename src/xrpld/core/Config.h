@@ -25,19 +25,19 @@ class Rules;
 //------------------------------------------------------------------------------
 
 enum class SizedItem : std::size_t {
-    sweepInterval = 0,
-    treeCacheSize,
-    treeCacheAge,
-    ledgerSize,
-    ledgerAge,
-    ledgerFetch,
-    hashNodeDBCache,
-    txnDBCache,
-    lgrDBCache,
-    openFinalLimit,
-    burstSize,
-    ramSizeGB,
-    accountIdCacheSize,
+    SweepInterval = 0,
+    TreeCacheSize,
+    TreeCacheAge,
+    LedgerSize,
+    LedgerAge,
+    LedgerFetch,
+    HashNodeDbCache,
+    TxnDbCache,
+    LgrDbCache,
+    OpenFinalLimit,
+    BurstSize,
+    RamSizeGb,
+    AccountIdCacheSize,
 };
 
 /** Fee schedule for startup / standalone, and to vote for.
@@ -51,10 +51,10 @@ struct FeeSetup
     XRPAmount reference_fee{10};
 
     /** The account reserve requirement in drops. */
-    XRPAmount account_reserve{10 * DROPS_PER_XRP};
+    XRPAmount account_reserve{10 * kDROPS_PER_XRP};
 
     /** The per-owned item reserve requirement in drops. */
-    XRPAmount owner_reserve{2 * DROPS_PER_XRP};
+    XRPAmount owner_reserve{2 * kDROPS_PER_XRP};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
@@ -76,30 +76,30 @@ class Config : public BasicConfig
 {
 public:
     // Settings related to the configuration file location and directories
-    static char const* const configFileName;
-    static char const* const configLegacyName;
-    static char const* const databaseDirName;
-    static char const* const validatorsFileName;
+    static char const* const kCONFIG_FILE_NAME;
+    static char const* const kCONFIG_LEGACY_NAME;
+    static char const* const kDATABASE_DIR_NAME;
+    static char const* const kVALIDATORS_FILE_NAME;
 
     /** Returns the full path and filename of the debug log file. */
     [[nodiscard]] boost::filesystem::path
     getDebugLogFile() const;
 
 private:
-    boost::filesystem::path CONFIG_FILE;
+    boost::filesystem::path CONFIG_FILE_;
 
 public:
     boost::filesystem::path CONFIG_DIR;
 
 private:
-    boost::filesystem::path DEBUG_LOGFILE;
+    boost::filesystem::path DEBUG_LOGFILE_;
 
     void
     load();
     beast::Journal const j_;
 
-    bool QUIET = false;   // Minimize logging verbosity.
-    bool SILENT = false;  // No output to console after startup.
+    bool QUIET_ = false;   // Minimize logging verbosity.
+    bool SILENT_ = false;  // No output to console after startup.
     /** Operate in stand-alone mode.
 
         In stand alone mode:
@@ -109,9 +109,9 @@ private:
         - If no ledger is loaded, the default ledger with the root
           account is created.
     */
-    bool RUN_STANDALONE = false;
+    bool RUN_STANDALONE_ = false;
 
-    bool USE_TX_TABLES = true;
+    bool USE_TX_TABLES_ = true;
 
     /** Determines if the server will sign a tx, given an account's secret seed.
 
@@ -209,11 +209,11 @@ public:
 
     // Work queue limits
     int MAX_TRANSACTIONS = 250;
-    static constexpr int MAX_JOB_QUEUE_TX = 1000;
-    static constexpr int MIN_JOB_QUEUE_TX = 100;
+    static constexpr int kMAX_JOB_QUEUE_TX = 1000;
+    static constexpr int kMIN_JOB_QUEUE_TX = 100;
 
     // Amendment majority time
-    std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
+    std::chrono::seconds AMENDMENT_MAJORITY_TIME = kDEFAULT_AMENDMENT_MAJORITY_TIME;
 
     // Thread pool configuration (0 = choose for me)
     int WORKERS = 0;           // jobqueue thread count. default: upto 6
@@ -258,7 +258,7 @@ public:
     // These override the command line client settings
     std::optional<beast::IP::Endpoint> rpc_ip;
 
-    std::unordered_set<uint256, beast::uhash<>> features;
+    std::unordered_set<uint256, beast::Uhash<>> features;
 
     std::string SERVER_DOMAIN;
 
@@ -305,23 +305,23 @@ public:
     [[nodiscard]] bool
     quiet() const
     {
-        return QUIET;
+        return QUIET_;
     }
     [[nodiscard]] bool
     silent() const
     {
-        return SILENT;
+        return SILENT_;
     }
     [[nodiscard]] bool
     standalone() const
     {
-        return RUN_STANDALONE;
+        return RUN_STANDALONE_;
     }
 
     [[nodiscard]] bool
     useTxTables() const
     {
-        return USE_TX_TABLES;
+        return USE_TX_TABLES_;
     }
 
     [[nodiscard]] bool
@@ -358,9 +358,9 @@ public:
 };
 
 FeeSetup
-setup_FeeVote(Section const& section);
+setupFeeVote(Section const& section);
 
 DatabaseCon::Setup
-setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
+setupDatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
 
 }  // namespace xrpl

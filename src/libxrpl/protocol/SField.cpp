@@ -8,22 +8,22 @@
 namespace xrpl {
 
 // Storage for static const members.
-SField::IsSigning const SField::notSigning;
+SField::IsSigning const SField::kNOT_SIGNING;
 int SField::num = 0;
 std::unordered_map<int, SField const*> SField::knownCodeToField;
 std::unordered_map<std::string, SField const*> SField::knownNameToField;
 
 // Give only this translation unit permission to construct SFields
-struct SField::private_access_tag_t
+struct SField::PrivateAccessTagT
 {
-    explicit private_access_tag_t() = default;
+    explicit PrivateAccessTagT() = default;
 };
 
-static SField::private_access_tag_t access;
+static SField::PrivateAccessTagT access;
 
 template <class T>
 template <class... Args>
-TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
+TypedField<T>::TypedField(PrivateAccessTagT pat, Args&&... args)
     : SField(pat, std::forward<Args>(args)...)
 {
 }
@@ -53,12 +53,12 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
         ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
-SField const sfInvalid(access, -1, "");
-SField const sfGeneric(access, 0, "Generic");
+SField const kSF_INVALID(access, -1, "");
+SField const kSF_GENERIC(access, 0, "Generic");
 // The following two fields aren't used anywhere, but they break tests/have
 // downstream effects.
-SField const sfHash(access, STI_UINT256, 257, "hash");
-SField const sfIndex(access, STI_UINT256, 258, "index");
+SField const kSF_HASH(access, STI_UINT256, 257, "hash");
+SField const kSF_INDEX(access, STI_UINT256, 258, "index");
 
 #include <xrpl/protocol/detail/sfields.macro>
 
@@ -68,13 +68,13 @@ SField const sfIndex(access, STI_UINT256, 258, "index");
 #pragma pop_macro("UNTYPED_SFIELD")
 
 SField::SField(
-    private_access_tag_t,
+    PrivateAccessTagT,
     SerializedTypeID tid,
     int fv,
     char const* fn,
     int meta,
     IsSigning signing)
-    : fieldCode(field_code(tid, fv))
+    : fieldCodeMem(fieldCode(tid, fv))
     , fieldType(tid)
     , fieldValue(fv)
     , fieldName(fn)
@@ -84,30 +84,31 @@ SField::SField(
     , jsonName(fieldName.c_str())
 {
     XRPL_ASSERT(
-        !knownCodeToField.contains(fieldCode),
+        !knownCodeToField.contains(fieldCodeMem),
         "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldCode is unique");
     XRPL_ASSERT(
         !knownNameToField.contains(fieldName),
         "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldName is unique");
-    knownCodeToField[fieldCode] = this;
+    knownCodeToField[fieldCodeMem] = this;
     knownNameToField[fieldName] = this;
 }
 
-SField::SField(private_access_tag_t, int fc, char const* fn)
-    : fieldCode(fc)
+SField::SField(PrivateAccessTagT, int fc, char const* fn)
+    : fieldCodeMem(fc)
     , fieldType(STI_UNKNOWN)
     , fieldValue(0)
     , fieldName(fn)
-    , fieldMeta(sMD_Never)
+    , fieldMeta(SMdNever)
     , fieldNum(++num)
-    , signingField(IsSigning::yes)
+    , signingField(IsSigning::Yes)
     , jsonName(fieldName.c_str())
 {
     XRPL_ASSERT(
-        !knownCodeToField.contains(fieldCode), "xrpl::SField::SField(fc,fn) : fieldCode is unique");
+        !knownCodeToField.contains(fieldCodeMem),
+        "xrpl::SField::SField(fc,fn) : fieldCode is unique");
     XRPL_ASSERT(
         !knownNameToField.contains(fieldName), "xrpl::SField::SField(fc,fn) : fieldName is unique");
-    knownCodeToField[fieldCode] = this;
+    knownCodeToField[fieldCodeMem] = this;
     knownNameToField[fieldName] = this;
 }
 
@@ -120,20 +121,20 @@ SField::getField(int code)
     {
         return *(it->second);
     }
-    return sfInvalid;
+    return kSF_INVALID;
 }
 
 int
 SField::compare(SField const& f1, SField const& f2)
 {
     // -1 = f1 comes before f2, 0 = illegal combination, 1 = f1 comes after f2
-    if ((f1.fieldCode <= 0) || (f2.fieldCode <= 0))
+    if ((f1.fieldCodeMem <= 0) || (f2.fieldCodeMem <= 0))
         return 0;
 
-    if (f1.fieldCode < f2.fieldCode)
+    if (f1.fieldCodeMem < f2.fieldCodeMem)
         return -1;
 
-    if (f2.fieldCode < f1.fieldCode)
+    if (f2.fieldCodeMem < f1.fieldCodeMem)
         return 1;
 
     return 0;
@@ -148,7 +149,7 @@ SField::getField(std::string const& fieldName)
     {
         return *(it->second);
     }
-    return sfInvalid;
+    return kSF_INVALID;
 }
 
 }  // namespace xrpl

@@ -7,7 +7,7 @@ namespace xrpl {
 class EscrowCreate : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Custom};
 
     explicit EscrowCreate(ApplyContext& ctx) : Transactor(ctx)
     {

@@ -26,13 +26,13 @@ struct LedgerFill
     // Bitwise bitmask
     // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum Options {
-        dumpTxrp = 1,
-        dumpState = 2,
-        expand = 4,
-        full = 8,
-        binary = 16,
-        ownerFunds = 32,
-        dumpQueue = 64
+        DumpTxrp = 1,
+        DumpState = 2,
+        Expand = 4,
+        Full = 8,
+        Binary = 16,
+        OwnerFunds = 32,
+        DumpQueue = 64
     };
 
     ReadView const& ledger;
@@ -42,18 +42,18 @@ struct LedgerFill
     std::optional<NetClock::time_point> closeTime;
 };
 
-/** Given a Ledger and options, fill a Json::Value with a
+/** Given a Ledger and options, fill a json::Value with a
     description of the ledger.
  */
 void
-addJson(Json::Value&, LedgerFill const&);
+addJson(json::Value&, LedgerFill const&);
 
-/** Return a new Json::Value representing the ledger with given options.*/
-Json::Value
+/** Return a new json::Value representing the ledger with given options.*/
+json::Value
 getJson(LedgerFill const&);
 
 /** Copy all the keys and values from one object into another. */
 void
-copyFrom(Json::Value& to, Json::Value const& from);
+copyFrom(json::Value& to, json::Value const& from);
 
 }  // namespace xrpl

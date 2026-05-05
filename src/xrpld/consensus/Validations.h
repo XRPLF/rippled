@@ -147,15 +147,15 @@ isCurrent(
 /** Status of validation we received */
 enum class ValStatus {
     /// This was a new validation and was added
-    current,
+    Current,
     /// Not current or was older than current from this node
-    stale,
+    Stale,
     /// A validation violates the increasing seq requirement
-    badSeq,
+    BadSeq,
     /// Multiple validations by a validator for the same ledger
-    multiple,
+    Multiple,
     /// Multiple validations by a validator for different ledgers
-    conflicting
+    Conflicting
 };
 
 inline std::string
@@ -163,15 +163,15 @@ to_string(ValStatus m)
 {
     switch (m)
     {
-        case ValStatus::current:
+        case ValStatus::Current:
             return "current";
-        case ValStatus::stale:
+        case ValStatus::Stale:
             return "stale";
-        case ValStatus::badSeq:
+        case ValStatus::BadSeq:
             return "badSeq";
-        case ValStatus::multiple:
+        case ValStatus::Multiple:
             return "multiple";
-        case ValStatus::conflicting:
+        case ValStatus::Conflicting:
             return "conflicting";
         default:
             return "unknown";
@@ -295,7 +295,7 @@ class Validations
         ID,
         hash_map<NodeID, Validation>,
         std::chrono::steady_clock,
-        beast::uhash<>>
+        beast::Uhash<>>
         byLedger_;
 
     // Partial and full validations indexed by sequence
@@ -303,14 +303,14 @@ class Validations
         Seq,
         hash_map<NodeID, Validation>,
         std::chrono::steady_clock,
-        beast::uhash<>>
+        beast::Uhash<>>
         bySequence_;
 
     // A range [low_, high_) of validations to keep from expire
     struct KeepRange
     {
-        Seq low_;
-        Seq high_;
+        Seq low;
+        Seq high;
     };
     std::optional<KeepRange> toKeep_;
 
@@ -543,7 +543,7 @@ public:
     template <class... Ts>
     Validations(
         ValidationParms const& p,
-        beast::abstract_clock<std::chrono::steady_clock>& c,
+        beast::AbstractClock<std::chrono::steady_clock>& c,
         Ts&&... ts)
         : byLedger_(c), bySequence_(c), parms_(p), adaptor_(std::forward<Ts>(ts)...)
     {
@@ -591,7 +591,7 @@ public:
     add(NodeID const& nodeID, Validation const& val)
     {
         if (!isCurrent(parms_, adaptor_.now(), val.signTime(), val.seenTime()))
-            return ValStatus::stale;
+            return ValStatus::Stale;
 
         {
             std::scoped_lock const lock{mutex_};
@@ -627,22 +627,22 @@ public:
                     // ledgers. This could be the result of misconfiguration
                     // but it can also mean a Byzantine validator.
                     if (seqit->second.ledgerID() != val.ledgerID())
-                        return ValStatus::conflicting;
+                        return ValStatus::Conflicting;
 
                     // Two validations for the same sequence and for the same
                     // ledger with different sign times. This could be the
                     // result of a misconfiguration but it can also mean a
                     // Byzantine validator.
                     if (seqit->second.signTime() != val.signTime())
-                        return ValStatus::conflicting;
+                        return ValStatus::Conflicting;
 
                     // Two validations for the same sequence but with different
                     // cookies. This is probably accidental misconfiguration.
                     if (seqit->second.cookie() != val.cookie())
-                        return ValStatus::multiple;
+                        return ValStatus::Multiple;
                 }
 
-                return ValStatus::badSeq;
+                return ValStatus::BadSeq;
             }
 
             byLedger_[val.ledgerID()].insert_or_assign(nodeID, val);
@@ -661,7 +661,7 @@ public:
                 }
                 else
                 {
-                    return ValStatus::stale;
+                    return ValStatus::Stale;
                 }
             }
             else if (val.trusted())
@@ -670,7 +670,7 @@ public:
             }
         }
 
-        return ValStatus::current;
+        return ValStatus::Current;
     }
 
     /**
@@ -702,12 +702,12 @@ public:
             {
                 // We only need to refresh the keep range when it's just about
                 // to expire. Track the next time we need to refresh.
-                static std::chrono::steady_clock::time_point refreshTime;
-                if (auto const now = byLedger_.clock().now(); refreshTime <= now)
+                static std::chrono::steady_clock::time_point kREFRESH_TIME;
+                if (auto const now = byLedger_.clock().now(); kREFRESH_TIME <= now)
                 {
                     // The next refresh time is shortly before the expiration
                     // time from now.
-                    refreshTime = now + parms_.validationSET_EXPIRES - parms_.validationFRESHNESS;
+                    kREFRESH_TIME = now + parms_.validationSET_EXPIRES - parms_.validationFRESHNESS;
 
                     for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
                     {
@@ -715,7 +715,7 @@ public:
                         if (!validationMap.empty())
                         {
                             auto const seq = validationMap.begin()->second.seq();
-                            if (toKeep_->low_ <= seq && seq < toKeep_->high_)
+                            if (toKeep_->low <= seq && seq < toKeep_->high)
                             {
                                 byLedger_.touch(i);
                             }
@@ -724,7 +724,7 @@ public:
 
                     for (auto i = bySequence_.begin(); i != bySequence_.end(); ++i)
                     {
-                        if (toKeep_->low_ <= i->first && i->first < toKeep_->high_)
+                        if (toKeep_->low <= i->first && i->first < toKeep_->high)
                         {
                             bySequence_.touch(i);
                         }
@@ -787,7 +787,7 @@ public:
         }
     }
 
-    Json::Value
+    json::Value
     getJsonTrie() const
     {
         std::scoped_lock const lock{mutex_};

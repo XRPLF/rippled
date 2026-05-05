@@ -14,40 +14,40 @@
 
 namespace xrpl::LedgerEntryHelpers {
 
-inline Unexpected<Json::Value>
-missingFieldError(Json::StaticString const field, std::optional<std::string> err = std::nullopt)
+inline Unexpected<json::Value>
+missingFieldError(json::StaticString const field, std::optional<std::string> err = std::nullopt)
 {
-    Json::Value json = Json::objectValue;
+    json::Value json = json::ObjectValue;
     json[jss::error] = err.value_or("malformedRequest");
-    json[jss::error_code] = rpcINVALID_PARAMS;
-    json[jss::error_message] = RPC::missing_field_message(std::string(field.c_str()));
+    json[jss::error_code] = RpcInvalidParams;
+    json[jss::error_message] = RPC::missingFieldMessage(std::string(field.cStr()));
     return Unexpected(json);
 }
 
-inline Unexpected<Json::Value>
-invalidFieldError(std::string const& err, Json::StaticString const field, std::string const& type)
+inline Unexpected<json::Value>
+invalidFieldError(std::string const& err, json::StaticString const field, std::string const& type)
 {
-    Json::Value json = Json::objectValue;
+    json::Value json = json::ObjectValue;
     json[jss::error] = err;
-    json[jss::error_code] = rpcINVALID_PARAMS;
-    json[jss::error_message] = RPC::expected_field_message(field, type);
+    json[jss::error_code] = RpcInvalidParams;
+    json[jss::error_message] = RPC::expectedFieldMessage(field, type);
     return Unexpected(json);
 }
 
-inline Unexpected<Json::Value>
+inline Unexpected<json::Value>
 malformedError(std::string const& err, std::string const& message)
 {
-    Json::Value json = Json::objectValue;
+    json::Value json = json::ObjectValue;
     json[jss::error] = err;
-    json[jss::error_code] = rpcINVALID_PARAMS;
+    json[jss::error_code] = RpcInvalidParams;
     json[jss::error_message] = message;
     return Unexpected(json);
 }
 
-inline Expected<bool, Json::Value>
+inline Expected<bool, json::Value>
 hasRequired(
-    Json::Value const& params,
-    std::initializer_list<Json::StaticString> fields,
+    json::Value const& params,
+    std::initializer_list<json::StaticString> fields,
     std::optional<std::string> err = std::nullopt)
 {
     for (auto const field : fields)
@@ -62,13 +62,13 @@ hasRequired(
 
 template <class T>
 std::optional<T>
-parse(Json::Value const& param);
+parse(json::Value const& param);
 
 template <class T>
-Expected<T, Json::Value>
+Expected<T, json::Value>
 required(
-    Json::Value const& params,
-    Json::StaticString const fieldName,
+    json::Value const& params,
+    json::StaticString const fieldName,
     std::string const& err,
     std::string const& expectedType)
 {
@@ -85,7 +85,7 @@ required(
 
 template <>
 inline std::optional<AccountID>
-parse(Json::Value const& param)
+parse(json::Value const& param)
 {
     if (!param.isString())
         return std::nullopt;
@@ -99,17 +99,17 @@ parse(Json::Value const& param)
     return account;
 }
 
-inline Expected<AccountID, Json::Value>
+inline Expected<AccountID, json::Value>
 requiredAccountID(
-    Json::Value const& params,
-    Json::StaticString const fieldName,
+    json::Value const& params,
+    json::StaticString const fieldName,
     std::string const& err)
 {
     return required<AccountID>(params, fieldName, err, "AccountID");
 }
 
 inline std::optional<Blob>
-parseHexBlob(Json::Value const& param, std::size_t maxLength)
+parseHexBlob(json::Value const& param, std::size_t maxLength)
 {
     if (!param.isString())
         return std::nullopt;
@@ -121,10 +121,10 @@ parseHexBlob(Json::Value const& param, std::size_t maxLength)
     return blob;
 }
 
-inline Expected<Blob, Json::Value>
+inline Expected<Blob, json::Value>
 requiredHexBlob(
-    Json::Value const& params,
-    Json::StaticString const fieldName,
+    json::Value const& params,
+    json::StaticString const fieldName,
     std::size_t maxLength,
     std::string const& err)
 {
@@ -141,7 +141,7 @@ requiredHexBlob(
 
 template <>
 inline std::optional<std::uint32_t>
-parse(Json::Value const& param)
+parse(json::Value const& param)
 {
     if (param.isUInt() || (param.isInt() && param.asInt() >= 0))
         return param.asUInt();
@@ -156,10 +156,10 @@ parse(Json::Value const& param)
     return std::nullopt;
 }
 
-inline Expected<std::uint32_t, Json::Value>
+inline Expected<std::uint32_t, json::Value>
 requiredUInt32(
-    Json::Value const& params,
-    Json::StaticString const fieldName,
+    json::Value const& params,
+    json::StaticString const fieldName,
     std::string const& err)
 {
     return required<std::uint32_t>(params, fieldName, err, "number");
@@ -167,7 +167,7 @@ requiredUInt32(
 
 template <>
 inline std::optional<uint256>
-parse(Json::Value const& param)
+parse(json::Value const& param)
 {
     uint256 uNodeIndex;
     if (!param.isString() || !uNodeIndex.parseHex(param.asString()))
@@ -178,10 +178,10 @@ parse(Json::Value const& param)
     return uNodeIndex;
 }
 
-inline Expected<uint256, Json::Value>
+inline Expected<uint256, json::Value>
 requiredUInt256(
-    Json::Value const& params,
-    Json::StaticString const fieldName,
+    json::Value const& params,
+    json::StaticString const fieldName,
     std::string const& err)
 {
     return required<uint256>(params, fieldName, err, "Hash256");
@@ -189,7 +189,7 @@ requiredUInt256(
 
 template <>
 inline std::optional<uint192>
-parse(Json::Value const& param)
+parse(json::Value const& param)
 {
     uint192 field;
     if (!param.isString() || !field.parseHex(param.asString()))
@@ -200,10 +200,10 @@ parse(Json::Value const& param)
     return field;
 }
 
-inline Expected<uint192, Json::Value>
+inline Expected<uint192, json::Value>
 requiredUInt192(
-    Json::Value const& params,
-    Json::StaticString const fieldName,
+    json::Value const& params,
+    json::StaticString const fieldName,
     std::string const& err)
 {
     return required<uint192>(params, fieldName, err, "Hash192");
@@ -211,7 +211,7 @@ requiredUInt192(
 
 template <>
 inline std::optional<Asset>
-parse(Json::Value const& param)
+parse(json::Value const& param)
 {
     try
     {
@@ -223,14 +223,14 @@ parse(Json::Value const& param)
     }
 }
 
-inline Expected<Asset, Json::Value>
-requiredAsset(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
+inline Expected<Asset, json::Value>
+requiredAsset(json::Value const& params, json::StaticString const fieldName, std::string const& err)
 {
     return required<Asset>(params, fieldName, err, "Asset");
 }
 
-inline Expected<STXChainBridge, Json::Value>
-parseBridgeFields(Json::Value const& params)
+inline Expected<STXChainBridge, json::Value>
+parseBridgeFields(json::Value const& params)
 {
     if (auto const value = hasRequired(
             params,

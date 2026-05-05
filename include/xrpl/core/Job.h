@@ -15,62 +15,62 @@ namespace xrpl {
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum JobType {
     // Special type indicating an invalid job - will go away soon.
-    jtINVALID = -1,
+    JtInvalid = -1,
 
     // Job types - the position in this enum indicates the job priority with
     // earlier jobs having lower priority than later jobs. If you wish to
     // insert a job at a specific priority, simply add it at the right location.
 
-    jtPACK,               // Make a fetch pack for a peer
-    jtPUBOLDLEDGER,       // An old ledger has been accepted
-    jtCLIENT,             // A placeholder for the priority of all jtCLIENT jobs
-    jtCLIENT_SUBSCRIBE,   // A websocket subscription by a client
-    jtCLIENT_FEE_CHANGE,  // Subscription for fee change by a client
-    jtCLIENT_CONSENSUS,   // Subscription for consensus state change by a client
-    jtCLIENT_ACCT_HIST,   // Subscription for account history by a client
-    jtCLIENT_RPC,         // Client RPC request
-    jtCLIENT_WEBSOCKET,   // Client websocket request
-    jtRPC,                // A websocket command from the client
-    jtSWEEP,              // Sweep for stale structures
-    jtVALIDATION_ut,      // A validation from an untrusted source
-    jtMANIFEST,           // A validator's manifest
-    jtUPDATE_PF,          // Update pathfinding requests
-    jtTRANSACTION_l,      // A local transaction
-    jtREPLAY_REQ,         // Peer request a ledger delta or a skip list
-    jtLEDGER_REQ,         // Peer request ledger/txnset data
-    jtPROPOSAL_ut,        // A proposal from an untrusted source
-    jtREPLAY_TASK,        // A Ledger replay task/subtask
-    jtTRANSACTION,        // A transaction received from the network
-    jtMISSING_TXN,        // Request missing transactions
-    jtREQUESTED_TXN,      // Reply with requested transactions
-    jtBATCH,              // Apply batched transactions
-    jtLEDGER_DATA,        // Received data for a ledger we're acquiring
-    jtADVANCE,            // Advance validated/acquired ledgers
-    jtPUBLEDGER,          // Publish a fully-accepted ledger
-    jtTXN_DATA,           // Fetch a proposed set
-    jtWAL,                // Write-ahead logging
-    jtVALIDATION_t,       // A validation from a trusted source
-    jtWRITE,              // Write out hashed objects
-    jtACCEPT,             // Accept a consensus ledger
-    jtPROPOSAL_t,         // A proposal from a trusted source
-    jtNETOP_CLUSTER,      // NetworkOPs cluster peer report
-    jtNETOP_TIMER,        // NetworkOPs net timer processing
-    jtADMIN,              // An administrative operation
+    JtPack,             // Make a fetch pack for a peer
+    JtPuboldledger,     // An old ledger has been accepted
+    JtClient,           // A placeholder for the priority of all jtCLIENT jobs
+    JtClientSubscribe,  // A websocket subscription by a client
+    JtClientFeeChange,  // Subscription for fee change by a client
+    JtClientConsensus,  // Subscription for consensus state change by a client
+    JtClientAcctHist,   // Subscription for account history by a client
+    JtClientRpc,        // Client RPC request
+    JtClientWebsocket,  // Client websocket request
+    JtRpc,              // A websocket command from the client
+    JtSweep,            // Sweep for stale structures
+    JtValidationUt,     // A validation from an untrusted source
+    JtManifest,         // A validator's manifest
+    JtUpdatePf,         // Update pathfinding requests
+    JtTransactionL,     // A local transaction
+    JtReplayReq,        // Peer request a ledger delta or a skip list
+    JtLedgerReq,        // Peer request ledger/txnset data
+    JtProposalUt,       // A proposal from an untrusted source
+    JtReplayTask,       // A Ledger replay task/subtask
+    JtTransaction,      // A transaction received from the network
+    JtMissingTxn,       // Request missing transactions
+    JtRequestedTxn,     // Reply with requested transactions
+    JtBatch,            // Apply batched transactions
+    JtLedgerData,       // Received data for a ledger we're acquiring
+    JtAdvance,          // Advance validated/acquired ledgers
+    JtPubledger,        // Publish a fully-accepted ledger
+    JtTxnData,          // Fetch a proposed set
+    JtWal,              // Write-ahead logging
+    JtValidationT,      // A validation from a trusted source
+    JtWrite,            // Write out hashed objects
+    JtAccept,           // Accept a consensus ledger
+    JtProposalT,        // A proposal from a trusted source
+    JtNetopCluster,     // NetworkOPs cluster peer report
+    JtNetopTimer,       // NetworkOPs net timer processing
+    JtAdmin,            // An administrative operation
 
     // Special job types which are not dispatched by the job pool
-    jtPEER,
-    jtDISK,
-    jtTXN_PROC,
-    jtOB_SETUP,
-    jtPATH_FIND,
-    jtHO_READ,
-    jtHO_WRITE,
-    jtGENERIC,  // Used just to measure time
+    JtPeer,
+    JtDisk,
+    JtTxnProc,
+    JtObSetup,
+    JtPathFind,
+    JtHoRead,
+    JtHoWrite,
+    JtGeneric,  // Used just to measure time
 
     // Node store monitoring
-    jtNS_SYNC_READ,
-    jtNS_ASYNC_READ,
-    jtNS_WRITE,
+    JtNsSyncRead,
+    JtNsAsyncRead,
+    JtNsWrite,
 };
 
 class Job : public CountedObject<Job>
@@ -105,7 +105,7 @@ public:
 
     /** Returns the time when the job was queued. */
     [[nodiscard]] clock_type::time_point const&
-    queue_time() const;
+    queueTime() const;
 
     void
     doJob();
@@ -122,12 +122,12 @@ public:
     operator>=(Job const& j) const;
 
 private:
-    JobType mType;
-    std::uint64_t mJobIndex;
-    std::function<void()> mJob;
-    std::shared_ptr<LoadEvent> m_loadEvent;
-    std::string mName;
-    clock_type::time_point m_queue_time;
+    JobType type_;
+    std::uint64_t jobIndex_;
+    std::function<void()> job_;
+    std::shared_ptr<LoadEvent> loadEvent_;
+    std::string name_;
+    clock_type::time_point queue_time_;
 };
 
 using JobCounter = ClosureCounter<void>;

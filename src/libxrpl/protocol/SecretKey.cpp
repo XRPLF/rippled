@@ -32,7 +32,7 @@ namespace xrpl {
 
 SecretKey::~SecretKey()
 {
-    secure_erase(buf_, sizeof(buf_));
+    secureErase(buf_, sizeof(buf_));
 }
 
 SecretKey::SecretKey(std::array<std::uint8_t, 32> const& key)
@@ -43,12 +43,12 @@ SecretKey::SecretKey(std::array<std::uint8_t, 32> const& key)
 SecretKey::SecretKey(Slice const& slice)
 {
     if (slice.size() != sizeof(buf_))
-        LogicError("SecretKey::SecretKey: invalid size");
+        logicError("SecretKey::SecretKey: invalid size");
     std::memcpy(buf_, slice.data(), sizeof(buf_));
 }
 
 std::string
-SecretKey::to_string() const
+SecretKey::toString() const
 {
     return strHex(*this);
 }
@@ -56,7 +56,7 @@ SecretKey::to_string() const
 namespace detail {
 
 void
-copy_uint32(std::uint8_t* out, std::uint32_t v)
+copyUint32(std::uint8_t* out, std::uint32_t v)
 {
     *out++ = v >> 24;
     *out++ = (v >> 16) & 0xff;
@@ -84,13 +84,13 @@ deriveDeterministicRootKey(Seed const& seed)
     // more iterations loop a few times.
     for (std::uint32_t seq = 0; seq != 128; ++seq)
     {
-        copy_uint32(buf.data() + 16, seq);
+        copyUint32(buf.data() + 16, seq);
 
         auto const ret = sha512Half(buf);
 
         if (secp256k1_ec_seckey_verify(secp256k1Context(), ret.data()) == 1)
         {
-            secure_erase(buf.data(), buf.size());
+            secureErase(buf.data(), buf.size());
             return ret;
         }
     }
@@ -137,19 +137,19 @@ private:
 
         std::array<std::uint8_t, 41> buf{};
         std::ranges::copy(generator_, buf.begin());
-        copy_uint32(buf.data() + 33, seq);
+        copyUint32(buf.data() + 33, seq);
 
         // The odds that this loop executes more than once are negligible
         // but we impose a maximum limit just in case.
         for (std::uint32_t subseq = 0; subseq != 128; ++subseq)
         {
-            copy_uint32(buf.data() + 37, subseq);
+            copyUint32(buf.data() + 37, subseq);
 
-            auto const ret = sha512Half_s(buf);
+            auto const ret = sha512HalfS(buf);
 
             if (secp256k1_ec_seckey_verify(secp256k1Context(), ret.data()) == 1)
             {
-                secure_erase(buf.data(), buf.size());
+                secureErase(buf.data(), buf.size());
                 return ret;
             }
         }
@@ -162,19 +162,19 @@ public:
     {
         secp256k1_pubkey pubkey;
         if (secp256k1_ec_pubkey_create(secp256k1Context(), &pubkey, root_.data()) != 1)
-            LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
+            logicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
 
         auto len = generator_.size();
 
         if (secp256k1_ec_pubkey_serialize(
                 secp256k1Context(), generator_.data(), &len, &pubkey, SECP256K1_EC_COMPRESSED) != 1)
-            LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
+            logicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
     }
 
     ~Generator()
     {
-        secure_erase(root_.data(), root_.size());
-        secure_erase(generator_.data(), generator_.size());
+        secureErase(root_.data(), root_.size());
+        secureErase(generator_.data(), generator_.size());
     }
 
     /** Generate the nth key pair. */
@@ -188,14 +188,14 @@ public:
             if (secp256k1_ec_seckey_tweak_add(secp256k1Context(), rpk.data(), tweak.data()) == 1)
             {
                 SecretKey const sk{Slice{rpk.data(), rpk.size()}};
-                secure_erase(rpk.data(), rpk.size());
+                secureErase(rpk.data(), rpk.size());
                 return sk;
             }
 
-            LogicError("Unable to add a tweak!");
+            logicError("Unable to add a tweak!");
         }();
 
-        return {derivePublicKey(KeyType::secp256k1, gsk), gsk};
+        return {derivePublicKey(KeyType::Secp256k1, gsk), gsk};
     }
 };
 
@@ -204,24 +204,24 @@ public:
 Buffer
 signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
 {
-    if (publicKeyType(pk.slice()) != KeyType::secp256k1)
-        LogicError("sign: secp256k1 required for digest signing");
+    if (publicKeyType(pk.slice()) != KeyType::Secp256k1)
+        logicError("sign: secp256k1 required for digest signing");
 
     BOOST_ASSERT(sk.size() == 32);
-    secp256k1_ecdsa_signature sig_imp;
+    secp256k1_ecdsa_signature sigImp;
     if (secp256k1_ecdsa_sign(
             secp256k1Context(),
-            &sig_imp,
+            &sigImp,
             reinterpret_cast<unsigned char const*>(digest.data()),
             reinterpret_cast<unsigned char const*>(sk.data()),
             secp256k1_nonce_function_rfc6979,
             nullptr) != 1)
-        LogicError("sign: secp256k1_ecdsa_sign failed");
+        logicError("sign: secp256k1_ecdsa_sign failed");
 
     unsigned char sig[72];
     size_t len = sizeof(sig);
-    if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sig_imp) != 1)
-        LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
+    if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sigImp) != 1)
+        logicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
     return Buffer{sig, len};
 }
@@ -231,39 +231,39 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 {
     auto const type = publicKeyType(pk.slice());
     if (!type)
-        LogicError("sign: invalid type");
+        logicError("sign: invalid type");
     switch (*type)
     {
-        case KeyType::ed25519: {
+        case KeyType::Ed25519: {
             Buffer b(64);
             ed25519_sign(m.data(), m.size(), sk.data(), pk.data() + 1, b.data());
             return b;
         }
-        case KeyType::secp256k1: {
+        case KeyType::Secp256k1: {
             sha512_half_hasher h;
             h(m.data(), m.size());
             auto const digest = sha512_half_hasher::result_type(h);
 
-            secp256k1_ecdsa_signature sig_imp;
+            secp256k1_ecdsa_signature sigImp;
             if (secp256k1_ecdsa_sign(
                     secp256k1Context(),
-                    &sig_imp,
+                    &sigImp,
                     reinterpret_cast<unsigned char const*>(digest.data()),
                     reinterpret_cast<unsigned char const*>(sk.data()),
                     secp256k1_nonce_function_rfc6979,
                     nullptr) != 1)
-                LogicError("sign: secp256k1_ecdsa_sign failed");
+                logicError("sign: secp256k1_ecdsa_sign failed");
 
             unsigned char sig[72];
             size_t len = sizeof(sig);
-            if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sig_imp) !=
+            if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sigImp) !=
                 1)
-                LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
+                logicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
             return Buffer{sig, len};
         }
         default:
-            LogicError("sign: invalid type");
+            logicError("sign: invalid type");
     }
 }
 
@@ -271,32 +271,32 @@ SecretKey
 randomSecretKey()
 {
     std::uint8_t buf[32];
-    beast::rngfill(buf, sizeof(buf), crypto_prng());
+    beast::rngfill(buf, sizeof(buf), cryptoPrng());
     SecretKey const sk(Slice{buf, sizeof(buf)});
-    secure_erase(buf, sizeof(buf));
+    secureErase(buf, sizeof(buf));
     return sk;
 }
 
 SecretKey
 generateSecretKey(KeyType type, Seed const& seed)
 {
-    if (type == KeyType::ed25519)
+    if (type == KeyType::Ed25519)
     {
-        auto key = sha512Half_s(Slice(seed.data(), seed.size()));
+        auto key = sha512HalfS(Slice(seed.data(), seed.size()));
         SecretKey const sk{Slice{key.data(), key.size()}};
-        secure_erase(key.data(), key.size());
+        secureErase(key.data(), key.size());
         return sk;
     }
 
-    if (type == KeyType::secp256k1)
+    if (type == KeyType::Secp256k1)
     {
         auto key = detail::deriveDeterministicRootKey(seed);
         SecretKey const sk{Slice{key.data(), key.size()}};
-        secure_erase(key.data(), key.size());
+        secureErase(key.data(), key.size());
         return sk;
     }
 
-    LogicError("generateSecretKey: unknown key type");
+    logicError("generateSecretKey: unknown key type");
 }
 
 PublicKey
@@ -304,30 +304,30 @@ derivePublicKey(KeyType type, SecretKey const& sk)
 {
     switch (type)
     {
-        case KeyType::secp256k1: {
-            secp256k1_pubkey pubkey_imp;
+        case KeyType::Secp256k1: {
+            secp256k1_pubkey pubkeyImp;
             if (secp256k1_ec_pubkey_create(
                     secp256k1Context(),
-                    &pubkey_imp,
+                    &pubkeyImp,
                     reinterpret_cast<unsigned char const*>(sk.data())) != 1)
-                LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
+                logicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
 
             unsigned char pubkey[33];
             std::size_t len = sizeof(pubkey);
             if (secp256k1_ec_pubkey_serialize(
-                    secp256k1Context(), pubkey, &len, &pubkey_imp, SECP256K1_EC_COMPRESSED) != 1)
-                LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
+                    secp256k1Context(), pubkey, &len, &pubkeyImp, SECP256K1_EC_COMPRESSED) != 1)
+                logicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
 
             return PublicKey{Slice{pubkey, len}};
         }
-        case KeyType::ed25519: {
+        case KeyType::Ed25519: {
             unsigned char buf[33];
             buf[0] = 0xED;
             ed25519_publickey(sk.data(), &buf[1]);
             return PublicKey(Slice{buf, sizeof(buf)});
         }
         default:
-            LogicError("derivePublicKey: bad key type");
+            logicError("derivePublicKey: bad key type");
     };
 }
 
@@ -336,12 +336,12 @@ generateKeyPair(KeyType type, Seed const& seed)
 {
     switch (type)
     {
-        case KeyType::secp256k1: {
+        case KeyType::Secp256k1: {
             detail::Generator const g(seed);
             return g(0);
         }
         default:
-        case KeyType::ed25519: {
+        case KeyType::Ed25519: {
             auto const sk = generateSecretKey(type, seed);
             return {derivePublicKey(type, sk), sk};
         }

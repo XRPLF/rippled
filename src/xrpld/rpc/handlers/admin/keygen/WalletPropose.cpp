@@ -23,7 +23,7 @@
 namespace xrpl {
 
 double
-estimate_entropy(std::string const& input)
+estimateEntropy(std::string const& input)
 {
     // First, we calculate the Shannon entropy. This gives
     // the average number of bits per symbol that we would
@@ -51,14 +51,14 @@ estimate_entropy(std::string const& input)
 // {
 //  passphrase: <string>
 // }
-Json::Value
+json::Value
 doWalletPropose(RPC::JsonContext& context)
 {
     return walletPropose(context.params);
 }
 
-Json::Value
-walletPropose(Json::Value const& params)
+json::Value
+walletPropose(json::Value const& params)
 {
     std::optional<KeyType> keyType;
     std::optional<Seed> seed;
@@ -68,13 +68,13 @@ walletPropose(Json::Value const& params)
     {
         if (!params[jss::key_type].isString())
         {
-            return RPC::expected_field_error(jss::key_type, "string");
+            return RPC::expectedFieldError(jss::key_type, "string");
         }
 
         keyType = keyTypeFromString(params[jss::key_type].asString());
 
         if (!keyType)
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
     }
 
     // XrplLib encodes seed used to generate an Ed25519 wallet in a
@@ -96,10 +96,10 @@ walletPropose(Json::Value const& params)
 
             // If the user *explicitly* requests a key type other than
             // Ed25519 we return an error.
-            if (keyType.value_or(KeyType::ed25519) != KeyType::ed25519)
-                return rpcError(rpcBAD_SEED);
+            if (keyType.value_or(KeyType::Ed25519) != KeyType::Ed25519)
+                return rpcError(RpcBadSeed);
 
-            keyType = KeyType::ed25519;
+            keyType = KeyType::Ed25519;
         }
     }
 
@@ -108,7 +108,7 @@ walletPropose(Json::Value const& params)
         if (params.isMember(jss::passphrase) || params.isMember(jss::seed) ||
             params.isMember(jss::seed_hex))
         {
-            Json::Value err;
+            json::Value err;
 
             seed = RPC::getSeedFromRPC(params, err);
 
@@ -122,11 +122,11 @@ walletPropose(Json::Value const& params)
     }
 
     if (!keyType)
-        keyType = KeyType::secp256k1;
+        keyType = KeyType::Secp256k1;
 
     auto const publicKey = generateKeyPair(*keyType, *seed).first;
 
-    Json::Value obj(Json::objectValue);
+    json::Value obj(json::ObjectValue);
 
     auto const seed1751 = seedAs1751(*seed);
     auto const seedHex = strHex(*seed);
@@ -151,7 +151,7 @@ walletPropose(Json::Value const& params)
         {
             // 80 bits of entropy isn't bad, but it's better to
             // err on the side of caution and be conservative.
-            if (estimate_entropy(passphrase) < 80.0)
+            if (estimateEntropy(passphrase) < 80.0)
             {
                 obj[jss::warning] =
                     "This wallet was generated using a user-supplied "

@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace Json {
+namespace json {
 
 /**
  *  Writer implements an O(1)-space, O(1)-granular output JSON writer.
@@ -107,7 +107,7 @@ namespace Json {
 class Writer
 {
 public:
-    enum class CollectionType { array, object };
+    enum class CollectionType { Array, Object };
 
     explicit Writer(Output const& output);
     Writer(Writer&&) noexcept;
@@ -138,7 +138,7 @@ public:
     /** Append a value to an array.
      *
      *  Scalar must be a scalar - that is, a number, boolean, string, string
-     *  literal, nullptr or Json::Value
+     *  literal, nullptr or json::Value
      */
     template <typename Scalar>
     void
@@ -188,9 +188,9 @@ public:
     void
     output(char const*);
 
-    /*** Output a Json::Value. */
+    /*** Output a json::Value. */
     void
-    output(Json::Value const&);
+    output(json::Value const&);
 
     /** Output a null. */
     void output(std::nullptr_t);
@@ -216,9 +216,9 @@ public:
     }
 
     void
-    output(Json::StaticString const& t)
+    output(json::StaticString const& t)
     {
-        output(t.c_str());
+        output(t.cStr());
     }
 
 private:
@@ -236,4 +236,4 @@ check(bool condition, std::string const& message)
         xrpl::Throw<std::logic_error>(message);
 }
 
-}  // namespace Json
+}  // namespace json

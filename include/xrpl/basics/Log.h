@@ -17,15 +17,15 @@ namespace xrpl {
 // DEPRECATED use beast::severities::Severity instead
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LogSeverity {
-    lsINVALID = -1,  // used to indicate an invalid severity
-    lsTRACE = 0,     // Very low-level progress information, details inside
+    LSInvalid = -1,  // used to indicate an invalid severity
+    LSTrace = 0,     // Very low-level progress information, details inside
                      // an operation
-    lsDEBUG = 1,     // Function-level progress information, operations
-    lsINFO = 2,      // Server-level progress information, major operations
-    lsWARNING = 3,   // Conditions that warrant human attention, may indicate
+    LSDebug = 1,     // Function-level progress information, operations
+    LSInfo = 2,      // Server-level progress information, major operations
+    LSWarning = 3,   // Conditions that warrant human attention, may indicate
                      // a problem
-    lsERROR = 4,     // A condition that indicates a problem
-    lsFATAL = 5      // A severe condition that indicates a server problem
+    LSError = 4,     // A condition that indicates a problem
+    LSFatal = 5      // A severe condition that indicates a server problem
 };
 
 /** Manages partitions for logging. */
@@ -130,8 +130,8 @@ private:
         /** @} */
 
     private:
-        std::unique_ptr<std::ofstream> m_stream;
-        boost::filesystem::path m_path;
+        std::unique_ptr<std::ofstream> stream_;
+        boost::filesystem::path path_;
     };
 
     std::mutex mutable mutex_;
@@ -168,7 +168,7 @@ public:
     threshold(beast::severities::Severity thresh);
 
     std::vector<std::pair<std::string, std::string>>
-    partition_severities() const;
+    partitionSeverities() const;
 
     void
     write(
@@ -214,7 +214,7 @@ private:
         // Maximum line length for log messages.
         // If the message exceeds this length it will be truncated with
         // ellipses.
-        maximumMessageCharacters = 12 * 1024
+        MaximumMessageCharacters = 12 * 1024
     };
 
     static void

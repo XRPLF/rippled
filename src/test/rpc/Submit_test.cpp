@@ -13,7 +13,7 @@
 
 namespace xrpl::test {
 
-class Submit_test : public beast::unit_test::suite
+class Submit_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -34,7 +34,7 @@ public:
                 JTx const jt = env.jt(pay(alice, bob, XRP(1)));
                 auto const txBlob = strHex(jt.stx->getSerializer().slice());
 
-                Json::Value params;
+                json::Value params;
                 params[jss::tx_blob] = txBlob;
                 params[jss::fail_hard] = param;
                 auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];
@@ -44,7 +44,7 @@ public:
 
             // Test with tx_json path (deprecated signing)
             {
-                Json::Value params;
+                json::Value params;
                 params[jss::secret] = toBase58(generateSeed("alice"));
                 params[jss::tx_json] = pay("alice", "bob", XRP(1));
                 params[jss::fail_hard] = param;
@@ -60,15 +60,15 @@ public:
         testInvalidFailHard(1);
         testInvalidFailHard(0);
         testInvalidFailHard(1.5);
-        testInvalidFailHard(Json::Value(Json::objectValue));
-        testInvalidFailHard(Json::Value(Json::arrayValue));
+        testInvalidFailHard(json::Value(json::ObjectValue));
+        testInvalidFailHard(json::Value(json::ArrayValue));
 
         // Valid boolean values should work (not return invalidParams)
         {
             JTx const jt = env.jt(pay(alice, bob, XRP(1)));
             auto const txBlob = strHex(jt.stx->getSerializer().slice());
 
-            Json::Value params;
+            json::Value params;
             params[jss::tx_blob] = txBlob;
             params[jss::fail_hard] = true;
             auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];
@@ -78,7 +78,7 @@ public:
             JTx const jt = env.jt(pay(alice, bob, XRP(1)));
             auto const txBlob = strHex(jt.stx->getSerializer().slice());
 
-            Json::Value params;
+            json::Value params;
             params[jss::tx_blob] = txBlob;
             params[jss::fail_hard] = false;
             auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];

@@ -19,131 +19,131 @@ namespace xrpl {
 // or repurpose error code values.
 // Protocol-wide, 50+ files
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum error_code_i {
+enum ErrorCodeI {
     // -1 represents codes not listed in this enumeration
-    rpcUNKNOWN = -1,
+    RpcUnknown = -1,
 
-    rpcSUCCESS = 0,
+    RpcSuccess = 0,
 
-    rpcBAD_SYNTAX = 1,
-    rpcJSON_RPC = 2,
-    rpcFORBIDDEN = 3,
+    RpcBadSyntax = 1,
+    RpcJsonRpc = 2,
+    RpcForbidden = 3,
 
-    rpcWRONG_NETWORK = 4,
+    RpcWrongNetwork = 4,
     // Misc failure
     // unused                  5,
-    rpcNO_PERMISSION = 6,
-    rpcNO_EVENTS = 7,
+    RpcNoPermission = 6,
+    RpcNoEvents = 7,
     // unused                  8,
-    rpcTOO_BUSY = 9,
-    rpcSLOW_DOWN = 10,
-    rpcHIGH_FEE = 11,
-    rpcNOT_ENABLED = 12,
-    rpcNOT_READY = 13,
-    rpcAMENDMENT_BLOCKED = 14,
+    RpcTooBusy = 9,
+    RpcSlowDown = 10,
+    RpcHighFee = 11,
+    RpcNotEnabled = 12,
+    RpcNotReady = 13,
+    RpcAmendmentBlocked = 14,
 
     // Networking
-    rpcNO_CLOSED = 15,
-    rpcNO_CURRENT = 16,
-    rpcNO_NETWORK = 17,
-    rpcNOT_SYNCED = 18,
+    RpcNoClosed = 15,
+    RpcNoCurrent = 16,
+    RpcNoNetwork = 17,
+    RpcNotSynced = 18,
 
     // Ledger state
-    rpcACT_NOT_FOUND = 19,
+    RpcActNotFound = 19,
     // unused                  20,
-    rpcLGR_NOT_FOUND = 21,
-    rpcLGR_NOT_VALIDATED = 22,
-    rpcMASTER_DISABLED = 23,
+    RpcLgrNotFound = 21,
+    RpcLgrNotValidated = 22,
+    RpcMasterDisabled = 23,
     // unused                  24,
     // unused                  25,
     // unused                  26,
     // unused                  27,
     // unused                  28,
-    rpcTXN_NOT_FOUND = 29,
-    rpcINVALID_HOTWALLET = 30,
+    RpcTxnNotFound = 29,
+    RpcInvalidHotwallet = 30,
 
     // Malformed command
-    rpcINVALID_PARAMS = 31,
-    rpcUNKNOWN_COMMAND = 32,
-    rpcNO_PF_REQUEST = 33,
+    RpcInvalidParams = 31,
+    RpcUnknownCommand = 32,
+    RpcNoPfRequest = 33,
 
     // Bad parameter
     // NOT USED DO NOT USE AGAIN rpcACT_BITCOIN = 34,
-    rpcACT_MALFORMED = 35,
-    rpcALREADY_MULTISIG = 36,
-    rpcALREADY_SINGLE_SIG = 37,
+    RpcActMalformed = 35,
+    RpcAlreadyMultisig = 36,
+    RpcAlreadySingleSig = 37,
     // unused                  38,
     // unused                  39,
-    rpcBAD_FEATURE = 40,
-    rpcBAD_ISSUER = 41,
-    rpcBAD_MARKET = 42,
-    rpcBAD_SECRET = 43,
-    rpcBAD_SEED = 44,
-    rpcCHANNEL_MALFORMED = 45,
-    rpcCHANNEL_AMT_MALFORMED = 46,
-    rpcCOMMAND_MISSING = 47,
-    rpcDST_ACT_MALFORMED = 48,
-    rpcDST_ACT_MISSING = 49,
-    rpcDST_ACT_NOT_FOUND = 50,
-    rpcDST_AMT_MALFORMED = 51,
-    rpcDST_AMT_MISSING = 52,
-    rpcDST_ISR_MALFORMED = 53,
+    RpcBadFeature = 40,
+    RpcBadIssuer = 41,
+    RpcBadMarket = 42,
+    RpcBadSecret = 43,
+    RpcBadSeed = 44,
+    RpcChannelMalformed = 45,
+    RpcChannelAmtMalformed = 46,
+    RpcCommandMissing = 47,
+    RpcDstActMalformed = 48,
+    RpcDstActMissing = 49,
+    RpcDstActNotFound = 50,
+    RpcDstAmtMalformed = 51,
+    RpcDstAmtMissing = 52,
+    RpcDstIsrMalformed = 53,
     // unused                  54,
     // unused                  55,
     // unused                  56,
-    rpcLGR_IDXS_INVALID = 57,
-    rpcLGR_IDX_MALFORMED = 58,
+    RpcLgrIdxsInvalid = 57,
+    RpcLgrIdxMalformed = 58,
     // unused                  59,
     // unused                  60,
     // unused                  61,
-    rpcPUBLIC_MALFORMED = 62,
-    rpcSIGNING_MALFORMED = 63,
-    rpcSENDMAX_MALFORMED = 64,
-    rpcSRC_ACT_MALFORMED = 65,
-    rpcSRC_ACT_MISSING = 66,
-    rpcSRC_ACT_NOT_FOUND = 67,
-    rpcDELEGATE_ACT_NOT_FOUND = 68,
-    rpcSRC_CUR_MALFORMED = 69,
-    rpcSRC_ISR_MALFORMED = 70,
-    rpcSTREAM_MALFORMED = 71,
-    rpcATX_DEPRECATED = 72,
+    RpcPublicMalformed = 62,
+    RpcSigningMalformed = 63,
+    RpcSendmaxMalformed = 64,
+    RpcSrcActMalformed = 65,
+    RpcSrcActMissing = 66,
+    RpcSrcActNotFound = 67,
+    RpcDelegateActNotFound = 68,
+    RpcSrcCurMalformed = 69,
+    RpcSrcIsrMalformed = 70,
+    RpcStreamMalformed = 71,
+    RpcAtxDeprecated = 72,
 
     // Internal error (should never happen)
-    rpcINTERNAL = 73,  // Generic internal error.
-    rpcNOT_IMPL = 74,
-    rpcNOT_SUPPORTED = 75,
-    rpcBAD_KEY_TYPE = 76,
-    rpcDB_DESERIALIZATION = 77,
-    rpcEXCESSIVE_LGR_RANGE = 78,
-    rpcINVALID_LGR_RANGE = 79,
-    rpcEXPIRED_VALIDATOR_LIST = 80,
+    RpcInternal = 73,  // Generic internal error.
+    RpcNotImpl = 74,
+    RpcNotSupported = 75,
+    RpcBadKeyType = 76,
+    RpcDbDeserialization = 77,
+    RpcExcessiveLgrRange = 78,
+    RpcInvalidLgrRange = 79,
+    RpcExpiredValidatorList = 80,
 
     // unused = 90,
     // DEPRECATED. New code must not use this value.
-    rpcREPORTING_UNSUPPORTED = 91,
+    RpcReportingUnsupported = 91,
 
-    rpcOBJECT_NOT_FOUND = 92,
+    RpcObjectNotFound = 92,
 
     // AMM
-    rpcISSUE_MALFORMED = 93,
+    RpcIssueMalformed = 93,
 
     // Oracle
-    rpcORACLE_MALFORMED = 94,
+    RpcOracleMalformed = 94,
 
     // deposit_authorized + credentials
-    rpcBAD_CREDENTIALS = 95,
+    RpcBadCredentials = 95,
 
     // Simulate
-    rpcTX_SIGNED = 96,
+    RpcTxSigned = 96,
 
     // Pathfinding
-    rpcDOMAIN_MALFORMED = 97,
+    RpcDomainMalformed = 97,
 
     // ledger_entry
-    rpcENTRY_NOT_FOUND = 98,
-    rpcUNEXPECTED_LEDGER_TYPE = 99,
+    RpcEntryNotFound = 98,
+    RpcUnexpectedLedgerType = 99,
 
-    rpcLAST = rpcUNEXPECTED_LEDGER_TYPE  // rpcLAST should always equal the last code.
+    RpcLast = RpcUnexpectedLedgerType  // rpcLAST should always equal the last code.
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.
@@ -152,13 +152,13 @@ enum error_code_i {
 */
 // Protocol-wide, 50+ files
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum warning_code_i {
-    warnRPC_UNSUPPORTED_MAJORITY = 1001,
-    warnRPC_AMENDMENT_BLOCKED = 1002,
-    warnRPC_EXPIRED_VALIDATOR_LIST = 1003,
+enum WarningCodeI {
+    WarnRpcUnsupportedMajority = 1001,
+    WarnRpcAmendmentBlocked = 1002,
+    WarnRpcExpiredValidatorList = 1003,
     // unused = 1004
-    warnRPC_FIELDS_DEPRECATED = 2004,  // xrpld needs to maintain
-                                       // compatibility with Clio on this code.
+    WarnRpcFieldsDeprecated = 2004,  // xrpld needs to maintain
+                                     // compatibility with Clio on this code.
 };
 
 //------------------------------------------------------------------------------
@@ -172,163 +172,159 @@ struct ErrorInfo
 {
     // Default ctor needed to produce an empty std::array during constexpr eval.
     constexpr ErrorInfo()
-        : code(rpcUNKNOWN), token("unknown"), message("An unknown error code."), http_status(200)
+        : code(RpcUnknown), token("unknown"), message("An unknown error code."), http_status(200)
     {
     }
 
-    constexpr ErrorInfo(error_code_i code_, char const* token_, char const* message_)
-        : code(code_), token(token_), message(message_), http_status(200)
+    constexpr ErrorInfo(ErrorCodeI code, char const* token, char const* message)
+        : code(code), token(token), message(message), http_status(200)
     {
     }
 
-    constexpr ErrorInfo(
-        error_code_i code_,
-        char const* token_,
-        char const* message_,
-        int http_status_)
-        : code(code_), token(token_), message(message_), http_status(http_status_)
+    constexpr ErrorInfo(ErrorCodeI code, char const* token, char const* message, int httpStatus)
+        : code(code), token(token), message(message), http_status(httpStatus)
     {
     }
 
-    error_code_i code;
-    Json::StaticString token;
-    Json::StaticString message;
+    ErrorCodeI code;
+    json::StaticString token;
+    json::StaticString message;
     int http_status;
 };
 
 /** Returns an ErrorInfo that reflects the error code. */
 ErrorInfo const&
-get_error_info(error_code_i code);
+getErrorInfo(ErrorCodeI code);
 
 /** Add or update the json update to reflect the error code. */
 /** @{ */
 void
-inject_error(error_code_i code, Json::Value& json);
+injectError(ErrorCodeI code, json::Value& json);
 
 void
-inject_error(error_code_i code, std::string const& message, Json::Value& json);
+injectError(ErrorCodeI code, std::string const& message, json::Value& json);
 /** @} */
 
 /** Returns a new json object that reflects the error code. */
 /** @{ */
-Json::Value
-make_error(error_code_i code);
-Json::Value
-make_error(error_code_i code, std::string const& message);
+json::Value
+makeError(ErrorCodeI code);
+json::Value
+makeError(ErrorCodeI code, std::string const& message);
 /** @} */
 
 /** Returns a new json object that indicates invalid parameters. */
 /** @{ */
-inline Json::Value
-make_param_error(std::string const& message)
+inline json::Value
+makeParamError(std::string const& message)
 {
-    return make_error(rpcINVALID_PARAMS, message);
+    return makeError(RpcInvalidParams, message);
 }
 
 inline std::string
-missing_field_message(std::string const& name)
+missingFieldMessage(std::string const& name)
 {
     return "Missing field '" + name + "'.";
 }
 
-inline Json::Value
-missing_field_error(std::string const& name)
+inline json::Value
+missingFieldError(std::string const& name)
 {
-    return make_param_error(missing_field_message(name));
+    return makeParamError(missingFieldMessage(name));
 }
 
-inline Json::Value
-missing_field_error(Json::StaticString name)
+inline json::Value
+missingFieldError(json::StaticString name)
 {
-    return missing_field_error(std::string(name));
+    return missingFieldError(std::string(name));
 }
 
 inline std::string
-object_field_message(std::string const& name)
+objectFieldMessage(std::string const& name)
 {
     return "Invalid field '" + name + "', not object.";
 }
 
-inline Json::Value
-object_field_error(std::string const& name)
+inline json::Value
+objectFieldError(std::string const& name)
 {
-    return make_param_error(object_field_message(name));
+    return makeParamError(objectFieldMessage(name));
 }
 
-inline Json::Value
-object_field_error(Json::StaticString name)
+inline json::Value
+objectFieldError(json::StaticString name)
 {
-    return object_field_error(std::string(name));
+    return objectFieldError(std::string(name));
 }
 
 inline std::string
-invalid_field_message(std::string const& name)
+invalidFieldMessage(std::string const& name)
 {
     return "Invalid field '" + name + "'.";
 }
 
 inline std::string
-invalid_field_message(Json::StaticString name)
+invalidFieldMessage(json::StaticString name)
 {
-    return invalid_field_message(std::string(name));
+    return invalidFieldMessage(std::string(name));
 }
 
-inline Json::Value
-invalid_field_error(std::string const& name)
+inline json::Value
+invalidFieldError(std::string const& name)
 {
-    return make_param_error(invalid_field_message(name));
+    return makeParamError(invalidFieldMessage(name));
 }
 
-inline Json::Value
-invalid_field_error(Json::StaticString name)
+inline json::Value
+invalidFieldError(json::StaticString name)
 {
-    return invalid_field_error(std::string(name));
+    return invalidFieldError(std::string(name));
 }
 
 inline std::string
-expected_field_message(std::string const& name, std::string const& type)
+expectedFieldMessage(std::string const& name, std::string const& type)
 {
     return "Invalid field '" + name + "', not " + type + ".";
 }
 
 inline std::string
-expected_field_message(Json::StaticString name, std::string const& type)
+expectedFieldMessage(json::StaticString name, std::string const& type)
 {
-    return expected_field_message(std::string(name), type);
+    return expectedFieldMessage(std::string(name), type);
 }
 
-inline Json::Value
-expected_field_error(std::string const& name, std::string const& type)
+inline json::Value
+expectedFieldError(std::string const& name, std::string const& type)
 {
-    return make_param_error(expected_field_message(name, type));
+    return makeParamError(expectedFieldMessage(name, type));
 }
 
-inline Json::Value
-expected_field_error(Json::StaticString name, std::string const& type)
+inline json::Value
+expectedFieldError(json::StaticString name, std::string const& type)
 {
-    return expected_field_error(std::string(name), type);
+    return expectedFieldError(std::string(name), type);
 }
 
-inline Json::Value
-not_validator_error()
+inline json::Value
+notValidatorError()
 {
-    return make_param_error("not a validator");
+    return makeParamError("not a validator");
 }
 
 /** @} */
 
 /** Returns `true` if the json contains an rpc error specification. */
 bool
-contains_error(Json::Value const& json);
+containsError(json::Value const& json);
 
 /** Returns http status that corresponds to the error code. */
 int
-error_code_http_status(error_code_i code);
+errorCodeHttpStatus(ErrorCodeI code);
 
 }  // namespace RPC
 
 /** Returns a single string with the contents of an RPC error. */
 std::string
-rpcErrorString(Json::Value const& jv);
+rpcErrorString(json::Value const& jv);
 
 }  // namespace xrpl

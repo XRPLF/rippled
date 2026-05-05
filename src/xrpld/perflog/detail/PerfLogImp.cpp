@@ -35,10 +35,10 @@ PerfLogImp::Counters::Counters(std::set<char const*> const& labels, JobTypes con
 {
     {
         // populateRpc
-        rpc_.reserve(labels.size());
+        rpc.reserve(labels.size());
         for (std::string const label : labels)
         {
-            auto const inserted = rpc_.emplace(label, Rpc()).second;
+            auto const inserted = rpc.emplace(label, Rpc()).second;
             if (!inserted)
             {
                 // Ensure that no other function populates this entry.
@@ -52,10 +52,10 @@ PerfLogImp::Counters::Counters(std::set<char const*> const& labels, JobTypes con
     }
     {
         // populateJq
-        jq_.reserve(jobTypes.size());
+        jq.reserve(jobTypes.size());
         for (auto const& [jobType, _] : jobTypes)
         {
-            auto const inserted = jq_.emplace(jobType, Jq()).second;
+            auto const inserted = jq.emplace(jobType, Jq()).second;
             if (!inserted)
             {
                 // Ensure that no other function populates this entry.
@@ -69,13 +69,13 @@ PerfLogImp::Counters::Counters(std::set<char const*> const& labels, JobTypes con
     }
 }
 
-Json::Value
+json::Value
 PerfLogImp::Counters::countersJson() const
 {
-    Json::Value rpcobj(Json::objectValue);
+    json::Value rpcobj(json::ObjectValue);
     // totalRpc represents all rpc methods. All that started, finished, etc.
     Rpc totalRpc;
-    for (auto const& proc : rpc_)
+    for (auto const& proc : rpc)
     {
         Rpc value;
         {
@@ -88,7 +88,7 @@ PerfLogImp::Counters::countersJson() const
             value = proc.second.value;
         }
 
-        Json::Value p(Json::objectValue);
+        json::Value p(json::ObjectValue);
         p[jss::started] = std::to_string(value.started);
         totalRpc.started += value.started;
         p[jss::finished] = std::to_string(value.finished);
@@ -102,7 +102,7 @@ PerfLogImp::Counters::countersJson() const
 
     if (totalRpc.started != 0u)
     {
-        Json::Value totalRpcJson(Json::objectValue);
+        json::Value totalRpcJson(json::ObjectValue);
         totalRpcJson[jss::started] = std::to_string(totalRpc.started);
         totalRpcJson[jss::finished] = std::to_string(totalRpc.finished);
         totalRpcJson[jss::errored] = std::to_string(totalRpc.errored);
@@ -110,10 +110,10 @@ PerfLogImp::Counters::countersJson() const
         rpcobj[jss::total] = totalRpcJson;
     }
 
-    Json::Value jobQueueObj(Json::objectValue);
+    json::Value jobQueueObj(json::ObjectValue);
     // totalJq represents all jobs. All enqueued, started, finished, etc.
     Jq totalJq;
-    for (auto const& proc : jq_)
+    for (auto const& proc : jq)
     {
         Jq value;
         {
@@ -126,7 +126,7 @@ PerfLogImp::Counters::countersJson() const
             value = proc.second.value;
         }
 
-        Json::Value j(Json::objectValue);
+        json::Value j(json::ObjectValue);
         j[jss::queued] = std::to_string(value.queued);
         totalJq.queued += value.queued;
         j[jss::started] = std::to_string(value.started);
@@ -142,7 +142,7 @@ PerfLogImp::Counters::countersJson() const
 
     if (totalJq.queued != 0u)
     {
-        Json::Value totalJqJson(Json::objectValue);
+        json::Value totalJqJson(json::ObjectValue);
         totalJqJson[jss::queued] = std::to_string(totalJq.queued);
         totalJqJson[jss::started] = std::to_string(totalJq.started);
         totalJqJson[jss::finished] = std::to_string(totalJq.finished);
@@ -151,7 +151,7 @@ PerfLogImp::Counters::countersJson() const
         jobQueueObj[jss::total] = totalJqJson;
     }
 
-    Json::Value counters(Json::objectValue);
+    json::Value counters(json::ObjectValue);
     // Be kind to reporting tools and let them expect rpc and jq objects
     // even if empty.
     counters[jss::rpc] = rpcobj;
@@ -159,46 +159,46 @@ PerfLogImp::Counters::countersJson() const
     return counters;
 }
 
-Json::Value
+json::Value
 PerfLogImp::Counters::currentJson() const
 {
     auto const present = steady_clock::now();
 
-    Json::Value jobsArray(Json::arrayValue);
+    json::Value jobsArray(json::ArrayValue);
     auto const jobs = [this] {
-        std::scoped_lock const lock(jobsMutex_);
-        return jobs_;
+        std::scoped_lock const lock(jobsMutex);
+        return this->jobs;
     }();
 
     for (auto const& j : jobs)
     {
-        if (j.first == jtINVALID)
+        if (j.first == JtInvalid)
             continue;
-        Json::Value jobj(Json::objectValue);
+        json::Value jobj(json::ObjectValue);
         jobj[jss::job] = JobTypes::name(j.first);
         jobj[jss::duration_us] =
             std::to_string(std::chrono::duration_cast<microseconds>(present - j.second).count());
         jobsArray.append(jobj);
     }
 
-    Json::Value methodsArray(Json::arrayValue);
+    json::Value methodsArray(json::ArrayValue);
     std::vector<MethodStart> methods;
     {
-        std::scoped_lock const lock(methodsMutex_);
-        methods.reserve(methods_.size());
-        for (auto const& m : methods_)
+        std::scoped_lock const lock(methodsMutex);
+        methods.reserve(this->methods.size());
+        for (auto const& m : this->methods)
             methods.push_back(m.second);
     }
     for (auto m : methods)
     {
-        Json::Value methodobj(Json::objectValue);
+        json::Value methodobj(json::ObjectValue);
         methodobj[jss::method] = m.first;
         methodobj[jss::duration_us] =
             std::to_string(std::chrono::duration_cast<microseconds>(present - m.second).count());
         methodsArray.append(methodobj);
     }
 
-    Json::Value current(Json::objectValue);
+    json::Value current(json::ObjectValue);
     current[jss::jobs] = jobsArray;
     current[jss::methods] = methodsArray;
     return current;
@@ -277,20 +277,20 @@ PerfLogImp::report()
         return;
     lastLog_ = present;
 
-    Json::Value report(Json::objectValue);
+    json::Value report(json::ObjectValue);
     report[jss::time] = to_string(std::chrono::floor<microseconds>(present));
     {
-        std::scoped_lock const lock{counters_.jobsMutex_};
-        report[jss::workers] = static_cast<unsigned int>(counters_.jobs_.size());
+        std::scoped_lock const lock{counters_.jobsMutex};
+        report[jss::workers] = static_cast<unsigned int>(counters_.jobs.size());
     }
     report[jss::hostid] = hostname_;
     report[jss::counters] = counters_.countersJson();
-    report[jss::nodestore] = Json::objectValue;
+    report[jss::nodestore] = json::ObjectValue;
     app_.getNodeStore().getCountsJson(report[jss::nodestore]);
     report[jss::current_activities] = counters_.currentJson();
     app_.getOPs().stateAccounting(report);
 
-    logFile_ << Json::Compact{std::move(report)} << std::endl;
+    logFile_ << json::Compact{std::move(report)} << std::endl;
 }
 
 PerfLogImp::PerfLogImp(
@@ -311,8 +311,8 @@ PerfLogImp::~PerfLogImp()
 void
 PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
 {
-    auto counter = counters_.rpc_.find(method);
-    if (counter == counters_.rpc_.end())
+    auto counter = counters_.rpc.find(method);
+    if (counter == counters_.rpc.end())
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::perf::PerfLogImp::rpcStart : valid method input");
@@ -324,15 +324,15 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
         std::scoped_lock const lock(counter->second.mutex);
         ++counter->second.value.started;
     }
-    std::scoped_lock const lock(counters_.methodsMutex_);
-    counters_.methods_[requestId] = {counter->first.c_str(), steady_clock::now()};
+    std::scoped_lock const lock(counters_.methodsMutex);
+    counters_.methods[requestId] = {counter->first.c_str(), steady_clock::now()};
 }
 
 void
 PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, bool finish)
 {
-    auto counter = counters_.rpc_.find(method);
-    if (counter == counters_.rpc_.end())
+    auto counter = counters_.rpc.find(method);
+    if (counter == counters_.rpc.end())
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::perf::PerfLogImp::rpcEnd : valid method input");
@@ -341,12 +341,12 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
     }
     steady_time_point startTime;
     {
-        std::scoped_lock const lock(counters_.methodsMutex_);
-        auto const e = counters_.methods_.find(requestId);
-        if (e != counters_.methods_.end())
+        std::scoped_lock const lock(counters_.methodsMutex);
+        auto const e = counters_.methods.find(requestId);
+        if (e != counters_.methods.end())
         {
             startTime = e->second.second;
-            counters_.methods_.erase(e);
+            counters_.methods.erase(e);
         }
         else
         {
@@ -371,8 +371,8 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
 void
 PerfLogImp::jobQueue(JobType const type)
 {
-    auto counter = counters_.jq_.find(type);
-    if (counter == counters_.jq_.end())
+    auto counter = counters_.jq.find(type);
+    if (counter == counters_.jq.end())
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::perf::PerfLogImp::jobQueue : valid job type input");
@@ -390,8 +390,8 @@ PerfLogImp::jobStart(
     steady_time_point startTime,
     int instance)
 {
-    auto counter = counters_.jq_.find(type);
-    if (counter == counters_.jq_.end())
+    auto counter = counters_.jq.find(type);
+    if (counter == counters_.jq.end())
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::perf::PerfLogImp::jobStart : valid job type input");
@@ -404,16 +404,16 @@ PerfLogImp::jobStart(
         ++counter->second.value.started;
         counter->second.value.queuedDuration += dur;
     }
-    std::scoped_lock const lock(counters_.jobsMutex_);
-    if (instance >= 0 && instance < counters_.jobs_.size())
-        counters_.jobs_[instance] = {type, startTime};
+    std::scoped_lock const lock(counters_.jobsMutex);
+    if (instance >= 0 && instance < counters_.jobs.size())
+        counters_.jobs[instance] = {type, startTime};
 }
 
 void
 PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
 {
-    auto counter = counters_.jq_.find(type);
-    if (counter == counters_.jq_.end())
+    auto counter = counters_.jq.find(type);
+    if (counter == counters_.jq.end())
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::perf::PerfLogImp::jobFinish : valid job type input");
@@ -426,17 +426,17 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
         ++counter->second.value.finished;
         counter->second.value.runningDuration += dur;
     }
-    std::scoped_lock const lock(counters_.jobsMutex_);
-    if (instance >= 0 && instance < counters_.jobs_.size())
-        counters_.jobs_[instance] = {jtINVALID, steady_time_point()};
+    std::scoped_lock const lock(counters_.jobsMutex);
+    if (instance >= 0 && instance < counters_.jobs.size())
+        counters_.jobs[instance] = {JtInvalid, steady_time_point()};
 }
 
 void
 PerfLogImp::resizeJobs(int const resize)
 {
-    std::scoped_lock const lock(counters_.jobsMutex_);
-    if (resize > counters_.jobs_.size())
-        counters_.jobs_.resize(resize, {jtINVALID, steady_time_point()});
+    std::scoped_lock const lock(counters_.jobsMutex);
+    if (resize > counters_.jobs.size())
+        counters_.jobs.resize(resize, {JtInvalid, steady_time_point()});
 }
 
 void
@@ -474,7 +474,7 @@ PerfLogImp::stop()
 //-----------------------------------------------------------------------------
 
 PerfLog::Setup
-setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
+setupPerfLog(Section const& section, boost::filesystem::path const& configDir)
 {
     PerfLog::Setup setup;
     std::string perfLog;
@@ -489,13 +489,13 @@ setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
     }
 
     std::uint64_t logInterval = 0;
-    if (get_if_exists(section, "log_interval", logInterval))
+    if (getIfExists(section, "log_interval", logInterval))
         setup.logInterval = std::chrono::seconds(logInterval);
     return setup;
 }
 
 std::unique_ptr<PerfLog>
-make_PerfLog(
+makePerfLog(
     PerfLog::Setup const& setup,
     Application& app,
     beast::Journal journal,

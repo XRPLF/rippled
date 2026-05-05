@@ -23,7 +23,7 @@
 
 namespace xrpl {
 
-class AmendmentBlocked_test : public beast::unit_test::suite
+class AmendmentBlocked_test : public beast::unit_test::Suite
 {
     void
     testBlockedMethods()
@@ -34,10 +34,10 @@ class AmendmentBlocked_test : public beast::unit_test::suite
                     return cfg;
                 })};
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
-        Account const ali{"ali", KeyType::secp256k1};
+        Account const ali{"ali", KeyType::Secp256k1};
         env.fund(XRP(10000), alice, bob, gw);
         env.memoize(ali);
         // This close() ensures that all the accounts get created and their
@@ -46,10 +46,10 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         // noRipple set on gw's end. The existing tests pass either way, but
         // better to do it right.
         env.close();
-        env.trust(USD(600), alice);
-        env.trust(USD(700), bob);
-        env(pay(gw, alice, USD(70)));
-        env(pay(gw, bob, USD(50)));
+        env.trust(usd(600), alice);
+        env.trust(usd(700), bob);
+        env(pay(gw, alice, usd(70)));
+        env(pay(gw, bob, usd(50)));
         env.close();
 
         auto wsc = test::makeWSClient(env.app().config());
@@ -71,12 +71,12 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // path_find
-        Json::Value pf_req;
-        pf_req[jss::subcommand] = "create";
-        pf_req[jss::source_account] = alice.human();
-        pf_req[jss::destination_account] = bob.human();
-        pf_req[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::none);
-        jr = wsc->invoke("path_find", pf_req)[jss::result];
+        json::Value pfReq;
+        pfReq[jss::subcommand] = "create";
+        pfReq[jss::source_account] = alice.human();
+        pfReq[jss::destination_account] = bob.human();
+        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::KNone);
+        jr = wsc->invoke("path_find", pfReq)[jss::result];
         BEAST_EXPECT(
             jr.isMember(jss::alternatives) && jr[jss::alternatives].isArray() &&
             jr[jss::alternatives].size() == 1);
@@ -91,28 +91,28 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit_multisigned
-        env(signers(bob, 1, {{alice, 1}}), sig(bob));
+        env(signers(bob, 1, {{alice, 1}}), Sig(bob));
         env(regkey(alice, ali));
         env.close();
 
-        Json::Value set_tx;
-        set_tx[jss::Account] = bob.human();
-        set_tx[jss::TransactionType] = jss::AccountSet;
-        set_tx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
-        set_tx[jss::Sequence] = env.seq(bob);
-        set_tx[jss::SigningPubKey] = "";
+        json::Value setTx;
+        setTx[jss::Account] = bob.human();
+        setTx[jss::TransactionType] = jss::AccountSet;
+        setTx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
+        setTx[jss::Sequence] = env.seq(bob);
+        setTx[jss::SigningPubKey] = "";
 
-        Json::Value sign_for;
-        sign_for[jss::tx_json] = set_tx;
-        sign_for[jss::account] = alice.human();
-        sign_for[jss::secret] = ali.name();
-        jr = env.rpc("json", "sign_for", to_string(sign_for))[jss::result];
+        json::Value signFor;
+        signFor[jss::tx_json] = setTx;
+        signFor[jss::account] = alice.human();
+        signFor[jss::secret] = ali.name();
+        jr = env.rpc("json", "sign_for", to_string(signFor))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
-        Json::Value ms_req;
-        ms_req[jss::tx_json] = jr[jss::tx_json];
-        jr = env.rpc("json", "submit_multisigned", to_string(ms_req))[jss::result];
+        json::Value msReq;
+        msReq[jss::tx_json] = jr[jss::tx_json];
+        jr = env.rpc("json", "submit_multisigned", to_string(msReq))[jss::result];
         BEAST_EXPECT(jr.isMember(jss::engine_result) && jr[jss::engine_result] == "tesSUCCESS");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
@@ -137,11 +137,11 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // path_find
-        pf_req[jss::subcommand] = "create";
-        pf_req[jss::source_account] = alice.human();
-        pf_req[jss::destination_account] = bob.human();
-        pf_req[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::none);
-        jr = wsc->invoke("path_find", pf_req)[jss::result];
+        pfReq[jss::subcommand] = "create";
+        pfReq[jss::source_account] = alice.human();
+        pfReq[jss::destination_account] = bob.human();
+        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::KNone);
+        jr = wsc->invoke("path_find", pfReq)[jss::result];
         BEAST_EXPECT(
             jr.isMember(jss::alternatives) && jr[jss::alternatives].isArray() &&
             jr[jss::alternatives].size() == 1);
@@ -156,25 +156,25 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit_multisigned
-        env(signers(bob, 1, {{alice, 1}}), sig(bob));
+        env(signers(bob, 1, {{alice, 1}}), Sig(bob));
         env(regkey(alice, ali));
         env.close();
 
-        set_tx[jss::Account] = bob.human();
-        set_tx[jss::TransactionType] = jss::AccountSet;
-        set_tx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
-        set_tx[jss::Sequence] = env.seq(bob);
-        set_tx[jss::SigningPubKey] = "";
+        setTx[jss::Account] = bob.human();
+        setTx[jss::TransactionType] = jss::AccountSet;
+        setTx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
+        setTx[jss::Sequence] = env.seq(bob);
+        setTx[jss::SigningPubKey] = "";
 
-        sign_for[jss::tx_json] = set_tx;
-        sign_for[jss::account] = alice.human();
-        sign_for[jss::secret] = ali.name();
-        jr = env.rpc("json", "sign_for", to_string(sign_for))[jss::result];
+        signFor[jss::tx_json] = setTx;
+        signFor[jss::account] = alice.human();
+        signFor[jss::secret] = ali.name();
+        jr = env.rpc("json", "sign_for", to_string(signFor))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
-        ms_req[jss::tx_json] = jr[jss::tx_json];
-        jr = env.rpc("json", "submit_multisigned", to_string(ms_req))[jss::result];
+        msReq[jss::tx_json] = jr[jss::tx_json];
+        jr = env.rpc("json", "submit_multisigned", to_string(msReq))[jss::result];
         BEAST_EXPECT(jr.isMember(jss::engine_result) && jr[jss::engine_result] == "tesSUCCESS");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
@@ -202,7 +202,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // path_find
-        jr = wsc->invoke("path_find", pf_req)[jss::result];
+        jr = wsc->invoke("path_find", pfReq)[jss::result];
         BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
@@ -214,12 +214,12 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit_multisigned
-        set_tx[jss::Sequence] = env.seq(bob);
-        sign_for[jss::tx_json] = set_tx;
-        jr = env.rpc("json", "sign_for", to_string(sign_for))[jss::result];
+        setTx[jss::Sequence] = env.seq(bob);
+        signFor[jss::tx_json] = setTx;
+        jr = env.rpc("json", "sign_for", to_string(signFor))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
-        ms_req[jss::tx_json] = jr[jss::tx_json];
-        jr = env.rpc("json", "submit_multisigned", to_string(ms_req))[jss::result];
+        msReq[jss::tx_json] = jr[jss::tx_json];
+        jr = env.rpc("json", "submit_multisigned", to_string(msReq))[jss::result];
         BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
     }

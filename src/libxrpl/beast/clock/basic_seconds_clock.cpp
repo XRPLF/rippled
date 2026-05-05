@@ -13,9 +13,9 @@ namespace beast {
 namespace {
 
 // Updates the clock
-class seconds_clock_thread
+class SecondsClockThread
 {
-    using Clock = basic_seconds_clock::Clock;
+    using Clock = BasicSecondsClock::Clock;
 
     bool stop_{false};
     std::mutex mut_;
@@ -24,8 +24,8 @@ class seconds_clock_thread
     std::atomic<Clock::time_point::rep> tp_;
 
 public:
-    ~seconds_clock_thread();
-    seconds_clock_thread();
+    ~SecondsClockThread();
+    SecondsClockThread();
 
     Clock::time_point
     now();
@@ -37,7 +37,7 @@ private:
 
 static_assert(std::atomic<std::chrono::steady_clock::rep>::is_always_lock_free);
 
-seconds_clock_thread::~seconds_clock_thread()
+SecondsClockThread::~SecondsClockThread()
 {
     XRPL_ASSERT(
         thread_.joinable(), "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable");
@@ -49,19 +49,19 @@ seconds_clock_thread::~seconds_clock_thread()
     thread_.join();
 }
 
-seconds_clock_thread::seconds_clock_thread() : tp_{Clock::now().time_since_epoch().count()}
+SecondsClockThread::SecondsClockThread() : tp_{Clock::now().time_since_epoch().count()}
 {
-    thread_ = std::thread(&seconds_clock_thread::run, this);
+    thread_ = std::thread(&SecondsClockThread::run, this);
 }
 
-seconds_clock_thread::Clock::time_point
-seconds_clock_thread::now()
+SecondsClockThread::Clock::time_point
+SecondsClockThread::now()
 {
     return Clock::time_point{Clock::duration{tp_.load()}};
 }
 
 void
-seconds_clock_thread::run()
+SecondsClockThread::run()
 {
     std::unique_lock lock(mut_);
     while (true)
@@ -78,11 +78,11 @@ seconds_clock_thread::run()
 
 }  // unnamed namespace
 
-basic_seconds_clock::time_point
-basic_seconds_clock::now()
+BasicSecondsClock::time_point
+BasicSecondsClock::now()
 {
-    static seconds_clock_thread clk;
-    return clk.now();
+    static SecondsClockThread kCLK;
+    return kCLK.now();
 }
 
 }  // namespace beast

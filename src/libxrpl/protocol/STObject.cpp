@@ -43,7 +43,7 @@
 namespace xrpl {
 
 STObject::STObject(STObject&& other)
-    : STBase(other.getFName()), v_(std::move(other.v_)), mType(other.mType)
+    : STBase(other.getFName()), v_(std::move(other.v_)), type_(other.type_)
 {
 }
 
@@ -119,14 +119,14 @@ STObject::isDefault() const
 void
 STObject::add(Serializer& s) const
 {
-    add(s, WhichFields::withAllFields);  // just inner elements
+    add(s, WhichFields::WithAllFields);  // just inner elements
 }
 
 STObject&
 STObject::operator=(STObject&& other)
 {
     setFName(other.getFName());
-    mType = other.mType;
+    type_ = other.type_;
     v_ = std::move(other.v_);
     return *this;
 }
@@ -136,17 +136,17 @@ STObject::set(SOTemplate const& type)
 {
     v_.clear();
     v_.reserve(type.size());
-    mType = &type;
+    type_ = &type;
 
     for (auto const& elem : type)
     {
-        if (elem.style() != soeREQUIRED)
+        if (elem.style() != SoeRequired)
         {
-            v_.emplace_back(detail::nonPresentObject, elem.sField());
+            v_.emplace_back(detail::gNonPresentObject, elem.sField());
         }
         else
         {
-            v_.emplace_back(detail::defaultObject, elem.sField());
+            v_.emplace_back(detail::gDefaultObject, elem.sField());
         }
     }
 }
@@ -162,7 +162,7 @@ STObject::applyTemplate(SOTemplate const& type)
         Throw<FieldErr>(text);
     };
 
-    mType = &type;
+    type_ = &type;
     decltype(v_) v;
     v.reserve(type.size());
     for (auto const& e : type)
@@ -171,7 +171,7 @@ STObject::applyTemplate(SOTemplate const& type)
             v_, [&](detail::STVar const& b) { return b.get().getFName() == e.sField(); });
         if (iter != v_.end())
         {
-            if ((e.style() == soeDEFAULT) && iter->get().isDefault())
+            if ((e.style() == SoeDefault) && iter->get().isDefault())
             {
                 throwFieldErr(e.sField().fieldName, "may not be explicitly set to default.");
             }
@@ -180,11 +180,11 @@ STObject::applyTemplate(SOTemplate const& type)
         }
         else
         {
-            if (e.style() == soeREQUIRED)
+            if (e.style() == SoeRequired)
             {
                 throwFieldErr(e.sField().fieldName, "is required but missing.");
             }
-            v.emplace_back(detail::nonPresentObject, e.sField());
+            v.emplace_back(detail::gNonPresentObject, e.sField());
         }
     }
     for (auto const& e : v_)
@@ -258,7 +258,7 @@ STObject::set(SerialIter& sit, int depth)
 
     // We want to ensure that the deserialized object does not contain any
     // duplicate fields. This is a key invariant:
-    auto const sf = getSortedFields(*this, WhichFields::withAllFields);
+    auto const sf = getSortedFields(*this, WhichFields::WithAllFields);
 
     auto const dup = std::ranges::adjacent_find(sf, [](STBase const* lhs, STBase const* rhs) {
         return lhs->getFName() == rhs->getFName();
@@ -345,7 +345,7 @@ STObject::isEquivalent(STBase const& t) const
     if (v == nullptr)
         return false;
 
-    if (mType != nullptr && v->mType == mType)
+    if (type_ != nullptr && v->type_ == type_)
     {
         return std::ranges::equal(
             begin(), end(), v->begin(), v->end(), [](STBase const& st1, STBase const& st2) {
@@ -353,8 +353,8 @@ STObject::isEquivalent(STBase const& t) const
             });
     }
 
-    auto const sf1 = getSortedFields(*this, WhichFields::withAllFields);
-    auto const sf2 = getSortedFields(*v, WhichFields::withAllFields);
+    auto const sf1 = getSortedFields(*this, WhichFields::WithAllFields);
+    auto const sf2 = getSortedFields(*v, WhichFields::WithAllFields);
 
     return std::ranges::equal(sf1, sf2, [](STBase const* st1, STBase const* st2) {
         return (st1->getSType() == st2->getSType()) && st1->isEquivalent(*st2);
@@ -366,7 +366,7 @@ STObject::getHash(HashPrefix prefix) const
 {
     Serializer s;
     s.add32(prefix);
-    add(s, WhichFields::withAllFields);
+    add(s, WhichFields::WithAllFields);
     return s.getSHA512Half();
 }
 
@@ -375,15 +375,15 @@ STObject::getSigningHash(HashPrefix prefix) const
 {
     Serializer s;
     s.add32(prefix);
-    add(s, WhichFields::omitSigningFields);
+    add(s, WhichFields::OmitSigningFields);
     return s.getSHA512Half();
 }
 
 int
 STObject::getFieldIndex(SField const& field) const
 {
-    if (mType != nullptr)
-        return mType->getIndex(field);
+    if (type_ != nullptr)
+        return type_->getIndex(field);
 
     int i = 0;
     for (auto const& elem : v_)
@@ -442,7 +442,7 @@ STObject::getPField(SField const& field, bool createOkay)
     if (index == -1)
     {
         if (createOkay && isFree())
-            return getPIndex(emplace_back(detail::defaultObject, field));
+            return getPIndex(emplaceBack(detail::gDefaultObject, field));
 
         return nullptr;
     }
@@ -524,7 +524,7 @@ STObject::makeFieldPresent(SField const& field)
         if (!isFree())
             throwFieldNotFound(field);
 
-        return getPIndex(emplace_back(detail::nonPresentObject, field));
+        return getPIndex(emplaceBack(detail::gNonPresentObject, field));
     }
 
     STBase* f = getPIndex(index);  // NOLINT(misc-const-correctness)
@@ -532,7 +532,7 @@ STObject::makeFieldPresent(SField const& field)
     if (f->getSType() != STI_NOTPRESENT)
         return f;
 
-    v_[index] = detail::STVar(detail::defaultObject, f->getFName());
+    v_[index] = detail::STVar(detail::gDefaultObject, f->getFName());
     return getPIndex(index);
 }
 
@@ -548,7 +548,7 @@ STObject::makeFieldAbsent(SField const& field)
 
     if (f.getSType() == STI_NOTPRESENT)
         return;
-    v_[index] = detail::STVar(detail::nonPresentObject, f.getFName());
+    v_[index] = detail::STVar(detail::gNonPresentObject, f.getFName());
 }
 
 bool
@@ -572,7 +572,7 @@ STObject::delField(int index)
 SOEStyle
 STObject::getStyle(SField const& field) const
 {
-    return (mType != nullptr) ? mType->style(field) : soeINVALID;
+    return (type_ != nullptr) ? type_->style(field) : SoeInvalid;
 }
 
 unsigned char
@@ -646,22 +646,22 @@ STObject::getFieldVL(SField const& field) const
 STAmount const&
 STObject::getFieldAmount(SField const& field) const
 {
-    static STAmount const empty{};
-    return getFieldByConstRef<STAmount>(field, empty);
+    static STAmount const kEMPTY{};
+    return getFieldByConstRef<STAmount>(field, kEMPTY);
 }
 
 STPathSet const&
 STObject::getFieldPathSet(SField const& field) const
 {
-    static STPathSet const empty{};
-    return getFieldByConstRef<STPathSet>(field, empty);
+    static STPathSet const kEMPTY{};
+    return getFieldByConstRef<STPathSet>(field, kEMPTY);
 }
 
 STVector256 const&
 STObject::getFieldV256(SField const& field) const
 {
-    static STVector256 const empty{};
-    return getFieldByConstRef<STVector256>(field, empty);
+    static STVector256 const kEMPTY{};
+    return getFieldByConstRef<STVector256>(field, kEMPTY);
 }
 
 STObject
@@ -677,22 +677,22 @@ STObject::getFieldObject(SField const& field) const
 STArray const&
 STObject::getFieldArray(SField const& field) const
 {
-    static STArray const empty{};
-    return getFieldByConstRef<STArray>(field, empty);
+    static STArray const kEMPTY{};
+    return getFieldByConstRef<STArray>(field, kEMPTY);
 }
 
 STCurrency const&
 STObject::getFieldCurrency(SField const& field) const
 {
-    static STCurrency const empty{};
-    return getFieldByConstRef<STCurrency>(field, empty);
+    static STCurrency const kEMPTY{};
+    return getFieldByConstRef<STCurrency>(field, kEMPTY);
 }
 
 STNumber const&
 STObject::getFieldNumber(SField const& field) const
 {
-    static STNumber const empty{};
-    return getFieldByConstRef<STNumber>(field, empty);
+    static STNumber const kEMPTY{};
+    return getFieldByConstRef<STNumber>(field, kEMPTY);
 }
 
 void
@@ -831,10 +831,10 @@ STObject::setFieldObject(SField const& field, STObject const& v)
     setFieldUsingAssignment(field, v);
 }
 
-Json::Value
+json::Value
 STObject::getJson(JsonOptions options) const
 {
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ObjectValue);
 
     for (auto const& elem : v_)
     {
@@ -927,7 +927,7 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
 
     // Sort the fields by fieldCode.
     std::ranges::sort(sf, [](STBase const* lhs, STBase const* rhs) {
-        return lhs->getFName().fieldCode < rhs->getFName().fieldCode;
+        return lhs->getFName().fieldCodeMem < rhs->getFName().fieldCodeMem;
     });
 
     return sf;

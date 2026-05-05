@@ -26,19 +26,19 @@ namespace xrpl::test::jtx::pdomain {
 
 // helpers
 // Make json for PermissionedDomainSet transaction
-Json::Value
+json::Value
 setTx(AccountID const& account, Credentials const& credentials, std::optional<uint256> domain)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::PermissionedDomainSet;
     jv[sfAccount] = to_string(account);
     if (domain)
         jv[sfDomainID] = to_string(*domain);
 
-    Json::Value acceptedCredentials(Json::arrayValue);
+    json::Value acceptedCredentials(json::ArrayValue);
     for (auto const& credential : credentials)
     {
-        Json::Value object(Json::objectValue);
+        json::Value object(json::ObjectValue);
         object[sfCredential] = credential.toJson();
         acceptedCredentials.append(std::move(object));
     }
@@ -48,10 +48,10 @@ setTx(AccountID const& account, Credentials const& credentials, std::optional<ui
 }
 
 // Make json for PermissionedDomainDelete transaction
-Json::Value
+json::Value
 deleteTx(AccountID const& account, uint256 const& domain)
 {
-    Json::Value jv{Json::objectValue};
+    json::Value jv{json::ObjectValue};
     jv[sfTransactionType] = jss::PermissionedDomainDelete;
     jv[sfAccount] = to_string(account);
     jv[sfDomainID] = to_string(domain);
@@ -59,17 +59,17 @@ deleteTx(AccountID const& account, uint256 const& domain)
 }
 
 // Get PermissionedDomain objects by type from account_objects rpc call
-std::map<uint256, Json::Value>
+std::map<uint256, json::Value>
 getObjects(Account const& account, Env& env, bool withType)
 {
-    std::map<uint256, Json::Value> ret;
-    Json::Value params;
+    std::map<uint256, json::Value> ret;
+    json::Value params;
     params[jss::account] = account.human();
     if (withType)
         params[jss::type] = jss::permissioned_domain;
 
     auto const& resp = env.rpc("json", "account_objects", to_string(params));
-    Json::Value objects(Json::arrayValue);
+    json::Value objects(json::ArrayValue);
     objects = resp[jss::result][jss::account_objects];
     for (auto const& object : objects)
     {
@@ -96,7 +96,7 @@ getObjects(Account const& account, Env& env, bool withType)
 bool
 objectExists(uint256 const& objID, Env& env)
 {
-    Json::Value params;
+    json::Value params;
     params[jss::index] = to_string(objID);
 
     auto const result = env.rpc("json", "ledger_entry", to_string(params))["result"];
@@ -116,15 +116,15 @@ objectExists(uint256 const& objID, Env& env)
 // Extract credentials from account_object object
 Credentials
 credentialsFromJson(
-    Json::Value const& object,
+    json::Value const& object,
     std::unordered_map<std::string, Account> const& human2Acc)
 {
     Credentials ret;
-    Json::Value credentials(Json::arrayValue);
+    json::Value credentials(json::ArrayValue);
     credentials = object["AcceptedCredentials"];
     for (auto const& credential : credentials)
     {
-        Json::Value obj(Json::objectValue);
+        json::Value obj(json::ObjectValue);
         obj = credential[jss::Credential];
         auto const& issuer = obj[jss::Issuer];
         auto const& credentialType = obj["CredentialType"];
@@ -150,8 +150,8 @@ uint256
 getNewDomain(std::shared_ptr<STObject const> const& meta)
 {
     uint256 ret;
-    auto metaJson = meta->getJson(JsonOptions::none);
-    Json::Value a(Json::arrayValue);
+    auto metaJson = meta->getJson(JsonOptions::KNone);
+    json::Value a(json::ArrayValue);
     a = metaJson["AffectedNodes"];
 
     for (auto const& node : a)
