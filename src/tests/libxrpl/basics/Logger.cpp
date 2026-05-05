@@ -515,7 +515,7 @@ TEST_F(LoggerFixture, init_fails_for_invalid_directory)
     auto const badDir = std::filesystem::path(__FILE__) / "impossible_log_dir";
     LoggingConfiguration const config{
         .enableConsole = false,
-        .directory = badDir,
+        .directory = badDir.string(),
         .isAsync = false,
         .defaultSeverity = Severity::TRC,
         .jsonMode = false,
