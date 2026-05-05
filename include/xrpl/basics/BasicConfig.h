@@ -133,7 +133,7 @@ public:
     /// Returns a value if present, else another value.
     template <class T>
     [[nodiscard]] T
-    value_or(std::string const& name, T const& other) const
+    valueOr(std::string const& name, T const& other) const
     {
         auto const v = get<T>(name);
         return v.has_value() ? *v : other;
@@ -142,7 +142,7 @@ public:
     // indicates if trailing comments were seen
     // during the appending of any lines/values
     [[nodiscard]] bool
-    had_trailing_comments() const
+    hadTrailingComments() const
     {
         return had_trailing_comments_;
     }
@@ -273,7 +273,7 @@ public:
     // indicates if trailing comments were seen
     // in any loaded Sections
     [[nodiscard]] bool
-    had_trailing_comments() const
+    hadTrailingComments() const
     {
         return std::ranges::any_of(map_, [](auto s) { return s.second.had_trailing_comments(); });
     }
@@ -294,17 +294,17 @@ template <class T>
 bool
 set(T& target, std::string const& name, Section const& section)
 {
-    bool found_and_valid = false;
+    bool foundAndValid = false;
     try
     {
         auto const val = section.get<T>(name);
-        if ((found_and_valid = val.has_value()))
+        if ((foundAndValid = val.has_value()))
             target = *val;
     }
     catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
     {
     }
-    return found_and_valid;
+    return foundAndValid;
 }
 
 /** Set a value from a configuration Section
@@ -316,10 +316,10 @@ template <class T>
 bool
 set(T& target, T const& defaultValue, std::string const& name, Section const& section)
 {
-    bool const found_and_valid = set<T>(target, name, section);
-    if (!found_and_valid)
+    bool const foundAndValid = set<T>(target, name, section);
+    if (!foundAndValid)
         target = defaultValue;
-    return found_and_valid;
+    return foundAndValid;
 }
 
 /** Retrieve a key/value pair from a section.

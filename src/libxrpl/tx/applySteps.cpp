@@ -55,7 +55,7 @@ struct UnknownTxnType : std::exception
 // throw an "UnknownTxnType" exception on error
 template <class F>
 auto
-with_txn_type(Rules const& rules, TxType txnType, F&& f)
+withTxnType(Rules const& rules, TxType txnType, F&& f)
 {
     // These global updates really should have been for every Transaction
     // step: preflight, preclaim, calculateBaseFee, and doApply. Unfortunately,
@@ -79,7 +79,7 @@ with_txn_type(Rules const& rules, TxType txnType, F&& f)
     else
     {
         // Without those features enabled, always use the old number rules.
-        mantissaScaleGuard.emplace(MantissaRange::mantissa_scale::small);
+        mantissaScaleGuard.emplace(MantissaRange::MantissaScale::Small);
     }
 
     switch (txnType)
@@ -125,7 +125,7 @@ template <class T>
 TxConsequences
 consequences_helper(PreflightContext const& ctx)
 {
-    return TxConsequences(ctx.tx, TxConsequences::Category::blocker);
+    return TxConsequences(ctx.tx, TxConsequences::Category::Blocker);
 };
 
 // For Transactor::Custom
@@ -138,11 +138,11 @@ consequences_helper(PreflightContext const& ctx)
 };
 
 static std::pair<NotTEC, TxConsequences>
-invoke_preflight(PreflightContext const& ctx)
+invokePreflight(PreflightContext const& ctx)
 {
     try
     {
-        return with_txn_type(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
             auto const tec = Transactor::invokePreflight<T>(ctx);
             return std::make_pair(
                 tec, isTesSuccess(tec) ? consequences_helper<T>(ctx) : TxConsequences{tec});
@@ -154,19 +154,19 @@ invoke_preflight(PreflightContext const& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preflight: " << e.txnType;
         UNREACHABLE("xrpl::invoke_preflight : unknown transaction type");
-        return {temUNKNOWN, TxConsequences{temUNKNOWN}};
+        return {TemUnknown, TxConsequences{TemUnknown}};
         // LCOV_EXCL_STOP
     }
 }
 
 static TER
-invoke_preclaim(PreclaimContext const& ctx)
+invokePreclaim(PreclaimContext const& ctx)
 {
     try
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return with_txn_type(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+        return withTxnType(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
             // preclaim functionality is divided into two sections:
             // 1. Up to and including the signature check: returns NotTEC.
             //    All transaction checks before and including checkSign
@@ -181,7 +181,7 @@ invoke_preclaim(PreclaimContext const& ctx)
             // a flagged a failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
 
-            if (id != beast::zero)
+            if (id != beast::kZERO)
             {
                 if (NotTEC const preSigResult = [&]() -> NotTEC {
                         if (NotTEC const result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
@@ -196,7 +196,7 @@ invoke_preclaim(PreclaimContext const& ctx)
                         if (NotTEC const result = T::checkSign(ctx))
                             return result;
 
-                        return tesSUCCESS;
+                        return TesSuccess;
                     }())
                     return preSigResult;
 
@@ -213,7 +213,7 @@ invoke_preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preclaim: " << e.txnType;
         UNREACHABLE("xrpl::invoke_preclaim : unknown transaction type");
-        return temUNKNOWN;
+        return TemUnknown;
         // LCOV_EXCL_STOP
     }
 }
@@ -235,11 +235,11 @@ invoke_preclaim(PreclaimContext const& ctx)
  * logs an error and returns an XRPAmount of zero.
  */
 static XRPAmount
-invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
+invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
 {
     try
     {
-        return with_txn_type(view.rules(), tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T>() {
             return T::calculateBaseFee(view, tx);
         });
     }
@@ -254,8 +254,8 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
 
 TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
-    , fee_(beast::zero)
-    , potentialSpend_(beast::zero)
+    , fee_(beast::kZERO)
+    , potentialSpend_(beast::kZERO)
     , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
@@ -265,8 +265,8 @@ TxConsequences::TxConsequences(NotTEC pfResult)
 
 TxConsequences::TxConsequences(STTx const& tx)
     : isBlocker_(false)
-    , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::zero)
-    , potentialSpend_(beast::zero)
+    , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::kZERO)
+    , potentialSpend_(beast::kZERO)
     , seqProx_(tx.getSeqProxy())
     , sequencesConsumed_(tx.getSeqProxy().isSeq() ? 1 : 0)
 {
@@ -274,7 +274,7 @@ TxConsequences::TxConsequences(STTx const& tx)
 
 TxConsequences::TxConsequences(STTx const& tx, Category category) : TxConsequences(tx)
 {
-    isBlocker_ = (category == Category::blocker);
+    isBlocker_ = (category == Category::Blocker);
 }
 
 TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend) : TxConsequences(tx)
@@ -288,11 +288,11 @@ TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed) 
 }
 
 static ApplyResult
-invoke_apply(ApplyContext& ctx)
+invokeApply(ApplyContext& ctx)
 {
     try
     {
-        return with_txn_type(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
             T p(ctx);
             return p();
         });
@@ -303,7 +303,7 @@ invoke_apply(ApplyContext& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.journal.fatal()) << "Unknown transaction type in apply: " << e.txnType;
         UNREACHABLE("xrpl::invoke_apply : unknown transaction type");
-        return {temUNKNOWN, false};
+        return {TemUnknown, false};
         // LCOV_EXCL_STOP
     }
 }
@@ -314,7 +314,7 @@ invoke_apply(ApplyContext& ctx)
 std::unique_ptr<Transactor>
 makeTransactor(ApplyContext& ctx)
 {
-    return with_txn_type(
+    return withTxnType(
         ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() -> std::unique_ptr<Transactor> {
             return std::make_unique<T>(ctx);
         });
@@ -331,12 +331,12 @@ preflight(
     PreflightContext const pfCtx(registry, tx, rules, flags, j);
     try
     {
-        return {pfCtx, invoke_preflight(pfCtx)};
+        return {pfCtx, invokePreflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfCtx, {TefException, TxConsequences{tx}}};
     }
 }
 
@@ -352,12 +352,12 @@ preflight(
     PreflightContext const pfCtx(registry, tx, parentBatchId, rules, flags, j);
     try
     {
-        return {pfCtx, invoke_preflight(pfCtx)};
+        return {pfCtx, invokePreflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfCtx, {TefException, TxConsequences{tx}}};
     }
 }
 
@@ -412,19 +412,19 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     {
         if (!isTesSuccess(ctx->preflightResult))
             return {*ctx, ctx->preflightResult};
-        return {*ctx, invoke_preclaim(*ctx)};
+        return {*ctx, invokePreclaim(*ctx)};
     }
     catch (std::exception const& e)
     {
         JLOG(ctx->j.fatal()) << "apply (preclaim): " << e.what();
-        return {*ctx, tefEXCEPTION};
+        return {*ctx, TefException};
     }
 }
 
 XRPAmount
 calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    return invoke_calculateBaseFee(view, tx);
+    return invokeCalculateBaseFee(view, tx);
 }
 
 XRPAmount
@@ -440,7 +440,7 @@ doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenVie
     {
         // Logic error from the caller. Don't have enough
         // info to recover.
-        return {tefEXCEPTION, false};
+        return {TefException, false};
     }
     try
     {
@@ -455,12 +455,12 @@ doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenVie
             calculateBaseFee(view, preclaimResult.tx),
             preclaimResult.flags,
             preclaimResult.j);
-        return invoke_apply(ctx);
+        return invokeApply(ctx);
     }
     catch (std::exception const& e)
     {
         JLOG(preclaimResult.j.fatal()) << "apply: " << e.what();
-        return {tefEXCEPTION, false};
+        return {TefException, false};
     }
 }
 

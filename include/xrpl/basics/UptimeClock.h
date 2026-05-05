@@ -21,7 +21,7 @@ public:
     using period = std::ratio<1>;
     using duration = std::chrono::duration<rep, period>;
     using time_point = std::chrono::time_point<UptimeClock>;
-    static constexpr bool is_steady = std::chrono::system_clock::is_steady;
+    static constexpr bool kIS_STEADY = std::chrono::system_clock::is_steady;
 
     explicit UptimeClock() = default;
 
@@ -29,19 +29,19 @@ public:
     now();  // seconds since xrpld program start
 
 private:
-    static std::atomic<rep> now_;
-    static std::atomic<bool> stop_;
+    static std::atomic<rep> now;
+    static std::atomic<bool> stop;
 
-    struct update_thread : private std::thread
+    struct UpdateThread : private std::thread
     {
-        ~update_thread();
-        update_thread(update_thread&&) = default;
+        ~UpdateThread();
+        UpdateThread(UpdateThread&&) = default;
 
         using std::thread::thread;
     };
 
-    static update_thread
-    start_clock();
+    static UpdateThread
+    startClock();
 };
 
 }  // namespace xrpl

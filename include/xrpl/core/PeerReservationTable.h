@@ -81,7 +81,7 @@ public:
      * @throw soci::soci_error
      */
     std::optional<PeerReservation>
-    insert_or_assign(PeerReservation const& reservation);
+    insertOrAssign(PeerReservation const& reservation);
 
     /**
      * @return the erased reservation if it existed
@@ -93,7 +93,7 @@ private:
     beast::Journal mutable journal_;
     std::mutex mutable mutex_;
     DatabaseCon* connection_{};
-    std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table_;
+    std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual> table_;
 };
 
 }  // namespace xrpl

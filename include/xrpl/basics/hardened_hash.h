@@ -18,22 +18,22 @@ template <bool = true>
 seed_pair
 make_seed_pair() noexcept
 {
-    struct state_t
+    struct StateT
     {
         std::mutex mutex;
         std::random_device rng;
         std::mt19937_64 gen;
         std::uniform_int_distribution<std::uint64_t> dist;
 
-        state_t() : gen(rng())
+        StateT() : gen(rng())
         {
         }
         // state_t(state_t const&) = delete;
         // state_t& operator=(state_t const&) = delete;
     };
-    static state_t state;
-    std::scoped_lock const lock(state.mutex);
-    return {state.dist(state.gen), state.dist(state.gen)};
+    static StateT kSTATE;
+    std::scoped_lock const lock(kSTATE.mutex);
+    return {kSTATE.dist(kSTATE.gen), kSTATE.dist(kSTATE.gen)};
 }
 
 }  // namespace detail
@@ -68,22 +68,22 @@ make_seed_pair() noexcept
    see https://131002.net/siphash/#at
 */
 
-template <class HashAlgorithm = beast::xxhasher>
-class hardened_hash
+template <class HashAlgorithm = beast::Xxhasher>
+class HardenedHash
 {
 private:
-    detail::seed_pair m_seeds{detail::make_seed_pair<>()};
+    detail::seed_pair m_seeds_{detail::make_seed_pair<>()};
 
 public:
     using result_type = typename HashAlgorithm::result_type;
 
-    hardened_hash() = default;
+    HardenedHash() = default;
 
     template <class T>
     result_type
     operator()(T const& t) const noexcept
     {
-        HashAlgorithm h(m_seeds.first, m_seeds.second);
+        HashAlgorithm h(m_seeds_.first, m_seeds_.second);
         hash_append(h, t);
         return static_cast<result_type>(h);
     }

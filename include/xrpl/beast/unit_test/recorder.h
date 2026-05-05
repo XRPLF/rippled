@@ -10,65 +10,65 @@
 namespace beast::unit_test {
 
 /** A test runner that stores the results. */
-class recorder : public runner
+class Recorder : public Runner
 {
 private:
-    results m_results;
-    suite_results m_suite;
-    case_results m_case;
+    Results m_results_;
+    SuiteResults m_suite_;
+    CaseResults m_case_;
 
 public:
-    recorder() = default;
+    Recorder() = default;
 
     /** Returns a report with the results of all completed suites. */
-    [[nodiscard]] results const&
+    [[nodiscard]] Results const&
     report() const
     {
-        return m_results;
+        return m_results_;
     }
 
 private:
     void
-    on_suite_begin(suite_info const& info) override
+    onSuiteBegin(SuiteInfo const& info) override
     {
-        m_suite = suite_results(info.full_name());
+        m_suite_ = SuiteResults(info.fullName());
     }
 
     void
-    on_suite_end() override
+    onSuiteEnd() override
     {
-        m_results.insert(std::move(m_suite));
+        m_results_.insert(std::move(m_suite_));
     }
 
     void
-    on_case_begin(std::string const& name) override
+    onCaseBegin(std::string const& name) override
     {
-        m_case = case_results(name);
+        m_case_ = CaseResults(name);
     }
 
     void
-    on_case_end() override
+    onCaseEnd() override
     {
-        if (!m_case.tests.empty())
-            m_suite.insert(std::move(m_case));
+        if (!m_case_.tests.empty())
+            m_suite_.insert(std::move(m_case_));
     }
 
     void
-    on_pass() override
+    onPass() override
     {
-        m_case.tests.pass();
+        m_case_.tests.pass();
     }
 
     void
-    on_fail(std::string const& reason) override
+    onFail(std::string const& reason) override
     {
-        m_case.tests.fail(reason);
+        m_case_.tests.fail(reason);
     }
 
     void
-    on_log(std::string const& s) override
+    onLog(std::string const& s) override
     {
-        m_case.log.insert(s);
+        m_case_.log.insert(s);
     }
 };
 

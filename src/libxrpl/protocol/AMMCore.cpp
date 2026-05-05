@@ -29,7 +29,7 @@ Currency
 ammLPTCurrency(Asset const& asset1, Asset const& asset2)
 {
     // AMM LPToken is 0x03 plus 19 bytes of the hash
-    std::int32_t constexpr AMMCurrencyCode = 0x03;
+    std::int32_t constexpr kAMM_CURRENCY_CODE = 0x03;
     auto const& [minA, maxA] = std::minmax(asset1, asset2);
     uint256 const hash = std::visit(
         [](auto&& issue1, auto&& issue2) {
@@ -44,7 +44,7 @@ ammLPTCurrency(Asset const& asset1, Asset const& asset2)
         minA.value(),
         maxA.value());
     Currency currency;
-    *currency.begin() = AMMCurrencyCode;
+    *currency.begin() = kAMM_CURRENCY_CODE;
     std::copy(hash.begin(), hash.begin() + currency.size() - 1, currency.begin() + 1);
     return currency;
 }
@@ -60,22 +60,22 @@ invalidAMMAsset(Asset const& asset, std::optional<std::pair<Asset, Asset>> const
 {
     auto const err = asset.visit(
         [](MPTIssue const& issue) -> std::optional<NotTEC> {
-            if (issue.getIssuer() == beast::zero)
-                return temBAD_MPT;
+            if (issue.getIssuer() == beast::kZERO)
+                return TemBadMpt;
             return std::nullopt;
         },
         [](Issue const& issue) -> std::optional<NotTEC> {
             if (badCurrency() == issue.currency)
-                return temBAD_CURRENCY;
+                return TemBadCurrency;
             if (isXRP(issue) && issue.getIssuer().isNonZero())
-                return temBAD_ISSUER;
+                return TemBadIssuer;
             return std::nullopt;
         });
     if (err)
         return *err;
     if (pair && asset != pair->first && asset != pair->second)
-        return temBAD_AMM_TOKENS;
-    return tesSUCCESS;
+        return TemBadAmmTokens;
+    return TesSuccess;
 }
 
 NotTEC
@@ -85,12 +85,12 @@ invalidAMMAssetPair(
     std::optional<std::pair<Asset, Asset>> const& pair)
 {
     if (asset1 == asset2)
-        return temBAD_AMM_TOKENS;
+        return TemBadAmmTokens;
     if (auto const res = invalidAMMAsset(asset1, pair))
         return res;
     if (auto const res = invalidAMMAsset(asset2, pair))
         return res;
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 NotTEC
@@ -101,9 +101,9 @@ invalidAMMAmount(
 {
     if (auto const res = invalidAMMAsset(amount.asset(), pair))
         return res;
-    if (amount < beast::zero || (!validZero && amount == beast::zero))
-        return temBAD_AMOUNT;
-    return tesSUCCESS;
+    if (amount < beast::kZERO || (!validZero && amount == beast::kZERO))
+        return TemBadAmount;
+    return TesSuccess;
 }
 
 std::optional<std::uint8_t>
@@ -113,13 +113,13 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     // but check just to be safe
     auto const expiration = auctionSlot[sfExpiration];
     XRPL_ASSERT(
-        expiration >= TOTAL_TIME_SLOT_SECS, "xrpl::ammAuctionTimeSlot : minimum expiration");
-    if (expiration >= TOTAL_TIME_SLOT_SECS)
+        expiration >= kTOTAL_TIME_SLOT_SECS, "xrpl::ammAuctionTimeSlot : minimum expiration");
+    if (expiration >= kTOTAL_TIME_SLOT_SECS)
     {
-        if (auto const start = expiration - TOTAL_TIME_SLOT_SECS; current >= start)
+        if (auto const start = expiration - kTOTAL_TIME_SLOT_SECS; current >= start)
         {
-            if (auto const diff = current - start; diff < TOTAL_TIME_SLOT_SECS)
-                return diff / AUCTION_SLOT_INTERVAL_DURATION;
+            if (auto const diff = current - start; diff < kTOTAL_TIME_SLOT_SECS)
+                return diff / kAUCTION_SLOT_INTERVAL_DURATION;
         }
     }
     return std::nullopt;

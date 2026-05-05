@@ -30,8 +30,8 @@ struct TokenAndPage
     STObject token;
     std::shared_ptr<SLE> page;
 
-    TokenAndPage(STObject token_, std::shared_ptr<SLE> page_)
-        : token(std::move(token_)), page(std::move(page_))
+    TokenAndPage(STObject token, std::shared_ptr<SLE> page)
+        : token(std::move(token)), page(std::move(page))
     {
     }
 };
@@ -92,7 +92,7 @@ tokenOfferCreatePreflight(
     std::uint16_t nftFlags,
     Rules const& rules,
     std::optional<AccountID> const& owner = std::nullopt,
-    std::uint32_t txFlags = tfSellNFToken);
+    std::uint32_t txFlags = kTF_SELL_NF_TOKEN);
 
 /** Preclaim checks shared by NFTokenCreateOffer and NFTokenMint */
 TER
@@ -106,7 +106,7 @@ tokenOfferCreatePreclaim(
     std::uint16_t xferFee,
     beast::Journal j,
     std::optional<AccountID> const& owner = std::nullopt,
-    std::uint32_t txFlags = tfSellNFToken);
+    std::uint32_t txFlags = kTF_SELL_NF_TOKEN);
 
 /** doApply implementation shared by NFTokenCreateOffer and NFTokenMint */
 TER
@@ -120,7 +120,7 @@ tokenOfferCreateApply(
     uint256 const& nftokenID,
     XRPAmount const& priorBalance,
     beast::Journal j,
-    std::uint32_t txFlags = tfSellNFToken);
+    std::uint32_t txFlags = kTF_SELL_NF_TOKEN);
 
 TER
 checkTrustlineAuthorized(

@@ -43,8 +43,8 @@ class PublicKey
 protected:
     // All the constructed public keys are valid, non-empty and contain 33
     // bytes of data.
-    static constexpr std::size_t size_ = 33;
-    std::uint8_t buf_[size_]{};  // should be large enough
+    static constexpr std::size_t kSIZE = 33;
+    std::uint8_t buf_[kSIZE]{};  // should be large enough
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -72,7 +72,7 @@ public:
     static std::size_t
     size() noexcept
     {
-        return size_;
+        return kSIZE;
     }
 
     [[nodiscard]] const_iterator
@@ -90,19 +90,19 @@ public:
     [[nodiscard]] const_iterator
     end() const noexcept
     {
-        return buf_ + size_;
+        return buf_ + kSIZE;
     }
 
     [[nodiscard]] const_iterator
     cend() const noexcept
     {
-        return buf_ + size_;
+        return buf_ + kSIZE;
     }
 
     [[nodiscard]] Slice
     slice() const noexcept
     {
-        return {buf_, size_};
+        return {buf_, kSIZE};
     }
 
     operator Slice() const noexcept
@@ -168,7 +168,7 @@ template <>
 std::optional<PublicKey>
 parseBase58(TokenType type, std::string const& s);
 
-enum class ECDSACanonicality { canonical, fullyCanonical };
+enum class ECDSACanonicality { Canonical, FullyCanonical };
 
 /** Determines the canonicality of a signature.
 

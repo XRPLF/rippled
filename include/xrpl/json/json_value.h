@@ -18,14 +18,14 @@ namespace Json {
 // Used throughout JSON layer
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum ValueType {
-    nullValue = 0,  ///< 'null' value
-    intValue,       ///< signed integer value
-    uintValue,      ///< unsigned integer value
-    realValue,      ///< double value
-    stringValue,    ///< UTF-8 string value
-    booleanValue,   ///< bool value
-    arrayValue,     ///< array value (ordered list)
-    objectValue     ///< object value (collection of name/value pairs).
+    NullValue = 0,  ///< 'null' value
+    IntValue,       ///< signed integer value
+    UintValue,      ///< unsigned integer value
+    RealValue,      ///< double value
+    StringValue,    ///< UTF-8 string value
+    BooleanValue,   ///< bool value
+    ArrayValue,     ///< array value (ordered list)
+    ObjectValue     ///< object value (collection of name/value pairs).
 };
 
 /** \brief Lightweight wrapper to tag static string.
@@ -56,7 +56,7 @@ public:
     }
 
     [[nodiscard]] constexpr char const*
-    c_str() const
+    cStr() const
     {
         return str_;
     }
@@ -68,7 +68,7 @@ private:
 inline bool
 operator==(StaticString x, StaticString y)
 {
-    return strcmp(x.c_str(), y.c_str()) == 0;
+    return strcmp(x.cStr(), y.cStr()) == 0;
 }
 
 inline bool
@@ -80,7 +80,7 @@ operator!=(StaticString x, StaticString y)
 inline bool
 operator==(std::string const& x, StaticString y)
 {
-    return strcmp(x.c_str(), y.c_str()) == 0;
+    return strcmp(x.c_str(), y.cStr()) == 0;
 }
 
 inline bool
@@ -140,10 +140,10 @@ public:
     using Int = Json::Int;
     using ArrayIndex = UInt;
 
-    static Value const null;
-    static constexpr Int minInt = std::numeric_limits<Int>::min();
-    static constexpr Int maxInt = std::numeric_limits<Int>::max();
-    static constexpr UInt maxUInt = std::numeric_limits<UInt>::max();
+    static Value const kNULL;
+    static constexpr Int kMIN_INT = std::numeric_limits<Int>::min();
+    static constexpr Int kMAX_INT = std::numeric_limits<Int>::max();
+    static constexpr UInt kMAX_U_INT = std::numeric_limits<UInt>::max();
 
 private:
     class CZString
@@ -151,7 +151,7 @@ private:
     public:
         // Stored as int field, implicit conversion
         // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-        enum DuplicationPolicy { noDuplication = 0, duplicate, duplicateOnCopy };
+        enum DuplicationPolicy { NoDuplication = 0, Duplicate, DuplicateOnCopy };
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
         CZString(CZString const& other);
@@ -165,7 +165,7 @@ private:
         [[nodiscard]] int
         index() const;
         [[nodiscard]] char const*
-        c_str() const;
+        cStr() const;
         [[nodiscard]] bool
         isStaticString() const;
 
@@ -193,7 +193,7 @@ public:
     Json::Value obj_value(Json::objectValue); // {}
     \endcode
          */
-    Value(ValueType type = nullValue);
+    Value(ValueType type = NullValue);
     Value(Int value);
     Value(UInt value);
     Value(double value);
@@ -418,11 +418,11 @@ private:
     union ValueHolder
     {
         Int int_;
-        UInt uint_;
-        double real_;
+        UInt uint;
+        double real;
         bool bool_;
-        char* string_;
-        ObjectValues* map_{nullptr};
+        char* string;
+        ObjectValues* map{nullptr};
     } value_;
     ValueType type_ : 8;
     int allocated_ : 1 {};  // Notes: if declared as bool, bitfield is useless.
@@ -477,7 +477,7 @@ class ValueAllocator
 public:
     // Need to be named before converting
     // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { unknown = (unsigned)-1 };
+    enum { Unknown = (unsigned)-1 };
 
     virtual ~ValueAllocator() = default;
 
@@ -486,7 +486,7 @@ public:
     virtual void
     releaseMemberName(char* memberName) = 0;
     virtual char*
-    duplicateStringValue(char const* value, unsigned int length = unknown) = 0;
+    duplicateStringValue(char const* value, unsigned int length = Unknown) = 0;
     virtual void
     releaseStringValue(char* value) = 0;
 };

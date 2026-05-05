@@ -26,7 +26,7 @@ Json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags);
 
 /** Adds a new Batch Txn on a JTx and autofills. */
-class inner
+class Inner
 {
 private:
     Json::Value txn_;
@@ -34,21 +34,21 @@ private:
     std::optional<std::uint32_t> ticket_;
 
 public:
-    inner(
+    Inner(
         Json::Value txn,
         std::uint32_t const& sequence,
         std::optional<std::uint32_t> const& ticket = std::nullopt)
         : txn_(std::move(txn)), seq_(sequence), ticket_(ticket)
     {
-        txn_[jss::SigningPubKey] = "";
-        txn_[jss::Sequence] = seq_;
-        txn_[jss::Fee] = "0";
-        txn_[jss::Flags] = txn_[jss::Flags].asUInt() | tfInnerBatchTxn;
+        txn_[jss::kSIGNING_PUB_KEY] = "";
+        txn_[jss::kSEQUENCE] = seq_;
+        txn_[jss::kFEE] = "0";
+        txn_[jss::kFLAGS] = txn_[jss::kFLAGS].asUInt() | kTF_INNER_BATCH_TXN;
 
         // Optionally set ticket sequence
         if (ticket_.has_value())
         {
-            txn_[jss::Sequence] = 0;
+            txn_[jss::kSEQUENCE] = 0;
             txn_[sfTicketSequence.jsonName] = *ticket_;
         }
     }
@@ -76,19 +76,19 @@ public:
 };
 
 /** Set a batch signature on a JTx. */
-class sig
+class Sig
 {
 public:
     std::vector<Reg> signers;
 
-    sig(std::vector<Reg> signers_) : signers(std::move(signers_))
+    Sig(std::vector<Reg> signers) : signers(std::move(signers))
     {
         sortSigners(signers);
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit sig(AccountType&& a0, Accounts&&... aN)
+    explicit Sig(AccountType&& a0, Accounts&&... aN)
         : signers{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}
     {
         sortSigners(signers);
@@ -99,21 +99,21 @@ public:
 };
 
 /** Set a batch nested multi-signature on a JTx. */
-class msig
+class Msig
 {
 public:
     Account master;
     std::vector<Reg> signers;
 
-    msig(Account masterAccount, std::vector<Reg> signers_)
-        : master(std::move(masterAccount)), signers(std::move(signers_))
+    Msig(Account masterAccount, std::vector<Reg> signers)
+        : master(std::move(masterAccount)), signers(std::move(signers))
     {
         sortSigners(signers);
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit msig(Account masterAccount, AccountType&& a0, Accounts&&... aN)
+    explicit Msig(Account masterAccount, AccountType&& a0, Accounts&&... aN)
         : master(std::move(masterAccount))
         , signers{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}
     {

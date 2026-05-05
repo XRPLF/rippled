@@ -12,7 +12,7 @@
 
 namespace beast {
 
-class xxhasher
+class Xxhasher
 {
 public:
     using result_type = std::size_t;
@@ -21,9 +21,9 @@ private:
     static_assert(sizeof(std::size_t) == 8, "requires 64-bit std::size_t");
     // Have an internal buffer to avoid the streaming API
     // A 64-byte buffer should to be big enough for us
-    static constexpr std::size_t INTERNAL_BUFFER_SIZE = 64;
+    static constexpr std::size_t kINTERNAL_BUFFER_SIZE = 64;
 
-    alignas(64) std::array<std::uint8_t, INTERNAL_BUFFER_SIZE> buffer_{};
+    alignas(64) std::array<std::uint8_t, kINTERNAL_BUFFER_SIZE> buffer_{};
     std::span<std::uint8_t> readBuffer_;
     std::span<std::uint8_t> writeBuffer_;
 
@@ -102,18 +102,18 @@ private:
     }
 
 public:
-    static constexpr auto const endian = boost::endian::order::native;
+    static constexpr auto const kENDIAN = boost::endian::order::native;
 
-    xxhasher(xxhasher const&) = delete;
-    xxhasher&
-    operator=(xxhasher const&) = delete;
+    Xxhasher(Xxhasher const&) = delete;
+    Xxhasher&
+    operator=(Xxhasher const&) = delete;
 
-    xxhasher()
+    Xxhasher()
     {
         resetBuffers();
     }
 
-    ~xxhasher() noexcept
+    ~Xxhasher() noexcept
     {
         if (state_ != nullptr)
         {
@@ -122,13 +122,13 @@ public:
     }
 
     template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
-    explicit xxhasher(Seed seed) : seed_(seed)
+    explicit Xxhasher(Seed seed) : seed_(seed)
     {
         resetBuffers();
     }
 
     template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
-    xxhasher(Seed seed, Seed) : seed_(seed)
+    Xxhasher(Seed seed, Seed) : seed_(seed)
     {
         resetBuffers();
     }

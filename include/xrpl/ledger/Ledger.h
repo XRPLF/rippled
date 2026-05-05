@@ -20,11 +20,11 @@ class TransactionMaster;
 
 class SqliteStatement;
 
-struct create_genesis_t
+struct CreateGenesisT
 {
-    explicit create_genesis_t() = default;
+    explicit CreateGenesisT() = default;
 };
-extern create_genesis_t const create_genesis;
+extern CreateGenesisT const kCREATE_GENESIS;
 
 /** Holds a ledger.
 
@@ -81,7 +81,7 @@ public:
         Amendments specified are enabled in the genesis ledger
     */
     Ledger(
-        create_genesis_t,
+        CreateGenesisT,
         Rules rules,
         Fees const& fees,
         std::vector<uint256> const& amendments,
@@ -169,19 +169,19 @@ public:
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesBegin() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesEnd() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesUpperBound(uint256 const& key) const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    std::unique_ptr<TxsType::iter_base>
     txsBegin() const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    std::unique_ptr<TxsType::iter_base>
     txsEnd() const override;
 
     bool
@@ -249,7 +249,7 @@ public:
     bool
     isImmutable() const
     {
-        return mImmutable;
+        return mImmutable_;
     }
 
     /*  Mark this ledger as "should be full".
@@ -392,7 +392,7 @@ private:
     static std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
     deserializeTxPlusMeta(SHAMapItem const& item);
 
-    bool mImmutable;
+    bool mImmutable_;
 
     // A SHAMap containing the transactions associated with this ledger.
     SHAMap mutable txMap_;

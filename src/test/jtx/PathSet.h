@@ -81,13 +81,13 @@ public:
         addHelper(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
     Path&
-    push_back(Issue const& iss);
+    pushBack(Issue const& iss);
     Path&
-    push_back(MPTIssue const& iss);
+    pushBack(MPTIssue const& iss);
     Path&
-    push_back(jtx::Account const& acc);
+    pushBack(jtx::Account const& acc);
     Path&
-    push_back(STPathElement const& pe);
+    pushBack(STPathElement const& pe);
     [[nodiscard]] Json::Value
     json() const;
 
@@ -98,38 +98,38 @@ private:
 };
 
 inline Path&
-Path::push_back(STPathElement const& pe)
+Path::pushBack(STPathElement const& pe)
 {
-    path.emplace_back(pe);
+    path.emplaceBack(pe);
     return *this;
 }
 
 inline Path&
-Path::push_back(Issue const& iss)
+Path::pushBack(Issue const& iss)
 {
-    path.emplace_back(
-        STPathElement::typeCurrency | STPathElement::typeIssuer,
-        beast::zero,
+    path.emplaceBack(
+        STPathElement::TypeCurrency | STPathElement::TypeIssuer,
+        beast::kZERO,
         iss.currency,
         iss.account);
     return *this;
 }
 
 inline Path&
-Path::push_back(MPTIssue const& iss)
+Path::pushBack(MPTIssue const& iss)
 {
-    path.emplace_back(
-        STPathElement::typeMPT | STPathElement::typeIssuer,
-        beast::zero,
+    path.emplaceBack(
+        STPathElement::TypeMpt | STPathElement::TypeIssuer,
+        beast::kZERO,
         iss.getMptID(),
         iss.getIssuer());
     return *this;
 }
 
 inline Path&
-Path::push_back(jtx::Account const& account)
+Path::pushBack(jtx::Account const& account)
 {
-    path.emplace_back(account.id(), Currency{beast::zero}, beast::zero);
+    path.emplaceBack(account.id(), Currency{beast::kZERO}, beast::kZERO);
     return *this;
 }
 
@@ -137,7 +137,7 @@ template <class First, class... Rest>
 void
 Path::addHelper(First&& first, Rest&&... rest)
 {
-    push_back(std::forward<First>(first));
+    pushBack(std::forward<First>(first));
     if constexpr (sizeof...(rest) > 0)
         addHelper(std::forward<Rest>(rest)...);
 }
@@ -145,7 +145,7 @@ Path::addHelper(First&& first, Rest&&... rest)
 inline Json::Value
 Path::json() const
 {
-    return path.getJson(JsonOptions::none);
+    return path.getJson(JsonOptions::None);
 }
 
 class PathSet
@@ -170,7 +170,7 @@ public:
     json() const
     {
         Json::Value v;
-        v["Paths"] = paths.getJson(JsonOptions::none);
+        v["Paths"] = paths.getJson(JsonOptions::None);
         return v;
     }
 
@@ -179,7 +179,7 @@ private:
     void
     addHelper(First first, Rest... rest)
     {
-        paths.emplace_back(std::move(first.path));
+        paths.emplaceBack(std::move(first.path));
         if constexpr (sizeof...(rest) > 0)
             addHelper(std::move(rest)...);
     }

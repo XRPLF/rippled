@@ -75,7 +75,7 @@ noripple(Account const& account, Args const&... args)
 inline FeatureBitset
 testable_amendments()
 {
-    static FeatureBitset const ids = [] {
+    static FeatureBitset const kIDS = [] {
         auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -93,18 +93,18 @@ testable_amendments()
         }
         return FeatureBitset(feats);
     }();
-    return ids;
+    return kIDS;
 }
 
 //------------------------------------------------------------------------------
 
 class SuiteLogs : public Logs
 {
-    beast::unit_test::suite& suite_;
+    beast::unit_test::Suite& suite_;
 
 public:
-    explicit SuiteLogs(beast::unit_test::suite& suite)
-        : Logs(beast::severities::kError), suite_(suite)
+    explicit SuiteLogs(beast::unit_test::Suite& suite)
+        : Logs(beast::severities::KError), suite_(suite)
     {
     }
 
@@ -123,9 +123,9 @@ public:
 class Env
 {
 public:
-    beast::unit_test::suite& test;
+    beast::unit_test::Suite& test;
 
-    Account const& master = Account::master;
+    Account const& master = Account::kMASTER;
 
     /// Used by parseResult() and postConditions()
     struct ParsedResult
@@ -135,7 +135,7 @@ public:
         // with an "error" that corresponds to the "code"), or with an "error"
         // and an "exception". However, this structure allows all possible
         // combinations.
-        std::optional<error_code_i> rpcCode;
+        std::optional<ErrorCodeI> rpcCode;
         std::string rpcMessage;
         std::string rpcError;
         std::string rpcException;
@@ -152,7 +152,7 @@ private:
 
         AppBundle() = default;
         AppBundle(
-            beast::unit_test::suite& suite,
+            beast::unit_test::Suite& suite,
             std::unique_ptr<Config> config,
             std::unique_ptr<Logs> logs,
             beast::severities::Severity thresh);
@@ -184,16 +184,16 @@ public:
      * supported_features_except() to enable all and disable specific features.
      */
     // VFALCO Could wrap the suite::log in a Journal here
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         std::unique_ptr<Config> config,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr,
-        beast::severities::Severity thresh = beast::severities::kError)
-        : test(suite_)
-        , bundle_(suite_, std::move(config), std::move(logs), thresh)
+        beast::severities::Severity thresh = beast::severities::KError)
+        : test(suite)
+        , bundle_(suite, std::move(config), std::move(logs), thresh)
         , journal{bundle_.app->getJournal("Env")}
     {
-        memoize(Account::master);
+        memoize(Account::kMASTER);
         Pathfinder::initPathTable();
         foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) {
             appFeats.insert(f);
@@ -213,10 +213,10 @@ public:
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr)
-        : Env(suite_, envconfig(), features, std::move(logs))
+        : Env(suite, envconfig(), features, std::move(logs))
     {
     }
 
@@ -232,11 +232,11 @@ public:
      * the pointer. See envconfig and related functions for common config
      * tweaks.
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr,
-        beast::severities::Severity thresh = beast::severities::kError)
-        : Env(suite_, std::move(config), testable_amendments(), std::move(logs), thresh)
+        beast::severities::Severity thresh = beast::severities::KError)
+        : Env(suite, std::move(config), testable_amendments(), std::move(logs), thresh)
     {
     }
 
@@ -249,9 +249,9 @@ public:
      *
      * @param suite_ the current unit_test::suite
      */
-    Env(beast::unit_test::suite& suite_,
-        beast::severities::Severity thresh = beast::severities::kError)
-        : Env(suite_, envconfig(), nullptr, thresh)
+    Env(beast::unit_test::Suite& suite,
+        beast::severities::Severity thresh = beast::severities::KError)
+        : Env(suite, envconfig(), nullptr, thresh)
     {
     }
 
@@ -459,21 +459,21 @@ public:
     }
 
     void
-    set_parse_failure_expected(bool b)
+    setParseFailureExpected(bool b)
     {
         parseFailureExpected_ = b;
     }
 
     /** Turn off signature checks. */
     void
-    disable_sigs()
+    disableSigs()
     {
         app().checkSigs(false);
     }
 
     // set rpc retries
     void
-    set_retries(unsigned r = 5)
+    setRetries(unsigned r = 5)
     {
         retries_ = r;
     }
@@ -561,7 +561,7 @@ public:
     {
         JTx jt(std::forward<JsonValue>(jv));
         invoke(jt, fN...);
-        autofill_sig(jt);
+        autofillSig(jt);
         jt.stx = st(jt);
         return jt;
     }
@@ -604,9 +604,9 @@ public:
         This calls postconditions.
     */
     void
-    sign_and_submit(
+    signAndSubmit(
         JTx const& jt,
-        Json::Value params = Json::nullValue,
+        Json::Value params = Json::NullValue,
         std::source_location const& loc = std::source_location::current());
 
     /** Check expected postconditions
@@ -704,14 +704,14 @@ private:
     fund(bool setDefaultRipple, STAmount const& amount, Account const& account);
 
     void
-    fund_arg(STAmount const& amount, Account const& account)
+    fundArg(STAmount const& amount, Account const& account)
     {
         fund(true, amount, account);
     }
 
     template <std::size_t N>
     void
-    fund_arg(STAmount const& amount, std::array<Account, N> const& list)
+    fundArg(STAmount const& amount, std::array<Account, N> const& list)
     {
         for (auto const& account : list)
             fund(false, amount, account);
@@ -748,7 +748,7 @@ public:
     void
     fund(STAmount const& amount, Arg const& arg, Args const&... args)
     {
-        fund_arg(amount, arg);
+        fundArg(amount, arg);
         if constexpr (sizeof...(args) > 0)
             fund(amount, args...);
     }
@@ -794,18 +794,18 @@ protected:
     int trace_ = 0;
     TestStopwatch stopwatch_;
     uint256 txid_;
-    TER ter_ = tesSUCCESS;
+    TER ter_ = TesSuccess;
     bool parseFailureExpected_ = false;
     unsigned retries_ = 5;
 
     Json::Value
-    do_rpc(
+    doRpc(
         unsigned apiVersion,
         std::vector<std::string> const& args,
         std::unordered_map<std::string, std::string> const& headers = {});
 
     void
-    autofill_sig(JTx& jt);
+    autofillSig(JTx& jt);
 
     virtual void
     autofill(JTx& jt);
@@ -849,7 +849,7 @@ Env::rpc(
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(apiVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
+    return doRpc(apiVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
 }
 
 template <class... Args>
@@ -870,8 +870,8 @@ Env::rpc(
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(
-        RPC::apiCommandLineVersion,
+    return doRpc(
+        RPC::kAPI_COMMAND_LINE_VERSION,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);
 }

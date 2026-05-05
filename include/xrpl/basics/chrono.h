@@ -30,10 +30,10 @@ using weeks = std::chrono::duration<int, std::ratio_multiply<days::period, std::
     = seconds(946684800)
 */
 
-constexpr static std::chrono::seconds epoch_offset =
+constexpr static std::chrono::seconds kEPOCH_OFFSET =
     date::sys_days{date::year{2000} / 1 / 1} - date::sys_days{date::year{1970} / 1 / 1};
 
-static_assert(epoch_offset.count() == 946684800);
+static_assert(kEPOCH_OFFSET.count() == 946684800);
 
 class NetClock
 {
@@ -45,7 +45,7 @@ public:
     using duration = std::chrono::duration<rep, period>;
     using time_point = std::chrono::time_point<NetClock>;
 
-    static bool const is_steady = false;
+    static bool const kIS_STEADY = false;
 };
 
 template <class Duration>
@@ -60,7 +60,7 @@ to_string(NetClock::time_point tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
-    return to_string(system_clock::time_point{tp.time_since_epoch() + epoch_offset});
+    return to_string(system_clock::time_point{tp.time_since_epoch() + kEPOCH_OFFSET});
 }
 
 template <class Duration>
@@ -77,23 +77,23 @@ to_string_iso(NetClock::time_point tp)
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     // Note, NetClock::duration is seconds, as checked by static_assert
     static_assert(std::is_same_v<NetClock::duration::period, std::ratio<1>>);
-    return to_string_iso(date::sys_time<NetClock::duration>{tp.time_since_epoch() + epoch_offset});
+    return to_string_iso(date::sys_time<NetClock::duration>{tp.time_since_epoch() + kEPOCH_OFFSET});
 }
 
 /** A clock for measuring elapsed time.
 
     The epoch is unspecified.
 */
-using Stopwatch = beast::abstract_clock<std::chrono::steady_clock>;
+using Stopwatch = beast::AbstractClock<std::chrono::steady_clock>;
 
 /** A manual Stopwatch for unit tests. */
-using TestStopwatch = beast::manual_clock<std::chrono::steady_clock>;
+using TestStopwatch = beast::ManualClock<std::chrono::steady_clock>;
 
 /** Returns an instance of a wall clock. */
 inline Stopwatch&
 stopwatch()
 {
-    using Clock = beast::basic_seconds_clock;
+    using Clock = beast::BasicSecondsClock;
     using Facade = Clock::Clock;
     return beast::get_abstract_clock<Facade, Clock>();
 }

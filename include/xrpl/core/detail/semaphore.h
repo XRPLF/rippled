@@ -34,12 +34,12 @@
 namespace xrpl {
 
 template <class Mutex, class CondVar>
-class basic_semaphore
+class BasicSemaphore
 {
 private:
-    Mutex m_mutex;
-    CondVar m_cond;
-    std::size_t m_count;
+    Mutex m_mutex_;
+    CondVar m_cond_;
+    std::size_t m_count_;
 
 public:
     using size_type = std::size_t;
@@ -47,7 +47,7 @@ public:
     /** Create the semaphore, with an optional initial count.
         If unspecified, the initial count is zero.
     */
-    explicit basic_semaphore(size_type count = 0) : m_count(count)
+    explicit BasicSemaphore(size_type count = 0) : m_count_(count)
     {
     }
 
@@ -55,35 +55,35 @@ public:
     void
     notify()
     {
-        std::scoped_lock const lock{m_mutex};
-        ++m_count;
-        m_cond.notify_one();
+        std::scoped_lock const lock{m_mutex_};
+        ++m_count_;
+        m_cond_.notify_one();
     }
 
     /** Block until notify is called. */
     void
     wait()
     {
-        std::unique_lock lock{m_mutex};
-        while (m_count == 0)
-            m_cond.wait(lock);
-        --m_count;
+        std::unique_lock lock{m_mutex_};
+        while (m_count_ == 0)
+            m_cond_.wait(lock);
+        --m_count_;
     }
 
     /** Perform a non-blocking wait.
         @return `true` If the wait would be satisfied.
     */
     bool
-    try_wait()
+    tryWait()
     {
-        std::scoped_lock lock{m_mutex};
-        if (m_count == 0)
+        std::scoped_lock lock{m_mutex_};
+        if (m_count_ == 0)
             return false;
-        --m_count;
+        --m_count_;
         return true;
     }
 };
 
-using semaphore = basic_semaphore<std::mutex, std::condition_variable>;
+using semaphore = BasicSemaphore<std::mutex, std::condition_variable>;
 
 }  // namespace xrpl

@@ -27,7 +27,7 @@ struct Zero
 };
 
 namespace {
-constexpr Zero zero{};
+constexpr Zero kZERO{};
 }  // namespace
 
 /** Default implementation of signum calls the method on the class. */
@@ -102,42 +102,42 @@ template <typename T>
 bool
 operator==(Zero, T const& t)
 {
-    return t == zero;
+    return t == kZERO;
 }
 
 template <typename T>
 bool
 operator!=(Zero, T const& t)
 {
-    return t != zero;
+    return t != kZERO;
 }
 
 template <typename T>
 bool
 operator<(Zero, T const& t)
 {
-    return t > zero;
+    return t > kZERO;
 }
 
 template <typename T>
 bool
 operator>(Zero, T const& t)
 {
-    return t < zero;
+    return t < kZERO;
 }
 
 template <typename T>
 bool
 operator>=(Zero, T const& t)
 {
-    return t <= zero;
+    return t <= kZERO;
 }
 
 template <typename T>
 bool
 operator<=(Zero, T const& t)
 {
-    return t >= zero;
+    return t >= kZERO;
 }
 
 }  // namespace beast

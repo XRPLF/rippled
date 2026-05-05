@@ -9,7 +9,7 @@ namespace xrpl::test::jtx {
 
 /** Disable the regular key. */
 Json::Value
-regkey(Account const& account, disabled_t);
+regkey(Account const& account, DisabledT);
 
 /** Set a regular key. */
 Json::Value

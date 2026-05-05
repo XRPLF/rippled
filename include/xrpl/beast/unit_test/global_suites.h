@@ -11,11 +11,11 @@ namespace beast::unit_test {
 namespace detail {
 
 /// Holds test suites registered during static initialization.
-inline suite_list&
+inline SuiteList&
 global_suites()
 {
-    static suite_list s;
-    return s;
+    static SuiteList kS;
+    return kS;
 }
 
 template <class Suite>
@@ -35,7 +35,7 @@ struct insert_suite
 }  // namespace detail
 
 /// Holds test suites registered during static initialization.
-inline suite_list const&
+inline SuiteList const&
 global_suites()
 {
     return detail::global_suites();

@@ -16,13 +16,13 @@ keylet(
 }
 
 // Sets the optional URI.
-class uri
+class Uri
 {
 private:
     std::string const uri_;
 
 public:
-    explicit uri(std::string_view u) : uri_(strHex(u))
+    explicit Uri(std::string_view u) : uri_(strHex(u))
     {
     }
 
@@ -34,20 +34,20 @@ public:
 };
 
 // Set credentialsIDs array
-class ids
+class Ids
 {
 private:
     std::vector<std::string> const credentials_;
 
 public:
-    explicit ids(std::vector<std::string> const& creds) : credentials_(creds)
+    explicit Ids(std::vector<std::string> const& creds) : credentials_(creds)
     {
     }
 
     void
     operator()(jtx::Env&, jtx::JTx& jtx) const
     {
-        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = Json::ArrayValue);
         for (auto const& hash : credentials_)
             arr.append(hash);
     }

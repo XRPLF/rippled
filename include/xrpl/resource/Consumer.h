@@ -26,7 +26,7 @@ public:
 
     /** Return a human readable string uniquely identifying this consumer. */
     [[nodiscard]] std::string
-    to_string() const;
+    toString() const;
 
     /** Returns `true` if this is a privileged endpoint. */
     [[nodiscard]] bool
@@ -71,8 +71,8 @@ public:
     setPublicKey(PublicKey const& publicKey);
 
 private:
-    Logic* m_logic;
-    Entry* m_entry;
+    Logic* m_logic_;
+    Entry* m_entry_;
 };
 
 std::ostream&

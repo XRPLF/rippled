@@ -18,7 +18,7 @@ trustline that has rippling enabled on the account's side.
 disabled on the account's side. Any trust lines for an incoming account that
 have rippling disabled are unusable in paths.
 */
-enum class LineDirection : bool { incoming = false, outgoing = true };
+enum class LineDirection : bool { Incoming = false, Outgoing = true };
 
 /** Wraps a trust line SLE for convenience.
     The complication of trust lines is that there is a
@@ -58,96 +58,96 @@ public:
     [[nodiscard]] AccountID const&
     getAccountID() const
     {
-        return mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
+        return mViewLowest_ ? mLowLimit_.getIssuer() : mHighLimit_.getIssuer();
     }
 
     [[nodiscard]] AccountID const&
     getAccountIDPeer() const
     {
-        return !mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
+        return !mViewLowest_ ? mLowLimit_.getIssuer() : mHighLimit_.getIssuer();
     }
 
     // True, Provided auth to peer.
     [[nodiscard]] bool
     getAuth() const
     {
-        return (mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth)) != 0u;
+        return (mFlags_ & (mViewLowest_ ? LsfLowAuth : LsfHighAuth)) != 0u;
     }
 
     [[nodiscard]] bool
     getAuthPeer() const
     {
-        return (mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth)) != 0u;
+        return (mFlags_ & (!mViewLowest_ ? LsfLowAuth : LsfHighAuth)) != 0u;
     }
 
     [[nodiscard]] bool
     getNoRipple() const
     {
-        return (mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
+        return (mFlags_ & (mViewLowest_ ? LsfLowNoRipple : LsfHighNoRipple)) != 0u;
     }
 
     [[nodiscard]] bool
     getNoRipplePeer() const
     {
-        return (mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
+        return (mFlags_ & (!mViewLowest_ ? LsfLowNoRipple : LsfHighNoRipple)) != 0u;
     }
 
     [[nodiscard]] LineDirection
     getDirection() const
     {
-        return getNoRipple() ? LineDirection::incoming : LineDirection::outgoing;
+        return getNoRipple() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
     [[nodiscard]] LineDirection
     getDirectionPeer() const
     {
-        return getNoRipplePeer() ? LineDirection::incoming : LineDirection::outgoing;
+        return getNoRipplePeer() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
     /** Have we set the freeze flag on our peer */
     [[nodiscard]] bool
     getFreeze() const
     {
-        return (mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze)) != 0u;
+        return (mFlags_ & (mViewLowest_ ? LsfLowFreeze : LsfHighFreeze)) != 0u;
     }
 
     /** Have we set the deep freeze flag on our peer */
     [[nodiscard]] bool
     getDeepFreeze() const
     {
-        return (mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
+        return (mFlags_ & (mViewLowest_ ? LsfLowDeepFreeze : LsfHighDeepFreeze)) != 0u;
     }
 
     /** Has the peer set the freeze flag on us */
     [[nodiscard]] bool
     getFreezePeer() const
     {
-        return (mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze)) != 0u;
+        return (mFlags_ & (!mViewLowest_ ? LsfLowFreeze : LsfHighFreeze)) != 0u;
     }
 
     /** Has the peer set the deep freeze flag on us */
     [[nodiscard]] bool
     getDeepFreezePeer() const
     {
-        return (mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
+        return (mFlags_ & (!mViewLowest_ ? LsfLowDeepFreeze : LsfHighDeepFreeze)) != 0u;
     }
 
     [[nodiscard]] STAmount const&
     getBalance() const
     {
-        return mBalance;
+        return mBalance_;
     }
 
     [[nodiscard]] STAmount const&
     getLimit() const
     {
-        return mViewLowest ? mLowLimit : mHighLimit;
+        return mViewLowest_ ? mLowLimit_ : mHighLimit_;
     }
 
     [[nodiscard]] STAmount const&
     getLimitPeer() const
     {
-        return !mViewLowest ? mLowLimit : mHighLimit;
+        return !mViewLowest_ ? mLowLimit_ : mHighLimit_;
     }
 
     Json::Value
@@ -156,14 +156,14 @@ public:
 protected:
     uint256 key_;
 
-    STAmount const mLowLimit;
-    STAmount const mHighLimit;
+    STAmount const mLowLimit_;
+    STAmount const mHighLimit_;
 
-    STAmount mBalance;
+    STAmount mBalance_;
 
-    std::uint32_t mFlags;
+    std::uint32_t mFlags_;
 
-    bool mViewLowest;
+    bool mViewLowest_;
 };
 
 // This wrapper is used for the path finder
@@ -195,13 +195,13 @@ public:
     [[nodiscard]] Rate const&
     getQualityIn() const
     {
-        return mViewLowest ? lowQualityIn_ : highQualityIn_;
+        return mViewLowest_ ? lowQualityIn_ : highQualityIn_;
     }
 
     [[nodiscard]] Rate const&
     getQualityOut() const
     {
-        return mViewLowest ? lowQualityOut_ : highQualityOut_;
+        return mViewLowest_ ? lowQualityOut_ : highQualityOut_;
     }
 
     static std::optional<RPCTrustLine>

@@ -9,12 +9,12 @@ namespace xrpl::test {
 #define PORT_RPC "port_rpc"
 #define PORT_PEER "port_peer"
 
-extern std::atomic<bool> envUseIPv4;
+extern std::atomic<bool> gEnvUseIPv4;
 
 inline char const*
 getEnvLocalhostAddr()
 {
-    return envUseIPv4 ? "127.0.0.1" : "::1";
+    return gEnvUseIPv4 ? "127.0.0.1" : "::1";
 }
 
 /// @brief initializes a config object for use with jtx::Env

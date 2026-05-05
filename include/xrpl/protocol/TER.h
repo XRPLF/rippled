@@ -31,23 +31,23 @@ enum TELcodes : TERUnderlyingType {
     // limit) Only valid during non-consensus processing. Implications:
     // - Not forwarded
     // - No fee check
-    telLOCAL_ERROR = -399,
-    telBAD_DOMAIN,
-    telBAD_PATH_COUNT,
-    telBAD_PUBLIC_KEY,
-    telFAILED_PROCESSING,
-    telINSUF_FEE_P,
-    telNO_DST_PARTIAL,
-    telCAN_NOT_QUEUE,
-    telCAN_NOT_QUEUE_BALANCE,
-    telCAN_NOT_QUEUE_BLOCKS,
-    telCAN_NOT_QUEUE_BLOCKED,
-    telCAN_NOT_QUEUE_FEE,
-    telCAN_NOT_QUEUE_FULL,
-    telWRONG_NETWORK,
-    telREQUIRES_NETWORK_ID,
-    telNETWORK_ID_MAKES_TX_NON_CANONICAL,
-    telENV_RPC_FAILED
+    TelLocalError = -399,
+    TelBadDomain,
+    TelBadPathCount,
+    TelBadPublicKey,
+    TelFailedProcessing,
+    TelInsufFeeP,
+    TelNoDstPartial,
+    TelCanNotQueue,
+    TelCanNotQueueBalance,
+    TelCanNotQueueBlocks,
+    TelCanNotQueueBlocked,
+    TelCanNotQueueFee,
+    TelCanNotQueueFull,
+    TelWrongNetwork,
+    TelRequiresNetworkId,
+    TelNetworkIdMakesTxNonCanonical,
+    TelEnvRpcFailed
 };
 
 //------------------------------------------------------------------------------
@@ -68,64 +68,64 @@ enum TEMcodes : TERUnderlyingType {
     // - Not forwarded
     // - Reject
     // - Cannot succeed in any imagined ledger.
-    temMALFORMED = -299,
+    TemMalformed = -299,
 
-    temBAD_AMOUNT,
-    temBAD_CURRENCY,
-    temBAD_EXPIRATION,
-    temBAD_FEE,
-    temBAD_ISSUER,
-    temBAD_LIMIT,
-    temBAD_OFFER,
-    temBAD_PATH,
-    temBAD_PATH_LOOP,
-    temBAD_REGKEY,
-    temBAD_SEND_XRP_LIMIT,
-    temBAD_SEND_XRP_MAX,
-    temBAD_SEND_XRP_NO_DIRECT,
-    temBAD_SEND_XRP_PARTIAL,
-    temBAD_SEND_XRP_PATHS,
-    temBAD_SEQUENCE,
-    temBAD_SIGNATURE,
-    temBAD_SRC_ACCOUNT,
-    temBAD_TRANSFER_RATE,
-    temDST_IS_SRC,
-    temDST_NEEDED,
-    temINVALID,
-    temINVALID_FLAG,
-    temREDUNDANT,
-    temRIPPLE_EMPTY,
-    temDISABLED,
-    temBAD_SIGNER,
-    temBAD_QUORUM,
-    temBAD_WEIGHT,
-    temBAD_TICK_SIZE,
-    temINVALID_ACCOUNT_ID,
-    temCANNOT_PREAUTH_SELF,
-    temINVALID_COUNT,
+    TemBadAmount,
+    TemBadCurrency,
+    TemBadExpiration,
+    TemBadFee,
+    TemBadIssuer,
+    TemBadLimit,
+    TemBadOffer,
+    TemBadPath,
+    TemBadPathLoop,
+    TemBadRegkey,
+    TemBadSendXrpLimit,
+    TemBadSendXrpMax,
+    TemBadSendXrpNoDirect,
+    TemBadSendXrpPartial,
+    TemBadSendXrpPaths,
+    TemBadSequence,
+    TemBadSignature,
+    TemBadSrcAccount,
+    TemBadTransferRate,
+    TemDstIsSrc,
+    TemDstNeeded,
+    TemInvalid,
+    TemInvalidFlag,
+    TemRedundant,
+    TemRippleEmpty,
+    TemDisabled,
+    TemBadSigner,
+    TemBadQuorum,
+    TemBadWeight,
+    TemBadTickSize,
+    TemInvalidAccountId,
+    TemCannotPreauthSelf,
+    TemInvalidCount,
 
-    temUNCERTAIN,  // An internal intermediate result; should never be returned.
-    temUNKNOWN,    // An internal intermediate result; should never be returned.
+    TemUncertain,  // An internal intermediate result; should never be returned.
+    TemUnknown,    // An internal intermediate result; should never be returned.
 
-    temSEQ_AND_TICKET,
-    temBAD_NFTOKEN_TRANSFER_FEE,
+    TemSeqAndTicket,
+    TemBadNftokenTransferFee,
 
-    temBAD_AMM_TOKENS,
+    TemBadAmmTokens,
 
-    temXCHAIN_EQUAL_DOOR_ACCOUNTS,
-    temXCHAIN_BAD_PROOF,
-    temXCHAIN_BRIDGE_BAD_ISSUES,
-    temXCHAIN_BRIDGE_NONDOOR_OWNER,
-    temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT,
-    temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT,
+    TemXchainEqualDoorAccounts,
+    TemXchainBadProof,
+    TemXchainBridgeBadIssues,
+    TemXchainBridgeNondoorOwner,
+    TemXchainBridgeBadMinAccountCreateAmount,
+    TemXchainBridgeBadRewardAmount,
 
-    temEMPTY_DID,
+    TemEmptyDid,
 
-    temARRAY_EMPTY,
-    temARRAY_TOO_LARGE,
-    temBAD_TRANSFER_FEE,
-    temINVALID_INNER_BATCH,
-    temBAD_MPT,
+    TemArrayEmpty,
+    TemArrayTooLarge,
+    TemBadTransferFee,
+    TemInvalidInnerBatch,
+    TemBadMpt,
 };
 
 //------------------------------------------------------------------------------
@@ -150,28 +150,28 @@ enum TEFcodes : TERUnderlyingType {
     // - Not applied
     // - Not forwarded
     // - Could succeed in an imagined ledger.
-    tefFAILURE = -199,
-    tefALREADY,
-    tefBAD_ADD_AUTH,
-    tefBAD_AUTH,
-    tefBAD_LEDGER,
-    tefCREATED,
-    tefEXCEPTION,
-    tefINTERNAL,
-    tefNO_AUTH_REQUIRED,  // Can't set auth if auth is not required.
-    tefPAST_SEQ,
-    tefWRONG_PRIOR,
-    tefMASTER_DISABLED,
-    tefMAX_LEDGER,
-    tefBAD_SIGNATURE,
-    tefBAD_QUORUM,
-    tefNOT_MULTI_SIGNING,
-    tefBAD_AUTH_MASTER,
-    tefINVARIANT_FAILED,
-    tefTOO_BIG,
-    tefNO_TICKET,
-    tefNFTOKEN_IS_NOT_TRANSFERABLE,
-    tefINVALID_LEDGER_FIX_TYPE,
+    TefFailure = -199,
+    TefAlready,
+    TefBadAddAuth,
+    TefBadAuth,
+    TefBadLedger,
+    TefCreated,
+    TefException,
+    TefInternal,
+    TefNoAuthRequired,  // Can't set auth if auth is not required.
+    TefPastSeq,
+    TefWrongPrior,
+    TefMasterDisabled,
+    TefMaxLedger,
+    TefBadSignature,
+    TefBadQuorum,
+    TefNotMultiSigning,
+    TefBadAuthMaster,
+    TefInvariantFailed,
+    TefTooBig,
+    TefNoTicket,
+    TefNftokenIsNotTransferable,
+    TefInvalidLedgerFixType,
 };
 
 //------------------------------------------------------------------------------
@@ -200,24 +200,24 @@ enum TERcodes : TERUnderlyingType {
     // - Might succeed later
     // - Hold
     // - Makes hole in sequence which jams transactions.
-    terRETRY = -99,
-    terFUNDS_SPENT,             // DEPRECATED.
-    terINSUF_FEE_B,             // Can't pay fee, therefore don't burden network.
-    terNO_ACCOUNT,              // Can't pay fee, therefore don't burden network.
-    terNO_AUTH,                 // Not authorized to hold IOUs.
-    terNO_LINE,                 // Internal flag.
-    terOWNERS,                  // Can't succeed with non-zero owner count.
-    terPRE_SEQ,                 // Can't pay fee, no point in forwarding, so don't
-                                // burden network.
-    terLAST,                    // DEPRECATED.
-    terNO_RIPPLE,               // Rippling not allowed
-    terQUEUED,                  // Transaction is being held in TxQ until fee drops
-    terPRE_TICKET,              // Ticket is not yet in ledger but might be on its way
-    terNO_AMM,                  // AMM doesn't exist for the asset pair
-    terADDRESS_COLLISION,       // Failed to allocate AccountID when trying to
-                                // create a pseudo-account
-    terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
-    terLOCKED,                  // MPT is locked
+    TerRetry = -99,
+    TerFundsSpent,            // DEPRECATED.
+    TerInsufFeeB,             // Can't pay fee, therefore don't burden network.
+    TerNoAccount,             // Can't pay fee, therefore don't burden network.
+    TerNoAuth,                // Not authorized to hold IOUs.
+    TerNoLine,                // Internal flag.
+    TerOwners,                // Can't succeed with non-zero owner count.
+    TerPreSeq,                // Can't pay fee, no point in forwarding, so don't
+                              // burden network.
+    TerLast,                  // DEPRECATED.
+    TerNoRipple,              // Rippling not allowed
+    TerQueued,                // Transaction is being held in TxQ until fee drops
+    TerPreTicket,             // Ticket is not yet in ledger but might be on its way
+    TerNoAmm,                 // AMM doesn't exist for the asset pair
+    TerAddressCollision,      // Failed to allocate AccountID when trying to
+                              // create a pseudo-account
+    TerNoDelegatePermission,  // Delegate does not have permission
+    TerLocked,                // MPT is locked
 };
 
 //------------------------------------------------------------------------------
@@ -234,7 +234,7 @@ enum TEScodes : TERUnderlyingType {
     // Implications:
     // - Applied
     // - Forwarded
-    tesSUCCESS = 0
+    TesSuccess = 0
 };
 
 //------------------------------------------------------------------------------
@@ -273,89 +273,89 @@ enum TECcodes : TERUnderlyingType {
     // - tecOBJECT_NOT_FOUND : cannot find the additional object(s) needed to
     //   complete the transaction
 
-    tecCLAIM = 100,
-    tecPATH_PARTIAL = 101,
-    tecUNFUNDED_ADD = 102,  // Unused legacy code
-    tecUNFUNDED_OFFER = 103,
-    tecUNFUNDED_PAYMENT = 104,
-    tecFAILED_PROCESSING = 105,
-    tecDIR_FULL = 121,
-    tecINSUF_RESERVE_LINE = 122,
-    tecINSUF_RESERVE_OFFER = 123,
-    tecNO_DST = 124,
-    tecNO_DST_INSUF_XRP = 125,
-    tecNO_LINE_INSUF_RESERVE = 126,
-    tecNO_LINE_REDUNDANT = 127,
-    tecPATH_DRY = 128,
-    tecUNFUNDED = 129,
-    tecNO_ALTERNATIVE_KEY = 130,
-    tecNO_REGULAR_KEY = 131,
-    tecOWNERS = 132,
-    tecNO_ISSUER = 133,
-    tecNO_AUTH = 134,
-    tecNO_LINE = 135,
-    tecINSUFF_FEE = 136,
-    tecFROZEN = 137,
-    tecNO_TARGET = 138,
-    tecNO_PERMISSION = 139,
-    tecNO_ENTRY = 140,
-    tecINSUFFICIENT_RESERVE = 141,
-    tecNEED_MASTER_KEY = 142,
-    tecDST_TAG_NEEDED = 143,
-    tecINTERNAL = 144,
-    tecOVERSIZE = 145,
-    tecCRYPTOCONDITION_ERROR = 146,
-    tecINVARIANT_FAILED = 147,
-    tecEXPIRED = 148,
-    tecDUPLICATE = 149,
-    tecKILLED = 150,
-    tecHAS_OBLIGATIONS = 151,
-    tecTOO_SOON = 152,
-    tecHOOK_REJECTED [[maybe_unused]] = 153,
-    tecMAX_SEQUENCE_REACHED = 154,
-    tecNO_SUITABLE_NFTOKEN_PAGE = 155,
-    tecNFTOKEN_BUY_SELL_MISMATCH = 156,
-    tecNFTOKEN_OFFER_TYPE_MISMATCH = 157,
-    tecCANT_ACCEPT_OWN_NFTOKEN_OFFER = 158,
-    tecINSUFFICIENT_FUNDS = 159,
-    tecOBJECT_NOT_FOUND = 160,
-    tecINSUFFICIENT_PAYMENT = 161,
-    tecUNFUNDED_AMM = 162,
-    tecAMM_BALANCE = 163,
-    tecAMM_FAILED = 164,
-    tecAMM_INVALID_TOKENS = 165,
-    tecAMM_EMPTY = 166,
-    tecAMM_NOT_EMPTY = 167,
-    tecAMM_ACCOUNT = 168,
-    tecINCOMPLETE = 169,
-    tecXCHAIN_BAD_TRANSFER_ISSUE = 170,
-    tecXCHAIN_NO_CLAIM_ID = 171,
-    tecXCHAIN_BAD_CLAIM_ID = 172,
-    tecXCHAIN_CLAIM_NO_QUORUM = 173,
-    tecXCHAIN_PROOF_UNKNOWN_KEY = 174,
-    tecXCHAIN_CREATE_ACCOUNT_NONXRP_ISSUE = 175,
-    tecXCHAIN_WRONG_CHAIN = 176,
-    tecXCHAIN_REWARD_MISMATCH = 177,
-    tecXCHAIN_NO_SIGNERS_LIST = 178,
-    tecXCHAIN_SENDING_ACCOUNT_MISMATCH = 179,
-    tecXCHAIN_INSUFF_CREATE_AMOUNT = 180,
-    tecXCHAIN_ACCOUNT_CREATE_PAST = 181,
-    tecXCHAIN_ACCOUNT_CREATE_TOO_MANY = 182,
-    tecXCHAIN_PAYMENT_FAILED = 183,
-    tecXCHAIN_SELF_COMMIT = 184,
-    tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR = 185,
-    tecXCHAIN_CREATE_ACCOUNT_DISABLED = 186,
-    tecEMPTY_DID = 187,
-    tecINVALID_UPDATE_TIME = 188,
-    tecTOKEN_PAIR_NOT_FOUND = 189,
-    tecARRAY_EMPTY = 190,
-    tecARRAY_TOO_LARGE = 191,
-    tecLOCKED = 192,
-    tecBAD_CREDENTIALS = 193,
-    tecWRONG_ASSET = 194,
-    tecLIMIT_EXCEEDED = 195,
-    tecPSEUDO_ACCOUNT = 196,
-    tecPRECISION_LOSS = 197,
+    TecClaim = 100,
+    TecPathPartial = 101,
+    TecUnfundedAdd = 102,  // Unused legacy code
+    TecUnfundedOffer = 103,
+    TecUnfundedPayment = 104,
+    TecFailedProcessing = 105,
+    TecDirFull = 121,
+    TecInsufReserveLine = 122,
+    TecInsufReserveOffer = 123,
+    TecNoDst = 124,
+    TecNoDstInsufXrp = 125,
+    TecNoLineInsufReserve = 126,
+    TecNoLineRedundant = 127,
+    TecPathDry = 128,
+    TecUnfunded = 129,
+    TecNoAlternativeKey = 130,
+    TecNoRegularKey = 131,
+    TecOwners = 132,
+    TecNoIssuer = 133,
+    TecNoAuth = 134,
+    TecNoLine = 135,
+    TecInsuffFee = 136,
+    TecFrozen = 137,
+    TecNoTarget = 138,
+    TecNoPermission = 139,
+    TecNoEntry = 140,
+    TecInsufficientReserve = 141,
+    TecNeedMasterKey = 142,
+    TecDstTagNeeded = 143,
+    TecInternal = 144,
+    TecOversize = 145,
+    TecCryptoconditionError = 146,
+    TecInvariantFailed = 147,
+    TecExpired = 148,
+    TecDuplicate = 149,
+    TecKilled = 150,
+    TecHasObligations = 151,
+    TecTooSoon = 152,
+    TecHookRejected [[maybe_unused]] = 153,
+    TecMaxSequenceReached = 154,
+    TecNoSuitableNftokenPage = 155,
+    TecNftokenBuySellMismatch = 156,
+    TecNftokenOfferTypeMismatch = 157,
+    TecCantAcceptOwnNftokenOffer = 158,
+    TecInsufficientFunds = 159,
+    TecObjectNotFound = 160,
+    TecInsufficientPayment = 161,
+    TecUnfundedAmm = 162,
+    TecAmmBalance = 163,
+    TecAmmFailed = 164,
+    TecAmmInvalidTokens = 165,
+    TecAmmEmpty = 166,
+    TecAmmNotEmpty = 167,
+    TecAmmAccount = 168,
+    TecIncomplete = 169,
+    TecXchainBadTransferIssue = 170,
+    TecXchainNoClaimId = 171,
+    TecXchainBadClaimId = 172,
+    TecXchainClaimNoQuorum = 173,
+    TecXchainProofUnknownKey = 174,
+    TecXchainCreateAccountNonxrpIssue = 175,
+    TecXchainWrongChain = 176,
+    TecXchainRewardMismatch = 177,
+    TecXchainNoSignersList = 178,
+    TecXchainSendingAccountMismatch = 179,
+    TecXchainInsuffCreateAmount = 180,
+    TecXchainAccountCreatePast = 181,
+    TecXchainAccountCreateTooMany = 182,
+    TecXchainPaymentFailed = 183,
+    TecXchainSelfCommit = 184,
+    TecXchainBadPublicKeyAccountPair = 185,
+    TecXchainCreateAccountDisabled = 186,
+    TecEmptyDid = 187,
+    TecInvalidUpdateTime = 188,
+    TecTokenPairNotFound = 189,
+    TecArrayEmpty = 190,
+    TecArrayTooLarge = 191,
+    TecLocked = 192,
+    TecBadCredentials = 193,
+    TecWrongAsset = 194,
+    TecLimitExceeded = 195,
+    TecPseudoAccount = 196,
+    TecPrecisionLoss = 197,
 };
 
 //------------------------------------------------------------------------------
@@ -364,37 +364,37 @@ enum TECcodes : TERUnderlyingType {
 constexpr TERUnderlyingType
 TERtoInt(TELcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
-TERtoInt(TEMcodes v)
+teRtoInt(TEMcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEFcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TERcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEScodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TECcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 //------------------------------------------------------------------------------
@@ -407,7 +407,7 @@ class TERSubset
 
 public:
     // Constructors
-    constexpr TERSubset() : code_(tesSUCCESS)
+    constexpr TERSubset() : code_(TesSuccess)
     {
     }
     constexpr TERSubset(TERSubset const& rhs) = default;
@@ -429,7 +429,7 @@ public:
     template <
         typename T,
         typename = std::enable_if_t<Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value>>
-    constexpr TERSubset(T rhs) : code_(TERtoInt(rhs))
+    constexpr TERSubset(T rhs) : code_(teRtoInt(rhs))
     {
     }
 
@@ -452,7 +452,7 @@ public:
     explicit
     operator bool() const
     {
-        return code_ != tesSUCCESS;
+        return code_ != TesSuccess;
     }
 
     // Conversion to Json::Value allows assignment to Json::Objects
@@ -486,7 +486,7 @@ public:
     // (unnamed) conversion to int.  To avoid silent conversions like these
     // we provide (only) a named conversion.
     friend constexpr TERUnderlyingType
-    TERtoInt(TERSubset v)
+    teRtoInt(TERSubset v)
     {
         return v.code_;
     }
@@ -497,28 +497,28 @@ public:
 template <typename L, typename R>
 constexpr auto
 operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
+    std::is_same_v<decltype(teRtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
-    return TERtoInt(lhs) == TERtoInt(rhs);
+    return teRtoInt(lhs) == TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
 operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
+    std::is_same_v<decltype(teRtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
-    return TERtoInt(lhs) != TERtoInt(rhs);
+    return teRtoInt(lhs) != TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
 operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
+    std::is_same_v<decltype(teRtoInt(lhs)), int> && std::is_same_v<decltype(teRtoInt(rhs)), int>,
     bool>
 {
-    return TERtoInt(lhs) < TERtoInt(rhs);
+    return teRtoInt(lhs) < teRtoInt(rhs);
 }
 
 template <typename L, typename R>
@@ -542,10 +542,10 @@ operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator>=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
+    std::is_same_v<decltype(teRtoInt(lhs)), int> && std::is_same_v<decltype(teRtoInt(rhs)), int>,
     bool>
 {
-    return TERtoInt(lhs) >= TERtoInt(rhs);
+    return teRtoInt(lhs) >= teRtoInt(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -630,25 +630,25 @@ using TER = TERSubset<CanCvtToTER>;
 inline bool
 isTelLocal(TER x) noexcept
 {
-    return (x >= telLOCAL_ERROR && x < temMALFORMED);
+    return (x >= TelLocalError && x < TemMalformed);
 }
 
 inline bool
 isTemMalformed(TER x) noexcept
 {
-    return (x >= temMALFORMED && x < tefFAILURE);
+    return (x >= TemMalformed && x < TefFailure);
 }
 
 inline bool
 isTefFailure(TER x) noexcept
 {
-    return (x >= tefFAILURE && x < terRETRY);
+    return (x >= TefFailure && x < TerRetry);
 }
 
 inline bool
 isTerRetry(TER x) noexcept
 {
-    return (x >= terRETRY && x < tesSUCCESS);
+    return (x >= TerRetry && x < TesSuccess);
 }
 
 inline bool
@@ -661,7 +661,7 @@ isTesSuccess(TER x) noexcept
 inline bool
 isTecClaim(TER x) noexcept
 {
-    return ((x) >= tecCLAIM);
+    return ((x) >= TecClaim);
 }
 
 std::unordered_map<TERUnderlyingType, std::pair<char const* const, char const* const>> const&

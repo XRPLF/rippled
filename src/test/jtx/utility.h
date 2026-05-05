@@ -11,10 +11,10 @@
 namespace xrpl::test::jtx {
 
 /** Thrown when parse fails. */
-struct parse_error : std::logic_error
+struct ParseError : std::logic_error
 {
     template <class String>
-    explicit parse_error(String const& s) : logic_error(s)
+    explicit ParseError(String const& s) : logic_error(s)
     {
     }
 };

@@ -16,10 +16,10 @@ namespace xrpl {
 
 class STPathElement final : public CountedObject<STPathElement>
 {
-    unsigned int mType;
-    AccountID mAccountID;
-    PathAsset mAssetID;
-    AccountID mIssuerID;
+    unsigned int mType_;
+    AccountID mAccountID_;
+    PathAsset mAssetID_;
+    AccountID mIssuerID_;
 
     bool is_offer_;
     std::size_t hash_value_;
@@ -28,14 +28,14 @@ public:
     // Bitwise values (typeCurrency | typeMPT)
     // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum Type {
-        typeNone = 0x00,
-        typeAccount = 0x01,   // Rippling through an account (vs taking an offer).
-        typeCurrency = 0x10,  // Currency follows.
-        typeIssuer = 0x20,    // Issuer follows.
-        typeMPT = 0x40,       // MPT follows.
-        typeBoundary = 0xFF,  // Boundary between alternate paths.
-        typeAsset = typeCurrency | typeMPT,
-        typeAll = typeAccount | typeCurrency | typeIssuer | typeMPT,
+        TypeNone = 0x00,
+        TypeAccount = 0x01,   // Rippling through an account (vs taking an offer).
+        TypeCurrency = 0x10,  // Currency follows.
+        TypeIssuer = 0x20,    // Issuer follows.
+        TypeMpt = 0x40,       // MPT follows.
+        TypeBoundary = 0xFF,  // Boundary between alternate paths.
+        TypeAsset = TypeCurrency | TypeMpt,
+        TypeAll = TypeAccount | TypeCurrency | TypeIssuer | TypeMpt,
         // Combination of all types.
     };
 
@@ -113,12 +113,12 @@ public:
 
 private:
     static std::size_t
-    get_hash(STPathElement const& element);
+    getHash(STPathElement const& element);
 };
 
 class STPath final : public CountedObject<STPath>
 {
-    std::vector<STPathElement> mPath;
+    std::vector<STPathElement> mPath_;
 
 public:
     STPath() = default;
@@ -132,11 +132,11 @@ public:
     empty() const;
 
     void
-    push_back(STPathElement const& e);
+    pushBack(STPathElement const& e);
 
     template <typename... Args>
     void
-    emplace_back(Args&&... args);
+    emplaceBack(Args&&... args);
 
     [[nodiscard]] bool
     hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const;
@@ -173,7 +173,7 @@ public:
 // A set of zero or more payment paths
 class STPathSet final : public STBase, public CountedObject<STPathSet>
 {
-    std::vector<STPath> value;
+    std::vector<STPath> value_;
 
 public:
     STPathSet() = default;
@@ -218,11 +218,11 @@ public:
     empty() const;
 
     void
-    push_back(STPath const& e);
+    pushBack(STPath const& e);
 
     template <typename... Args>
     void
-    emplace_back(Args&&... args);
+    emplaceBack(Args&&... args);
 
 private:
     STBase*
@@ -235,16 +235,16 @@ private:
 
 // ------------ STPathElement ------------
 
-inline STPathElement::STPathElement() : mType(typeNone), is_offer_(true)
+inline STPathElement::STPathElement() : mType_(TypeNone), is_offer_(true)
 {
-    hash_value_ = get_hash(*this);
+    hash_value_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
     std::optional<AccountID> const& account,
     std::optional<PathAsset> const& asset,
     std::optional<AccountID> const& issuer)
-    : mType(typeNone)
+    : mType_(TypeNone)
 {
     if (!account)
     {
@@ -253,26 +253,27 @@ inline STPathElement::STPathElement(
     else
     {
         is_offer_ = false;
-        mAccountID = *account;
-        mType |= typeAccount;
+        mAccountID_ = *account;
+        mType_ |= TypeAccount;
         XRPL_ASSERT(
-            mAccountID != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
+            mAccountID_ != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
     }
 
     if (asset)
     {
-        mAssetID = *asset;
-        mType |= mAssetID.holds<Currency>() ? typeCurrency : typeMPT;
+        mAssetID_ = *asset;
+        mType_ |= mAssetID_.holds<Currency>() ? TypeCurrency : TypeMpt;
     }
 
     if (issuer)
     {
-        mIssuerID = *issuer;
-        mType |= typeIssuer;
-        XRPL_ASSERT(mIssuerID != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
+        mIssuerID_ = *issuer;
+        mType_ |= TypeIssuer;
+        XRPL_ASSERT(
+            mIssuerID_ != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
     }
 
-    hash_value_ = get_hash(*this);
+    hash_value_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
@@ -280,22 +281,22 @@ inline STPathElement::STPathElement(
     PathAsset const& asset,
     AccountID const& issuer,
     bool forceAsset)
-    : mType(typeNone)
-    , mAccountID(account)
-    , mAssetID(asset)
-    , mIssuerID(issuer)
-    , is_offer_(isXRP(mAccountID))
+    : mType_(TypeNone)
+    , mAccountID_(account)
+    , mAssetID_(asset)
+    , mIssuerID_(issuer)
+    , is_offer_(isXRP(mAccountID_))
 {
     if (!is_offer_)
-        mType |= typeAccount;
+        mType_ |= TypeAccount;
 
-    if (forceAsset || !isXRP(mAssetID))
-        mType |= asset.holds<Currency>() ? typeCurrency : typeMPT;
+    if (forceAsset || !isXRP(mAssetID_))
+        mType_ |= asset.holds<Currency>() ? TypeCurrency : TypeMpt;
 
     if (!isXRP(issuer))
-        mType |= typeIssuer;
+        mType_ |= TypeIssuer;
 
-    hash_value_ = get_hash(*this);
+    hash_value_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
@@ -303,24 +304,24 @@ inline STPathElement::STPathElement(
     AccountID const& account,
     PathAsset const& asset,
     AccountID const& issuer)
-    : mType(uType)
-    , mAccountID(account)
-    , mAssetID(asset)
-    , mIssuerID(issuer)
-    , is_offer_(isXRP(mAccountID))
+    : mType_(uType)
+    , mAccountID_(account)
+    , mAssetID_(asset)
+    , mIssuerID_(issuer)
+    , is_offer_(isXRP(mAccountID_))
 {
     // uType could be assetType; i.e. either Currency or MPTID.
     // Get the actual type.
-    mAssetID.visit(
-        [&](Currency const&) { mType = mType & (~Type::typeMPT); },
-        [&](MPTID const&) { mType = mType & (~Type::typeCurrency); });
-    hash_value_ = get_hash(*this);
+    mAssetID_.visit(
+        [&](Currency const&) { mType_ = mType_ & (~Type::TypeMpt); },
+        [&](MPTID const&) { mType_ = mType_ & (~Type::TypeCurrency); });
+    hash_value_ = getHash(*this);
 }
 
 inline auto
 STPathElement::getNodeType() const
 {
-    return mType;
+    return mType_;
 }
 
 inline bool
@@ -338,37 +339,37 @@ STPathElement::isAccount() const
 inline bool
 STPathElement::isType(Type const& pe) const
 {
-    return (mType & pe) != 0u;
+    return (mType_ & pe) != 0u;
 }
 
 inline bool
 STPathElement::hasIssuer() const
 {
-    return isType(STPathElement::typeIssuer);
+    return isType(STPathElement::TypeIssuer);
 }
 
 inline bool
 STPathElement::hasCurrency() const
 {
-    return isType(STPathElement::typeCurrency);
+    return isType(STPathElement::TypeCurrency);
 }
 
 inline bool
 STPathElement::hasMPT() const
 {
-    return isType(STPathElement::typeMPT);
+    return isType(STPathElement::TypeMpt);
 }
 
 inline bool
 STPathElement::hasAsset() const
 {
-    return isType(STPathElement::typeAsset);
+    return isType(STPathElement::TypeAsset);
 }
 
 inline bool
 STPathElement::isNone() const
 {
-    return getNodeType() == STPathElement::typeNone;
+    return getNodeType() == STPathElement::TypeNone;
 }
 
 // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
@@ -376,38 +377,38 @@ STPathElement::isNone() const
 inline AccountID const&
 STPathElement::getAccountID() const
 {
-    return mAccountID;
+    return mAccountID_;
 }
 
 inline PathAsset const&
 STPathElement::getPathAsset() const
 {
-    return mAssetID;
+    return mAssetID_;
 }
 
 inline Currency const&
 STPathElement::getCurrency() const
 {
-    return mAssetID.get<Currency>();
+    return mAssetID_.get<Currency>();
 }
 
 inline MPTID const&
 STPathElement::getMPTID() const
 {
-    return mAssetID.get<MPTID>();
+    return mAssetID_.get<MPTID>();
 }
 
 inline AccountID const&
 STPathElement::getIssuerID() const
 {
-    return mIssuerID;
+    return mIssuerID_;
 }
 
 inline bool
 STPathElement::operator==(STPathElement const& t) const
 {
-    return (mType & typeAccount) == (t.mType & typeAccount) && hash_value_ == t.hash_value_ &&
-        mAccountID == t.mAccountID && mAssetID == t.mAssetID && mIssuerID == t.mIssuerID;
+    return (mType_ & TypeAccount) == (t.mType_ & TypeAccount) && hash_value_ == t.hash_value_ &&
+        mAccountID_ == t.mAccountID_ && mAssetID_ == t.mAssetID_ && mIssuerID_ == t.mIssuerID_;
 }
 
 inline bool
@@ -418,81 +419,81 @@ STPathElement::operator!=(STPathElement const& t) const
 
 // ------------ STPath ------------
 
-inline STPath::STPath(std::vector<STPathElement> p) : mPath(std::move(p))
+inline STPath::STPath(std::vector<STPathElement> p) : mPath_(std::move(p))
 {
 }
 
 inline std::vector<STPathElement>::size_type
 STPath::size() const
 {
-    return mPath.size();
+    return mPath_.size();
 }
 
 inline bool
 STPath::empty() const
 {
-    return mPath.empty();
+    return mPath_.empty();
 }
 
 inline void
-STPath::push_back(STPathElement const& e)
+STPath::pushBack(STPathElement const& e)
 {
-    mPath.push_back(e);
+    mPath_.push_back(e);
 }
 
 template <typename... Args>
 inline void
-STPath::emplace_back(Args&&... args)
+STPath::emplaceBack(Args&&... args)
 {
-    mPath.emplace_back(std::forward<Args>(args)...);
+    mPath_.emplace_back(std::forward<Args>(args)...);
 }
 
 inline std::vector<STPathElement>::const_iterator
 STPath::begin() const
 {
-    return mPath.begin();
+    return mPath_.begin();
 }
 
 inline std::vector<STPathElement>::const_iterator
 STPath::end() const
 {
-    return mPath.end();
+    return mPath_.end();
 }
 
 inline bool
 STPath::operator==(STPath const& t) const
 {
-    return mPath == t.mPath;
+    return mPath_ == t.mPath_;
 }
 
 inline std::vector<STPathElement>::const_reference
 STPath::back() const
 {
-    return mPath.back();
+    return mPath_.back();
 }
 
 inline std::vector<STPathElement>::const_reference
 STPath::front() const
 {
-    return mPath.front();
+    return mPath_.front();
 }
 
 inline STPathElement&
 STPath::operator[](int i)
 {
-    return mPath[i];
+    return mPath_[i];
 }
 
 inline STPathElement const&
 STPath::operator[](int i) const
 {
-    return mPath[i];
+    return mPath_[i];
 }
 
 inline void
 STPath::reserve(size_t s)
 {
-    mPath.reserve(s);
+    mPath_.reserve(s);
 }
 
 // ------------ STPathSet ------------
@@ -505,50 +506,50 @@ inline STPathSet::STPathSet(SField const& n) : STBase(n)
 inline std::vector<STPath>::const_reference
 STPathSet::operator[](std::vector<STPath>::size_type n) const
 {
-    return value[n];
+    return value_[n];
 }
 
 inline std::vector<STPath>::reference
 STPathSet::operator[](std::vector<STPath>::size_type n)
 {
-    return value[n];
+    return value_[n];
 }
 
 inline std::vector<STPath>::const_iterator
 STPathSet::begin() const
 {
-    return value.begin();
+    return value_.begin();
 }
 
 inline std::vector<STPath>::const_iterator
 STPathSet::end() const
 {
-    return value.end();
+    return value_.end();
 }
 
 inline std::vector<STPath>::size_type
 STPathSet::size() const
 {
-    return value.size();
+    return value_.size();
 }
 
 inline bool
 STPathSet::empty() const
 {
-    return value.empty();
+    return value_.empty();
 }
 
 inline void
-STPathSet::push_back(STPath const& e)
+STPathSet::pushBack(STPath const& e)
 {
-    value.push_back(e);
+    value_.push_back(e);
 }
 
 template <typename... Args>
 inline void
-STPathSet::emplace_back(Args&&... args)
+STPathSet::emplaceBack(Args&&... args)
 {
-    value.emplace_back(std::forward<Args>(args)...);
+    value_.emplace_back(std::forward<Args>(args)...);
 }
 
 }  // namespace xrpl

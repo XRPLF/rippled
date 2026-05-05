@@ -93,7 +93,7 @@ namespace detail {
 // The slab cutoffs and the number of megabytes per allocation are customized
 // based on the number of objects of each size we expect to need at any point
 // in time and with an eye to minimize the number of slack bytes in a block.
-inline SlabAllocatorSet<SHAMapItem> slabber({
+inline SlabAllocatorSet<SHAMapItem> gSlabber({
     {  128, megabytes(std::size_t(60)) },
     {  192, megabytes(std::size_t(46)) },
     {  272, megabytes(std::size_t(60)) },
@@ -130,7 +130,7 @@ intrusive_ptr_release(SHAMapItem const* x)
 
         // If the slabber doesn't claim this pointer, it was allocated
         // manually, so we free it manually.
-        if (!detail::slabber.deallocate(const_cast<std::uint8_t*>(p)))
+        if (!detail::gSlabber.deallocate(const_cast<std::uint8_t*>(p)))
             delete[] p;
     }
 }
@@ -142,7 +142,7 @@ make_shamapitem(uint256 const& tag, Slice data)
         data.size() <= megabytes<std::size_t>(16), "xrpl::make_shamapitem : maximum input size");
 
     // NOLINTNEXTLINE(misc-const-correctness)
-    std::uint8_t* raw = detail::slabber.allocate(data.size());
+    std::uint8_t* raw = detail::gSlabber.allocate(data.size());
 
     // If we can't grab memory from the slab allocators, we fall back to
     // the standard library and try to grab a precisely-sized memory block:

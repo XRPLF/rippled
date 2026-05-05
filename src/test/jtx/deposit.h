@@ -26,7 +26,7 @@ struct AuthorizeCredentials
     toJson() const
     {
         Json::Value jv;
-        jv[jss::Issuer] = issuer.human();
+        jv[jss::kISSUER] = issuer.human();
         jv[sfCredentialType.jsonName] = strHex(credType);
         return jv;
     }
@@ -36,8 +36,8 @@ struct AuthorizeCredentials
     toLEJson() const
     {
         Json::Value jv;
-        jv[jss::issuer] = issuer.human();
-        jv[jss::credential_type] = strHex(credType);
+        jv[jss::kISSUER] = issuer.human();
+        jv[jss::kCREDENTIAL_TYPE] = strHex(credType);
         return jv;
     }
 };

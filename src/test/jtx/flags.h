@@ -11,59 +11,59 @@
 namespace xrpl {
 namespace detail {
 
-class flags_helper
+class FlagsHelper
 {
 protected:
     std::uint32_t mask_{0};
 
 private:
     void
-    set_args(std::uint32_t flag)
+    setArgs(std::uint32_t flag)
     {
         switch (flag)
         {
-            case asfRequireDest:
-                mask_ |= lsfRequireDestTag;
+            case kASF_REQUIRE_DEST:
+                mask_ |= LsfRequireDestTag;
                 break;
-            case asfRequireAuth:
-                mask_ |= lsfRequireAuth;
+            case kASF_REQUIRE_AUTH:
+                mask_ |= LsfRequireAuth;
                 break;
-            case asfDisallowXRP:
-                mask_ |= lsfDisallowXRP;
+            case kASF_DISALLOW_XRP:
+                mask_ |= LsfDisallowXrp;
                 break;
-            case asfDisableMaster:
-                mask_ |= lsfDisableMaster;
+            case kASF_DISABLE_MASTER:
+                mask_ |= LsfDisableMaster;
                 break;
             // case asfAccountTxnID: // ???
-            case asfNoFreeze:
-                mask_ |= lsfNoFreeze;
+            case kASF_NO_FREEZE:
+                mask_ |= LsfNoFreeze;
                 break;
-            case asfGlobalFreeze:
-                mask_ |= lsfGlobalFreeze;
+            case kASF_GLOBAL_FREEZE:
+                mask_ |= LsfGlobalFreeze;
                 break;
-            case asfDefaultRipple:
-                mask_ |= lsfDefaultRipple;
+            case kASF_DEFAULT_RIPPLE:
+                mask_ |= LsfDefaultRipple;
                 break;
-            case asfDepositAuth:
-                mask_ |= lsfDepositAuth;
+            case kASF_DEPOSIT_AUTH:
+                mask_ |= LsfDepositAuth;
                 break;
-            case asfAllowTrustLineClawback:
-                mask_ |= lsfAllowTrustLineClawback;
+            case kASF_ALLOW_TRUST_LINE_CLAWBACK:
+                mask_ |= LsfAllowTrustLineClawback;
                 break;
-            case asfDisallowIncomingCheck:
-                mask_ |= lsfDisallowIncomingCheck;
+            case kASF_DISALLOW_INCOMING_CHECK:
+                mask_ |= LsfDisallowIncomingCheck;
                 break;
-            case asfDisallowIncomingNFTokenOffer:
-                mask_ |= lsfDisallowIncomingNFTokenOffer;
+            case kASF_DISALLOW_INCOMING_NF_TOKEN_OFFER:
+                mask_ |= LsfDisallowIncomingNfTokenOffer;
                 break;
-            case asfDisallowIncomingPayChan:
-                mask_ |= lsfDisallowIncomingPayChan;
+            case kASF_DISALLOW_INCOMING_PAY_CHAN:
+                mask_ |= LsfDisallowIncomingPayChan;
                 break;
-            case asfDisallowIncomingTrustline:
-                mask_ |= lsfDisallowIncomingTrustline;
+            case kASF_DISALLOW_INCOMING_TRUSTLINE:
+                mask_ |= LsfDisallowIncomingTrustline;
                 break;
-            case asfAllowTrustLineLocking:
-                mask_ |= lsfAllowTrustLineLocking;
+            case kASF_ALLOW_TRUST_LINE_LOCKING:
+                mask_ |= LsfAllowTrustLineLocking;
                 break;
             default:
                 Throw<std::runtime_error>("unknown flag");
@@ -72,16 +72,16 @@ private:
 
     template <class Flag, class... Args>
     void
-    set_args(std::uint32_t flag, Args... args)
+    setArgs(std::uint32_t flag, Args... args)
     {
-        set_args(flag);
+        setArgs(flag);
         if constexpr (sizeof...(args))
             set_args(args...);
     }
 
 protected:
     template <class... Args>
-    flags_helper(Args... args)
+    FlagsHelper(Args... args)
     {
         set_args(args...);
     }
@@ -105,14 +105,14 @@ fclear(Account const& account, std::uint32_t off)
 }
 
 /** Match set account flags */
-class flags : private xrpl::detail::flags_helper
+class Flags : private xrpl::detail::FlagsHelper
 {
 private:
     Account account_;
 
 public:
     template <class... Args>
-    flags(Account account, Args... args) : flags_helper(args...), account_(std::move(account))
+    Flags(Account account, Args... args) : FlagsHelper(args...), account_(std::move(account))
     {
     }
 
@@ -121,14 +121,14 @@ public:
 };
 
 /** Match clear account flags */
-class nflags : private xrpl::detail::flags_helper
+class Nflags : private xrpl::detail::FlagsHelper
 {
 private:
     Account account_;
 
 public:
     template <class... Args>
-    nflags(Account account, Args... args) : flags_helper(args...), account_(std::move(account))
+    Nflags(Account account, Args... args) : FlagsHelper(args...), account_(std::move(account))
     {
     }
 

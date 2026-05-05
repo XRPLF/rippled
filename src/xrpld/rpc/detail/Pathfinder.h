@@ -61,12 +61,12 @@ public:
         std::function<bool(void)> const& continueCallback = {});
 
     enum class NodeType {
-        nt_SOURCE,      // The source account: with an issuer account, if needed.
-        nt_ACCOUNTS,    // Accounts that connect from this source/currency.
-        nt_BOOKS,       // Order books that connect to this currency.
-        nt_XRP_BOOK,    // The order book from this currency to XRP.
-        nt_DEST_BOOK,   // The order book to the destination currency/issuer.
-        nt_DESTINATION  // The destination account only.
+        NtSource,      // The source account: with an issuer account, if needed.
+        NtAccounts,    // Accounts that connect from this source/currency.
+        NtBooks,       // Order books that connect to this currency.
+        NtXrpBook,     // The order book from this currency to XRP.
+        NtDestBook,    // The order book to the destination currency/issuer.
+        NtDestination  // The destination account only.
     };
 
     // The PathType is a list of the NodeTypes for a path.
@@ -75,11 +75,11 @@ public:
     // PaymentType represents the types of the source and destination currencies
     // in a path request.
     enum class PaymentType {
-        pt_XRP_to_XRP,
-        pt_XRP_to_nonXRP,
-        pt_nonXRP_to_XRP,
-        pt_nonXRP_to_same,   // Destination currency is the same as source.
-        pt_nonXRP_to_nonXRP  // Destination currency is NOT the same as source.
+        PtXrpToXrp,
+        PtXrpToNonXrp,
+        PtNonXrpToXrp,
+        PtNonXrpToSame,   // Destination currency is the same as source.
+        PtNonXrpToNonXrp  // Destination currency is NOT the same as source.
     };
 
     struct PathRank
@@ -168,47 +168,47 @@ private:
         std::vector<PathRank>& rankedPaths,
         std::function<bool(void)> const& continueCallback);
 
-    AccountID mSrcAccount;
-    AccountID mDstAccount;
-    AccountID mEffectiveDst;  // The account the paths need to end at
-    STAmount mDstAmount;
-    PathAsset mSrcPathAsset;
-    std::optional<AccountID> mSrcIssuer;
-    STAmount mSrcAmount;
+    AccountID mSrcAccount_;
+    AccountID mDstAccount_;
+    AccountID mEffectiveDst_;  // The account the paths need to end at
+    STAmount mDstAmount_;
+    PathAsset mSrcPathAsset_;
+    std::optional<AccountID> mSrcIssuer_;
+    STAmount mSrcAmount_;
     /** The amount remaining from mSrcAccount after the default liquidity has
         been removed. */
-    STAmount mRemainingAmount;
+    STAmount mRemainingAmount_;
     bool convert_all_;
-    std::optional<uint256> mDomain;
+    std::optional<uint256> mDomain_;
 
-    std::shared_ptr<ReadView const> mLedger;
-    std::unique_ptr<LoadEvent> m_loadEvent;
-    std::shared_ptr<AssetCache> mAssetCache;
+    std::shared_ptr<ReadView const> mLedger_;
+    std::unique_ptr<LoadEvent> m_loadEvent_;
+    std::shared_ptr<AssetCache> mAssetCache_;
 
-    STPathElement mSource;
-    STPathSet mCompletePaths;
-    std::vector<PathRank> mPathRanks;
-    std::map<PathType, STPathSet> mPaths;
+    STPathElement mSource_;
+    STPathSet mCompletePaths_;
+    std::vector<PathRank> mPathRanks_;
+    std::map<PathType, STPathSet> mPaths_;
 
-    hash_map<Asset, int> mPathsOutCountMap;
+    hash_map<Asset, int> mPathsOutCountMap_;
 
     Application& app_;
     beast::Journal const j_;
 
     // Add ripple paths
-    static std::uint32_t const afADD_ACCOUNTS = 0x001;
+    static std::uint32_t const kAF_ADD_ACCOUNTS = 0x001;
 
     // Add order books
-    static std::uint32_t const afADD_BOOKS = 0x002;
+    static std::uint32_t const kAF_ADD_BOOKS = 0x002;
 
     // Add order book to XRP only
-    static std::uint32_t const afOB_XRP = 0x010;
+    static std::uint32_t const kAF_OB_XRP = 0x010;
 
     // Must link to destination currency
-    static std::uint32_t const afOB_LAST = 0x040;
+    static std::uint32_t const kAF_OB_LAST = 0x040;
 
     // Destination account only
-    static std::uint32_t const afAC_LAST = 0x080;
+    static std::uint32_t const kAF_AC_LAST = 0x080;
 };
 
 }  // namespace xrpl

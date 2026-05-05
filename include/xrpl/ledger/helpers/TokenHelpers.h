@@ -21,13 +21,13 @@ namespace xrpl {
 //------------------------------------------------------------------------------
 
 /** Controls the treatment of frozen account balances */
-enum class FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
+enum class FreezeHandling { FhIgnoreFreeze, FhZeroIfFrozen };
 
 /** Controls the treatment of unauthorized MPT balances */
-enum class AuthHandling { ahIGNORE_AUTH, ahZERO_IF_UNAUTHORIZED };
+enum class AuthHandling { AhIgnoreAuth, AhZeroIfUnauthorized };
 
 /** Controls whether to include the account's full spendable balance */
-enum class SpendableHandling { shSIMPLE_BALANCE, shFULL_BALANCE };
+enum class SpendableHandling { ShSimpleBalance, ShFullBalance };
 
 enum class WaiveTransferFee : bool { No = false, Yes };
 
@@ -135,7 +135,7 @@ accountHolds(
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
     beast::Journal j,
-    SpendableHandling includeFullBalance = SpendableHandling::shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::ShSimpleBalance);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -144,7 +144,7 @@ accountHolds(
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
     beast::Journal j,
-    SpendableHandling includeFullBalance = SpendableHandling::shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::ShSimpleBalance);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -154,7 +154,7 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j,
-    SpendableHandling includeFullBalance = SpendableHandling::shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::ShSimpleBalance);
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -164,7 +164,7 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j,
-    SpendableHandling includeFullBalance = SpendableHandling::shSIMPLE_BALANCE);
+    SpendableHandling includeFullBalance = SpendableHandling::ShSimpleBalance);
 
 // Returns the amount an account can spend of the currency type saDefault, or
 // returns saDefault if this account is the issuer of the currency in

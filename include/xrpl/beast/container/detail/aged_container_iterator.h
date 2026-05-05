@@ -12,13 +12,13 @@ class aged_ordered_container;
 namespace detail {
 
 // If Iterator is SCARY then this iterator will be as well.
-template <bool is_const, class Iterator>
-class aged_container_iterator
+template <bool IsConst, class Iterator>
+class AgedContainerIterator
 {
 public:
     using iterator_category = typename std::iterator_traits<Iterator>::iterator_category;
     using value_type = std::conditional_t<
-        is_const,
+        IsConst,
         typename Iterator::value_type::stashed::value_type const,
         typename Iterator::value_type::stashed::value_type>;
     using difference_type = typename std::iterator_traits<Iterator>::difference_type;
@@ -26,99 +26,98 @@ public:
     using reference = value_type&;
     using time_point = typename Iterator::value_type::stashed::time_point;
 
-    aged_container_iterator() = default;
+    AgedContainerIterator() = default;
 
     // Disable constructing a const_iterator from a non-const_iterator.
     // Converting between reverse and non-reverse iterators should be explicit.
     template <
-        bool other_is_const,
+        bool OtherIsConst,
         class OtherIterator,
         class = std::enable_if_t<
-            (!other_is_const || is_const) &&
+            (!OtherIsConst || IsConst) &&
             !static_cast<bool>(std::is_same_v<Iterator, OtherIterator>)>>
-    explicit aged_container_iterator(
-        aged_container_iterator<other_is_const, OtherIterator> const& other)
-        : m_iter(other.m_iter)
+    explicit AgedContainerIterator(AgedContainerIterator<OtherIsConst, OtherIterator> const& other)
+        : m_iter_(other.m_iter)
     {
     }
 
     // Disable constructing a const_iterator from a non-const_iterator.
-    template <bool other_is_const, class = std::enable_if_t<!other_is_const || is_const>>
-    aged_container_iterator(aged_container_iterator<other_is_const, Iterator> const& other)
-        : m_iter(other.m_iter)
+    template <bool OtherIsConst, class = std::enable_if_t<!OtherIsConst || IsConst>>
+    AgedContainerIterator(AgedContainerIterator<OtherIsConst, Iterator> const& other)
+        : m_iter_(other.m_iter)
     {
     }
 
     // Disable assigning a const_iterator to a non-const iterator
-    template <bool other_is_const, class OtherIterator>
+    template <bool OtherIsConst, class OtherIterator>
     auto
-    operator=(aged_container_iterator<other_is_const, OtherIterator> const& other)
-        -> std::enable_if_t<!other_is_const || is_const, aged_container_iterator&>
+    operator=(AgedContainerIterator<OtherIsConst, OtherIterator> const& other)
+        -> std::enable_if_t<!OtherIsConst || IsConst, AgedContainerIterator&>
     {
-        m_iter = other.m_iter;
+        m_iter_ = other.m_iter;
         return *this;
     }
 
-    template <bool other_is_const, class OtherIterator>
+    template <bool OtherIsConst, class OtherIterator>
     bool
-    operator==(aged_container_iterator<other_is_const, OtherIterator> const& other) const
+    operator==(AgedContainerIterator<OtherIsConst, OtherIterator> const& other) const
     {
-        return m_iter == other.m_iter;
+        return m_iter_ == other.m_iter;
     }
 
-    template <bool other_is_const, class OtherIterator>
+    template <bool OtherIsConst, class OtherIterator>
     bool
-    operator!=(aged_container_iterator<other_is_const, OtherIterator> const& other) const
+    operator!=(AgedContainerIterator<OtherIsConst, OtherIterator> const& other) const
     {
-        return m_iter != other.m_iter;
+        return m_iter_ != other.m_iter;
     }
 
-    aged_container_iterator&
+    AgedContainerIterator&
     operator++()
     {
-        ++m_iter;
+        ++m_iter_;
         return *this;
     }
 
-    aged_container_iterator
+    AgedContainerIterator
     operator++(int)
     {
-        aged_container_iterator const prev(*this);
-        ++m_iter;
+        AgedContainerIterator const prev(*this);
+        ++m_iter_;
         return prev;
     }
 
-    aged_container_iterator&
+    AgedContainerIterator&
     operator--()
     {
-        --m_iter;
+        --m_iter_;
         return *this;
     }
 
-    aged_container_iterator
+    AgedContainerIterator
     operator--(int)
     {
-        aged_container_iterator const prev(*this);
-        --m_iter;
+        AgedContainerIterator const prev(*this);
+        --m_iter_;
         return prev;
     }
 
     reference
     operator*() const
     {
-        return m_iter->value;
+        return m_iter_->value;
     }
 
     pointer
     operator->() const
     {
-        return &m_iter->value;
+        return &m_iter_->value;
     }
 
     [[nodiscard]] time_point const&
     when() const
     {
-        return m_iter->when;
+        return m_iter_->when;
     }
 
 private:
@@ -132,17 +131,17 @@ private:
     friend class aged_container_iterator;
 
     template <class OtherIterator>
-    aged_container_iterator(OtherIterator iter) : m_iter(std::move(iter))
+    AgedContainerIterator(OtherIterator iter) : m_iter_(std::move(iter))
     {
     }
 
     [[nodiscard]] Iterator const&
     iterator() const
     {
-        return m_iter;
+        return m_iter_;
     }
 
-    Iterator m_iter;
+    Iterator m_iter_;
 };
 
 }  // namespace detail

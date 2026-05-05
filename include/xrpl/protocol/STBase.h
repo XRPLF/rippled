@@ -20,14 +20,14 @@ struct JsonOptions
 
     // Bitwise flags with operator~
     // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum values : underlying_t {
+    enum Values : underlying_t {
         // clang-format off
-        none                        = 0b0000'0000,
-        include_date                = 0b0000'0001,
-        disable_API_prior_V2        = 0b0000'0010,
+        None                        = 0b0000'0000,
+        IncludeDate                = 0b0000'0001,
+        DisableApiPriorV2        = 0b0000'0010,
 
         // IMPORTANT `_all` must be union of all of the above; see also operator~
-        _all                        = 0b0000'0011
+        All                        = 0b0000'0011
         // clang-format on
     };
 
@@ -69,18 +69,18 @@ struct JsonOptions
     [[nodiscard]] constexpr JsonOptions friend
     operator~(JsonOptions v) noexcept
     {
-        return {~v.value & static_cast<underlying_t>(_all)};
+        return {~v.value & static_cast<underlying_t>(All)};
     }
 };
 
 template <typename T>
     requires requires(T const& t) {
-        { t.getJson(JsonOptions::none) } -> std::convertible_to<Json::Value>;
+        { t.getJson(JsonOptions::None) } -> std::convertible_to<Json::Value>;
     }
 Json::Value
 to_json(T const& t)
 {
-    return t.getJson(JsonOptions::none);
+    return t.getJson(JsonOptions::None);
 }
 
 namespace detail {
@@ -115,7 +115,7 @@ class STVar;
 */
 class STBase
 {
-    SField const* fName;
+    SField const* fName_;
 
 public:
     virtual ~STBase() = default;
@@ -148,7 +148,7 @@ public:
     [[nodiscard]] virtual std::string
     getText() const;
 
-    [[nodiscard]] virtual Json::Value getJson(JsonOptions = JsonOptions::none) const;
+    [[nodiscard]] virtual Json::Value getJson(JsonOptions = JsonOptions::None) const;
 
     virtual void
     add(Serializer& s) const;

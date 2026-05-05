@@ -16,7 +16,7 @@ class STBitString final : public STBase, public CountedObject<STBitString<Bits>>
     static_assert(Bits > 0, "Number of bits must be positive");
 
 public:
-    using value_type = base_uint<Bits>;
+    using value_type = BaseUint<Bits>;
 
 private:
     value_type value_{};
@@ -46,7 +46,7 @@ public:
 
     template <typename Tag>
     void
-    setValue(base_uint<Bits, Tag> const& v);
+    setValue(BaseUint<Bits, Tag> const& v);
 
     [[nodiscard]] value_type const&
     value() const;
@@ -106,28 +106,28 @@ template <>
 inline SerializedTypeID
 STUInt128::getSType() const
 {
-    return STI_UINT128;
+    return StiUinT128;
 }
 
 template <>
 inline SerializedTypeID
 STUInt160::getSType() const
 {
-    return STI_UINT160;
+    return StiUinT160;
 }
 
 template <>
 inline SerializedTypeID
 STUInt192::getSType() const
 {
-    return STI_UINT192;
+    return StiUinT192;
 }
 
 template <>
 inline SerializedTypeID
 STUInt256::getSType() const
 {
-    return STI_UINT256;
+    return StiUinT256;
 }
 
 template <int Bits>
@@ -157,7 +157,7 @@ STBitString<Bits>::add(Serializer& s) const
 template <int Bits>
 template <typename Tag>
 void
-STBitString<Bits>::setValue(base_uint<Bits, Tag> const& v)
+STBitString<Bits>::setValue(BaseUint<Bits, Tag> const& v)
 {
     value_ = v;
 }
@@ -180,7 +180,7 @@ template <int Bits>
 bool
 STBitString<Bits>::isDefault() const
 {
-    return value_ == beast::zero;
+    return value_ == beast::kZERO;
 }
 
 }  // namespace xrpl

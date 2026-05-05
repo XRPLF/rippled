@@ -39,45 +39,45 @@ class STCurrency;
 
 #define XMACRO(STYPE)                             \
     /* special types */                           \
-    STYPE(STI_UNKNOWN, -2)                        \
-    STYPE(STI_NOTPRESENT, 0)                      \
-    STYPE(STI_UINT16, 1)                          \
+    STYPE(StiUnknown, -2)                         \
+    STYPE(StiNotpresent, 0)                       \
+    STYPE(StiUinT16, 1)                           \
                                                   \
     /* types (common) */                          \
-    STYPE(STI_UINT32, 2)                          \
-    STYPE(STI_UINT64, 3)                          \
-    STYPE(STI_UINT128, 4)                         \
-    STYPE(STI_UINT256, 5)                         \
-    STYPE(STI_AMOUNT, 6)                          \
-    STYPE(STI_VL, 7)                              \
-    STYPE(STI_ACCOUNT, 8)                         \
-    STYPE(STI_NUMBER, 9)                          \
-    STYPE(STI_INT32, 10)                          \
-    STYPE(STI_INT64, 11)                          \
+    STYPE(StiUinT32, 2)                           \
+    STYPE(StiUinT64, 3)                           \
+    STYPE(StiUinT128, 4)                          \
+    STYPE(StiUinT256, 5)                          \
+    STYPE(StiAmount, 6)                           \
+    STYPE(StiVl, 7)                               \
+    STYPE(StiAccount, 8)                          \
+    STYPE(StiNumber, 9)                           \
+    STYPE(StiInT32, 10)                           \
+    STYPE(StiInT64, 11)                           \
                                                   \
     /* 12-13 are reserved */                      \
-    STYPE(STI_OBJECT, 14)                         \
-    STYPE(STI_ARRAY, 15)                          \
+    STYPE(StiObject, 14)                          \
+    STYPE(StiArray, 15)                           \
                                                   \
     /* types (uncommon) */                        \
-    STYPE(STI_UINT8, 16)                          \
-    STYPE(STI_UINT160, 17)                        \
-    STYPE(STI_PATHSET, 18)                        \
-    STYPE(STI_VECTOR256, 19)                      \
-    STYPE(STI_UINT96, 20)                         \
-    STYPE(STI_UINT192, 21)                        \
-    STYPE(STI_UINT384, 22)                        \
-    STYPE(STI_UINT512, 23)                        \
-    STYPE(STI_ISSUE, 24)                          \
-    STYPE(STI_XCHAIN_BRIDGE, 25)                  \
-    STYPE(STI_CURRENCY, 26)                       \
+    STYPE(StiUinT8, 16)                           \
+    STYPE(StiUinT160, 17)                         \
+    STYPE(StiPathset, 18)                         \
+    STYPE(StiVectoR256, 19)                       \
+    STYPE(StiUinT96, 20)                          \
+    STYPE(StiUinT192, 21)                         \
+    STYPE(StiUinT384, 22)                         \
+    STYPE(StiUinT512, 23)                         \
+    STYPE(StiIssue, 24)                           \
+    STYPE(StiXchainBridge, 25)                    \
+    STYPE(StiCurrency, 26)                        \
                                                   \
     /* high-level types */                        \
     /* cannot be serialized inside other types */ \
-    STYPE(STI_TRANSACTION, 10001)                 \
-    STYPE(STI_LEDGERENTRY, 10002)                 \
-    STYPE(STI_VALIDATION, 10003)                  \
-    STYPE(STI_METADATA, 10004)
+    STYPE(StiTransaction, 10001)                  \
+    STYPE(StiLedgerentry, 10002)                  \
+    STYPE(StiValidation, 10003)                   \
+    STYPE(StiMetadata, 10004)
 
 #pragma push_macro("TO_ENUM")
 #undef TO_ENUM
@@ -91,7 +91,7 @@ class STCurrency;
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SerializedTypeID { XMACRO(TO_ENUM) };
 
-static std::map<std::string, int> const sTypeMap = {XMACRO(TO_MAP)};
+static std::map<std::string, int> const kS_TYPE_MAP = {XMACRO(TO_MAP)};
 
 #undef XMACRO
 #undef TO_ENUM
@@ -104,7 +104,7 @@ static std::map<std::string, int> const sTypeMap = {XMACRO(TO_MAP)};
 inline int
 field_code(SerializedTypeID id, int index)
 {
-    return (safe_cast<int>(id) << 16) | index;
+    return (safeCast<int>(id) << 16) | index;
 }
 
 // constexpr
@@ -130,23 +130,23 @@ public:
     // Need to be named before converting
     // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
-        sMD_Never = 0x00,
-        sMD_ChangeOrig = 0x01,     // original value when it changes
-        sMD_ChangeNew = 0x02,      // new value when it changes
-        sMD_DeleteFinal = 0x04,    // final value when it is deleted
-        sMD_Create = 0x08,         // value when it's created
-        sMD_Always = 0x10,         // value when node containing it is affected at all
-        sMD_BaseTen = 0x20,        // value is treated as base 10, overriding behavior
-        sMD_PseudoAccount = 0x40,  // if this field is set in an ACCOUNT_ROOT
-                                   // _only_, then it is a pseudo-account
-        sMD_NeedsAsset = 0x80,     // This field needs to be associated with an
-                                   // asset before it is serialized as a ledger
-                                   // object. Intended for STNumber.
-        sMD_Default = sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create
+        SMdNever = 0x00,
+        SMdChangeOrig = 0x01,     // original value when it changes
+        SMdChangeNew = 0x02,      // new value when it changes
+        SMdDeleteFinal = 0x04,    // final value when it is deleted
+        SMdCreate = 0x08,         // value when it's created
+        SMdAlways = 0x10,         // value when node containing it is affected at all
+        SMdBaseTen = 0x20,        // value is treated as base 10, overriding behavior
+        SMdPseudoAccount = 0x40,  // if this field is set in an ACCOUNT_ROOT
+                                  // _only_, then it is a pseudo-account
+        SMdNeedsAsset = 0x80,     // This field needs to be associated with an
+                                  // asset before it is serialized as a ledger
+                                  // object. Intended for STNumber.
+        SMdDefault = SMdChangeOrig | SMdChangeNew | SMdDeleteFinal | SMdCreate
     };
 
-    enum class IsSigning : unsigned char { no, yes };
-    static IsSigning const notSigning = IsSigning::no;
+    enum class IsSigning : unsigned char { No, Yes };
+    static IsSigning const kNOT_SIGNING = IsSigning::No;
 
     int const fieldCode;               // (type<<16)|index
     SerializedTypeID const fieldType;  // STI_*
@@ -173,8 +173,8 @@ public:
         SerializedTypeID tid,
         int fv,
         char const* fn,
-        int meta = sMD_Default,
-        IsSigning signing = IsSigning::yes);
+        int meta = SMdDefault,
+        IsSigning signing = IsSigning::Yes);
     explicit SField(private_access_tag_t, int fc, char const* fn);
 
     static SField const&
@@ -269,7 +269,7 @@ public:
     [[nodiscard]] bool
     shouldInclude(bool withSigningField) const
     {
-        return (fieldValue < 256) && (withSigningField || (signingField == IsSigning::yes));
+        return (fieldValue < 256) && (withSigningField || (signingField == IsSigning::Yes));
     }
 
     bool
@@ -315,7 +315,7 @@ struct OptionaledField
 {
     TypedField<T> const* f;
 
-    explicit OptionaledField(TypedField<T> const& f_) : f(&f_)
+    explicit OptionaledField(TypedField<T> const& f) : f(&f)
     {
     }
 };
@@ -366,8 +366,8 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SField const sfName;
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SF_##stiSuffix const sfName;
 
-extern SField const sfInvalid;
-extern SField const sfGeneric;
+extern SField const kSF_INVALID;
+extern SField const kSF_GENERIC;
 
 #include <xrpl/protocol/detail/sfields.macro>
 

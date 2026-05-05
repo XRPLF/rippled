@@ -30,7 +30,7 @@ namespace xrpl {
  * \tparam Ret_t The return type of the closure.
  * \tparam Args_t The argument types of the closure.
  */
-template <typename Ret_t, typename... Args_t>
+template <typename RetT, typename... ArgsT>
 class ClosureCounter
 {
 private:
@@ -75,7 +75,7 @@ private:
         std::remove_reference_t<Closure> closure_{};
 
         static_assert(
-            std::is_same_v<decltype(closure_(std::declval<Args_t>()...)), Ret_t>,
+            std::is_same_v<decltype(closure_(std::declval<ArgsT>()...)), RetT>,
             "Closure arguments don't match ClosureCounter Ret_t or Args_t");
 
     public:
@@ -113,10 +113,10 @@ private:
         // Note that Args_t is not deduced, it is explicit.  So Args_t&&
         // would be an rvalue reference, not a forwarding reference.  We
         // want to forward exactly what the user declared.
-        Ret_t
-        operator()(Args_t... args)
+        RetT
+        operator()(ArgsT... args)
         {
-            return closure_(std::forward<Args_t>(args)...);
+            return closure_(std::forward<ArgsT>(args)...);
         }
     };
 

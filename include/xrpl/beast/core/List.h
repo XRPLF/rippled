@@ -45,8 +45,8 @@ class ListNode
     template <typename>
     friend class ListIterator;
 
-    ListNode* m_next = nullptr;
-    ListNode* m_prev = nullptr;
+    ListNode* m_next_ = nullptr;
+    ListNode* m_prev_ = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -62,12 +62,12 @@ public:
     using reference = value_type&;
     using size_type = std::size_t;
 
-    ListIterator(N* node = nullptr) noexcept : m_node(node)
+    ListIterator(N* node = nullptr) noexcept : m_node_(node)
     {
     }
 
     template <typename M>
-    ListIterator(ListIterator<M> const& other) noexcept : m_node(other.m_node)
+    ListIterator(ListIterator<M> const& other) noexcept : m_node_(other.m_node)
     {
     }
 
@@ -75,7 +75,7 @@ public:
     bool
     operator==(ListIterator<M> const& other) const noexcept
     {
-        return m_node == other.m_node;
+        return m_node_ == other.m_node;
     }
 
     template <typename M>
@@ -131,22 +131,22 @@ private:
     [[nodiscard]] reference
     dereference() const noexcept
     {
-        return static_cast<reference>(*m_node);
+        return static_cast<reference>(*m_node_);
     }
 
     void
     increment() noexcept
     {
-        m_node = m_node->m_next;
+        m_node_ = m_node_->m_next;
     }
 
     void
     decrement() noexcept
     {
-        m_node = m_node->m_prev;
+        m_node_ = m_node_->m_prev;
     }
 
-    N* m_node;
+    N* m_node_;
 };
 
 }  // namespace detail
@@ -275,8 +275,8 @@ public:
     /** Create an empty list. */
     List()
     {
-        m_head.m_prev = nullptr;  // identifies the head
-        m_tail.m_next = nullptr;  // identifies the tail
+        m_head_.m_prev = nullptr;  // identifies the head
+        m_tail_.m_next = nullptr;  // identifies the tail
         clear();
     }
 
@@ -297,7 +297,7 @@ public:
     [[nodiscard]] size_type
     size() const noexcept
     {
-        return m_size;
+        return m_size_;
     }
 
     /** Obtain a reference to the first element.
@@ -307,7 +307,7 @@ public:
     reference
     front() noexcept
     {
-        return element_from(m_head.m_next);
+        return element_from(m_head_.m_next);
     }
 
     /** Obtain a const reference to the first element.
@@ -317,7 +317,7 @@ public:
     [[nodiscard]] const_reference
     front() const noexcept
     {
-        return element_from(m_head.m_next);
+        return element_from(m_head_.m_next);
     }
 
     /** Obtain a reference to the last element.
@@ -327,7 +327,7 @@ public:
     reference
     back() noexcept
     {
-        return element_from(m_tail.m_prev);
+        return element_from(m_tail_.m_prev);
     }
 
     /** Obtain a const reference to the last element.
@@ -337,7 +337,7 @@ public:
     [[nodiscard]] const_reference
     back() const noexcept
     {
-        return element_from(m_tail.m_prev);
+        return element_from(m_tail_.m_prev);
     }
 
     /** Obtain an iterator to the beginning of the list.
@@ -346,7 +346,7 @@ public:
     iterator
     begin() noexcept
     {
-        return iterator(m_head.m_next);
+        return iterator(m_head_.m_next);
     }
 
     /** Obtain a const iterator to the beginning of the list.
@@ -355,7 +355,7 @@ public:
     [[nodiscard]] const_iterator
     begin() const noexcept
     {
-        return const_iterator(m_head.m_next);
+        return const_iterator(m_head_.m_next);
     }
 
     /** Obtain a const iterator to the beginning of the list.
@@ -364,7 +364,7 @@ public:
     [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
-        return const_iterator(m_head.m_next);
+        return const_iterator(m_head_.m_next);
     }
 
     /** Obtain a iterator to the end of the list.
@@ -373,7 +373,7 @@ public:
     iterator
     end() noexcept
     {
-        return iterator(&m_tail);
+        return iterator(&m_tail_);
     }
 
     /** Obtain a const iterator to the end of the list.
@@ -382,7 +382,7 @@ public:
     [[nodiscard]] const_iterator
     end() const noexcept
     {
-        return const_iterator(&m_tail);
+        return const_iterator(&m_tail_);
     }
 
     /** Obtain a const iterator to the end of the list
@@ -391,7 +391,7 @@ public:
     [[nodiscard]] const_iterator
     cend() const noexcept
     {
-        return const_iterator(&m_tail);
+        return const_iterator(&m_tail_);
     }
 
     /** Clear the list.
@@ -400,9 +400,9 @@ public:
     void
     clear() noexcept
     {
-        m_head.m_next = &m_tail;
-        m_tail.m_prev = &m_head;
-        m_size = 0;
+        m_head_.m_next = &m_tail_;
+        m_tail_.m_prev = &m_head_;
+        m_size_ = 0;
     }
 
     /** Insert an element.
@@ -419,7 +419,7 @@ public:
         node->m_prev = node->m_next->m_prev;
         node->m_next->m_prev = node;
         node->m_prev->m_next = node;
-        ++m_size;
+        ++m_size_;
         return iterator(node);
     }
 
@@ -434,11 +434,11 @@ public:
         if (!other.empty())
         {
             Node* before = &*pos;
-            other.m_head.m_next->m_prev = before->m_prev;
-            before->m_prev->m_next = other.m_head.m_next;
-            other.m_tail.m_prev->m_next = before;
-            before->m_prev = other.m_tail.m_prev;
-            m_size += other.m_size;
+            other.m_head_.m_next->m_prev = before->m_prev;
+            before->m_prev->m_next = other.m_head_.m_next;
+            other.m_tail_.m_prev->m_next = before;
+            before->m_prev = other.m_tail_.m_prev;
+            m_size_ += other.m_size_;
             other.clear();
         }
     }
@@ -455,7 +455,7 @@ public:
         ++pos;
         node->m_next->m_prev = node->m_prev;
         node->m_prev->m_next = node->m_next;
-        --m_size;
+        --m_size_;
         return pos;
     }
 
@@ -464,7 +464,7 @@ public:
         @param element The element to insert.
     */
     iterator
-    push_front(T& element) noexcept
+    pushFront(T& element) noexcept
     {
         return insert(begin(), element);
     }
@@ -474,7 +474,7 @@ public:
         @return A reference to the popped element.
     */
     T&
-    pop_front() noexcept
+    popFront() noexcept
     {
         T& element(front());
         erase(begin());
@@ -486,7 +486,7 @@ public:
         @param element The element to append.
     */
     iterator
-    push_back(T& element) noexcept
+    pushBack(T& element) noexcept
     {
         return insert(end(), element);
     }
@@ -496,7 +496,7 @@ public:
         @return A reference to the popped element.
     */
     T&
-    pop_back() noexcept
+    popBack() noexcept
     {
         T& element(back());
         erase(--end());
@@ -539,7 +539,7 @@ public:
         @return An iterator to the element.
     */
     iterator
-    iterator_to(T& element) const noexcept
+    iteratorTo(T& element) const noexcept
     {
         return iterator(static_cast<Node*>(&element));
     }
@@ -550,28 +550,28 @@ public:
         @return A const iterator to the element.
     */
     [[nodiscard]] const_iterator
-    const_iterator_to(T const& element) const noexcept
+    constIteratorTo(T const& element) const noexcept
     {
         return const_iterator(static_cast<Node const*>(&element));
     }
 
 private:
     reference
-    element_from(Node* node) noexcept
+    elementFrom(Node* node) noexcept
     {
         return *(static_cast<pointer>(node));
     }
 
     const_reference
-    element_from(Node const* node) const noexcept
+    elementFrom(Node const* node) const noexcept
     {
         return *(static_cast<const_pointer>(node));
     }
 
 private:
-    size_type m_size = 0u;
-    Node m_head;
-    Node m_tail;
+    size_type m_size_ = 0u;
+    Node m_head_;
+    Node m_tail_;
 };
 
 }  // namespace beast

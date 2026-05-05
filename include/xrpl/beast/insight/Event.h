@@ -31,7 +31,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Event(std::shared_ptr<EventImpl> const& impl) : m_impl(impl)
+    explicit Event(std::shared_ptr<EventImpl> const& impl) : m_impl_(impl)
     {
     }
 
@@ -41,18 +41,18 @@ public:
     notify(std::chrono::duration<Rep, Period> const& value) const
     {
         using namespace std::chrono;
-        if (m_impl)
-            m_impl->notify(ceil<value_type>(value));
+        if (m_impl_)
+            m_impl_->notify(ceil<value_type>(value));
     }
 
     [[nodiscard]] std::shared_ptr<EventImpl> const&
     impl() const
     {
-        return m_impl;
+        return m_impl_;
     }
 
 private:
-    std::shared_ptr<EventImpl> m_impl;
+    std::shared_ptr<EventImpl> m_impl_;
 };
 
 }  // namespace beast::insight

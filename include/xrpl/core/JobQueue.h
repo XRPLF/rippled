@@ -24,9 +24,9 @@ class PerfLog;
 }  // namespace perf
 
 class Logs;
-struct Coro_create_t
+struct CoroCreateT
 {
-    explicit Coro_create_t() = default;
+    explicit CoroCreateT() = default;
 };
 
 /** A pool of threads to perform work.
@@ -63,7 +63,7 @@ public:
     public:
         // Private: Used in the implementation
         template <class F>
-        Coro(Coro_create_t, JobQueue&, JobType, std::string const&, F&&);
+        Coro(CoroCreateT, JobQueue&, JobType, std::string const&, F&&);
 
         // Not copy-constructible or assignable
         Coro(Coro const&) = delete;
@@ -226,29 +226,29 @@ private:
 
     using JobDataMap = std::map<JobType, JobTypeData>;
 
-    beast::Journal m_journal;
-    mutable std::mutex m_mutex;
-    std::uint64_t m_lastJob{0};
-    std::set<Job> m_jobSet;
+    beast::Journal m_journal_;
+    mutable std::mutex m_mutex_;
+    std::uint64_t m_lastJob_{0};
+    std::set<Job> m_jobSet_;
     JobCounter jobCounter_;
     std::atomic_bool stopping_{false};
     std::atomic_bool stopped_{false};
-    JobDataMap m_jobData;
-    JobTypeData m_invalidJobData;
+    JobDataMap m_jobData_;
+    JobTypeData m_invalidJobData_;
 
     // The number of jobs currently in processTask()
-    int m_processCount{0};
+    int m_processCount_{0};
 
     // The number of suspended coroutines
     int nSuspend_ = 0;
 
-    Workers m_workers;
+    Workers m_workers_;
 
     // Statistics tracking
     perf::PerfLog& perfLog_;
-    beast::insight::Collector::ptr m_collector;
-    beast::insight::Gauge job_count;
-    beast::insight::Hook hook;
+    beast::insight::Collector::ptr m_collector_;
+    beast::insight::Gauge job_count_;
+    beast::insight::Hook hook_;
 
     std::condition_variable cv_;
 
@@ -397,7 +397,7 @@ JobQueue::postCoro(JobType t, std::string const& name, F&& f)
         Last param is the function the coroutine runs. Signature of
         void(std::shared_ptr<Coro>).
     */
-    auto coro = std::make_shared<Coro>(Coro_create_t{}, *this, t, name, std::forward<F>(f));
+    auto coro = std::make_shared<Coro>(CoroCreateT{}, *this, t, name, std::forward<F>(f));
     if (!coro->post())
     {
         // The Coro was not successfully posted.  Disable it so it's destructor

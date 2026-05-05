@@ -102,15 +102,15 @@ getMPTIssuer(MPTID&&) = delete;
 inline MPTID
 noMPT()
 {
-    static MPTIssue const mpt{0, noAccount()};
-    return mpt.getMptID();
+    static MPTIssue const kMPT{0, noAccount()};
+    return kMPT.getMptID();
 }
 
 inline MPTID
 badMPT()
 {
-    static MPTIssue const mpt{0, xrpAccount()};
-    return mpt.getMptID();
+    static MPTIssue const kMPT{0, xrpAccount()};
+    return kMPT.getMptID();
 }
 
 template <class Hasher>

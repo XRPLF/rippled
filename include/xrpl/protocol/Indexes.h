@@ -75,14 +75,14 @@ Keylet const&
 negativeUNL() noexcept;
 
 /** The beginning of an order book */
-struct book_t
+struct BookT
 {
-    explicit book_t() = default;
+    explicit BookT() = default;
 
     Keylet
     operator()(Book const& b) const;
 };
-static book_t const book{};
+static BookT const kBOOK{};
 
 /** The index of a trust line for a given currency
 
@@ -119,19 +119,19 @@ Keylet
 quality(Keylet const& k, std::uint64_t q) noexcept;
 
 /** The directory for the next lower quality */
-struct next_t
+struct NextT
 {
-    explicit next_t() = default;
+    explicit NextT() = default;
 
     Keylet
     operator()(Keylet const& k) const;
 };
-static next_t const next{};
+static NextT const kNEXT{};
 
 /** A ticket belonging to an account */
-struct ticket_t
+struct TicketT
 {
-    explicit ticket_t() = default;
+    explicit TicketT() = default;
 
     Keylet
     operator()(AccountID const& id, std::uint32_t ticketSeq) const;
@@ -145,7 +145,7 @@ struct ticket_t
         return {ltTICKET, key};
     }
 };
-static ticket_t const ticket{};
+static TicketT const kTICKET{};
 
 /** A SignerList */
 Keylet
@@ -362,18 +362,18 @@ getTicketIndex(AccountID const& account, std::uint32_t uSequence);
 uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
 
-template <class... keyletParams>
+template <class... KeyletParams>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-struct keyletDesc
+struct KeyletDesc
 {
-    std::function<Keylet(keyletParams...)> function;
+    std::function<Keylet(KeyletParams...)> function;
     Json::StaticString expectedLEName;
     bool includeInTests{};
 };
 
 // This list should include all of the keylet functions that take a single
 // AccountID parameter.
-std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
+std::array<KeyletDesc<AccountID const&>, 6> const kDIRECT_ACCOUNT_KEYLETS{
     {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
      {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
      {.function = &keylet::signers, .expectedLEName = jss::SignerList, .includeInTests = true},

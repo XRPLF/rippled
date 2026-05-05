@@ -38,11 +38,11 @@ public:
 
             do
             {
-                head = instance.m_head.load();
+                head = instance.m_head_.load();
                 next_ = head;
-            } while (instance.m_head.exchange(this) != head);
+            } while (instance.m_head_.exchange(this) != head);
 
-            ++instance.m_count;
+            ++instance.m_count_;
         }
 
         ~Counter() noexcept = default;
@@ -88,8 +88,8 @@ private:
     ~CountedObjects() noexcept = default;
 
 private:
-    std::atomic<int> m_count;
-    std::atomic<Counter*> m_head;
+    std::atomic<int> m_count_;
+    std::atomic<Counter*> m_head_;
 };
 
 //------------------------------------------------------------------------------
@@ -108,8 +108,8 @@ private:
     static auto&
     getCounter() noexcept
     {
-        static CountedObjects::Counter c{beast::type_name<Object>()};
-        return c;
+        static CountedObjects::Counter kC{beast::type_name<Object>()};
+        return kC;
     }
 
     CountedObject() noexcept

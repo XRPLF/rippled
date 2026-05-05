@@ -58,13 +58,13 @@ public:
 
     template <class... Args>
     void
-    emplace_back(Args&&... args);
+    emplaceBack(Args&&... args);
 
     void
-    push_back(STObject const& object);
+    pushBack(STObject const& object);
 
     void
-    push_back(STObject&& object);
+    pushBack(STObject&& object);
 
     iterator
     begin();
@@ -180,19 +180,19 @@ STArray::back() const
 
 template <class... Args>
 inline void
-STArray::emplace_back(Args&&... args)
+STArray::emplaceBack(Args&&... args)
 {
     v_.emplace_back(std::forward<Args>(args)...);
 }
 
 inline void
-STArray::push_back(STObject const& object)
+STArray::pushBack(STObject const& object)
 {
     v_.push_back(object);
 }
 
 inline void
-STArray::push_back(STObject&& object)
+STArray::pushBack(STObject&& object)
 {
     v_.push_back(std::move(object));
 }

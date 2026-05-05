@@ -4,18 +4,17 @@ namespace xrpl {
 
 /// Coroutine stack size (1.5 MB). Increased from 1 MB because
 /// ASAN-instrumented deep call stacks exceeded the original limit.
-constexpr std::size_t coroStackSize = 1536 * 1024;
+constexpr std::size_t kCORO_STACK_SIZE = 1536 * 1024;
 
 template <class F>
-JobQueue::Coro::Coro(Coro_create_t, JobQueue& jq, JobType type, std::string const& name, F&& f)
+JobQueue::Coro::Coro(CoroCreateT, JobQueue& jq, JobType type, std::string const& name, F&& f)
     : jq_(jq)
     , type_(type)
     , name_(name)
     , coro_(
-          boost::context::protected_fixedsize_stack(coroStackSize),
-          [this,
-           fn = std::forward<F>(f)](boost::coroutines2::coroutine<void>::push_type& do_yield) {
-              yield_ = &do_yield;
+          boost::context::protected_fixedsize_stack(kCORO_STACK_SIZE),
+          [this, fn = std::forward<F>(f)](boost::coroutines2::coroutine<void>::push_type& doYield) {
+              yield_ = &doYield;
               yield();
               fn(shared_from_this());
 #ifndef NDEBUG
@@ -36,7 +35,7 @@ inline void
 JobQueue::Coro::yield() const
 {
     {
-        std::scoped_lock lock(jq_.m_mutex);
+        std::scoped_lock lock(jq_.m_mutex_);
         ++jq_.nSuspend_;
     }
     (*yield_)();
@@ -71,7 +70,7 @@ JobQueue::Coro::resume()
         running_ = true;
     }
     {
-        std::scoped_lock lk(jq_.m_mutex);
+        std::scoped_lock lk(jq_.m_mutex_);
         --jq_.nSuspend_;
     }
     auto saved = detail::getLocalValues().release();
@@ -115,7 +114,7 @@ JobQueue::Coro::expectEarlyExit()
         //
         // That said, since we're outside the Coro's stack, we need to
         // decrement the nSuspend that the Coro's call to yield caused.
-        std::scoped_lock lock(jq_.m_mutex);
+        std::scoped_lock lock(jq_.m_mutex_);
         --jq_.nSuspend_;
 #ifndef NDEBUG
         finished_ = true;

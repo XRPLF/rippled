@@ -16,9 +16,9 @@ namespace xrpl {
 */
 
 // Exception thrown by an invalid access to Expected.
-struct bad_expected_access : public std::runtime_error
+struct BadExpectedAccess : public std::runtime_error
 {
-    bad_expected_access() : runtime_error("bad expected access")
+    BadExpectedAccess() : runtime_error("bad expected access")
     {
     }
 };
@@ -26,30 +26,30 @@ struct bad_expected_access : public std::runtime_error
 namespace detail {
 
 // Custom policy for Expected.  Always throw on an invalid access.
-struct throw_policy : public boost::outcome_v2::policy::base
+struct ThrowPolicy : public boost::outcome_v2::policy::base
 {
     template <class Impl>
     static constexpr void
-    wide_value_check(Impl&& self)
+    wideValueCheck(Impl&& self)
     {
         if (!base::_has_value(std::forward<Impl>(self)))
-            Throw<bad_expected_access>();
+            Throw<BadExpectedAccess>();
     }
 
     template <class Impl>
     static constexpr void
-    wide_error_check(Impl&& self)
+    wideErrorCheck(Impl&& self)
     {
         if (!base::_has_error(std::forward<Impl>(self)))
-            Throw<bad_expected_access>();
+            Throw<BadExpectedAccess>();
     }
 
     template <class Impl>
     static constexpr void
-    wide_exception_check(Impl&& self)
+    wideExceptionCheck(Impl&& self)
     {
         if (!base::_has_exception(std::forward<Impl>(self)))
-            Throw<bad_expected_access>();
+            Throw<BadExpectedAccess>();
     }
 };
 
@@ -107,9 +107,9 @@ Unexpected(E (&)[N]) -> Unexpected<E const*>;
 
 // Definition of Expected.  All of the machinery comes from boost::result.
 template <class T, class E>
-class [[nodiscard]] Expected : private boost::outcome_v2::result<T, E, detail::throw_policy>
+class [[nodiscard]] Expected : private boost::outcome_v2::result<T, E, detail::ThrowPolicy>
 {
-    using Base = boost::outcome_v2::result<T, E, detail::throw_policy>;
+    using Base = boost::outcome_v2::result<T, E, detail::ThrowPolicy>;
 
 public:
     template <typename U>
@@ -126,7 +126,7 @@ public:
     }
 
     [[nodiscard]] constexpr bool
-    has_value() const
+    hasValue() const
     {
         return Base::has_value();
     }
@@ -158,7 +158,7 @@ public:
     constexpr explicit
     operator bool() const
     {
-        return has_value();
+        return hasValue();
     }
 
     // Add operator* and operator-> so the Expected API looks a bit more like
@@ -193,9 +193,9 @@ public:
 // (without a value) or the reason for the failure.
 template <class E>
 class [[nodiscard]]
-Expected<void, E> : private boost::outcome_v2::result<void, E, detail::throw_policy>
+Expected<void, E> : private boost::outcome_v2::result<void, E, detail::ThrowPolicy>
 {
-    using Base = boost::outcome_v2::result<void, E, detail::throw_policy>;
+    using Base = boost::outcome_v2::result<void, E, detail::ThrowPolicy>;
 
 public:
     // The default constructor makes a successful Expected<void, E>.

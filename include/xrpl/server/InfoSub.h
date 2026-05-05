@@ -72,7 +72,7 @@ public:
          * historical transactions
          * @return rpcSUCCESS if successful, otherwise an error code
          */
-        virtual error_code_i
+        virtual ErrorCodeI
         subAccountHistory(ref ispListener, AccountID const& account) = 0;
 
         /**
@@ -207,23 +207,23 @@ public:
     getApiVersion() const noexcept;
 
 protected:
-    std::mutex mLock;
+    std::mutex mLock_;
 
 private:
-    Consumer m_consumer;
-    Source& m_source;
+    Consumer m_consumer_;
+    Source& m_source_;
     hash_set<AccountID> realTimeSubscriptions_;
     hash_set<AccountID> normalSubscriptions_;
     std::shared_ptr<InfoSubRequest> request_;
-    std::uint64_t mSeq;
+    std::uint64_t mSeq_;
     hash_set<AccountID> accountHistorySubscriptions_;
     unsigned int apiVersion_ = 0;
 
     static int
-    assign_id()
+    assignId()
     {
-        static std::atomic<std::uint64_t> id(0);
-        return ++id;
+        static std::atomic<std::uint64_t> kID(0);
+        return ++kID;
     }
 };
 

@@ -96,16 +96,16 @@ operator<=>(Issue const& lhs, Issue const& rhs)
 inline Issue const&
 xrpIssue()
 {
-    static Issue const issue{xrpCurrency(), xrpAccount()};
-    return issue;
+    static Issue const kISSUE{xrpCurrency(), xrpAccount()};
+    return kISSUE;
 }
 
 /** Returns an asset specifier that represents no account and currency. */
 inline Issue const&
 noIssue()
 {
-    static Issue const issue{noCurrency(), noAccount()};
-    return issue;
+    static Issue const kISSUE{noCurrency(), noAccount()};
+    return kISSUE;
 }
 
 inline bool

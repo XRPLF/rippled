@@ -55,11 +55,11 @@ namespace xrpl {
 NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 {
-    if (isPseudoTx(ctx.tx) && ctx.tx.isFlag(tfInnerBatchTxn))
+    if (isPseudoTx(ctx.tx) && ctx.tx.isFlag(kTF_INNER_BATCH_TXN))
     {
         JLOG(ctx.j.warn()) << "Pseudo transactions cannot contain the "
                               "tfInnerBatchTxn flag.";
-        return temINVALID_FLAG;
+        return TemInvalidFlag;
     }
 
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
@@ -72,36 +72,36 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
             // legacy networks have ids less than 1024, these networks cannot
             // specify NetworkID in txn
             if (txNID)
-                return telNETWORK_ID_MAKES_TX_NON_CANONICAL;
+                return TelNetworkIdMakesTxNonCanonical;
         }
         else
         {
             // new networks both require the field to be present and require it
             // to match
             if (!txNID)
-                return telREQUIRES_NETWORK_ID;
+                return TelRequiresNetworkId;
 
             if (*txNID != nodeNID)
-                return telWRONG_NETWORK;
+                return TelWrongNetwork;
         }
     }
 
     auto const txID = ctx.tx.getTransactionID();
 
-    if (txID == beast::zero)
+    if (txID == beast::kZERO)
     {
         JLOG(ctx.j.warn()) << "applyTransaction: transaction id may not be zero";
-        return temINVALID;
+        return TemInvalid;
     }
 
     if ((ctx.tx.getFlags() & flagMask) != 0u)
     {
         JLOG(ctx.j.debug()) << ctx.tx.peekAtField(sfTransactionType).getFullText()
                             << ": invalid flags.";
-        return temINVALID_FLAG;
+        return TemInvalidFlag;
     }
 
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 namespace detail {
@@ -117,28 +117,28 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
         !spk.empty() && !publicKeyType(makeSlice(spk)))
     {
         JLOG(j.debug()) << "preflightCheckSigningKey: invalid signing key";
-        return temBAD_SIGNATURE;
+        return TemBadSignature;
     }
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 std::optional<NotTEC>
 preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::Journal j)
 {
-    if ((flags & tapDRY_RUN) != 0u)  // simulation
+    if ((flags & TapDryRun) != 0u)  // simulation
     {
         std::optional<Slice> const signature = sigObject[~sfTxnSignature];
         if (signature && !signature->empty())
         {
             // NOTE: This code should never be hit because it's checked in the
             // `simulate` RPC
-            return temINVALID;  // LCOV_EXCL_LINE
+            return TemInvalid;  // LCOV_EXCL_LINE
         }
 
         if (!sigObject.isFieldPresent(sfSigners))
         {
             // no signers, no signature - a valid simulation
-            return tesSUCCESS;
+            return TesSuccess;
         }
 
         for (auto const& signer : sigObject.getFieldArray(sfSigners))
@@ -147,7 +147,7 @@ preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::J
             {
                 // NOTE: This code should never be hit because it's
                 // checked in the `simulate` RPC
-                return temINVALID;  // LCOV_EXCL_LINE
+                return TemInvalid;  // LCOV_EXCL_LINE
             }
         }
 
@@ -155,9 +155,9 @@ preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::J
         if (!signingPubKey.empty())
         {
             // trying to single-sign _and_ multi-sign a transaction
-            return temINVALID;
+            return TemInvalid;
         }
-        return tesSUCCESS;
+        return TesSuccess;
     }
     return {};
 }
@@ -171,20 +171,20 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     if (ctx.tx.isFieldPresent(sfDelegate))
     {
         if (!ctx.rules.enabled(featurePermissionDelegationV1_1))
-            return temDISABLED;
+            return TemDisabled;
 
         if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
-            return temBAD_SIGNER;
+            return TemBadSigner;
     }
 
     if (auto const ret = preflight0(ctx, flagMask))
         return ret;
 
     auto const id = ctx.tx.getAccountID(sfAccount);
-    if (id == beast::zero)
+    if (id == beast::kZERO)
     {
         JLOG(ctx.j.warn()) << "preflight1: bad account id";
-        return temBAD_SRC_ACCOUNT;
+        return TemBadSrcAccount;
     }
 
     // No point in going any further if the transaction fee is malformed.
@@ -192,7 +192,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
     {
         JLOG(ctx.j.debug()) << "preflight1: invalid fee";
-        return temBAD_FEE;
+        return TemBadFee;
     }
 
     if (auto const ret = detail::preflightCheckSigningKey(ctx.tx, ctx.j))
@@ -205,17 +205,17 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     //
     // We return temINVALID for such transactions.
     if (ctx.tx.getSeqProxy().isTicket() && ctx.tx.isFieldPresent(sfAccountTxnID))
-        return temINVALID;
+        return TemInvalid;
 
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
-        return temINVALID_FLAG;
+    if (ctx.tx.isFlag(kTF_INNER_BATCH_TXN) && !ctx.rules.enabled(featureBatch))
+        return TemInvalidFlag;
 
     XRPL_ASSERT(
-        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
+        ctx.tx.isFlag(kTF_INNER_BATCH_TXN) == ctx.parentBatchId.has_value() ||
             !ctx.rules.enabled(featureBatch),
         "Inner batch transaction must have a parent batch ID.");
 
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 /** Checks whether the signature appears valid */
@@ -232,12 +232,12 @@ Transactor::preflight2(PreflightContext const& ctx)
     // It should be impossible for the InnerBatchTxn flag to be set without
     // featureBatch being enabled
     XRPL_ASSERT_PARTS(
-        !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatch),
+        !ctx.tx.isFlag(kTF_INNER_BATCH_TXN) || ctx.rules.enabled(featureBatch),
         "xrpl::Transactor::preflight2",
         "InnerBatch flag only set if feature enabled");
     // Skip signature check on batch inner transactions
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch))
-        return tesSUCCESS;
+    if (ctx.tx.isFlag(kTF_INNER_BATCH_TXN) && ctx.rules.enabled(featureBatch))
+        return TesSuccess;
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 
@@ -245,14 +245,14 @@ Transactor::preflight2(PreflightContext const& ctx)
     if (sigValid.first == Validity::SigBad)
     {  // LCOV_EXCL_START
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
-        return temINVALID;
+        return TemInvalid;
         // LCOV_EXCL_STOP
     }
 
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 //------------------------------------------------------------------------------
@@ -276,13 +276,13 @@ Transactor::validDataLength(std::optional<Slice> const& slice, std::size_t maxLe
 std::uint32_t
 Transactor::getFlagsMask(PreflightContext const& ctx)
 {
-    return tfUniversalMask;
+    return kTF_UNIVERSAL_MASK;
 }
 
 NotTEC
 Transactor::preflightSigValidated(PreflightContext const& ctx)
 {
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 NotTEC
@@ -290,13 +290,13 @@ Transactor::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
-        return tesSUCCESS;
+        return TesSuccess;
 
     auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return terNO_DELEGATE_PERMISSION;
+        return TerNoDelegatePermission;
 
     return checkTxPermission(sle, tx);
 }
@@ -347,28 +347,28 @@ Transactor::minimumFee(
     Fees const& fees,
     ApplyFlags flags)
 {
-    return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, (flags & tapUNLIMITED) != 0u);
+    return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, (flags & TapUnlimited) != 0u);
 }
 
 TER
 Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 {
     if (!ctx.tx[sfFee].native())
-        return temBAD_FEE;
+        return TemBadFee;
 
     auto const feePaid = ctx.tx[sfFee].xrp();
 
-    if ((ctx.flags & tapBATCH) != 0u)
+    if ((ctx.flags & TapBatch) != 0u)
     {
-        if (feePaid == beast::zero)
-            return tesSUCCESS;
+        if (feePaid == beast::kZERO)
+            return TesSuccess;
 
         JLOG(ctx.j.trace()) << "Batch: Fee must be zero.";
-        return temBAD_FEE;  // LCOV_EXCL_LINE
+        return TemBadFee;  // LCOV_EXCL_LINE
     }
 
-    if (!isLegalAmount(feePaid) || feePaid < beast::zero)
-        return temBAD_FEE;
+    if (!isLegalAmount(feePaid) || feePaid < beast::kZERO)
+        return TemBadFee;
 
     // Only check fee is sufficient when the ledger is open.
     if (ctx.view.open())
@@ -379,17 +379,17 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         {
             JLOG(ctx.j.trace()) << "Insufficient fee paid: " << to_string(feePaid) << "/"
                                 << to_string(feeDue);
-            return telINSUF_FEE_P;
+            return TelInsufFeeP;
         }
     }
 
-    if (feePaid == beast::zero)
-        return tesSUCCESS;
+    if (feePaid == beast::kZERO)
+        return TesSuccess;
 
     auto const id = ctx.tx.getFeePayer();
     auto const sle = ctx.view.read(keylet::account(id));
     if (!sle)
-        return terNO_ACCOUNT;
+        return TerNoAccount;
 
     auto const balance = (*sle)[sfBalance].xrp();
 
@@ -405,16 +405,16 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
                             << " paid=" << to_string(feePaid);
 
-        if ((balance > beast::zero) && !ctx.view.open())
+        if ((balance > beast::kZERO) && !ctx.view.open())
         {
             // Closed ledger, non-zero balance, less than fee
-            return tecINSUFF_FEE;
+            return TecInsuffFee;
         }
 
-        return terINSUF_FEE_B;
+        return TerInsufFeeB;
     }
 
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 TER
@@ -425,7 +425,7 @@ Transactor::payFee()
     auto const feePayer = ctx_.tx.getFeePayer();
     auto const sle = view().peek(keylet::account(feePayer));
     if (!sle)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+        return TefInternal;  // LCOV_EXCL_LINE
 
     // Deduct the fee, so it's not available during the transaction.
     // Will only write the account back if the transaction succeeds.
@@ -434,7 +434,7 @@ Transactor::payFee()
         view().update(sle);  // done in `apply()` for the account
 
     // VFALCO Should we call view().rawDestroyXRP() here as well?
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 NotTEC
@@ -448,58 +448,58 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
     {
         JLOG(j.trace()) << "applyTransaction: delay: source account does not exist "
                         << toBase58(id);
-        return terNO_ACCOUNT;
+        return TerNoAccount;
     }
 
-    SeqProxy const t_seqProx = tx.getSeqProxy();
-    SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy const tSeqProx = tx.getSeqProxy();
+    SeqProxy const aSeq = SeqProxy::sequence((*sle)[sfSequence]);
 
-    if (t_seqProx.isSeq())
+    if (tSeqProx.isSeq())
     {
         if (tx.isFieldPresent(sfTicketSequence))
         {
             JLOG(j.trace()) << "applyTransaction: has both a TicketSequence "
                                "and a non-zero Sequence number";
-            return temSEQ_AND_TICKET;
+            return TemSeqAndTicket;
         }
-        if (t_seqProx != a_seq)
+        if (tSeqProx != aSeq)
         {
-            if (a_seq < t_seqProx)
+            if (aSeq < tSeqProx)
             {
                 JLOG(j.trace()) << "applyTransaction: has future sequence number "
-                                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
-                return terPRE_SEQ;
+                                << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
+                return TerPreSeq;
             }
             // It's an already-used sequence number.
             JLOG(j.trace()) << "applyTransaction: has past sequence number "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
-            return tefPAST_SEQ;
+                            << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
+            return TefPastSeq;
         }
     }
-    else if (t_seqProx.isTicket())
+    else if (tSeqProx.isTicket())
     {
         // Bypass the type comparison. Apples and oranges.
-        if (a_seq.value() <= t_seqProx.value())
+        if (aSeq.value() <= tSeqProx.value())
         {
             // If the Ticket number is greater than or equal to the
             // account sequence there's the possibility that the
             // transaction to create the Ticket has not hit the ledger
             // yet.  Allow a retry.
             JLOG(j.trace()) << "applyTransaction: has future ticket id "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
-            return terPRE_TICKET;
+                            << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
+            return TerPreTicket;
         }
 
         // Transaction can never succeed if the Ticket is not in the ledger.
-        if (!view.exists(keylet::ticket(id, t_seqProx)))
+        if (!view.exists(keylet::kTICKET(id, tSeqProx)))
         {
             JLOG(j.trace()) << "applyTransaction: ticket already used or never created "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
-            return tefNO_TICKET;
+                            << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
+            return TefNoTicket;
         }
     }
 
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 NotTEC
@@ -513,21 +513,21 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.trace()) << "applyTransaction: delay: source account does not exist "
                             << toBase58(id);
-        return terNO_ACCOUNT;
+        return TerNoAccount;
     }
 
     if (ctx.tx.isFieldPresent(sfAccountTxnID) &&
         (sle->getFieldH256(sfAccountTxnID) != ctx.tx.getFieldH256(sfAccountTxnID)))
-        return tefWRONG_PRIOR;
+        return TefWrongPrior;
 
     if (ctx.tx.isFieldPresent(sfLastLedgerSequence) &&
         (ctx.view.seq() > ctx.tx.getFieldU32(sfLastLedgerSequence)))
-        return tefMAX_LEDGER;
+        return TefMaxLedger;
 
     if (ctx.view.txExists(ctx.tx.getTransactionID()))
-        return tefALREADY;
+        return TefAlready;
 
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 TER
@@ -541,7 +541,7 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
         // the transaction will modify the account root sfSequence
         // yet again.
         sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
-        return tesSUCCESS;
+        return TesSuccess;
     }
     return ticketDelete(view(), account_, getTicketIndex(account_, seqProx), j_);
 }
@@ -556,12 +556,12 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
+    SLE::pointer const sleTicket = view.peek(keylet::kTICKET(ticketIndex));
     if (!sleTicket)
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Ticket disappeared from ledger.";
-        return tefBAD_LEDGER;
+        return TefBadLedger;
         // LCOV_EXCL_STOP
     }
 
@@ -570,7 +570,7 @@ Transactor::ticketDelete(
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Ticket from owner.";
-        return tefBAD_LEDGER;
+        return TefBadLedger;
         // LCOV_EXCL_STOP
     }
 
@@ -581,7 +581,7 @@ Transactor::ticketDelete(
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Could not find Ticket owner account root.";
-        return tefBAD_LEDGER;
+        return TefBadLedger;
         // LCOV_EXCL_STOP
     }
 
@@ -600,7 +600,7 @@ Transactor::ticketDelete(
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "TicketCount field missing from account root.";
-        return tefBAD_LEDGER;
+        return TefBadLedger;
         // LCOV_EXCL_STOP
     }
 
@@ -609,14 +609,14 @@ Transactor::ticketDelete(
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 // check stuff before you bother to lock the ledger
 void
 Transactor::preCompute()
 {
-    XRPL_ASSERT(account_ != beast::zero, "xrpl::Transactor::preCompute : nonzero account");
+    XRPL_ASSERT(account_ != beast::kZERO, "xrpl::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -631,7 +631,7 @@ Transactor::apply()
     // sle must exist except for transactions
     // that allow zero account.
     XRPL_ASSERT(
-        sle != nullptr || account_ == beast::zero,
+        sle != nullptr || account_ == beast::kZERO,
         "xrpl::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
@@ -672,7 +672,7 @@ Transactor::checkSign(
             // Pseudo-accounts can't sign transactions. This check is gated on
             // the Lending Protocol amendment because that's the project it was
             // added under, and it doesn't justify another amendment
-            return tefBAD_AUTH;
+            return TefBadAuth;
         }
     }
 
@@ -684,16 +684,16 @@ Transactor::checkSign(
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
             sigObject.isFieldPresent(sfSigners))
         {
-            return temINVALID_FLAG;  // LCOV_EXCL_LINE
+            return TemInvalidFlag;  // LCOV_EXCL_LINE
         }
-        return tesSUCCESS;
+        return TesSuccess;
     }
 
-    if (((flags & tapDRY_RUN) != 0u) && pkSigner.empty() && !sigObject.isFieldPresent(sfSigners))
+    if (((flags & TapDryRun) != 0u) && pkSigner.empty() && !sigObject.isFieldPresent(sfSigners))
     {
         // simulate: skip signature validation when neither SigningPubKey nor
         // Signers are provided
-        return tesSUCCESS;
+        return TesSuccess;
     }
 
     // If the pk is empty and not simulate or simulate and signers,
@@ -709,14 +709,14 @@ Transactor::checkSign(
     if (!publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(j.trace()) << "checkSign: signing public key type is unknown";
-        return tefBAD_AUTH;  // FIXME: should be better error!
+        return TefBadAuth;  // FIXME: should be better error!
     }
 
     // Look up the account.
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const sleAccount = view.read(keylet::account(idAccount));
     if (!sleAccount)
-        return terNO_ACCOUNT;
+        return TerNoAccount;
 
     return checkSingleSign(view, idSigner, idAccount, sleAccount, j);
 }
@@ -732,7 +732,7 @@ Transactor::checkSign(PreclaimContext const& ctx)
 NotTEC
 Transactor::checkBatchSign(PreclaimContext const& ctx)
 {
-    NotTEC ret = tesSUCCESS;
+    NotTEC ret = TesSuccess;
     STArray const& signers{ctx.tx.getFieldArray(sfBatchSigners)};
     for (auto const& signer : signers)
     {
@@ -749,7 +749,7 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
         {
             // LCOV_EXCL_START
             if (!publicKeyType(makeSlice(pkSigner)))
-                return tefBAD_AUTH;
+                return TefBadAuth;
             // LCOV_EXCL_STOP
 
             auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
@@ -760,9 +760,9 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
             if (!sleAccount)
             {
                 if (idAccount != idSigner)
-                    return tefBAD_AUTH;
+                    return TefBadAuth;
 
-                return tesSUCCESS;
+                return TesSuccess;
             }
 
             if (ret = checkSingleSign(ctx.view, idSigner, idAccount, sleAccount, ctx.j);
@@ -781,28 +781,28 @@ Transactor::checkSingleSign(
     std::shared_ptr<SLE const> sleAccount,
     beast::Journal const j)
 {
-    bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
+    bool const isMasterDisabled = sleAccount->isFlag(LsfDisableMaster);
 
     // Signed with regular key.
     if ((*sleAccount)[~sfRegularKey] == idSigner)
     {
-        return tesSUCCESS;
+        return TesSuccess;
     }
 
     // Signed with enabled master key.
     if (!isMasterDisabled && idAccount == idSigner)
     {
-        return tesSUCCESS;
+        return TesSuccess;
     }
 
     // Signed with disabled master key.
     if (isMasterDisabled && idAccount == idSigner)
     {
-        return tefMASTER_DISABLED;
+        return TefMasterDisabled;
     }
 
     // Signed with any other key.
-    return tefBAD_AUTH;
+    return TefBadAuth;
 }
 
 NotTEC
@@ -819,7 +819,7 @@ Transactor::checkMultiSign(
     if (!sleAccountSigners)
     {
         JLOG(j.trace()) << "applyTransaction: Invalid: Not a multi-signing account.";
-        return tefNOT_MULTI_SIGNING;
+        return TefNotMultiSigning;
     }
 
     // We have plans to support multiple SignerLists in the future.  The
@@ -856,14 +856,14 @@ Transactor::checkMultiSign(
             if (++iter == accountSigners->end())
             {
                 JLOG(j.trace()) << "applyTransaction: Invalid SigningAccount.Account.";
-                return tefBAD_SIGNATURE;
+                return TefBadSignature;
             }
         }
         if (iter->account != txSignerAcctID)
         {
             // The SigningAccount is not in the SignerEntries.
             JLOG(j.trace()) << "applyTransaction: Invalid SigningAccount.Account.";
-            return tefBAD_SIGNATURE;
+            return TefBadSignature;
         }
 
         // We found the SigningAccount in the list of valid signers.  Now we
@@ -876,11 +876,11 @@ Transactor::checkMultiSign(
         if (!spk.empty() && !publicKeyType(makeSlice(spk)))
         {
             JLOG(j.trace()) << "checkMultiSign: signing public key type is unknown";
-            return tefBAD_SIGNATURE;
+            return TefBadSignature;
         }
 
         XRPL_ASSERT(
-            (flags & tapDRY_RUN) || !spk.empty(),
+            (flags & TapDryRun) || !spk.empty(),
             "xrpl::Transactor::checkMultiSign : non-empty signer or "
             "simulation");
         AccountID const signingAcctIDFromPubKey =
@@ -921,10 +921,10 @@ Transactor::checkMultiSign(
                 // Master Key.  Account may not have asfDisableMaster set.
                 std::uint32_t const signerAccountFlags = sleTxSignerRoot->getFieldU32(sfFlags);
 
-                if ((signerAccountFlags & lsfDisableMaster) != 0u)
+                if ((signerAccountFlags & LsfDisableMaster) != 0u)
                 {
                     JLOG(j.trace()) << "applyTransaction: Signer:Account lsfDisableMaster.";
-                    return tefMASTER_DISABLED;
+                    return TefMasterDisabled;
                 }
             }
         }
@@ -936,18 +936,18 @@ Transactor::checkMultiSign(
             {
                 JLOG(j.trace()) << "applyTransaction: Non-phantom signer "
                                    "lacks account root.";
-                return tefBAD_SIGNATURE;
+                return TefBadSignature;
             }
 
             if (!sleTxSignerRoot->isFieldPresent(sfRegularKey))
             {
                 JLOG(j.trace()) << "applyTransaction: Account lacks RegularKey.";
-                return tefBAD_SIGNATURE;
+                return TefBadSignature;
             }
             if (signingAcctIDFromPubKey != sleTxSignerRoot->getAccountID(sfRegularKey))
             {
                 JLOG(j.trace()) << "applyTransaction: Account doesn't match RegularKey.";
-                return tefBAD_SIGNATURE;
+                return TefBadSignature;
             }
         }
         // The signer is legitimate.  Add their weight toward the quorum.
@@ -958,11 +958,11 @@ Transactor::checkMultiSign(
     if (weightSum < sleAccountSigners->getFieldU32(sfSignerQuorum))
     {
         JLOG(j.trace()) << "applyTransaction: Signers failed to meet quorum.";
-        return tefBAD_QUORUM;
+        return TefBadQuorum;
     }
 
     // Met the quorum.  Continue.
-    return tesSUCCESS;
+    return TesSuccess;
 }
 
 //------------------------------------------------------------------------------
@@ -978,7 +978,7 @@ removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast:
         {
             // offer is unfunded
             offerDelete(view, sleOffer, viewJ);
-            if (++removed == unfundedOfferRemoveLimit)
+            if (++removed == kUNFUNDED_OFFER_REMOVE_LIMIT)
                 return;
         }
     }
@@ -997,7 +997,7 @@ removeExpiredNFTokenOffers(
         if (auto const offer = view.peek(keylet::nftoffer(index)))
         {
             nft::deleteTokenOffer(view, offer);
-            if (++removed == expiredOfferRemoveLimit)
+            if (++removed == kEXPIRED_OFFER_REMOVE_LIMIT)
                 return;
         }
     }
@@ -1019,7 +1019,7 @@ removeDeletedTrustLines(
     std::vector<uint256> const& trustLines,
     beast::Journal viewJ)
 {
-    if (trustLines.size() > maxDeletableAMMTrustLines)
+    if (trustLines.size() > kMAX_DELETABLE_AMM_TRUST_LINES)
     {
         JLOG(viewJ.error()) << "removeDeletedTrustLines: deleted trustlines exceed max "
                             << trustLines.size();
@@ -1049,7 +1049,7 @@ removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Jour
     for (auto const& index : mpts)
     {
         if (auto const sleState = view.peek({ltMPTOKEN, index}); sleState &&
-            deleteAMMMPToken(view, sleState, (*sleState)[sfIssuer], viewJ) != tesSUCCESS)
+            deleteAMMMPToken(view, sleState, (*sleState)[sfIssuer], viewJ) != TesSuccess)
         {
             JLOG(viewJ.error()) << "removeDeletedMPTs: failed to delete AMM MPT";
         }
@@ -1071,17 +1071,17 @@ Transactor::reset(XRPAmount fee)
     // The account should never be missing from the ledger.  But if it
     // is missing then we can't very well charge it a fee, can we?
     if (!txnAcct)
-        return {tefINTERNAL, beast::zero};
+        return {TefInternal, beast::kZERO};
 
     auto const payerSle = view().peek(keylet::account(ctx_.tx.getFeePayer()));
     if (!payerSle)
-        return {tefINTERNAL, beast::zero};  // LCOV_EXCL_LINE
+        return {TefInternal, beast::kZERO};  // LCOV_EXCL_LINE
 
     auto const balance = payerSle->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
-        balance != beast::zero && (!view().open() || balance >= fee),
+        balance != beast::kZERO && (!view().open() || balance >= fee),
         "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or
@@ -1134,8 +1134,8 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
         {
             JLOG(ctx_.journal.fatal()) <<                                             //
                 "Transaction has failed one or more transaction invariants, tx: " <<  //
-                to_string(ctx_.tx.getJson(JsonOptions::none));
-            return tecINVARIANT_FAILED;
+                to_string(ctx_.tx.getJson(JsonOptions::None));
+            return TecInvariantFailed;
         }
     }
     catch (std::exception const& ex)
@@ -1144,9 +1144,9 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
             "Exception while checking transaction invariants: " <<  //
             ex.what() <<                                            //
             ", tx: " <<                                             //
-            to_string(ctx_.tx.getJson(JsonOptions::none));
+            to_string(ctx_.tx.getJson(JsonOptions::None));
 
-        return tecINVARIANT_FAILED;
+        return TecInvariantFailed;
     }
 
     return result;
@@ -1164,10 +1164,10 @@ Transactor::checkInvariants(TER result, XRPAmount fee)
     auto const protoResult = ctx_.checkInvariants(result, fee);
 
     // Fail if either check failed. tef (fatal) takes priority over tec.
-    if (protoResult == tefINVARIANT_FAILED)
-        return tefINVARIANT_FAILED;
-    if (txResult == tecINVARIANT_FAILED || protoResult == tecINVARIANT_FAILED)
-        return tecINVARIANT_FAILED;
+    if (protoResult == TefInvariantFailed)
+        return TefInvariantFailed;
+    if (txResult == TecInvariantFailed || protoResult == TecInvariantFailed)
+        return TecInvariantFailed;
 
     return result;
 }
@@ -1190,8 +1190,8 @@ Transactor::operator()()
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
-            JLOG(j_.fatal()) << ctx_.tx.getJson(JsonOptions::none);
-            JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
+            JLOG(j_.fatal()) << ctx_.tx.getJson(JsonOptions::None);
+            JLOG(j_.fatal()) << s2.getJson(JsonOptions::None);
             UNREACHABLE("xrpl::Transactor::operator() : transaction serdes mismatch");
             // LCOV_EXCL_STOP
         }
@@ -1210,7 +1210,7 @@ Transactor::operator()()
 
     // No transaction can return temUNKNOWN from apply,
     // and it can't be passed in from a preclaim.
-    XRPL_ASSERT(result != temUNKNOWN, "xrpl::Transactor::operator() : result is not temUNKNOWN");
+    XRPL_ASSERT(result != TemUnknown, "xrpl::Transactor::operator() : result is not temUNKNOWN");
 
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
@@ -1218,10 +1218,10 @@ Transactor::operator()()
     bool applied = isTesSuccess(result);
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
 
-    if (ctx_.size() > oversizeMetaDataCap)
-        result = tecOVERSIZE;
+    if (ctx_.size() > kOVERSIZE_META_DATA_CAP)
+        result = TecOversize;
 
-    if (isTecClaim(result) && ((view().flags() & tapFAIL_HARD) != 0u))
+    if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
@@ -1229,8 +1229,8 @@ Transactor::operator()()
         applied = false;
     }
     else if (
-        (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-        (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
+        (result == TecOversize) || (result == TecKilled) || (result == TecIncomplete) ||
+        (result == TecExpired) || (isTecClaimHardFail(result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
@@ -1244,10 +1244,10 @@ Transactor::operator()()
         std::vector<uint256> expiredNFTokenOffers;
         std::vector<uint256> expiredCredentials;
 
-        bool const doOffers = ((result == tecOVERSIZE) || (result == tecKILLED));
-        bool const doLinesOrMPTs = (result == tecINCOMPLETE);
-        bool const doNFTokenOffers = (result == tecEXPIRED);
-        bool const doCredentials = (result == tecEXPIRED);
+        bool const doOffers = ((result == TecOversize) || (result == TecKilled));
+        bool const doLinesOrMPTs = (result == TecIncomplete);
+        bool const doNFTokenOffers = (result == TecExpired);
+        bool const doCredentials = (result == TecExpired);
         if (doOffers || doLinesOrMPTs || doNFTokenOffers || doCredentials)
         {
             ctx_.visit([doOffers,
@@ -1309,25 +1309,25 @@ Transactor::operator()()
         }
 
         // If necessary, remove any offers found unfunded during processing
-        if ((result == tecOVERSIZE) || (result == tecKILLED))
+        if ((result == TecOversize) || (result == TecKilled))
         {
             removeUnfundedOffers(view(), removedOffers, ctx_.registry.get().getJournal("View"));
         }
 
-        if (result == tecEXPIRED)
+        if (result == TecExpired)
         {
             removeExpiredNFTokenOffers(
                 view(), expiredNFTokenOffers, ctx_.registry.get().getJournal("View"));
         }
 
-        if (result == tecINCOMPLETE)
+        if (result == TecIncomplete)
         {
             removeDeletedTrustLines(
                 view(), removedTrustLines, ctx_.registry.get().getJournal("View"));
             removeDeletedMPTs(view(), removedMPTs, ctx_.registry.get().getJournal("View"));
         }
 
-        if (result == tecEXPIRED)
+        if (result == TecExpired)
         {
             removeExpiredCredentials(
                 view(), expiredCredentials, ctx_.registry.get().getJournal("View"));
@@ -1341,7 +1341,7 @@ Transactor::operator()()
         // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
         // proceed to apply the tx
         result = checkInvariants(result, fee);
-        if (result == tecINVARIANT_FAILED)
+        if (result == TecInvariantFailed)
         {
             // Reset to fee-claim only
             auto const resetResult = reset(fee);
@@ -1373,21 +1373,21 @@ Transactor::operator()()
         // The transactor and invariant checkers guarantee that this will
         // *never* trigger but if it, somehow, happens, don't allow a tx
         // that charges a negative fee.
-        if (fee < beast::zero)
+        if (fee < beast::kZERO)
             Throw<std::logic_error>("fee charged is negative!");
 
         // Charge whatever fee they specified. The fee has already been
         // deducted from the balance of the account that issued the
         // transaction. We just need to account for it in the ledger
         // header.
-        if (!view().open() && fee != beast::zero)
+        if (!view().open() && fee != beast::kZERO)
             ctx_.destroyXRP(fee);
 
         // Once we call apply, we will no longer be able to look at view()
         metadata = ctx_.apply(result);
     }
 
-    if ((ctx_.flags() & tapDRY_RUN) != 0u)
+    if ((ctx_.flags() & TapDryRun) != 0u)
     {
         applied = false;
     }

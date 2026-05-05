@@ -41,14 +41,14 @@ required(Args const&... args)
     applied, and only if the resulting TER
     matches the expected TER.
 */
-class require
+class Require
 {
 private:
     require_t cond_;
 
 public:
     template <class... Args>
-    require(Args const&... args) : cond_(required(args...))
+    Require(Args const&... args) : cond_(required(args...))
     {
     }
 

@@ -25,7 +25,7 @@ public:
 }  // namespace detail
 
 /** A 160-bit unsigned that uniquely identifies an account. */
-using AccountID = base_uint<160, detail::AccountIDTag>;
+using AccountID = BaseUint<160, detail::AccountIDTag>;
 
 /** Convert AccountID to base58 checked string */
 std::string
@@ -69,7 +69,7 @@ to_issuer(AccountID&, std::string const&);
 inline bool
 isXRP(AccountID const& c)
 {
-    return c == beast::zero;
+    return c == beast::kZERO;
 }
 
 // DEPRECATED

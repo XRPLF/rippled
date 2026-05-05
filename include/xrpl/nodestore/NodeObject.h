@@ -10,11 +10,11 @@ namespace xrpl {
 
 /** The types of node objects. */
 enum class NodeObjectType : std::uint32_t {
-    hotUNKNOWN = 0,
-    hotLEDGER = 1,
-    hotACCOUNT_NODE = 3,
-    hotTRANSACTION_NODE = 4,
-    hotDUMMY = 512  // an invalid or missing object
+    HotUnknown = 0,
+    HotLedger = 1,
+    HotAccountNode = 3,
+    HotTransactionNode = 4,
+    HotDummy = 512  // an invalid or missing object
 };
 
 /** A simple object that the Ledger uses to store entries.
@@ -29,7 +29,7 @@ enum class NodeObjectType : std::uint32_t {
 class NodeObject : public CountedObject<NodeObject>
 {
 public:
-    static constexpr std::size_t keyBytes = 32;
+    static constexpr std::size_t kEY_BYTES = 32;
 
 private:
     // This hack is used to make the constructor effectively private
@@ -71,9 +71,9 @@ public:
     getData() const;
 
 private:
-    NodeObjectType const mType;
-    uint256 const mHash;
-    Blob const mData;
+    NodeObjectType const mType_;
+    uint256 const mHash_;
+    Blob const mData_;
 };
 
 }  // namespace xrpl
