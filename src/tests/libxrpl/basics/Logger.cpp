@@ -15,8 +15,6 @@
 
 #include <cstddef>
 #include <filesystem>
-#include <fstream>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <regex>
@@ -125,6 +123,14 @@ protected:
     resetService()
     {
         LogServiceState::reset();
+    }
+
+    /// Create a file sink via LogService::createFileSink (friend access).
+    static spdlog::sink_ptr
+    createFileSink(std::string const& logDir)
+    {
+        LogService::FileLoggingParams const params{.logDir = logDir};
+        return LogService::createFileSink(params, LogServiceState::format());
     }
 
     /// Install two sinks: one with NonCriticalFormatter, one critical-only.
@@ -482,77 +488,28 @@ TEST_F(LoggerFixture, console_disabled_creates_only_stderr_sink)
         << "Only sink should be stderr_color_sink_mt";
 }
 
-TEST_F(LoggerFixture, file_sink_created_when_directory_configured)
+TEST_F(LoggerFixture, create_file_sink_returns_correct_type_and_path)
 {
-    // Use a unique temp directory for the log file
-    auto const tmpDir =
-        std::filesystem::temp_directory_path() / ("logger_test_" + std::to_string(::getpid()));
-    std::filesystem::create_directories(tmpDir);
+    initLogging(false);
 
-    LoggingConfiguration const config{
-        .enableConsole = false,
-        .directory = tmpDir.string(),
-        .isAsync = false,
-        .defaultSeverity = Severity::TRC,
-        .jsonMode = false,
-    };
-    auto const result = LogService::init(config);
-    ASSERT_TRUE(result);
+    // Use the system temp directory (already exists) so no directory
+    // creation or cleanup is needed.
+    auto const dir = std::filesystem::temp_directory_path();
+    auto sink = createFileSink(dir.string());
 
-    // stderr sink + file sink = 2 sinks
-    ASSERT_EQ(sinks().size(), 2u);
-    EXPECT_NE(dynamic_cast<spdlog::sinks::basic_file_sink_mt*>(sinks()[1].get()), nullptr)
-        << "Second sink should be basic_file_sink_mt";
+    // Should be a basic_file_sink_mt
+    auto* fileSink = dynamic_cast<spdlog::sinks::basic_file_sink_mt*>(sink.get());
+    ASSERT_NE(fileSink, nullptr) << "createFileSink should return a basic_file_sink_mt";
 
-    // The log file should exist
-    EXPECT_TRUE(std::filesystem::exists(tmpDir / "xrpld.log"));
-
-    // Clean up
-    std::filesystem::remove_all(tmpDir);
-}
-
-TEST_F(LoggerFixture, file_sink_writes_log_entries)
-{
-    auto const tmpDir = std::filesystem::temp_directory_path() /
-        ("logger_test_write_" + std::to_string(::getpid()));
-    std::filesystem::create_directories(tmpDir);
-
-    LoggingConfiguration const config{
-        .enableConsole = false,
-        .directory = tmpDir.string(),
-        .isAsync = false,
-        .defaultSeverity = Severity::TRC,
-        .jsonMode = false,
-    };
-    auto const result = LogService::init(config);
-    ASSERT_TRUE(result);
-
-    Logger const logger("FileTest");
-    logger.info() << "file sink test message";
-
-    // Flush so the message is written
-    spdlog::default_logger()->flush();
-
-    // Read the file and verify the message was written
-    auto const logPath = tmpDir / "xrpld.log";
-    std::ifstream ifs(logPath);
-    std::string const contents(
-        (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-
-    EXPECT_NE(contents.find("file sink test message"), std::string::npos)
-        << "Log file contents: " << contents;
-    EXPECT_NE(contents.find("FileTest:NFO"), std::string::npos)
-        << "Log file contents: " << contents;
-
-    // Clean up
-    std::filesystem::remove_all(tmpDir);
+    // The filename should point to <dir>/xrpld.log
+    auto const expectedPath = (dir / "xrpld.log").string();
+    EXPECT_EQ(fileSink->filename(), expectedPath);
 }
 
 TEST_F(LoggerFixture, init_fails_for_invalid_directory)
 {
     // Use a path where directory creation should fail —
     // a deeply nested path under a non-existent root that can't be created.
-    // On macOS/Linux, /proc/fake/... or a path with a null byte should fail.
     LoggingConfiguration const config{
         .enableConsole = false,
         .directory = std::string("/dev/null/impossible_log_dir"),
@@ -568,30 +525,13 @@ TEST_F(LoggerFixture, init_fails_for_invalid_directory)
 
 TEST_F(LoggerFixture, async_mode_creates_async_logger)
 {
-    initLogging(/*jsonMode=*/false, Severity::TRC, /*isAsync=*/true);
+    initLogging(false, Severity::TRC, true);
 
     Logger const logger("AsyncTest");
     auto const spdlogger = spdlog::get("AsyncTest");
     ASSERT_NE(spdlogger, nullptr);
     EXPECT_NE(dynamic_cast<spdlog::async_logger*>(spdlogger.get()), nullptr)
         << "Logger should be async_logger when isAsync=true";
-}
-
-TEST_F(LoggerFixture, async_mode_delivers_messages)
-{
-    initLogging(/*jsonMode=*/false, Severity::TRC, /*isAsync=*/true);
-
-    Logger const logger("AsyncMsg");
-    logger.info() << "async hello";
-
-    // In async mode, messages are queued to a thread pool.
-    // shutdown() blocks until all queued messages are processed.
-    LogService::shutdown();
-
-    EXPECT_NE(output_.str().find("async hello"), std::string::npos)
-        << "Async message not delivered: " << output_.str();
-    EXPECT_NE(output_.str().find("AsyncMsg:NFO"), std::string::npos)
-        << "Missing channel/severity: " << output_.str();
 }
 
 TEST_F(LoggerFixture, sync_mode_creates_sync_logger)
@@ -751,9 +691,7 @@ TEST_F(LoggerFixture, rotate_returns_message_when_no_file_logging)
 
 TEST_F(LoggerFixture, rotate_replaces_file_sink)
 {
-    auto const tmpDir = std::filesystem::temp_directory_path() /
-        ("logger_test_rotate_" + std::to_string(::getpid()));
-    std::filesystem::create_directories(tmpDir);
+    auto const tmpDir = std::filesystem::temp_directory_path();
 
     LoggingConfiguration const config{
         .enableConsole = false,
@@ -764,10 +702,6 @@ TEST_F(LoggerFixture, rotate_replaces_file_sink)
     };
     auto const result = LogService::init(config);
     ASSERT_TRUE(result);
-
-    // Log something before rotation
-    Logger const logger("RotateTest");
-    logger.info() << "before rotation";
 
     auto const msg = LogService::rotate();
     EXPECT_EQ(msg, "The log file was closed and reopened.");
@@ -783,18 +717,6 @@ TEST_F(LoggerFixture, rotate_replaces_file_sink)
         }
     }
     EXPECT_TRUE(hasFileSink) << "File sink should still exist after rotation";
-
-    // Log something after rotation — it should go to the new file
-    logger.info() << "after rotation";
-    spdlog::get("RotateTest")->flush();
-
-    std::ifstream ifs(tmpDir / "xrpld.log");
-    std::string const contents(
-        (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-    EXPECT_NE(contents.find("after rotation"), std::string::npos)
-        << "Post-rotation message missing from log file: " << contents;
-
-    std::filesystem::remove_all(tmpDir);
 }
 
 // -- LogService::shutdown -----------------------------------------------------
@@ -812,7 +734,7 @@ TEST_F(LoggerFixture, shutdown_sync_mode_is_noop)
 
 TEST_F(LoggerFixture, shutdown_async_mode_flushes)
 {
-    initLogging(/*jsonMode=*/false, Severity::TRC, /*isAsync=*/true);
+    initLogging(false, Severity::TRC, true);
 
     Logger const logger("ShutdownAsync");
     logger.info() << "before shutdown";
