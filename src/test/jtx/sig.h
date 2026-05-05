@@ -21,7 +21,7 @@ private:
     /** Account that will generate the signature.
      *
      * If not provided, no signature will be added by this helper. See also
-     * Env::autofill_sig.
+     * Env::autofillSig.
      */
     std::optional<Account> account_;
     /// Used solely as a convenience placeholder for ctors that do _not_ specify

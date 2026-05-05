@@ -55,7 +55,7 @@ public:
         clock_type::duration expiration,
         clock_type& clock,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New());
+        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make());
 
 public:
     /** Return the clock associated with the cache. */
@@ -276,26 +276,26 @@ private:
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
 
-    beast::Journal m_journal_;
-    clock_type& m_clock_;
-    Stats m_stats_;
+    beast::Journal journal_;
+    clock_type& clock_;
+    Stats stats_;
 
-    mutex_type mutable m_mutex_;
+    mutex_type mutable mutex_;
 
     // Used for logging
-    std::string m_name_;
+    std::string name_;
 
     // Desired number of cache entries (0 = ignore)
-    int const m_target_size_;
+    int const target_size_;
 
     // Desired maximum cache age
-    clock_type::duration const m_target_age_;
+    clock_type::duration const target_age_;
 
     // Number of items cached
-    int m_cache_count_{0};
-    cache_type m_cache_;  // Hold strong reference to recent objects
-    std::uint64_t m_hits_{0};
-    std::uint64_t m_misses_{0};
+    int cache_count_{0};
+    cache_type cache_;  // Hold strong reference to recent objects
+    std::uint64_t hits_{0};
+    std::uint64_t misses_{0};
 };
 
 }  // namespace xrpl

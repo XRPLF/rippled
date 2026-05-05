@@ -54,16 +54,15 @@ public:
         std::mutex mutex_;
         std::mutex mutex_run_;
         std::condition_variable cv_;
+        boost::coroutines2::coroutine<void>::push_type* yield_{};
         boost::coroutines2::coroutine<void>::pull_type coro_;
-        boost::coroutines2::coroutine<void>::push_type* yield_;
 #ifndef NDEBUG
         bool finished_ = false;
 #endif
 
     public:
-        // Private: Used in the implementation
         template <class F>
-        Coro(CoroCreateT, JobQueue&, JobType, std::string const&, F&&);
+        Coro(CoroCreateT, JobQueue&, JobType, std::string, F&&);
 
         // Not copy-constructible or assignable
         Coro(Coro const&) = delete;
@@ -200,7 +199,7 @@ public:
     isOverloaded();
 
     // Cannot be const because LoadMonitor has no const methods.
-    Json::Value
+    json::Value
     getJson(int c = 0);
 
     /** Block until no jobs running. */
@@ -226,27 +225,27 @@ private:
 
     using JobDataMap = std::map<JobType, JobTypeData>;
 
-    beast::Journal m_journal_;
-    mutable std::mutex m_mutex_;
-    std::uint64_t m_lastJob_{0};
-    std::set<Job> m_jobSet_;
+    beast::Journal journal_;
+    mutable std::mutex mutex_;
+    std::uint64_t lastJob_{0};
+    std::set<Job> jobSet_;
     JobCounter jobCounter_;
     std::atomic_bool stopping_{false};
     std::atomic_bool stopped_{false};
-    JobDataMap m_jobData_;
-    JobTypeData m_invalidJobData_;
+    JobDataMap jobData_;
+    JobTypeData invalidJobData_;
 
     // The number of jobs currently in processTask()
-    int m_processCount_{0};
+    int processCount_{0};
 
     // The number of suspended coroutines
     int nSuspend_ = 0;
 
-    Workers m_workers_;
+    Workers workers_;
 
     // Statistics tracking
     perf::PerfLog& perfLog_;
-    beast::insight::Collector::ptr m_collector_;
+    beast::insight::Collector::ptr collector_;
     beast::insight::Gauge job_count_;
     beast::insight::Hook hook_;
 
@@ -274,12 +273,12 @@ private:
     //  A Job in the JobSet whose slots count for its type is greater than zero.
     //
     // Pre-conditions:
-    //  mJobSet must not be empty.
-    //  mJobSet holds at least one RunnableJob
+    //  jobSet_ must not be empty.
+    //  jobSet_ holds at least one RunnableJob
     //
     // Post-conditions:
     //  job is a valid Job object.
-    //  job is removed from mJobQueue.
+    //  job is removed from jobQueue_.
     //  Waiting job count of its type is decremented
     //  Running job count of its type is incremented
     //
@@ -291,7 +290,7 @@ private:
     // Indicates that a running Job has completed its task.
     //
     // Pre-conditions:
-    //  Job must not exist in mJobSet.
+    //  Job must not exist in jobSet_.
     //  The JobType must not be invalid.
     //
     // Post-conditions:

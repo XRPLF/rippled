@@ -39,7 +39,7 @@ public:
     getText() const;
 
     void
-    setJson(Json::Value& jv) const;
+    setJson(json::Value& jv) const;
 
     friend constexpr bool
     operator==(MPTIssue const& lhs, MPTIssue const& rhs);
@@ -121,14 +121,14 @@ hash_append(Hasher& h, MPTIssue const& r)
     hash_append(h, r.getMptID());
 }
 
-Json::Value
-to_json(MPTIssue const& mptIssue);
+json::Value
+toJson(MPTIssue const& mptIssue);
 
 std::string
 to_string(MPTIssue const& mptIssue);
 
 MPTIssue
-mptIssueFromJson(Json::Value const& jv);
+mptIssueFromJson(json::Value const& jv);
 
 std::ostream&
 operator<<(std::ostream& os, MPTIssue const& x);

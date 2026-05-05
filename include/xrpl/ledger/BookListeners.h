@@ -41,9 +41,9 @@ public:
     publish(MultiApiJson const& jvObj, hash_set<std::uint64_t>& havePublished);
 
 private:
-    std::recursive_mutex mLock;
+    std::recursive_mutex lock_;
 
-    hash_map<std::uint64_t, InfoSub::wptr> mListeners;
+    hash_map<std::uint64_t, InfoSub::wptr> listeners_;
 };
 
 }  // namespace xrpl

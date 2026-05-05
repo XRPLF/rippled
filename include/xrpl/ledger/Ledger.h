@@ -249,7 +249,7 @@ public:
     bool
     isImmutable() const
     {
-        return mImmutable_;
+        return immutable_;
     }
 
     /*  Mark this ledger as "should be full".
@@ -365,8 +365,8 @@ public:
     peek(Keylet const& k) const;
 
 private:
-    class sles_iter_impl;
-    class txs_iter_impl;
+    class SlesIterImpl;
+    class TxsIterImpl;
 
     bool
     setup();
@@ -392,7 +392,7 @@ private:
     static std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
     deserializeTxPlusMeta(SHAMapItem const& item);
 
-    bool mImmutable_;
+    bool immutable_;
 
     // A SHAMap containing the transactions associated with this ledger.
     SHAMap mutable txMap_;

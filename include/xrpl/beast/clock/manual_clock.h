@@ -44,7 +44,7 @@ public:
     {
         XRPL_ASSERT(
             !Clock::is_steady || when >= now_,
-            "beast::manual_clock::set(time_point) : forward input");
+            "beast::ManualClock::set(time_point) : forward input");
         now_ = when;
     }
 
@@ -63,7 +63,7 @@ public:
     {
         XRPL_ASSERT(
             !Clock::is_steady || (now_ + elapsed) >= now_,
-            "beast::manual_clock::advance(duration) : forward input");
+            "beast::ManualClock::advance(duration) : forward input");
         now_ += elapsed;
     }
 

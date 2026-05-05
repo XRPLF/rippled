@@ -30,7 +30,8 @@ struct ThrowPolicy : public boost::outcome_v2::policy::base
 {
     template <class Impl>
     static constexpr void
-    wideValueCheck(Impl&& self)
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    wide_value_check(Impl&& self)
     {
         if (!base::_has_value(std::forward<Impl>(self)))
             Throw<BadExpectedAccess>();
@@ -38,7 +39,8 @@ struct ThrowPolicy : public boost::outcome_v2::policy::base
 
     template <class Impl>
     static constexpr void
-    wideErrorCheck(Impl&& self)
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    wide_error_check(Impl&& self)
     {
         if (!base::_has_error(std::forward<Impl>(self)))
             Throw<BadExpectedAccess>();
@@ -46,7 +48,8 @@ struct ThrowPolicy : public boost::outcome_v2::policy::base
 
     template <class Impl>
     static constexpr void
-    wideExceptionCheck(Impl&& self)
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    wide_exception_check(Impl&& self)
     {
         if (!base::_has_exception(std::forward<Impl>(self)))
             Throw<BadExpectedAccess>();
@@ -126,7 +129,8 @@ public:
     }
 
     [[nodiscard]] constexpr bool
-    hasValue() const
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    has_value() const
     {
         return Base::has_value();
     }
@@ -158,7 +162,7 @@ public:
     constexpr explicit
     operator bool() const
     {
-        return hasValue();
+        return has_value();
     }
 
     // Add operator* and operator-> so the Expected API looks a bit more like

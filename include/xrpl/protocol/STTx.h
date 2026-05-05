@@ -16,12 +16,12 @@
 namespace xrpl {
 
 enum class TxnSql : char {
-    TxnSqlNew = 'N',
-    TxnSqlConflict = 'C',
-    TxnSqlHeld = 'H',
-    TxnSqlValidated = 'V',
-    TxnSqlIncluded = 'I',
-    TxnSqlUnknown = 'U'
+    New = 'N',
+    Conflict = 'C',
+    Held = 'H',
+    Validated = 'V',
+    Included = 'I',
+    Unknown = 'U'
 };
 
 class STTx final : public STObject, public CountedObject<STTx>
@@ -92,10 +92,10 @@ public:
     uint256
     getTransactionID() const;
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options) const override;
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options, bool binary) const;
 
     void

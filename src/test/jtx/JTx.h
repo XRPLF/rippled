@@ -21,15 +21,15 @@ class Env;
 */
 struct JTx
 {
-    Json::Value jv;
+    json::Value jv;
     requires_t require;
-    std::optional<TER> ter = TER{TesSuccess};
+    std::optional<TER> ter = TER{tesSUCCESS};
     std::optional<std::pair<ErrorCodeI, std::string>> rpcCode = std::nullopt;
     std::optional<std::pair<std::string, std::optional<std::string>>> rpcException = std::nullopt;
-    bool fill_fee = true;
-    bool fill_seq = true;
-    bool fill_sig = true;
-    bool fill_netid = true;
+    bool fillFee = true;
+    bool fillSeq = true;
+    bool fillSig = true;
+    bool fillNetid = true;
     std::shared_ptr<STTx const> stx;
     // Functions that sign the transaction from the Account
     std::vector<std::function<void(Env&, JTx&)>> mainSigners;
@@ -45,16 +45,16 @@ struct JTx
     JTx&
     operator=(JTx&&) = default;
 
-    JTx(Json::Value&& jv) : jv(std::move(jv))
+    JTx(json::Value&& jv) : jv(std::move(jv))
     {
     }
 
-    JTx(Json::Value const& jv) : jv(jv)
+    JTx(json::Value const& jv) : jv(jv)
     {
     }
 
     template <class Key>
-    Json::Value&
+    json::Value&
     operator[](Key const& key)
     {
         return jv[key];

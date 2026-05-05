@@ -24,7 +24,7 @@ namespace detail {
 template <class T>
 /*constexpr*/
 inline void
-reverse_bytes(T& t)
+reverseBytes(T& t)
 {
     unsigned char* bytes =
         static_cast<unsigned char*>(std::memmove(std::addressof(t), std::addressof(t), sizeof(T)));
@@ -35,14 +35,14 @@ reverse_bytes(T& t)
 template <class T>
 /*constexpr*/
 inline void
-maybe_reverse_bytes(T& t, std::false_type)
+maybeReverseBytes(T& t, std::false_type)
 {
 }
 
 template <class T>
 /*constexpr*/
 inline void
-maybe_reverse_bytes(T& t, std::true_type)
+maybeReverseBytes(T& t, std::true_type)
 {
     reverse_bytes(t);
 }
@@ -50,15 +50,15 @@ maybe_reverse_bytes(T& t, std::true_type)
 template <class T, class Hasher>
 /*constexpr*/
 inline void
-maybe_reverse_bytes(T& t, Hasher&)
+maybeReverseBytes(T& t, Hasher&)
 {
-    maybe_reverse_bytes(
-        t, std::integral_constant<bool, Hasher::endian != boost::endian::order::native>{});
+    maybeReverseBytes(
+        t, std::integral_constant<bool, Hasher::kENDIAN != boost::endian::order::native>{});
 }
 
 }  // namespace detail
 
-// is_uniquely_represented<T>
+// IsUniquelyRepresented<T>
 
 // A type T is contiguously hashable if for all combinations of two values of
 // a type, say x and y, if x == y, then it must also be true that
@@ -75,69 +75,69 @@ struct IsUniquelyRepresented
 };
 
 template <class T>
-struct is_uniquely_represented<T const> : public IsUniquelyRepresented<T>
+struct IsUniquelyRepresented<T const> : public IsUniquelyRepresented<T>
 {
-    explicit is_uniquely_represented() = default;
+    explicit IsUniquelyRepresented() = default;
 };
 
 template <class T>
-struct is_uniquely_represented<T volatile> : public IsUniquelyRepresented<T>
+struct IsUniquelyRepresented<T volatile> : public IsUniquelyRepresented<T>
 {
-    explicit is_uniquely_represented() = default;
+    explicit IsUniquelyRepresented() = default;
 };
 
 template <class T>
-struct is_uniquely_represented<T const volatile> : public IsUniquelyRepresented<T>
+struct IsUniquelyRepresented<T const volatile> : public IsUniquelyRepresented<T>
 {
-    explicit is_uniquely_represented() = default;
+    explicit IsUniquelyRepresented() = default;
 };
 
-// is_uniquely_represented<std::pair<T, U>>
+// IsUniquelyRepresented<std::pair<T, U>>
 
 template <class T, class U>
-struct is_uniquely_represented<std::pair<T, U>>
+struct IsUniquelyRepresented<std::pair<T, U>>
     : public std::integral_constant<
           bool,
           IsUniquelyRepresented<T>::value && IsUniquelyRepresented<U>::value &&
               sizeof(T) + sizeof(U) == sizeof(std::pair<T, U>)>
 {
-    explicit is_uniquely_represented() = default;
+    explicit IsUniquelyRepresented() = default;
 };
 
-// is_uniquely_represented<std::tuple<T...>>
+// IsUniquelyRepresented<std::tuple<T...>>
 
 template <class... T>
-struct is_uniquely_represented<std::tuple<T...>>
+struct IsUniquelyRepresented<std::tuple<T...>>
     : public std::integral_constant<
           bool,
           std::conjunction_v<IsUniquelyRepresented<T>...> &&
               sizeof(std::tuple<T...>) == (sizeof(T) + ...)>
 {
-    explicit is_uniquely_represented() = default;
+    explicit IsUniquelyRepresented() = default;
 };
 
-// is_uniquely_represented<T[N]>
+// IsUniquelyRepresented<T[N]>
 
 template <class T, std::size_t N>
-struct is_uniquely_represented<T[N]> : public IsUniquelyRepresented<T>
+struct IsUniquelyRepresented<T[N]> : public IsUniquelyRepresented<T>
 {
-    explicit is_uniquely_represented() = default;
+    explicit IsUniquelyRepresented() = default;
 };
 
-// is_uniquely_represented<std::array<T, N>>
+// IsUniquelyRepresented<std::array<T, N>>
 
 template <class T, std::size_t N>
-struct is_uniquely_represented<std::array<T, N>>
+struct IsUniquelyRepresented<std::array<T, N>>
     : public std::integral_constant<
           bool,
           IsUniquelyRepresented<T>::value && sizeof(T) * N == sizeof(std::array<T, N>)>
 {
-    explicit is_uniquely_represented() = default;
+    explicit IsUniquelyRepresented() = default;
 };
 
 /** Metafunction returning `true` if the type can be hashed in one call.
 
-    For `is_contiguously_hashable<T>::value` to be true, then for every
+    For `IsContiguouslyHashable<T>::value` to be true, then for every
     combination of possible values of `T` held in `x` and `y`,
     if `x == y`, then it must be true that `memcmp(&x, &y, sizeof(T))`
     return 0; i.e. that `x` and `y` are represented by the same bit pattern.
@@ -160,13 +160,13 @@ struct IsContiguouslyHashable
 };
 
 template <class T, std::size_t N, class HashAlgorithm>
-struct is_contiguously_hashable<T[N], HashAlgorithm>
+struct IsContiguouslyHashable<T[N], HashAlgorithm>
     : public std::integral_constant<
           bool,
           IsUniquelyRepresented<T[N]>::value &&
               (sizeof(T) == 1 || HashAlgorithm::endian == boost::endian::order::native)>
 {
-    explicit is_contiguously_hashable() = default;
+    explicit IsContiguouslyHashable() = default;
 };
 /** @} */
 
@@ -213,7 +213,7 @@ inline std::enable_if_t<
     (std::is_integral_v<T> || std::is_pointer_v<T> || std::is_enum_v<T>)>
 hash_append(Hasher& h, T t) noexcept
 {
-    detail::reverse_bytes(t);
+    detail::reverseBytes(t);
     h(std::addressof(t), sizeof(t));
 }
 
@@ -223,7 +223,7 @@ hash_append(Hasher& h, T t) noexcept
 {
     if (t == 0)
         t = 0;
-    detail::maybe_reverse_bytes(t, h);
+    detail::maybeReverseBytes(t, h);
     h(&t, sizeof(t));
 }
 
@@ -232,7 +232,7 @@ inline void
 hash_append(Hasher& h, std::nullptr_t) noexcept
 {
     void const* p = nullptr;
-    detail::maybe_reverse_bytes(p, h);
+    detail::maybeReverseBytes(p, h);
     h(&p, sizeof(p));
 }
 
@@ -373,13 +373,13 @@ hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v)
 namespace detail {
 
 inline void
-for_each_item(...) noexcept
+forEachItem(...) noexcept
 {
 }
 
 template <class Hasher, class T>
 inline int
-hash_one(Hasher& h, T const& t) noexcept
+hashOne(Hasher& h, T const& t) noexcept
 {
     hash_append(h, t);
     return 0;

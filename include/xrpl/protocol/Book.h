@@ -170,8 +170,8 @@ private:
     using asset_hasher = std::hash<xrpl::Asset>;
     using uint256_hasher = xrpl::uint256::hasher;
 
-    asset_hasher m_asset_hasher_;
-    uint256_hasher m_uint256_hasher_;
+    asset_hasher issue_hasher_;
+    uint256_hasher uint256_hasher_;
 
 public:
     hash() = default;
@@ -182,11 +182,11 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(m_asset_hasher_(value.in));
-        boost::hash_combine(result, m_asset_hasher_(value.out));
+        value_type result(issue_hasher_(value.in));
+        boost::hash_combine(result, issue_hasher_(value.out));
 
         if (value.domain)
-            boost::hash_combine(result, m_uint256_hasher_(*value.domain));
+            boost::hash_combine(result, uint256_hasher_(*value.domain));
 
         return result;
     }

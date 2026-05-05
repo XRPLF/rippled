@@ -25,11 +25,11 @@ struct Signer
     }
 };
 
-Json::Value
+json::Value
 signers(Account const& account, std::uint32_t quorum, std::vector<Signer> const& v);
 
 /** Remove a signer list. */
-Json::Value
+json::Value
 signers(Account const& account, NoneT);
 
 //------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ public:
     Msig(SField const* subField, std::vector<Reg> signers)
         : signers(std::move(signers)), subField(subField)
     {
-        sortSigners(signers);
+        sortSigners(this->signers);
     }
 
     Msig(SField const& subField, std::vector<Reg> signers) : Msig{&subField, signers}

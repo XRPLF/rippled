@@ -47,8 +47,8 @@ private:
     // Severity level / threshold of a Journal message.
     using Severity = severities::Severity;
 
-    // Invariant: m_sink always points to a valid Sink
-    Sink* m_sink_;
+    // Invariant: sink_ always points to a valid Sink
+    Sink* sink_;
 
 public:
     //--------------------------------------------------------------------------
@@ -108,7 +108,7 @@ public:
 
     private:
         Severity thresh_;
-        bool m_console_;
+        bool console_;
     };
 
 #ifndef __INTELLISENSE__
@@ -132,7 +132,7 @@ public:
     class ScopedStream
     {
     public:
-        ScopedStream(ScopedStream const& other) : ScopedStream(other.m_sink_, other.m_level_)
+        ScopedStream(ScopedStream const& other) : ScopedStream(other.sink_, other.level_)
         {
         }
 
@@ -151,7 +151,7 @@ public:
         std::ostringstream&
         ostream() const
         {
-            return m_ostream_;
+            return ostream_;
         }
 
         std::ostream&
@@ -162,9 +162,9 @@ public:
         operator<<(T const& t) const;
 
     private:
-        Sink& m_sink_;
-        Severity const m_level_;
-        std::ostringstream mutable m_ostream_;
+        Sink& sink_;
+        Severity const level_;
+        std::ostringstream mutable ostream_;
     };
 
 #ifndef __INTELLISENSE__
@@ -183,7 +183,7 @@ public:
     {
     public:
         /** Create a stream which produces no output. */
-        explicit Stream() : m_sink_(getNullSink()), m_level_(severities::KDisabled)
+        explicit Stream() : sink_(getNullSink()), level_(severities::KDisabled)
         {
         }
 
@@ -191,14 +191,14 @@ public:
 
             Constructor is inlined so checking active() very inexpensive.
         */
-        Stream(Sink& sink, Severity level) : m_sink_(sink), m_level_(level)
+        Stream(Sink& sink, Severity level) : sink_(sink), level_(level)
         {
             XRPL_ASSERT(
-                m_level_ < severities::KDisabled, "beast::Journal::Stream::Stream : maximum level");
+                level_ < severities::KDisabled, "beast::Journal::Stream::Stream : maximum level");
         }
 
         /** Construct or copy another Stream. */
-        Stream(Stream const& other) : Stream(other.m_sink_, other.m_level_)
+        Stream(Stream const& other) : Stream(other.sink_, other.level_)
         {
         }
 
@@ -209,14 +209,14 @@ public:
         [[nodiscard]] Sink&
         sink() const
         {
-            return m_sink_;
+            return sink_;
         }
 
         /** Returns the Severity level of messages this Stream reports. */
         [[nodiscard]] Severity
         level() const
         {
-            return m_level_;
+            return level_;
         }
 
         /** Returns `true` if sink logs anything at this stream's level. */
@@ -224,7 +224,7 @@ public:
         [[nodiscard]] bool
         active() const
         {
-            return m_sink_.active(m_level_);
+            return sink_.active(level_);
         }
 
         explicit
@@ -245,8 +245,8 @@ public:
         /** @} */
 
     private:
-        Sink& m_sink_;
-        Severity m_level_;
+        Sink& sink_;
+        Severity level_;
     };
 
 #ifndef __INTELLISENSE__
@@ -264,7 +264,7 @@ public:
     Journal() = delete;
 
     /** Create a journal that writes to the specified sink. */
-    explicit Journal(Sink& sink) : m_sink_(&sink)
+    explicit Journal(Sink& sink) : sink_(&sink)
     {
     }
 
@@ -272,14 +272,14 @@ public:
     [[nodiscard]] Sink&
     sink() const
     {
-        return *m_sink_;
+        return *sink_;
     }
 
     /** Returns a stream for this sink, with the specified severity level. */
     [[nodiscard]] Stream
     stream(Severity level) const
     {
-        return Stream(*m_sink_, level);
+        return Stream(*sink_, level);
     }
 
     /** Returns `true` if any message would be logged at this severity level.
@@ -289,7 +289,7 @@ public:
     [[nodiscard]] bool
     active(Severity level) const
     {
-        return m_sink_->active(level);
+        return sink_->active(level);
     }
 
     /** Severity stream access functions. */
@@ -297,37 +297,37 @@ public:
     [[nodiscard]] Stream
     trace() const
     {
-        return {*m_sink_, severities::KTrace};
+        return {*sink_, severities::KTrace};
     }
 
     [[nodiscard]] Stream
     debug() const
     {
-        return {*m_sink_, severities::KDebug};
+        return {*sink_, severities::KDebug};
     }
 
     [[nodiscard]] Stream
     info() const
     {
-        return {*m_sink_, severities::KInfo};
+        return {*sink_, severities::KInfo};
     }
 
     [[nodiscard]] Stream
     warn() const
     {
-        return {*m_sink_, severities::KWarning};
+        return {*sink_, severities::KWarning};
     }
 
     [[nodiscard]] Stream
     error() const
     {
-        return {*m_sink_, severities::KError};
+        return {*sink_, severities::KError};
     }
 
     [[nodiscard]] Stream
     fatal() const
     {
-        return {*m_sink_, severities::KFatal};
+        return {*sink_, severities::KFatal};
     }
     /** @} */
 };
@@ -347,15 +347,15 @@ template <typename T>
 Journal::ScopedStream::ScopedStream(Journal::Stream const& stream, T const& t)
     : ScopedStream(stream.sink(), stream.level())
 {
-    m_ostream_ << t;
+    ostream_ << t;
 }
 
 template <typename T>
 std::ostream&
 Journal::ScopedStream::operator<<(T const& t) const
 {
-    m_ostream_ << t;
-    return m_ostream_;
+    ostream_ << t;
+    return ostream_;
 }
 
 //------------------------------------------------------------------------------
@@ -370,7 +370,7 @@ Journal::Stream::operator<<(T const& t) const
 namespace detail {
 
 template <class CharT, class Traits = std::char_traits<CharT>>
-class LogstreamBuf : public std::basic_stringbuf<CharT, Traits>
+class LogStreamBuf : public std::basic_stringbuf<CharT, Traits>
 {
     beast::Journal::Stream strm_;
 
@@ -389,11 +389,11 @@ class LogstreamBuf : public std::basic_stringbuf<CharT, Traits>
     }
 
 public:
-    explicit LogstreamBuf(beast::Journal::Stream const& strm) : strm_(strm)
+    explicit LogStreamBuf(beast::Journal::Stream const& strm) : strm_(strm)
     {
     }
 
-    ~LogstreamBuf() override
+    ~LogStreamBuf() override
     {
         sync();
     }
@@ -422,7 +422,7 @@ class BasicLogstream : public std::basic_ostream<CharT, Traits>
     using pos_type = typename traits_type::pos_type;
     using off_type = typename traits_type::off_type;
 
-    detail::LogstreamBuf<CharT, Traits> buf_;
+    detail::LogStreamBuf<CharT, Traits> buf_;
 
 public:
     explicit BasicLogstream(beast::Journal::Stream const& strm)

@@ -45,7 +45,7 @@ public:
     using duration = std::chrono::duration<rep, period>;
     using time_point = std::chrono::time_point<NetClock>;
 
-    static bool const kIS_STEADY = false;
+    static bool const is_steady = false;  // NOLINT(readability-identifier-naming)
 };
 
 template <class Duration>
@@ -65,19 +65,19 @@ to_string(NetClock::time_point tp)
 
 template <class Duration>
 std::string
-to_string_iso(date::sys_time<Duration> tp)
+toStringIso(date::sys_time<Duration> tp)
 {
     using namespace std::chrono;
     return date::format("%FT%TZ", tp);
 }
 
 inline std::string
-to_string_iso(NetClock::time_point tp)
+toStringIso(NetClock::time_point tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     // Note, NetClock::duration is seconds, as checked by static_assert
     static_assert(std::is_same_v<NetClock::duration::period, std::ratio<1>>);
-    return to_string_iso(date::sys_time<NetClock::duration>{tp.time_since_epoch() + kEPOCH_OFFSET});
+    return toStringIso(date::sys_time<NetClock::duration>{tp.time_since_epoch() + kEPOCH_OFFSET});
 }
 
 /** A clock for measuring elapsed time.
@@ -95,7 +95,7 @@ stopwatch()
 {
     using Clock = beast::BasicSecondsClock;
     using Facade = Clock::Clock;
-    return beast::get_abstract_clock<Facade, Clock>();
+    return beast::getAbstractClock<Facade, Clock>();
 }
 
 }  // namespace xrpl

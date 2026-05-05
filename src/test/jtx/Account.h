@@ -130,7 +130,7 @@ operator==(Account const& lhs, Account const& rhs) noexcept
 
 template <class Hasher>
 void
-hash_append(Hasher& h, Account const& v) noexcept
+hash_append(Hasher& h, Account const& v) noexcept  // NOLINT(readability-identifier-naming)
 {
     hash_append(h, v.id());
 }

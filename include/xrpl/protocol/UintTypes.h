@@ -77,7 +77,7 @@ to_string(Currency const& c);
           to rewrite some unit test code.
 */
 bool
-to_currency(Currency&, std::string const&);
+toCurrency(Currency&, std::string const&);
 
 /** Tries to convert a string to a Currency, returns noCurrency() on failure.
 
@@ -86,7 +86,7 @@ to_currency(Currency&, std::string const&);
           everywhere and may mean having to rewrite some unit test code.
 */
 Currency
-to_currency(std::string const&);
+toCurrency(std::string const&);
 
 inline std::ostream&
 operator<<(std::ostream& os, Currency const& x)

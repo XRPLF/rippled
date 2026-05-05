@@ -61,21 +61,21 @@ invalidAMMAsset(Asset const& asset, std::optional<std::pair<Asset, Asset>> const
     auto const err = asset.visit(
         [](MPTIssue const& issue) -> std::optional<NotTEC> {
             if (issue.getIssuer() == beast::kZERO)
-                return TemBadMpt;
+                return temBAD_MPT;
             return std::nullopt;
         },
         [](Issue const& issue) -> std::optional<NotTEC> {
             if (badCurrency() == issue.currency)
-                return TemBadCurrency;
+                return temBAD_CURRENCY;
             if (isXRP(issue) && issue.getIssuer().isNonZero())
-                return TemBadIssuer;
+                return temBAD_ISSUER;
             return std::nullopt;
         });
     if (err)
         return *err;
     if (pair && asset != pair->first && asset != pair->second)
-        return TemBadAmmTokens;
-    return TesSuccess;
+        return temBAD_AMM_TOKENS;
+    return tesSUCCESS;
 }
 
 NotTEC
@@ -85,12 +85,12 @@ invalidAMMAssetPair(
     std::optional<std::pair<Asset, Asset>> const& pair)
 {
     if (asset1 == asset2)
-        return TemBadAmmTokens;
+        return temBAD_AMM_TOKENS;
     if (auto const res = invalidAMMAsset(asset1, pair))
         return res;
     if (auto const res = invalidAMMAsset(asset2, pair))
         return res;
-    return TesSuccess;
+    return tesSUCCESS;
 }
 
 NotTEC
@@ -102,8 +102,8 @@ invalidAMMAmount(
     if (auto const res = invalidAMMAsset(amount.asset(), pair))
         return res;
     if (amount < beast::kZERO || (!validZero && amount == beast::kZERO))
-        return TemBadAmount;
-    return TesSuccess;
+        return temBAD_AMOUNT;
+    return tesSUCCESS;
 }
 
 std::optional<std::uint8_t>
@@ -128,7 +128,7 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
 bool
 ammEnabled(Rules const& rules)
 {
-    return rules.enabled(featureAMM);
+    return rules.enabled(featureAMM) && rules.enabled(fixUniversalNumber);
 }
 
 }  // namespace xrpl

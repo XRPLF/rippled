@@ -39,8 +39,8 @@ public:
     operator*(value_type m) const;
 
 private:
-    value_type m_cost_;
-    std::string m_label_;
+    value_type cost_;
+    std::string label_;
 };
 
 std::ostream&

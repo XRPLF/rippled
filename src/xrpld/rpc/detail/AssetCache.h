@@ -45,7 +45,7 @@ public:
     getMPTs(AccountID const& account);
 
 private:
-    std::mutex mLock_;
+    std::mutex lock_;
 
     xrpl::HardenedHash<> hasher_;
     std::shared_ptr<ReadView const> ledger_;

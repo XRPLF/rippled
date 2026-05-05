@@ -21,41 +21,41 @@ class Serializer
 {
 private:
     // DEPRECATED
-    Blob mData_;
+    Blob data_;
 
 public:
     explicit Serializer(int n = 256)
     {
-        mData_.reserve(n);
+        data_.reserve(n);
     }
 
     Serializer(void const* data, std::size_t size)
     {
-        mData_.resize(size);
+        data_.resize(size);
 
         if (size != 0u)
         {
             XRPL_ASSERT(data, "xrpl::Serializer::Serializer(void const*) : non-null input");
-            std::memcpy(mData_.data(), data, size);
+            std::memcpy(data_.data(), data, size);
         }
     }
 
     [[nodiscard]] Slice
     slice() const noexcept
     {
-        return Slice(mData_.data(), mData_.size());
+        return Slice(data_.data(), data_.size());
     }
 
     [[nodiscard]] std::size_t
     size() const noexcept
     {
-        return mData_.size();
+        return data_.size();
     }
 
     [[nodiscard]] void const*
     data() const noexcept
     {
-        return mData_.data();
+        return data_.data();
     }
 
     // assemble functions
@@ -69,11 +69,11 @@ public:
     int
     add32(T i)
     {
-        int const ret = mData_.size();
-        mData_.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
-        mData_.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-        mData_.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-        mData_.push_back(static_cast<unsigned char>(i & 0xff));
+        int const ret = data_.size();
+        data_.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
+        data_.push_back(static_cast<unsigned char>(i & 0xff));
         return ret;
     }
 
@@ -85,15 +85,15 @@ public:
     int
     add64(T i)
     {
-        int const ret = mData_.size();
-        mData_.push_back(static_cast<unsigned char>((i >> 56) & 0xff));
-        mData_.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
-        mData_.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
-        mData_.push_back(static_cast<unsigned char>((i >> 32) & 0xff));
-        mData_.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
-        mData_.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-        mData_.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-        mData_.push_back(static_cast<unsigned char>(i & 0xff));
+        int const ret = data_.size();
+        data_.push_back(static_cast<unsigned char>((i >> 56) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 32) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
+        data_.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
+        data_.push_back(static_cast<unsigned char>(i & 0xff));
         return ret;
     }
 
@@ -135,11 +135,11 @@ public:
     getInteger(Integer& number, int offset)
     {
         static auto const kBYTES = sizeof(Integer);
-        if ((offset + kBYTES) > mData_.size())
+        if ((offset + kBYTES) > data_.size())
             return false;
         number = 0;
 
-        auto ptr = &mData_[offset];
+        auto ptr = &data_[offset];
         for (auto i = 0; i < kBYTES; ++i)
         {
             if (i)
@@ -153,9 +153,9 @@ public:
     bool
     getBitString(BaseUint<Bits, Tag>& data, int offset) const
     {
-        auto success = (offset + (Bits / 8)) <= mData_.size();
+        auto success = (offset + (Bits / 8)) <= data_.size();
         if (success)
-            memcpy(data.begin(), &(mData_.front()) + offset, (Bits / 8));
+            memcpy(data.begin(), &(data_.front()) + offset, (Bits / 8));
         return success;
     }
 
@@ -175,38 +175,38 @@ public:
     [[nodiscard]] Blob const&
     peekData() const
     {
-        return mData_;
+        return data_;
     }
     [[nodiscard]] Blob
     getData() const
     {
-        return mData_;
+        return data_;
     }
     Blob&
     modData()
     {
-        return mData_;
+        return data_;
     }
 
     [[nodiscard]] int
     getDataLength() const
     {
-        return mData_.size();
+        return data_.size();
     }
     [[nodiscard]] void const*
     getDataPtr() const
     {
-        return mData_.data();
+        return data_.data();
     }
     void*
     getDataPtr()
     {
-        return mData_.data();
+        return data_.data();
     }
     [[nodiscard]] int
     getLength() const
     {
-        return mData_.size();
+        return data_.size();
     }
     [[nodiscard]] std::string
     getString() const
@@ -216,7 +216,7 @@ public:
     void
     erase()
     {
-        mData_.clear();
+        data_.clear();
     }
     bool
     chop(int num);
@@ -225,58 +225,58 @@ public:
     Blob ::iterator
     begin()
     {
-        return mData_.begin();
+        return data_.begin();
     }
     Blob ::iterator
     end()
     {
-        return mData_.end();
+        return data_.end();
     }
     [[nodiscard]] Blob ::const_iterator
     begin() const
     {
-        return mData_.begin();
+        return data_.begin();
     }
     [[nodiscard]] Blob ::const_iterator
     end() const
     {
-        return mData_.end();
+        return data_.end();
     }
     void
     reserve(size_t n)
     {
-        mData_.reserve(n);
+        data_.reserve(n);
     }
     void
     resize(size_t n)
     {
-        mData_.resize(n);
+        data_.resize(n);
     }
     [[nodiscard]] size_t
     capacity() const
     {
-        return mData_.capacity();
+        return data_.capacity();
     }
 
     bool
     operator==(Blob const& v) const
     {
-        return v == mData_;
+        return v == data_;
     }
     bool
     operator!=(Blob const& v) const
     {
-        return v != mData_;
+        return v != data_;
     }
     bool
     operator==(Serializer const& v) const
     {
-        return v.mData_ == mData_;
+        return v.data_ == data_;
     }
     bool
     operator!=(Serializer const& v) const
     {
-        return v.mData_ != mData_;
+        return v.data_ != data_;
     }
 
     static int

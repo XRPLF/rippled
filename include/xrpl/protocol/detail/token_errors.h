@@ -67,7 +67,7 @@ public:
 }  // namespace detail
 
 inline xrpl::detail::TokenCodecErrcCategory const&
-TokenCodecErrcCategory()
+tokenCodecErrcCategory()
 {
     static xrpl::detail::TokenCodecErrcCategory const kC;
     return kC;
@@ -76,6 +76,6 @@ TokenCodecErrcCategory()
 inline std::error_code
 make_error_code(xrpl::TokenCodecErrc e)
 {
-    return {static_cast<int>(e), TokenCodecErrcCategory()};
+    return {static_cast<int>(e), tokenCodecErrcCategory()};
 }
 }  // namespace xrpl

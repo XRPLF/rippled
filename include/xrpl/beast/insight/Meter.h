@@ -28,7 +28,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Meter(std::shared_ptr<MeterImpl> const& impl) : m_impl_(impl)
+    explicit Meter(std::shared_ptr<MeterImpl> const& impl) : impl_(impl)
     {
     }
 
@@ -37,8 +37,8 @@ public:
     void
     increment(value_type amount) const
     {
-        if (m_impl_)
-            m_impl_->increment(amount);
+        if (impl_)
+            impl_->increment(amount);
     }
 
     Meter const&
@@ -66,11 +66,11 @@ public:
     [[nodiscard]] std::shared_ptr<MeterImpl> const&
     impl() const
     {
-        return m_impl_;
+        return impl_;
     }
 
 private:
-    std::shared_ptr<MeterImpl> m_impl_;
+    std::shared_ptr<MeterImpl> impl_;
 };
 
 }  // namespace beast::insight

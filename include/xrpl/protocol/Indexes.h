@@ -221,11 +221,11 @@ payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
 /** @{ */
 /** A keylet for the owner's first possible NFT page. */
 Keylet
-nftpage_min(AccountID const& owner);
+nftpageMin(AccountID const& owner);
 
 /** A keylet for the owner's last possible NFT page. */
 Keylet
-nftpage_max(AccountID const& owner);
+nftpageMax(AccountID const& owner);
 
 Keylet
 nftpage(Keylet const& k, uint256 const& token);
@@ -243,11 +243,11 @@ nftoffer(uint256 const& offer)
 
 /** The directory of buy offers for the specified NFT */
 Keylet
-nft_buys(uint256 const& id) noexcept;
+nftBuys(uint256 const& id) noexcept;
 
 /** The directory of sell offers for the specified NFT */
 Keylet
-nft_sells(uint256 const& id) noexcept;
+nftSells(uint256 const& id) noexcept;
 
 /** AMM entry */
 Keylet
@@ -367,7 +367,7 @@ template <class... KeyletParams>
 struct KeyletDesc
 {
     std::function<Keylet(KeyletParams...)> function;
-    Json::StaticString expectedLEName;
+    json::StaticString expectedLEName;
     bool includeInTests{};
 };
 
@@ -379,8 +379,8 @@ std::array<KeyletDesc<AccountID const&>, 6> const kDIRECT_ACCOUNT_KEYLETS{
      {.function = &keylet::signers, .expectedLEName = jss::SignerList, .includeInTests = true},
      // It's normally impossible to create an item at nftpage_min, but
      // test it anyway, since the invariant checks for it.
-     {.function = &keylet::nftpage_min, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
-     {.function = &keylet::nftpage_max, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
+     {.function = &keylet::nftpageMin, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
+     {.function = &keylet::nftpageMax, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
      {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
 
 MPTID

@@ -25,7 +25,8 @@ public:
     using duration = typename Clock::duration;
     using time_point = typename Clock::time_point;
 
-    static bool const kIS_STEADY = Clock::is_steady;
+    static bool const is_steady =  // NOLINT(readability-identifier-naming)
+        Clock::is_steady;
 
     static time_point
     now();

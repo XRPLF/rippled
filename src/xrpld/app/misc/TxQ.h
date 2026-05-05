@@ -336,7 +336,7 @@ public:
 
         @returns a `Json objectvalue`
     */
-    Json::Value
+    json::Value
     doRPC(Application& app) const;
 
 private:
@@ -825,13 +825,13 @@ private:
     Build a @ref TxQ::Setup object from application configuration.
 */
 TxQ::Setup
-setup_TxQ(Config const&);
+setupTxQ(Config const&);
 
 template <class T>
 XRPAmount
 toDrops(FeeLevel<T> const& level, XRPAmount baseFee)
 {
-    return mulDiv(level, baseFee, TxQ::kBASE_LEVEL).value_or(XRPAmount(STAmount::kC_MAX_NATIVE_N));
+    return mulDiv(level, baseFee, TxQ::kBASE_LEVEL).value_or(XRPAmount(STAmount::kMAX_NATIVE_N));
 }
 
 inline FeeLevel64

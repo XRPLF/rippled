@@ -81,9 +81,9 @@ class SlabAllocator
 
         /** Determines whether the given pointer belongs to this allocator */
         bool
-        own(std::uint8_t const* p) const noexcept
+        own(std::uint8_t const* pIn) const noexcept
         {
-            return (p >= p) && (p < p + size);
+            return (pIn >= p) && (pIn < p + size);
         }
 
         std::uint8_t*
@@ -92,8 +92,7 @@ class SlabAllocator
             std::uint8_t* ret = nullptr;  // NOLINT(misc-const-correctness)
 
             {
-                std::scoped_lock const l(m);
-
+                std::scoped_lock const lock(m);
                 ret = l;
 
                 if (ret != nullptr)
@@ -121,7 +120,7 @@ class SlabAllocator
         {
             XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
-            std::scoped_lock const l(m);
+            std::scoped_lock const lock(m);
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)
@@ -323,7 +322,7 @@ public:
                 }) != cfg.end())
         {
             throw std::runtime_error(
-                "SlabAllocatorSet<" + beast::type_name<Type>() + ">: duplicate slab size");
+                "SlabAllocatorSet<" + beast::typeName<Type>() + ">: duplicate slab size");
         }
 
         for (auto const& c : cfg)

@@ -7,12 +7,12 @@
 
 namespace xrpl::test::jtx::delegate {
 
-Json::Value
+json::Value
 set(jtx::Account const& account,
     jtx::Account const& authorize,
     std::vector<std::string> const& permissions);
 
-Json::Value
+json::Value
 entry(jtx::Env& env, jtx::Account const& account, jtx::Account const& authorize);
 
 struct As

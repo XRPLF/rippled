@@ -11,28 +11,28 @@
 /** Escrow operations. */
 namespace xrpl::test::jtx::escrow {
 
-Json::Value
+json::Value
 create(AccountID const& account, AccountID const& to, STAmount const& amount);
 
-inline Json::Value
+inline json::Value
 create(Account const& account, Account const& to, STAmount const& amount)
 {
     return create(account.id(), to.id(), amount);
 }
 
-Json::Value
+json::Value
 finish(AccountID const& account, AccountID const& from, std::uint32_t seq);
 
-inline Json::Value
+inline json::Value
 finish(Account const& account, Account const& from, std::uint32_t seq)
 {
     return finish(account.id(), from.id(), seq);
 }
 
-Json::Value
+json::Value
 cancel(AccountID const& account, Account const& from, std::uint32_t seq);
 
-inline Json::Value
+inline json::Value
 cancel(Account const& account, Account const& from, std::uint32_t seq)
 {
     return cancel(account.id(), from, seq);
@@ -41,7 +41,7 @@ cancel(Account const& account, Account const& from, std::uint32_t seq)
 Rate
 rate(Env& env, Account const& account, std::uint32_t const& seq);
 
-// A PreimageSha256 fulfillments and its associated condition.
+// A PreimageSha256 fulfillments and its associated kCONDITION.
 std::array<std::uint8_t, 4> const kFB1 = {{0xA0, 0x02, 0x80, 0x00}};
 
 std::array<std::uint8_t, 39> const kCB1 = {
@@ -49,7 +49,7 @@ std::array<std::uint8_t, 39> const kCB1 = {
      0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24, 0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B,
      0x93, 0x4C, 0xA4, 0x95, 0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55, 0x81, 0x01, 0x00}};
 
-// Another PreimageSha256 fulfillments and its associated condition.
+// Another PreimageSha256 fulfillments and its associated kCONDITION.
 std::array<std::uint8_t, 7> const kFB2 = {{0xA0, 0x05, 0x80, 0x03, 0x61, 0x61, 0x61}};
 
 std::array<std::uint8_t, 39> const kCB2 = {
@@ -57,7 +57,7 @@ std::array<std::uint8_t, 39> const kCB2 = {
      0xA5, 0xC2, 0x49, 0x53, 0xEB, 0xA5, 0x8C, 0x4A, 0xC8, 0x9B, 0x1A, 0xDF, 0x57,
      0xF2, 0x8F, 0x2F, 0x9D, 0x09, 0xAF, 0x10, 0x7E, 0xE8, 0xF0, 0x81, 0x01, 0x03}};
 
-// Another PreimageSha256 fulfillment and its associated condition.
+// Another PreimageSha256 kFULFILLMENT and its associated kCONDITION.
 std::array<std::uint8_t, 8> const kFB3 = {{0xA0, 0x06, 0x80, 0x04, 0x6E, 0x69, 0x6B, 0x62}};
 
 std::array<std::uint8_t, 39> const kCB3 = {

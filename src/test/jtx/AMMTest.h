@@ -21,7 +21,7 @@ struct TestAMMArg
     std::vector<FeatureBitset> features = {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+        jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
 
     bool noLog = false;
 };
@@ -63,7 +63,7 @@ struct TestAMMArgs
     std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt;
     std::uint16_t tfee = 0;
     std::optional<jtx::Ter> const& ter = std::nullopt;
-    std::vector<FeatureBitset> const& features = {testable_amendments()};
+    std::vector<FeatureBitset> const& features = {testableAmendments()};
 };
 
 class AMMTestBase : public beast::unit_test::Suite
@@ -73,11 +73,11 @@ protected:
     jtx::Account const carol_;
     jtx::Account const alice_;
     jtx::Account const bob_;
-    jtx::IOU const USD_;
-    jtx::IOU const EUR_;
-    jtx::IOU const GBP_;
-    jtx::IOU const BTC_;
-    jtx::IOU const BAD_;
+    jtx::IOU const USD;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const EUR;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const GBP;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const BTC;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const BAD;  // NOLINT(readability-identifier-naming)
 
 public:
     AMMTestBase();
@@ -87,7 +87,7 @@ public:
     {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        return jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol;
+        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
     }
 
 protected:

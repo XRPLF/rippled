@@ -73,7 +73,7 @@ noripple(Account const& account, Args const&... args)
 }
 
 inline FeatureBitset
-testable_amendments()
+testableAmendments()
 {
     static FeatureBitset const kIDS = [] {
         auto const& sa = allAmendments();
@@ -176,7 +176,7 @@ public:
      * and takes ownership the passed Config pointer. Features will be enabled
      * according to rules described below (see next constructor).
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      * @param config The desired Config - ownership will be taken by moving
      * the pointer. See envconfig and related functions for common config
      * tweaks.
@@ -209,7 +209,7 @@ public:
      * with_only_features(...) or supported_features_except(...) to create a
      * collection of features appropriate for passing here.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      * @param args collection of features
      *
      */
@@ -227,7 +227,7 @@ public:
      * and takes ownership the passed Config pointer. All supported amendments
      * are enabled by this version of the constructor.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      * @param config The desired Config - ownership will be taken by moving
      * the pointer. See envconfig and related functions for common config
      * tweaks.
@@ -236,7 +236,7 @@ public:
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr,
         beast::severities::Severity thresh = beast::severities::KError)
-        : Env(suite, std::move(config), testable_amendments(), std::move(logs), thresh)
+        : Env(suite, std::move(config), testableAmendments(), std::move(logs), thresh)
     {
     }
 
@@ -247,7 +247,7 @@ public:
      * test Env configuration (from envconfig()) and all supported
      * amendments enabled.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      */
     Env(beast::unit_test::Suite& suite,
         beast::severities::Severity thresh = beast::severities::KError)
@@ -303,24 +303,24 @@ public:
         the correct JSON as per the arguments.
     */
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(unsigned apiVersion,
         std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(unsigned apiVersion, std::string const& cmd, Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(std::string const& cmd, Args&&... args);
 
     /** Returns the current ledger.
@@ -570,7 +570,7 @@ public:
         This will apply funclets and autofill.
     */
     template <class JsonValue, class... FN>
-    Json::Value
+    json::Value
     json(JsonValue&& jv, FN const&... fN)
     {
         auto tj = jt(std::forward<JsonValue>(jv), fN...);
@@ -592,7 +592,7 @@ public:
     /** Gets the TER result and `didApply` flag from a RPC Json result object.
      */
     static ParsedResult
-    parseResult(Json::Value const& jr);
+    parseResult(json::Value const& jr);
 
     /** Submit an existing JTx.
         This calls postconditions.
@@ -606,7 +606,7 @@ public:
     void
     signAndSubmit(
         JTx const& jt,
-        Json::Value params = Json::NullValue,
+        json::Value params = json::NullValue,
         std::source_location const& loc = std::source_location::current());
 
     /** Check expected postconditions
@@ -616,14 +616,14 @@ public:
     postconditions(
         JTx const& jt,
         ParsedResult const& parsed,
-        Json::Value const& jr = Json::Value(),
+        json::Value const& jr = json::Value(),
         std::source_location const& loc = std::source_location::current());
 
     /** Apply funclets and submit. */
     /** @{ */
     template <class... FN>
     Env&
-    apply(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    apply(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
@@ -639,7 +639,7 @@ public:
 
     template <class... FN>
     Env&
-    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    operator()(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         return apply(std::move(jv), fN...);
     }
@@ -794,11 +794,11 @@ protected:
     int trace_ = 0;
     TestStopwatch stopwatch_;
     uint256 txid_;
-    TER ter_ = TesSuccess;
+    TER ter_ = tesSUCCESS;
     bool parseFailureExpected_ = false;
     unsigned retries_ = 5;
 
-    Json::Value
+    json::Value
     doRpc(
         unsigned apiVersion,
         std::vector<std::string> const& args,
@@ -815,7 +815,7 @@ protected:
         On a parse error, the JSON is logged and
         an exception thrown.
         Throws:
-            parse_error
+            ParseError
     */
     std::shared_ptr<STTx const>
     st(JTx const& jt);
@@ -842,7 +842,7 @@ protected:
 };
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(
     unsigned apiVersion,
     std::unordered_map<std::string, std::string> const& headers,
@@ -853,7 +853,7 @@ Env::rpc(
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 {
     return rpc(
@@ -864,7 +864,7 @@ Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
@@ -877,7 +877,7 @@ Env::rpc(
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(std::string const& cmd, Args&&... args)
 {
     return rpc(std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);

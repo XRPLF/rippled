@@ -32,7 +32,7 @@ struct IsContiguousContainer : std::false_type
 };
 
 template <class Container>
-struct is_contiguous_container<
+struct IsContiguousContainer<
     Container,
     std::void_t<
         decltype(std::declval<Container const>().size()),
@@ -42,7 +42,7 @@ struct is_contiguous_container<
 };
 
 template <>
-struct is_contiguous_container<Slice> : std::true_type
+struct IsContiguousContainer<Slice> : std::true_type
 {
 };
 
@@ -235,7 +235,7 @@ private:
         auto const result = parseFromStringView(sv);
         if (!result)
         {
-            if (result.error() == ParseResult::badLength)
+            if (result.error() == ParseResult::BadLength)
                 Throw<std::invalid_argument>("invalid length for hex string");
 
             Throw<std::range_error>("invalid hex character");
@@ -614,7 +614,7 @@ to_string(BaseUint<Bits, Tag> const& a)
 
 template <std::size_t Bits, class Tag>
 inline std::string
-to_short_string(BaseUint<Bits, Tag> const& a)
+toShortString(BaseUint<Bits, Tag> const& a)
 {
     static_assert(BaseUint<Bits, Tag>::kBYTES > 4, "For 4 bytes or less, use a native type");
     return strHex(a.cbegin(), a.cbegin() + 4) + "...";
@@ -650,9 +650,9 @@ static_assert(sizeof(uint256) == 256 / 8, "There should be no padding bytes");
 namespace beast {
 
 template <std::size_t Bits, class Tag>
-struct is_uniquely_represented<xrpl::BaseUint<Bits, Tag>> : public std::true_type
+struct IsUniquelyRepresented<xrpl::BaseUint<Bits, Tag>> : public std::true_type
 {
-    explicit is_uniquely_represented() = default;
+    explicit IsUniquelyRepresented() = default;
 };
 
 }  // namespace beast

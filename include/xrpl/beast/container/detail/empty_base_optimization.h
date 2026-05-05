@@ -53,21 +53,21 @@ public:
 //------------------------------------------------------------------------------
 
 template <class T, int UniqueID>
-class empty_base_optimization<T, UniqueID, false>
+class EmptyBaseOptimization<T, UniqueID, false>
 {
     T t_;
 
 public:
-    empty_base_optimization() = default;
-    empty_base_optimization(empty_base_optimization&&) = default;
-    empty_base_optimization(empty_base_optimization const&) = default;
-    empty_base_optimization&
-    operator=(empty_base_optimization&&) = default;
-    empty_base_optimization&
-    operator=(empty_base_optimization const&) = default;
+    EmptyBaseOptimization() = default;
+    EmptyBaseOptimization(EmptyBaseOptimization&&) = default;
+    EmptyBaseOptimization(EmptyBaseOptimization const&) = default;
+    EmptyBaseOptimization&
+    operator=(EmptyBaseOptimization&&) = default;
+    EmptyBaseOptimization&
+    operator=(EmptyBaseOptimization const&) = default;
 
     template <class Arg1, class... ArgN>
-    explicit empty_base_optimization(Arg1&& arg1, ArgN&&... argn)
+    explicit EmptyBaseOptimization(Arg1&& arg1, ArgN&&... argn)
         : t_(std::forward<Arg1>(arg1), std::forward<ArgN>(argn)...)
     {
     }

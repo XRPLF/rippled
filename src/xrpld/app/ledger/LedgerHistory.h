@@ -30,7 +30,7 @@ public:
     float
     getCacheHitRate()
     {
-        return m_ledgers_by_hash.getHitRate();
+        return ledgers_by_hash_.getHitRate();
     }
 
     /** Get a ledger given its sequence number */
@@ -53,13 +53,13 @@ public:
     void
     sweep()
     {
-        m_ledgers_by_hash.sweep();
-        m_consensus_validated.sweep();
+        ledgers_by_hash_.sweep();
+        consensus_validated_.sweep();
     }
 
     /** Report that we have locally built a particular ledger */
     void
-    builtLedger(std::shared_ptr<Ledger const> const&, uint256 const& consensusHash, Json::Value);
+    builtLedger(std::shared_ptr<Ledger const> const&, uint256 const& consensusHash, json::Value);
 
     /** Report that we have validated a particular ledger */
     void
@@ -95,7 +95,7 @@ private:
         LedgerHash const& valid,
         std::optional<uint256> const& builtConsensusHash,
         std::optional<uint256> const& validatedConsensusHash,
-        Json::Value const& consensus);
+        json::Value const& consensus);
 
     Application& app_;
     beast::insight::Collector::ptr collector_;
@@ -103,11 +103,11 @@ private:
 
     using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
 
-    LedgersByHash m_ledgers_by_hash;
+    LedgersByHash ledgers_by_hash_;
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
-    struct cv_entry
+    struct CvEntry
     {
         // Hash of locally built ledger
         std::optional<LedgerHash> built;
@@ -118,13 +118,13 @@ private:
         // Hash of validated consensus transaction set
         std::optional<uint256> validatedConsensusHash;
         // Consensus metadata of built ledger
-        std::optional<Json::Value> consensus;
+        std::optional<json::Value> consensus;
     };
-    using ConsensusValidated = TaggedCache<LedgerIndex, cv_entry>;
-    ConsensusValidated m_consensus_validated;
+    using ConsensusValidated = TaggedCache<LedgerIndex, CvEntry>;
+    ConsensusValidated consensus_validated_;
 
     // Maps ledger indexes to the corresponding hash.
-    std::map<LedgerIndex, LedgerHash> mLedgersByIndex;  // validated ledgers
+    std::map<LedgerIndex, LedgerHash> ledgersByIndex_;  // validated ledgers
 
     beast::Journal j_;
 };

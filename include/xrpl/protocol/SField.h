@@ -34,50 +34,51 @@ class STXChainBridge;
 class STVector256;
 class STCurrency;
 
+// NOLINTBEGIN(readability-identifier-naming)
 #pragma push_macro("XMACRO")
 #undef XMACRO
 
 #define XMACRO(STYPE)                             \
     /* special types */                           \
-    STYPE(StiUnknown, -2)                         \
-    STYPE(StiNotpresent, 0)                       \
-    STYPE(StiUinT16, 1)                           \
+    STYPE(STI_UNKNOWN, -2)                        \
+    STYPE(STI_NOTPRESENT, 0)                      \
+    STYPE(STI_UINT16, 1)                          \
                                                   \
     /* types (common) */                          \
-    STYPE(StiUinT32, 2)                           \
-    STYPE(StiUinT64, 3)                           \
-    STYPE(StiUinT128, 4)                          \
-    STYPE(StiUinT256, 5)                          \
-    STYPE(StiAmount, 6)                           \
-    STYPE(StiVl, 7)                               \
-    STYPE(StiAccount, 8)                          \
-    STYPE(StiNumber, 9)                           \
-    STYPE(StiInT32, 10)                           \
-    STYPE(StiInT64, 11)                           \
+    STYPE(STI_UINT32, 2)                          \
+    STYPE(STI_UINT64, 3)                          \
+    STYPE(STI_UINT128, 4)                         \
+    STYPE(STI_UINT256, 5)                         \
+    STYPE(STI_AMOUNT, 6)                          \
+    STYPE(STI_VL, 7)                              \
+    STYPE(STI_ACCOUNT, 8)                         \
+    STYPE(STI_NUMBER, 9)                          \
+    STYPE(STI_INT32, 10)                          \
+    STYPE(STI_INT64, 11)                          \
                                                   \
     /* 12-13 are reserved */                      \
-    STYPE(StiObject, 14)                          \
-    STYPE(StiArray, 15)                           \
+    STYPE(STI_OBJECT, 14)                         \
+    STYPE(STI_ARRAY, 15)                          \
                                                   \
     /* types (uncommon) */                        \
-    STYPE(StiUinT8, 16)                           \
-    STYPE(StiUinT160, 17)                         \
-    STYPE(StiPathset, 18)                         \
-    STYPE(StiVectoR256, 19)                       \
-    STYPE(StiUinT96, 20)                          \
-    STYPE(StiUinT192, 21)                         \
-    STYPE(StiUinT384, 22)                         \
-    STYPE(StiUinT512, 23)                         \
-    STYPE(StiIssue, 24)                           \
-    STYPE(StiXchainBridge, 25)                    \
-    STYPE(StiCurrency, 26)                        \
+    STYPE(STI_UINT8, 16)                          \
+    STYPE(STI_UINT160, 17)                        \
+    STYPE(STI_PATHSET, 18)                        \
+    STYPE(STI_VECTOR256, 19)                      \
+    STYPE(STI_UINT96, 20)                         \
+    STYPE(STI_UINT192, 21)                        \
+    STYPE(STI_UINT384, 22)                        \
+    STYPE(STI_UINT512, 23)                        \
+    STYPE(STI_ISSUE, 24)                          \
+    STYPE(STI_XCHAIN_BRIDGE, 25)                  \
+    STYPE(STI_CURRENCY, 26)                       \
                                                   \
     /* high-level types */                        \
     /* cannot be serialized inside other types */ \
-    STYPE(StiTransaction, 10001)                  \
-    STYPE(StiLedgerentry, 10002)                  \
-    STYPE(StiValidation, 10003)                   \
-    STYPE(StiMetadata, 10004)
+    STYPE(STI_TRANSACTION, 10001)                 \
+    STYPE(STI_LEDGERENTRY, 10002)                 \
+    STYPE(STI_VALIDATION, 10003)                  \
+    STYPE(STI_METADATA, 10004)
 
 #pragma push_macro("TO_ENUM")
 #undef TO_ENUM
@@ -99,17 +100,18 @@ static std::map<std::string, int> const kS_TYPE_MAP = {XMACRO(TO_MAP)};
 #pragma pop_macro("XMACRO")
 #pragma pop_macro("TO_ENUM")
 #pragma pop_macro("TO_MAP")
+// NOLINTEND(readability-identifier-naming)
 
 // constexpr
 inline int
-field_code(SerializedTypeID id, int index)
+fieldCode(SerializedTypeID id, int index)
 {
     return (safeCast<int>(id) << 16) | index;
 }
 
 // constexpr
 inline int
-field_code(int id, int index)
+fieldCode(int id, int index)
 {
     return (id << 16) | index;
 }
@@ -148,14 +150,14 @@ public:
     enum class IsSigning : unsigned char { No, Yes };
     static IsSigning const kNOT_SIGNING = IsSigning::No;
 
-    int const fieldCode;               // (type<<16)|index
+    int const fieldCodeMem;            // (type<<16)|index // TODO: rename, clashes with function
     SerializedTypeID const fieldType;  // STI_*
     int const fieldValue;              // Code number for protocol
     std::string const fieldName;
     int const fieldMeta;
     int const fieldNum;
     IsSigning const signingField;
-    Json::StaticString const jsonName;
+    json::StaticString const jsonName;
 
     SField(SField const&) = delete;
     SField&
@@ -165,17 +167,17 @@ public:
     operator=(SField&&) = delete;
 
 public:
-    struct private_access_tag_t;  // public, but still an implementation detail
+    struct PrivateAccessTagT;  // public, but still an implementation detail
 
     // These constructors can only be called from SField.cpp
     SField(
-        private_access_tag_t,
+        PrivateAccessTagT,
         SerializedTypeID tid,
         int fv,
         char const* fn,
         int meta = SMdDefault,
         IsSigning signing = IsSigning::Yes);
-    explicit SField(private_access_tag_t, int fc, char const* fn);
+    explicit SField(PrivateAccessTagT, int fc, char const* fn);
 
     static SField const&
     getField(int fieldCode);
@@ -184,13 +186,13 @@ public:
     static SField const&
     getField(int type, int value)
     {
-        return getField(field_code(type, value));
+        return getField(fieldCode(type, value));
     }
 
     static SField const&
     getField(SerializedTypeID type, int value)
     {
-        return getField(field_code(type, value));
+        return getField(fieldCode(type, value));
     }
 
     [[nodiscard]] std::string const&
@@ -202,16 +204,16 @@ public:
     [[nodiscard]] bool
     hasName() const
     {
-        return fieldCode > 0;
+        return fieldCodeMem > 0;
     }
 
-    [[nodiscard]] Json::StaticString const&
+    [[nodiscard]] json::StaticString const&
     getJsonName() const
     {
         return jsonName;
     }
 
-    operator Json::StaticString const&() const
+    operator json::StaticString const&() const
     {
         return jsonName;
     }
@@ -219,13 +221,13 @@ public:
     [[nodiscard]] bool
     isInvalid() const
     {
-        return fieldCode == -1;
+        return fieldCodeMem == -1;
     }
 
     [[nodiscard]] bool
     isUseful() const
     {
-        return fieldCode > 0;
+        return fieldCodeMem > 0;
     }
 
     [[nodiscard]] bool
@@ -247,7 +249,7 @@ public:
     [[nodiscard]] int
     getCode() const
     {
-        return fieldCode;
+        return fieldCodeMem;
     }
     [[nodiscard]] int
     getNum() const
@@ -275,13 +277,13 @@ public:
     bool
     operator==(SField const& f) const
     {
-        return fieldCode == f.fieldCode;
+        return fieldCodeMem == f.fieldCodeMem;
     }
 
     bool
     operator!=(SField const& f) const
     {
-        return fieldCode != f.fieldCode;
+        return fieldCodeMem != f.fieldCodeMem;
     }
 
     static int
@@ -306,7 +308,7 @@ struct TypedField : SField
     using type = T;
 
     template <class... Args>
-    explicit TypedField(private_access_tag_t pat, Args&&... args);
+    explicit TypedField(PrivateAccessTagT pat, Args&&... args);
 };
 
 /** Indicate std::optional field semantics. */

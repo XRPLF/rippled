@@ -44,7 +44,7 @@ namespace detail::zero_helper {
 // be made from a namespace that does not include overloads of the function..
 template <class T>
 auto
-call_signum(T const& t)
+callSignum(T const& t)
 {
     return signum(t);
 }
@@ -57,42 +57,42 @@ template <typename T>
 bool
 operator==(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) == 0;
+    return detail::zero_helper::callSignum(t) == 0;
 }
 
 template <typename T>
 bool
 operator!=(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) != 0;
+    return detail::zero_helper::callSignum(t) != 0;
 }
 
 template <typename T>
 bool
 operator<(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) < 0;
+    return detail::zero_helper::callSignum(t) < 0;
 }
 
 template <typename T>
 bool
 operator>(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) > 0;
+    return detail::zero_helper::callSignum(t) > 0;
 }
 
 template <typename T>
 bool
 operator>=(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) >= 0;
+    return detail::zero_helper::callSignum(t) >= 0;
 }
 
 template <typename T>
 bool
 operator<=(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) <= 0;
+    return detail::zero_helper::callSignum(t) <= 0;
 }
 
 // Handle operators where T is on the right side by

@@ -13,9 +13,9 @@ namespace beast::unit_test {
 class Recorder : public Runner
 {
 private:
-    Results m_results_;
-    SuiteResults m_suite_;
-    CaseResults m_case_;
+    Results results_;
+    SuiteResults suite_;
+    CaseResults case_;
 
 public:
     Recorder() = default;
@@ -24,51 +24,51 @@ public:
     [[nodiscard]] Results const&
     report() const
     {
-        return m_results_;
+        return results_;
     }
 
 private:
     void
     onSuiteBegin(SuiteInfo const& info) override
     {
-        m_suite_ = SuiteResults(info.fullName());
+        suite_ = SuiteResults(info.fullName());
     }
 
     void
     onSuiteEnd() override
     {
-        m_results_.insert(std::move(m_suite_));
+        results_.insert(std::move(suite_));
     }
 
     void
     onCaseBegin(std::string const& name) override
     {
-        m_case_ = CaseResults(name);
+        case_ = CaseResults(name);
     }
 
     void
     onCaseEnd() override
     {
-        if (!m_case_.tests.empty())
-            m_suite_.insert(std::move(m_case_));
+        if (!case_.tests.empty())
+            suite_.insert(std::move(case_));
     }
 
     void
     onPass() override
     {
-        m_case_.tests.pass();
+        case_.tests.pass();
     }
 
     void
     onFail(std::string const& reason) override
     {
-        m_case_.tests.fail(reason);
+        case_.tests.fail(reason);
     }
 
     void
     onLog(std::string const& s) override
     {
-        m_case_.log.insert(s);
+        case_.log.insert(s);
     }
 };
 

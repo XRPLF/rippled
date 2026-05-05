@@ -81,14 +81,14 @@ validFeatureNameSize(auto fn) -> bool
 {
     constexpr char const* kN = fn();
     // Note, std::strlen is not constexpr, we need to implement our own here.
-    constexpr std::size_t kN = [](auto n) {
+    constexpr std::size_t kLEN = [](auto n) {
         std::size_t ret = 0;
         for (auto ptr = n; *ptr != '\0'; ret++, ++ptr)
             ;
         return ret;
     }(kN);
-    return kN != kRESERVED_FEATURE_NAME_SIZE &&  //
-        kN <= kMAX_FEATURE_NAME_SIZE;
+    return kLEN != kRESERVED_FEATURE_NAME_SIZE &&  //
+        kLEN <= kMAX_FEATURE_NAME_SIZE;
 }
 
 consteval auto

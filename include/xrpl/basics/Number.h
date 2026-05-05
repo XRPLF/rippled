@@ -385,11 +385,12 @@ public:
 
     // Thread local rounding control.  Default is to_nearest
     enum class RoundingMode { ToNearest, TowardsZero, Downward, Upward };
+
     static RoundingMode
     getround();
-    // Returns previously set mode
+
     static RoundingMode
-    setround(RoundingMode mode);
+    setround(RoundingMode inMode);
 
     /** Returns which mantissa scale is currently in use for normalization.
      *
@@ -397,6 +398,7 @@ public:
      */
     static MantissaRange::MantissaScale
     getMantissaScale();
+
     /** Changes which mantissa scale is used for normalization.
      *
      * If you think you need to call this outside of unit tests, no you don't.
@@ -407,19 +409,19 @@ public:
     static internalrep
     minMantissa()
     {
-        return range.get().min;
+        return kRANGE.get().min;
     }
 
     static internalrep
     maxMantissa()
     {
-        return range.get().max;
+        return kRANGE.get().max;
     }
 
     static int
     mantissaLog()
     {
-        return range.get().log;
+        return kRANGE.get().log;
     }
 
     /// oneSmall is needed because the ranges are private
@@ -461,7 +463,7 @@ private:
     // The range for the mantissa when normalized.
     // Use reference_wrapper to avoid making copies, and prevent accidentally
     // changing the values inside the range.
-    static thread_local std::reference_wrapper<MantissaRange const> range;
+    static thread_local std::reference_wrapper<MantissaRange const> kRANGE;
 
     void
     normalize();
@@ -469,7 +471,7 @@ private:
     /** Normalize Number components to an arbitrary range.
      *
      * min/maxMantissa are parameters because this function is used by both
-     * normalize(), which reads from range_, and by normalizeToRange,
+     * normalize(), which reads from kRANGE, and by normalizeToRange,
      * which is public and can accept an arbitrary range from the caller.
      */
     template <class T>
@@ -669,25 +671,25 @@ operator/(Number const& x, Number const& y)
 inline Number
 Number::min() noexcept
 {
-    return Number{false, range.get().min, kMIN_EXPONENT, Unchecked{}};
+    return Number{false, kRANGE.get().min, kMIN_EXPONENT, Unchecked{}};
 }
 
 inline Number
 Number::max() noexcept
 {
-    return Number{false, std::min(range.get().max, kMAX_REP), kMAX_EXPONENT, Unchecked{}};
+    return Number{false, std::min(kRANGE.get().max, kMAX_REP), kMAX_EXPONENT, Unchecked{}};
 }
 
 inline Number
 Number::lowest() noexcept
 {
-    return Number{true, std::min(range.get().max, kMAX_REP), kMAX_EXPONENT, Unchecked{}};
+    return Number{true, std::min(kRANGE.get().max, kMAX_REP), kMAX_EXPONENT, Unchecked{}};
 }
 
 inline bool
 Number::isnormal() const noexcept
 {
-    MantissaRange const& range = range;
+    MantissaRange const& range = kRANGE;
     auto const absM = mantissa_;
     return *this == Number{} ||
         (range.min <= absM && absM <= range.max && (absM <= kMAX_REP || absM % 10 == 0) &&

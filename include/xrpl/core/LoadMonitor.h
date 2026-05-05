@@ -54,13 +54,13 @@ private:
 
     std::mutex mutex_;
 
-    std::uint64_t mCounts_{0};
-    int mLatencyEvents_{0};
-    std::chrono::milliseconds mLatencyMSAvg_;
-    std::chrono::milliseconds mLatencyMSPeak_;
-    std::chrono::milliseconds mTargetLatencyAvg_;
-    std::chrono::milliseconds mTargetLatencyPk_;
-    UptimeClock::time_point mLastUpdate_;
+    std::uint64_t counts_{0};
+    int latencyEvents_{0};
+    std::chrono::milliseconds latencyMSAvg_;
+    std::chrono::milliseconds latencyMSPeak_;
+    std::chrono::milliseconds targetLatencyAvg_;
+    std::chrono::milliseconds targetLatencyPk_;
+    UptimeClock::time_point lastUpdate_;
     beast::Journal const j_;
 };
 

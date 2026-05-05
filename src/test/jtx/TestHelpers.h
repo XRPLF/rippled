@@ -145,11 +145,11 @@ public:
     }
 };
 
-struct StAmountField : public JTxField<SF_AMOUNT, STAmount, Json::Value>
+struct StAmountField : public JTxField<SF_AMOUNT, STAmount, json::Value>
 {
     using SF = SF_AMOUNT;
     using SV = STAmount;
-    using OV = Json::Value;
+    using OV = json::Value;
     using base = JTxField<SF, SV, OV>;
 
 protected:
@@ -163,7 +163,7 @@ public:
     [[nodiscard]] OV
     value() const override
     {
-        return value_.getJson(JsonOptions::None);
+        return value_.getJson(JsonOptions::KNone);
     }
 };
 
@@ -284,7 +284,7 @@ auto const kAMOUNT = JTxFieldWrapper<StAmountField>(sfAmount);
 // when we have moved to better compilers.
 template <typename Input>
 auto
-make_vector(Input const& input)
+makeVector(Input const& input)
     requires requires(Input& v) {
         std::begin(v);
         std::end(v);
@@ -294,42 +294,42 @@ make_vector(Input const& input)
 }
 
 // Functions used in debugging
-Json::Value
+json::Value
 getAccountOffers(Env& env, AccountID const& acct, bool current = false);
 
-inline Json::Value
+inline json::Value
 getAccountOffers(Env& env, Account const& acct, bool current = false)
 {
     return getAccountOffers(env, acct.id(), current);
 }
 
-Json::Value
+json::Value
 getAccountLines(Env& env, AccountID const& acctId);
 
-inline Json::Value
+inline json::Value
 getAccountLines(Env& env, Account const& acct)
 {
     return getAccountLines(env, acct.id());
 }
 
 template <typename... IOU>
-Json::Value
+json::Value
 getAccountLines(Env& env, AccountID const& acctId, IOU... ious)
 {
     auto jrr = getAccountLines(env, acctId);
-    Json::Value res;
-    for (auto const& line : jrr[jss::kLINES])
+    json::Value res;
+    for (auto const& line : jrr[jss::lines])
     {
         for (auto const& iou : {ious...})
         {
-            if (line[jss::kCURRENCY].asString() == to_string(iou.currency))
+            if (line[jss::currency].asString() == to_string(iou.currency))
             {
-                Json::Value v;
-                v[jss::kCURRENCY] = line[jss::kCURRENCY];
-                v[jss::kBALANCE] = line[jss::kBALANCE];
-                v[jss::kLIMIT] = line[jss::kLIMIT];
+                json::Value v;
+                v[jss::currency] = line[jss::currency];
+                v[jss::balance] = line[jss::balance];
+                v[jss::limit] = line[jss::limit];
                 v[jss::account] = line[jss::account];
-                res[jss::kLINES].append(v);
+                res[jss::lines].append(v);
             }
         }
     }
@@ -339,7 +339,7 @@ getAccountLines(Env& env, AccountID const& acctId, IOU... ious)
 }
 
 [[nodiscard]] bool
-checkArraySize(Json::Value const& val, unsigned int size);
+checkArraySize(json::Value const& val, unsigned int size);
 
 // Helper function that returns the owner count on an account.
 std::uint32_t
@@ -364,52 +364,45 @@ checkVL(std::shared_ptr<SLE const> const& sle, SField const& field, std::string 
 /* Path finding */
 /******************************************************************************/
 void
-stpath_append_one(STPath& st, Account const& account);
+stpathAppendOne(STPath& st, Account const& account);
 
 template <class T>
 std::enable_if_t<std::is_constructible_v<Account, T>>
-stpath_append_one(STPath& st, T const& t)
+stpathAppendOne(STPath& st, T const& t)
 {
-    stpath_append_one(st, Account{t});
+    stpathAppendOne(st, Account{t});
 }
 
 void
-stpath_append_one(STPath& st, STPathElement const& pe);
+stpathAppendOne(STPath& st, STPathElement const& pe);
 
 template <class T, class... Args>
 void
-stpath_append(STPath& st, T const& t, Args const&... args)
+stpathAppend(STPath& st, T const& t, Args const&... args)
 {
-    stpath_append_one(st, t);
+    stpathAppendOne(st, t);
     if constexpr (sizeof...(args) > 0)
-        stpath_append(st, args...);
+        stpathAppend(st, args...);
 }
 
 template <class... Args>
 void
-stpathset_append(STPathSet& st, STPath const& p, Args const&... args)
+stpathsetAppend(STPathSet& st, STPath const& p, Args const&... args)
 {
     st.pushBack(p);
     if constexpr (sizeof...(args) > 0)
-        stpathset_append(st, args...);
+        stpathsetAppend(st, args...);
 }
 
 bool
 equal(STAmount const& sa1, STAmount const& sa2);
-
-// Issue path element
-STPathElement
-IPE(Issue const& iss);
-
-STPathElement
-IPE(MPTIssue const& iss);
 
 template <class... Args>
 STPath
 stpath(Args const&... args)
 {
     STPath st;
-    stpath_append(st, args...);
+    stpathAppend(st, args...);
     return st;
 }
 
@@ -418,7 +411,7 @@ bool
 same(STPathSet const& st1, Args const&... args)
 {
     STPathSet st2;
-    stpathset_append(st2, args...);
+    stpathsetAppend(st2, args...);
     if (st1.size() != st2.size())
         return false;
 
@@ -430,7 +423,7 @@ same(STPathSet const& st1, Args const&... args)
     return true;
 }
 
-Json::Value
+json::Value
 rpf(jtx::Account const& src,
     jtx::Account const& dst,
     STAmount const& dstAmount,
@@ -470,8 +463,8 @@ public:
     }
 };
 
-Json::Value
-find_paths_request(
+json::Value
+findPathsRequest(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -482,7 +475,7 @@ find_paths_request(
     std::optional<uint256> const& domain = std::nullopt);
 
 std::tuple<STPathSet, STAmount, STAmount>
-find_paths(
+findPaths(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -493,7 +486,7 @@ find_paths(
     std::optional<uint256> const& domain = std::nullopt);
 
 std::tuple<STPathSet, STAmount, STAmount>
-find_paths_by_element(
+findPathsByElement(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -506,7 +499,7 @@ find_paths_by_element(
 /******************************************************************************/
 
 XRPAmount
-txfee(Env const& env, std::uint16_t n);
+txFee(Env const& env, std::uint16_t n);
 
 PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount);
@@ -538,22 +531,22 @@ expectOffers(
     std::uint16_t size,
     std::vector<Amounts> const& toMatch = {});
 
-Json::Value
+json::Value
 ledgerEntryRoot(Env& env, Account const& acct);
 
-Json::Value
+json::Value
 ledgerEntryState(Env& env, Account const& acctA, Account const& acctB, std::string const& currency);
 
-Json::Value
+json::Value
 ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offerSeq);
 
-Json::Value
+json::Value
 ledgerEntryMPT(jtx::Env& env, jtx::Account const& acct, MPTID const& mptID);
 
-Json::Value
+json::Value
 getBookOffers(jtx::Env& env, Asset const& takerPays, Asset const& takerGets);
 
-Json::Value
+json::Value
 accountBalance(Env& env, Account const& acct);
 
 [[nodiscard]] bool
@@ -563,7 +556,7 @@ expectLedgerEntryRoot(Env& env, Account const& acct, STAmount const& expectedVal
 /******************************************************************************/
 namespace paychan {
 
-Json::Value
+json::Value
 create(
     AccountID const& account,
     AccountID const& to,
@@ -573,7 +566,7 @@ create(
     std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
     std::optional<std::uint32_t> const& dstTag = std::nullopt);
 
-inline Json::Value
+inline json::Value
 create(
     Account const& account,
     Account const& to,
@@ -586,14 +579,14 @@ create(
     return create(account.id(), to.id(), amount, settleDelay, pk, cancelAfter, dstTag);
 }
 
-Json::Value
+json::Value
 fund(
     AccountID const& account,
     uint256 const& channel,
     STAmount const& amount,
     std::optional<NetClock::time_point> const& expiration = std::nullopt);
 
-Json::Value
+json::Value
 claim(
     AccountID const& account,
     uint256 const& channel,
@@ -623,7 +616,7 @@ channelExists(ReadView const& view, uint256 const& chan);
 /******************************************************************************/
 
 void
-n_offers(Env& env, std::size_t n, Account const& account, STAmount const& in, STAmount const& out);
+nOffers(Env& env, std::size_t n, Account const& account, STAmount const& in, STAmount const& out);
 
 /* Pay Strand */
 /***************************************************************/
@@ -716,18 +709,18 @@ namespace check {
 /** Create a check. */
 template <typename A>
     requires std::is_same_v<A, AccountID>
-Json::Value
+json::Value
 create(A const& account, A const& dest, STAmount const& sendMax)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = to_string(account);
-    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::None);
+    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::KNone);
     jv[sfDestination.jsonName] = to_string(dest);
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
     return jv;
 }
 
-inline Json::Value
+inline json::Value
 create(jtx::Account const& account, jtx::Account const& dest, STAmount const& sendMax)
 {
     return create(account.id(), dest.id(), sendMax);
@@ -838,21 +831,21 @@ checkMetrics(
 
 namespace loanBroker {
 
-Json::Value
+json::Value
 set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
 
 // Use "del" because "delete" is a reserved word in C++.
-Json::Value
+json::Value
 del(AccountID const& account, uint256 const& brokerID, std::uint32_t flags = 0);
 
-Json::Value
+json::Value
 coverDeposit(
     AccountID const& account,
     uint256 const& brokerID,
     STAmount const& amount,
     std::uint32_t flags = 0);
 
-Json::Value
+json::Value
 coverWithdraw(
     AccountID const& account,
     uint256 const& brokerID,
@@ -860,7 +853,7 @@ coverWithdraw(
     std::uint32_t flags = 0);
 
 // Must specify at least one of loanBrokerID or amount.
-Json::Value
+json::Value
 coverClawback(AccountID const& account, std::uint32_t flags = 0);
 
 auto const kLOAN_BROKER_ID = JTxFieldWrapper<Uint256Field>(sfLoanBrokerID);
@@ -884,7 +877,7 @@ auto const kDESTINATION = JTxFieldWrapper<AccountIdField>(sfDestination);
 /******************************************************************************/
 namespace loan {
 
-Json::Value
+json::Value
 set(AccountID const& account,
     uint256 const& loanBrokerID,
     Number principalRequested,
@@ -892,7 +885,7 @@ set(AccountID const& account,
 
 auto const kCOUNTERPARTY = JTxFieldWrapper<AccountIdField>(sfCounterparty);
 
-// For `CounterPartySignature`, use `sig(sfCounterpartySignature, ...)`
+// For `CounterPartySignature`, use `Sig(sfCounterpartySignature, ...)`
 
 auto const kLOAN_ORIGINATION_FEE = simpleField<SF_NUMBER>(sfLoanOriginationFee);
 
@@ -921,13 +914,13 @@ auto const kPAYMENT_INTERVAL = simpleField<SF_UINT32>(sfPaymentInterval);
 
 auto const kGRACE_PERIOD = simpleField<SF_UINT32>(sfGracePeriod);
 
-Json::Value
+json::Value
 manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
 
-Json::Value
+json::Value
 del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
 
-Json::Value
+json::Value
 pay(AccountID const& account,
     uint256 const& loanID,
     STAmount const& amount,

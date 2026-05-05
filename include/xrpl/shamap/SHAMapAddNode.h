@@ -8,9 +8,9 @@ namespace xrpl {
 class SHAMapAddNode
 {
 private:
-    int mGood_;
-    int mBad_;
-    int mDuplicate_;
+    int good_;
+    int bad_;
+    int duplicate_;
 
 public:
     SHAMapAddNode();
@@ -47,63 +47,63 @@ private:
     SHAMapAddNode(int good, int bad, int duplicate);
 };
 
-inline SHAMapAddNode::SHAMapAddNode() : mGood_(0), mBad_(0), mDuplicate_(0)
+inline SHAMapAddNode::SHAMapAddNode() : good_(0), bad_(0), duplicate_(0)
 {
 }
 
 inline SHAMapAddNode::SHAMapAddNode(int good, int bad, int duplicate)
-    : mGood_(good), mBad_(bad), mDuplicate_(duplicate)
+    : good_(good), bad_(bad), duplicate_(duplicate)
 {
 }
 
 inline void
 SHAMapAddNode::incInvalid()
 {
-    ++mBad_;
+    ++bad_;
 }
 
 inline void
 SHAMapAddNode::incUseful()
 {
-    ++mGood_;
+    ++good_;
 }
 
 inline void
 SHAMapAddNode::incDuplicate()
 {
-    ++mDuplicate_;
+    ++duplicate_;
 }
 
 inline void
 SHAMapAddNode::reset()
 {
-    mGood_ = mBad_ = mDuplicate_ = 0;
+    good_ = bad_ = duplicate_ = 0;
 }
 
 inline int
 SHAMapAddNode::getGood() const
 {
-    return mGood_;
+    return good_;
 }
 
 inline bool
 SHAMapAddNode::isInvalid() const
 {
-    return mBad_ > 0;
+    return bad_ > 0;
 }
 
 inline bool
 SHAMapAddNode::isUseful() const
 {
-    return mGood_ > 0;
+    return good_ > 0;
 }
 
 inline SHAMapAddNode&
 SHAMapAddNode::operator+=(SHAMapAddNode const& n)
 {
-    mGood_ += n.mGood_;
-    mBad_ += n.mBad_;
-    mDuplicate_ += n.mDuplicate_;
+    good_ += n.good_;
+    bad_ += n.bad_;
+    duplicate_ += n.duplicate_;
 
     return *this;
 }
@@ -111,7 +111,7 @@ SHAMapAddNode::operator+=(SHAMapAddNode const& n)
 inline bool
 SHAMapAddNode::isGood() const
 {
-    return (mGood_ + mDuplicate_) > mBad_;
+    return (good_ + duplicate_) > bad_;
 }
 
 inline SHAMapAddNode
@@ -136,24 +136,24 @@ inline std::string
 SHAMapAddNode::get() const
 {
     std::string ret;
-    if (mGood_ > 0)
+    if (good_ > 0)
     {
         ret.append("good:");
-        ret.append(std::to_string(mGood_));
+        ret.append(std::to_string(good_));
     }
-    if (mBad_ > 0)
+    if (bad_ > 0)
     {
         if (!ret.empty())
             ret.append(" ");
         ret.append("bad:");
-        ret.append(std::to_string(mBad_));
+        ret.append(std::to_string(bad_));
     }
-    if (mDuplicate_ > 0)
+    if (duplicate_ > 0)
     {
         if (!ret.empty())
             ret.append(" ");
         ret.append("dupe:");
-        ret.append(std::to_string(mDuplicate_));
+        ret.append(std::to_string(duplicate_));
     }
     if (ret.empty())
         ret = "no nodes processed";

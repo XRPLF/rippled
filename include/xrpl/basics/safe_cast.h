@@ -62,20 +62,20 @@ template <class Dest, class Src>
 constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
 unsafeCast(Src s) noexcept
 {
-    return static_cast<Dest>(unsafe_cast<std::underlying_type_t<Dest>>(s));
+    return static_cast<Dest>(unsafeCast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
 unsafeCast(Src s) noexcept
 {
-    return unsafe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
+    return unsafeCast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
 }
 
 template <class Dest, class Src>
     requires std::is_pointer_v<Dest>
 inline Dest
-safe_downcast(Src* s) noexcept
+safeDowncast(Src* s) noexcept
 {
 #ifdef NDEBUG
     return static_cast<Dest>(s);  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
@@ -89,7 +89,7 @@ safe_downcast(Src* s) noexcept
 template <class Dest, class Src>
     requires std::is_lvalue_reference_v<Dest>
 inline Dest
-safe_downcast(Src& s) noexcept
+safeDowncast(Src& s) noexcept
 {
 #ifndef NDEBUG
     XRPL_ASSERT(

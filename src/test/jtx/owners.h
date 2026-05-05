@@ -14,10 +14,10 @@ namespace xrpl {
 namespace detail {
 
 std::uint32_t
-owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type);
+ownedCountOf(ReadView const& view, AccountID const& id, LedgerEntryType type);
 
 void
-owned_count_helper(
+ownedCountHelper(
     test::jtx::Env& env,
     AccountID const& id,
     LedgerEntryType type,
@@ -43,7 +43,7 @@ public:
     void
     operator()(Env& env) const
     {
-        xrpl::detail::owned_count_helper(env, account_.id(), Type, value_);
+        xrpl::detail::ownedCountHelper(env, account_.id(), Type, value_);
     }
 };
 

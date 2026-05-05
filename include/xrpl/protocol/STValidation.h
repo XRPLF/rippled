@@ -23,7 +23,7 @@ constexpr std::uint32_t kVF_FULLY_CANONICAL_SIG = 0x80000000;
 
 class STValidation final : public STObject, public CountedObject<STValidation>
 {
-    bool mTrusted_ = false;
+    bool trusted_ = false;
 
     // Determines the validity of the signature in this validation; unseated
     // optional if we haven't yet checked it, a boolean otherwise.
@@ -161,7 +161,7 @@ STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool ch
     if (checkSignature && !isValid())
     {
         JLOG(debugLog().error()) << "Invalid signature in validation: "
-                                 << getJson(JsonOptions::None);
+                                 << getJson(JsonOptions::KNone);
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 
@@ -195,7 +195,7 @@ STValidation::STValidation(
 
     // First, set our own public key:
     if (publicKeyType(pk) != KeyType::Secp256k1)
-        LogicError("We can only use secp256k1 keys for signing validations");
+        logicError("We can only use secp256k1 keys for signing validations");
 
     setFieldVL(sfSigningPubKey, pk.slice());
     setFieldU32(sfSigningTime, signTime.time_since_epoch().count());
@@ -212,7 +212,7 @@ STValidation::STValidation(
     for (auto const& e : validationFormat())
     {
         if (e.style() == SoeRequired && !isFieldPresent(e.sField()))
-            LogicError("Required field '" + e.sField().getName() + "' missing from validation.");
+            logicError("Required field '" + e.sField().getName() + "' missing from validation.");
     }
 
     // We just signed this, so it should be valid.
@@ -234,19 +234,19 @@ STValidation::getNodeID() const noexcept
 inline bool
 STValidation::isTrusted() const noexcept
 {
-    return mTrusted_;
+    return trusted_;
 }
 
 inline void
 STValidation::setTrusted()
 {
-    mTrusted_ = true;
+    trusted_ = true;
 }
 
 inline void
 STValidation::setUntrusted()
 {
-    mTrusted_ = false;
+    trusted_ = false;
 }
 
 inline void

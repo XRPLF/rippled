@@ -23,11 +23,13 @@ public:
     std::string description = {};  // NOLINT(readability-redundant-member-init)
 
     [[nodiscard]] auto
-    toJson() const -> Json::Value;
+    toJson() const -> json::Value;
 
     template <typename Hasher>
     friend void
-    hash_append(Hasher& h, PeerReservation const& x) noexcept
+    hash_append(
+        Hasher& h,
+        PeerReservation const& x) noexcept  // NOLINT(readability-identifier-naming)
     {
         using beast::hash_append;
         hash_append(h, x.nodeId);

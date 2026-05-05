@@ -16,7 +16,7 @@ using seed_pair = std::pair<std::uint64_t, std::uint64_t>;
 
 template <bool = true>
 seed_pair
-make_seed_pair() noexcept
+makeSeedPair() noexcept
 {
     struct StateT
     {
@@ -72,7 +72,7 @@ template <class HashAlgorithm = beast::Xxhasher>
 class HardenedHash
 {
 private:
-    detail::seed_pair m_seeds_{detail::make_seed_pair<>()};
+    detail::seed_pair seeds_{detail::makeSeedPair<>()};
 
 public:
     using result_type = typename HashAlgorithm::result_type;
@@ -83,7 +83,7 @@ public:
     result_type
     operator()(T const& t) const noexcept
     {
-        HashAlgorithm h(m_seeds_.first, m_seeds_.second);
+        HashAlgorithm h(seeds_.first, seeds_.second);
         hash_append(h, t);
         return static_cast<result_type>(h);
     }

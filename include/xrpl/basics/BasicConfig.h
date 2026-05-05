@@ -27,7 +27,7 @@ private:
     std::unordered_map<std::string, std::string> lookup_;
     std::vector<std::string> lines_;
     std::vector<std::string> values_;
-    bool had_trailing_comments_ = false;
+    bool hadTrailingComments_ = false;
 
     using const_iterator = decltype(lookup_)::const_iterator;
 
@@ -144,7 +144,7 @@ public:
     [[nodiscard]] bool
     hadTrailingComments() const
     {
-        return had_trailing_comments_;
+        return hadTrailingComments_;
     }
 
     friend std::ostream&
@@ -275,7 +275,7 @@ public:
     [[nodiscard]] bool
     hadTrailingComments() const
     {
-        return std::ranges::any_of(map_, [](auto s) { return s.second.had_trailing_comments(); });
+        return std::ranges::any_of(map_, [](auto s) { return s.second.hadTrailingComments(); });
     }
 
 protected:
@@ -333,7 +333,7 @@ get(Section const& section, std::string const& name, T const& defaultValue = T{}
 {
     try
     {
-        return section.value_or<T>(name, defaultValue);
+        return section.valueOr<T>(name, defaultValue);
     }
     catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
     {
@@ -358,17 +358,17 @@ get(Section const& section, std::string const& name, char const* defaultValue)
 
 template <class T>
 bool
-get_if_exists(Section const& section, std::string const& name, T& v)
+getIfExists(Section const& section, std::string const& name, T& v)
 {
     return set<T>(v, name, section);
 }
 
 template <>
 inline bool
-get_if_exists<bool>(Section const& section, std::string const& name, bool& v)
+getIfExists<bool>(Section const& section, std::string const& name, bool& v)
 {
     int intVal = 0;
-    auto stat = get_if_exists(section, name, intVal);
+    auto stat = getIfExists(section, name, intVal);
     if (stat)
         v = bool(intVal);
     return stat;

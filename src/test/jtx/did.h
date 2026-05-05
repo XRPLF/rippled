@@ -7,10 +7,10 @@
 /** DID operations. */
 namespace xrpl::test::jtx::did {
 
-Json::Value
+json::Value
 set(jtx::Account const& account);
 
-Json::Value
+json::Value
 setValid(jtx::Account const& account);
 
 /** Sets the optional DIDDocument on a DIDSet. */
@@ -67,7 +67,7 @@ public:
     }
 };
 
-Json::Value
+json::Value
 del(jtx::Account const& account);
 
 }  // namespace xrpl::test::jtx::did

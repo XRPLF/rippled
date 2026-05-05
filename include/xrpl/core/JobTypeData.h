@@ -11,10 +11,10 @@ namespace xrpl {
 struct JobTypeData
 {
 private:
-    LoadMonitor m_load_;
+    LoadMonitor load_;
 
     /* Support for insight */
-    beast::insight::Collector::ptr m_collector_;
+    beast::insight::Collector::ptr collector_;
 
 public:
     /* The job category which we represent */
@@ -37,15 +37,15 @@ public:
         JobTypeInfo const& info,
         beast::insight::Collector::ptr collector,
         Logs& logs) noexcept
-        : m_load_(logs.journal("LoadMonitor")), m_collector_(std::move(collector)), info(info)
+        : load_(logs.journal("LoadMonitor")), collector_(std::move(collector)), info(info)
 
     {
-        m_load_.setTargetLatency(info.getAverageLatency(), info.getPeakLatency());
+        load_.setTargetLatency(info.getAverageLatency(), info.getPeakLatency());
 
         if (!info.special())
         {
-            dequeue = m_collector_->makeEvent(info.name() + "_q");
-            execute = m_collector_->makeEvent(info.name());
+            dequeue = collector_->makeEvent(info.name() + "_q");
+            execute = collector_->makeEvent(info.name());
         }
     }
 
@@ -69,13 +69,13 @@ public:
     LoadMonitor&
     load()
     {
-        return m_load_;
+        return load_;
     }
 
     LoadMonitor::Stats
     stats()
     {
-        return m_load_.getStats();
+        return load_.getStats();
     }
 };
 

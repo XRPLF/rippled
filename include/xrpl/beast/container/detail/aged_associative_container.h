@@ -17,9 +17,9 @@ struct AgedAssociativeContainerExtractT
 };
 
 template <>
-struct aged_associative_container_extract_t<false>
+struct AgedAssociativeContainerExtractT<false>
 {
-    explicit aged_associative_container_extract_t() = default;
+    explicit AgedAssociativeContainerExtractT() = default;
 
     template <class Value>
     Value const&

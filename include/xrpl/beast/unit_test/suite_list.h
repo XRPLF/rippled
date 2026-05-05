@@ -58,7 +58,7 @@ SuiteList::insert(
         BOOST_ASSERT(result.second);  // Duplicate type
     }
 #endif
-    cont().emplace(make_suite_info<Suite>(name, module, library, manual, priority));
+    cont().emplace(makeSuiteInfo<Suite>(name, module, library, manual, priority));
 }
 
 }  // namespace beast::unit_test

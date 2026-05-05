@@ -11,7 +11,7 @@
 
 /** \brief JSON (JavaScript Object Notation).
  */
-namespace Json {
+namespace json {
 
 /** \brief Type of the value held by a Value object.
  */
@@ -36,8 +36,8 @@ enum ValueType {
  *
  * Example of usage:
  * \code
- * Json::Value aValue( StaticString("some text") );
- * Json::Value object;
+ * json::Value aValue( StaticString("some text") );
+ * json::Value object;
  * static const StaticString code("code");
  * object[code] = 1234;
  * \endcode
@@ -136,8 +136,8 @@ public:
     using Members = std::vector<std::string>;
     using iterator = ValueIterator;
     using const_iterator = ValueConstIterator;
-    using UInt = Json::UInt;
-    using Int = Json::Int;
+    using UInt = json::UInt;
+    using Int = json::Int;
     using ArrayIndex = UInt;
 
     static Value const kNULL;
@@ -152,6 +152,7 @@ private:
         // Stored as int field, implicit conversion
         // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
         enum DuplicationPolicy { NoDuplication = 0, Duplicate, DuplicateOnCopy };
+
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
         CZString(CZString const& other);
@@ -188,9 +189,9 @@ public:
 
            Examples:
     \code
-    Json::Value null_value; // null
-    Json::Value arr_value(Json::arrayValue); // []
-    Json::Value obj_value(Json::objectValue); // {}
+    json::Value null_value; // null
+    json::Value arr_value(json::arrayValue); // []
+    json::Value obj_value(json::objectValue); // {}
     \endcode
          */
     Value(ValueType type = NullValue);
@@ -207,7 +208,7 @@ public:
      * constructor.
      * Example of usage:
      * \code
-     * Json::Value aValue( StaticString("some text") );
+     * json::Value aValue( StaticString("some text") );
      * \endcode
      */
     Value(StaticString const& value);
@@ -345,7 +346,7 @@ public:
      * the new entry is not duplicated.
      * Example of use:
      * \code
-     * Json::Value object;
+     * json::Value object;
      * static const StaticString code("code");
      * object[code] = 1234;
      * \endcode
@@ -417,19 +418,19 @@ private:
 private:
     union ValueHolder
     {
-        Int int_;
-        UInt uint;
-        double real;
-        bool bool_;
-        char* string;
-        ObjectValues* map{nullptr};
+        Int intVal;
+        UInt uintVal;
+        double realVal;
+        bool boolVal;
+        char* stringVal;
+        ObjectValues* mapVal{nullptr};
     } value_;
     ValueType type_ : 8;
     int allocated_ : 1 {};  // Notes: if declared as bool, bitfield is useless.
 };
 
 inline Value
-to_json(xrpl::Number const& number)
+toJson(xrpl::Number const& number)
 {
     return to_string(number);
 }
@@ -468,9 +469,9 @@ operator>=(Value const& x, Value const& y)
  * string value memory management done by Value.
  *
  * - makeMemberName() and releaseMemberName() are called to respectively
- * duplicate and free an Json::objectValue member name.
+ * duplicate and free an json::objectValue member name.
  * - duplicateStringValue() and releaseStringValue() are called similarly to
- *   duplicate and free a Json::stringValue value.
+ *   duplicate and free a json::stringValue value.
  */
 class ValueAllocator
 {
@@ -681,4 +682,4 @@ public:
     }
 };
 
-}  // namespace Json
+}  // namespace json

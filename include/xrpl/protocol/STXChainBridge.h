@@ -45,9 +45,9 @@ public:
         AccountID const& dstChainDoor,
         Issue const& dstChainIssue);
 
-    explicit STXChainBridge(Json::Value const& v);
+    explicit STXChainBridge(json::Value const& v);
 
-    explicit STXChainBridge(SField const& name, Json::Value const& v);
+    explicit STXChainBridge(SField const& name, json::Value const& v);
 
     explicit STXChainBridge(SerialIter& sit, SField const& name);
 
@@ -81,7 +81,7 @@ public:
     [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;

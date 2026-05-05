@@ -117,10 +117,10 @@ bool
 parseUrl(ParsedUrl& pUrl, std::string const& strUrl);
 
 std::string
-trim_whitespace(std::string str);
+trimWhitespace(std::string str);
 
 std::optional<std::uint64_t>
-to_uint64(std::string const& s);
+toUint64(std::string const& s);
 
 /** Determines if the given string looks like a TOML-file hosting domain.
 

@@ -12,23 +12,23 @@ namespace detail {
 
 /// Holds test suites registered during static initialization.
 inline SuiteList&
-global_suites()
+globalSuites()
 {
     static SuiteList kS;
     return kS;
 }
 
 template <class Suite>
-struct insert_suite
+struct InsertSuite
 {
-    insert_suite(
+    InsertSuite(
         char const* name,
         char const* module,
         char const* library,
         bool manual,
         int priority)
     {
-        global_suites().insert<Suite>(name, module, library, manual, priority);
+        globalSuites().insert<Suite>(name, module, library, manual, priority);
     }
 };
 
@@ -36,9 +36,9 @@ struct insert_suite
 
 /// Holds test suites registered during static initialization.
 inline SuiteList const&
-global_suites()
+globalSuites()
 {
-    return detail::global_suites();
+    return detail::globalSuites();
 }
 
 }  // namespace beast::unit_test

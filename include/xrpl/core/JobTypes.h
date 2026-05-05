@@ -16,7 +16,7 @@ public:
 
 private:
     JobTypes()
-        : m_unknown(
+        : unknown(
               JtInvalid,
               "invalid",
               0,
@@ -32,15 +32,13 @@ private:
                        int limit,
                        std::chrono::milliseconds avgLatency,
                        std::chrono::milliseconds peakLatency) {
-            XRPL_ASSERT(
-                !m_map.contains(jt), "xrpl::JobTypes::JobTypes::add : unique job type input");
+            XRPL_ASSERT(!map.contains(jt), "xrpl::JobTypes::JobTypes::add : unique job type input");
 
             [[maybe_unused]] auto const inserted =
-                m_map
-                    .emplace(
-                        std::piecewise_construct,
-                        std::forward_as_tuple(jt),
-                        std::forward_as_tuple(jt, name, limit, avgLatency, peakLatency))
+                map.emplace(
+                       std::piecewise_construct,
+                       std::forward_as_tuple(jt),
+                       std::forward_as_tuple(jt, name, limit, avgLatency, peakLatency))
                     .second;
 
             XRPL_ASSERT(inserted == true, "xrpl::JobTypes::JobTypes::add : input is inserted");
@@ -116,53 +114,53 @@ public:
     [[nodiscard]] JobTypeInfo const&
     get(JobType jt) const
     {
-        Map::const_iterator const iter(m_map.find(jt));
-        XRPL_ASSERT(iter != m_map.end(), "xrpl::JobTypes::get : valid input");
+        Map::const_iterator const iter(map.find(jt));
+        XRPL_ASSERT(iter != map.end(), "xrpl::JobTypes::get : valid input");
 
-        if (iter != m_map.end())
+        if (iter != map.end())
             return iter->second;
 
-        return m_unknown;
+        return unknown;
     }
 
     [[nodiscard]] JobTypeInfo const&
     getInvalid() const
     {
-        return m_unknown;
+        return unknown;
     }
 
     [[nodiscard]] Map::size_type
     size() const
     {
-        return m_map.size();
+        return map.size();
     }
 
     [[nodiscard]] const_iterator
     begin() const
     {
-        return m_map.cbegin();
+        return map.cbegin();
     }
 
     [[nodiscard]] const_iterator
     cbegin() const
     {
-        return m_map.cbegin();
+        return map.cbegin();
     }
 
     [[nodiscard]] const_iterator
     end() const
     {
-        return m_map.cend();
+        return map.cend();
     }
 
     [[nodiscard]] const_iterator
     cend() const
     {
-        return m_map.cend();
+        return map.cend();
     }
 
-    JobTypeInfo m_unknown;
-    Map m_map;
+    JobTypeInfo unknown;
+    Map map;
 };
 
 }  // namespace xrpl

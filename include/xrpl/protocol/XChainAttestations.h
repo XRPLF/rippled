@@ -63,7 +63,7 @@ struct AttestationBase
 
 protected:
     explicit AttestationBase(STObject const& o);
-    explicit AttestationBase(Json::Value const& v);
+    explicit AttestationBase(json::Value const& v);
 
     [[nodiscard]] static bool
     equalHelper(AttestationBase const& lhs, AttestationBase const& rhs);
@@ -109,7 +109,7 @@ struct AttestationClaim : AttestationBase
         std::optional<AccountID> const& dst);
 
     explicit AttestationClaim(STObject const& o);
-    explicit AttestationClaim(Json::Value const& v);
+    explicit AttestationClaim(json::Value const& v);
 
     [[nodiscard]] STObject
     toSTObject() const;
@@ -162,7 +162,7 @@ struct AttestationCreateAccount : AttestationBase
 
     explicit AttestationCreateAccount(STObject const& o);
 
-    explicit AttestationCreateAccount(Json::Value const& v);
+    explicit AttestationCreateAccount(json::Value const& v);
 
     explicit AttestationCreateAccount(
         AccountID attestationSignerAccount,
@@ -283,7 +283,7 @@ struct XChainClaimAttestation
 
     explicit XChainClaimAttestation(STObject const& o);
 
-    explicit XChainClaimAttestation(Json::Value const& v);
+    explicit XChainClaimAttestation(json::Value const& v);
 
     [[nodiscard]] AttestationMatch
     match(MatchFields const& rhs) const;
@@ -331,7 +331,7 @@ struct XChainCreateAccountAttestation
 
     explicit XChainCreateAccountAttestation(STObject const& o);
 
-    explicit XChainCreateAccountAttestation(Json::Value const& v);
+    explicit XChainCreateAccountAttestation(json::Value const& v);
 
     [[nodiscard]] STObject
     toSTObject() const;
@@ -372,7 +372,7 @@ public:
 
     explicit XChainAttestationsBase(AttCollection&& sigs);
 
-    explicit XChainAttestationsBase(Json::Value const& v);
+    explicit XChainAttestationsBase(json::Value const& v);
 
     explicit XChainAttestationsBase(STArray const& arr);
 

@@ -102,7 +102,7 @@ private:
     // STAmount. However, this class does not always use the canonical
     // representation. In particular, the increment and decrement operators may
     // cause a non-canonical representation.
-    value_type m_value_;
+    value_type value_;
 
 public:
     Quality() = default;
@@ -148,7 +148,7 @@ public:
     [[nodiscard]] STAmount
     rate() const
     {
-        return amountFromQuality(m_value_);
+        return amountFromQuality(value_);
     }
 
     /** Returns the quality rounded up to the specified number
@@ -220,13 +220,13 @@ public:
     friend bool
     operator<(Quality const& lhs, Quality const& rhs) noexcept
     {
-        return lhs.m_value_ > rhs.m_value_;
+        return lhs.value_ > rhs.value_;
     }
 
     friend bool
     operator>(Quality const& lhs, Quality const& rhs) noexcept
     {
-        return lhs.m_value_ < rhs.m_value_;
+        return lhs.value_ < rhs.value_;
     }
 
     friend bool
@@ -244,7 +244,7 @@ public:
     friend bool
     operator==(Quality const& lhs, Quality const& rhs) noexcept
     {
-        return lhs.m_value_ == rhs.m_value_;
+        return lhs.value_ == rhs.value_;
     }
 
     friend bool
@@ -256,7 +256,7 @@ public:
     friend std::ostream&
     operator<<(std::ostream& os, Quality const& quality)
     {
-        os << quality.m_value_;
+        os << quality.value_;
         return os;
     }
 
@@ -266,12 +266,12 @@ public:
     relativeDistance(Quality const& q1, Quality const& q2)
     {
         XRPL_ASSERT(
-            q1.m_value_ > 0 && q2.m_value_ > 0, "xrpl::Quality::relativeDistance : minimum inputs");
+            q1.value_ > 0 && q2.value_ > 0, "xrpl::Quality::relativeDistance : minimum inputs");
 
-        if (q1.m_value_ == q2.m_value_)  // make expected common case fast
+        if (q1.value_ == q2.value_)  // make expected common case fast
             return 0;
 
-        auto const [minV, maxV] = std::minmax(q1.m_value_, q2.m_value_);
+        auto const [minV, maxV] = std::minmax(q1.value_, q2.value_);
 
         auto mantissa = [](std::uint64_t rate) { return rate & ~(255ull << (64 - 8)); };
         auto exponent = [](std::uint64_t rate) { return static_cast<int>(rate >> (64 - 8)) - 100; };
@@ -319,7 +319,7 @@ Quality::ceilIn(TAmounts<In, Out> const& amount, In const& limit) const
     static constexpr Amounts (Quality::*kCEIL_IN_FN_PTR)(Amounts const&, STAmount const&) const =
         &Quality::ceilIn;
 
-    return ceil_TAmounts_helper(amount, limit, amount.in, kCEIL_IN_FN_PTR);
+    return ceilTAmountsHelper(amount, limit, amount.in, kCEIL_IN_FN_PTR);
 }
 
 template <class In, class Out>
@@ -330,7 +330,7 @@ Quality::ceilInStrict(TAmounts<In, Out> const& amount, In const& limit, bool rou
     static constexpr Amounts (Quality::*kCEIL_IN_FN_PTR)(Amounts const&, STAmount const&, bool)
         const = &Quality::ceilInStrict;
 
-    return ceil_TAmounts_helper(amount, limit, amount.in, kCEIL_IN_FN_PTR, roundUp);
+    return ceilTAmountsHelper(amount, limit, amount.in, kCEIL_IN_FN_PTR, roundUp);
 }
 
 template <class In, class Out>
@@ -352,7 +352,7 @@ Quality::ceilOutStrict(TAmounts<In, Out> const& amount, Out const& limit, bool r
     static constexpr Amounts (Quality::*kCEIL_OUT_FN_PTR)(Amounts const&, STAmount const&, bool)
         const = &Quality::ceilOutStrict;
 
-    return ceil_TAmounts_helper(amount, limit, amount.out, kCEIL_OUT_FN_PTR, roundUp);
+    return ceilTAmountsHelper(amount, limit, amount.out, kCEIL_OUT_FN_PTR, roundUp);
 }
 
 /** Calculate the quality of a two-hop path given the two hops.
@@ -360,6 +360,6 @@ Quality::ceilOutStrict(TAmounts<In, Out> const& amount, Out const& limit, bool r
     @param rhs  The second leg of the path: intermediate to output.
 */
 Quality
-composed_quality(Quality const& lhs, Quality const& rhs);
+composedQuality(Quality const& lhs, Quality const& rhs);
 
 }  // namespace xrpl

@@ -96,7 +96,7 @@ public:
 
     template <class T, class... Args>
     friend STVar
-    make_stvar(Args&&... args);
+    makeStvar(Args&&... args);
 
 private:
     STVar() = default;
@@ -138,7 +138,7 @@ private:
 
 template <class T, class... Args>
 inline STVar
-make_stvar(Args&&... args)
+makeStvar(Args&&... args)
 {
     STVar st;
     st.construct<T>(std::forward<Args>(args)...);

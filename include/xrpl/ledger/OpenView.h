@@ -49,7 +49,7 @@ private:
     // It is unclear how the size initially chosen in qalloc.
     static constexpr size_t kINITIAL_BUFFER_SIZE = kilobytes(256);
 
-    class txs_iter_impl;
+    class TxsIterImpl;
 
     struct TxData
     {

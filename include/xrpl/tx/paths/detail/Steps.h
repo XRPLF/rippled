@@ -592,45 +592,45 @@ bookStepEqual(Step const& step, xrpl::Book const& book);
 }  // namespace test
 
 std::pair<TER, std::unique_ptr<Step>>
-make_DirectStepI(
+makeDirectStepI(
     StrandContext const& ctx,
     AccountID const& src,
     AccountID const& dst,
     Currency const& c);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_MPTEndpointStep(
+makeMptEndpointStep(
     StrandContext const& ctx,
     AccountID const& src,
     AccountID const& dst,
     MPTID const& a);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepII(StrandContext const& ctx, Issue const& in, Issue const& out);
+makeBookStepIi(StrandContext const& ctx, Issue const& in, Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepIX(StrandContext const& ctx, Issue const& in);
+makeBookStepIx(StrandContext const& ctx, Issue const& in);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepXI(StrandContext const& ctx, Issue const& out);
+makeBookStepXi(StrandContext const& ctx, Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc);
+makeXrpEndpointStep(StrandContext const& ctx, AccountID const& acc);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepMM(StrandContext const& ctx, MPTIssue const& in, MPTIssue const& out);
+makeBookStepMm(StrandContext const& ctx, MPTIssue const& in, MPTIssue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepMX(StrandContext const& ctx, MPTIssue const& in);
+makeBookStepMx(StrandContext const& ctx, MPTIssue const& in);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepXM(StrandContext const& ctx, MPTIssue const& out);
+makeBookStepXm(StrandContext const& ctx, MPTIssue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepMI(StrandContext const& ctx, MPTIssue const& in, Issue const& out);
+makeBookStepMi(StrandContext const& ctx, MPTIssue const& in, Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepIM(StrandContext const& ctx, Issue const& in, MPTIssue const& out);
+makeBookStepIm(StrandContext const& ctx, Issue const& in, MPTIssue const& out);
 
 template <StepAmount InAmt, StepAmount OutAmt>
 bool

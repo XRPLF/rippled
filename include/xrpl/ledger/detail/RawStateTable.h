@@ -79,7 +79,7 @@ private:
         Replace,
     };
 
-    class sles_iter_impl;
+    class SlesIterImpl;
 
     struct SleAction
     {

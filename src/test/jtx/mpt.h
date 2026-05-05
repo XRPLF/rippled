@@ -13,10 +13,10 @@ namespace xrpl::test::jtx {
 
 class MPTTester;
 
-auto const kMPTDEX_FLAGS = kTF_MPT_CAN_TRADE | kTF_MPT_CAN_TRANSFER;
+auto const kMPT_DEX_FLAGS = tfMPTCanTrade | tfMPTCanTransfer;
 
 // Check flags settings on MPT create
-class Mptflags
+class MptFlags
 {
 private:
     MPTTester& tester_;
@@ -24,7 +24,7 @@ private:
     std::optional<Account> holder_;
 
 public:
-    Mptflags(
+    MptFlags(
         MPTTester& tester,
         std::uint32_t flags,
         std::optional<Account> const& holder = std::nullopt)
@@ -37,7 +37,7 @@ public:
 };
 
 // Check mptissuance or mptoken amount balances on payment
-class Mptbalance
+class MptBalance
 {
 private:
     MPTTester const& tester_;
@@ -45,7 +45,7 @@ private:
     std::int64_t const amount_;
 
 public:
-    Mptbalance(MPTTester& tester, Account const& account, std::int64_t amount)
+    MptBalance(MPTTester& tester, Account const& account, std::int64_t amount)
         : tester_(tester), account_(account), amount_(amount)
     {
     }
@@ -96,8 +96,8 @@ struct MPTCreate
 struct MPTInit
 {
     Holders holders = {};  // NOLINT(readability-redundant-member-init)
-    PrettyAmount const xrp = kXRP(10'000);
-    PrettyAmount const xrpHolders = kXRP(10'000);
+    PrettyAmount const xrp = XRP(10'000);
+    PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
     bool close = true;
     // create MPTIssuanceID if seated and follow rules for MPTCreate args
@@ -112,7 +112,7 @@ struct MPTInitDef
     Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
-    std::uint32_t flags = kMPTDEX_FLAGS;
+    std::uint32_t flags = kMPT_DEX_FLAGS;
     std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
@@ -180,19 +180,19 @@ public:
     void
     create(MPTCreate const& arg = MPTCreate{});
 
-    static Json::Value
+    static json::Value
     createJV(MPTCreate const& arg = MPTCreate{});
 
     void
     destroy(MPTDestroy const& arg = MPTDestroy{});
 
-    static Json::Value
+    static json::Value
     destroyJV(MPTDestroy const& arg = MPTDestroy{});
 
     void
     authorize(MPTAuthorize const& arg = MPTAuthorize{});
 
-    static Json::Value
+    static json::Value
     authorizeJV(MPTAuthorize const& arg = MPTAuthorize{});
 
     void
@@ -201,7 +201,7 @@ public:
     void
     set(MPTSet const& set = {});
 
-    static Json::Value
+    static json::Value
     setJV(MPTSet const& set = {});
 
     [[nodiscard]] bool
@@ -288,9 +288,9 @@ private:
 
     template <typename A>
     TER
-    submit(A const& arg, Json::Value const& jv)
+    submit(A const& arg, json::Value const& jv)
     {
-        env_(jv, Txflags(arg.flags.value_or(0)), Ter(arg.err.value_or(TesSuccess)));
+        env_(jv, Txflags(arg.flags.value_or(0)), Ter(arg.err.value_or(tesSUCCESS)));
         auto const err = env_.ter();
         if (close_)
             env_.close();

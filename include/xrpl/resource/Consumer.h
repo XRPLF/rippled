@@ -71,8 +71,8 @@ public:
     setPublicKey(PublicKey const& publicKey);
 
 private:
-    Logic* m_logic_;
-    Entry* m_entry_;
+    Logic* logic_;
+    Entry* entry_;
 };
 
 std::ostream&

@@ -117,7 +117,7 @@ public:
     template <Compatible<ValueUnit> Other>
     constexpr ValueUnit(ValueUnit<unit_type, Other> const& value)
         requires SafeToCast<Other, value_type>
-        : ValueUnit(safe_cast<value_type>(value.value()))
+        : ValueUnit(safeCast<value_type>(value.value()))
     {
     }
 
@@ -291,14 +291,14 @@ public:
     // known valid type tags can be converted to JSON. At the time
     // of implementation, that includes all known tags, but more may
     // be added in the future.
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     jsonClipped() const
         requires Usable<ValueUnit>
     {
         if constexpr (std::is_integral_v<value_type>)
         {
             using jsontype =
-                std::conditional_t<std::is_signed_v<value_type>, Json::Int, Json::UInt>;
+                std::conditional_t<std::is_signed_v<value_type>, json::Int, json::UInt>;
 
             constexpr auto kMIN = std::numeric_limits<jsontype>::min();
             constexpr auto kMAX = std::numeric_limits<jsontype>::max();
@@ -497,7 +497,7 @@ constexpr Dest
 safeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{safe_cast<typename Dest::value_type>(s.value())};
+    return Dest{safeCast<typename Dest::value_type>(s.value())};
 }
 
 template <unit::IntegralValue Dest, unit::Integral Src>
@@ -505,7 +505,7 @@ constexpr Dest
 safeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{safe_cast<typename Dest::value_type>(s)};
+    return Dest{safeCast<typename Dest::value_type>(s)};
 }
 
 template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
@@ -513,7 +513,7 @@ constexpr Dest
 unsafeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{unsafe_cast<typename Dest::value_type>(s.value())};
+    return Dest{unsafeCast<typename Dest::value_type>(s.value())};
 }
 
 template <unit::IntegralValue Dest, unit::Integral Src>
@@ -521,7 +521,7 @@ constexpr Dest
 unsafeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{unsafe_cast<typename Dest::value_type>(s)};
+    return Dest{unsafeCast<typename Dest::value_type>(s)};
 }
 
 }  // namespace xrpl

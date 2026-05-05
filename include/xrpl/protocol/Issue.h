@@ -31,7 +31,7 @@ public:
     getText() const;
 
     void
-    setJson(Json::Value& jv) const;
+    setJson(json::Value& jv) const;
 
     [[nodiscard]] bool
     native() const;
@@ -49,11 +49,11 @@ isConsistent(Issue const& ac);
 std::string
 to_string(Issue const& ac);
 
-Json::Value
-to_json(Issue const& is);
+json::Value
+toJson(Issue const& is);
 
 Issue
-issueFromJson(Json::Value const& v);
+issueFromJson(json::Value const& v);
 
 std::ostream&
 operator<<(std::ostream& os, Issue const& x);

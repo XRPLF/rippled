@@ -168,7 +168,7 @@ public:
 
     template <class TT, class... Args>
     friend SharedIntrusive<TT>
-    make_SharedIntrusive(Args&&... args);
+    makeSharedIntrusive(Args&&... args);
 
     template <class TT>
     friend class SharedIntrusive;
@@ -442,7 +442,7 @@ private:
 */
 template <class TT, class... Args>
 SharedIntrusive<TT>
-make_SharedIntrusive(Args&&... args)
+makeSharedIntrusive(Args&&... args)
 {
     auto p = new TT(std::forward<Args>(args)...);
 
@@ -469,21 +469,21 @@ using SharedWeakUnionPtr = SharedWeakUnion<T>;
 
 template <class T, class... A>
 SharedPtr<T>
-make_shared(A&&... args)
+makeShared(A&&... args)
 {
-    return make_SharedIntrusive<T>(std::forward<A>(args)...);
+    return makeSharedIntrusive<T>(std::forward<A>(args)...);
 }
 
 template <class T, class TT>
 SharedPtr<T>
-static_pointer_cast(TT const& v)
+staticPointerCast(TT const& v)
 {
     return SharedPtr<T>(StaticCastTagSharedIntrusive{}, v);
 }
 
 template <class T, class TT>
 SharedPtr<T>
-dynamic_pointer_cast(TT const& v)
+dynamicPointerCast(TT const& v)
 {
     return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, v);
 }

@@ -93,7 +93,7 @@ public:
     token() const;
 
     void
-    setJson(Json::Value& jv) const;
+    setJson(json::Value& jv) const;
 
     STAmount
     operator()(Number const&) const;
@@ -153,10 +153,10 @@ constexpr bool kIS_ISSUE_V = std::is_same_v<TIss, Issue>;
 template <ValidIssueType TIss>
 constexpr bool kIS_MPTISSUE_V = std::is_same_v<TIss, MPTIssue>;
 
-inline Json::Value
-to_json(Asset const& asset)
+inline json::Value
+toJson(Asset const& asset)
 {
-    Json::Value jv;
+    json::Value jv;
     asset.setJson(jv);
     return jv;
 }
@@ -242,7 +242,7 @@ operator<=>(Asset const& lhs, Asset const& rhs)
             {
                 return std::weak_ordering(lhs <=> rhs);
             }
-            else if constexpr (is_issue_v<TLhs> && is_mptissue_v<TRhs>)
+            else if constexpr (kIS_ISSUE_V<TLhs> && kIS_MPTISSUE_V<TRhs>)
             {
                 return std::weak_ordering::greater;
             }
@@ -303,10 +303,10 @@ std::string
 to_string(Asset const& asset);
 
 bool
-validJSONAsset(Json::Value const& jv);
+validJSONAsset(json::Value const& jv);
 
 Asset
-assetFromJson(Json::Value const& jv);
+assetFromJson(json::Value const& jv);
 
 inline bool
 isConsistent(Asset const& asset)

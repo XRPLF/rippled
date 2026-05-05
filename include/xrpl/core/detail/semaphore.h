@@ -37,9 +37,9 @@ template <class Mutex, class CondVar>
 class BasicSemaphore
 {
 private:
-    Mutex m_mutex_;
-    CondVar m_cond_;
-    std::size_t m_count_;
+    Mutex mutex_;
+    CondVar cond_;
+    std::size_t count_;
 
 public:
     using size_type = std::size_t;
@@ -47,7 +47,7 @@ public:
     /** Create the semaphore, with an optional initial count.
         If unspecified, the initial count is zero.
     */
-    explicit BasicSemaphore(size_type count = 0) : m_count_(count)
+    explicit BasicSemaphore(size_type count = 0) : count_(count)
     {
     }
 
@@ -55,19 +55,19 @@ public:
     void
     notify()
     {
-        std::scoped_lock const lock{m_mutex_};
-        ++m_count_;
-        m_cond_.notify_one();
+        std::scoped_lock const lock{mutex_};
+        ++count_;
+        cond_.notify_one();
     }
 
     /** Block until notify is called. */
     void
     wait()
     {
-        std::unique_lock lock{m_mutex_};
-        while (m_count_ == 0)
-            m_cond_.wait(lock);
-        --m_count_;
+        std::unique_lock lock{mutex_};
+        while (count_ == 0)
+            cond_.wait(lock);
+        --count_;
     }
 
     /** Perform a non-blocking wait.
@@ -76,10 +76,10 @@ public:
     bool
     tryWait()
     {
-        std::scoped_lock lock{m_mutex_};
-        if (m_count_ == 0)
+        std::scoped_lock lock{mutex_};
+        if (count_ == 0)
             return false;
-        --m_count_;
+        --count_;
         return true;
     }
 };

@@ -157,7 +157,7 @@ public:
     operator*() const;
 
 private:
-    Source* m_source_;
+    Source* source_;
 };
 
 //------------------------------------------------------------------------------
@@ -169,9 +169,9 @@ private:
 class PropertyStream::Proxy
 {
 private:
-    Map const* m_map_;
-    std::string m_key_;
-    std::ostringstream mutable m_ostream_;
+    Map const* map_;
+    std::string key_;
+    std::ostringstream mutable ostream_;
 
 public:
     Proxy(Map const& map, std::string key);
@@ -189,7 +189,7 @@ public:
     std::ostream&
     operator<<(T const& t) const
     {
-        return m_ostream_ << t;
+        return ostream_ << t;
     }
 };
 
@@ -202,7 +202,7 @@ public:
 class PropertyStream::Map
 {
 private:
-    PropertyStream& m_stream_;
+    PropertyStream& stream_;
 
 public:
     explicit Map(PropertyStream& stream);
@@ -224,7 +224,7 @@ public:
     void
     add(std::string const& key, Value value) const
     {
-        m_stream_.add(key, value);
+        stream_.add(key, value);
     }
 
     template <typename Key, typename Value>
@@ -261,7 +261,7 @@ template <typename Value>
 PropertyStream::Proxy&
 PropertyStream::Proxy::operator=(Value value)
 {
-    m_map_->add(m_key_, value);
+    map_->add(key_, value);
     return *this;
 }
 
@@ -274,7 +274,7 @@ PropertyStream::Proxy::operator=(Value value)
 class PropertyStream::Set
 {
 private:
-    PropertyStream& m_stream_;
+    PropertyStream& stream_;
 
 public:
     Set(std::string const& key, Map& map);
@@ -294,7 +294,7 @@ public:
     void
     add(Value value) const
     {
-        m_stream_.add(value);
+        stream_.add(value);
     }
 };
 
@@ -308,7 +308,7 @@ public:
 class PropertyStream::Source
 {
 private:
-    std::string const m_name_;
+    std::string const name_;
     std::recursive_mutex lock_;
     Item item_;
     Source* parent_{nullptr};

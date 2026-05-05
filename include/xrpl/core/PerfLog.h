@@ -121,7 +121,7 @@ public:
      *
      * @return Counters Json object
      */
-    [[nodiscard]] virtual Json::Value
+    [[nodiscard]] virtual json::Value
     countersJson() const = 0;
 
     /**
@@ -129,7 +129,7 @@ public:
      *
      * @return Current executing jobs and RPC calls and durations
      */
-    [[nodiscard]] virtual Json::Value
+    [[nodiscard]] virtual json::Value
     currentJson() const = 0;
 
     /**
@@ -148,10 +148,10 @@ public:
 };
 
 PerfLog::Setup
-setup_PerfLog(Section const& section, boost::filesystem::path const& configDir);
+setupPerfLog(Section const& section, boost::filesystem::path const& configDir);
 
 std::unique_ptr<PerfLog>
-make_PerfLog(
+makePerfLog(
     PerfLog::Setup const& setup,
     Application& app,
     beast::Journal journal,

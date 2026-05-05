@@ -63,7 +63,7 @@ public:
     /** Run a sequence of suites.
         The expression
             `FwdIter::value_type`
-        must be convertible to `suite_info`.
+        must be convertible to `SuiteInfo`.
         @return `true` if any conditions failed.
     */
     template <class FwdIter>
@@ -73,7 +73,7 @@ public:
     /** Conditionally run a sequence of suites.
         pred will be called as:
         @code
-            bool pred(suite_info const&);
+            bool pred(SuiteInfo const&);
         @endcode
         @return `true` if any conditions failed.
     */
@@ -91,7 +91,7 @@ public:
     /** Conditionally run suites in a container.
         pred will be called as:
         @code
-            bool pred(suite_info const&);
+            bool pred(SuiteInfo const&);
         @endcode
         @return `true` if any conditions failed.
     */

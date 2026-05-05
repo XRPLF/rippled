@@ -165,7 +165,7 @@ public:
 class Results : public detail::ConstContainer<std::vector<SuiteResults>>
 {
 private:
-    std::size_t m_cases_{0};
+    std::size_t cases_{0};
     std::size_t total_{0};
     std::size_t failed_{0};
 
@@ -176,7 +176,7 @@ public:
     [[nodiscard]] std::size_t
     cases() const
     {
-        return m_cases_;
+        return cases_;
     }
 
     /** Returns the total number of test conditions. */
@@ -198,7 +198,7 @@ public:
     void
     insert(SuiteResults&& r)
     {
-        m_cases_ += r.size();
+        cases_ += r.size();
         total_ += r.total();
         failed_ += r.failed();
         cont().emplace_back(std::move(r));
@@ -207,7 +207,7 @@ public:
     void
     insert(SuiteResults const& r)
     {
-        m_cases_ += r.size();
+        cases_ += r.size();
         total_ += r.total();
         failed_ += r.failed();
         cont().push_back(r);

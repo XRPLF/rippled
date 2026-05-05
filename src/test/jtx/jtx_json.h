@@ -10,17 +10,17 @@ namespace xrpl::test::jtx {
 class Json
 {
 private:
-    Json::Value jv_;
+    ::json::Value jv_;
 
 public:
     explicit Json(std::string const&);
 
     explicit Json(char const*);
 
-    explicit Json(Json::Value);
+    explicit Json(::json::Value);
 
     template <class T>
-    Json(Json::StaticString const& key, T const& value)
+    Json(::json::StaticString const& key, T const& value)
     {
         jv_[key] = value;
     }

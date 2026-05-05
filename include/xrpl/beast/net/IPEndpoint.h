@@ -39,21 +39,21 @@ public:
     [[nodiscard]] Port
     port() const
     {
-        return m_port_;
+        return port_;
     }
 
     /** Returns a new Endpoint with a different port. */
     [[nodiscard]] Endpoint
     atPort(Port port) const
     {
-        return Endpoint(m_addr_, port);
+        return Endpoint(addr_, port);
     }
 
     /** Returns the address portion of this endpoint. */
     [[nodiscard]] Address const&
     address() const
     {
-        return m_addr_;
+        return addr_;
     }
 
     /** Convenience accessors for the address part. */
@@ -61,22 +61,22 @@ public:
     [[nodiscard]] bool
     isV4() const
     {
-        return m_addr_.is_v4();
+        return addr_.is_v4();
     }
     [[nodiscard]] bool
     isV6() const
     {
-        return m_addr_.is_v6();
+        return addr_.is_v6();
     }
     [[nodiscard]] AddressV4
     toV4() const
     {
-        return m_addr_.to_v4();
+        return addr_.to_v4();
     }
     [[nodiscard]] AddressV6
     toV6() const
     {
-        return m_addr_.to_v6();
+        return addr_.to_v6();
     }
     /** @} */
 
@@ -114,12 +114,12 @@ public:
     hash_append(Hasher& h, Endpoint const& endpoint)
     {
         using ::beast::hash_append;
-        hash_append(h, endpoint.m_addr_, endpoint.m_port_);
+        hash_append(h, endpoint.addr_, endpoint.port_);
     }
 
 private:
-    Address m_addr_;
-    Port m_port_;
+    Address addr_;
+    Port port_;
 };
 
 //------------------------------------------------------------------------------
@@ -128,37 +128,37 @@ private:
 
 /** Returns `true` if the endpoint is a loopback address. */
 inline bool
-is_loopback(Endpoint const& endpoint)
+isLoopback(Endpoint const& endpoint)
 {
-    return is_loopback(endpoint.address());
+    return isLoopback(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is unspecified. */
 inline bool
-is_unspecified(Endpoint const& endpoint)
+isUnspecified(Endpoint const& endpoint)
 {
-    return is_unspecified(endpoint.address());
+    return isUnspecified(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is a multicast address. */
 inline bool
-is_multicast(Endpoint const& endpoint)
+isMulticast(Endpoint const& endpoint)
 {
-    return is_multicast(endpoint.address());
+    return isMulticast(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is a private unroutable address. */
 inline bool
-is_private(Endpoint const& endpoint)
+isPrivate(Endpoint const& endpoint)
 {
-    return is_private(endpoint.address());
+    return isPrivate(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is a public routable address. */
 inline bool
-is_public(Endpoint const& endpoint)
+isPublic(Endpoint const& endpoint)
 {
-    return is_public(endpoint.address());
+    return isPublic(endpoint.address());
 }
 
 //------------------------------------------------------------------------------

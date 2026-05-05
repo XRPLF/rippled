@@ -25,7 +25,7 @@ class SHAMapItem : public CountedObject<SHAMapItem>
 
     // This is the interface for creating new instances of this class.
     friend boost::intrusive_ptr<SHAMapItem>
-    make_shamapitem(uint256 const& tag, Slice data);
+    makeShamapitem(uint256 const& tag, Slice data);
 
 private:
     uint256 const tag_;
@@ -112,7 +112,7 @@ intrusive_ptr_add_ref(SHAMapItem const* x)
     // This can only happen if someone releases the last reference to the
     // item while we were trying to increment the refcount.
     if (x->refcount_++ == 0)
-        LogicError("SHAMapItem: the reference count is 0!");
+        logicError("SHAMapItem: the reference count is 0!");
 }
 
 inline void
@@ -136,7 +136,7 @@ intrusive_ptr_release(SHAMapItem const* x)
 }
 
 inline boost::intrusive_ptr<SHAMapItem>
-make_shamapitem(uint256 const& tag, Slice data)
+makeShamapitem(uint256 const& tag, Slice data)
 {
     XRPL_ASSERT(
         data.size() <= megabytes<std::size_t>(16), "xrpl::make_shamapitem : maximum input size");
@@ -160,9 +160,9 @@ static_assert(alignof(SHAMapItem) != 40);
 static_assert(alignof(SHAMapItem) == 8 || alignof(SHAMapItem) == 4);
 
 inline boost::intrusive_ptr<SHAMapItem>
-make_shamapitem(SHAMapItem const& other)
+makeShamapitem(SHAMapItem const& other)
 {
-    return make_shamapitem(other.key(), other.slice());
+    return makeShamapitem(other.key(), other.slice());
 }
 
 }  // namespace xrpl

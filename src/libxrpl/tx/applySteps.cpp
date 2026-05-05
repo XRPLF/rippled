@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -70,10 +71,14 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     //
     // See also Transactor::operator().
     //
+    std::optional<NumberSO> stNumberSO;
     std::optional<CurrentTransactionRulesGuard> rulesGuard;
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
     if (rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol))
     {
+        // raii classes for the current ledger rules.
+        // fixUniversalNumber predates the rulesGuard and should be replaced.
+        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
         rulesGuard.emplace(rules);
     }
     else
@@ -101,7 +106,7 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 }
 }  // namespace
 
-// Templates so preflight does the right thing with T::ConsequencesFactory.
+// Templates so preflight does the right thing with T::kCONSEQUENCES_FACTORY.
 //
 // This could be done more easily using if constexpr, but Visual Studio
 // 2017 doesn't handle if constexpr correctly.  So once we're no longer
@@ -112,27 +117,27 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 //
 
 template <class T>
-    requires(T::ConsequencesFactory == Transactor::Normal)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::Normal)
 TxConsequences
-consequences_helper(PreflightContext const& ctx)
+consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
 
 // For Transactor::Blocker
 template <class T>
-    requires(T::ConsequencesFactory == Transactor::Blocker)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::Blocker)
 TxConsequences
-consequences_helper(PreflightContext const& ctx)
+consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx, TxConsequences::Category::Blocker);
 };
 
 // For Transactor::Custom
 template <class T>
-    requires(T::ConsequencesFactory == Transactor::Custom)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::Custom)
 TxConsequences
-consequences_helper(PreflightContext const& ctx)
+consequencesHelper(PreflightContext const& ctx)
 {
     return T::makeTxConsequences(ctx);
 };
@@ -145,7 +150,7 @@ invokePreflight(PreflightContext const& ctx)
         return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
             auto const tec = Transactor::invokePreflight<T>(ctx);
             return std::make_pair(
-                tec, isTesSuccess(tec) ? consequences_helper<T>(ctx) : TxConsequences{tec});
+                tec, isTesSuccess(tec) ? consequencesHelper<T>(ctx) : TxConsequences{tec});
         });
     }
     catch (UnknownTxnType const& e)
@@ -154,7 +159,7 @@ invokePreflight(PreflightContext const& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preflight: " << e.txnType;
         UNREACHABLE("xrpl::invoke_preflight : unknown transaction type");
-        return {TemUnknown, TxConsequences{TemUnknown}};
+        return {temUNKNOWN, TxConsequences{temUNKNOWN}};
         // LCOV_EXCL_STOP
     }
 }
@@ -196,7 +201,7 @@ invokePreclaim(PreclaimContext const& ctx)
                         if (NotTEC const result = T::checkSign(ctx))
                             return result;
 
-                        return TesSuccess;
+                        return tesSUCCESS;
                     }())
                     return preSigResult;
 
@@ -213,7 +218,7 @@ invokePreclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preclaim: " << e.txnType;
         UNREACHABLE("xrpl::invoke_preclaim : unknown transaction type");
-        return TemUnknown;
+        return temUNKNOWN;
         // LCOV_EXCL_STOP
     }
 }
@@ -274,7 +279,7 @@ TxConsequences::TxConsequences(STTx const& tx)
 
 TxConsequences::TxConsequences(STTx const& tx, Category category) : TxConsequences(tx)
 {
-    isBlocker_ = (category == Category::Blocker);
+    isBlocker_ = (category == TxConsequences::Category::Blocker);
 }
 
 TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend) : TxConsequences(tx)
@@ -303,7 +308,7 @@ invokeApply(ApplyContext& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.journal.fatal()) << "Unknown transaction type in apply: " << e.txnType;
         UNREACHABLE("xrpl::invoke_apply : unknown transaction type");
-        return {TemUnknown, false};
+        return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }
 }
@@ -336,7 +341,7 @@ preflight(
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfCtx, {TefException, TxConsequences{tx}}};
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
@@ -357,7 +362,7 @@ preflight(
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfCtx, {TefException, TxConsequences{tx}}};
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
@@ -417,7 +422,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     catch (std::exception const& e)
     {
         JLOG(ctx->j.fatal()) << "apply (preclaim): " << e.what();
-        return {*ctx, TefException};
+        return {*ctx, tefEXCEPTION};
     }
 }
 
@@ -440,7 +445,7 @@ doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenVie
     {
         // Logic error from the caller. Don't have enough
         // info to recover.
-        return {TefException, false};
+        return {tefEXCEPTION, false};
     }
     try
     {
@@ -460,7 +465,7 @@ doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenVie
     catch (std::exception const& e)
     {
         JLOG(preclaimResult.j.fatal()) << "apply: " << e.what();
-        return {TefException, false};
+        return {tefEXCEPTION, false};
     }
 }
 

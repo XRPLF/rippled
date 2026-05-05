@@ -1,5 +1,7 @@
 #pragma once
 
+// NOLINTBEGIN(readability-identifier-naming)
+
 #include <xrpl/protocol/LedgerFormats.h>
 
 #include <cstdint>
@@ -448,3 +450,5 @@ getAsfFlagMap()
 #pragma pop_macro("ACCOUNTSET_FLAGS")
 
 }  // namespace xrpl
+
+// NOLINTEND(readability-identifier-naming)

@@ -76,14 +76,14 @@ private:
     {
         setArgs(flag);
         if constexpr (sizeof...(args))
-            set_args(args...);
+            setArgs(args...);
     }
 
 protected:
     template <class... Args>
     FlagsHelper(Args... args)
     {
-        set_args(args...);
+        setArgs(args...);
     }
 };
 
@@ -94,11 +94,11 @@ namespace test::jtx {
 // JSON generators
 
 /** Add and/or remove flag. */
-Json::Value
+json::Value
 fset(Account const& account, std::uint32_t on, std::uint32_t off = 0);
 
 /** Remove account flag. */
-inline Json::Value
+inline json::Value
 fclear(Account const& account, std::uint32_t off)
 {
     return fset(account, 0, off);

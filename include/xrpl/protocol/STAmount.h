@@ -34,30 +34,30 @@ public:
     using rep = std::pair<mantissa_type, exponent_type>;
 
 private:
-    Asset mAsset_;
-    mantissa_type mValue_{};
-    exponent_type mOffset_;
-    bool mIsNegative_{};
+    Asset asset_;
+    mantissa_type value_{};
+    exponent_type offset_;
+    bool isNegative_{};
 
 public:
     using value_type = STAmount;
 
-    constexpr static int kC_MIN_OFFSET = -96;
-    constexpr static int kC_MAX_OFFSET = 80;
+    constexpr static int kMIN_OFFSET = -96;
+    constexpr static int kMAX_OFFSET = 80;
 
     // Maximum native value supported by the code
-    constexpr static std::uint64_t kC_MIN_VALUE = 1'000'000'000'000'000ull;
-    static_assert(isPowerOfTen(kC_MIN_VALUE));
-    constexpr static std::uint64_t kC_MAX_VALUE = (kC_MIN_VALUE * 10) - 1;
-    static_assert(kC_MAX_VALUE == 9'999'999'999'999'999ull);
-    constexpr static std::uint64_t kC_MAX_NATIVE = 9'000'000'000'000'000'000ull;
+    constexpr static std::uint64_t kMIN_VALUE = 1'000'000'000'000'000ull;
+    static_assert(isPowerOfTen(kMIN_VALUE));
+    constexpr static std::uint64_t kMAX_VALUE = (kMIN_VALUE * 10) - 1;
+    static_assert(kMAX_VALUE == 9'999'999'999'999'999ull);
+    constexpr static std::uint64_t kMAX_NATIVE = 9'000'000'000'000'000'000ull;
 
     // Max native value on network.
-    constexpr static std::uint64_t kC_MAX_NATIVE_N = 100'000'000'000'000'000ull;
-    constexpr static std::uint64_t kC_ISSUED_CURRENCY = 0x8'000'000'000'000'000ull;
-    constexpr static std::uint64_t kC_POSITIVE = 0x4'000'000'000'000'000ull;
-    constexpr static std::uint64_t kC_MP_TOKEN = 0x2'000'000'000'000'000ull;
-    constexpr static std::uint64_t kC_VALUE_MASK = ~(kC_POSITIVE | kC_MP_TOKEN);
+    constexpr static std::uint64_t kMAX_NATIVE_N = 100'000'000'000'000'000ull;
+    constexpr static std::uint64_t kISSUED_CURRENCY = 0x8'000'000'000'000'000ull;
+    constexpr static std::uint64_t kPOSITIVE = 0x4'000'000'000'000'000ull;
+    constexpr static std::uint64_t kMP_TOKEN = 0x2'000'000'000'000'000ull;
+    constexpr static std::uint64_t kVALUE_MASK = ~(kPOSITIVE | kMP_TOKEN);
 
     static std::uint64_t const kU_RATE_ONE;
 
@@ -106,7 +106,7 @@ public:
 
     template <AssetType A>
     STAmount(A const& asset, std::uint64_t mantissa = 0, int exponent = 0, bool negative = false)
-        : mAsset_(asset), mValue_(mantissa), mOffset_(exponent), mIsNegative_(negative)
+        : asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
     {
         canonicalize();
     }
@@ -179,7 +179,7 @@ public:
     zeroed() const;
 
     void
-    setJson(Json::Value&) const;
+    setJson(json::Value&) const;
 
     [[nodiscard]] STAmount const&
     value() const noexcept;
@@ -241,7 +241,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions = JsonOptions::None) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::KNone) const override;
 
     void
     add(Serializer& s) const override;
@@ -294,7 +294,7 @@ STAmount::STAmount(
     exponent_type exponent,
     bool negative,
     Unchecked)
-    : STBase(name), mAsset_(asset), mValue_(mantissa), mOffset_(exponent), mIsNegative_(negative)
+    : STBase(name), asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
 {
 }
 
@@ -305,7 +305,7 @@ STAmount::STAmount(
     exponent_type exponent,
     bool negative,
     Unchecked)
-    : mAsset_(asset), mValue_(mantissa), mOffset_(exponent), mIsNegative_(negative)
+    : asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
 {
 }
 
@@ -316,19 +316,19 @@ STAmount::STAmount(
     std::uint64_t mantissa,
     int exponent,
     bool negative)
-    : STBase(name), mAsset_(asset), mValue_(mantissa), mOffset_(exponent), mIsNegative_(negative)
+    : STBase(name), asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
 {
-    // mValue is uint64, but needs to fit in the range of int64
+    // value_ is uint64, but needs to fit in the range of int64
     if (Number::getMantissaScale() == MantissaRange::MantissaScale::Small)
     {
         XRPL_ASSERT(
-            mValue_ <= std::numeric_limits<std::int64_t>::max(),
+            value_ <= std::numeric_limits<std::int64_t>::max(),
             "xrpl::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
             "maximum mantissa input");
     }
     else
     {
-        if (integral() && mValue_ > std::numeric_limits<std::int64_t>::max())
+        if (integral() && value_ > std::numeric_limits<std::int64_t>::max())
             throw std::overflow_error("STAmount mantissa is too large " + std::to_string(mantissa));
     }
     canonicalize();
@@ -336,7 +336,7 @@ STAmount::STAmount(
 
 template <AssetType A>
 STAmount::STAmount(A const& asset, std::int64_t mantissa, int exponent)
-    : mAsset_(asset), mOffset_(exponent)
+    : asset_(asset), offset_(exponent)
 {
     set(mantissa);
     canonicalize();
@@ -356,30 +356,30 @@ STAmount::STAmount(A const& asset, int mantissa, int exponent)
 
 // Legacy support for new-style amounts
 inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
-    : mAsset_(issue), mOffset_(amount.exponent()), mIsNegative_(amount < beast::kZERO)
+    : asset_(issue), offset_(amount.exponent()), isNegative_(amount < beast::kZERO)
 {
-    if (mIsNegative_)
+    if (isNegative_)
     {
-        mValue_ = unsafeCast<std::uint64_t>(-amount.mantissa());
+        value_ = unsafeCast<std::uint64_t>(-amount.mantissa());
     }
     else
     {
-        mValue_ = unsafeCast<std::uint64_t>(amount.mantissa());
+        value_ = unsafeCast<std::uint64_t>(amount.mantissa());
     }
 
     canonicalize();
 }
 
 inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
-    : mAsset_(mptIssue), mOffset_(0), mIsNegative_(amount < beast::kZERO)
+    : asset_(mptIssue), offset_(0), isNegative_(amount < beast::kZERO)
 {
-    if (mIsNegative_)
+    if (isNegative_)
     {
-        mValue_ = unsafeCast<std::uint64_t>(-amount.value());
+        value_ = unsafeCast<std::uint64_t>(-amount.value());
     }
     else
     {
-        mValue_ = unsafeCast<std::uint64_t>(amount.value());
+        value_ = unsafeCast<std::uint64_t>(amount.value());
     }
 
     canonicalize();
@@ -399,10 +399,10 @@ STAmount
 amountFromString(Asset const& asset, std::string const& amount);
 
 STAmount
-amountFromJson(SField const& name, Json::Value const& v);
+amountFromJson(SField const& name, json::Value const& v);
 
 bool
-amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource);
+amountFromJsonNoThrow(STAmount& result, json::Value const& jvSource);
 
 // IOUAmount and XRPAmount define toSTAmount, defining this
 // trivial conversion here makes writing generic code easier
@@ -421,78 +421,78 @@ toSTAmount(STAmount const& a)
 inline int
 STAmount::exponent() const noexcept
 {
-    return mOffset_;
+    return offset_;
 }
 
 inline bool
 STAmount::integral() const noexcept
 {
-    return mAsset_.integral();
+    return asset_.integral();
 }
 
 inline bool
 STAmount::native() const noexcept
 {
-    return mAsset_.native();
+    return asset_.native();
 }
 
 template <ValidIssueType TIss>
 constexpr bool
 STAmount::holds() const noexcept
 {
-    return mAsset_.holds<TIss>();
+    return asset_.holds<TIss>();
 }
 
 inline bool
 STAmount::negative() const noexcept
 {
-    return mIsNegative_;
+    return isNegative_;
 }
 
 inline std::uint64_t
 STAmount::mantissa() const noexcept
 {
-    return mValue_;
+    return value_;
 }
 
 inline Asset const&
 STAmount::asset() const
 {
-    return mAsset_;
+    return asset_;
 }
 
 template <ValidIssueType TIss>
 [[nodiscard]] constexpr TIss const&
 STAmount::get() const
 {
-    return mAsset_.get<TIss>();
+    return asset_.get<TIss>();
 }
 
 template <ValidIssueType TIss>
 TIss&
 STAmount::get()
 {
-    return mAsset_.get<TIss>();
+    return asset_.get<TIss>();
 }
 
 inline AccountID const&
 STAmount::getIssuer() const
 {
-    return mAsset_.getIssuer();
+    return asset_.getIssuer();
 }
 
 inline int
 STAmount::signum() const noexcept
 {
-    if (mValue_ == 0u)
+    if (value_ == 0u)
         return 0;
-    return mIsNegative_ ? -1 : 1;
+    return isNegative_ ? -1 : 1;
 }
 
 inline STAmount
 STAmount::zeroed() const
 {
-    return STAmount(mAsset_);
+    return STAmount(asset_);
 }
 
 inline STAmount::
@@ -540,7 +540,7 @@ STAmount::fromNumber(A const& a, Number const& number)
         return STAmount{asset, intValue, 0, negative};
     }
 
-    auto const [mantissa, exponent] = working.normalizeToRange(kC_MIN_VALUE, kC_MAX_VALUE);
+    auto const [mantissa, exponent] = working.normalizeToRange(kMIN_VALUE, kMAX_VALUE);
 
     return STAmount{asset, mantissa, exponent, negative};
 }
@@ -549,7 +549,7 @@ inline void
 STAmount::negate()
 {
     if (*this != beast::kZERO)
-        mIsNegative_ = !mIsNegative_;
+        isNegative_ = !isNegative_;
 }
 
 inline void
@@ -557,9 +557,9 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset_ = integral() ? 0 : -100;
-    mValue_ = 0;
-    mIsNegative_ = false;
+    offset_ = integral() ? 0 : -100;
+    value_ = 0;
+    isNegative_ = false;
 }
 
 inline void
@@ -578,7 +578,7 @@ STAmount::value() const noexcept
 inline bool
 isLegalNet(STAmount const& value)
 {
-    return !value.native() || (value.mantissa() <= STAmount::kC_MAX_NATIVE_N);
+    return !value.native() || (value.mantissa() <= STAmount::kMAX_NATIVE_N);
 }
 
 //------------------------------------------------------------------------------
@@ -752,16 +752,16 @@ scale(Number const& number, Asset const& asset)
 }  // namespace xrpl
 
 //------------------------------------------------------------------------------
-namespace Json {
+namespace json {
 template <>
 inline xrpl::STAmount
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
-    Json::StaticString const& key = field.getJsonName();
+    json::StaticString const& key = field.getJsonName();
     if (!v.isMember(key))
         Throw<JsonMissingKeyError>(key);
-    Json::Value const& inner = v[key];
+    json::Value const& inner = v[key];
     return amountFromJson(field, inner);
 }
-}  // namespace Json
+}  // namespace json

@@ -26,27 +26,27 @@ public:
 
     LockFreeStackIterator() = default;
 
-    LockFreeStackIterator(NodePtr node) : m_node_(node)
+    LockFreeStackIterator(NodePtr node) : node_(node)
     {
     }
 
     template <bool OtherIsConst>
     explicit LockFreeStackIterator(LockFreeStackIterator<Container, OtherIsConst> const& other)
-        : m_node_(other.m_node)
+        : node_(other.node_)
     {
     }
 
     LockFreeStackIterator&
     operator=(NodePtr node)
     {
-        m_node_ = node;
+        node_ = node;
         return static_cast<LockFreeStackIterator&>(*this);
     }
 
     LockFreeStackIterator&
     operator++()
     {
-        m_node_ = m_node_->m_next.load();
+        node_ = node_->next_.load();
         return static_cast<LockFreeStackIterator&>(*this);
     }
 
@@ -54,14 +54,14 @@ public:
     operator++(int)
     {
         LockFreeStackIterator result(*this);
-        m_node_ = m_node_->m_next;
+        node_ = node_->next_;
         return result;
     }
 
     NodePtr
     node() const
     {
-        return m_node_;
+        return node_;
     }
 
     reference
@@ -73,11 +73,11 @@ public:
     pointer
     operator->() const
     {
-        return static_cast<pointer>(m_node_);
+        return static_cast<pointer>(node_);
     }
 
 private:
-    NodePtr m_node_{};
+    NodePtr node_{};
 };
 
 //------------------------------------------------------------------------------
@@ -121,11 +121,11 @@ public:
     class Node
     {
     public:
-        Node() : m_next_(nullptr)
+        Node() : next_(nullptr)
         {
         }
 
-        explicit Node(Node* next) : m_next_(next)
+        explicit Node(Node* next) : next_(next)
         {
         }
 
@@ -139,7 +139,7 @@ public:
         template <class Container, bool IsConst>
         friend class LockFreeStackIterator;
 
-        std::atomic<Node*> m_next_;
+        std::atomic<Node*> next_;
     };
 
 public:
@@ -153,7 +153,7 @@ public:
     using iterator = LockFreeStackIterator<LockFreeStack<Element, Tag>, false>;
     using const_iterator = LockFreeStackIterator<LockFreeStack<Element, Tag>, true>;
 
-    LockFreeStack() : m_end_(nullptr), m_head_(&m_end_)
+    LockFreeStack() : end_(nullptr), head_(&end_)
     {
     }
 
@@ -165,7 +165,7 @@ public:
     [[nodiscard]] bool
     empty() const
     {
-        return m_head_.load() == &m_end_;
+        return head_.load() == &end_;
     }
 
     /** Push a node onto the stack.
@@ -184,12 +184,12 @@ public:
     pushFront(Node* node)
     {
         bool first = false;
-        Node* oldHead = m_head_.load(std::memory_order_relaxed);
+        Node* oldHead = head_.load(std::memory_order_relaxed);
         do
         {
-            first = (oldHead == &m_end_);
-            node->m_next_ = oldHead;
-        } while (!m_head_.compare_exchange_strong(
+            first = (oldHead == &end_);
+            node->next_ = oldHead;
+        } while (!head_.compare_exchange_strong(
             oldHead, node, std::memory_order_release, std::memory_order_relaxed));
         return first;
     }
@@ -206,14 +206,14 @@ public:
     Element*
     popFront()
     {
-        Node* node = m_head_.load();
+        Node* node = head_.load();
         Node* newHead = nullptr;
         do
         {
-            if (node == &m_end_)
+            if (node == &end_)
                 return nullptr;
-            newHead = node->m_next_.load();
-        } while (!m_head_.compare_exchange_strong(
+            newHead = node->next_.load();
+        } while (!head_.compare_exchange_strong(
             node, newHead, std::memory_order_release, std::memory_order_relaxed));
         return static_cast<Element*>(node);
     }
@@ -228,43 +228,43 @@ public:
     iterator
     begin()
     {
-        return iterator(m_head_.load());
+        return iterator(head_.load());
     }
 
     iterator
     end()
     {
-        return iterator(&m_end_);
+        return iterator(&end_);
     }
 
     [[nodiscard]] const_iterator
     begin() const
     {
-        return const_iterator(m_head_.load());
+        return const_iterator(head_.load());
     }
 
     [[nodiscard]] const_iterator
     end() const
     {
-        return const_iterator(&m_end_);
+        return const_iterator(&end_);
     }
 
     [[nodiscard]] const_iterator
     cbegin() const
     {
-        return const_iterator(m_head_.load());
+        return const_iterator(head_.load());
     }
 
     [[nodiscard]] const_iterator
     cend() const
     {
-        return const_iterator(&m_end_);
+        return const_iterator(&end_);
     }
     /** @} */
 
 private:
-    Node m_end_;
-    std::atomic<Node*> m_head_;
+    Node end_;
+    std::atomic<Node*> head_;
 };
 
 }  // namespace beast

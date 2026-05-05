@@ -40,7 +40,7 @@ public:
     using time_point = typename Clock::time_point;
     using clock_type = Clock;
 
-    static bool const kIS_STEADY = Clock::kIS_STEADY;
+    static bool const is_steady = Clock::is_steady;  // NOLINT(readability-identifier-naming)
 
     virtual ~AbstractClock() = default;
     AbstractClock() = default;
@@ -81,7 +81,7 @@ struct AbstractClockWrapper : public AbstractClock<Facade>
 */
 template <class Facade, class Clock = Facade>
 AbstractClock<Facade>&
-get_abstract_clock()
+getAbstractClock()
 {
     static detail::AbstractClockWrapper<Facade, Clock> kCLOCK;
     return kCLOCK;

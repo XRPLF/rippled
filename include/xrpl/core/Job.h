@@ -122,12 +122,12 @@ public:
     operator>=(Job const& j) const;
 
 private:
-    JobType mType_;
-    std::uint64_t mJobIndex_;
-    std::function<void()> mJob_;
-    std::shared_ptr<LoadEvent> m_loadEvent_;
-    std::string mName_;
-    clock_type::time_point m_queue_time_;
+    JobType type_;
+    std::uint64_t jobIndex_;
+    std::function<void()> job_;
+    std::shared_ptr<LoadEvent> loadEvent_;
+    std::string name_;
+    clock_type::time_point queue_time_;
 };
 
 using JobCounter = ClosureCounter<void>;

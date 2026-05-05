@@ -31,7 +31,7 @@ PaymentChannelFund::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelFund::preflight(PreflightContext const& ctx)
 {
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
+    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZERO))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

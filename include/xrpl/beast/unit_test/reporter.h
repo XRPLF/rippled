@@ -196,21 +196,21 @@ Reporter<Unused>::fmtdur(typename clock_type::duration const& d)
 
 template <class Unused>
 void
-Reporter<Unused>::on_suite_begin(SuiteInfo const& info)
+Reporter<Unused>::onSuiteBegin(SuiteInfo const& info)
 {
     suite_results_ = SuiteResults{info.fullName()};
 }
 
 template <class Unused>
 void
-Reporter<Unused>::on_suite_end()
+Reporter<Unused>::onSuiteEnd()
 {
     results_.add(suite_results_);
 }
 
 template <class Unused>
 void
-Reporter<Unused>::on_case_begin(std::string const& name)
+Reporter<Unused>::onCaseBegin(std::string const& name)
 {
     case_results_ = CaseResults(name);
     os_ << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
@@ -219,21 +219,21 @@ Reporter<Unused>::on_case_begin(std::string const& name)
 
 template <class Unused>
 void
-Reporter<Unused>::on_case_end()
+Reporter<Unused>::onCaseEnd()
 {
     suite_results_.add(case_results_);
 }
 
 template <class Unused>
 void
-Reporter<Unused>::on_pass()
+Reporter<Unused>::onPass()
 {
     ++case_results_.total;
 }
 
 template <class Unused>
 void
-Reporter<Unused>::on_fail(std::string const& reason)
+Reporter<Unused>::onFail(std::string const& reason)
 {
     ++case_results_.failed;
     ++case_results_.total;
@@ -243,7 +243,7 @@ Reporter<Unused>::on_fail(std::string const& reason)
 
 template <class Unused>
 void
-Reporter<Unused>::on_log(std::string const& s)
+Reporter<Unused>::onLog(std::string const& s)
 {
     os_ << s;
 }

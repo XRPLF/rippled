@@ -187,144 +187,144 @@ struct ErrorInfo
     }
 
     ErrorCodeI code;
-    Json::StaticString token;
-    Json::StaticString message;
+    json::StaticString token;
+    json::StaticString message;
     int http_status;
 };
 
 /** Returns an ErrorInfo that reflects the error code. */
 ErrorInfo const&
-get_error_info(ErrorCodeI code);
+getErrorInfo(ErrorCodeI code);
 
 /** Add or update the json update to reflect the error code. */
 /** @{ */
 void
-inject_error(ErrorCodeI code, Json::Value& json);
+injectError(ErrorCodeI code, json::Value& json);
 
 void
-inject_error(ErrorCodeI code, std::string const& message, Json::Value& json);
+injectError(ErrorCodeI code, std::string const& message, json::Value& json);
 /** @} */
 
 /** Returns a new json object that reflects the error code. */
 /** @{ */
-Json::Value
-make_error(ErrorCodeI code);
-Json::Value
-make_error(ErrorCodeI code, std::string const& message);
+json::Value
+makeError(ErrorCodeI code);
+json::Value
+makeError(ErrorCodeI code, std::string const& message);
 /** @} */
 
 /** Returns a new json object that indicates invalid parameters. */
 /** @{ */
-inline Json::Value
-make_param_error(std::string const& message)
+inline json::Value
+makeParamError(std::string const& message)
 {
-    return make_error(RpcInvalidParams, message);
+    return makeError(RpcInvalidParams, message);
 }
 
 inline std::string
-missing_field_message(std::string const& name)
+missingFieldMessage(std::string const& name)
 {
     return "Missing field '" + name + "'.";
 }
 
-inline Json::Value
-missing_field_error(std::string const& name)
+inline json::Value
+missingFieldError(std::string const& name)
 {
-    return make_param_error(missing_field_message(name));
+    return makeParamError(missingFieldMessage(name));
 }
 
-inline Json::Value
-missing_field_error(Json::StaticString name)
+inline json::Value
+missingFieldError(json::StaticString name)
 {
-    return missing_field_error(std::string(name));
+    return missingFieldError(std::string(name));
 }
 
 inline std::string
-object_field_message(std::string const& name)
+objectFieldMessage(std::string const& name)
 {
     return "Invalid field '" + name + "', not object.";
 }
 
-inline Json::Value
-object_field_error(std::string const& name)
+inline json::Value
+objectFieldError(std::string const& name)
 {
-    return make_param_error(object_field_message(name));
+    return makeParamError(objectFieldMessage(name));
 }
 
-inline Json::Value
-object_field_error(Json::StaticString name)
+inline json::Value
+objectFieldError(json::StaticString name)
 {
-    return object_field_error(std::string(name));
+    return objectFieldError(std::string(name));
 }
 
 inline std::string
-invalid_field_message(std::string const& name)
+invalidFieldMessage(std::string const& name)
 {
     return "Invalid field '" + name + "'.";
 }
 
 inline std::string
-invalid_field_message(Json::StaticString name)
+invalidFieldMessage(json::StaticString name)
 {
-    return invalid_field_message(std::string(name));
+    return invalidFieldMessage(std::string(name));
 }
 
-inline Json::Value
-invalid_field_error(std::string const& name)
+inline json::Value
+invalidFieldError(std::string const& name)
 {
-    return make_param_error(invalid_field_message(name));
+    return makeParamError(invalidFieldMessage(name));
 }
 
-inline Json::Value
-invalid_field_error(Json::StaticString name)
+inline json::Value
+invalidFieldError(json::StaticString name)
 {
-    return invalid_field_error(std::string(name));
+    return invalidFieldError(std::string(name));
 }
 
 inline std::string
-expected_field_message(std::string const& name, std::string const& type)
+expectedFieldMessage(std::string const& name, std::string const& type)
 {
     return "Invalid field '" + name + "', not " + type + ".";
 }
 
 inline std::string
-expected_field_message(Json::StaticString name, std::string const& type)
+expectedFieldMessage(json::StaticString name, std::string const& type)
 {
-    return expected_field_message(std::string(name), type);
+    return expectedFieldMessage(std::string(name), type);
 }
 
-inline Json::Value
-expected_field_error(std::string const& name, std::string const& type)
+inline json::Value
+expectedFieldError(std::string const& name, std::string const& type)
 {
-    return make_param_error(expected_field_message(name, type));
+    return makeParamError(expectedFieldMessage(name, type));
 }
 
-inline Json::Value
-expected_field_error(Json::StaticString name, std::string const& type)
+inline json::Value
+expectedFieldError(json::StaticString name, std::string const& type)
 {
-    return expected_field_error(std::string(name), type);
+    return expectedFieldError(std::string(name), type);
 }
 
-inline Json::Value
-not_validator_error()
+inline json::Value
+notValidatorError()
 {
-    return make_param_error("not a validator");
+    return makeParamError("not a validator");
 }
 
 /** @} */
 
 /** Returns `true` if the json contains an rpc error specification. */
 bool
-contains_error(Json::Value const& json);
+containsError(json::Value const& json);
 
 /** Returns http status that corresponds to the error code. */
 int
-error_code_http_status(ErrorCodeI code);
+errorCodeHttpStatus(ErrorCodeI code);
 
 }  // namespace RPC
 
 /** Returns a single string with the contents of an RPC error. */
 std::string
-rpcErrorString(Json::Value const& jv);
+rpcErrorString(json::Value const& jv);
 
 }  // namespace xrpl

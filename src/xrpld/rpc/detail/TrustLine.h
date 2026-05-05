@@ -58,38 +58,38 @@ public:
     [[nodiscard]] AccountID const&
     getAccountID() const
     {
-        return mViewLowest_ ? mLowLimit_.getIssuer() : mHighLimit_.getIssuer();
+        return viewLowest_ ? lowLimit_.getIssuer() : highLimit_.getIssuer();
     }
 
     [[nodiscard]] AccountID const&
     getAccountIDPeer() const
     {
-        return !mViewLowest_ ? mLowLimit_.getIssuer() : mHighLimit_.getIssuer();
+        return !viewLowest_ ? lowLimit_.getIssuer() : highLimit_.getIssuer();
     }
 
     // True, Provided auth to peer.
     [[nodiscard]] bool
     getAuth() const
     {
-        return (mFlags_ & (mViewLowest_ ? LsfLowAuth : LsfHighAuth)) != 0u;
+        return (flags_ & (viewLowest_ ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
     [[nodiscard]] bool
     getAuthPeer() const
     {
-        return (mFlags_ & (!mViewLowest_ ? LsfLowAuth : LsfHighAuth)) != 0u;
+        return (flags_ & (!viewLowest_ ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
     [[nodiscard]] bool
     getNoRipple() const
     {
-        return (mFlags_ & (mViewLowest_ ? LsfLowNoRipple : LsfHighNoRipple)) != 0u;
+        return (flags_ & (viewLowest_ ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
     [[nodiscard]] bool
     getNoRipplePeer() const
     {
-        return (mFlags_ & (!mViewLowest_ ? LsfLowNoRipple : LsfHighNoRipple)) != 0u;
+        return (flags_ & (!viewLowest_ ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
     [[nodiscard]] LineDirection
@@ -108,62 +108,62 @@ public:
     [[nodiscard]] bool
     getFreeze() const
     {
-        return (mFlags_ & (mViewLowest_ ? LsfLowFreeze : LsfHighFreeze)) != 0u;
+        return (flags_ & (viewLowest_ ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
     /** Have we set the deep freeze flag on our peer */
     [[nodiscard]] bool
     getDeepFreeze() const
     {
-        return (mFlags_ & (mViewLowest_ ? LsfLowDeepFreeze : LsfHighDeepFreeze)) != 0u;
+        return (flags_ & (viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
     /** Has the peer set the freeze flag on us */
     [[nodiscard]] bool
     getFreezePeer() const
     {
-        return (mFlags_ & (!mViewLowest_ ? LsfLowFreeze : LsfHighFreeze)) != 0u;
+        return (flags_ & (!viewLowest_ ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
     /** Has the peer set the deep freeze flag on us */
     [[nodiscard]] bool
     getDeepFreezePeer() const
     {
-        return (mFlags_ & (!mViewLowest_ ? LsfLowDeepFreeze : LsfHighDeepFreeze)) != 0u;
+        return (flags_ & (!viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
     [[nodiscard]] STAmount const&
     getBalance() const
     {
-        return mBalance_;
+        return balance_;
     }
 
     [[nodiscard]] STAmount const&
     getLimit() const
     {
-        return mViewLowest_ ? mLowLimit_ : mHighLimit_;
+        return viewLowest_ ? lowLimit_ : highLimit_;
     }
 
     [[nodiscard]] STAmount const&
     getLimitPeer() const
     {
-        return !mViewLowest_ ? mLowLimit_ : mHighLimit_;
+        return !viewLowest_ ? lowLimit_ : highLimit_;
     }
 
-    Json::Value
+    json::Value
     getJson(int);
 
 protected:
     uint256 key_;
 
-    STAmount const mLowLimit_;
-    STAmount const mHighLimit_;
+    STAmount const lowLimit_;
+    STAmount const highLimit_;
 
-    STAmount mBalance_;
+    STAmount balance_;
 
-    std::uint32_t mFlags_;
+    std::uint32_t flags_;
 
-    bool mViewLowest_;
+    bool viewLowest_;
 };
 
 // This wrapper is used for the path finder
@@ -195,13 +195,13 @@ public:
     [[nodiscard]] Rate const&
     getQualityIn() const
     {
-        return mViewLowest_ ? lowQualityIn_ : highQualityIn_;
+        return viewLowest_ ? lowQualityIn_ : highQualityIn_;
     }
 
     [[nodiscard]] Rate const&
     getQualityOut() const
     {
-        return mViewLowest_ ? lowQualityOut_ : highQualityOut_;
+        return viewLowest_ ? lowQualityOut_ : highQualityOut_;
     }
 
     static std::optional<RPCTrustLine>

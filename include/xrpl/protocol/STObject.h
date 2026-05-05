@@ -57,7 +57,7 @@ class STObject : public STBase, public CountedObject<STObject>
     using list_type = std::vector<detail::STVar>;
 
     list_type v_;
-    SOTemplate const* mType_{};
+    SOTemplate const* type_{};
 
 public:
     using iterator = boost::transform_iterator<Transform, STObject::list_type::const_iterator>;
@@ -132,7 +132,7 @@ public:
     getText() const override;
 
     // TODO(tom): options should be an enum.
-    [[nodiscard]] Json::Value getJson(JsonOptions = JsonOptions::None) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::KNone) const override;
 
     void
     addWithoutSigningFields(Serializer& s) const;
@@ -415,7 +415,7 @@ public:
 private:
     enum class WhichFields : bool {
         // These values are carefully chosen to do the right thing if passed
-        // to SField::shouldInclude (bool) via static_cast<bool>
+        // to SField::shouldInclude (bool)
         OmitSigningFields = false,
         WithAllFields = true
     };
@@ -703,12 +703,12 @@ class STObject::FieldErr : public std::runtime_error
 template <class T>
 STObject::Proxy<T>::Proxy(STObject* st, TypedField<T> const* f) : st_(st), f_(f)
 {
-    if (st_->mType_ != nullptr)
+    if (st_->type_ != nullptr)
     {
         // STObject has associated template
         if (!st_->peekAtPField(*f_))
             Throw<STObject::FieldErr>("Template field error '" + this->f_->getName() + "'");
-        style_ = st_->mType_->style(*f_);
+        style_ = st_->type_->style(*f_);
     }
     else
     {
@@ -981,7 +981,7 @@ STObject::reserve(std::size_t n)
 inline bool
 STObject::isFree() const
 {
-    return mType_ == nullptr;
+    return type_ == nullptr;
 }
 
 inline void
@@ -1082,15 +1082,15 @@ STObject::at(TypedField<T> const& f) const
     if (auto const u = dynamic_cast<T const*>(b))
         return u->value();
 
-    XRPL_ASSERT(mType_, "xrpl::STObject::at(TypedField auto) : field template non-null");
+    XRPL_ASSERT(type_, "xrpl::STObject::at(TypedField auto) : field template non-null");
     XRPL_ASSERT(
-        b->getSType() == StiNotpresent, "xrpl::STObject::at(TypedField auto) : type not present");
+        b->getSType() == STI_NOTPRESENT, "xrpl::STObject::at(TypedField auto) : type not present");
 
-    if (mType_->style(f) == SoeOptional)
+    if (type_->style(f) == SoeOptional)
         Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
 
     XRPL_ASSERT(
-        mType_->style(f) == SoeDefault,
+        type_->style(f) == SoeDefault,
         "xrpl::STObject::at(TypedField auto) : template style is default");
 
     // Used to help handle the case where value_type is a const reference,
@@ -1110,16 +1110,16 @@ STObject::at(OptionaledField<T> const& of) const
     if (!u)
     {
         XRPL_ASSERT(
-            mType_,
+            type_,
             "xrpl::STObject::at(OptionaledField auto) : field template "
             "non-null");
         XRPL_ASSERT(
-            b->getSType() == StiNotpresent,
+            b->getSType() == STI_NOTPRESENT,
             "xrpl::STObject::at(OptionaledField auto) : type not present");
-        if (mType_->style(*of.f) == SoeOptional)
+        if (type_->style(*of.f) == SoeOptional)
             return std::nullopt;
         XRPL_ASSERT(
-            mType_->style(*of.f) == SoeDefault,
+            type_->style(*of.f) == SoeDefault,
             "xrpl::STObject::at(OptionaledField auto) : template style is "
             "default");
         return typename T::value_type{};
@@ -1150,7 +1150,7 @@ STObject::setFieldH160(SField const& field, BaseUint<160, Tag> const& v)
     if (!rf)
         throwFieldNotFound(field);
 
-    if (rf->getSType() == StiNotpresent)
+    if (rf->getSType() == STI_NOTPRESENT)
         rf = makeFieldPresent(field);
 
     using Bits = STBitString<160>;
@@ -1181,7 +1181,7 @@ STObject::getFieldByValue(SField const& field) const
 
     SerializedTypeID const id = rf->getSType();
 
-    if (id == StiNotpresent)
+    if (id == STI_NOTPRESENT)
         return V();  // optional field not present
 
     T const* cf = dynamic_cast<T const*>(rf);
@@ -1208,7 +1208,7 @@ STObject::getFieldByConstRef(SField const& field, V const& empty) const
 
     SerializedTypeID const id = rf->getSType();
 
-    if (id == StiNotpresent)
+    if (id == STI_NOTPRESENT)
     {
         // NOLINTNEXTLINE(bugprone-return-const-ref-from-parameter)
         return empty;  // optional field not present
@@ -1234,7 +1234,7 @@ STObject::setFieldUsingSetValue(SField const& field, V value)
     if (!rf)
         throwFieldNotFound(field);
 
-    if (rf->getSType() == StiNotpresent)
+    if (rf->getSType() == STI_NOTPRESENT)
         rf = makeFieldPresent(field);
 
     T* cf = dynamic_cast<T*>(rf);
@@ -1255,7 +1255,7 @@ STObject::setFieldUsingAssignment(SField const& field, T const& value)
     if (!rf)
         throwFieldNotFound(field);
 
-    if (rf->getSType() == StiNotpresent)
+    if (rf->getSType() == STI_NOTPRESENT)
         rf = makeFieldPresent(field);
 
     T* cf = dynamic_cast<T*>(rf);
@@ -1276,7 +1276,7 @@ STObject::peekField(SField const& field)
     if (!rf)
         throwFieldNotFound(field);
 
-    if (rf->getSType() == StiNotpresent)
+    if (rf->getSType() == STI_NOTPRESENT)
         rf = makeFieldPresent(field);
 
     T* cf = dynamic_cast<T*>(rf);

@@ -38,7 +38,7 @@ public:
 class Path
 {
 private:
-    Json::Value jv_;
+    json::Value jv_;
 
 public:
     Path();
@@ -52,7 +52,7 @@ public:
     operator()(Env&, JTx& jt) const;
 
 private:
-    Json::Value&
+    json::Value&
     create();
 
     void
@@ -80,7 +80,7 @@ private:
 };
 
 template <class T, class... Args>
-Path::Path(T const& t, Args const&... args) : jv_(Json::ArrayValue)
+Path::Path(T const& t, Args const&... args) : jv_(json::ArrayValue)
 {
     append(t, args...);
 }

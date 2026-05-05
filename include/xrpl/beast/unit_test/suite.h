@@ -299,8 +299,8 @@ private:
     static Suite**
     pThisSuite()
     {
-        static Suite* kPTS = nullptr;  // NOLINT(misc-const-correctness)
-        return &kPTS;
+        static Suite* kP_TS = nullptr;  // NOLINT TODO
+        return &kP_TS;
     }
 
     /** Runs the suite. */
@@ -579,7 +579,7 @@ Suite::run(Runner& r)
 // detail:
 // This inserts the suite with the given manual flag
 #define BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, manual, priority) \
-    static beast::unit_test::detail::insert_suite<Class##_test>                 \
+    static beast::unit_test::detail::InsertSuite<Class##_test>                  \
         Library##Module##Class##_test_instance(#Class, #Module, #Library, manual, priority)
 
 //------------------------------------------------------------------------------

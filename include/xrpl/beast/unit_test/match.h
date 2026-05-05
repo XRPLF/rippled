@@ -122,7 +122,7 @@ Selector::operator()(SuiteInfo const& s)
 
 /** Returns a predicate that implements a smart matching rule.
     The predicate checks the suite, module, and library fields of the
-    suite_info in that order. When it finds a match, it changes modes
+    SuiteInfo in that order. When it finds a match, it changes modes
     depending on what was found:
 
         If a suite is matched first, then only the suite is selected. The
@@ -136,28 +136,28 @@ Selector::operator()(SuiteInfo const& s)
 
 */
 inline Selector
-match_auto(std::string const& name)
+matchAuto(std::string const& name)
 {
     return Selector(Selector::ModeT::Automatch, name);
 }
 
 /** Return a predicate that matches all suites not marked manual. */
 inline Selector
-match_all()
+matchAll()
 {
     return Selector(Selector::ModeT::All);
 }
 
 /** Returns a predicate that matches a specific suite. */
 inline Selector
-match_suite(std::string const& name)
+matchSuite(std::string const& name)
 {
     return Selector(Selector::ModeT::Suite, name);
 }
 
 /** Returns a predicate that matches all suites in a library. */
 inline Selector
-match_library(std::string const& name)
+matchLibrary(std::string const& name)
 {
     return Selector(Selector::ModeT::Library, name);
 }

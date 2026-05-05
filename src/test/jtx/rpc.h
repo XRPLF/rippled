@@ -38,7 +38,7 @@ public:
         jt.ter = TelEnvRpcFailed;
         if (code_)
         {
-            auto const& errorInfo = RPC::get_error_info(*code_);
+            auto const& errorInfo = RPC::getErrorInfo(*code_);
             // When an RPC request returns an error code ('error_code'), it
             // always includes an error message ('error_message'), and sometimes
             // includes an error token ('error'). If it does, the error token is

@@ -57,11 +57,11 @@ static_assert(kAPI_BETA_VERSION >= kAPI_MAXIMUM_SUPPORTED_VERSION);
 static_assert(kAPI_MAXIMUM_VALID_VERSION >= kAPI_MAXIMUM_SUPPORTED_VERSION);
 
 inline void
-setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
+setVersion(json::Value& parent, unsigned int apiVersion, bool betaEnabled)
 {
     XRPL_ASSERT(apiVersion != kAPI_INVALID_VERSION, "xrpl::RPC::setVersion : input is valid");
 
-    auto& retObj = parent[jss::kVERSION] = Json::ObjectValue;
+    auto& retObj = parent[jss::version] = json::ObjectValue;
 
     if (apiVersion == kAPI_VERSION_IF_UNSPECIFIED)
     {
@@ -70,14 +70,14 @@ setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
         static beast::SemanticVersion const kGOOD_VERSION{"1.0.0"};
         static beast::SemanticVersion const kLAST_VERSION{"1.0.0"};
 
-        retObj[jss::kFIRST] = kFIRST_VERSION.print();
-        retObj[jss::kGOOD] = kGOOD_VERSION.print();
-        retObj[jss::kLAST] = kLAST_VERSION.print();
+        retObj[jss::first] = kFIRST_VERSION.print();
+        retObj[jss::good] = kGOOD_VERSION.print();
+        retObj[jss::last] = kLAST_VERSION.print();
     }
     else
     {
-        retObj[jss::kFIRST] = kAPI_MINIMUM_SUPPORTED_VERSION.value;
-        retObj[jss::kLAST] = betaEnabled ? kAPI_BETA_VERSION : kAPI_MAXIMUM_SUPPORTED_VERSION;
+        retObj[jss::first] = kAPI_MINIMUM_SUPPORTED_VERSION.value;
+        retObj[jss::last] = betaEnabled ? kAPI_BETA_VERSION : kAPI_MAXIMUM_SUPPORTED_VERSION;
     }
 }
 
@@ -96,17 +96,17 @@ setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
  * @return the api version number
  */
 inline unsigned int
-getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
+getAPIVersionNumber(json::Value const& jv, bool betaEnabled)
 {
-    static Json::Value const kMIN_VERSION(RPC::kAPI_MINIMUM_SUPPORTED_VERSION);
-    Json::Value const maxVersion(
+    static json::Value const kMIN_VERSION(RPC::kAPI_MINIMUM_SUPPORTED_VERSION);
+    json::Value const maxVersion(
         betaEnabled ? RPC::kAPI_BETA_VERSION : RPC::kAPI_MAXIMUM_SUPPORTED_VERSION);
 
     if (jv.isObject())
     {
-        if (jv.isMember(jss::kAPI_VERSION))
+        if (jv.isMember(jss::api_version))
         {
-            auto const specifiedVersion = jv[jss::kAPI_VERSION];
+            auto const specifiedVersion = jv[jss::api_version];
             if (!specifiedVersion.isInt() && !specifiedVersion.isUInt())
             {
                 return RPC::kAPI_INVALID_VERSION;

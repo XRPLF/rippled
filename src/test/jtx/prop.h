@@ -7,13 +7,13 @@
 namespace xrpl::test::jtx {
 
 /** Set a property on a JTx. */
-template <class Prop>
+template <class T>
 struct Prop
 {
     std::unique_ptr<BasicProp> p;
 
     template <class... Args>
-    Prop(Args&&... args) : p(std::make_unique<PropType<Prop>>(std::forward<Args>(args)...))
+    Prop(Args&&... args) : p(std::make_unique<PropType<T>>(std::forward<Args>(args)...))
     {
     }
 

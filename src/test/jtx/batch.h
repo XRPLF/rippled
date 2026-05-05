@@ -22,33 +22,33 @@ XRPAmount
 calcBatchFee(jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns = 0);
 
 /** Batch. */
-Json::Value
+json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags);
 
 /** Adds a new Batch Txn on a JTx and autofills. */
 class Inner
 {
 private:
-    Json::Value txn_;
+    json::Value txn_;
     std::uint32_t seq_;
     std::optional<std::uint32_t> ticket_;
 
 public:
     Inner(
-        Json::Value txn,
+        json::Value txn,
         std::uint32_t const& sequence,
         std::optional<std::uint32_t> const& ticket = std::nullopt)
         : txn_(std::move(txn)), seq_(sequence), ticket_(ticket)
     {
-        txn_[jss::kSIGNING_PUB_KEY] = "";
-        txn_[jss::kSEQUENCE] = seq_;
-        txn_[jss::kFEE] = "0";
-        txn_[jss::kFLAGS] = txn_[jss::kFLAGS].asUInt() | kTF_INNER_BATCH_TXN;
+        txn_[jss::SigningPubKey] = "";
+        txn_[jss::Sequence] = seq_;
+        txn_[jss::Fee] = "0";
+        txn_[jss::Flags] = txn_[jss::Flags].asUInt() | tfInnerBatchTxn;
 
         // Optionally set ticket sequence
         if (ticket_.has_value())
         {
-            txn_[jss::kSEQUENCE] = 0;
+            txn_[jss::Sequence] = 0;
             txn_[sfTicketSequence.jsonName] = *ticket_;
         }
     }
@@ -56,19 +56,19 @@ public:
     void
     operator()(Env&, JTx& jtx) const;
 
-    Json::Value&
-    operator[](Json::StaticString const& key)
+    json::Value&
+    operator[](json::StaticString const& key)
     {
         return txn_[key];
     }
 
     void
-    removeMember(Json::StaticString const& key)
+    removeMember(json::StaticString const& key)
     {
         txn_.removeMember(key);
     }
 
-    [[nodiscard]] Json::Value const&
+    [[nodiscard]] json::Value const&
     getTxn() const
     {
         return txn_;
@@ -81,7 +81,7 @@ class Sig
 public:
     std::vector<Reg> signers;
 
-    Sig(std::vector<Reg> signers) : signers(std::move(signers))
+    Sig(std::vector<Reg> s) : signers(std::move(s))
     {
         sortSigners(signers);
     }
@@ -105,8 +105,8 @@ public:
     Account master;
     std::vector<Reg> signers;
 
-    Msig(Account masterAccount, std::vector<Reg> signers)
-        : master(std::move(masterAccount)), signers(std::move(signers))
+    Msig(Account masterAccount, std::vector<Reg> s)
+        : master(std::move(masterAccount)), signers(std::move(s))
     {
         sortSigners(signers);
     }

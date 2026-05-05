@@ -154,7 +154,7 @@ private:
     sha512_hasher h_;
 
 public:
-    static constexpr auto const endian = boost::endian::order::big;
+    static constexpr auto const kENDIAN = boost::endian::order::big;
 
     using result_type = uint256;
 
@@ -185,7 +185,7 @@ private:
     void
     erase(std::true_type)
     {
-        secure_erase(&h_, sizeof(h_));
+        secureErase(&h_, sizeof(h_));
     }
 };
 
@@ -217,7 +217,7 @@ sha512Half(Args const&... args)
 */
 template <class... Args>
 sha512_half_hasher_s::result_type
-sha512Half_s(Args const&... args)
+sha512HalfS(Args const&... args)
 {
     sha512_half_hasher_s h;
     using beast::hash_append;

@@ -18,7 +18,7 @@ namespace xrpl {
     destroy: Run the destructor. This action will occur when either the strong
     count or weak count is decremented and the other count is also zero.
  */
-enum class ReleaseStrongRefAction { Noop, PartialDestroy, Destroy };
+enum class ReleaseStrongRefAction { NoOp, PartialDestroy, Destroy };
 
 /** Action to perform when releasing a weak pointer.
 
@@ -28,7 +28,7 @@ enum class ReleaseStrongRefAction { Noop, PartialDestroy, Destroy };
     destroy: Run the destructor. This action will occur when either the strong
     count or weak count is decremented and the other count is also zero.
  */
-enum class ReleaseWeakRefAction { Noop, Destroy };
+enum class ReleaseWeakRefAction { NoOp, Destroy };
 
 /** Implement the strong count, weak count, and bit flags for an intrusive
     pointer.
@@ -256,7 +256,7 @@ IntrusiveRefCounts::releaseStrongRef() const
             "xrpl::IntrusiveRefCounts::releaseStrongRef : previous ref "
             "higher than new");
         auto nextIntVal = prevIntVal - kSTRONG_DELTA;
-        ReleaseStrongRefAction action = Noop;
+        ReleaseStrongRefAction action = NoOp;
         if (prevVal.strong == 1)
         {
             if (prevVal.weak == 0)
@@ -276,7 +276,7 @@ IntrusiveRefCounts::releaseStrongRef() const
             // count to zero can start a partial destroy, and that can't happen
             // twice.
             XRPL_ASSERT(
-                (action == Noop) || !(prevIntVal & kPARTIAL_DESTROY_STARTED_MASK),
+                (action == NoOp) || !(prevIntVal & kPARTIAL_DESTROY_STARTED_MASK),
                 "xrpl::IntrusiveRefCounts::releaseStrongRef : not in partial "
                 "destroy");
             return action;
@@ -313,12 +313,12 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
             "partial destroy");
 
         auto nextIntVal = prevIntVal + kDELTA;
-        ReleaseStrongRefAction action = Noop;
+        ReleaseStrongRefAction action = NoOp;
         if (prevVal.strong == 1)
         {
             if (prevVal.weak == 0)
             {
-                action = Noop;
+                action = NoOp;
             }
             else
             {
@@ -361,7 +361,7 @@ IntrusiveRefCounts::releaseWeakRef() const
         }
         return ReleaseWeakRefAction::Destroy;
     }
-    return ReleaseWeakRefAction::Noop;
+    return ReleaseWeakRefAction::NoOp;
 }
 
 inline bool

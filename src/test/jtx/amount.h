@@ -55,7 +55,8 @@ struct None
 // This value is also defined in SystemParameters.h. It's
 // duplicated here to catch any possible future errors that
 // could change that value (however unlikely).
-constexpr XRPAmount kDROPS_PER_XRP{1'000'000};
+// TODO: rename — clashes with xrpl::kDROPS_PER_XRP
+constexpr XRPAmount kJTX_DROPS_PER_XRP{1'000'000};
 
 /** Represents an XRP, IOU, or MPT quantity
     This customizes the string conversion and supports
@@ -134,9 +135,9 @@ public:
 
     operator AnyAmount() const;
 
-    operator Json::Value() const
+    operator json::Value() const
     {
-        return to_json(value());
+        return toJson(value());
     }
 };
 
@@ -183,9 +184,9 @@ public:
         return asset_;
     }
 
-    operator Json::Value() const
+    operator json::Value() const
     {
-        return to_json(asset_);
+        return toJson(asset_);
     }
 
     template <std::integral T>
@@ -275,7 +276,7 @@ struct XrpT
     operator()(T v) const
     {
         using TOut = std::conditional_t<std::is_signed_v<T>, std::int64_t, std::uint64_t>;
-        return {TOut{v} * kDROPS_PER_XRP};
+        return {TOut{v} * kJTX_DROPS_PER_XRP};
     }
 
     /** Returns an amount of XRP as PrettyAmount,
@@ -286,7 +287,7 @@ struct XrpT
     PrettyAmount
     operator()(Number v) const
     {
-        auto const c = kDROPS_PER_XRP.drops();
+        auto const c = kJTX_DROPS_PER_XRP.drops();
         auto const d = std::int64_t(v * c);
         if (Number(d) / c != v)
             Throw<std::domain_error>("unrepresentable");
@@ -296,7 +297,7 @@ struct XrpT
     PrettyAmount
     operator()(double v) const
     {
-        auto const c = kDROPS_PER_XRP.drops();
+        auto const c = kJTX_DROPS_PER_XRP.drops();
         if (v >= 0)
         {
             auto const d = std::uint64_t(std::round(v * c));
@@ -331,7 +332,7 @@ struct XrpT
         XRP         Converts to the XRP Issue
         XRP(10)     Returns STAmount of 10 XRP
 */
-extern XrpT const kXRP;
+extern XrpT const XRP;  // NOLINT(readability-identifier-naming)
 
 /** Returns an XRP PrettyAmount, which is trivially convertible to STAmount.
 
@@ -475,7 +476,7 @@ public:
     std::string name;
     xrpl::MPTID issuanceID;
 
-    MPT(std::string n, xrpl::MPTID const& issuanceId) : name(std::move(n)), issuanceID(issuanceId)
+    MPT(std::string n, xrpl::MPTID const& issuanceID) : name(std::move(n)), issuanceID(issuanceID)
     {
     }
     MPT(std::string n = "") : name(std::move(n)), issuanceID(noMPT())
@@ -576,7 +577,7 @@ struct AnyT
 /** Amount specifier with an option for any issuer. */
 struct AnyAmount
 {
-    bool is_any;
+    bool isAny;
     STAmount value;
 
     AnyAmount() = delete;
@@ -584,11 +585,11 @@ struct AnyAmount
     AnyAmount&
     operator=(AnyAmount const&) = default;
 
-    AnyAmount(STAmount amount) : is_any(false), value(std::move(amount))
+    AnyAmount(STAmount amount) : isAny(false), value(std::move(amount))
     {
     }
 
-    AnyAmount(STAmount amount, AnyT const*) : is_any(true), value(std::move(amount))
+    AnyAmount(STAmount amount, AnyT const*) : isAny(true), value(std::move(amount))
     {
     }
 
@@ -596,7 +597,7 @@ struct AnyAmount
     void
     to(AccountID const& id)
     {
-        if (!is_any)
+        if (!isAny)
             return;
         value.get<Issue>().account = id;
     }

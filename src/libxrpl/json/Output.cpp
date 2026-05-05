@@ -5,47 +5,47 @@
 
 #include <string>
 
-namespace Json {
+namespace json {
 
 namespace {
 
 void
-outputJson(Json::Value const& value, Writer& writer)
+outputJson(json::Value const& value, Writer& writer)
 {
     switch (value.type())
     {
-        case Json::nullValue: {
+        case json::NullValue: {
             writer.output(nullptr);
             break;
         }
 
-        case Json::intValue: {
+        case json::IntValue: {
             writer.output(value.asInt());
             break;
         }
 
-        case Json::uintValue: {
+        case json::UintValue: {
             writer.output(value.asUInt());
             break;
         }
 
-        case Json::realValue: {
+        case json::RealValue: {
             writer.output(value.asDouble());
             break;
         }
 
-        case Json::stringValue: {
+        case json::StringValue: {
             writer.output(value.asString());
             break;
         }
 
-        case Json::booleanValue: {
+        case json::BooleanValue: {
             writer.output(value.asBool());
             break;
         }
 
-        case Json::arrayValue: {
-            writer.startRoot(Writer::CollectionType::array);
+        case json::ArrayValue: {
+            writer.startRoot(Writer::CollectionType::Array);
             for (auto const& i : value)
             {
                 writer.rawAppend();
@@ -55,8 +55,8 @@ outputJson(Json::Value const& value, Writer& writer)
             break;
         }
 
-        case Json::objectValue: {
-            writer.startRoot(Writer::CollectionType::object);
+        case json::ObjectValue: {
+            writer.startRoot(Writer::CollectionType::Object);
             auto members = value.getMemberNames();
             for (auto const& tag : members)
             {
@@ -72,14 +72,14 @@ outputJson(Json::Value const& value, Writer& writer)
 }  // namespace
 
 void
-outputJson(Json::Value const& value, Output const& out)
+outputJson(json::Value const& value, Output const& out)
 {
     Writer writer(out);
     outputJson(value, writer);
 }
 
 std::string
-jsonAsString(Json::Value const& value)
+jsonAsString(json::Value const& value)
 {
     std::string s;
     Writer writer(stringOutput(s));
@@ -87,4 +87,4 @@ jsonAsString(Json::Value const& value)
     return s;
 }
 
-}  // namespace Json
+}  // namespace json

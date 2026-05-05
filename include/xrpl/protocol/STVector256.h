@@ -9,7 +9,7 @@ namespace xrpl {
 
 class STVector256 : public STBase, public CountedObject<STVector256>
 {
-    std::vector<uint256> mValue_;
+    std::vector<uint256> value_;
 
 public:
     using value_type = std::vector<uint256> const&;
@@ -27,7 +27,7 @@ public:
     void
     add(Serializer& s) const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
@@ -103,124 +103,124 @@ inline STVector256::STVector256(SField const& n) : STBase(n)
 {
 }
 
-inline STVector256::STVector256(std::vector<uint256> const& vector) : mValue_(vector)
+inline STVector256::STVector256(std::vector<uint256> const& vector) : value_(vector)
 {
 }
 
 inline STVector256::STVector256(SField const& n, std::vector<uint256> const& vector)
-    : STBase(n), mValue_(vector)
+    : STBase(n), value_(vector)
 {
 }
 
 inline STVector256&
 STVector256::operator=(std::vector<uint256> const& v)
 {
-    mValue_ = v;
+    value_ = v;
     return *this;
 }
 
 inline STVector256&
 STVector256::operator=(std::vector<uint256>&& v)
 {
-    mValue_ = std::move(v);
+    value_ = std::move(v);
     return *this;
 }
 
 inline void
 STVector256::setValue(STVector256 const& v)
 {
-    mValue_ = v.mValue_;
+    value_ = v.value_;
 }
 
 /** Retrieve a copy of the vector we contain */
 inline STVector256::
 operator std::vector<uint256>() const
 {
-    return mValue_;
+    return value_;
 }
 
 inline std::size_t
 STVector256::size() const
 {
-    return mValue_.size();
+    return value_.size();
 }
 
 inline void
 STVector256::resize(std::size_t n)
 {
-    mValue_.resize(n);
+    value_.resize(n);
 }
 
 inline bool
 STVector256::empty() const
 {
-    return mValue_.empty();
+    return value_.empty();
 }
 
 inline std::vector<uint256>::reference
 STVector256::operator[](std::vector<uint256>::size_type n)
 {
-    return mValue_[n];
+    return value_[n];
 }
 
 inline std::vector<uint256>::const_reference
 STVector256::operator[](std::vector<uint256>::size_type n) const
 {
-    return mValue_[n];
+    return value_[n];
 }
 
 inline std::vector<uint256> const&
 STVector256::value() const
 {
-    return mValue_;
+    return value_;
 }
 
 inline std::vector<uint256>::iterator
 STVector256::insert(std::vector<uint256>::const_iterator pos, uint256 const& value)
 {
-    return mValue_.insert(pos, value);
+    return value_.insert(pos, value);
 }
 
 inline void
 STVector256::pushBack(uint256 const& v)
 {
-    mValue_.push_back(v);
+    value_.push_back(v);
 }
 
 inline std::vector<uint256>::iterator
 STVector256::begin()
 {
-    return mValue_.begin();
+    return value_.begin();
 }
 
 inline std::vector<uint256>::const_iterator
 STVector256::begin() const
 {
-    return mValue_.begin();
+    return value_.begin();
 }
 
 inline std::vector<uint256>::iterator
 STVector256::end()
 {
-    return mValue_.end();
+    return value_.end();
 }
 
 inline std::vector<uint256>::const_iterator
 STVector256::end() const
 {
-    return mValue_.end();
+    return value_.end();
 }
 
 inline std::vector<uint256>::iterator
 STVector256::erase(std::vector<uint256>::iterator position)
 {
-    return mValue_.erase(position);
+    return value_.erase(position);
 }
 
 inline void
 STVector256::clear() noexcept
 {
-    mValue_.clear();
+    value_.clear();
 }
 
 }  // namespace xrpl

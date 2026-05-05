@@ -40,10 +40,10 @@ public:
         std::string const& name,
         clock_type& clock,
         beast::Journal j,
-        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New(),
+        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
         std::size_t targetSize = DefaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
-        : m_cache_(name, targetSize, expiration, clock, j, collector), m_gen_(1)
+        : cache_(name, targetSize, expiration, clock, j, collector), gen_(1)
     {
     }
 
@@ -51,7 +51,7 @@ public:
     clock_type&
     clock()
     {
-        return m_cache_.clock();
+        return cache_.clock();
     }
 
     /** Return the number of elements in the cache.
@@ -61,7 +61,7 @@ public:
     std::size_t
     size() const
     {
-        return m_cache_.size();
+        return cache_.size();
     }
 
     /** Remove expired cache items.
@@ -71,7 +71,7 @@ public:
     void
     sweep()
     {
-        m_cache_.sweep();
+        cache_.sweep();
     }
 
     /** Refresh the last access time of an item, if it exists.
@@ -83,7 +83,7 @@ public:
     bool
     touchIfExists(key_type const& key)
     {
-        return m_cache_.touchIfExists(key);
+        return cache_.touchIfExists(key);
     }
 
     /** Insert a key into the cache.
@@ -96,33 +96,33 @@ public:
     void
     insert(key_type const& key)
     {
-        m_cache_.insert(key);
+        cache_.insert(key);
     }
 
     /** generation determines whether cached entry is valid */
     std::uint32_t
     getGeneration(void) const
     {
-        return m_gen_;
+        return gen_;
     }
 
     void
     clear()
     {
-        m_cache_.clear();
-        ++m_gen_;
+        cache_.clear();
+        ++gen_;
     }
 
     void
     reset()
     {
-        m_cache_.clear();
-        m_gen_ = 1;
+        cache_.clear();
+        gen_ = 1;
     }
 
 private:
-    CacheType m_cache_;
-    std::atomic<std::uint32_t> m_gen_;
+    CacheType cache_;
+    std::atomic<std::uint32_t> gen_;
 };
 
 }  // namespace detail

@@ -62,7 +62,7 @@ public:
 
         Iterator() = default;
 
-        Iterator(partition_map_type* map) : map(map)
+        Iterator(partition_map_type* m) : map(m)
         {
         }
 
@@ -131,7 +131,7 @@ public:
 
         ConstIterator() = default;
 
-        ConstIterator(partition_map_type* map) : map(map)
+        ConstIterator(partition_map_type* m) : map(m)
         {
         }
 
@@ -216,11 +216,11 @@ private:
     static void
     begin(T& it)
     {
-        for (it.ait_ = it.map_->begin(); it.ait_ != it.map_->end(); ++it.ait_)
+        for (it.ait = it.map->begin(); it.ait != it.map->end(); ++it.ait)
         {
-            if (it.ait_->begin() == it.ait_->end())
+            if (it.ait->begin() == it.ait->end())
                 continue;
-            it.mit_ = it.ait_->begin();
+            it.mit = it.ait->begin();
             return;
         }
         end(it);

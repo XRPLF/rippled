@@ -17,15 +17,15 @@ namespace xrpl {
 // DEPRECATED use beast::severities::Severity instead
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LogSeverity {
-    LsInvalid = -1,  // used to indicate an invalid severity
-    LsTrace = 0,     // Very low-level progress information, details inside
+    LSInvalid = -1,  // used to indicate an invalid severity
+    LSTrace = 0,     // Very low-level progress information, details inside
                      // an operation
-    LsDebug = 1,     // Function-level progress information, operations
-    LsInfo = 2,      // Server-level progress information, major operations
-    LsWarning = 3,   // Conditions that warrant human attention, may indicate
+    LSDebug = 1,     // Function-level progress information, operations
+    LSInfo = 2,      // Server-level progress information, major operations
+    LSWarning = 3,   // Conditions that warrant human attention, may indicate
                      // a problem
-    LsError = 4,     // A condition that indicates a problem
-    LsFatal = 5      // A severe condition that indicates a server problem
+    LSError = 4,     // A condition that indicates a problem
+    LSFatal = 5      // A severe condition that indicates a server problem
 };
 
 /** Manages partitions for logging. */
@@ -130,8 +130,8 @@ private:
         /** @} */
 
     private:
-        std::unique_ptr<std::ofstream> m_stream_;
-        boost::filesystem::path m_path_;
+        std::unique_ptr<std::ofstream> stream_;
+        boost::filesystem::path path_;
     };
 
     std::mutex mutable mutex_;

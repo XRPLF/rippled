@@ -93,15 +93,10 @@ public:
 
 //------------------------------------------------------------------------------
 
-/// Convenience for producing suite_info for a given test type.
+/// Convenience for producing SuiteInfo for a given test type.
 template <class Suite>
 SuiteInfo
-make_suite_info(
-    std::string name,
-    std::string module,
-    std::string library,
-    bool manual,
-    int priority)
+makeSuiteInfo(std::string name, std::string module, std::string library, bool manual, int priority)
 {
     return SuiteInfo(
         std::move(name), std::move(module), std::move(library), manual, priority, [](Runner& r) {

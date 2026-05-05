@@ -16,10 +16,10 @@ namespace xrpl {
 
 class STPathElement final : public CountedObject<STPathElement>
 {
-    unsigned int mType_;
-    AccountID mAccountID_;
-    PathAsset mAssetID_;
-    AccountID mIssuerID_;
+    unsigned int type_;
+    AccountID accountID_;
+    PathAsset assetID_;
+    AccountID issuerID_;
 
     bool is_offer_;
     std::size_t hash_value_;
@@ -118,7 +118,7 @@ private:
 
 class STPath final : public CountedObject<STPath>
 {
-    std::vector<STPathElement> mPath_;
+    std::vector<STPathElement> path_;
 
 public:
     STPath() = default;
@@ -141,7 +141,7 @@ public:
     [[nodiscard]] bool
     hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const;
+    [[nodiscard]] json::Value getJson(JsonOptions) const;
 
     [[nodiscard]] std::vector<STPathElement>::const_iterator
     begin() const;
@@ -184,7 +184,7 @@ public:
     void
     add(Serializer& s) const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     [[nodiscard]] SerializedTypeID
     getSType() const override;
@@ -235,7 +235,7 @@ private:
 
 // ------------ STPathElement ------------
 
-inline STPathElement::STPathElement() : mType_(TypeNone), is_offer_(true)
+inline STPathElement::STPathElement() : type_(TypeNone), is_offer_(true)
 {
     hash_value_ = getHash(*this);
 }
@@ -244,7 +244,7 @@ inline STPathElement::STPathElement(
     std::optional<AccountID> const& account,
     std::optional<PathAsset> const& asset,
     std::optional<AccountID> const& issuer)
-    : mType_(TypeNone)
+    : type_(TypeNone)
 {
     if (!account)
     {
@@ -253,24 +253,23 @@ inline STPathElement::STPathElement(
     else
     {
         is_offer_ = false;
-        mAccountID_ = *account;
-        mType_ |= TypeAccount;
+        accountID_ = *account;
+        type_ |= TypeAccount;
         XRPL_ASSERT(
-            mAccountID_ != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
+            accountID_ != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
     }
 
     if (asset)
     {
-        mAssetID_ = *asset;
-        mType_ |= mAssetID_.holds<Currency>() ? TypeCurrency : TypeMpt;
+        assetID_ = *asset;
+        type_ |= assetID_.holds<Currency>() ? TypeCurrency : TypeMpt;
     }
 
     if (issuer)
     {
-        mIssuerID_ = *issuer;
-        mType_ |= TypeIssuer;
-        XRPL_ASSERT(
-            mIssuerID_ != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
+        issuerID_ = *issuer;
+        type_ |= TypeIssuer;
+        XRPL_ASSERT(issuerID_ != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
     }
 
     hash_value_ = getHash(*this);
@@ -281,20 +280,20 @@ inline STPathElement::STPathElement(
     PathAsset const& asset,
     AccountID const& issuer,
     bool forceAsset)
-    : mType_(TypeNone)
-    , mAccountID_(account)
-    , mAssetID_(asset)
-    , mIssuerID_(issuer)
-    , is_offer_(isXRP(mAccountID_))
+    : type_(TypeNone)
+    , accountID_(account)
+    , assetID_(asset)
+    , issuerID_(issuer)
+    , is_offer_(isXRP(accountID_))
 {
     if (!is_offer_)
-        mType_ |= TypeAccount;
+        type_ |= TypeAccount;
 
-    if (forceAsset || !isXRP(mAssetID_))
-        mType_ |= asset.holds<Currency>() ? TypeCurrency : TypeMpt;
+    if (forceAsset || !isXRP(assetID_))
+        type_ |= asset.holds<Currency>() ? TypeCurrency : TypeMpt;
 
     if (!isXRP(issuer))
-        mType_ |= TypeIssuer;
+        type_ |= TypeIssuer;
 
     hash_value_ = getHash(*this);
 }
@@ -304,24 +303,22 @@ inline STPathElement::STPathElement(
     AccountID const& account,
     PathAsset const& asset,
     AccountID const& issuer)
-    : mType_(uType)
-    , mAccountID_(account)
-    , mAssetID_(asset)
-    , mIssuerID_(issuer)
-    , is_offer_(isXRP(mAccountID_))
+    : type_(uType)
+    , accountID_(account)
+    , assetID_(asset)
+    , issuerID_(issuer)
+    , is_offer_(isXRP(accountID_))
 {
-    // uType could be assetType; i.e. either Currency or MPTID.
-    // Get the actual type.
-    mAssetID_.visit(
-        [&](Currency const&) { mType_ = mType_ & (~Type::TypeMpt); },
-        [&](MPTID const&) { mType_ = mType_ & (~Type::TypeCurrency); });
+    assetID_.visit(
+        [&](Currency const&) { type_ = type_ & (~Type::TypeMpt); },
+        [&](MPTID const&) { type_ = type_ & (~Type::TypeCurrency); });
     hash_value_ = getHash(*this);
 }
 
 inline auto
 STPathElement::getNodeType() const
 {
-    return mType_;
+    return type_;
 }
 
 inline bool
@@ -339,7 +336,7 @@ STPathElement::isAccount() const
 inline bool
 STPathElement::isType(Type const& pe) const
 {
-    return (mType_ & pe) != 0u;
+    return (type_ & pe) != 0u;
 }
 
 inline bool
@@ -377,38 +374,38 @@ STPathElement::isNone() const
 inline AccountID const&
 STPathElement::getAccountID() const
 {
-    return mAccountID_;
+    return accountID_;
 }
 
 inline PathAsset const&
 STPathElement::getPathAsset() const
 {
-    return mAssetID_;
+    return assetID_;
 }
 
 inline Currency const&
 STPathElement::getCurrency() const
 {
-    return mAssetID_.get<Currency>();
+    return assetID_.get<Currency>();
 }
 
 inline MPTID const&
 STPathElement::getMPTID() const
 {
-    return mAssetID_.get<MPTID>();
+    return assetID_.get<MPTID>();
 }
 
 inline AccountID const&
 STPathElement::getIssuerID() const
 {
-    return mIssuerID_;
+    return issuerID_;
 }
 
 inline bool
 STPathElement::operator==(STPathElement const& t) const
 {
-    return (mType_ & TypeAccount) == (t.mType_ & TypeAccount) && hash_value_ == t.hash_value_ &&
-        mAccountID_ == t.mAccountID_ && mAssetID_ == t.mAssetID_ && mIssuerID_ == t.mIssuerID_;
+    return (type_ & TypeAccount) == (t.type_ & TypeAccount) && hash_value_ == t.hash_value_ &&
+        accountID_ == t.accountID_ && assetID_ == t.assetID_ && issuerID_ == t.issuerID_;
 }
 
 inline bool
@@ -419,81 +416,81 @@ STPathElement::operator!=(STPathElement const& t) const
 
 // ------------ STPath ------------
 
-inline STPath::STPath(std::vector<STPathElement> p) : mPath_(std::move(p))
+inline STPath::STPath(std::vector<STPathElement> p) : path_(std::move(p))
 {
 }
 
 inline std::vector<STPathElement>::size_type
 STPath::size() const
 {
-    return mPath_.size();
+    return path_.size();
 }
 
 inline bool
 STPath::empty() const
 {
-    return mPath_.empty();
+    return path_.empty();
 }
 
 inline void
 STPath::pushBack(STPathElement const& e)
 {
-    mPath_.push_back(e);
+    path_.push_back(e);
 }
 
 template <typename... Args>
 inline void
 STPath::emplaceBack(Args&&... args)
 {
-    mPath_.emplace_back(std::forward<Args>(args)...);
+    path_.emplace_back(std::forward<Args>(args)...);
 }
 
 inline std::vector<STPathElement>::const_iterator
 STPath::begin() const
 {
-    return mPath_.begin();
+    return path_.begin();
 }
 
 inline std::vector<STPathElement>::const_iterator
 STPath::end() const
 {
-    return mPath_.end();
+    return path_.end();
 }
 
 inline bool
 STPath::operator==(STPath const& t) const
 {
-    return mPath_ == t.mPath_;
+    return path_ == t.path_;
 }
 
 inline std::vector<STPathElement>::const_reference
 STPath::back() const
 {
-    return mPath_.back();
+    return path_.back();
 }
 
 inline std::vector<STPathElement>::const_reference
 STPath::front() const
 {
-    return mPath_.front();
+    return path_.front();
 }
 
 inline STPathElement&
 STPath::operator[](int i)
 {
-    return mPath_[i];
+    return path_[i];
 }
 
 inline STPathElement const&
 STPath::operator[](int i) const
 {
-    return mPath_[i];
+    return path_[i];
 }
 
 inline void
 STPath::reserve(size_t s)
 {
-    mPath_.reserve(s);
+    path_.reserve(s);
 }
 
 // ------------ STPathSet ------------

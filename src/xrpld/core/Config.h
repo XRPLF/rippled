@@ -358,9 +358,9 @@ public:
 };
 
 FeeSetup
-setup_FeeVote(Section const& section);
+setupFeeVote(Section const& section);
 
 DatabaseCon::Setup
-setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
+setupDatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
 
 }  // namespace xrpl

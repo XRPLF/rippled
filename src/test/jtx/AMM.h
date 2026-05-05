@@ -161,7 +161,7 @@ public:
         STAmount const& asset2,
         CreateArg const& arg);
 
-    static Json::Value
+    static json::Value
     createJv(
         AccountID const& account,
         STAmount const& asset1,
@@ -170,7 +170,7 @@ public:
 
     /** Send amm_info RPC command
      */
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     ammRpcInfo(
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledgerIndex = std::nullopt,
@@ -235,7 +235,7 @@ public:
     [[nodiscard]] bool
     ammExists() const;
 
-    static Json::Value
+    static json::Value
     depositJv(DepositArg const& arg);
 
     IOUAmount
@@ -271,7 +271,7 @@ public:
     IOUAmount
     deposit(DepositArg const& arg);
 
-    static Json::Value
+    static json::Value
     withdrawJv(WithdrawArg const& arg);
 
     IOUAmount
@@ -292,7 +292,7 @@ public:
             account,
             std::nullopt,
             asset1OutDetails,
-            asset1OutDetails ? kTF_ONE_ASSET_WITHDRAW_ALL : kTF_WITHDRAW_ALL,
+            asset1OutDetails ? tfOneAssetWithdrawAll : tfWithdrawAll,
             ter);
     }
 
@@ -319,7 +319,7 @@ public:
     IOUAmount
     withdraw(WithdrawArg const& arg);
 
-    static Json::Value
+    static json::Value
     voteJv(VoteArg const& arg);
 
     void
@@ -334,7 +334,7 @@ public:
     void
     vote(VoteArg const& arg);
 
-    Json::Value
+    json::Value
     bid(BidArg const& arg);
 
     void
@@ -375,13 +375,13 @@ public:
         return ammRpcInfo(lp).toStyledString();
     }
 
-    Json::Value
+    json::Value
     operator()(AccountID const& lp) const
     {
         return ammRpcInfo(lp);
     }
 
-    static Json::Value
+    static json::Value
     deleteJv(AccountID const& account, Asset const& asset1, Asset const& assets);
 
     void
@@ -400,7 +400,7 @@ public:
     }
 
     void
-    setTokens(Json::Value& jv, std::optional<std::pair<Asset, Asset>> const& assets = std::nullopt);
+    setTokens(json::Value& jv, std::optional<std::pair<Asset, Asset>> const& assets = std::nullopt);
 
     Asset const&
     operator[](std::uint8_t i)
@@ -413,18 +413,18 @@ public:
     struct Pool
     {
         AMM const& amm;
-        std::vector<Json::StaticString> names;
-        Pool(AMM const& a, std::vector<Json::StaticString> const& n = {}) : amm(a), names(n)
+        std::vector<json::StaticString> names;
+        Pool(AMM const& a, std::vector<json::StaticString> const& n = {}) : amm(a), names(n)
         {
         }
         friend std::ostream&
         operator<<(std::ostream& s, Pool const& p)
         {
             auto const& jr = p.amm.ammRpcInfo();
-            auto out = [&](Json::Value const& jv) {
-                if (jv.isMember(jss::kVALUE))
+            auto out = [&](json::Value const& jv) {
+                if (jv.isMember(jss::value))
                 {
-                    std::cout << jv[jss::kVALUE].asString();
+                    std::cout << jv[jss::value].asString();
                 }
                 else
                 {
@@ -434,9 +434,9 @@ public:
             };
             if (p.names.empty())
             {
-                out(jr[jss::amm][jss::kAMOUNT]);
-                out(jr[jss::amm][jss::kAMOUNT2]);
-                out(jr[jss::amm][jss::kLP_TOKEN]);
+                out(jr[jss::amm][jss::amount]);
+                out(jr[jss::amm][jss::amount2]);
+                out(jr[jss::amm][jss::lp_token]);
             }
             else
             {
@@ -449,29 +449,29 @@ public:
     };
     struct Offers
     {
-        Json::Value const& jv;
-        Offers(Json::Value const& j) : jv(j)
+        json::Value const& jv;
+        Offers(json::Value const& j) : jv(j)
         {
         }
         friend std::ostream&
         operator<<(std::ostream& s, Offers const& offers)
         {
-            auto out = [&](Json::Value const& jv) {
-                if (jv.isMember(jss::kVALUE))
+            auto out = [&](json::Value const& jv) {
+                if (jv.isMember(jss::value))
                 {
-                    s << jv[jss::kVALUE].asString();
+                    s << jv[jss::value].asString();
                 }
                 else
                 {
                     s << jv;
                 }
             };
-            for (auto const& o : offers.jv[jss::kOFFERS])
+            for (auto const& o : offers.jv[jss::offers])
             {
                 s << "taker_pays: ";
-                out(o[jss::kTAKER_PAYS]);
+                out(o[jss::taker_pays]);
                 s << " taker_gets: ";
-                out(o[jss::kTAKER_GETS]);
+                out(o[jss::taker_gets]);
                 s << std::endl;
             }
             return s;
@@ -497,11 +497,11 @@ private:
         STAmount const& asset1,
         STAmount const& asset2,
         IOUAmount const& balance,
-        Json::Value const& jv) const;
+        json::Value const& jv) const;
 
     void
     submit(
-        Json::Value const& jv,
+        json::Value const& jv,
         std::optional<jtx::Seq> const& seq,
         std::optional<Ter> const& ter);
 
@@ -514,7 +514,7 @@ private:
 
 namespace amm {
 
-Json::Value
+json::Value
 ammClawback(
     Account const& issuer,
     Account const& holder,
