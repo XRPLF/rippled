@@ -7,6 +7,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Units.h>
 
 #include <cstdint>
