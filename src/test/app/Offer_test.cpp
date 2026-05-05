@@ -1969,17 +1969,8 @@ public:
 
         using namespace jtx;
 
-        for (auto numberSwitchOver : {false, true})
         {
             Env env{*this, features};
-            if (numberSwitchOver)
-            {
-                env.enableFeature(fixUniversalNumber);
-            }
-            else
-            {
-                env.disableFeature(fixUniversalNumber);
-            }
 
             auto const gw = Account{"gateway"};
             auto const alice = Account{"alice"};
@@ -2008,14 +1999,7 @@ public:
 
             jrr = ledgerEntryState(env, bob, gw, "USD");
             json::Value const bobUSD = jrr[jss::node][sfBalance.fieldName][jss::value];
-            if (!numberSwitchOver)
-            {
-                BEAST_EXPECT(bobUSD == "-0.966500000033334");
-            }
-            else
-            {
-                BEAST_EXPECT(bobUSD == "-0.9665000000333333");
-            }
+            BEAST_EXPECT(bobUSD == "-0.9665000000333333");
         }
     }
 

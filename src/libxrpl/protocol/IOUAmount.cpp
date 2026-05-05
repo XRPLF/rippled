@@ -1,6 +1,5 @@
 #include <xrpl/protocol/IOUAmount.h>
 
-#include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -16,29 +15,6 @@
 #include <vector>
 
 namespace xrpl {
-
-namespace {
-
-// Use a static inside a function to help prevent order-of-initialization issues
-LocalValue<bool>&
-getStaticSTNumberSwitchover()
-{
-    static LocalValue<bool> kR{true};
-    return kR;
-}
-}  // namespace
-
-bool
-getSTNumberSwitchover()
-{
-    return *getStaticSTNumberSwitchover();
-}
-
-void
-setSTNumberSwitchover(bool v)
-{
-    *getStaticSTNumberSwitchover() = v;
-}
 
 /* The range for the mantissa when normalized */
 // log(2^63,10) ~ 18.96
@@ -75,56 +51,28 @@ IOUAmount::normalize()
         return;
     }
 
-    if (getSTNumberSwitchover())
+    Number const v{mantissa_, exponent_};
+    *this = fromNumber(v);
+    if (exponent_ > kMAX_EXPONENT)
     {
-        Number const v{mantissa_, exponent_};
-        *this = fromNumber(v);
-        if (exponent_ > kMAX_EXPONENT)
-            Throw<std::overflow_error>("value overflow");
-        if (exponent_ < kMIN_EXPONENT)
-            *this = beast::kZERO;
-        return;
+        Throw<std::overflow_error>("value overflow");
     }
-
-    bool const negative = (mantissa_ < 0);
-
-    if (negative)
-        mantissa_ = -mantissa_;
-
-    while ((mantissa_ < kMIN_MANTISSA) && (exponent_ > kMIN_EXPONENT))
-    {
-        mantissa_ *= 10;
-        --exponent_;
-    }
-
-    while (mantissa_ > kMAX_MANTISSA)
-    {
-        if (exponent_ >= kMAX_EXPONENT)
-            Throw<std::overflow_error>("IOUAmount::normalize");
-
-        mantissa_ /= 10;
-        ++exponent_;
-    }
-
-    if ((exponent_ < kMIN_EXPONENT) || (mantissa_ < kMIN_MANTISSA))
+    if (exponent_ < kMIN_EXPONENT)
     {
         *this = beast::kZERO;
-        return;
     }
-
-    if (exponent_ > kMAX_EXPONENT)
-        Throw<std::overflow_error>("value overflow");
-
-    if (negative)
-        mantissa_ = -mantissa_;
 }
 
 IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
 {
     if (exponent_ > kMAX_EXPONENT)
+    {
         Throw<std::overflow_error>("value overflow");
+    }
     if (exponent_ < kMIN_EXPONENT)
+    {
         *this = beast::kZERO;
+    }
 }
 
 IOUAmount&
@@ -139,37 +87,7 @@ IOUAmount::operator+=(IOUAmount const& other)
         return *this;
     }
 
-    if (getSTNumberSwitchover())
-    {
-        *this = IOUAmount{Number{*this} + Number{other}};
-        return *this;
-    }
-    auto m = other.mantissa_;
-    auto e = other.exponent_;
-
-    while (exponent_ < e)
-    {
-        mantissa_ /= 10;
-        ++exponent_;
-    }
-
-    while (e < exponent_)
-    {
-        m /= 10;
-        ++e;
-    }
-
-    // This addition cannot overflow an std::int64_t but we may throw from
-    // normalize if the result isn't representable.
-    mantissa_ += m;
-
-    if (mantissa_ >= -10 && mantissa_ <= 10)
-    {
-        *this = beast::kZERO;
-        return *this;
-    }
-
-    normalize();
+    *this = IOUAmount{Number{*this} + Number{other}};
     return *this;
 }
 

@@ -65,7 +65,7 @@ invalidAMMAssetPair(
 std::optional<std::uint8_t>
 ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot);
 
-/** Return true if required AMM amendments are enabled
+/** Return true if required AMM amendment is enabled
  */
 bool
 ammEnabled(Rules const&);

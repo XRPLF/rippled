@@ -8,7 +8,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -71,14 +70,11 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     //
     // See also Transactor::operator().
     //
-    std::optional<NumberSO> stNumberSO;
     std::optional<CurrentTransactionRulesGuard> rulesGuard;
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
     if (rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol))
     {
         // raii classes for the current ledger rules.
-        // fixUniversalNumber predates the rulesGuard and should be replaced.
-        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
         rulesGuard.emplace(rules);
     }
     else
