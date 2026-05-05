@@ -101,7 +101,7 @@ TEST(AppendEscapedJsonString, escapes_all_named_controls)
 TEST(AppendEscapedJsonString, escapes_low_control_char_as_unicode)
 {
     std::string dest;
-    std::string input(1, '\x01');
+    std::string const input(1, '\x01');
     detail::appendEscapedJsonString(dest, input);
     EXPECT_EQ(dest, R"("\u0001")");
 }
