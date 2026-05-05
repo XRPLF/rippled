@@ -149,18 +149,6 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     defs_[jss::FIELDS] = json::ArrayValue;
 
     uint32_t i = 0;
-    {
-        json::Value a = json::ArrayValue;
-        a[0U] = "Generic";
-        json::Value v = json::ObjectValue;
-        v[jss::nth] = 0;
-        v[jss::isVLEncoded] = false;
-        v[jss::isSerialized] = false;
-        v[jss::isSigningField] = false;
-        v[jss::type] = "Unknown";
-        a[1U] = v;
-        defs_[jss::FIELDS][i++] = a;
-    }
 
     {
         json::Value a = json::ArrayValue;
@@ -227,21 +215,28 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
         defs_[jss::FIELDS][i++] = a;
     }
 
-    for (auto const& [code, field] : xrpl::SField::getKnownCodeToField())
+    // copy into a sorted map to ensure deterministic output order (sorted by fieldCode)
+    static std::map<int, SField const*> const kSORTED_FIELDS(
+        xrpl::SField::getKnownCodeToField().begin(), xrpl::SField::getKnownCodeToField().end());
+
+    for (auto const& [code, field] : kSORTED_FIELDS)
     {
         if (field->fieldName.empty())
             continue;
 
         json::Value innerObj = json::ObjectValue;
 
-        uint32_t type = field->fieldType;
+        int32_t const type = field->fieldType;
 
         innerObj[jss::nth] = field->fieldValue;
 
         // whether the field is variable-length encoded this means that the length is included
         // before the content
         innerObj[jss::isVLEncoded] =
-            (type == 7U /* Blob */ || type == 8U /* AccountID */ || type == 19U /* Vector256 */);
+            (type == STI_VL || type == STI_ACCOUNT || type == STI_VECTOR256);
+        static_assert(
+            STI_VL == 7U && STI_ACCOUNT == 8U && STI_VECTOR256 == 19U,
+            "STI_VL, STI_ACCOUNT, STI_VECTOR256 must be 7, 8, 19 respectively");
 
         // whether the field is included in serialization
         innerObj[jss::isSerialized] =
