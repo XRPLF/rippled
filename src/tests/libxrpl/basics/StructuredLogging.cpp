@@ -61,12 +61,106 @@ TEST(AppendJsonValue, appends_to_existing)
     EXPECT_EQ(dest, "prefix:99");
 }
 
+// -- detail::appendEscapedJsonString ------------------------------------------
+
+TEST(AppendEscapedJsonString, plain_string)
+{
+    std::string dest;
+    detail::appendEscapedJsonString(dest, "hello");
+    EXPECT_EQ(dest, "\"hello\"");
+}
+
+TEST(AppendEscapedJsonString, escapes_double_quote)
+{
+    std::string dest;
+    detail::appendEscapedJsonString(dest, R"(say "hi")");
+    EXPECT_EQ(dest, R"("say \"hi\"")");
+}
+
+TEST(AppendEscapedJsonString, escapes_backslash)
+{
+    std::string dest;
+    detail::appendEscapedJsonString(dest, R"(a\b)");
+    EXPECT_EQ(dest, R"("a\\b")");
+}
+
+TEST(AppendEscapedJsonString, escapes_control_characters)
+{
+    std::string dest;
+    detail::appendEscapedJsonString(dest, "line1\nline2\ttab");
+    EXPECT_EQ(dest, R"("line1\nline2\ttab")");
+}
+
+TEST(AppendEscapedJsonString, escapes_all_named_controls)
+{
+    std::string dest;
+    detail::appendEscapedJsonString(dest, "\b\f\r");
+    EXPECT_EQ(dest, R"("\b\f\r")");
+}
+
+TEST(AppendEscapedJsonString, escapes_low_control_char_as_unicode)
+{
+    std::string dest;
+    std::string input(1, '\x01');
+    detail::appendEscapedJsonString(dest, input);
+    EXPECT_EQ(dest, R"("\u0001")");
+}
+
+TEST(AppendEscapedJsonString, empty_string)
+{
+    std::string dest;
+    detail::appendEscapedJsonString(dest, "");
+    EXPECT_EQ(dest, R"("")");
+}
+
+// -- appendJsonValue with escaping -------------------------------------------
+
+TEST(AppendJsonValue, string_with_quotes_escaped)
+{
+    std::string dest;
+    std::string const val = R"(say "hi")";
+    detail::appendJsonValue(dest, val);
+    EXPECT_EQ(dest, R"("say \"hi\"")");
+}
+
+TEST(AppendJsonValue, string_with_backslash_escaped)
+{
+    std::string dest;
+    std::string const val = R"(path\to\file)";
+    detail::appendJsonValue(dest, val);
+    EXPECT_EQ(dest, R"("path\\to\\file")");
+}
+
+TEST(AppendJsonValue, string_with_newline_escaped)
+{
+    std::string dest;
+    std::string const val = "line1\nline2";
+    detail::appendJsonValue(dest, val);
+    EXPECT_EQ(dest, R"("line1\nline2")");
+}
+
+// -- appendJsonField with key escaping ----------------------------------------
+
+TEST(AppendJsonField, key_with_quotes_escaped)
+{
+    std::string dest;
+    detail::appendJsonField(dest, R"(my"key)", 42);
+    EXPECT_EQ(dest, R"("my\"key":42)");
+}
+
+TEST(AppendJsonField, key_with_backslash_escaped)
+{
+    std::string dest;
+    detail::appendJsonField(dest, R"(a\b)", true);
+    EXPECT_EQ(dest, R"("a\\b":true)");
+}
+
 // -- buildJsonPattern --------------------------------------------------------
 
 TEST(BuildJsonPattern, no_params)
 {
     auto const pattern = buildJsonPattern("");
-    EXPECT_EQ(pattern, "{, \"message\": %v }");
+    EXPECT_EQ(pattern, "{\"message\": %v }");
 }
 
 TEST(BuildJsonPattern, single_string_field)

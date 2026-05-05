@@ -28,6 +28,58 @@ concept HasToString = requires(std::remove_cvref_t<T> const& t) {
 };
 
 /**
+ * @brief Escape a string for safe embedding in a JSON value.
+ *
+ * Escapes backslash, double-quote, and control characters (U+0000-U+001F)
+ * according to RFC 8259 section 7.
+ */
+inline void
+appendEscapedJsonString(std::string& dest, std::string_view sv)
+{
+    dest.reserve(dest.size() + sv.size() + 2);
+    dest += '"';
+    for (char const c : sv)
+    {
+        switch (c)
+        {
+            case '"':
+                dest += "\\\"";
+                break;
+            case '\\':
+                dest += "\\\\";
+                break;
+            case '\b':
+                dest += "\\b";
+                break;
+            case '\f':
+                dest += "\\f";
+                break;
+            case '\n':
+                dest += "\\n";
+                break;
+            case '\r':
+                dest += "\\r";
+                break;
+            case '\t':
+                dest += "\\t";
+                break;
+            default:
+                if (static_cast<unsigned char>(c) < 0x20)
+                {
+                    fmt::format_to(
+                        std::back_inserter(dest), "\\u{:04x}", static_cast<unsigned int>(c));
+                }
+                else
+                {
+                    dest += c;
+                }
+                break;
+        }
+    }
+    dest += '"';
+}
+
+/**
  * @brief Append a value formatted as a JSON fragment to @p dest.
  *
  * - @c bool \u2192 unquoted @c true / @c false
@@ -58,11 +110,11 @@ appendJsonValue(std::string& dest, T const& value)
     }
     else if constexpr (HasToString<T>)
     {
-        fmt::format_to(std::back_inserter(dest), "\"{}\"", to_string(value));
+        appendEscapedJsonString(dest, to_string(value));
     }
     else
     {
-        fmt::format_to(std::back_inserter(dest), "\"{}\"", value);
+        appendEscapedJsonString(dest, fmt::format("{}", value));
     }
 }
 
@@ -78,7 +130,8 @@ appendJsonField(std::string& dest, std::string_view key, T const& value)
 {
     if (!dest.empty())
         dest += ',';
-    fmt::format_to(std::back_inserter(dest), "\"{}\":", key);
+    appendEscapedJsonString(dest, key);
+    dest += ':';
     appendJsonValue(dest, value);
 }
 
@@ -111,15 +164,22 @@ class JsonLoggingPatternBuilder
 {
     std::string fields_;
 
-    static constexpr std::string_view kSUFFIX = ", \"message\": %v }";
+    static constexpr std::string_view kMESSAGE_FIELD = "\"message\": %v";
 
     static std::string
     extractFields(std::string_view pattern)
     {
         if (!pattern.empty() && pattern.front() == '{')
             pattern.remove_prefix(1);
-        if (auto pos = pattern.rfind(kSUFFIX); pos != std::string_view::npos)
-            pattern = pattern.substr(0, pos);
+        // Strip the trailing message field: `"message": %v }` or `"message": %v }`
+        if (auto pos = pattern.rfind(kMESSAGE_FIELD); pos != std::string_view::npos)
+        {
+            // Also strip the leading ", " separator if present
+            auto end = pos;
+            if (end >= 2 && pattern.substr(end - 2, 2) == ", ")
+                end -= 2;
+            pattern = pattern.substr(0, end);
+        }
         return std::string(pattern);
     }
 
@@ -143,7 +203,13 @@ public:
     [[nodiscard]] std::string
     build() const
     {
-        return "{" + fields_ + std::string(kSUFFIX);
+        std::string result = "{";
+        result += fields_;
+        if (!fields_.empty())
+            result += ", ";
+        result += kMESSAGE_FIELD;
+        result += " }";
+        return result;
     }
 };
 
