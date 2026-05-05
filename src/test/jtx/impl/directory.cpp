@@ -30,7 +30,7 @@ bumpLastPage(
 {
     Expected<void, Error> res{};
     env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
-        Sandbox sb(&view, tapNONE);
+        Sandbox sb(&view, TapNone);
 
         // Find the root page
         auto sleRoot = sb.peek(directory);
@@ -85,7 +85,7 @@ bumpLastPage(
 
         // Adjust root previous and previous node's next
         sleRoot->setFieldU64(sfIndexPrevious, newLastPage);
-        if (prevIndex.value_or(0) == 0)
+        if (prevIndex.valueOr(0) == 0)
         {
             sleRoot->setFieldU64(sfIndexNext, newLastPage);
         }

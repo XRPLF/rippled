@@ -12,29 +12,29 @@ namespace xrpl {
 std::vector<SOElement> const&
 TxFormats::getCommonFields()
 {
-    static auto const commonFields = std::vector<SOElement>{
-        {sfTransactionType, soeREQUIRED},
-        {sfFlags, soeOPTIONAL},
-        {sfSourceTag, soeOPTIONAL},
-        {sfAccount, soeREQUIRED},
-        {sfSequence, soeREQUIRED},
-        {sfPreviousTxnID, soeOPTIONAL},  // emulate027
-        {sfLastLedgerSequence, soeOPTIONAL},
-        {sfAccountTxnID, soeOPTIONAL},
-        {sfFee, soeREQUIRED},
-        {sfOperationLimit, soeOPTIONAL},
-        {sfMemos, soeOPTIONAL},
-        {sfSigningPubKey, soeREQUIRED},
-        {sfTicketSequence, soeOPTIONAL},
-        {sfTxnSignature, soeOPTIONAL},
-        {sfSigners, soeOPTIONAL},  // submit_multisigned
-        {sfNetworkID, soeOPTIONAL},
-        {sfDelegate, soeOPTIONAL},
-        {sfSponsor, soeOPTIONAL},
-        {sfSponsorFlags, soeOPTIONAL},
-        {sfSponsorSignature, soeOPTIONAL},
+    static auto const kCOMMON_FIELDS = std::vector<SOElement>{
+        {sfTransactionType, SoeRequired},
+        {sfFlags, SoeOptional},
+        {sfSourceTag, SoeOptional},
+        {sfAccount, SoeRequired},
+        {sfSequence, SoeRequired},
+        {sfPreviousTxnID, SoeOptional},  // emulate027
+        {sfLastLedgerSequence, SoeOptional},
+        {sfAccountTxnID, SoeOptional},
+        {sfFee, SoeRequired},
+        {sfOperationLimit, SoeOptional},
+        {sfMemos, SoeOptional},
+        {sfSigningPubKey, SoeRequired},
+        {sfTicketSequence, SoeOptional},
+        {sfTxnSignature, SoeOptional},
+        {sfSigners, SoeOptional},  // submit_multisigned
+        {sfNetworkID, SoeOptional},
+        {sfDelegate, SoeOptional},
+        {sfSponsor, SoeOptional},
+        {sfSponsorFlags, SoeOptional},
+        {sfSponsorSignature, SoeOptional},
     };
-    return commonFields;
+    return kCOMMON_FIELDS;
 }
 
 TxFormats::TxFormats()
@@ -59,8 +59,8 @@ TxFormats::TxFormats()
 TxFormats const&
 TxFormats::getInstance()
 {
-    static TxFormats const instance;
-    return instance;
+    static TxFormats const kINSTANCE;
+    return kINSTANCE;
 }
 
 }  // namespace xrpl

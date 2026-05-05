@@ -13,7 +13,7 @@ class Slot
 public:
     using ptr = std::shared_ptr<Slot>;
 
-    enum class State { accept, connect, connected, active, closing };
+    enum class State { Accept, Connect, Connected, Active, Closing };
 
     virtual ~Slot() = 0;
 
@@ -41,20 +41,20 @@ public:
 
     /** The remote endpoint of socket. */
     [[nodiscard]] virtual beast::IP::Endpoint const&
-    remote_endpoint() const = 0;
+    remoteEndpoint() const = 0;
 
     /** The local endpoint of the socket, when known. */
     [[nodiscard]] virtual std::optional<beast::IP::Endpoint> const&
-    local_endpoint() const = 0;
+    localEndpoint() const = 0;
 
     [[nodiscard]] virtual std::optional<std::uint16_t>
-    listening_port() const = 0;
+    listeningPort() const = 0;
 
     /** The peer's public key, when known.
         The public key is established when the handshake is complete.
     */
     [[nodiscard]] virtual std::optional<PublicKey> const&
-    public_key() const = 0;
+    publicKey() const = 0;
 };
 
 }  // namespace xrpl::PeerFinder

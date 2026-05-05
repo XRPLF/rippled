@@ -18,6 +18,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -34,8 +35,8 @@
 
 namespace xrpl {
 
-Expected<Asset, error_code_i>
-getAsset(Json::Value const& v, beast::Journal j)
+Expected<Asset, ErrorCodeI>
+getAsset(json::Value const& v, beast::Journal j)
 {
     try
     {
@@ -45,25 +46,25 @@ getAsset(Json::Value const& v, beast::Journal j)
     {
         JLOG(j.debug()) << "getAsset " << ex.what();
     }
-    return Unexpected(rpcISSUE_MALFORMED);
+    return Unexpected(RpcIssueMalformed);
 }
 
 std::string
-to_iso8601(NetClock::time_point tp)
+toIso8601(NetClock::time_point tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
     return date::format(
         "%Y-%Om-%dT%H:%M:%OS%z",
         date::sys_time<system_clock::duration>(
-            system_clock::time_point{tp.time_since_epoch() + epoch_offset}));
+            system_clock::time_point{tp.time_since_epoch() + kEPOCH_OFFSET}));
 }
 
-Json::Value
+json::Value
 doAMMInfo(RPC::JsonContext& context)
 {
     auto const& params(context.params);
-    Json::Value result;
+    json::Value result;
 
     std::shared_ptr<ReadView const> ledger;
     result = RPC::lookupLedger(ledger, context);
@@ -78,20 +79,20 @@ doAMMInfo(RPC::JsonContext& context)
         std::shared_ptr<SLE const> amm;
     };
 
-    auto getValuesFromContextParams = [&]() -> Expected<ValuesFromContextParams, error_code_i> {
+    auto getValuesFromContextParams = [&]() -> Expected<ValuesFromContextParams, ErrorCodeI> {
         std::optional<AccountID> accountID;
         std::optional<Asset> asset1;
         std::optional<Asset> asset2;
         std::optional<uint256> ammID;
 
-        constexpr auto invalid = [](Json::Value const& params) -> bool {
+        constexpr auto kINVALID = [](json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
                 (params.isMember(jss::asset) == params.isMember(jss::amm_account));
         };
 
         // NOTE, identical check for apVersion >= 3 below
-        if (context.apiVersion < 3 && invalid(params))
-            return Unexpected(rpcINVALID_PARAMS);
+        if (context.apiVersion < 3 && kINVALID(params))
+            return Unexpected(RpcInvalidParams);
 
         if (params.isMember(jss::asset))
         {
@@ -121,25 +122,25 @@ doAMMInfo(RPC::JsonContext& context)
         {
             auto const id = parseBase58<AccountID>((params[jss::amm_account].asString()));
             if (!id)
-                return Unexpected(rpcACT_MALFORMED);
+                return Unexpected(RpcActMalformed);
             auto const sle = ledger->read(keylet::account(*id));
             if (!sle)
-                return Unexpected(rpcACT_MALFORMED);
+                return Unexpected(RpcActMalformed);
             ammID = sle->getFieldH256(sfAMMID);
             if (ammID->isZero())
-                return Unexpected(rpcACT_NOT_FOUND);
+                return Unexpected(RpcActNotFound);
         }
 
         if (params.isMember(jss::account))
         {
             accountID = parseBase58<AccountID>(params[jss::account].asString());
             if (!accountID || !ledger->read(keylet::account(*accountID)))
-                return Unexpected(rpcACT_MALFORMED);
+                return Unexpected(RpcActMalformed);
         }
 
         // NOTE, identical check for apVersion < 3 above
-        if (context.apiVersion >= 3 && invalid(params))
-            return Unexpected(rpcINVALID_PARAMS);
+        if (context.apiVersion >= 3 && kINVALID(params))
+            return Unexpected(RpcInvalidParams);
 
         XRPL_ASSERT(
             (asset1.has_value() == asset2.has_value()) && (asset1.has_value() != ammID.has_value()),
@@ -153,7 +154,7 @@ doAMMInfo(RPC::JsonContext& context)
         }();
         auto const amm = ledger->read(ammKeylet);
         if (!amm)
-            return Unexpected(rpcACT_NOT_FOUND);
+            return Unexpected(RpcActNotFound);
         if (!asset1 && !asset2)
         {
             asset1 = (*amm)[sfAsset];
@@ -167,7 +168,7 @@ doAMMInfo(RPC::JsonContext& context)
     auto const r = getValuesFromContextParams();
     if (!r)
     {
-        RPC::inject_error(r.error(), result);
+        RPC::injectError(r.error(), result);
         return result;
     }
 
@@ -181,24 +182,24 @@ doAMMInfo(RPC::JsonContext& context)
         ammAccountID,
         asset1,
         asset2,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         context.j);
     auto const lptAMMBalance =
         accountID ? ammLPHolds(*ledger, *amm, *accountID, context.j) : (*amm)[sfLPTokenBalance];
 
-    Json::Value ammResult;
+    json::Value ammResult;
     asset1Balance.setJson(ammResult[jss::amount]);
     asset2Balance.setJson(ammResult[jss::amount2]);
     lptAMMBalance.setJson(ammResult[jss::lp_token]);
     ammResult[jss::trading_fee] = (*amm)[sfTradingFee];
     ammResult[jss::account] = to_string(ammAccountID);
-    Json::Value voteSlots(Json::arrayValue);
+    json::Value voteSlots(json::ArrayValue);
     if (amm->isFieldPresent(sfVoteSlots))
     {
         for (auto const& voteEntry : amm->getFieldArray(sfVoteSlots))
         {
-            Json::Value vote;
+            json::Value vote;
             vote[jss::account] = to_string(voteEntry.getAccountID(sfAccount));
             vote[jss::trading_fee] = voteEntry[sfTradingFee];
             vote[jss::vote_weight] = voteEntry[sfVoteWeight];
@@ -212,24 +213,24 @@ doAMMInfo(RPC::JsonContext& context)
         "xrpl::doAMMInfo : auction slot is set");
     if (amm->isFieldPresent(sfAuctionSlot))
     {
-        auto const& auctionSlot = safe_downcast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+        auto const& auctionSlot = safeDowncast<STObject const&>(amm->peekAtField(sfAuctionSlot));
         if (auctionSlot.isFieldPresent(sfAccount))
         {
-            Json::Value auction;
+            json::Value auction;
             auto const timeSlot = ammAuctionTimeSlot(
                 ledger->header().parentCloseTime.time_since_epoch().count(), auctionSlot);
-            auction[jss::time_interval] = timeSlot ? *timeSlot : AUCTION_SLOT_TIME_INTERVALS;
+            auction[jss::time_interval] = timeSlot ? *timeSlot : kAUCTION_SLOT_TIME_INTERVALS;
             auctionSlot[sfPrice].setJson(auction[jss::price]);
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] = to_string(auctionSlot.getAccountID(sfAccount));
             auction[jss::expiration] =
-                to_iso8601(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
+                toIso8601(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
-                Json::Value auth;
+                json::Value auth;
                 for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
                 {
-                    Json::Value jv;
+                    json::Value jv;
                     jv[jss::account] = to_string(acct.getAccountID(sfAccount));
                     auth.append(jv);
                 }

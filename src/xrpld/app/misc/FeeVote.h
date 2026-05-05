@@ -38,6 +38,6 @@ struct FeeSetup;
     @param journal Where to log.
 */
 std::unique_ptr<FeeVote>
-make_FeeVote(FeeSetup const& setup, beast::Journal journal);
+makeFeeVote(FeeSetup const& setup, beast::Journal journal);
 
 }  // namespace xrpl

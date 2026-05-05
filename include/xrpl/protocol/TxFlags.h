@@ -1,5 +1,7 @@
 #pragma once
 
+// NOLINTBEGIN(readability-identifier-naming)
+
 #include <xrpl/protocol/LedgerFormats.h>
 
 #include <cstdint>
@@ -491,3 +493,5 @@ getspfFlagMap()
 #pragma pop_macro("SPONSOR_FLAGS")
 
 }  // namespace xrpl
+
+// NOLINTEND(readability-identifier-naming)

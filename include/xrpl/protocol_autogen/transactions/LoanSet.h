@@ -19,9 +19,9 @@ class LoanSetBuilder;
  * @brief Transaction: LoanSet
  *
  * Type: ttLOAN_SET (80)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: mayAuthorizeMPT | mustModifyVault
+ * Privileges: MayAuthorizeMpt | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLoanBrokerID (soeREQUIRED)
+     * @brief Get sfLoanBrokerID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfData (soeOPTIONAL)
+     * @brief Get sfData (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +85,7 @@ public:
     }
 
     /**
-     * @brief Get sfCounterparty (soeOPTIONAL)
+     * @brief Get sfCounterparty (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -110,7 +110,7 @@ public:
         return this->tx_->isFieldPresent(sfCounterparty);
     }
     /**
-     * @brief Get sfCounterpartySignature (soeOPTIONAL)
+     * @brief Get sfCounterpartySignature (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -135,7 +135,7 @@ public:
     }
 
     /**
-     * @brief Get sfLoanOriginationFee (soeOPTIONAL)
+     * @brief Get sfLoanOriginationFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -161,7 +161,7 @@ public:
     }
 
     /**
-     * @brief Get sfLoanServiceFee (soeOPTIONAL)
+     * @brief Get sfLoanServiceFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -187,7 +187,7 @@ public:
     }
 
     /**
-     * @brief Get sfLatePaymentFee (soeOPTIONAL)
+     * @brief Get sfLatePaymentFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -213,7 +213,7 @@ public:
     }
 
     /**
-     * @brief Get sfClosePaymentFee (soeOPTIONAL)
+     * @brief Get sfClosePaymentFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -239,7 +239,7 @@ public:
     }
 
     /**
-     * @brief Get sfOverpaymentFee (soeOPTIONAL)
+     * @brief Get sfOverpaymentFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -265,7 +265,7 @@ public:
     }
 
     /**
-     * @brief Get sfInterestRate (soeOPTIONAL)
+     * @brief Get sfInterestRate (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -291,7 +291,7 @@ public:
     }
 
     /**
-     * @brief Get sfLateInterestRate (soeOPTIONAL)
+     * @brief Get sfLateInterestRate (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -317,7 +317,7 @@ public:
     }
 
     /**
-     * @brief Get sfCloseInterestRate (soeOPTIONAL)
+     * @brief Get sfCloseInterestRate (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -343,7 +343,7 @@ public:
     }
 
     /**
-     * @brief Get sfOverpaymentInterestRate (soeOPTIONAL)
+     * @brief Get sfOverpaymentInterestRate (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -369,7 +369,7 @@ public:
     }
 
     /**
-     * @brief Get sfPrincipalRequested (soeREQUIRED)
+     * @brief Get sfPrincipalRequested (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -380,7 +380,7 @@ public:
     }
 
     /**
-     * @brief Get sfPaymentTotal (soeOPTIONAL)
+     * @brief Get sfPaymentTotal (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -406,7 +406,7 @@ public:
     }
 
     /**
-     * @brief Get sfPaymentInterval (soeOPTIONAL)
+     * @brief Get sfPaymentInterval (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -432,7 +432,7 @@ public:
     }
 
     /**
-     * @brief Get sfGracePeriod (soeOPTIONAL)
+     * @brief Get sfGracePeriod (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -462,7 +462,7 @@ public:
  * @brief Builder for LoanSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class LoanSetBuilder : public TransactionBuilderBase<LoanSetBuilder>
@@ -503,7 +503,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLoanBrokerID (soeREQUIRED)
+     * @brief Set sfLoanBrokerID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -514,7 +514,7 @@ public:
     }
 
     /**
-     * @brief Set sfData (soeOPTIONAL)
+     * @brief Set sfData (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -525,7 +525,7 @@ public:
     }
 
     /**
-     * @brief Set sfCounterparty (soeOPTIONAL)
+     * @brief Set sfCounterparty (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -536,7 +536,7 @@ public:
     }
 
     /**
-     * @brief Set sfCounterpartySignature (soeOPTIONAL)
+     * @brief Set sfCounterpartySignature (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -547,7 +547,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanOriginationFee (soeOPTIONAL)
+     * @brief Set sfLoanOriginationFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -558,7 +558,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanServiceFee (soeOPTIONAL)
+     * @brief Set sfLoanServiceFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -569,7 +569,7 @@ public:
     }
 
     /**
-     * @brief Set sfLatePaymentFee (soeOPTIONAL)
+     * @brief Set sfLatePaymentFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -580,7 +580,7 @@ public:
     }
 
     /**
-     * @brief Set sfClosePaymentFee (soeOPTIONAL)
+     * @brief Set sfClosePaymentFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -591,7 +591,7 @@ public:
     }
 
     /**
-     * @brief Set sfOverpaymentFee (soeOPTIONAL)
+     * @brief Set sfOverpaymentFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -602,7 +602,7 @@ public:
     }
 
     /**
-     * @brief Set sfInterestRate (soeOPTIONAL)
+     * @brief Set sfInterestRate (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -613,7 +613,7 @@ public:
     }
 
     /**
-     * @brief Set sfLateInterestRate (soeOPTIONAL)
+     * @brief Set sfLateInterestRate (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -624,7 +624,7 @@ public:
     }
 
     /**
-     * @brief Set sfCloseInterestRate (soeOPTIONAL)
+     * @brief Set sfCloseInterestRate (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -635,7 +635,7 @@ public:
     }
 
     /**
-     * @brief Set sfOverpaymentInterestRate (soeOPTIONAL)
+     * @brief Set sfOverpaymentInterestRate (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -646,7 +646,7 @@ public:
     }
 
     /**
-     * @brief Set sfPrincipalRequested (soeREQUIRED)
+     * @brief Set sfPrincipalRequested (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -657,7 +657,7 @@ public:
     }
 
     /**
-     * @brief Set sfPaymentTotal (soeOPTIONAL)
+     * @brief Set sfPaymentTotal (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -668,7 +668,7 @@ public:
     }
 
     /**
-     * @brief Set sfPaymentInterval (soeOPTIONAL)
+     * @brief Set sfPaymentInterval (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&
@@ -679,7 +679,7 @@ public:
     }
 
     /**
-     * @brief Set sfGracePeriod (soeOPTIONAL)
+     * @brief Set sfGracePeriod (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanSetBuilder&

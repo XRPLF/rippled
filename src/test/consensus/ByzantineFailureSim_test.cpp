@@ -16,7 +16,7 @@
 
 namespace xrpl::test {
 
-class ByzantineFailureSim_test : public beast::unit_test::suite
+class ByzantineFailureSim_test : public beast::unit_test::Suite
 {
     void
     run() override

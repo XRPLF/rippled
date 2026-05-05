@@ -27,11 +27,11 @@ LoanBrokerCoverDeposit::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::zero)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZERO)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::zero)
+    if (dstAmount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))
@@ -91,10 +91,10 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             vaultAsset,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j,
-            SpendableHandling::shFULL_BALANCE) < amount)
+            SpendableHandling::FullBalance) < amount)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;

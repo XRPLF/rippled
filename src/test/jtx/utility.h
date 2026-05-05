@@ -11,10 +11,10 @@
 namespace xrpl::test::jtx {
 
 /** Thrown when parse fails. */
-struct parse_error : std::logic_error
+struct ParseError : std::logic_error
 {
     template <class String>
-    explicit parse_error(String const& s) : logic_error(s)
+    explicit ParseError(String const& s) : logic_error(s)
     {
     }
 };
@@ -25,30 +25,30 @@ struct parse_error : std::logic_error
           this set of unit test routines.
 */
 STObject
-parse(Json::Value const& jv);
+parse(json::Value const& jv);
 
 /** Sign automatically into a specific Json field of the jv object.
     @note This only works on accounts with multi-signing off.
 */
 void
-sign(Json::Value& jv, Account const& account, Json::Value& sigObject);
+sign(json::Value& jv, Account const& account, json::Value& sigObject);
 
 /** Sign automatically.
     @note This only works on accounts with multi-signing off.
 */
 void
-sign(Json::Value& jv, Account const& account);
+sign(json::Value& jv, Account const& account);
 
 /** Set the fee automatically. */
 void
-fill_fee(Json::Value& jv, ReadView const& view);
+fillFee(json::Value& jv, ReadView const& view);
 
 /** Set the sequence number automatically. */
 void
-fill_seq(Json::Value& jv, ReadView const& view);
+fillSeq(json::Value& jv, ReadView const& view);
 
 /** Given an xrpld unit test rpc command, return the corresponding JSON. */
-Json::Value
+json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion);
 
 }  // namespace xrpl::test::jtx

@@ -7,26 +7,26 @@
 namespace xrpl::test::jtx {
 
 /** Inject raw JSON. */
-class json
+class Json
 {
 private:
-    Json::Value jv_;
+    ::json::Value jv_;
 
 public:
-    explicit json(std::string const&);
+    explicit Json(std::string const&);
 
-    explicit json(char const*);
+    explicit Json(char const*);
 
-    explicit json(Json::Value);
+    explicit Json(::json::Value);
 
     template <class T>
-    json(Json::StaticString const& key, T const& value)
+    Json(::json::StaticString const& key, T const& value)
     {
         jv_[key] = value;
     }
 
     template <class T>
-    json(std::string const& key, T const& value)
+    Json(std::string const& key, T const& value)
     {
         jv_[key] = value;
     }

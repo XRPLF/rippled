@@ -28,7 +28,7 @@
 
 namespace xrpl {
 
-class STObject_test : public beast::unit_test::suite
+class STObject_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -36,19 +36,19 @@ public:
     {
         testcase("serialization");
 
-        unexpected(sfGeneric.isUseful(), "sfGeneric must not be useful");
+        unexpected(kSF_GENERIC.isUseful(), "sfGeneric must not be useful");
         {
             // Try to put sfGeneric in an SOTemplate.
             except<std::runtime_error>(
-                [&]() { SOTemplate const elements{{sfGeneric, soeREQUIRED}}; });
+                [&]() { SOTemplate const elements{{kSF_GENERIC, SoeRequired}}; });
         }
 
-        unexpected(sfInvalid.isUseful(), "sfInvalid must not be useful");
+        unexpected(kSF_INVALID.isUseful(), "sfInvalid must not be useful");
         {
             // Test return of sfInvalid.
             auto testInvalid = [this](SerializedTypeID tid, int fv) {
                 SField const& shouldBeInvalid{SField::getField(tid, fv)};
-                BEAST_EXPECT(shouldBeInvalid == sfInvalid);
+                BEAST_EXPECT(shouldBeInvalid == kSF_INVALID);
             };
             testInvalid(STI_VL, 255);
             testInvalid(STI_UINT256, 255);
@@ -59,14 +59,14 @@ public:
         {
             // Try to put sfInvalid in an SOTemplate.
             except<std::runtime_error>(
-                [&]() { SOTemplate const elements{{sfInvalid, soeREQUIRED}}; });
+                [&]() { SOTemplate const elements{{kSF_INVALID, SoeRequired}}; });
         }
         {
             // Try to put the same SField into an SOTemplate twice.
             except<std::runtime_error>([&]() {
                 SOTemplate const elements{
-                    {sfAccount, soeREQUIRED},
-                    {sfAccount, soeREQUIRED},
+                    {sfAccount, SoeRequired},
+                    {sfAccount, SoeRequired},
                 };
             });
         }
@@ -79,11 +79,11 @@ public:
         SField const& sfTestObject = sfMajority;
 
         SOTemplate const elements{
-            {sfFlags, soeREQUIRED},
-            {sfTestVL, soeREQUIRED},
-            {sfTestH256, soeOPTIONAL},
-            {sfTestU32, soeREQUIRED},
-            {sfTestV256, soeOPTIONAL},
+            {sfFlags, SoeRequired},
+            {sfTestVL, SoeRequired},
+            {sfTestH256, SoeOptional},
+            {sfTestU32, SoeRequired},
+            {sfTestV256, SoeOptional},
         };
 
         STObject object1(elements, sfTestObject);
@@ -103,8 +103,8 @@ public:
 
         if (object1.getSerializer() == object2.getSerializer())
         {
-            log << "O1: " << object1.getJson(JsonOptions::none) << '\n'
-                << "O2: " << object2.getJson(JsonOptions::none) << std::endl;
+            log << "O1: " << object1.getJson(JsonOptions::KNone) << '\n'
+                << "O2: " << object2.getJson(JsonOptions::KNone) << std::endl;
             fail("STObject error 4");
         }
         else
@@ -188,7 +188,7 @@ public:
 
         {
             auto const st = [&]() {
-                STObject s(sfGeneric);
+                STObject s(kSF_GENERIC);
                 s.setFieldU32(sf1Outer, 1);
                 s.setFieldU32(sf2Outer, 2);
                 return s;
@@ -209,17 +209,17 @@ public:
 
         // read templated object
         SOTemplate const sotOuter{
-            {sf1Outer, soeREQUIRED},
-            {sf2Outer, soeOPTIONAL},
-            {sf3Outer, soeDEFAULT},
-            {sf4Outer, soeOPTIONAL},
-            {sf4, soeOPTIONAL},
-            {sf5, soeDEFAULT},
+            {sf1Outer, SoeRequired},
+            {sf2Outer, SoeOptional},
+            {sf3Outer, SoeDefault},
+            {sf4Outer, SoeOptional},
+            {sf4, SoeOptional},
+            {sf5, SoeDefault},
         };
 
         {
             auto const st = [&]() {
-                STObject s(sotOuter, sfGeneric);
+                STObject s(sotOuter, kSF_GENERIC);
                 s.setFieldU32(sf1Outer, 1);
                 s.setFieldU32(sf2Outer, 2);
                 return s;
@@ -239,7 +239,7 @@ public:
         // write free object
 
         {
-            STObject st(sfGeneric);
+            STObject st(kSF_GENERIC);
             unexcept([&]() { st[sf1Outer]; });
             except([&]() { return st[sf1Outer] == 0; });
             BEAST_EXPECT(st[~sf1Outer] == std::nullopt);
@@ -295,7 +295,7 @@ public:
         // Write templated object
 
         {
-            STObject st(sotOuter, sfGeneric);
+            STObject st(sotOuter, kSF_GENERIC);
             BEAST_EXPECT(!!st[~sf1Outer]);
             BEAST_EXPECT(st[~sf1Outer] != std::nullopt);
             BEAST_EXPECT(st[sf1Outer] == 0);
@@ -353,7 +353,7 @@ public:
         // coercion operator to std::optional
 
         {
-            STObject st(sfGeneric);
+            STObject st(kSF_GENERIC);
             auto const v = ~st[~sf1Outer];
             static_assert(
                 std::is_same_v<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>, "");
@@ -362,7 +362,7 @@ public:
         // UDT scalar fields
 
         {
-            STObject st(sfGeneric);
+            STObject st(kSF_GENERIC);
             st[sfAmount] = STAmount{};
             st[sfAccount] = AccountID{};
             st[sfDigest] = uint256{};
@@ -375,7 +375,7 @@ public:
 
         {
             {
-                STObject st(sfGeneric);
+                STObject st(kSF_GENERIC);
                 Buffer b(1);
                 BEAST_EXPECT(!b.empty());
                 st[sf4] = std::move(b);
@@ -392,7 +392,7 @@ public:
                 BEAST_EXPECT(Slice(st[sf5]).size() == 2);
             }
             {
-                STObject st(sotOuter, sfGeneric);
+                STObject st(sotOuter, kSF_GENERIC);
                 BEAST_EXPECT(st[sf5] == Slice{});
                 BEAST_EXPECT(!!st[~sf5]);
                 BEAST_EXPECT(!!~st[~sf5]);
@@ -408,9 +408,9 @@ public:
         // UDT blobs
 
         {
-            STObject st(sfGeneric);
+            STObject st(kSF_GENERIC);
             BEAST_EXPECT(!st[~sf5]);
-            auto const kp = generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"));
+            auto const kp = generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase"));
             st[sf5] = kp.first;
             st[~sf5] = std::nullopt;
         }
@@ -419,7 +419,7 @@ public:
 
         {
             auto const& sf = sfIndexes;
-            STObject st(sfGeneric);
+            STObject st(kSF_GENERIC);
             std::vector<uint256> v;
             v.emplace_back(1);
             v.emplace_back(2);
@@ -441,12 +441,12 @@ public:
             auto const& sf2 = sfHashes;
             auto const& sf3 = sfAmendments;
             SOTemplate const sot{
-                {sf1, soeREQUIRED},
-                {sf2, soeOPTIONAL},
-                {sf3, soeDEFAULT},
+                {sf1, SoeRequired},
+                {sf2, SoeOptional},
+                {sf3, SoeDefault},
             };
 
-            STObject st(sot, sfGeneric);
+            STObject st(sot, kSF_GENERIC);
             auto const& cst(st);
             BEAST_EXPECT(cst[sf1].empty());
             BEAST_EXPECT(!cst[~sf2]);

@@ -109,7 +109,7 @@ TrustSet::preflight(PreflightContext const& ctx)
         return temBAD_CURRENCY;
     }
 
-    if (saLimitAmount < beast::zero)
+    if (saLimitAmount < beast::kZERO)
     {
         JLOG(j.trace()) << "Malformed transaction: Negative credit limit.";
         return temBAD_LIMIT;
@@ -259,7 +259,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
             else if (auto const ammSle = ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
             {
                 auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
-                if (lpTokens == beast::zero)
+                if (lpTokens == beast::kZERO)
                 {
                     return tecAMM_EMPTY;
                 }
@@ -513,7 +513,7 @@ TrustSet::doApply()
 
         if (bSetNoRipple && !bClearNoRipple)
         {
-            if ((bHigh ? saHighBalance : saLowBalance) >= beast::zero)
+            if ((bHigh ? saHighBalance : saLowBalance) >= beast::kZERO)
             {
                 uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
             }
@@ -550,12 +550,12 @@ TrustSet::doApply()
 
         bool const bLowReserveSet = (uLowQualityIn != 0u) || (uLowQualityOut != 0u) ||
             ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
-            ((uFlagsOut & lsfLowFreeze) != 0u) || saLowLimit || saLowBalance > beast::zero;
+            ((uFlagsOut & lsfLowFreeze) != 0u) || saLowLimit || saLowBalance > beast::kZERO;
         bool const bLowReserveClear = !bLowReserveSet;
 
         bool const bHighReserveSet = (uHighQualityIn != 0u) || (uHighQualityOut != 0u) ||
             ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple ||
-            ((uFlagsOut & lsfHighFreeze) != 0u) || saHighLimit || saHighBalance > beast::zero;
+            ((uFlagsOut & lsfHighFreeze) != 0u) || saHighLimit || saHighBalance > beast::kZERO;
         bool const bHighReserveClear = !bHighReserveSet;
 
         bool const bDefault = bLowReserveClear && bHighReserveClear;

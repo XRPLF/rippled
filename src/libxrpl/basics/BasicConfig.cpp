@@ -28,7 +28,7 @@ void
 Section::append(std::vector<std::string> const& lines)
 {
     // <key> '=' <value>
-    static boost::regex const re1(
+    static boost::regex const kRE1(
         "^"                        // start of line
         "(?:\\s*)"                 // whitespace (optional)
         "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
@@ -43,8 +43,8 @@ Section::append(std::vector<std::string> const& lines)
     lines_.reserve(lines_.size() + lines.size());
     for (auto line : lines)
     {
-        auto remove_comment = [](std::string& val) -> bool {
-            bool removed_trailing = false;
+        auto removeComment = [](std::string& val) -> bool {
+            bool removedTrailing = false;
             auto comment = val.find('#');
             while (comment != std::string::npos)
             {
@@ -65,24 +65,24 @@ Section::append(std::vector<std::string> const& lines)
                 {
                     // this must be a real comment. Extract the value
                     // as a substring and stop looking.
-                    val = trim_whitespace(val.substr(0, comment));
-                    removed_trailing = true;
+                    val = trimWhitespace(val.substr(0, comment));
+                    removedTrailing = true;
                     break;
                 }
 
                 comment = val.find('#', comment);
             }
-            return removed_trailing;
+            return removedTrailing;
         };
 
-        if (remove_comment(line) && !line.empty())
-            had_trailing_comments_ = true;
+        if (removeComment(line) && !line.empty())
+            hadTrailingComments_ = true;
 
         if (line.empty())
             continue;
 
         boost::smatch match;
-        if (boost::regex_match(line, match, re1))
+        if (boost::regex_match(line, match, kRE1))
         {
             set(match[1], match[2]);
         }
@@ -126,10 +126,10 @@ BasicConfig::section(std::string const& name)
 Section const&
 BasicConfig::section(std::string const& name) const
 {
-    static Section const none("");
+    static Section const kNONE("");
     auto const iter = map_.find(name);
     if (iter == map_.end())
-        return none;
+        return kNONE;
     return iter->second;
 }
 
