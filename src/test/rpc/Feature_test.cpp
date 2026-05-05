@@ -22,7 +22,7 @@
 
 namespace xrpl {
 
-class Feature_test : public beast::unit_test::suite
+class Feature_test : public beast::unit_test::Suite
 {
     void
     testInternals()
@@ -208,35 +208,35 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
 
         // Test feature name size checks
-        constexpr auto ok63Name = [] {
+        constexpr auto kOK63_NAME = [] {
             return "123456789012345678901234567890123456789012345678901234567890123";
         };
-        static_assert(validFeatureNameSize(ok63Name));
+        static_assert(validFeatureNameSize(kOK63_NAME));
 
-        constexpr auto bad64Name = [] {
+        constexpr auto kBAD64_NAME = [] {
             return "1234567890123456789012345678901234567890123456789012345678901234";
         };
-        static_assert(!validFeatureNameSize(bad64Name));
+        static_assert(!validFeatureNameSize(kBAD64_NAME));
 
-        constexpr auto ok31Name = [] { return "1234567890123456789012345678901"; };
-        static_assert(validFeatureNameSize(ok31Name));
+        constexpr auto kOK31_NAME = [] { return "1234567890123456789012345678901"; };
+        static_assert(validFeatureNameSize(kOK31_NAME));
 
-        constexpr auto bad32Name = [] { return "12345678901234567890123456789012"; };
-        static_assert(!validFeatureNameSize(bad32Name));
+        constexpr auto kBAD32_NAME = [] { return "12345678901234567890123456789012"; };
+        static_assert(!validFeatureNameSize(kBAD32_NAME));
 
-        constexpr auto ok33Name = [] { return "123456789012345678901234567890123"; };
-        static_assert(validFeatureNameSize(ok33Name));
+        constexpr auto kOK33_NAME = [] { return "123456789012345678901234567890123"; };
+        static_assert(validFeatureNameSize(kOK33_NAME));
 
         // Test feature character set checks
-        constexpr auto okName = [] { return "AMM_123"; };
-        static_assert(validFeatureName(okName));
+        constexpr auto kOK_NAME = [] { return "AMM_123"; };
+        static_assert(validFeatureName(kOK_NAME));
 
         // First character is Greek Capital Alpha, visually confusable with ASCII 'A'
-        constexpr auto badName = [] { return "ΑMM_123"; };
-        static_assert(!validFeatureName(badName));
+        constexpr auto kBAD_NAME = [] { return "ΑMM_123"; };
+        static_assert(!validFeatureName(kBAD_NAME));
 
-        constexpr auto badEmoji = [] { return "🔥"; };
-        static_assert(!validFeatureName(badEmoji));
+        constexpr auto kBAD_EMOJI = [] { return "🔥"; };
+        static_assert(!validFeatureName(kBAD_EMOJI));
     }
 
     void
@@ -248,7 +248,7 @@ class Feature_test : public beast::unit_test::suite
         Env env{*this};
 
         auto testInvalidParam = [&](auto const& param) {
-            Json::Value params;
+            json::Value params;
             params[jss::feature] = param;
             auto jrr = env.rpc("json", "feature", to_string(params))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -258,9 +258,9 @@ class Feature_test : public beast::unit_test::suite
         testInvalidParam(1);
         testInvalidParam(1.1);
         testInvalidParam(true);
-        testInvalidParam(Json::Value(Json::nullValue));
-        testInvalidParam(Json::Value(Json::objectValue));
-        testInvalidParam(Json::Value(Json::arrayValue));
+        testInvalidParam(json::Value(json::NullValue));
+        testInvalidParam(json::Value(json::ObjectValue));
+        testInvalidParam(json::Value(json::ArrayValue));
 
         {
             auto jrr = env.rpc("feature", "AllTheThings")[jss::result];
@@ -312,7 +312,7 @@ class Feature_test : public beast::unit_test::suite
         }
 
         {
-            Json::Value params;
+            json::Value params;
             // invalid feature
             params[jss::feature] =
                 "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCD"
@@ -323,7 +323,7 @@ class Feature_test : public beast::unit_test::suite
         }
 
         {
-            Json::Value params;
+            json::Value params;
             params[jss::feature] =
                 "93E516234E35E08CA689FA33A6D38E103881F8DCB53023F728C307AA89D515"
                 "A7";
@@ -474,40 +474,40 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this, FeatureBitset{featurePriceOracle}};
-        constexpr char const* featureName = "fixAMMOverflowOffer";
+        constexpr char const* kFEATURE_NAME = "fixAMMOverflowOffer";
 
-        auto jrr = env.rpc("feature", featureName)[jss::result];
+        auto jrr = env.rpc("feature", kFEATURE_NAME)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
             return;
         jrr.removeMember(jss::status);
         if (!BEAST_EXPECT(jrr.size() == 1))
             return;
         auto feature = *(jrr.begin());
-        BEAST_EXPECTS(feature[jss::name] == featureName, "name");
+        BEAST_EXPECTS(feature[jss::name] == kFEATURE_NAME, "name");
         BEAST_EXPECTS(feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(), "vetoed");
 
-        jrr = env.rpc("feature", featureName, "reject")[jss::result];
+        jrr = env.rpc("feature", kFEATURE_NAME, "reject")[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
             return;
         jrr.removeMember(jss::status);
         if (!BEAST_EXPECT(jrr.size() == 1))
             return;
         feature = *(jrr.begin());
-        BEAST_EXPECTS(feature[jss::name] == featureName, "name");
+        BEAST_EXPECTS(feature[jss::name] == kFEATURE_NAME, "name");
         BEAST_EXPECTS(feature[jss::vetoed].isBool() && feature[jss::vetoed].asBool(), "vetoed");
 
-        jrr = env.rpc("feature", featureName, "accept")[jss::result];
+        jrr = env.rpc("feature", kFEATURE_NAME, "accept")[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
             return;
         jrr.removeMember(jss::status);
         if (!BEAST_EXPECT(jrr.size() == 1))
             return;
         feature = *(jrr.begin());
-        BEAST_EXPECTS(feature[jss::name] == featureName, "name");
+        BEAST_EXPECTS(feature[jss::name] == kFEATURE_NAME, "name");
         BEAST_EXPECTS(feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(), "vetoed");
 
         // anything other than accept or reject is an error
-        jrr = env.rpc("feature", featureName, "maybe");
+        jrr = env.rpc("feature", kFEATURE_NAME, "maybe");
         BEAST_EXPECT(jrr[jss::error] == "invalidParams");
         BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
     }

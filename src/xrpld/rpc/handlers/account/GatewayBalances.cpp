@@ -48,7 +48,7 @@ namespace xrpl {
 
 // gateway_balances [<ledger>] <account> [<hotwallet> [<hotwallet [...
 
-Json::Value
+json::Value
 doGatewayBalances(RPC::JsonContext& context)
 {
     auto& params = context.params;
@@ -61,7 +61,7 @@ doGatewayBalances(RPC::JsonContext& context)
         return result;
 
     if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
-        return RPC::missing_field_error(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     std::string const strIdent(
         params.isMember(jss::account) ? params[jss::account].asString()
@@ -70,15 +70,15 @@ doGatewayBalances(RPC::JsonContext& context)
     // Get info on account.
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
-        return rpcError(rpcACT_MALFORMED);
+        return rpcError(RpcActMalformed);
     auto const accountID{id.value()};
-    context.loadType = Resource::feeHeavyBurdenRPC;
+    context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
 
     result[jss::account] = toBase58(accountID);
 
     if (context.apiVersion > 1u && !ledger->exists(keylet::account(accountID)))
     {
-        RPC::inject_error(rpcACT_NOT_FOUND, result);
+        RPC::injectError(RpcActNotFound, result);
         return result;
     }
 
@@ -87,7 +87,7 @@ doGatewayBalances(RPC::JsonContext& context)
 
     if (params.isMember(jss::hotwallet))
     {
-        auto addHotWallet = [&hotWallets](Json::Value const& j) {
+        auto addHotWallet = [&hotWallets](json::Value const& j) {
             if (j.isString())
             {
                 if (auto id = parseBase58<AccountID>(j.asString()); id)
@@ -100,7 +100,7 @@ doGatewayBalances(RPC::JsonContext& context)
             return false;
         };
 
-        Json::Value const& hw = params[jss::hotwallet];
+        json::Value const& hw = params[jss::hotwallet];
         bool valid = true;
 
         // null is treated as a valid 0-sized array of hotwallet
@@ -126,11 +126,11 @@ doGatewayBalances(RPC::JsonContext& context)
             // not have currency issued by the account from the request.
             if (context.apiVersion < 2u)
             {
-                RPC::inject_error(rpcINVALID_HOTWALLET, result);
+                RPC::injectError(RpcInvalidHotwallet, result);
             }
             else
             {
-                RPC::inject_error(rpcINVALID_PARAMS, result);
+                RPC::injectError(RpcInvalidParams, result);
             }
             return result;
         }
@@ -153,7 +153,7 @@ doGatewayBalances(RPC::JsonContext& context)
                     return;
 
                 auto& bal = locked[escrow.get<Issue>().currency];
-                if (bal == beast::zero)
+                if (bal == beast::kZERO)
                 {
                     // This is needed to set the currency code correctly
                     bal = escrow;
@@ -170,7 +170,8 @@ doGatewayBalances(RPC::JsonContext& context)
                         // On overflow return the largest valid STAmount.
                         // Very large sums of STAmount are approximations
                         // anyway.
-                        bal = STAmount(bal.get<Issue>(), STAmount::cMaxValue, STAmount::cMaxOffset);
+                        bal =
+                            STAmount(bal.get<Issue>(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
                     }
                 }
             }
@@ -209,7 +210,7 @@ doGatewayBalances(RPC::JsonContext& context)
             {
                 // normal negative balance, obligation to customer
                 auto& bal = sums[rs->getBalance().get<Issue>().currency];
-                if (bal == beast::zero)
+                if (bal == beast::kZERO)
                 {
                     // This is needed to set the currency code correctly
                     bal = -rs->getBalance();
@@ -226,7 +227,7 @@ doGatewayBalances(RPC::JsonContext& context)
                         // On overflow return the largest valid STAmount.
                         // Very large sums of STAmount are approximations
                         // anyway.
-                        bal = STAmount(bal.asset(), STAmount::cMaxValue, STAmount::cMaxOffset);
+                        bal = STAmount(bal.asset(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
                     }
                 }
             }
@@ -235,7 +236,7 @@ doGatewayBalances(RPC::JsonContext& context)
 
     if (!sums.empty())
     {
-        Json::Value j;
+        json::Value j;
         for (auto const& [k, v] : sums)
         {
             j[to_string(k)] = v.getText();
@@ -245,16 +246,16 @@ doGatewayBalances(RPC::JsonContext& context)
 
     auto populateResult = [&result](
                               std::map<AccountID, std::vector<STAmount>> const& array,
-                              Json::StaticString const& name) {
+                              json::StaticString const& name) {
         if (!array.empty())
         {
-            Json::Value j;
+            json::Value j;
             for (auto const& [accId, accBalances] : array)
             {
-                Json::Value balanceArray;
+                json::Value balanceArray;
                 for (auto const& balance : accBalances)
                 {
-                    Json::Value entry;
+                    json::Value entry;
                     entry[jss::currency] = to_string(balance.get<Issue>().currency);
                     entry[jss::value] = balance.getText();
                     balanceArray.append(std::move(entry));
@@ -272,7 +273,7 @@ doGatewayBalances(RPC::JsonContext& context)
     // Add total escrow to the result
     if (!locked.empty())
     {
-        Json::Value j;
+        json::Value j;
         for (auto const& [k, v] : locked)
         {
             j[to_string(k)] = v.getText();

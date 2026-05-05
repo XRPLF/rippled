@@ -165,7 +165,7 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     // - 32 bits are the uncompressed data size
     if (*iter & 0x80)
     {
-        hdr.header_size = headerBytesCompressed;
+        hdr.header_size = kHEADER_BYTES_COMPRESSED;
 
         // not enough bytes to parse the header
         if (size < hdr.header_size)
@@ -210,7 +210,7 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     // - 26 bits are the payload size
     if ((*iter & 0xFC) == 0)
     {
-        hdr.header_size = headerBytes;
+        hdr.header_size = kHEADER_BYTES;
 
         if (size < hdr.header_size)
         {
@@ -335,8 +335,8 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > maximumMessageSize ||
-        header->uncompressed_size > maximumMessageSize)
+    if (header->payload_wire_size > kMAXIMUM_MESSAGE_SIZE ||
+        header->uncompressed_size > kMAXIMUM_MESSAGE_SIZE)
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;
@@ -449,10 +449,10 @@ hash_append(Hasher& h, TMGetLedger const& msg)
 {
     using beast::hash_append;
     using namespace xrpl;
-    hash_append(h, safe_cast<int>(protocolMessageType(msg)));
-    hash_append(h, safe_cast<int>(msg.itype()));
+    hash_append(h, safeCast<int>(protocolMessageType(msg)));
+    hash_append(h, safeCast<int>(msg.itype()));
     if (msg.has_ltype())
-        hash_append(h, safe_cast<int>(msg.ltype()));
+        hash_append(h, safeCast<int>(msg.ltype()));
 
     if (msg.has_ledgerhash())
         hash_append(h, msg.ledgerhash());
@@ -470,7 +470,7 @@ hash_append(Hasher& h, TMGetLedger const& msg)
     //    hash_append(h, msg.requestcookie());
 
     if (msg.has_querytype())
-        hash_append(h, safe_cast<int>(msg.querytype()));
+        hash_append(h, safeCast<int>(msg.querytype()));
 
     if (msg.has_querydepth())
         hash_append(h, msg.querydepth());
@@ -482,10 +482,10 @@ hash_append(Hasher& h, TMLedgerData const& msg)
 {
     using beast::hash_append;
     using namespace xrpl;
-    hash_append(h, safe_cast<int>(protocolMessageType(msg)));
+    hash_append(h, safeCast<int>(protocolMessageType(msg)));
     hash_append(h, msg.ledgerhash());
     hash_append(h, msg.ledgerseq());
-    hash_append(h, safe_cast<int>(msg.type()));
+    hash_append(h, safeCast<int>(msg.type()));
     for (auto const& node : msg.nodes())
     {
         hash_append(h, node.nodedata());
@@ -496,7 +496,7 @@ hash_append(Hasher& h, TMLedgerData const& msg)
     if (msg.has_requestcookie())
         hash_append(h, msg.requestcookie());
     if (msg.has_error())
-        hash_append(h, safe_cast<int>(msg.error()));
+        hash_append(h, safeCast<int>(msg.error()));
 }
 
 }  // namespace protocol

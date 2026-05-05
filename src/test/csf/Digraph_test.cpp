@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-class Digraph_test : public beast::unit_test::suite
+class Digraph_test : public beast::unit_test::Suite
 {
 public:
     void

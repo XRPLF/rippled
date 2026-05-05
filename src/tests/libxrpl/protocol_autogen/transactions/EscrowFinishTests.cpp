@@ -21,7 +21,7 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowFinish"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowFinish"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -108,7 +108,7 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowFinishFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowFinishFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -192,7 +192,7 @@ TEST(TransactionsEscrowFinishTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -206,7 +206,7 @@ TEST(TransactionsEscrowFinishTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -220,7 +220,7 @@ TEST(TransactionsEscrowFinishTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testEscrowFinishNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testEscrowFinishNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
