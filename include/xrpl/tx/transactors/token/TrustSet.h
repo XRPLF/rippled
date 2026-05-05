@@ -8,7 +8,7 @@ namespace xrpl {
 class TrustSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit TrustSet(ApplyContext& ctx) : Transactor(ctx)
     {

@@ -77,11 +77,11 @@ public:
         if (ec)
         {
             journal_.warn() << "forwarded for (" << forwardedFor << ") from proxy "
-                            << address.to_string()
+                            << address.toString()
                             << " doesn't convert to IP endpoint: " << ec.message();
             return newInboundEndpoint(address);
         }
-        return newInboundEndpoint(beast::IPAddressConversion::from_asio(proxiedIp));
+        return newInboundEndpoint(beast::IPAddressConversion::fromAsio(proxiedIp));
     }
 
     Consumer
@@ -110,13 +110,13 @@ public:
 
     //--------------------------------------------------------------------------
 
-    Json::Value
+    json::Value
     getJson() override
     {
         return logic_.getJson();
     }
 
-    Json::Value
+    json::Value
     getJson(int threshold) override
     {
         return logic_.getJson(threshold);
@@ -159,7 +159,7 @@ Manager::~Manager() = default;
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-make_Manager(beast::insight::Collector::ptr const& collector, beast::Journal journal)
+makeManager(beast::insight::Collector::ptr const& collector, beast::Journal journal)
 {
     return std::make_unique<ManagerImp>(collector, journal);
 }

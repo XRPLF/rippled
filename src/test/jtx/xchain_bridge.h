@@ -10,86 +10,86 @@
 
 namespace xrpl::test::jtx {
 
-using JValueVec = std::vector<Json::Value>;
+using JValueVec = std::vector<json::Value>;
 
-constexpr std::size_t UT_XCHAIN_DEFAULT_NUM_SIGNERS = 5;
-constexpr std::size_t UT_XCHAIN_DEFAULT_QUORUM = 4;
+constexpr std::size_t kUT_XCHAIN_DEFAULT_NUM_SIGNERS = 5;
+constexpr std::size_t kUT_XCHAIN_DEFAULT_QUORUM = 4;
 
-Json::Value
+json::Value
 bridge(
     Account const& lockingChainDoor,
     Issue const& lockingChainIssue,
     Account const& issuingChainDoor,
     Issue const& issuingChainIssue);
 
-Json::Value
-bridge_create(
+json::Value
+bridgeCreate(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     STAmount const& reward,
     std::optional<STAmount> const& minAccountCreate = std::nullopt);
 
-Json::Value
-bridge_modify(
+json::Value
+bridgeModify(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     std::optional<STAmount> const& reward,
     std::optional<STAmount> const& minAccountCreate = std::nullopt);
 
-Json::Value
-xchain_create_claim_id(
+json::Value
+xchainCreateClaimId(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     STAmount const& reward,
     Account const& otherChainSource);
 
-Json::Value
-xchain_commit(
+json::Value
+xchainCommit(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     std::uint32_t claimID,
     AnyAmount const& amt,
     std::optional<Account> const& dst = std::nullopt);
 
-Json::Value
-xchain_claim(
+json::Value
+xchainClaim(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     std::uint32_t claimID,
     AnyAmount const& amt,
     Account const& dst);
 
-Json::Value
-sidechain_xchain_account_create(
+json::Value
+sidechainXchainAccountCreate(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     Account const& dst,
     AnyAmount const& amt,
     AnyAmount const& xChainFee);
 
-Json::Value
-sidechain_xchain_account_claim(
+json::Value
+sidechainXchainAccountClaim(
     Account const& acc,
-    Json::Value const& bridge,
+    json::Value const& bridge,
     Account const& dst,
     AnyAmount const& amt);
 
-Json::Value
-claim_attestation(
+json::Value
+claimAttestation(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     jtx::Account const& rewardAccount,
     bool wasLockingChainSend,
     std::uint64_t claimID,
     std::optional<jtx::Account> const& dst,
-    jtx::signer const& signer);
+    jtx::Signer const& signer);
 
-Json::Value
-create_account_attestation(
+json::Value
+createAccountAttestation(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     jtx::AnyAmount const& rewardAmount,
@@ -97,26 +97,26 @@ create_account_attestation(
     bool wasLockingChainSend,
     std::uint64_t createCount,
     jtx::Account const& dst,
-    jtx::signer const& signer);
+    jtx::Signer const& signer);
 
 JValueVec
-claim_attestations(
+claimAttestations(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     std::vector<jtx::Account> const& rewardAccounts,
     bool wasLockingChainSend,
     std::uint64_t claimID,
     std::optional<jtx::Account> const& dst,
-    std::vector<jtx::signer> const& signers,
-    std::size_t const numAtts = UT_XCHAIN_DEFAULT_QUORUM,
+    std::vector<jtx::Signer> const& signers,
+    std::size_t const numAtts = kUT_XCHAIN_DEFAULT_QUORUM,
     std::size_t const fromIdx = 0);
 
 JValueVec
-create_account_attestations(
+createAccountAttestations(
     jtx::Account const& submittingAccount,
-    Json::Value const& jvBridge,
+    json::Value const& jvBridge,
     jtx::Account const& sendingAccount,
     jtx::AnyAmount const& sendingAmount,
     jtx::AnyAmount const& rewardAmount,
@@ -124,8 +124,8 @@ create_account_attestations(
     bool wasLockingChainSend,
     std::uint64_t createCount,
     jtx::Account const& dst,
-    std::vector<jtx::signer> const& signers,
-    std::size_t const numAtts = UT_XCHAIN_DEFAULT_QUORUM,
+    std::vector<jtx::Signer> const& signers,
+    std::size_t const numAtts = kUT_XCHAIN_DEFAULT_QUORUM,
     std::size_t const fromIdx = 0);
 
 struct XChainBridgeObjects
@@ -159,16 +159,16 @@ struct XChainBridgeObjects
     IOU const mcUSD;
     IOU const scUSD;
 
-    Json::Value const jvXRPBridgeRPC;
-    Json::Value jvb;   // standard xrp bridge def for tx
-    Json::Value jvub;  // standard xrp bridge def for tx, unfunded accounts
+    json::Value const jvXRPBridgeRPC;
+    json::Value jvb;   // standard xrp bridge def for tx
+    json::Value jvub;  // standard xrp bridge def for tx, unfunded accounts
 
     FeatureBitset const features;
-    std::vector<signer> const signers;
-    std::vector<signer> const alt_signers;
+    std::vector<Signer> const signers;
+    std::vector<Signer> const alt_signers;
     std::vector<Account> const payee;
     std::vector<Account> const payees;
-    std::uint32_t const quorum{UT_XCHAIN_DEFAULT_QUORUM};
+    std::uint32_t const quorum{kUT_XCHAIN_DEFAULT_QUORUM};
 
     STAmount const reward;                 // 1 xrp
     STAmount const split_reward_quorum;    // 250,000 drops
@@ -181,7 +181,7 @@ struct XChainBridgeObjects
     STAmount const one_xrp;
     STAmount const xrp_dust;
 
-    static constexpr int drop_per_xrp = 1000000;
+    static constexpr int kDROP_PER_XRP = 1000000;
 
     XChainBridgeObjects();
 
@@ -195,14 +195,14 @@ struct XChainBridgeObjects
     createBridgeObjects(Env& mcEnv, Env& scEnv);
 
     JValueVec
-    att_create_acct_vec(
+    attCreateAcctVec(
         std::uint64_t createCount,
         jtx::AnyAmount const& amt,
         jtx::Account const& dst,
         std::size_t const numAtts,
         std::size_t const fromIdx = 0)
     {
-        return create_account_attestations(
+        return createAccountAttestations(
             scAttester,
             jvb,
             mcCarol,
@@ -217,15 +217,15 @@ struct XChainBridgeObjects
             fromIdx);
     }
 
-    [[nodiscard]] Json::Value
-    create_bridge(
+    [[nodiscard]] json::Value
+    createBridge(
         Account const& acc,
-        Json::Value const& bridge = Json::nullValue,
-        STAmount const& _reward = XRP(1),
+        json::Value const& bridge = json::NullValue,
+        STAmount const& reward = XRP(1),
         std::optional<STAmount> const& minAccountCreate = std::nullopt) const
     {
-        return bridge_create(
-            acc, bridge == Json::nullValue ? jvb : bridge, _reward, minAccountCreate);
+        return bridgeCreate(
+            acc, bridge == json::NullValue ? jvb : bridge, reward, minAccountCreate);
     }
 };
 

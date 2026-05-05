@@ -21,48 +21,48 @@ namespace xrpl {
 // code assumes this node is synced (and will continue to do so until
 // there's a functional network.
 
-InfoSub::InfoSub(Source& source) : m_source(source), mSeq(assign_id())
+InfoSub::InfoSub(Source& source) : source_(source), seq_(assignId())
 {
 }
 
 InfoSub::InfoSub(Source& source, Consumer consumer)
-    : m_consumer(consumer), m_source(source), mSeq(assign_id())
+    : consumer_(consumer), source_(source), seq_(assignId())
 {
 }
 
 InfoSub::~InfoSub()
 {
-    m_source.unsubTransactions(mSeq);
-    m_source.unsubRTTransactions(mSeq);
-    m_source.unsubLedger(mSeq);
-    m_source.unsubManifests(mSeq);
-    m_source.unsubServer(mSeq);
-    m_source.unsubValidations(mSeq);
-    m_source.unsubPeerStatus(mSeq);
-    m_source.unsubConsensus(mSeq);
+    source_.unsubTransactions(seq_);
+    source_.unsubRTTransactions(seq_);
+    source_.unsubLedger(seq_);
+    source_.unsubManifests(seq_);
+    source_.unsubServer(seq_);
+    source_.unsubValidations(seq_);
+    source_.unsubPeerStatus(seq_);
+    source_.unsubConsensus(seq_);
 
     // Use the internal unsubscribe so that it won't call
     // back to us and modify its own parameter
     if (!realTimeSubscriptions_.empty())
-        m_source.unsubAccountInternal(mSeq, realTimeSubscriptions_, true);
+        source_.unsubAccountInternal(seq_, realTimeSubscriptions_, true);
 
     if (!normalSubscriptions_.empty())
-        m_source.unsubAccountInternal(mSeq, normalSubscriptions_, false);
+        source_.unsubAccountInternal(seq_, normalSubscriptions_, false);
 
     for (auto const& account : accountHistorySubscriptions_)
-        m_source.unsubAccountHistoryInternal(mSeq, account, false);
+        source_.unsubAccountHistoryInternal(seq_, account, false);
 }
 
 Resource::Consumer&
 InfoSub::getConsumer()
 {
-    return m_consumer;
+    return consumer_;
 }
 
 std::uint64_t
 InfoSub::getSeq() const
 {
-    return mSeq;
+    return seq_;
 }
 
 void
@@ -73,7 +73,7 @@ InfoSub::onSendEmpty()
 void
 InfoSub::insertSubAccountInfo(AccountID const& account, bool rt)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     if (rt)
     {
@@ -88,7 +88,7 @@ InfoSub::insertSubAccountInfo(AccountID const& account, bool rt)
 void
 InfoSub::deleteSubAccountInfo(AccountID const& account, bool rt)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     if (rt)
     {
@@ -103,14 +103,14 @@ InfoSub::deleteSubAccountInfo(AccountID const& account, bool rt)
 bool
 InfoSub::insertSubAccountHistory(AccountID const& account)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
     return accountHistorySubscriptions_.insert(account).second;
 }
 
 void
 InfoSub::deleteSubAccountHistory(AccountID const& account)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
     accountHistorySubscriptions_.erase(account);
 }
 

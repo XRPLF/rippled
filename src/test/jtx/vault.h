@@ -28,7 +28,7 @@ struct Vault
     };
 
     /** Return a VaultCreate transaction and the Vault's expected keylet. */
-    [[nodiscard]] std::tuple<Json::Value, Keylet>
+    [[nodiscard]] std::tuple<json::Value, Keylet>
     create(CreateArgs const& args) const;
 
     struct SetArgs
@@ -37,7 +37,7 @@ struct Vault
         uint256 id;
     };
 
-    static Json::Value
+    static json::Value
     set(SetArgs const& args);
 
     struct DeleteArgs
@@ -46,7 +46,7 @@ struct Vault
         uint256 id;
     };
 
-    static Json::Value
+    static json::Value
     del(DeleteArgs const& args);
 
     struct DepositArgs
@@ -56,7 +56,7 @@ struct Vault
         STAmount amount;
     };
 
-    static Json::Value
+    static json::Value
     deposit(DepositArgs const& args);
 
     struct WithdrawArgs
@@ -66,7 +66,7 @@ struct Vault
         STAmount amount;
     };
 
-    static Json::Value
+    static json::Value
     withdraw(WithdrawArgs const& args);
 
     struct ClawbackArgs
@@ -77,7 +77,7 @@ struct Vault
         std::optional<STAmount> amount = std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
-    static Json::Value
+    static json::Value
     clawback(ClawbackArgs const& args);
 };
 

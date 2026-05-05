@@ -5,7 +5,7 @@
 namespace xrpl::test::jtx {
 
 /** The null transaction. */
-inline Json::Value
+inline json::Value
 noop(Account const& account)
 {
     return fset(account, 0);

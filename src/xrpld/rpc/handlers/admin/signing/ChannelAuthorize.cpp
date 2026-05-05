@@ -29,35 +29,35 @@ namespace xrpl {
 //   channel_id: 256-bit channel id
 //   drops: 64-bit uint (as string)
 // }
-Json::Value
+json::Value
 doChannelAuthorize(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {
-        return RPC::make_error(rpcNOT_SUPPORTED, "Signing is not supported by this server.");
+        return RPC::makeError(RpcNotSupported, "Signing is not supported by this server.");
     }
 
     auto const& params(context.params);
     for (auto const& p : {jss::channel_id, jss::amount})
     {
         if (!params.isMember(p))
-            return RPC::missing_field_error(p);
+            return RPC::missingFieldError(p);
     }
 
     // Compatibility if a key type isn't specified. If it is, the
     // keypairForSignature code will validate parameters and return
     // the appropriate error.
     if (!params.isMember(jss::key_type) && !params.isMember(jss::secret))
-        return RPC::missing_field_error(jss::secret);
+        return RPC::missingFieldError(jss::secret);
 
-    Json::Value result;
+    json::Value result;
     std::optional<std::pair<PublicKey, SecretKey>> const keyPair =
         RPC::keypairForSignature(params, result, context.apiVersion);
 
     XRPL_ASSERT(
-        keyPair || RPC::contains_error(result),
+        keyPair || RPC::containsError(result),
         "xrpl::doChannelAuthorize : valid keyPair or an error");
-    if (!keyPair || RPC::contains_error(result))
+    if (!keyPair || RPC::containsError(result))
         return result;
 
     PublicKey const& pk = keyPair->first;
@@ -65,13 +65,13 @@ doChannelAuthorize(RPC::JsonContext& context)
 
     uint256 channelId;
     if (!channelId.parseHex(params[jss::channel_id].asString()))
-        return rpcError(rpcCHANNEL_MALFORMED);
+        return rpcError(RpcChannelMalformed);
 
     std::optional<std::uint64_t> const optDrops =
-        params[jss::amount].isString() ? to_uint64(params[jss::amount].asString()) : std::nullopt;
+        params[jss::amount].isString() ? toUint64(params[jss::amount].asString()) : std::nullopt;
 
     if (!optDrops)
-        return rpcError(rpcCHANNEL_AMT_MALFORMED);
+        return rpcError(RpcChannelAmtMalformed);
 
     std::uint64_t const drops = *optDrops;
 
@@ -86,8 +86,8 @@ doChannelAuthorize(RPC::JsonContext& context)
     catch (std::exception const& ex)
     {
         // LCOV_EXCL_START
-        result = RPC::make_error(
-            rpcINTERNAL, "Exception occurred during signing: " + std::string(ex.what()));
+        result = RPC::makeError(
+            RpcInternal, "Exception occurred during signing: " + std::string(ex.what()));
         // LCOV_EXCL_STOP
     }
     return result;

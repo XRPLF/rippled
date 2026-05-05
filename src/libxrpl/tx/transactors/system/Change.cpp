@@ -42,7 +42,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
-    if (account != beast::zero)
+    if (account != beast::kZERO)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";
         return temBAD_SRC_ACCOUNT;
@@ -50,7 +50,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 
     // No point in going any further if the transaction fee is malformed.
     auto const fee = ctx.tx.getFieldAmount(sfFee);
-    if (!fee.native() || fee != beast::zero)
+    if (!fee.native() || fee != beast::kZERO)
     {
         JLOG(ctx.j.warn()) << "Change: invalid fee";
         return temBAD_FEE;
@@ -154,7 +154,7 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    XRPL_ASSERT(account_ == beast::zero, "xrpl::Change::preCompute : zero account");
+    XRPL_ASSERT(account_ == beast::kZERO, "xrpl::Change::preCompute : zero account");
 }
 
 TER
@@ -202,7 +202,7 @@ Change::applyAmendment()
             else
             {
                 // pass through
-                newMajorities.push_back(majority);
+                newMajorities.pushBack(majority);
             }
         }
     }
@@ -213,7 +213,7 @@ Change::applyAmendment()
     if (gotMajority)
     {
         // This amendment now has a majority
-        newMajorities.push_back(STObject::makeInnerObject(sfMajority));
+        newMajorities.pushBack(STObject::makeInnerObject(sfMajority));
         auto& entry = newMajorities.back();
         entry[sfAmendment] = amendment;
         entry[sfCloseTime] = view().parentCloseTime().time_since_epoch().count();
@@ -226,7 +226,7 @@ Change::applyAmendment()
     else if (!lostMajority)
     {
         // No flags, enable amendment
-        amendments.push_back(amendment);
+        amendments.pushBack(amendment);
         amendmentObject->setFieldV256(sfAmendments, amendments);
 
         ctx_.registry.get().getAmendmentTable().enable(amendment);
