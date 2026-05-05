@@ -45,12 +45,12 @@ realValidatorContents()
 )vl";
 }
 
-auto constexpr default_expires = std::chrono::seconds{3600};
-auto constexpr default_effective_overlap = std::chrono::seconds{30};
+auto constexpr kDEFAULT_EXPIRES = std::chrono::seconds{3600};
+auto constexpr kDEFAULT_EFFECTIVE_OVERLAP = std::chrono::seconds{30};
 }  // namespace detail
 
 namespace test {
-class ValidatorSite_test : public beast::unit_test::suite
+class ValidatorSite_test : public beast::unit_test::Suite
 {
 private:
     using Validator = TrustedPublisherServer::Validator;
@@ -62,7 +62,7 @@ private:
 
         using namespace jtx;
 
-        Env env(*this, envconfig(), nullptr, beast::severities::kDisabled);
+        Env env(*this, envconfig(), nullptr, beast::severities::KDisabled);
         auto trustedSites = std::make_unique<ValidatorSite>(env.app(), env.journal);
 
         // load should accept empty sites list
@@ -129,8 +129,8 @@ private:
         bool failFetch = false;
         bool failApply = false;
         int serverVersion = 1;
-        std::chrono::seconds expiresFromNow = detail::default_expires;
-        std::chrono::seconds effectiveOverlap = detail::default_effective_overlap;
+        std::chrono::seconds expiresFromNow = detail::kDEFAULT_EXPIRES;
+        std::chrono::seconds effectiveOverlap = detail::kDEFAULT_EFFECTIVE_OVERLAP;
         int expectedRefreshMin = 0;
     };
     void
@@ -159,9 +159,9 @@ private:
         beast::Journal journal{sink};
 
         std::vector<std::string> const emptyCfgKeys;
-        struct publisher
+        struct Publisher
         {
-            publisher(FetchListConfig const& c) : cfg{c}
+            Publisher(FetchListConfig const& c) : cfg{c}
             {
             }
             std::shared_ptr<TrustedPublisherServer> server;
@@ -170,9 +170,9 @@ private:
             FetchListConfig const& cfg;
             bool isRetry{};
         };
-        std::vector<publisher> servers;
+        std::vector<Publisher> servers;
 
-        auto constexpr listSize = 20;
+        auto constexpr kLIST_SIZE = 20;
         std::vector<std::string> cfgPublishers;
 
         for (auto const& cfg : paths)
@@ -180,14 +180,14 @@ private:
             servers.emplace_back(cfg);
             auto& item = servers.back();
             item.isRetry = cfg.path == "/bad-resource";
-            item.list.reserve(listSize);
-            while (item.list.size() < listSize)
+            item.list.reserve(kLIST_SIZE);
+            while (item.list.size() < kLIST_SIZE)
                 item.list.push_back(TrustedPublisherServer::randomValidator());
 
             NetClock::time_point const expires = env.timeKeeper().now() + cfg.expiresFromNow;
             NetClock::time_point const effective2 = expires - cfg.effectiveOverlap;
             NetClock::time_point const expires2 = effective2 + cfg.expiresFromNow;
-            item.server = make_TrustedPublisherServer(
+            item.server = makeTrustedPublisherServer(
                 env.app().getIOContext(),
                 item.list,
                 expires,
@@ -206,7 +206,7 @@ private:
             }
 
             std::stringstream uri;
-            uri << (cfg.ssl ? "https://" : "http://") << item.server->local_endpoint() << cfg.path;
+            uri << (cfg.ssl ? "https://" : "http://") << item.server->localEndpoint() << cfg.path;
             item.uri = uri.str();
         }
 
@@ -236,7 +236,7 @@ private:
                 BEAST_EXPECT(trustedKeys.listed(val.signingPublic) != u.cfg.failApply);
             }
 
-            Json::Value myStatus;
+            json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
             {
                 if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
@@ -288,13 +288,13 @@ private:
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        struct publisher
+        struct Publisher
         {
             std::string uri;
             std::string expectMsg;
             bool shouldFail;
         };
-        std::vector<publisher> servers;
+        std::vector<Publisher> servers;
 
         for (auto const& cfg : paths)
         {
@@ -321,7 +321,7 @@ private:
         for (auto const& u : servers)
         {
             auto const jv = sites->getJson();
-            Json::Value myStatus;
+            json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
             {
                 if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
@@ -405,7 +405,7 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
+                  detail::kDEFAULT_EXPIRES,
                   std::chrono::seconds{-90}}});
             // fetch single site with unending redirect (fails to load)
             testFetchList(
@@ -495,7 +495,7 @@ public:
                   false,
                   true,
                   1,
-                  std::chrono::seconds{Json::Value::minInt}}});
+                  std::chrono::seconds{json::Value::kMIN_INT}}});
             // force an out-of-range validUntil value on the future list
             // The first list is accepted. The second fails. The parser
             // returns the "best" result, so this looks like a success.
@@ -507,7 +507,7 @@ public:
                   false,
                   false,
                   1,
-                  std::chrono::seconds{Json::Value::maxInt - 300},
+                  std::chrono::seconds{json::Value::kMAX_INT - 300},
                   299s}});
             // force an out-of-range validFrom value
             // The first list is accepted. The second fails. The parser
@@ -520,7 +520,7 @@ public:
                   false,
                   false,
                   1,
-                  std::chrono::seconds{Json::Value::maxInt - 300},
+                  std::chrono::seconds{json::Value::kMAX_INT - 300},
                   301s}});
             // force an out-of-range validUntil value on _both_ lists
             testFetchList(
@@ -531,8 +531,8 @@ public:
                   false,
                   true,
                   1,
-                  std::chrono::seconds{Json::Value::minInt},
-                  std::chrono::seconds{Json::Value::maxInt - 6000}}});
+                  std::chrono::seconds{json::Value::kMIN_INT},
+                  std::chrono::seconds{json::Value::kMAX_INT - 6000}}});
             // verify refresh intervals are properly clamped
             testFetchList(
                 good,
@@ -542,8 +542,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   1}});  // minimum of 1 minute
             testFetchList(
                 good,
@@ -553,8 +553,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   1}});  // minimum of 1 minute
             testFetchList(
                 good,
@@ -564,8 +564,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   10}});  // 10 minutes is fine
             testFetchList(
                 good,
@@ -575,8 +575,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   10}});  // 10 minutes is fine
             testFetchList(
                 good,
@@ -586,8 +586,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   60 * 24}});  // max of 24 hours
             testFetchList(
                 good,
@@ -597,8 +597,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   60 * 24}});  // max of 24 hours
         }
         using namespace boost::filesystem;

@@ -26,23 +26,23 @@ namespace detail {
     The totals are output when the object is destroyed.
 */
 template <class = void>
-class reporter : public runner
+class Reporter : public Runner
 {
 private:
     using clock_type = std::chrono::steady_clock;
 
-    struct case_results
+    struct CaseResults
     {
         std::string name;
         std::size_t total = 0;
         std::size_t failed = 0;
 
-        explicit case_results(std::string name_ = "") : name(std::move(name_))
+        explicit CaseResults(std::string name = "") : name(std::move(name))
         {
         }
     };
 
-    struct suite_results
+    struct SuiteResults
     {
         std::string name;
         std::size_t cases = 0;
@@ -50,21 +50,21 @@ private:
         std::size_t failed = 0;
         typename clock_type::time_point start = clock_type::now();
 
-        explicit suite_results(std::string name_ = "") : name(std::move(name_))
+        explicit SuiteResults(std::string name = "") : name(std::move(name))
         {
         }
 
         void
-        add(case_results const& r);
+        add(CaseResults const& r);
     };
 
-    struct results
+    struct Results
     {
         using run_time = std::pair<std::string, typename clock_type::duration>;
 
         // Need to be named before converting
         // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-        enum { max_top = 10 };
+        enum { MaxTop = 10 };
 
         std::size_t suites = 0;
         std::size_t cases = 0;
@@ -74,54 +74,54 @@ private:
         typename clock_type::time_point start = clock_type::now();
 
         void
-        add(suite_results const& r);
+        add(SuiteResults const& r);
     };
 
     std::ostream& os_;
-    results results_;
-    suite_results suite_results_;
-    case_results case_results_;
+    Results results_;
+    SuiteResults suite_results_;
+    CaseResults case_results_;
 
 public:
-    reporter(reporter const&) = delete;
-    reporter&
-    operator=(reporter const&) = delete;
+    Reporter(Reporter const&) = delete;
+    Reporter&
+    operator=(Reporter const&) = delete;
 
-    ~reporter() override;
+    ~Reporter() override;
 
-    explicit reporter(std::ostream& os = std::cout);
+    explicit Reporter(std::ostream& os = std::cout);
 
 private:
     static std::string
     fmtdur(typename clock_type::duration const& d);
 
     void
-    on_suite_begin(suite_info const& info) override;
+    onSuiteBegin(SuiteInfo const& info) override;
 
     void
-    on_suite_end() override;
+    onSuiteEnd() override;
 
     void
-    on_case_begin(std::string const& name) override;
+    onCaseBegin(std::string const& name) override;
 
     void
-    on_case_end() override;
+    onCaseEnd() override;
 
     void
-    on_pass() override;
+    onPass() override;
 
     void
-    on_fail(std::string const& reason) override;
+    onFail(std::string const& reason) override;
 
     void
-    on_log(std::string const& s) override;
+    onLog(std::string const& s) override;
 };
 
 //------------------------------------------------------------------------------
 
 template <class Unused>
 void
-reporter<Unused>::suite_results::add(case_results const& r)
+Reporter<Unused>::SuiteResults::add(CaseResults const& r)
 {
     ++cases;
     total += r.total;
@@ -130,7 +130,7 @@ reporter<Unused>::suite_results::add(case_results const& r)
 
 template <class Unused>
 void
-reporter<Unused>::results::add(suite_results const& r)
+Reporter<Unused>::Results::add(SuiteResults const& r)
 {
     ++suites;
     total += r.total;
@@ -148,11 +148,11 @@ reporter<Unused>::results::add(suite_results const& r)
             });
         if (iter != top.end())
         {
-            if (top.size() == max_top)
+            if (top.size() == MaxTop)
                 top.resize(top.size() - 1);
             top.emplace(iter, r.name, elapsed);
         }
-        else if (top.size() < max_top)
+        else if (top.size() < MaxTop)
         {
             top.emplace_back(r.name, elapsed);
         }
@@ -162,12 +162,12 @@ reporter<Unused>::results::add(suite_results const& r)
 //------------------------------------------------------------------------------
 
 template <class Unused>
-reporter<Unused>::reporter(std::ostream& os) : os_(os)
+Reporter<Unused>::Reporter(std::ostream& os) : os_(os)
 {
 }
 
 template <class Unused>
-reporter<Unused>::~reporter()
+Reporter<Unused>::~Reporter()
 {
     if (results_.top.size() > 0)
     {
@@ -176,14 +176,14 @@ reporter<Unused>::~reporter()
             os_ << std::setw(8) << fmtdur(i.second) << " " << i.first << '\n';
     }
     auto const elapsed = clock_type::now() - results_.start;
-    os_ << fmtdur(elapsed) << ", " << amount{results_.suites, "suite"} << ", "
-        << amount{results_.cases, "case"} << ", " << amount{results_.total, "test"} << " total, "
-        << amount{results_.failed, "failure"} << std::endl;
+    os_ << fmtdur(elapsed) << ", " << Amount{results_.suites, "suite"} << ", "
+        << Amount{results_.cases, "case"} << ", " << Amount{results_.total, "test"} << " total, "
+        << Amount{results_.failed, "failure"} << std::endl;
 }
 
 template <class Unused>
 std::string
-reporter<Unused>::fmtdur(typename clock_type::duration const& d)
+Reporter<Unused>::fmtdur(typename clock_type::duration const& d)
 {
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
@@ -196,44 +196,44 @@ reporter<Unused>::fmtdur(typename clock_type::duration const& d)
 
 template <class Unused>
 void
-reporter<Unused>::on_suite_begin(suite_info const& info)
+Reporter<Unused>::onSuiteBegin(SuiteInfo const& info)
 {
-    suite_results_ = suite_results{info.full_name()};
+    suite_results_ = SuiteResults{info.fullName()};
 }
 
 template <class Unused>
 void
-reporter<Unused>::on_suite_end()
+Reporter<Unused>::onSuiteEnd()
 {
     results_.add(suite_results_);
 }
 
 template <class Unused>
 void
-reporter<Unused>::on_case_begin(std::string const& name)
+Reporter<Unused>::onCaseBegin(std::string const& name)
 {
-    case_results_ = case_results(name);
+    case_results_ = CaseResults(name);
     os_ << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
         << std::endl;
 }
 
 template <class Unused>
 void
-reporter<Unused>::on_case_end()
+Reporter<Unused>::onCaseEnd()
 {
     suite_results_.add(case_results_);
 }
 
 template <class Unused>
 void
-reporter<Unused>::on_pass()
+Reporter<Unused>::onPass()
 {
     ++case_results_.total;
 }
 
 template <class Unused>
 void
-reporter<Unused>::on_fail(std::string const& reason)
+Reporter<Unused>::onFail(std::string const& reason)
 {
     ++case_results_.failed;
     ++case_results_.total;
@@ -243,13 +243,13 @@ reporter<Unused>::on_fail(std::string const& reason)
 
 template <class Unused>
 void
-reporter<Unused>::on_log(std::string const& s)
+Reporter<Unused>::onLog(std::string const& s)
 {
     os_ << s;
 }
 
 }  // namespace detail
 
-using reporter = detail::reporter<>;
+using reporter = detail::Reporter<>;
 
 }  // namespace beast::unit_test

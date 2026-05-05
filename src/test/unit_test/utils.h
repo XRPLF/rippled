@@ -10,8 +10,8 @@ namespace xrpl::test {
 inline bool
 equal(SecretKey const& lhs, SecretKey const& rhs)
 {
-    return lhs.size() == SecretKey::size_ && rhs.size() == SecretKey::size_ &&
-        std::memcmp(lhs.data(), rhs.data(), SecretKey::size_) == 0;
+    return lhs.size() == SecretKey::kSIZE && rhs.size() == SecretKey::kSIZE &&
+        std::memcmp(lhs.data(), rhs.data(), SecretKey::kSIZE) == 0;
 }
 
 }  // namespace xrpl::test

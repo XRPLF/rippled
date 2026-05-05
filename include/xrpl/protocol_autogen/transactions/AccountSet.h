@@ -19,9 +19,9 @@ class AccountSetBuilder;
  * @brief Transaction: AccountSet
  *
  * Type: ttACCOUNT_SET (3)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AccountSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfEmailHash (soeOPTIONAL)
+     * @brief Get sfEmailHash (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfWalletLocator (soeOPTIONAL)
+     * @brief Get sfWalletLocator (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -100,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfWalletSize (soeOPTIONAL)
+     * @brief Get sfWalletSize (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfMessageKey (soeOPTIONAL)
+     * @brief Get sfMessageKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -152,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomain (soeOPTIONAL)
+     * @brief Get sfDomain (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -178,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Get sfTransferRate (soeOPTIONAL)
+     * @brief Get sfTransferRate (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -204,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Get sfSetFlag (soeOPTIONAL)
+     * @brief Get sfSetFlag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -230,7 +230,7 @@ public:
     }
 
     /**
-     * @brief Get sfClearFlag (soeOPTIONAL)
+     * @brief Get sfClearFlag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -256,7 +256,7 @@ public:
     }
 
     /**
-     * @brief Get sfTickSize (soeOPTIONAL)
+     * @brief Get sfTickSize (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -282,7 +282,7 @@ public:
     }
 
     /**
-     * @brief Get sfNFTokenMinter (soeOPTIONAL)
+     * @brief Get sfNFTokenMinter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -312,7 +312,7 @@ public:
  * @brief Builder for AccountSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class AccountSetBuilder : public TransactionBuilderBase<AccountSetBuilder>
@@ -349,7 +349,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfEmailHash (soeOPTIONAL)
+     * @brief Set sfEmailHash (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -360,7 +360,7 @@ public:
     }
 
     /**
-     * @brief Set sfWalletLocator (soeOPTIONAL)
+     * @brief Set sfWalletLocator (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -371,7 +371,7 @@ public:
     }
 
     /**
-     * @brief Set sfWalletSize (soeOPTIONAL)
+     * @brief Set sfWalletSize (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -382,7 +382,7 @@ public:
     }
 
     /**
-     * @brief Set sfMessageKey (soeOPTIONAL)
+     * @brief Set sfMessageKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -393,7 +393,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomain (soeOPTIONAL)
+     * @brief Set sfDomain (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -404,7 +404,7 @@ public:
     }
 
     /**
-     * @brief Set sfTransferRate (soeOPTIONAL)
+     * @brief Set sfTransferRate (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -415,7 +415,7 @@ public:
     }
 
     /**
-     * @brief Set sfSetFlag (soeOPTIONAL)
+     * @brief Set sfSetFlag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -426,7 +426,7 @@ public:
     }
 
     /**
-     * @brief Set sfClearFlag (soeOPTIONAL)
+     * @brief Set sfClearFlag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -437,7 +437,7 @@ public:
     }
 
     /**
-     * @brief Set sfTickSize (soeOPTIONAL)
+     * @brief Set sfTickSize (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
@@ -448,7 +448,7 @@ public:
     }
 
     /**
-     * @brief Set sfNFTokenMinter (soeOPTIONAL)
+     * @brief Set sfNFTokenMinter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&

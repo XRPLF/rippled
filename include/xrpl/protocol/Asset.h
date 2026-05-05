@@ -30,8 +30,8 @@ struct BadAsset
 inline BadAsset const&
 badAsset()
 {
-    static BadAsset const a;
-    return a;
+    static BadAsset const kA;
+    return kA;
 }
 
 /* Asset is an abstraction of three different issue types: XRP, IOU, MPT.
@@ -93,7 +93,7 @@ public:
     token() const;
 
     void
-    setJson(Json::Value& jv) const;
+    setJson(json::Value& jv) const;
 
     STAmount
     operator()(Number const&) const;
@@ -148,15 +148,15 @@ public:
 };
 
 template <ValidIssueType TIss>
-constexpr bool is_issue_v = std::is_same_v<TIss, Issue>;
+constexpr bool kIS_ISSUE_V = std::is_same_v<TIss, Issue>;
 
 template <ValidIssueType TIss>
-constexpr bool is_mptissue_v = std::is_same_v<TIss, MPTIssue>;
+constexpr bool kIS_MPTISSUE_V = std::is_same_v<TIss, MPTIssue>;
 
-inline Json::Value
-to_json(Asset const& asset)
+inline json::Value
+toJson(Asset const& asset)
 {
-    Json::Value jv;
+    json::Value jv;
     asset.setJson(jv);
     return jv;
 }
@@ -205,13 +205,13 @@ Asset::getAmountType() const
 {
     return visit(
         [&](Issue const& issue) -> Asset::AmtType {
-            constexpr AmountType<XRPAmount> xrp;
-            constexpr AmountType<IOUAmount> iou;
-            return native() ? AmtType(xrp) : AmtType(iou);
+            constexpr AmountType<XRPAmount> kXRP;
+            constexpr AmountType<IOUAmount> kIOU;
+            return native() ? AmtType(kXRP) : AmtType(kIOU);
         },
         [&](MPTIssue const& issue) -> Asset::AmtType {
-            constexpr AmountType<MPTAmount> mpt;
-            return AmtType(mpt);
+            constexpr AmountType<MPTAmount> kMPT;
+            return AmtType(kMPT);
         });
 }
 
@@ -237,12 +237,12 @@ constexpr std::weak_ordering
 operator<=>(Asset const& lhs, Asset const& rhs)
 {
     return std::visit(
-        []<ValidIssueType TLhs, ValidIssueType TRhs>(TLhs const& lhs_, TRhs const& rhs_) {
+        []<ValidIssueType TLhs, ValidIssueType TRhs>(TLhs const& lhs, TRhs const& rhs) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
             {
-                return std::weak_ordering(lhs_ <=> rhs_);
+                return std::weak_ordering(lhs <=> rhs);
             }
-            else if constexpr (is_issue_v<TLhs> && is_mptissue_v<TRhs>)
+            else if constexpr (kIS_ISSUE_V<TLhs> && kIS_MPTISSUE_V<TRhs>)
             {
                 return std::weak_ordering::greater;
             }
@@ -303,10 +303,10 @@ std::string
 to_string(Asset const& asset);
 
 bool
-validJSONAsset(Json::Value const& jv);
+validJSONAsset(json::Value const& jv);
 
 Asset
-assetFromJson(Json::Value const& jv);
+assetFromJson(json::Value const& jv);
 
 inline bool
 isConsistent(Asset const& asset)

@@ -84,7 +84,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         if (auto err = credentials::checkArray(
                 ctx.tx.getFieldArray(
                     authArrPresent ? sfAuthorizeCredentials : sfUnauthorizeCredentials),
-                maxCredentialsArraySize,
+                kMAX_CREDENTIALS_ARRAY_SIZE,
                 ctx.j);
             !isTesSuccess(err))
             return err;
@@ -226,7 +226,7 @@ DepositPreauth::doApply()
             auto cred = STObject::makeInnerObject(sfCredential);
             cred.setAccountID(sfIssuer, p.first);
             cred.setFieldVL(sfCredentialType, p.second);
-            sortedLE.push_back(std::move(cred));
+            sortedLE.pushBack(std::move(cred));
         }
 
         Keylet const preauthKey = keylet::depositPreauth(account_, sortedTX);

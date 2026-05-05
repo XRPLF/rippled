@@ -23,14 +23,14 @@ public:
     {
         auto const& h = ws->request();
         if (ipAllowed(
-                beast::IPAddressConversion::from_asio(ws->remote_endpoint()).address(),
+                beast::IPAddressConversion::fromAsio(ws->remoteEndpoint()).address(),
                 ws->port().secure_gateway_nets_v4,
                 ws->port().secure_gateway_nets_v6))
         {
             auto it = h.find("X-User");
             if (it != h.end())
                 user_ = it->value();
-            fwdfor_ = std::string(forwardedFor(h));
+            fwdfor_ = std::string(::xrpl::forwardedFor(h));
         }
     }
 
@@ -41,19 +41,19 @@ public:
     }
 
     [[nodiscard]] std::string_view
-    forwarded_for() const
+    forwardedFor() const
     {
         return fwdfor_;
     }
 
     void
-    send(Json::Value const& jv, bool) override
+    send(json::Value const& jv, bool) override
     {
         auto sp = ws_.lock();
         if (!sp)
             return;
         boost::beast::multi_buffer sb;
-        Json::stream(jv, [&](void const* data, std::size_t n) {
+        json::stream(jv, [&](void const* data, std::size_t n) {
             sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(data, n)));
         });
         auto m = std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb));

@@ -25,7 +25,7 @@ struct varint_traits<T, true>
 {
     explicit varint_traits() = default;
 
-    static std::size_t constexpr max = (8 * sizeof(T) + 6) / 7;
+    static std::size_t constexpr kMAX = (8 * sizeof(T) + 6) / 7;
 };
 
 // Returns: Number of bytes consumed or 0 on error,
@@ -33,7 +33,7 @@ struct varint_traits<T, true>
 //
 template <class = void>
 std::size_t
-read_varint(void const* buf, std::size_t buflen, std::size_t& t)
+readVarint(void const* buf, std::size_t buflen, std::size_t& t)
 {
     if (buflen == 0)
         return 0;
@@ -69,7 +69,7 @@ read_varint(void const* buf, std::size_t buflen, std::size_t& t)
 
 template <class T, std::enable_if_t<std::is_unsigned_v<T>>* = nullptr>
 std::size_t
-size_varint(T v)
+sizeVarint(T v)
 {
     std::size_t n = 0;
     do
@@ -82,7 +82,7 @@ size_varint(T v)
 
 template <class = void>
 std::size_t
-write_varint(void* p0, std::size_t v)
+writeVarint(void* p0, std::size_t v)
 {
     // NOLINTNEXTLINE(misc-const-correctness)
     std::uint8_t* p = reinterpret_cast<std::uint8_t*>(p0);
@@ -107,7 +107,7 @@ read(nudb::detail::istream& is, std::size_t& u)
     auto p1 = p0;
     while (*p1++ & 0x80)
         is(1);
-    read_varint(p0, p1 - p0, u);
+    readVarint(p0, p1 - p0, u);
 }
 
 // output stream
@@ -116,7 +116,7 @@ template <class T, std::enable_if_t<std::is_same_v<T, varint>>* = nullptr>
 void
 write(nudb::detail::ostream& os, std::size_t t)
 {
-    write_varint(os.data(size_varint(t)), t);
+    writeVarint(os.data(sizeVarint(t)), t);
 }
 
 }  // namespace xrpl::NodeStore

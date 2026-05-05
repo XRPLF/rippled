@@ -19,9 +19,9 @@ class XChainAddClaimAttestationBuilder;
  * @brief Transaction: XChainAddClaimAttestation
  *
  * Type: ttXCHAIN_ADD_CLAIM_ATTESTATION (45)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: createAcct
+ * Privileges: CreateAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainAddClaimAttestationBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAttestationSignerAccount (soeREQUIRED)
+     * @brief Get sfAttestationSignerAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfPublicKey (soeREQUIRED)
+     * @brief Get sfPublicKey (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * @brief Get sfSignature (soeREQUIRED)
+     * @brief Get sfSignature (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -92,7 +92,7 @@ public:
     }
 
     /**
-     * @brief Get sfOtherChainSource (soeREQUIRED)
+     * @brief Get sfOtherChainSource (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -103,7 +103,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -114,7 +114,7 @@ public:
     }
 
     /**
-     * @brief Get sfAttestationRewardAccount (soeREQUIRED)
+     * @brief Get sfAttestationRewardAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -125,7 +125,7 @@ public:
     }
 
     /**
-     * @brief Get sfWasLockingChainSend (soeREQUIRED)
+     * @brief Get sfWasLockingChainSend (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -136,7 +136,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainClaimID (soeREQUIRED)
+     * @brief Get sfXChainClaimID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -147,7 +147,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestination (soeOPTIONAL)
+     * @brief Get sfDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -177,7 +177,7 @@ public:
  * @brief Builder for XChainAddClaimAttestation transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class XChainAddClaimAttestationBuilder : public TransactionBuilderBase<XChainAddClaimAttestationBuilder>
@@ -232,7 +232,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -243,7 +243,7 @@ public:
     }
 
     /**
-     * @brief Set sfAttestationSignerAccount (soeREQUIRED)
+     * @brief Set sfAttestationSignerAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -254,7 +254,7 @@ public:
     }
 
     /**
-     * @brief Set sfPublicKey (soeREQUIRED)
+     * @brief Set sfPublicKey (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -265,7 +265,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignature (soeREQUIRED)
+     * @brief Set sfSignature (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -276,7 +276,7 @@ public:
     }
 
     /**
-     * @brief Set sfOtherChainSource (soeREQUIRED)
+     * @brief Set sfOtherChainSource (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -287,7 +287,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -298,7 +298,7 @@ public:
     }
 
     /**
-     * @brief Set sfAttestationRewardAccount (soeREQUIRED)
+     * @brief Set sfAttestationRewardAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -309,7 +309,7 @@ public:
     }
 
     /**
-     * @brief Set sfWasLockingChainSend (soeREQUIRED)
+     * @brief Set sfWasLockingChainSend (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -320,7 +320,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainClaimID (soeREQUIRED)
+     * @brief Set sfXChainClaimID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&
@@ -331,7 +331,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     XChainAddClaimAttestationBuilder&

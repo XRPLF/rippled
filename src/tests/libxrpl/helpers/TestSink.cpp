@@ -64,17 +64,17 @@ TestSink::writeAlways(beast::severities::Severity level, std::string const& text
     auto color = [level]() {
         switch (level)
         {
-            case beast::severities::kTrace:
+            case beast::severities::KTrace:
                 return "\033[34m";  // blue
-            case beast::severities::kDebug:
+            case beast::severities::KDebug:
                 return "\033[32m";  // green
-            case beast::severities::kInfo:
+            case beast::severities::KInfo:
                 return "\033[36m";  // cyan
-            case beast::severities::kWarning:
+            case beast::severities::KWarning:
                 return "\033[33m";  // yellow
-            case beast::severities::kError:
+            case beast::severities::KError:
                 return "\033[31m";  // red
-            case beast::severities::kFatal:
+            case beast::severities::KFatal:
             default:
                 break;
         }
@@ -84,17 +84,17 @@ TestSink::writeAlways(beast::severities::Severity level, std::string const& text
     auto prefix = [level]() {
         switch (level)
         {
-            case beast::severities::kTrace:
+            case beast::severities::KTrace:
                 return "TRC:";
-            case beast::severities::kDebug:
+            case beast::severities::KDebug:
                 return "DBG:";
-            case beast::severities::kInfo:
+            case beast::severities::KInfo:
                 return "INF:";
-            case beast::severities::kWarning:
+            case beast::severities::KWarning:
                 return "WRN:";
-            case beast::severities::kError:
+            case beast::severities::KError:
                 return "ERR:";
-            case beast::severities::kFatal:
+            case beast::severities::KFatal:
             default:
                 break;
         }
@@ -104,19 +104,19 @@ TestSink::writeAlways(beast::severities::Severity level, std::string const& text
     auto& stream = [level]() -> std::ostream& {
         switch (level)
         {
-            case beast::severities::kError:
-            case beast::severities::kFatal:
+            case beast::severities::KError:
+            case beast::severities::KFatal:
                 return std::cerr;
             default:
                 return std::cout;
         }
     }();
 
-    constexpr auto reset = "\033[0m";
+    constexpr auto kRESET = "\033[0m";
 
     if (supportsColor)
     {
-        stream << color << prefix << " " << text << reset << std::endl;
+        stream << color << prefix << " " << text << kRESET << std::endl;
     }
     else
     {
