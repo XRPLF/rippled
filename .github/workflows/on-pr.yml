@@ -158,29 +158,10 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  generate-version:
-    needs: should-run
-    if: ${{ needs.should-run.outputs.go == 'true' }}
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          sparse-checkout: |
-            .github/actions/generate-version
-            src/libxrpl/protocol/BuildInfo.cpp
-      - name: Generate version
-        id: version
-        uses: ./.github/actions/generate-version
-
   package:
-    needs: [should-run, build-test, generate-version]
+    needs: [should-run, build-test]
     if: ${{ needs.should-run.outputs.go == 'true' && needs.should-run.outputs.package == 'true' }}
     uses: ./.github/workflows/reusable-package.yml
-    with:
-      version: ${{ needs.generate-version.outputs.version }}
 
   upload-recipe:
     needs:

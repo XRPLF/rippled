@@ -13,10 +13,6 @@ on:
         required: false
         type: string
         default: "1"
-      version:
-        description: "Version string used for naming the output artifact."
-        required: true
-        type: string
 
 defaults:
   run:
@@ -45,8 +41,23 @@ jobs:
         run: |
           ./generate.py --packaging --config=linux.json >> "${GITHUB_OUTPUT}"
 
+  generate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            .github/actions/generate-version
+            src/libxrpl/protocol/BuildInfo.cpp
+      - name: Generate version
+        id: version
+        uses: ./.github/actions/generate-version
+
   package:
-    needs: generate-matrix
+    needs: [generate-matrix, generate-version]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
@@ -72,7 +83,7 @@ jobs:
 
       - name: Build package
         env:
-          PKG_VERSION: ${{ inputs.version }}
+          PKG_VERSION: ${{ needs.generate-version.outputs.version }}
           PKG_RELEASE: ${{ inputs.pkg_release }}
         run: ./package/build_pkg.sh
 
@@ -80,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: ${{ github.event.repository.visibility == 'public' }}
         with:
-          name: ${{ matrix.artifact_name }}-pkg-${{ inputs.version }}
+          name: ${{ matrix.artifact_name }}-pkg-${{ needs.generate-version.outputs.version }}
           path: |
             ${{ env.BUILD_DIR }}/debbuild/*.deb
             ${{ env.BUILD_DIR }}/debbuild/*.ddeb
