@@ -171,6 +171,7 @@ build_deb() {
     cp "${staging}/xrpld.service"        "${staging}/debian/xrpld.service"
     cp "${staging}/xrpld.sysusers"       "${staging}/debian/xrpld.sysusers"
     cp "${staging}/xrpld.tmpfiles"       "${staging}/debian/xrpld.tmpfiles"
+    cp "${staging}/xrpld.logrotate"      "${staging}/debian/xrpld.logrotate"
     cp "${staging}/update-xrpld.service" "${staging}/debian/xrpld.update-xrpld.service"
     cp "${staging}/update-xrpld.timer"   "${staging}/debian/xrpld.update-xrpld.timer"
 
