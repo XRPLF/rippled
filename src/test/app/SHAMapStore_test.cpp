@@ -231,7 +231,7 @@ public:
 
         store.rendezvous();
 
-        BEAST_EXPECT(env.closed()->info().seq == deleteInterval + 3);
+        BEAST_EXPECT(env.closed()->header().seq == deleteInterval + 3);
         lastRotated = store.getLastRotated();
         BEAST_EXPECT(lastRotated == deleteInterval + 5);
         BEAST_EXPECT(lastRotated == 13);
@@ -606,9 +606,9 @@ public:
         auto& ns = env.app().getNodeStore();
         std::map<LedgerIndex, uint256> hashes;
         auto storeHash = [&]() {
-            hashes.emplace(env.current()->info().seq, env.current()->info().hash);
+            hashes.emplace(env.current()->header().seq, env.current()->header().hash);
 
-            auto const& root = ns.fetchNodeObject(hashes[env.current()->info().seq]);
+            auto const& root = ns.fetchNodeObject(hashes[env.current()->header().seq]);
             BEAST_EXPECT(root);
         };
 
