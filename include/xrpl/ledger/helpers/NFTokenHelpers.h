@@ -20,10 +20,6 @@ removeTokenOffersWithLimit(
     Keylet const& directory,
     std::size_t maxDeletableOffers);
 
-/** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
-TER
-notTooManyOffers(ReadView const& view, uint256 const& nftokenID);
-
 /** Finds the specified token in the owner's token directory. */
 std::optional<STObject>
 findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID);
