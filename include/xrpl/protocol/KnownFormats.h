@@ -75,7 +75,7 @@ public:
         Derived classes will load the object with all the known formats.
     */
 private:
-    KnownFormats() : name_(beast::type_name<Derived>())
+    KnownFormats() : name_(beast::typeName<Derived>())
     {
     }
 
@@ -159,7 +159,7 @@ protected:
     {
         if (auto const item = findByType(type))
         {
-            LogicError(
+            logicError(
                 std::string("Duplicate key for item '") + name + "': already maps to " +
                 item->getName());
         }

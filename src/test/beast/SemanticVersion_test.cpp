@@ -5,7 +5,7 @@
 
 namespace beast {
 
-class SemanticVersion_test : public unit_test::suite
+class SemanticVersion_test : public unit_test::Suite
 {
     using identifier_list = SemanticVersion::identifier_list;
 

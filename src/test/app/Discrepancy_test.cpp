@@ -22,7 +22,7 @@
 
 namespace xrpl {
 
-class Discrepancy_test : public beast::unit_test::suite
+class Discrepancy_test : public beast::unit_test::Suite
 {
     // This is a legacy test ported from js/coffee. The ledger
     // state was originally setup via a saved ledger file and the relevant
@@ -36,64 +36,64 @@ class Discrepancy_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, features};
 
-        Account const A1{"A1"};
-        Account const A2{"A2"};
-        Account const A3{"A3"};
-        Account const A4{"A4"};
-        Account const A5{"A5"};
-        Account const A6{"A6"};
-        Account const A7{"A7"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const a3{"A3"};
+        Account const a4{"A4"};
+        Account const a5{"A5"};
+        Account const a6{"A6"};
+        Account const a7{"A7"};
 
-        env.fund(XRP(2000), A1);
-        env.fund(XRP(1000), A2, A6, A7);
-        env.fund(XRP(5000), A3);
-        env.fund(XRP(1000000), A4);
-        env.fund(XRP(600000), A5);
+        env.fund(XRP(2000), a1);
+        env.fund(XRP(1000), a2, a6, a7);
+        env.fund(XRP(5000), a3);
+        env.fund(XRP(1000000), a4);
+        env.fund(XRP(600000), a5);
         env.close();
 
-        env(trust(A1, A3["CNY"](200000)));
-        env(pay(A3, A1, A3["CNY"](31)));
+        env(trust(a1, a3["CNY"](200000)));
+        env(pay(a3, a1, a3["CNY"](31)));
         env.close();
 
-        env(trust(A1, A2["JPY"](1000000)));
-        env(pay(A2, A1, A2["JPY"](729117)));
+        env(trust(a1, a2["JPY"](1000000)));
+        env(pay(a2, a1, a2["JPY"](729117)));
         env.close();
 
-        env(trust(A4, A2["JPY"](10000000)));
-        env(pay(A2, A4, A2["JPY"](470056)));
+        env(trust(a4, a2["JPY"](10000000)));
+        env(pay(a2, a4, a2["JPY"](470056)));
         env.close();
 
-        env(trust(A5, A3["CNY"](50000)));
-        env(pay(A3, A5, A3["CNY"](8683)));
+        env(trust(a5, a3["CNY"](50000)));
+        env(pay(a3, a5, a3["CNY"](8683)));
         env.close();
 
-        env(trust(A6, A3["CNY"](3000)));
-        env(pay(A3, A6, A3["CNY"](293)));
+        env(trust(a6, a3["CNY"](3000)));
+        env(pay(a3, a6, a3["CNY"](293)));
         env.close();
 
-        env(trust(A7, A6["CNY"](50000)));
-        env(pay(A6, A7, A6["CNY"](261)));
+        env(trust(a7, a6["CNY"](50000)));
+        env(pay(a6, a7, a6["CNY"](261)));
         env.close();
 
-        env(offer(A4, XRP(49147), A2["JPY"](34501)));
-        env(offer(A5, A3["CNY"](3150), XRP(80086)));
-        env(offer(A7, XRP(1233), A6["CNY"](25)));
+        env(offer(a4, XRP(49147), a2["JPY"](34501)));
+        env(offer(a5, a3["CNY"](3150), XRP(80086)));
+        env(offer(a7, XRP(1233), a6["CNY"](25)));
         env.close();
 
         test::PathSet const payPaths{
-            test::Path{A2["JPY"], A2},
-            test::Path{XRP, A2["JPY"], A2},
-            test::Path{A6, XRP, A2["JPY"], A2}};
+            test::TestPath{a2["JPY"], a2},
+            test::TestPath{XRP, a2["JPY"], a2},
+            test::TestPath{a6, XRP, a2["JPY"], a2}};
 
-        env(pay(A1, A1, A2["JPY"](1000)),
-            json(payPaths.json()),
-            txflags(tfPartialPayment),
-            sendmax(A3["CNY"](56)));
+        env(pay(a1, a1, a2["JPY"](1000)),
+            Json(payPaths.json()),
+            Txflags(tfPartialPayment),
+            Sendmax(a3["CNY"](56)));
         env.close();
 
-        Json::Value jrq2;
+        json::Value jrq2;
         jrq2[jss::binary] = false;
-        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
+        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::KNone)[jss::hash];
         jrq2[jss::id] = 3;
         auto jrr = env.rpc("json", "tx", to_string(jrq2))[jss::result];
         uint64_t const fee{jrr[jss::Fee].asUInt()};
@@ -103,7 +103,7 @@ class Discrepancy_test : public beast::unit_test::suite
         BEAST_EXPECT(meta[sfAffectedNodes.fieldName].size() == 9);
         for (auto const& an : meta[sfAffectedNodes.fieldName])
         {
-            Json::Value node;
+            json::Value node;
             if (an.isMember(sfCreatedNode.fieldName))
             {
                 node = an[sfCreatedNode.fieldName];
@@ -119,10 +119,10 @@ class Discrepancy_test : public beast::unit_test::suite
 
             if (node && node[sfLedgerEntryType.fieldName] == jss::AccountRoot)
             {
-                Json::Value prevFields = node.isMember(sfPreviousFields.fieldName)
+                json::Value prevFields = node.isMember(sfPreviousFields.fieldName)
                     ? node[sfPreviousFields.fieldName]
                     : node[sfNewFields.fieldName];
-                Json::Value finalFields = node.isMember(sfFinalFields.fieldName)
+                json::Value finalFields = node.isMember(sfFinalFields.fieldName)
                     ? node[sfFinalFields.fieldName]
                     : node[sfNewFields.fieldName];
                 if (prevFields)
@@ -147,7 +147,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testXRPDiscrepancy(sa - featurePermissionedDEX);
         testXRPDiscrepancy(sa);
     }

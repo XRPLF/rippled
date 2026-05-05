@@ -117,7 +117,7 @@ public:
     template <Compatible<ValueUnit> Other>
     constexpr ValueUnit(ValueUnit<unit_type, Other> const& value)
         requires SafeToCast<Other, value_type>
-        : ValueUnit(safe_cast<value_type>(value.value()))
+        : ValueUnit(safeCast<value_type>(value.value()))
     {
     }
 
@@ -209,7 +209,7 @@ public:
         return *this;
     }
 
-    template <Integral transparent = value_type>
+    template <Integral Transparent = value_type>
     ValueUnit&
     operator%=(value_type const& rhs)
     {
@@ -291,22 +291,22 @@ public:
     // known valid type tags can be converted to JSON. At the time
     // of implementation, that includes all known tags, but more may
     // be added in the future.
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     jsonClipped() const
         requires Usable<ValueUnit>
     {
         if constexpr (std::is_integral_v<value_type>)
         {
             using jsontype =
-                std::conditional_t<std::is_signed_v<value_type>, Json::Int, Json::UInt>;
+                std::conditional_t<std::is_signed_v<value_type>, json::Int, json::UInt>;
 
-            constexpr auto min = std::numeric_limits<jsontype>::min();
-            constexpr auto max = std::numeric_limits<jsontype>::max();
+            constexpr auto kMIN = std::numeric_limits<jsontype>::min();
+            constexpr auto kMAX = std::numeric_limits<jsontype>::max();
 
-            if (value_ < min)
-                return min;
-            if (value_ > max)
-                return max;
+            if (value_ < kMIN)
+                return kMIN;
+            if (value_ > kMAX)
+                return kMAX;
             return static_cast<jsontype>(value_);
         }
         else
@@ -392,14 +392,14 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     }
 
     using desttype = typename Dest::value_type;
-    constexpr auto max = std::numeric_limits<desttype>::max();
+    constexpr auto kMAX = std::numeric_limits<desttype>::max();
 
     // Shortcuts, since these happen a lot in the real world
     if (value == div)
         return mul;
     if (mul.value() == div.value())
     {
-        if (value.value() > max)
+        if (value.value() > kMAX)
             return std::nullopt;
         return Dest{static_cast<desttype>(value.value())};
     }
@@ -414,7 +414,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
 
     auto quotient = product / div.value();
 
-    if (quotient > max)
+    if (quotient > kMAX)
         return std::nullopt;
 
     return Dest{static_cast<desttype>(quotient)};
@@ -494,34 +494,34 @@ mulDiv(std::uint64_t value, Source1 mul, Source2 div)
 
 template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
 constexpr Dest
-safe_cast(Src s) noexcept
+safeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{safe_cast<typename Dest::value_type>(s.value())};
+    return Dest{safeCast<typename Dest::value_type>(s.value())};
 }
 
 template <unit::IntegralValue Dest, unit::Integral Src>
 constexpr Dest
-safe_cast(Src s) noexcept
+safeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{safe_cast<typename Dest::value_type>(s)};
+    return Dest{safeCast<typename Dest::value_type>(s)};
 }
 
 template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
 constexpr Dest
-unsafe_cast(Src s) noexcept
+unsafeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{unsafe_cast<typename Dest::value_type>(s.value())};
+    return Dest{unsafeCast<typename Dest::value_type>(s.value())};
 }
 
 template <unit::IntegralValue Dest, unit::Integral Src>
 constexpr Dest
-unsafe_cast(Src s) noexcept
+unsafeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{unsafe_cast<typename Dest::value_type>(s)};
+    return Dest{unsafeCast<typename Dest::value_type>(s)};
 }
 
 }  // namespace xrpl

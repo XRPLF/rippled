@@ -43,7 +43,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     }
 
     auto const credType = ctx.tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > maxCredentialTypeLength))
+    if (credType.empty() || (credType.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;

@@ -45,17 +45,17 @@ namespace xrpl {
 namespace base64 {
 
 inline char const*
-get_alphabet()
+getAlphabet()
 {
-    static char constexpr tab[] = {
+    static char constexpr kTAB[] = {
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
-    return &tab[0];
+    return &kTAB[0];
 }
 
 inline signed char const*
-get_inverse()
+getInverse()
 {
-    static signed char constexpr tab[] = {
+    static signed char constexpr kTAB[] = {
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  //   0-15
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  //  16-31
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,  //  32-47
@@ -73,17 +73,17 @@ get_inverse()
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  // 224-239
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1   // 240-255
     };
-    return &tab[0];
+    return &kTAB[0];
 }
 
 /// Returns max chars needed to encode a base64 string
-std::size_t constexpr encoded_size(std::size_t n)
+std::size_t constexpr encodedSize(std::size_t n)
 {
     return 4 * ((n + 2) / 3);
 }
 
 /// Returns max bytes needed to decode a base64 string
-std::size_t constexpr decoded_size(std::size_t n)
+std::size_t constexpr decodedSize(std::size_t n)
 {
     return ((n / 4) * 3) + 2;
 }
@@ -105,7 +105,7 @@ encode(void* dest, void const* src, std::size_t len)
 {
     char* out = static_cast<char*>(dest);  // NOLINT(misc-const-correctness)
     char const* in = static_cast<char const*>(src);
-    auto const tab = base64::get_alphabet();
+    auto const tab = base64::getAlphabet();
 
     for (auto n = len / 3; n > 0; --n)
     {
@@ -160,7 +160,7 @@ decode(void* dest, char const* src, std::size_t len)
     int i = 0;
     int j = 0;
 
-    auto const inverse = base64::get_inverse();
+    auto const inverse = base64::getInverse();
 
     while (((len--) != 0u) && *in != '=')
     {
@@ -197,19 +197,19 @@ decode(void* dest, char const* src, std::size_t len)
 }  // namespace base64
 
 std::string
-base64_encode(std::uint8_t const* data, std::size_t len)
+base64Encode(std::uint8_t const* data, std::size_t len)
 {
     std::string dest;
-    dest.resize(base64::encoded_size(len));
+    dest.resize(base64::encodedSize(len));
     dest.resize(base64::encode(&dest[0], data, len));
     return dest;
 }
 
 std::string
-base64_decode(std::string_view data)
+base64Decode(std::string_view data)
 {
     std::string dest;
-    dest.resize(base64::decoded_size(data.size()));
+    dest.resize(base64::decodedSize(data.size()));
     auto const result = base64::decode(&dest[0], data.data(), data.size());
     dest.resize(result.first);
     return dest;

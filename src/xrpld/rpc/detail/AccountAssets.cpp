@@ -25,14 +25,14 @@ accountSourceAssets(
     if (includeXRP)
         assets.insert(xrpCurrency());
 
-    if (auto const lines = lrCache->getRippleLines(account, LineDirection::outgoing))
+    if (auto const lines = lrCache->getRippleLines(account, LineDirection::Outgoing))
     {
         for (auto const& rspEntry : *lines)
         {
             auto& saBalance = rspEntry.getBalance();
 
             // Filter out non
-            if (saBalance > beast::zero
+            if (saBalance > beast::kZERO
                 // Have IOUs to send.
                 || (rspEntry.getLimitPeer()
                     // Peer extends credit.
@@ -69,7 +69,7 @@ accountDestAssets(
         assets.insert(xrpCurrency());
     // Even if account doesn't exist
 
-    if (auto const lines = lrCache->getRippleLines(account, LineDirection::outgoing))
+    if (auto const lines = lrCache->getRippleLines(account, LineDirection::Outgoing))
     {
         for (auto const& rspEntry : *lines)
         {

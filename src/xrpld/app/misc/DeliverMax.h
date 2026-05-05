@@ -2,9 +2,9 @@
 
 #include <xrpl/protocol/TxFormats.h>
 
-namespace Json {
+namespace json {
 class Value;
-}  // namespace Json
+}  // namespace json
 
 namespace xrpl::RPC {
 
@@ -18,7 +18,7 @@ namespace xrpl::RPC {
  */
 
 void
-insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion);
+insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion);
 
 /** @} */
 
