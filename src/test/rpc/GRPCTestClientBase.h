@@ -12,7 +12,7 @@ namespace test {
 struct GRPCTestClientBase
 {
     explicit GRPCTestClientBase(std::string const& port)
-        : stub_(
+        : stub(
               org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
                   grpc::CreateChannel(
                       beast::IP::Endpoint(
@@ -25,7 +25,7 @@ struct GRPCTestClientBase
 
     grpc::Status status;
     grpc::ClientContext context;
-    std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub> stub_;
+    std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub> stub;
 };
 
 }  // namespace test

@@ -18,29 +18,29 @@ concept SafeToCast = (std::is_integral_v<Src> && std::is_integral_v<Dest>) &&
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
-safe_cast(Src s) noexcept
+safeCast(Src s) noexcept
 {
     static_assert(
         std::is_signed_v<Dest> || std::is_unsigned_v<Src>, "Cannot cast signed to unsigned");
-    constexpr unsigned not_same = std::is_signed_v<Dest> != std::is_signed_v<Src>;
+    constexpr unsigned kNOT_SAME = std::is_signed_v<Dest> != std::is_signed_v<Src>;
     static_assert(
-        sizeof(Dest) >= sizeof(Src) + not_same,
+        sizeof(Dest) >= sizeof(Src) + kNOT_SAME,
         "Destination is too small to hold all values of source");
     return static_cast<Dest>(s);
 }
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
-safe_cast(Src s) noexcept
+safeCast(Src s) noexcept
 {
-    return static_cast<Dest>(safe_cast<std::underlying_type_t<Dest>>(s));
+    return static_cast<Dest>(safeCast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
-safe_cast(Src s) noexcept
+safeCast(Src s) noexcept
 {
-    return safe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
+    return safeCast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
 }
 
 // unsafe_cast explicitly flags a static_cast as not necessarily able to hold
@@ -49,7 +49,7 @@ safe_cast(Src s) noexcept
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
-unsafe_cast(Src s) noexcept
+unsafeCast(Src s) noexcept
 {
     static_assert(
         !SafeToCast<Src, Dest>,
@@ -60,22 +60,22 @@ unsafe_cast(Src s) noexcept
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
-unsafe_cast(Src s) noexcept
+unsafeCast(Src s) noexcept
 {
-    return static_cast<Dest>(unsafe_cast<std::underlying_type_t<Dest>>(s));
+    return static_cast<Dest>(unsafeCast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
-unsafe_cast(Src s) noexcept
+unsafeCast(Src s) noexcept
 {
-    return unsafe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
+    return unsafeCast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
 }
 
 template <class Dest, class Src>
     requires std::is_pointer_v<Dest>
 inline Dest
-safe_downcast(Src* s) noexcept
+safeDowncast(Src* s) noexcept
 {
 #ifdef NDEBUG
     return static_cast<Dest>(s);  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
@@ -89,7 +89,7 @@ safe_downcast(Src* s) noexcept
 template <class Dest, class Src>
     requires std::is_lvalue_reference_v<Dest>
 inline Dest
-safe_downcast(Src& s) noexcept
+safeDowncast(Src& s) noexcept
 {
 #ifndef NDEBUG
     XRPL_ASSERT(

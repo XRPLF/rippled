@@ -11,7 +11,7 @@ namespace xrpl {
 void
 convertBlobsToTxResult(
     RelationalDatabase::AccountTxs& to,
-    std::uint32_t ledger_index,
+    std::uint32_t ledgerIndex,
     std::string const& status,
     Blob const& rawTxn,
     Blob const& rawMeta,
