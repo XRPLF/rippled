@@ -9,7 +9,7 @@
 namespace xrpl::test::jtx {
 
 void
-domain::operator()(Env&, JTx& jt) const
+Domain::operator()(Env&, JTx& jt) const
 {
     jt[sfDomainID.jsonName] = to_string(v_);
 }

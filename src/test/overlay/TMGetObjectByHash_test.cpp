@@ -47,7 +47,7 @@ using namespace jtx;
  * Tuning::hardMaxReplyNodes to prevent excessive memory usage and
  * potential DoS attacks from peers requesting large numbers of objects.
  */
-class TMGetObjectByHash_test : public beast::unit_test::suite
+class TMGetObjectByHash_test : public beast::unit_test::Suite
 {
     using middle_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream<middle_type>;
@@ -66,17 +66,17 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
             PublicKey const& publicKey,
             ProtocolVersion protocol,
             Resource::Consumer consumer,
-            std::unique_ptr<TMGetObjectByHash_test::stream_type>&& stream_ptr,
+            std::unique_ptr<TMGetObjectByHash_test::stream_type>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
                   app,
-                  id_++,
+                  id++,
                   slot,
                   std::move(request),
                   publicKey,
                   protocol,
                   consumer,
-                  std::move(stream_ptr),
+                  std::move(streamPtr),
                   overlay)
         {
         }
@@ -103,15 +103,15 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         static void
         resetId()
         {
-            id_ = 0;
+            id = 0;
         }
 
     private:
-        inline static Peer::id_t id_ = 0;
+        inline static Peer::id_t id = 0;
         std::shared_ptr<Message> lastSentMessage_;
     };
 
-    shared_context context_{make_SSLContext("")};
+    shared_context context_{makeSslContext("")};
     ProtocolVersion protocolVersion_{1, 7};
 
     std::shared_ptr<PeerTest>
@@ -119,15 +119,15 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
     {
         auto& overlay = dynamic_cast<OverlayImpl&>(env.app().getOverlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
-        auto stream_ptr =
+        auto streamPtr =
             std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
 
         beast::IP::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
         beast::IP::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
 
-        PublicKey const key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
-        auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
+        auto [slot, _] = overlay.peerFinder().newInboundSlot(local, remote);
 
         auto peer = std::make_shared<PeerTest>(
             env.app(),
@@ -136,10 +136,10 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
             key,
             protocolVersion_,
             consumer,
-            std::move(stream_ptr),
+            std::move(streamPtr),
             overlay);
 
-        overlay.add_active(peer);
+        overlay.addActive(peer);
         return peer;
     }
 
@@ -159,7 +159,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
 
             Blob data(100, static_cast<unsigned char>(i % 256));
             nodeStore.store(
-                NodeObjectType::hotLEDGER, std::move(data), hash, nodeStore.earliestLedgerSeq());
+                NodeObjectType::Ledger, std::move(data), hash, nodeStore.earliestLedgerSeq());
         }
 
         // Create a request with more objects than hardMaxReplyNodes
@@ -213,7 +213,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
     void
     run() override
     {
-        int const limit = static_cast<int>(Tuning::hardMaxReplyNodes);
+        int const limit = static_cast<int>(Tuning::HardMaxReplyNodes);
         testReplyLimit(limit + 1, limit);
         testReplyLimit(limit, limit);
         testReplyLimit(limit - 1, limit - 1);

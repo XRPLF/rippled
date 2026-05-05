@@ -24,7 +24,7 @@
 
 namespace xrpl::test {
 
-class LedgerMaster_test : public beast::unit_test::suite
+class LedgerMaster_test : public beast::unit_test::Suite
 {
     static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
@@ -187,7 +187,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
     }
 

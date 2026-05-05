@@ -25,35 +25,35 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     std::shared_ptr<ReadView const> const& ledger,
     std::shared_ptr<STTx const> const& txn,
     std::shared_ptr<STObject const> const& met)
-    : mTxn(txn)
-    , mMeta(txn->getTransactionID(), ledger->seq(), *met)
-    , mAffected(mMeta.getAffectedAccounts())
+    : txn_(txn)
+    , meta_(txn->getTransactionID(), ledger->seq(), *met)
+    , affected_(meta_.getAffectedAccounts())
 {
     XRPL_ASSERT(!ledger->open(), "xrpl::AcceptedLedgerTx::AcceptedLedgerTx : valid ledger state");
 
     Serializer s;
     met->add(s);
-    mRawMeta = std::move(s.modData());
+    rawMeta_ = std::move(s.modData());
 
-    mJson = Json::objectValue;
-    mJson[jss::transaction] = mTxn->getJson(JsonOptions::none);
+    json_ = json::ObjectValue;
+    json_[jss::transaction] = txn_->getJson(JsonOptions::KNone);
 
-    mJson[jss::meta] = mMeta.getJson(JsonOptions::none);
-    mJson[jss::raw_meta] = strHex(mRawMeta);
+    json_[jss::meta] = meta_.getJson(JsonOptions::KNone);
+    json_[jss::raw_meta] = strHex(rawMeta_);
 
-    mJson[jss::result] = transHuman(mMeta.getResultTER());
+    json_[jss::result] = transHuman(meta_.getResultTER());
 
-    if (!mAffected.empty())
+    if (!affected_.empty())
     {
-        Json::Value& affected = (mJson[jss::affected] = Json::arrayValue);
-        for (auto const& account : mAffected)
+        json::Value& affected = (json_[jss::affected] = json::ArrayValue);
+        for (auto const& account : affected_)
             affected.append(toBase58(account));
     }
 
-    if (mTxn->getTxnType() == ttOFFER_CREATE)
+    if (txn_->getTxnType() == ttOFFER_CREATE)
     {
-        auto const& account = mTxn->getAccountID(sfAccount);
-        auto const amount = mTxn->getFieldAmount(sfTakerGets);
+        auto const& account = txn_->getAccountID(sfAccount);
+        auto const amount = txn_->getFieldAmount(sfTakerGets);
 
         // If the offer create is not self funded then add the owner balance
         if (account != amount.getIssuer())
@@ -62,10 +62,10 @@ AcceptedLedgerTx::AcceptedLedgerTx(
                 *ledger,
                 account,
                 amount,
-                FreezeHandling::fhIGNORE_FREEZE,
-                AuthHandling::ahIGNORE_AUTH,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 beast::Journal{beast::Journal::getNullSink()});
-            mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText();
+            json_[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
     }
 }
@@ -73,8 +73,8 @@ AcceptedLedgerTx::AcceptedLedgerTx(
 std::string
 AcceptedLedgerTx::getEscMeta() const
 {
-    XRPL_ASSERT(!mRawMeta.empty(), "xrpl::AcceptedLedgerTx::getEscMeta : metadata is set");
-    return sqlBlobLiteral(mRawMeta);
+    XRPL_ASSERT(!rawMeta_.empty(), "xrpl::AcceptedLedgerTx::getEscMeta : metadata is set");
+    return sqlBlobLiteral(rawMeta_);
 }
 
 }  // namespace xrpl
