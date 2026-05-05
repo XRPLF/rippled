@@ -1356,90 +1356,6 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     }
 
     void
-    testHybridOfferCrossingQuality(FeatureBitset features)
-    {
-        bool const fixEnabled = features[fixCleanup3_2_0];
-        testcase << "Hybrid offer crossing quality"
-                 << (fixEnabled ? " (fixCleanup3_2_0)" : " (pre-fix)");
-
-        // Partially-crossed hybrid offer should have consistent quality
-        // across both book directories.
-        //
-        // Steps:
-        //   - Bob places a hybrid offer.
-        //   - Alice places an opposing hybrid offer that partially crosses.
-        //
-        // Verify:
-        //   - Domain-book key quality == its sfExchangeRate.
-        //   - Post-fix: open-book key quality == domain-book key quality.
-        //   - Pre-fix: open-book key quality != domain-book key quality
-        //     (key used post-crossing rate, sfExchangeRate used pre-crossing).
-        Env env(*this, features);
-        auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
-            PermissionedDEX(env);
-
-        // Bob places a hybrid offer: TakerPays = XRP(100), TakerGets = USD(40)
-        auto const bobOfferSeq{env.seq(bob_)};
-        env(offer(bob_, XRP(100), USD(40)), Txflags(tfHybrid), Domain(domainID));
-        env.close();
-        BEAST_EXPECT(offerExists(env, bob_, bobOfferSeq));
-
-        // Alice places a hybrid offer in the opposite direction that
-        // partially crosses Bob's offer.
-        // Alice: TakerPays = USD(100), TakerGets = XRP(300) (rate = 3 XRP/USD)
-        // Bob's offer is at a better rate (2.5 XRP/USD) so crossing occurs.
-        auto const aliceOfferSeq{env.seq(alice_)};
-        env(offer(alice_, USD(100), XRP(300)), Txflags(tfHybrid), Domain(domainID));
-        env.close();
-
-        // After crossing, Alice's remaining offer should be placed.
-        auto const sle = env.le(keylet::offer(alice_.id(), aliceOfferSeq));
-        BEAST_EXPECT(sle);
-        BEAST_EXPECT(sle->isFieldPresent(sfAdditionalBooks));
-        BEAST_EXPECT(sle->getFieldArray(sfAdditionalBooks).size() == 1);
-
-        auto const domainDirKey = sle->getFieldH256(sfBookDirectory);
-        auto const openDirKey =
-            sle->getFieldArray(sfAdditionalBooks)[0].getFieldH256(sfBookDirectory);
-
-        auto const domainQuality = getQuality(domainDirKey);
-        auto const openQuality = getQuality(openDirKey);
-
-        // Read the directory SLEs and check sfExchangeRate vs key quality.
-        auto const domainDirSle = env.le(Keylet(ltDIR_NODE, domainDirKey));
-        auto const openDirSle = env.le(Keylet(ltDIR_NODE, openDirKey));
-        BEAST_EXPECT(domainDirSle);
-        BEAST_EXPECT(openDirSle);
-
-        auto const domainExRate = domainDirSle->getFieldU64(sfExchangeRate);
-        auto const openExRate = openDirSle->getFieldU64(sfExchangeRate);
-
-        // Domain directory: sfExchangeRate should always match key quality
-        // (both use the pre-crossing rate).
-        BEAST_EXPECT(domainExRate == domainQuality);
-
-        if (fixEnabled)
-        {
-            // Post-fix: both directory keys use the pre-crossing rate.
-            BEAST_EXPECT(domainQuality == openQuality);
-            // sfExchangeRate matches key quality on both directories.
-            BEAST_EXPECT(openExRate == openQuality);
-        }
-        else
-        {
-            // Pre-fix: the open-book directory uses the post-crossing
-            // rate, which may differ from the domain-book directory.
-            BEAST_EXPECT(domainQuality != openQuality);
-            // sfExchangeRate (pre-crossing rate) does NOT match the
-            // open-book key quality (post-crossing rate).
-            BEAST_EXPECT(openExRate != openQuality);
-            // But sfExchangeRate does match the domain quality (both
-            // are the pre-crossing rate).
-            BEAST_EXPECT(openExRate == domainQuality);
-        }
-    }
-
-    void
     testAutoBridge(FeatureBitset features)
     {
         testcase("Auto bridge");
@@ -1543,6 +1459,90 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     }
 
     void
+    testHybridOfferCrossingQuality(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_2_0];
+        testcase << "Hybrid offer crossing quality"
+                 << (fixEnabled ? " (fixCleanup3_2_0)" : " (pre-fix)");
+
+        // Partially-crossed hybrid offer should have consistent quality
+        // across both book directories.
+        //
+        // Steps:
+        //   - Bob places a hybrid offer.
+        //   - Alice places an opposing hybrid offer that partially crosses.
+        //
+        // Verify:
+        //   - Domain-book key quality == its sfExchangeRate.
+        //   - Post-fix: open-book key quality == domain-book key quality.
+        //   - Pre-fix: open-book key quality != domain-book key quality
+        //     (key used post-crossing rate, sfExchangeRate used pre-crossing).
+        Env env(*this, features);
+        auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
+            PermissionedDEX(env);
+
+        // Bob places a hybrid offer: TakerPays = XRP(100), TakerGets = USD(40)
+        auto const bobOfferSeq{env.seq(bob_)};
+        env(offer(bob_, XRP(100), USD(40)), Txflags(tfHybrid), Domain(domainID));
+        env.close();
+        BEAST_EXPECT(offerExists(env, bob_, bobOfferSeq));
+
+        // Alice places a hybrid offer in the opposite direction that
+        // partially crosses Bob's offer.
+        // Alice: TakerPays = USD(100), TakerGets = XRP(300) (rate = 3 XRP/USD)
+        // Bob's offer is at a better rate (2.5 XRP/USD) so crossing occurs.
+        auto const aliceOfferSeq{env.seq(alice_)};
+        env(offer(alice_, USD(100), XRP(300)), Txflags(tfHybrid), Domain(domainID));
+        env.close();
+
+        // After crossing, Alice's remaining offer should be placed.
+        auto const sle = env.le(keylet::offer(alice_.id(), aliceOfferSeq));
+        BEAST_EXPECT(sle);
+        BEAST_EXPECT(sle->isFieldPresent(sfAdditionalBooks));
+        BEAST_EXPECT(sle->getFieldArray(sfAdditionalBooks).size() == 1);
+
+        auto const domainDirKey = sle->getFieldH256(sfBookDirectory);
+        auto const openDirKey =
+            sle->getFieldArray(sfAdditionalBooks)[0].getFieldH256(sfBookDirectory);
+
+        auto const domainQuality = getQuality(domainDirKey);
+        auto const openQuality = getQuality(openDirKey);
+
+        // Read the directory SLEs and check sfExchangeRate vs key quality.
+        auto const domainDirSle = env.le(Keylet(ltDIR_NODE, domainDirKey));
+        auto const openDirSle = env.le(Keylet(ltDIR_NODE, openDirKey));
+        BEAST_EXPECT(domainDirSle);
+        BEAST_EXPECT(openDirSle);
+
+        auto const domainExRate = domainDirSle->getFieldU64(sfExchangeRate);
+        auto const openExRate = openDirSle->getFieldU64(sfExchangeRate);
+
+        // Domain directory: sfExchangeRate should always match key quality
+        // (both use the pre-crossing rate).
+        BEAST_EXPECT(domainExRate == domainQuality);
+
+        if (fixEnabled)
+        {
+            // Post-fix: both directory keys use the pre-crossing rate.
+            BEAST_EXPECT(domainQuality == openQuality);
+            // sfExchangeRate matches key quality on both directories.
+            BEAST_EXPECT(openExRate == openQuality);
+        }
+        else
+        {
+            // Pre-fix: the open-book directory uses the post-crossing
+            // rate, which may differ from the domain-book directory.
+            BEAST_EXPECT(domainQuality != openQuality);
+            // sfExchangeRate (pre-crossing rate) does NOT match the
+            // open-book key quality (post-crossing rate).
+            BEAST_EXPECT(openExRate != openQuality);
+            // But sfExchangeRate does match the domain quality (both
+            // are the pre-crossing rate).
+            BEAST_EXPECT(openExRate == domainQuality);
+        }
+    }
+
+    void
     testBookExchangeRateFix(FeatureBitset features)
     {
         testcase("LedgerStateFix BookExchangeRate");
@@ -1591,11 +1591,18 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             auto const openDirKey =
                 sle->getFieldArray(sfAdditionalBooks)[0].getFieldH256(sfBookDirectory);
 
+            auto const preCrossingQuality = std::uint64_t{5623825668291712342ULL};
+            auto const postCrossingQuality = std::uint64_t{5623825668291712341ULL};
+
             // Confirm mismatch exists.
             {
                 auto const dirSle = env.le(Keylet(ltDIR_NODE, openDirKey));
                 BEAST_EXPECT(dirSle);
-                BEAST_EXPECT(dirSle->getFieldU64(sfExchangeRate) != getQuality(openDirKey));
+                auto const exchangeRate = dirSle->getFieldU64(sfExchangeRate);
+                auto const quality = getQuality(openDirKey);
+                BEAST_EXPECT(exchangeRate == preCrossingQuality);
+                BEAST_EXPECT(quality == postCrossingQuality);
+                BEAST_EXPECT(exchangeRate != quality);
             }
 
             // Enable fixCleanup3_2_0 and apply the LedgerStateFix.
@@ -1610,7 +1617,11 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             {
                 auto const dirSle = env.le(Keylet(ltDIR_NODE, openDirKey));
                 BEAST_EXPECT(dirSle);
-                BEAST_EXPECT(dirSle->getFieldU64(sfExchangeRate) == getQuality(openDirKey));
+                auto const exchangeRate = dirSle->getFieldU64(sfExchangeRate);
+                auto const quality = getQuality(openDirKey);
+                BEAST_EXPECT(exchangeRate == postCrossingQuality);
+                BEAST_EXPECT(quality == postCrossingQuality);
+                BEAST_EXPECT(exchangeRate == quality);
             }
 
             // Submitting again should fail — nothing to fix.
