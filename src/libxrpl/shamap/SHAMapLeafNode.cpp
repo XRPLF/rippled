@@ -63,15 +63,15 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
 
     auto const type = getType();
 
-    if (type == SHAMapNodeType::tnTRANSACTION_NM)
+    if (type == SHAMapNodeType::TnTransactionNm)
     {
         ret += ",txn\n";
     }
-    else if (type == SHAMapNodeType::tnTRANSACTION_MD)
+    else if (type == SHAMapNodeType::TnTransactionMd)
     {
         ret += ",txn+md\n";
     }
-    else if (type == SHAMapNodeType::tnACCOUNT_STATE)
+    else if (type == SHAMapNodeType::TnAccountState)
     {
         ret += ",as\n";
     }

@@ -6,10 +6,10 @@
 namespace beast {
 
 // Universal hash function
-template <class Hasher = xxhasher>
-struct uhash
+template <class Hasher = Xxhasher>
+struct Uhash
 {
-    uhash() = default;
+    Uhash() = default;
 
     using result_type = typename Hasher::result_type;
 

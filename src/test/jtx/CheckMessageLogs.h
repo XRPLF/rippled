@@ -43,7 +43,7 @@ public:
        found
     */
     CheckMessageLogs(std::string msg, bool* pFound)
-        : Logs{beast::severities::kDebug}, msg_{std::move(msg)}, pFound_{pFound}
+        : Logs{beast::severities::KDebug}, msg_{std::move(msg)}, pFound_{pFound}
     {
     }
 

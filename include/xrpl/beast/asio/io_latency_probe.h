@@ -15,44 +15,44 @@ namespace beast {
 
 /** Measures handler latency on an io_context queue. */
 template <class Clock>
-class io_latency_probe
+class IoLatencyProbe
 {
 private:
     using duration = typename Clock::duration;
     using time_point = typename Clock::time_point;
 
-    std::recursive_mutex m_mutex;
-    std::condition_variable_any m_cond;
-    std::size_t m_count{1};
-    duration const m_period;
-    boost::asio::io_context& m_ios;
-    boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
-    bool m_cancel{false};
+    std::recursive_mutex mutex_;
+    std::condition_variable_any cond_;
+    std::size_t count_{1};
+    duration const period_;
+    boost::asio::io_context& ios_;
+    boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
+    bool cancel_{false};
 
 public:
-    io_latency_probe(duration const& period, boost::asio::io_context& ios)
-        : m_period(period), m_ios(ios), m_timer(m_ios)
+    IoLatencyProbe(duration const& period, boost::asio::io_context& ios)
+        : period_(period), ios_(ios), timer_(ios_)
     {
     }
 
-    ~io_latency_probe()
+    ~IoLatencyProbe()
     {
-        std::unique_lock<decltype(m_mutex)> lock(m_mutex);
+        std::unique_lock<decltype(mutex_)> lock(mutex_);
         cancel(lock, true);
     }
 
     /** Return the io_context associated with the latency probe. */
     /** @{ */
     boost::asio::io_context&
-    get_io_context()
+    getIoContext()
     {
-        return m_ios;
+        return ios_;
     }
 
     [[nodiscard]] boost::asio::io_context const&
-    get_io_context() const
+    getIoContext() const
     {
-        return m_ios;
+        return ios_;
     }
     /** @} */
 
@@ -63,14 +63,14 @@ public:
     void
     cancel()
     {
-        std::unique_lock<decltype(m_mutex)> lock(m_mutex);
+        std::unique_lock<decltype(mutex_)> lock(mutex_);
         cancel(lock, true);
     }
 
     void
-    cancel_async()
+    cancelAsync()
     {
-        std::unique_lock<decltype(m_mutex)> lock(m_mutex);
+        std::unique_lock<decltype(mutex_)> lock(mutex_);
         cancel(lock, false);
     }
     /** @} */
@@ -81,13 +81,13 @@ public:
     */
     template <class Handler>
     void
-    sample_one(Handler&& handler)
+    sampleOne(Handler&& handler)
     {
-        std::scoped_lock const lock(m_mutex);
-        if (m_cancel)
+        std::scoped_lock const lock(mutex_);
+        if (cancel_)
             throw std::logic_error("io_latency_probe is canceled");
         boost::asio::post(
-            m_ios, sample_op<Handler>(std::forward<Handler>(handler), Clock::now(), false, this));
+            ios_, SampleOp<Handler>(std::forward<Handler>(handler), Clock::now(), false, this));
     }
 
     /** Initiate continuous i/o latency sampling.
@@ -98,125 +98,123 @@ public:
     void
     sample(Handler&& handler)
     {
-        std::scoped_lock const lock(m_mutex);
-        if (m_cancel)
+        std::scoped_lock const lock(mutex_);
+        if (cancel_)
             throw std::logic_error("io_latency_probe is canceled");
         boost::asio::post(
-            m_ios, sample_op<Handler>(std::forward<Handler>(handler), Clock::now(), true, this));
+            ios_, SampleOp<Handler>(std::forward<Handler>(handler), Clock::now(), true, this));
     }
 
 private:
     void
-    cancel(std::unique_lock<decltype(m_mutex)>& lock, bool wait)
+    cancel(std::unique_lock<decltype(mutex_)>& lock, bool wait)
     {
-        if (!m_cancel)
+        if (!cancel_)
         {
-            --m_count;
-            m_cancel = true;
+            --count_;
+            cancel_ = true;
         }
 
         if (wait)
-            m_cond.wait(lock, [this] { return this->m_count == 0; });
+            cond_.wait(lock, [this] { return this->count_ == 0; });
     }
 
     void
     addref()
     {
-        std::scoped_lock const lock(m_mutex);
-        ++m_count;
+        std::scoped_lock const lock(mutex_);
+        ++count_;
     }
 
     void
     release()
     {
-        std::scoped_lock const lock(m_mutex);
-        if (--m_count == 0)
-            m_cond.notify_all();
+        std::scoped_lock const lock(mutex_);
+        if (--count_ == 0)
+            cond_.notify_all();
     }
 
     template <class Handler>
-    struct sample_op
+    struct SampleOp
     {
-        Handler m_handler;
-        time_point m_start;
-        bool m_repeat;
-        io_latency_probe* m_probe;
+        Handler handler;
+        time_point start;
+        bool repeat;
+        IoLatencyProbe* probe;
 
-        sample_op(
+        SampleOp(
             Handler const& handler,
             time_point const& start,
             bool repeat,
-            io_latency_probe* probe)
-            : m_handler(handler), m_start(start), m_repeat(repeat), m_probe(probe)
+            IoLatencyProbe* probe)
+            : handler(handler), start(start), repeat(repeat), probe(probe)
         {
             XRPL_ASSERT(
-                m_probe,
+                probe,
                 "beast::io_latency_probe::sample_op::sample_op : non-null "
                 "probe input");
-            m_probe->addref();
+            probe->addref();
         }
 
-        sample_op(sample_op&& from) noexcept
-            : m_handler(std::move(from.m_handler))
-            , m_start(from.m_start)
-            , m_repeat(from.m_repeat)
-            , m_probe(from.m_probe)
+        SampleOp(SampleOp&& from) noexcept
+            : handler(std::move(from.handler))
+            , start(from.start)
+            , repeat(from.repeat)
+            , probe(from.probe)
         {
             XRPL_ASSERT(
-                m_probe,
+                probe,
                 "beast::io_latency_probe::sample_op::sample_op(sample_op&&) : "
                 "non-null probe input");
-            from.m_probe = nullptr;
+            from.probe = nullptr;
         }
 
-        sample_op(sample_op const&) = delete;
-        sample_op
-        operator=(sample_op const&) = delete;
-        sample_op&
-        operator=(sample_op&&) = delete;
+        SampleOp(SampleOp const&) = delete;
+        SampleOp
+        operator=(SampleOp const&) = delete;
+        SampleOp&
+        operator=(SampleOp&&) = delete;
 
-        ~sample_op()
+        ~SampleOp()
         {
-            if (m_probe)
-                m_probe->release();
+            if (probe)
+                probe->release();
         }
 
         void
         operator()() const
         {
-            if (m_probe == nullptr)
+            if (probe == nullptr)
                 return;
             typename Clock::time_point const now(Clock::now());
-            typename Clock::duration const elapsed(now - m_start);
+            typename Clock::duration const elapsed(now - start);
 
-            m_handler(elapsed);
+            handler(elapsed);
 
             {
-                std::scoped_lock const lock(m_probe->m_mutex);
-                if (m_probe->m_cancel)
+                std::scoped_lock const lock(probe->mutex_);
+                if (probe->cancel_)
                     return;
             }
 
-            if (m_repeat)
+            if (repeat)
             {
                 // Calculate when we want to sample again, and
                 // adjust for the expected latency.
                 //
-                typename Clock::time_point const when(now + m_probe->m_period - (2 * elapsed));
+                typename Clock::time_point const when(now + probe->period_ - (2 * elapsed));
 
                 if (when <= now)
                 {
                     // The latency is too high to maintain the desired
                     // period so don't bother with a timer.
                     //
-                    boost::asio::post(
-                        m_probe->m_ios, sample_op<Handler>(m_handler, now, m_repeat, m_probe));
+                    boost::asio::post(probe->ios_, SampleOp<Handler>(handler, now, repeat, probe));
                 }
                 else
                 {
-                    m_probe->m_timer.expires_after(when - now);
-                    m_probe->m_timer.async_wait(
-                        sample_op<Handler>(m_handler, now, m_repeat, m_probe));
+                    probe->timer_.expires_after(when - now);
+                    probe->timer_.async_wait(SampleOp<Handler>(handler, now, repeat, probe));
                 }
             }
         }
@@ -224,11 +222,10 @@ private:
         void
         operator()(boost::system::error_code const& ec)
         {
-            if (m_probe == nullptr)
+            if (probe == nullptr)
                 return;
             typename Clock::time_point const now(Clock::now());
-            boost::asio::post(
-                m_probe->m_ios, sample_op<Handler>(m_handler, now, m_repeat, m_probe));
+            boost::asio::post(probe->ios_, SampleOp<Handler>(handler, now, repeat, probe));
         }
     };
 };

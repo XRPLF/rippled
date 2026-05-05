@@ -10,56 +10,56 @@ namespace xrpl {
 // Bitwise flag enum with existing operator overloads
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum ApplyFlags : std::uint32_t {
-    tapNONE = 0x00,
+    TapNone = 0x00,
 
     // This is a local transaction with the
     // fail_hard flag set.
-    tapFAIL_HARD = 0x10,
+    TapFailHard = 0x10,
 
     // This is not the transaction's last pass
     // Transaction can be retried, soft failures allowed
-    tapRETRY = 0x20,
+    TapRetry = 0x20,
 
     // Transaction came from a privileged source
-    tapUNLIMITED = 0x400,
+    TapUnlimited = 0x400,
 
     // Transaction is executing as part of a batch
-    tapBATCH = 0x800,
+    TapBatch = 0x800,
 
     // Transaction shouldn't be applied
     // Signatures shouldn't be checked
-    tapDRY_RUN = 0x1000
+    TapDryRun = 0x1000
 };
 
 constexpr ApplyFlags
 operator|(ApplyFlags const& lhs, ApplyFlags const& rhs)
 {
-    return safe_cast<ApplyFlags>(
-        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) |
-        safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
+    return safeCast<ApplyFlags>(
+        safeCast<std::underlying_type_t<ApplyFlags>>(lhs) |
+        safeCast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
-static_assert((tapFAIL_HARD | tapRETRY) == safe_cast<ApplyFlags>(0x30u), "ApplyFlags operator |");
-static_assert((tapRETRY | tapFAIL_HARD) == safe_cast<ApplyFlags>(0x30u), "ApplyFlags operator |");
+static_assert((TapFailHard | TapRetry) == safeCast<ApplyFlags>(0x30u), "ApplyFlags operator |");
+static_assert((TapRetry | TapFailHard) == safeCast<ApplyFlags>(0x30u), "ApplyFlags operator |");
 
 constexpr ApplyFlags
 operator&(ApplyFlags const& lhs, ApplyFlags const& rhs)
 {
-    return safe_cast<ApplyFlags>(
-        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) &
-        safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
+    return safeCast<ApplyFlags>(
+        safeCast<std::underlying_type_t<ApplyFlags>>(lhs) &
+        safeCast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
-static_assert((tapFAIL_HARD & tapRETRY) == tapNONE, "ApplyFlags operator &");
-static_assert((tapRETRY & tapFAIL_HARD) == tapNONE, "ApplyFlags operator &");
+static_assert((TapFailHard & TapRetry) == TapNone, "ApplyFlags operator &");
+static_assert((TapRetry & TapFailHard) == TapNone, "ApplyFlags operator &");
 
 constexpr ApplyFlags
 operator~(ApplyFlags const& flags)
 {
-    return safe_cast<ApplyFlags>(~safe_cast<std::underlying_type_t<ApplyFlags>>(flags));
+    return safeCast<ApplyFlags>(~safeCast<std::underlying_type_t<ApplyFlags>>(flags));
 }
 
-static_assert(~tapRETRY == safe_cast<ApplyFlags>(0xFFFFFFDFu), "ApplyFlags operator ~");
+static_assert(~TapRetry == safeCast<ApplyFlags>(0xFFFFFFDFu), "ApplyFlags operator ~");
 
 inline ApplyFlags
 operator|=(ApplyFlags& lhs, ApplyFlags const& rhs)

@@ -49,10 +49,10 @@ LoanPay::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanPay::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::zero)
+    if (ctx.tx[sfLoanID] == beast::kZERO)
         return temINVALID;
 
-    if (ctx.tx[sfAmount] <= beast::zero)
+    if (ctx.tx[sfAmount] <= beast::kZERO)
         return temBAD_AMOUNT;
 
     // The loan payment flags are all mutually exclusive. If more than one is
@@ -97,7 +97,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         return normalCost;
     }
 
-    if (loanSle->at(sfPaymentRemaining) <= loanPaymentsPerFeeIncrement)
+    if (loanSle->at(sfPaymentRemaining) <= kLOAN_PAYMENTS_PER_FEE_INCREMENT)
     {
         // If there are fewer than loanPaymentsPerFeeIncrement payments left to
         // pay, we can skip the computations.
@@ -140,17 +140,17 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     // If making an overpayment, count it as a full payment because it will do
     // about the same amount of work, if not more.
     NumberRoundModeGuard const mg(
-        tx.isFlag(tfLoanOverpayment) ? Number::rounding_mode::upward
-                                     : Number::rounding_mode::downward);
+        tx.isFlag(tfLoanOverpayment) ? Number::RoundingMode::Upward
+                                     : Number::RoundingMode::Downward);
     // Estimate how many payments will be made
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
 
     // Charge one base fee per paymentsPerFeeIncrement payments, rounding up.
     // This set round is safe because there's a mode guard just above
-    Number::setround(Number::rounding_mode::upward);
+    Number::setround(Number::RoundingMode::Upward);
     auto const feeIncrements = std::max(
         std::int64_t(1),
-        static_cast<std::int64_t>(numPaymentEstimate / loanPaymentsPerFeeIncrement));
+        static_cast<std::int64_t>(numPaymentEstimate / kLOAN_PAYMENTS_PER_FEE_INCREMENT));
 
     return feeIncrements * normalCost;
 }
@@ -244,10 +244,10 @@ LoanPay::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             asset,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j,
-            SpendableHandling::shFULL_BALANCE);
+            SpendableHandling::FullBalance);
         balance < amount)
     {
         JLOG(ctx.j.warn()) << "Payment amount too large. Amount: " << to_string(amount.getJson())
@@ -302,7 +302,7 @@ LoanPay::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::rounding_mode::upward);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         return coverAvailableProxy >=
             roundToAsset(
                    asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
@@ -342,12 +342,12 @@ LoanPay::doApply()
     LoanPaymentType const paymentType = [&tx]() {
         // preflight already checked that at most one flag is set.
         if (tx.isFlag(tfLoanLatePayment))
-            return LoanPaymentType::late;
+            return LoanPaymentType::Late;
         if (tx.isFlag(tfLoanFullPayment))
-            return LoanPaymentType::full;
+            return LoanPaymentType::Full;
         if (tx.isFlag(tfLoanOverpayment))
-            return LoanPaymentType::overpayment;
-        return LoanPaymentType::regular;
+            return LoanPaymentType::Overpayment;
+        return LoanPaymentType::Regular;
     }();
 
     Expected<LoanPaymentParts, TER> const paymentParts =
@@ -408,7 +408,7 @@ LoanPay::doApply()
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
     auto const totalPaidToVaultRounded =
-        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::rounding_mode::downward);
+        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
@@ -452,8 +452,8 @@ LoanPay::doApply()
             view,
             vaultPseudoAccount,
             asset,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j_);
 
         XRPL_ASSERT_PARTS(
@@ -517,7 +517,7 @@ LoanPay::doApply()
         return tecPRECISION_LOSS;
         // LCOV_EXCL_STOP
     }
-    if (paymentParts->valueChange != beast::zero && assetsTotalAfter == assetsTotalBefore)
+    if (paymentParts->valueChange != beast::kZERO && assetsTotalAfter == assetsTotalBefore)
     {
         // Non-zero valueChange with an unchanged assetsTotal indicates that the
         // actual value change rounded to zero. That should be impossible, but I
@@ -533,7 +533,7 @@ LoanPay::doApply()
         return tecPRECISION_LOSS;
         // LCOV_EXCL_STOP
     }
-    if (paymentParts->valueChange == beast::zero && assetsTotalAfter != assetsTotalBefore)
+    if (paymentParts->valueChange == beast::kZERO && assetsTotalAfter != assetsTotalBefore)
     {
         // A change in assetsTotal when there was no valueChange indicates that
         // something really weird happened. That should be flat out impossible.
@@ -562,38 +562,37 @@ LoanPay::doApply()
         view,
         account_,
         asset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         j_,
-        SpendableHandling::shFULL_BALANCE);
+        SpendableHandling::FullBalance);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
               vaultPseudoAccount,
               asset,
-              FreezeHandling::fhIGNORE_FREEZE,
-              AuthHandling::ahIGNORE_AUTH,
+              FreezeHandling::IgnoreFreeze,
+              AuthHandling::IgnoreAuth,
               j_,
-              SpendableHandling::shFULL_BALANCE);
-    auto const brokerBalanceBefore = account_ == brokerPayee
-        ? STAmount{asset, 0}
-        : accountHolds(
-              view,
-              brokerPayee,
-              asset,
-              FreezeHandling::fhIGNORE_FREEZE,
-              AuthHandling::ahIGNORE_AUTH,
-              j_,
-              SpendableHandling::shFULL_BALANCE);
+              SpendableHandling::FullBalance);
+    auto const brokerBalanceBefore = account_ == brokerPayee ? STAmount{asset, 0}
+                                                             : accountHolds(
+                                                                   view,
+                                                                   brokerPayee,
+                                                                   asset,
+                                                                   FreezeHandling::IgnoreFreeze,
+                                                                   AuthHandling::IgnoreAuth,
+                                                                   j_,
+                                                                   SpendableHandling::FullBalance);
 
-    if (totalPaidToVaultRounded != beast::zero)
+    if (totalPaidToVaultRounded != beast::kZERO)
     {
         if (auto const ter = requireAuth(view, asset, vaultPseudoAccount, AuthType::StrongAuth))
             return ter;
     }
 
-    if (totalPaidToBroker != beast::zero)
+    if (totalPaidToBroker != beast::kZERO)
     {
         if (brokerPayee == account_)
         {
@@ -626,8 +625,8 @@ LoanPay::doApply()
             view,
             vaultPseudoAccount,
             asset,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j_);
         XRPL_ASSERT_PARTS(
             assetsAvailableAfter == pseudoAccountBalanceAfter,
@@ -641,37 +640,36 @@ LoanPay::doApply()
         view,
         account_,
         asset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         j_,
-        SpendableHandling::shFULL_BALANCE);
+        SpendableHandling::FullBalance);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
               vaultPseudoAccount,
               asset,
-              FreezeHandling::fhIGNORE_FREEZE,
-              AuthHandling::ahIGNORE_AUTH,
+              FreezeHandling::IgnoreFreeze,
+              AuthHandling::IgnoreAuth,
               j_,
-              SpendableHandling::shFULL_BALANCE);
-    auto const brokerBalanceAfter = account_ == brokerPayee
-        ? STAmount{asset, 0}
-        : accountHolds(
-              view,
-              brokerPayee,
-              asset,
-              FreezeHandling::fhIGNORE_FREEZE,
-              AuthHandling::ahIGNORE_AUTH,
-              j_,
-              SpendableHandling::shFULL_BALANCE);
+              SpendableHandling::FullBalance);
+    auto const brokerBalanceAfter = account_ == brokerPayee ? STAmount{asset, 0}
+                                                            : accountHolds(
+                                                                  view,
+                                                                  brokerPayee,
+                                                                  asset,
+                                                                  FreezeHandling::IgnoreFreeze,
+                                                                  AuthHandling::IgnoreAuth,
+                                                                  j_,
+                                                                  SpendableHandling::FullBalance);
     auto const balanceScale = [&]() {
         // Find a reasonable scale to use for the balance comparisons.
         //
         // First find the minimum and maximum exponent of all the non-zero balances, before and
         // after. If min and max are equal, use that value. If they are not, use "max + 1" to reduce
         // rounding discrepancies without making the result meaningless. Cap the scale at
-        // STAmount::cMaxOffset, just in case the numbers are all very large.
+        // STAmount::kMAX_OFFSET, just in case the numbers are all very large.
         std::vector<int> exponents;
 
         for (auto const& a : {
@@ -684,7 +682,7 @@ LoanPay::doApply()
              })
         {
             // Exclude zeroes
-            if (a != beast::zero)
+            if (a != beast::kZERO)
                 exponents.push_back(a.exponent());
         }
         if (exponents.empty())
@@ -700,15 +698,15 @@ LoanPay::doApply()
         // to round to such an extreme that it becomes meaningless.  e.g. Everything rounds to one
         // digit. So add 1 to the max (reducing the number of digits after the decimal point by 1)
         // if the scales are not already all the same.
-        return std::min(min == max ? max : max + 1, STAmount::cMaxOffset);
+        return std::min(min == max ? max : max + 1, STAmount::kMAX_OFFSET);
     }();
 
     // No object changes are made below this point
     XRPL_ASSERT_PARTS(
-        Number::getround() == Number::to_nearest,
+        Number::getround() == Number::RoundingMode::ToNearest,
         "xrpl::LoanPay::doApply",
-        "Number rounding to_nearest");
-    NumberRoundModeGuard const mg(Number::to_nearest);
+        "Number rounding ToNearest");
+    NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
 
     auto const accountBalanceBeforeRounded = roundToScale(accountBalanceBefore, balanceScale);
     auto const vaultBalanceBeforeRounded = roundToScale(vaultBalanceBefore, balanceScale);
@@ -761,10 +759,10 @@ LoanPay::doApply()
     if (totalBalanceBeforeRounded != totalBalanceAfterRounded)
     {
         JLOG(j_.warn()) << "Total rounded balances don't match"
-                        << (totalBalanceChangeRounded == beast::zero ? ", but total changes do"
-                                                                     : "");
+                        << (totalBalanceChangeRounded == beast::kZERO ? ", but total changes do"
+                                                                      : "");
     }
-    if (totalBalanceChangeRounded != beast::zero)
+    if (totalBalanceChangeRounded != beast::kZERO)
     {
         JLOG(j_.warn()) << "Total balance changes don't match"
                         << (totalBalanceBeforeRounded == totalBalanceAfterRounded
@@ -776,7 +774,7 @@ LoanPay::doApply()
     // that funds are conserved.
     XRPL_ASSERT_PARTS(
         totalBalanceBeforeRounded == totalBalanceAfterRounded ||
-            totalBalanceChangeRounded == beast::zero,
+            totalBalanceChangeRounded == beast::kZERO,
         "xrpl::LoanPay::doApply",
         "funds are conserved (with rounding)");
 
@@ -785,7 +783,7 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(
-        vaultBalanceAfter >= beast::zero && brokerBalanceAfter >= beast::zero,
+        vaultBalanceAfter >= beast::kZERO && brokerBalanceAfter >= beast::kZERO,
         "xrpl::LoanPay::doApply",
         "positive vault and broker balances");
     XRPL_ASSERT_PARTS(

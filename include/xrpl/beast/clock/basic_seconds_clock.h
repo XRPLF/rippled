@@ -13,19 +13,20 @@ namespace beast {
     @tparam Clock A type meeting these requirements:
         http://en.cppreference.com/w/cpp/concept/Clock
 */
-class basic_seconds_clock
+class BasicSecondsClock
 {
 public:
     using Clock = std::chrono::steady_clock;
 
-    explicit basic_seconds_clock() = default;
+    explicit BasicSecondsClock() = default;
 
     using rep = typename Clock::rep;
     using period = typename Clock::period;
     using duration = typename Clock::duration;
     using time_point = typename Clock::time_point;
 
-    static bool const is_steady = Clock::is_steady;
+    static bool const is_steady =  // NOLINT(readability-identifier-naming)
+        Clock::is_steady;
 
     static time_point
     now();
