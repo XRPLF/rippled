@@ -1775,7 +1775,7 @@ class MPToken_test : public beast::unit_test::Suite
             env.close();
 
             // Bob authorize credentials
-            env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = dpIssuer, .credType = credType}}));
             env.close();
 
             // alice try to send 100 MPT to bob, not authorized
@@ -2098,7 +2098,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::Account] = alice.human();
                 jv[sfSponsee.fieldName] = carol.human();
                 jv[sfFeeAmount.fieldName] = mpt.getJson(JsonOptions::KNone);
-                test(jv, sfFeeAmount.fieldName);
+                test(jv, sfFeeAmount.fieldName.c_str());
             }
         }
         BEAST_EXPECT(txWithAmounts.empty());

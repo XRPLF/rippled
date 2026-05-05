@@ -161,12 +161,12 @@ InnerObjectFormats::InnerObjectFormats()
             {sfSigners, SoeOptional},
         });
 
-    add(sfSponsorSignature.jsonName.c_str(),
+    add(sfSponsorSignature.jsonName.cStr(),
         sfSponsorSignature.getCode(),
         {
-            {sfSigningPubKey, soeOPTIONAL},
-            {sfTxnSignature, soeOPTIONAL},
-            {sfSigners, soeOPTIONAL},
+            {sfSigningPubKey, SoeOptional},
+            {sfTxnSignature, SoeOptional},
+            {sfSigners, SoeOptional},
         });
 }
 

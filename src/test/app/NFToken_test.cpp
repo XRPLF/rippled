@@ -446,20 +446,20 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             env.close();
 
             env(did::set(alice),
-                did::uri("uri"),
-                sponsor::as(bob, spfSponsorReserve),
-                sig(sfSponsorSignature, bob));
+                did::Uri("uri"),
+                sponsor::As(bob, spfSponsorReserve),
+                Sig(sfSponsorSignature, bob));
             env.close();
 
             env(did::set(bob),
-                did::uri("uri"),
-                sponsor::as(alice, spfSponsorReserve),
-                sig(sfSponsorSignature, alice));
+                did::Uri("uri"),
+                sponsor::As(alice, spfSponsorReserve),
+                Sig(sfSponsorSignature, alice));
             env.close();
 
             env(sponsor::transfer(bob, tfSponsorshipCreate),
-                sponsor::as(alice, spfSponsorReserve),
-                sig(sfSponsorSignature, alice));
+                sponsor::As(alice, spfSponsorReserve),
+                Sig(sfSponsorSignature, alice));
             env.close();
         }
 

@@ -1081,12 +1081,12 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 #   include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
 #endif
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 85, SponsorshipTransfer,
-    Delegation::delegable,
+    Delegation::Delegable,
     featureSponsor,
-    noPriv,
+    NoPriv,
     ({
-    {sfObjectID, soeOPTIONAL},
-    {sfSponsee, soeOPTIONAL},
+    {sfObjectID, SoeOptional},
+    {sfSponsee, SoeOptional},
 }))
 
 /** This transaction create sponsorship object */
@@ -1094,15 +1094,15 @@ TRANSACTION(ttSPONSORSHIP_TRANSFER, 85, SponsorshipTransfer,
 #   include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 #endif
 TRANSACTION(ttSPONSORSHIP_SET, 86, SponsorshipSet,
-    Delegation::delegable,
+    Delegation::Delegable,
     featureSponsor,
-    noPriv,
+    NoPriv,
     ({
-    {sfCounterpartySponsor, soeOPTIONAL},
-    {sfSponsee, soeOPTIONAL},
-    {sfFeeAmount, soeOPTIONAL},
-    {sfMaxFee, soeOPTIONAL},
-    {sfReserveCount, soeOPTIONAL},
+    {sfCounterpartySponsor, SoeOptional},
+    {sfSponsee, SoeOptional},
+    {sfFeeAmount, SoeOptional},
+    {sfMaxFee, SoeOptional},
+    {sfReserveCount, SoeOptional},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.

@@ -698,11 +698,11 @@ public:
 
         {
             std::string const credentialType1 = "credential1";
-            Account issuer("issuer");
+            Account const issuer("issuer");
             env.fund(XRP(5000), issuer);
 
             // gw creates an PermissionedDomain.
-            env(pdomain::setTx(gw, {{issuer, credentialType1}}));
+            env(pdomain::setTx(gw, {{.issuer = issuer, .credType = credentialType1}}));
             env.close();
 
             // Find the PermissionedDomain.
@@ -935,13 +935,13 @@ public:
         {
             // Create a sponsorship
             env(sponsor::set(alice, tfSponsorshipSetRequireSignForFee, 200, XRP(100), drops(10)),
-                sponsor::sponseeAcc(gw));
+                sponsor::SponseeAcc(gw));
             env.close();
 
             // Find the sponsorship.
             for (auto const& acct : {alice, gw})
             {
-                Json::Value const resp = acctObjs(acct, jss::sponsorship);
+                json::Value const resp = acctObjs(acct, jss::sponsorship);
                 BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
                 auto const& sponsorship = resp[jss::result][jss::account_objects][0u];
@@ -1387,12 +1387,12 @@ public:
         testcase("SponsoredFilter");
         using namespace jtx;
 
-        Env env(*this, testable_amendments());
+        Env env(*this, testableAmendments());
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor1("sponsor1");
         Account const gw("gw");
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(10000), alice, bob, sponsor1, gw);
         env.close();
@@ -1401,8 +1401,8 @@ public:
         auto acctObjsSponsored = [&env](
                                      AccountID const& acct,
                                      bool sponsored,
-                                     std::optional<Json::StaticString> const& type = std::nullopt) {
-            Json::Value params;
+                                     std::optional<json::StaticString> const& type = std::nullopt) {
+            json::Value params;
             params[jss::account] = to_string(acct);
             params[jss::sponsored] = sponsored;
             if (type)
@@ -1412,11 +1412,11 @@ public:
         };
 
         // Create a sponsorship (alice sponsors bob)
-        env(sponsor::set(alice, 0, 100, XRP(100)), sponsor::sponseeAcc(bob), fee(XRP(1)));
+        env(sponsor::set(alice, 0, 100, XRP(100)), sponsor::SponseeAcc(bob), Fee(XRP(1)));
         env.close();
 
         // Create a trust line for bob (not sponsored)
-        env(trust(bob, USD(1000)));
+        env(trust(bob, usd(1000)));
         env.close();
 
         // sponsored=true should not find any objects for bob (doesn't have any sponsored objects)
@@ -1427,12 +1427,12 @@ public:
         }
 
         // Now sponsor bob's trust line
-        auto const trustId = keylet::line(bob, gw, USD.currency);
+        auto const trustId = keylet::line(bob, gw, usd.currency);
         BEAST_EXPECT(env.le(trustId));
 
         env(sponsor::transfer(bob, tfSponsorshipCreate, trustId.key),
-            sponsor::as(sponsor1, spfSponsorReserve),
-            sig(sfSponsorSignature, sponsor1));
+            sponsor::As(sponsor1, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor1));
         env.close();
 
         // Verify trust line has sponsor field
@@ -1482,13 +1482,13 @@ public:
             env(token::mint(bob, 0));
             env.close();
 
-            auto const nftPageKeylet = keylet::nftpage_max(bob);
+            auto const nftPageKeylet = keylet::nftpageMax(bob);
             BEAST_EXPECT(env.le(nftPageKeylet));
 
             // Sponsor the NFT page
             env(sponsor::transfer(bob, tfSponsorshipCreate, nftPageKeylet.key),
-                sponsor::as(sponsor1, spfSponsorReserve),
-                sig(sfSponsorSignature, sponsor1));
+                sponsor::As(sponsor1, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor1));
             env.close();
 
             // Verify NFT page has sponsor field

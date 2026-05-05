@@ -378,7 +378,7 @@ doAccountObjects(RPC::JsonContext& context)
     {
         auto const& sponsoredJv = params[jss::sponsored];
         if (!sponsoredJv.isBool())
-            return RPC::expected_field_error(jss::sponsored, "boolean");
+            return RPC::expectedFieldError(jss::sponsored, "boolean");
 
         sponsored = sponsoredJv.asBool();
     }
