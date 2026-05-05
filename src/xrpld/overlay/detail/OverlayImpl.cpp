@@ -1314,12 +1314,10 @@ OverlayImpl::relay(
 
     if (enabledTarget > enabledInSkip && peers.size() > 1)
     {
-        auto const k = std::min(
-            static_cast<std::size_t>(enabledTarget), peers.size());
+        auto const k = std::min(static_cast<std::size_t>(enabledTarget), peers.size());
         for (std::size_t i = 0; i < k; ++i)
         {
-            auto const j =
-                i + randInt<std::size_t>(peers.size() - 1 - i);
+            auto const j = i + randInt<std::size_t>(peers.size() - 1 - i);
             std::swap(peers[i], peers[j]);
         }
     }

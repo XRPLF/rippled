@@ -61,10 +61,7 @@ public:
     }
 
     void
-    send(
-        Json::Value const&,
-        std::shared_ptr<std::string const> const& serialized,
-        bool) override
+    send(Json::Value const&, std::shared_ptr<std::string const> const& serialized, bool) override
     {
         auto sp = ws_.lock();
         if (!sp)

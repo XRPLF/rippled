@@ -42,6 +42,7 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -50,7 +51,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
@@ -309,13 +309,11 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     auto validator = m->getValidatorKey();
     if (validator && !squelch_.expireSquelch(*validator))
     {
-        overlay_.reportOutboundTraffic(
-            TrafficCount::Category::SquelchSuppressed, bufSize);
+        overlay_.reportOutboundTraffic(TrafficCount::Category::SquelchSuppressed, bufSize);
         return;
     }
 
-    overlay_.reportOutboundTraffic(
-        safeCast<TrafficCount::Category>(m->getCategory()), bufSize);
+    overlay_.reportOutboundTraffic(safeCast<TrafficCount::Category>(m->getCategory()), bufSize);
 
     overlay_.reportOutboundTraffic(TrafficCount::Category::Total, bufSize);
 
