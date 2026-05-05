@@ -31,9 +31,9 @@ public:
     stillNeed();
 
 private:
-    std::shared_ptr<SHAMap> mMap;
-    bool mHaveRoot{false};
-    std::unique_ptr<PeerSet> mPeerSet;
+    std::shared_ptr<SHAMap> map_;
+    bool haveRoot_{false};
+    std::unique_ptr<PeerSet> peerSet_;
 
     void
     onTimer(bool progress, ScopedLockType& peerSetLock) override;

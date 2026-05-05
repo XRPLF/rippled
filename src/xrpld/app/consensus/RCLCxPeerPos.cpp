@@ -38,7 +38,7 @@ RCLCxPeerPos::checkSign() const
     return verifyDigest(publicKey(), proposal_.signingHash(), signature(), false);
 }
 
-Json::Value
+json::Value
 RCLCxPeerPos::getJson() const
 {
     auto ret = proposal().getJson();

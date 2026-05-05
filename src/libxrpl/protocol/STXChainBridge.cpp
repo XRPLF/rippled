@@ -51,11 +51,11 @@ STXChainBridge::STXChainBridge(STObject const& o)
 {
 }
 
-STXChainBridge::STXChainBridge(Json::Value const& v) : STXChainBridge{sfXChainBridge, v}
+STXChainBridge::STXChainBridge(json::Value const& v) : STXChainBridge{sfXChainBridge, v}
 {
 }
 
-STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v) : STBase{name}
+STXChainBridge::STXChainBridge(SField const& name, json::Value const& v) : STBase{name}
 {
     if (!v.isObject())
     {
@@ -63,12 +63,12 @@ STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v) : STBas
             "STXChainBridge can only be specified with a 'object' Json value");
     }
 
-    auto checkExtra = [](Json::Value const& v) {
-        static auto const bridgeJson = xrpl::STXChainBridge().getJson(xrpl::JsonOptions::none);
+    auto checkExtra = [](json::Value const& v) {
+        static auto const kBRIDGE_JSON = xrpl::STXChainBridge().getJson(xrpl::JsonOptions::KNone);
         for (auto it = v.begin(); it != v.end(); ++it)
         {
             std::string const name = it.memberName();
-            if (!bridgeJson.isMember(name))
+            if (!kBRIDGE_JSON.isMember(name))
             {
                 Throw<std::runtime_error>("STXChainBridge extra field detected: " + name);
             }
@@ -77,10 +77,10 @@ STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v) : STBas
     };
     checkExtra(v);
 
-    Json::Value const& lockingChainDoorStr = v[jss::LockingChainDoor];
-    Json::Value const& lockingChainIssue = v[jss::LockingChainIssue];
-    Json::Value const& issuingChainDoorStr = v[jss::IssuingChainDoor];
-    Json::Value const& issuingChainIssue = v[jss::IssuingChainIssue];
+    json::Value const& lockingChainDoorStr = v[jss::LockingChainDoor];
+    json::Value const& lockingChainIssue = v[jss::LockingChainIssue];
+    json::Value const& issuingChainDoorStr = v[jss::IssuingChainDoor];
+    json::Value const& issuingChainIssue = v[jss::IssuingChainIssue];
 
     if (!lockingChainDoorStr.isString())
     {
@@ -126,10 +126,10 @@ STXChainBridge::add(Serializer& s) const
     issuingChainIssue_.add(s);
 }
 
-Json::Value
+json::Value
 STXChainBridge::getJson(JsonOptions jo) const
 {
-    Json::Value v;
+    json::Value v;
     v[jss::LockingChainDoor] = lockingChainDoor_.getJson(jo);
     v[jss::LockingChainIssue] = lockingChainIssue_.getJson(jo);
     v[jss::IssuingChainDoor] = issuingChainDoor_.getJson(jo);

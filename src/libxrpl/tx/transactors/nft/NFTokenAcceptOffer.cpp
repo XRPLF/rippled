@@ -44,7 +44,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
         if (!bo || !so)
             return temMALFORMED;
 
-        if (*bf <= beast::zero)
+        if (*bf <= beast::kZERO)
             return temMALFORMED;
     }
 
@@ -186,8 +186,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // own currency
         auto const needed = bo->at(sfAmount);
 
-        if (accountFunds(
-                ctx.view, (*bo)[sfOwner], needed, FreezeHandling::fhZERO_IF_FROZEN, ctx.j) < needed)
+        if (accountFunds(ctx.view, (*bo)[sfOwner], needed, FreezeHandling::ZeroIfFrozen, ctx.j) <
+            needed)
             return tecINSUFFICIENT_FUNDS;
 
         // Check that the account accepting the buy offer (he's selling the NFT)
@@ -256,7 +256,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // cover what the buyer will pay, which doesn't make sense, causes
             // an unnecessary tec, and is also resolved with this amendment.
             if (accountFunds(
-                    ctx.view, ctx.tx[sfAccount], needed, FreezeHandling::fhZERO_IF_FROZEN, ctx.j) <
+                    ctx.view, ctx.tx[sfAccount], needed, FreezeHandling::ZeroIfFrozen, ctx.j) <
                 needed)
                 return tecINSUFFICIENT_FUNDS;
         }
@@ -306,7 +306,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // give the NFToken issuer an undesired trust line.
         // Issuer doesn't need a trust line to accept their own currency.
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline) &&
-            (nft::getFlags(tokenID) & nft::flagCreateTrustLines) == 0 &&
+            (nft::getFlags(tokenID) & nft::kFLAG_CREATE_TRUST_LINES) == 0 &&
             nftMinter != amount.getIssuer() &&
             !ctx.view.read(keylet::line(nftMinter, amount.get<Issue>())))
             return tecNO_LINE;
@@ -333,7 +333,7 @@ TER
 NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount const& amount)
 {
     // This should never happen, but it's easy and quick to check.
-    if (amount < beast::zero)
+    if (amount < beast::kZERO)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const result = accountSend(view(), from, to, amount, j_);
@@ -345,9 +345,9 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
     // just confirm that the end state is OK.
     if (!isTesSuccess(result))
         return result;
-    if (accountFunds(view(), from, amount, FreezeHandling::fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (accountFunds(view(), from, amount, FreezeHandling::ZeroIfFrozen, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
-    if (accountFunds(view(), to, amount, FreezeHandling::fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (accountFunds(view(), to, amount, FreezeHandling::ZeroIfFrozen, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
     return tesSUCCESS;
 }
@@ -412,7 +412,7 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
 
     auto const nftokenID = (*offer)[sfNFTokenID];
 
-    if (auto amount = offer->getFieldAmount(sfAmount); amount != beast::zero)
+    if (auto amount = offer->getFieldAmount(sfAmount); amount != beast::kZERO)
     {
         // Calculate the issuer's cut from this sale, if any:
         if (auto const fee = nft::getTransferFee(nftokenID); fee != 0)
@@ -420,7 +420,7 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
             auto const cut = multiply(amount, nft::transferFeeAsRate(fee));
 
             if (auto const issuer = nft::getIssuer(nftokenID);
-                cut != beast::zero && seller != issuer && buyer != issuer)
+                cut != beast::kZERO && seller != issuer && buyer != issuer)
             {
                 if (auto const r = pay(buyer, issuer, cut); !isTesSuccess(r))
                     return r;
@@ -526,7 +526,7 @@ NFTokenAcceptOffer::doApply()
         // being paid out than the seller authorized.  That would be bad!
 
         // Send the broker the amount they requested.
-        if (auto const cut = ctx_.tx[~sfNFTokenBrokerFee]; cut && cut.value() != beast::zero)
+        if (auto const cut = ctx_.tx[~sfNFTokenBrokerFee]; cut && cut.value() != beast::kZERO)
         {
             if (auto const r = pay(buyer, account_, cut.value()); !isTesSuccess(r))
                 return r;
@@ -535,7 +535,7 @@ NFTokenAcceptOffer::doApply()
         }
 
         // Calculate the issuer's cut, if any.
-        if (auto const fee = nft::getTransferFee(nftokenID); amount != beast::zero && fee != 0)
+        if (auto const fee = nft::getTransferFee(nftokenID); amount != beast::kZERO && fee != 0)
         {
             auto cut = multiply(amount, nft::transferFeeAsRate(fee));
 
@@ -549,7 +549,7 @@ NFTokenAcceptOffer::doApply()
         }
 
         // And send whatever remains to the seller.
-        if (amount > beast::zero)
+        if (amount > beast::kZERO)
         {
             if (auto const r = pay(buyer, seller, amount); !isTesSuccess(r))
                 return r;

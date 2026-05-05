@@ -129,7 +129,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
         JLOG(j_.warn()) << "Need validated ledger for preferred ledger analysis " << hash;
 
         app_.getInboundLedgers().acquireAsync(
-            jtADVANCE, "GetConsL2", hash, 0, InboundLedger::Reason::CONSENSUS);
+            JtAdvance, "GetConsL2", hash, 0, InboundLedger::Reason::CONSENSUS);
         return std::nullopt;
     }
 
@@ -169,11 +169,11 @@ handleNewValidation(
     // masterKey is seated only if validator is trusted or listed
     auto const outcome = validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
 
-    if (outcome == ValStatus::current)
+    if (outcome == ValStatus::Current)
     {
         if (val->isTrusted())
         {
-            if (bypassAccept == BypassAccept::yes)
+            if (bypassAccept == BypassAccept::Yes)
             {
                 XRPL_ASSERT(j, "xrpl::handleNewValidation : journal is available");
                 if (j.has_value())
@@ -211,14 +211,14 @@ handleNewValidation(
             return ret;
         }();
 
-        if (outcome == ValStatus::conflicting)
+        if (outcome == ValStatus::Conflicting)
         {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Conflicting validation for " << seq << "!\n["
                << val->getSerializer().slice() << "]";
         }
 
-        if (outcome == ValStatus::multiple)
+        if (outcome == ValStatus::Multiple)
         {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Multiple validations for " << seq << "/" << hash << "!\n["

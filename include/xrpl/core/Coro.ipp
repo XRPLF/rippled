@@ -1,21 +1,22 @@
 #pragma once
 
+#include <utility>
+
 namespace xrpl {
 
 /// Coroutine stack size (1.5 MB). Increased from 1 MB because
 /// ASAN-instrumented deep call stacks exceeded the original limit.
-constexpr std::size_t coroStackSize = 1536 * 1024;
+constexpr std::size_t kCORO_STACK_SIZE = 1536 * 1024;
 
 template <class F>
-JobQueue::Coro::Coro(Coro_create_t, JobQueue& jq, JobType type, std::string const& name, F&& f)
+JobQueue::Coro::Coro(CoroCreateT, JobQueue& jq, JobType type, std::string name, F&& f)
     : jq_(jq)
     , type_(type)
-    , name_(name)
+    , name_(std::move(name))
     , coro_(
-          boost::context::protected_fixedsize_stack(coroStackSize),
-          [this,
-           fn = std::forward<F>(f)](boost::coroutines2::coroutine<void>::push_type& do_yield) {
-              yield_ = &do_yield;
+          boost::context::protected_fixedsize_stack(kCORO_STACK_SIZE),
+          [this, fn = std::forward<F>(f)](boost::coroutines2::coroutine<void>::push_type& doYield) {
+              yield_ = &doYield;
               yield();
               fn(shared_from_this());
 #ifndef NDEBUG
@@ -36,7 +37,7 @@ inline void
 JobQueue::Coro::yield() const
 {
     {
-        std::scoped_lock lock(jq_.m_mutex);
+        std::scoped_lock const lock(jq_.mutex_);
         ++jq_.nSuspend_;
     }
     (*yield_)();
@@ -46,7 +47,7 @@ inline bool
 JobQueue::Coro::post()
 {
     {
-        std::scoped_lock lk(mutex_run_);
+        std::scoped_lock const lk(mutex_run_);
         running_ = true;
     }
 
@@ -57,7 +58,7 @@ JobQueue::Coro::post()
     }
 
     // The coroutine will not run.  Clean up running_.
-    std::scoped_lock lk(mutex_run_);
+    std::scoped_lock const lk(mutex_run_);
     running_ = false;
     cv_.notify_all();
     return false;
@@ -67,16 +68,16 @@ inline void
 JobQueue::Coro::resume()
 {
     {
-        std::scoped_lock lk(mutex_run_);
+        std::scoped_lock const lk(mutex_run_);
         running_ = true;
     }
     {
-        std::scoped_lock lk(jq_.m_mutex);
+        std::scoped_lock const lk(jq_.mutex_);
         --jq_.nSuspend_;
     }
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
-    std::scoped_lock lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     // A late resume() can arrive after the coroutine has already completed.
     // This is an expected (if rare) outcome of the race condition documented
     // in JobQueue.h:354-377 where post() schedules a resume job before the
@@ -91,7 +92,7 @@ JobQueue::Coro::resume()
     }
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
-    std::scoped_lock lk(mutex_run_);
+    std::scoped_lock const lk(mutex_run_);
     running_ = false;
     cv_.notify_all();
 }
@@ -115,7 +116,7 @@ JobQueue::Coro::expectEarlyExit()
         //
         // That said, since we're outside the Coro's stack, we need to
         // decrement the nSuspend that the Coro's call to yield caused.
-        std::scoped_lock lock(jq_.m_mutex);
+        std::scoped_lock const lock(jq_.mutex_);
         --jq_.nSuspend_;
 #ifndef NDEBUG
         finished_ = true;
@@ -127,7 +128,7 @@ inline void
 JobQueue::Coro::join()
 {
     std::unique_lock<std::mutex> lk(mutex_run_);
-    cv_.wait(lk, [this]() { return running_ == false; });
+    cv_.wait(lk, [this]() { return !running_; });
 }
 
 }  // namespace xrpl

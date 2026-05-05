@@ -71,9 +71,9 @@ getEndpoint(std::string const& peer)
         }
 
         std::optional<beast::IP::Endpoint> endpoint =
-            beast::IP::Endpoint::from_string_checked(peerClean);
+            beast::IP::Endpoint::fromStringChecked(peerClean);
         if (endpoint)
-            return beast::IP::to_asio_endpoint(endpoint.value());
+            return beast::IP::toAsioEndpoint(endpoint.value());
     }
     catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
     {
@@ -146,7 +146,7 @@ GRPCServerImpl::CallData<Request, Response>::process()
     // is returned as a tag in handleRpcs(), after sending the response
     finished_ = true;
     auto coro = app_.getJobQueue().postCoro(
-        JobType::jtRPC, "gRPC-Client", [thisShared](std::shared_ptr<JobQueue::Coro> coro) {
+        JobType::JtRpc, "gRPC-Client", [thisShared](std::shared_ptr<JobQueue::Coro> coro) {
             thisShared->process(coro);
         });
 
@@ -204,17 +204,17 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                  role,
                  coro,
                  InfoSub::pointer(),
-                 apiVersion},
+                 kAPI_VERSION},
                 request_};
 
             // Make sure we can currently handle the rpc
-            error_code_i const conditionMetRes = RPC::conditionMet(requiredCondition_, context);
+            ErrorCodeI const conditionMetRes = RPC::conditionMet(requiredCondition_, context);
 
-            if (conditionMetRes != rpcSUCCESS)
+            if (conditionMetRes != RpcSuccess)
             {
-                RPC::ErrorInfo const errorInfo = RPC::get_error_info(conditionMetRes);
+                RPC::ErrorInfo const errorInfo = RPC::getErrorInfo(conditionMetRes);
                 grpc::Status const status{
-                    grpc::StatusCode::FAILED_PRECONDITION, errorInfo.message.c_str()};
+                    grpc::StatusCode::FAILED_PRECONDITION, errorInfo.message.cStr()};
                 responder_.FinishWithError(status, this);
             }
             else
@@ -327,7 +327,7 @@ GRPCServerImpl::CallData<Request, Response>::getUsage()
 {
     auto endpoint = getClientEndpoint();
     if (endpoint)
-        return app_.getResourceManager().newInboundEndpoint(beast::IP::from_asio(endpoint.value()));
+        return app_.getResourceManager().newInboundEndpoint(beast::IP::fromAsio(endpoint.value()));
     Throw<std::runtime_error>("Failed to get client endpoint");
 }
 
@@ -361,7 +361,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
             Throw<std::runtime_error>("Error setting grpc server address");
         }
 
-        auto const optSecureGateway = section.get("secure_gateway");
+        auto const optSecureGateway = section.get("secureGateway");
         if (optSecureGateway)
         {
             try
@@ -376,8 +376,8 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
                     if (addr.is_unspecified())
                     {
                         JLOG(journal_.error()) << "Can't pass unspecified IP in "
-                                               << "secure_gateway section of port_grpc";
-                        Throw<std::runtime_error>("Unspecified IP in secure_gateway section");
+                                               << "secureGateway section of port_grpc";
+                        Throw<std::runtime_error>("Unspecified IP in secureGateway section");
                     }
 
                     secureGatewayIPs_.emplace_back(addr);
@@ -386,7 +386,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
             catch (std::exception const&)
             {
                 JLOG(journal_.error()) << "Error parsing secure gateway IPs for grpc server";
-                Throw<std::runtime_error>("Error parsing secure_gateway section");
+                Throw<std::runtime_error>("Error parsing secureGateway section");
             }
         }
 
@@ -542,8 +542,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedger,
                 doLedgerGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
-                RPC::NO_CONDITION,
-                Resource::feeMediumBurdenRPC,
+                RPC::NoCondition,
+                Resource::kFEE_MEDIUM_BURDEN_RPC,
                 secureGatewayIPs_));
     }
     {
@@ -559,8 +559,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerData,
                 doLedgerDataGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
-                RPC::NO_CONDITION,
-                Resource::feeMediumBurdenRPC,
+                RPC::NoCondition,
+                Resource::kFEE_MEDIUM_BURDEN_RPC,
                 secureGatewayIPs_));
     }
     {
@@ -576,8 +576,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerDiff,
                 doLedgerDiffGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
-                RPC::NO_CONDITION,
-                Resource::feeMediumBurdenRPC,
+                RPC::NoCondition,
+                Resource::kFEE_MEDIUM_BURDEN_RPC,
                 secureGatewayIPs_));
     }
     {
@@ -593,8 +593,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerEntry,
                 doLedgerEntryGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
-                RPC::NO_CONDITION,
-                Resource::feeMediumBurdenRPC,
+                RPC::NoCondition,
+                Resource::kFEE_MEDIUM_BURDEN_RPC,
                 secureGatewayIPs_));
     }
     return requests;

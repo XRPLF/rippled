@@ -18,13 +18,13 @@ class SignerListSet : public Transactor
 {
 private:
     // Values determined during preCompute for use later.
-    enum class Operation { unknown, set, destroy };
-    Operation do_{Operation::unknown};
+    enum class Operation { Unknown, Set, Destroy };
+    Operation do_{Operation::Unknown};
     std::uint32_t quorum_{0};
     std::vector<SignerEntries::SignerEntry> signers_;
 
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Blocker};
 
     explicit SignerListSet(ApplyContext& ctx) : Transactor(ctx)
     {

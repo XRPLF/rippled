@@ -261,8 +261,8 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
 
     // If the account owns any NFTs it cannot be deleted.
-    Keylet const first = keylet::nftpage_min(account);
-    Keylet const last = keylet::nftpage_max(account);
+    Keylet const first = keylet::nftpageMin(account);
+    Keylet const last = keylet::nftpageMax(account);
 
     auto const cp = ctx.view.read(
         Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
@@ -275,8 +275,8 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     //
     // We look at the account's Sequence rather than the transaction's
     // Sequence in preparation for Tickets.
-    constexpr std::uint32_t seqDelta{255};
-    if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
+    constexpr std::uint32_t kSEQ_DELTA{255};
+    if ((*sleAccount)[sfSequence] + kSEQ_DELTA > ctx.view.seq())
         return tecTOO_SOON;
 
     // We don't allow an account to be deleted if
@@ -291,7 +291,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
     if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-            (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+            (*sleAccount)[~sfMintedNFTokens].value_or(0) + kSEQ_DELTA >
         ctx.view.seq())
         return tecTOO_SOON;
 
@@ -303,7 +303,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 
     std::shared_ptr<SLE const> sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::zero};
+    uint256 dirEntry{beast::kZERO};
 
     // Account has no directory at all.  This _should_ have been caught
     // by the dirIsEmpty() check earlier, but it's okay to catch it here.
@@ -326,14 +326,14 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
             // LCOV_EXCL_STOP
         }
 
-        LedgerEntryType const nodeType{safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+        LedgerEntryType const nodeType{safeCast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
         if (nonObligationDeleter(nodeType) == nullptr)
             return tecHAS_OBLIGATIONS;
 
         // We found a deletable directory entry.  Count it.  If we find too
         // many deletable directory entries then bail out.
-        if (++deletableDirEntryCount > maxDeletableDirEntries)
+        if (++deletableDirEntryCount > kMAX_DELETABLE_DIR_ENTRIES)
             return tefTOO_BIG;
 
     } while (cdirNext(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));

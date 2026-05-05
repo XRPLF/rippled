@@ -70,13 +70,13 @@ enum class OperatingMode {
 class NetworkOPs : public InfoSub::Source
 {
 public:
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
-    enum class FailHard : unsigned char { no, yes };
+    enum class FailHard : unsigned char { No, Yes };
     static FailHard
     doFailHard(bool noMeansDont)
     {
-        return noMeansDont ? FailHard::yes : FailHard::no;
+        return noMeansDont ? FailHard::Yes : FailHard::No;
     }
 
 public:
@@ -136,7 +136,7 @@ public:
     // Owner functions
     //
 
-    virtual Json::Value
+    virtual json::Value
     getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID const& account) = 0;
 
     //--------------------------------------------------------------------------
@@ -151,8 +151,8 @@ public:
         AccountID const& uTakerID,
         bool const bProof,
         unsigned int iLimit,
-        Json::Value const& jvMarker,
-        Json::Value& jvResult) = 0;
+        json::Value const& jvMarker,
+        json::Value& jvResult) = 0;
 
     //--------------------------------------------------------------------------
 
@@ -207,13 +207,13 @@ public:
     virtual void
     consensusViewChange() = 0;
 
-    virtual Json::Value
+    virtual json::Value
     getConsensusInfo() = 0;
-    virtual Json::Value
+    virtual json::Value
     getServerInfo(bool human, bool admin, bool counters) = 0;
     virtual void
     clearLedgerFetch() = 0;
-    virtual Json::Value
+    virtual json::Value
     getLedgerFetchInfo() = 0;
 
     /** Accepts the current transaction tree, return the new ledger's sequence
@@ -248,7 +248,7 @@ public:
     pubValidation(std::shared_ptr<STValidation> const& val) = 0;
 
     virtual void
-    stateAccounting(Json::Value& obj) = 0;
+    stateAccounting(json::Value& obj) = 0;
 };
 
 }  // namespace xrpl

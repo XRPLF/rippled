@@ -25,7 +25,7 @@
 namespace ripple {
 namespace test {
 
-struct CanProcess_test : beast::unit_test::suite
+struct CanProcess_test : beast::unit_test::Suite
 {
     template <class Mutex, class Collection, class Item>
     void

@@ -11,31 +11,31 @@
 namespace beast::unit_test {
 
 /** Utility for producing nicely composed output of amounts with units. */
-class amount
+class Amount
 {
 private:
     std::size_t n_;
     std::string const& what_;
 
 public:
-    amount(amount const&) = default;
-    amount&
-    operator=(amount const&) = delete;
+    Amount(Amount const&) = default;
+    Amount&
+    operator=(Amount const&) = delete;
 
     template <class = void>
-    amount(std::size_t n, std::string const& what);
+    Amount(std::size_t n, std::string const& what);
 
     friend std::ostream&
-    operator<<(std::ostream& s, amount const& t);
+    operator<<(std::ostream& s, Amount const& t);
 };
 
 template <class>
-amount::amount(std::size_t n, std::string const& what) : n_(n), what_(what)
+Amount::Amount(std::size_t n, std::string const& what) : n_(n), what_(what)
 {
 }
 
 inline std::ostream&
-operator<<(std::ostream& s, amount const& t)
+operator<<(std::ostream& s, Amount const& t)
 {
     s << t.n_ << " " << t.what_ << ((t.n_ != 1) ? "s" : "");
     return s;
