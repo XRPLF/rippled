@@ -3923,10 +3923,10 @@ public:
         // clang-format off
         TestData const tests[]{
             //        btcStart   --------------------- actor[0] ---------------------    -------------------- actor[1] -------------------
-            {.self=0, .leg0=0, .leg1=1, .btcStart=btc(20), .actors={{"ann", 0, drops(3900000'000000 - (4 * baseFee)), btc(20.0), usd(3000)}, {"abe", 0, drops(4100000'000000 - (3 * baseFee)), btc( 0), usd(750)}}},  // no BTC xfer fee
-            {.self=0, .leg0=1, .leg1=0, .btcStart=btc(20), .actors={{"bev", 0, drops(4100000'000000 - (4 * baseFee)), btc( 7.5), usd(2000)}, {"bob", 0, drops(3900000'000000 - (3 * baseFee)), btc(10), usd(  0)}}},  // no USD xfer fee
-            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(20), .actors={{"cam", 0, drops(4000000'000000 - (5 * baseFee)), btc(20.0), usd(2000)}                                                     }},  // no xfer fee
-            {.self=0, .leg0=1, .leg1=0, .btcStart=btc( 5), .actors={{"deb", 1, drops(4040000'000000 - (4 * baseFee)), btc( 0.0), usd(2000)}, {"dan", 1, drops(3960000'000000 - (3 * baseFee)), btc( 4), usd(  0)}}},  // no USD xfer fee
+            {.self=0, .leg0=0, .leg1=1, .btcStart=btc(20), .actors={{.acct="ann", .offers=0, .xrp=drops(3900000'000000 - (4 * baseFee)), .btc=btc(20.0), .usd=usd(3000)}, {.acct="abe", .offers=0, .xrp=drops(4100000'000000 - (3 * baseFee)), .btc=btc( 0), .usd=usd(750)}}},  // no BTC xfer fee
+            {.self=0, .leg0=1, .leg1=0, .btcStart=btc(20), .actors={{.acct="bev", .offers=0, .xrp=drops(4100000'000000 - (4 * baseFee)), .btc=btc( 7.5), .usd=usd(2000)}, {.acct="bob", .offers=0, .xrp=drops(3900000'000000 - (3 * baseFee)), .btc=btc(10), .usd=usd(  0)}}},  // no USD xfer fee
+            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(20), .actors={{.acct="cam", .offers=0, .xrp=drops(4000000'000000 - (5 * baseFee)), .btc=btc(20.0), .usd=usd(2000)}                                                     }},  // no xfer fee
+            {.self=0, .leg0=1, .leg1=0, .btcStart=btc( 5), .actors={{.acct="deb", .offers=1, .xrp=drops(4040000'000000 - (4 * baseFee)), .btc=btc( 0.0), .usd=usd(2000)}, {.acct="dan", .offers=1, .xrp=drops(3960000'000000 - (3 * baseFee)), .btc=btc( 4), .usd=usd(  0)}}},  // no USD xfer fee
         };
         // clang-format on
 
@@ -4071,8 +4071,8 @@ public:
         // clang-format off
         TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
-            {.self=0, .leg0=0, .leg1=1, .btcStart=btc(5), .actors={{"gay", 1, drops(3950000'000000 - (4 * baseFee)), btc(5), usd(2500)}, {"gar", 1, drops(4050000'000000 - (3 * baseFee)), btc(0), usd(1375)}}}, // no BTC xfer fee
-            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{"hye", 2, drops(4000000'000000 - (5 * baseFee)), btc(5), usd(2000)}                                                     }}  // no xfer fee
+            {.self=0, .leg0=0, .leg1=1, .btcStart=btc(5), .actors={{.acct="gay", .offers=1, .xrp=drops(3950000'000000 - (4 * baseFee)), .btc=btc(5), .usd=usd(2500)}, {.acct="gar", .offers=1, .xrp=drops(4050000'000000 - (3 * baseFee)), .btc=btc(0), .usd=usd(1375)}}}, // no BTC xfer fee
+            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{.acct="hye", .offers=2, .xrp=drops(4000000'000000 - (5 * baseFee)), .btc=btc(5), .usd=usd(2000)}                                                     }}  // no xfer fee
         };
         // clang-format on
 

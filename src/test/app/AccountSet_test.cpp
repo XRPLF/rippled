@@ -444,20 +444,20 @@ public:
                 env.close();
 
                 env(did::set(gw),
-                    did::uri("uri"),
-                    sponsor::as(alice, spfSponsorReserve),
-                    sig(sfSponsorSignature, alice));
+                    did::Uri("uri"),
+                    sponsor::As(alice, spfSponsorReserve),
+                    Sig(sfSponsorSignature, alice));
                 env.close();
 
                 env(did::set(alice),
-                    did::uri("uri"),
-                    sponsor::as(gw, spfSponsorReserve),
-                    sig(sfSponsorSignature, gw));
+                    did::Uri("uri"),
+                    sponsor::As(gw, spfSponsorReserve),
+                    Sig(sfSponsorSignature, gw));
                 env.close();
 
                 env(sponsor::transfer(alice, tfSponsorshipCreate),
-                    sponsor::as(gw, spfSponsorReserve),
-                    sig(sfSponsorSignature, gw));
+                    sponsor::As(gw, spfSponsorReserve),
+                    Sig(sfSponsorSignature, gw));
                 env.close();
             }
 

@@ -47,19 +47,19 @@ Owners::operator()(Env& env) const
 }
 
 void
-sponsored_owners::operator()(Env& env) const
+SponsoredOwners::operator()(Env& env) const
 {
     env.test.expect(env.le(account_)->getFieldU32(sfSponsoredOwnerCount) == value_);
 }
 
 void
-sponsoring_owners::operator()(Env& env) const
+SponsoringOwners::operator()(Env& env) const
 {
     env.test.expect(env.le(account_)->getFieldU32(sfSponsoringOwnerCount) == value_);
 }
 
 void
-sponsoring_account_count::operator()(Env& env) const
+SponsoringAccountCount::operator()(Env& env) const
 {
     env.test.expect(env.le(account_)->getFieldU32(sfSponsoringAccountCount) == value_);
 }

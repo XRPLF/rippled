@@ -158,7 +158,7 @@ ValidPermissionedDomain::finalize(
                 if (sleStatus_.empty())
                     return true;
 
-                if (sleStatus_[0].isDelete_)
+                if (sleStatus_[0].isDelete)
                 {
                     JLOG(j.fatal()) << "Invariant failed: domain object "
                                        "deleted by SponsorshipTransfer";

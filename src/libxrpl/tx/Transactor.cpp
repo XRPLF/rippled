@@ -501,7 +501,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return terNO_ACCOUNT;
     }
 
-    XRPAmount maxSpendable = beast::zero;
+    XRPAmount maxSpendable = beast::kZERO;
 
     if (payer.type == FeePayerType::SponsorPreFunded)
     {
@@ -572,7 +572,7 @@ Transactor::payFee()
 
     auto const feeAmountAfter = sle->getFieldAmount(payer.balanceField) - feePaid;
 
-    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount)
+    if (feeAmountAfter == beast::kZERO && payer.balanceField == sfFeeAmount)
     {
         // Because ltSponsorship.sfFeeAmount is soeOptional
         sle->makeFieldAbsent(payer.balanceField);
@@ -1272,7 +1272,7 @@ Transactor::reset(XRPAmount fee)
     // then the ledger is corrupted.  Rather than make things worse we
     // reject the transaction.
     auto const feeAmountAfter = balance - fee;
-    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount)
+    if (feeAmountAfter == beast::kZERO && payer.balanceField == sfFeeAmount)
     {
         // Because ltSponsorship.sfFeeAmount is soeOptional
         payerSle->makeFieldAbsent(payer.balanceField);

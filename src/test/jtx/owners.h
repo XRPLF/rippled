@@ -64,14 +64,14 @@ public:
 };
 
 /** Match the number of items in the account's owner directory */
-class sponsored_owners
+class SponsoredOwners
 {
 private:
     Account account_;
     std::uint32_t value_;
 
 public:
-    sponsored_owners(Account account, std::uint32_t value)
+    SponsoredOwners(Account account, std::uint32_t value)
         : account_(std::move(account)), value_(value)
     {
     }
@@ -81,14 +81,14 @@ public:
 };
 
 /** Match the number of items in the account's owner directory */
-class sponsoring_owners
+class SponsoringOwners
 {
 private:
     Account account_;
     std::uint32_t value_;
 
 public:
-    sponsoring_owners(Account account, std::uint32_t value)
+    SponsoringOwners(Account account, std::uint32_t value)
         : account_(std::move(account)), value_(value)
     {
     }
@@ -98,14 +98,14 @@ public:
 };
 
 /** Match the number of items in the account's owner directory */
-class sponsoring_account_count
+class SponsoringAccountCount
 {
 private:
     Account account_;
     std::uint32_t value_;
 
 public:
-    sponsoring_account_count(Account account, std::uint32_t value)
+    SponsoringAccountCount(Account account, std::uint32_t value)
         : account_(std::move(account)), value_(value)
     {
     }

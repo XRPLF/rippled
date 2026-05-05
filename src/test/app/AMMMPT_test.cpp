@@ -1012,7 +1012,7 @@ private:
                 // Before the Amendment, it will result in tecINSUF_RESERVE_LINE
                 // if the current XRP == balance the required XRP balance calculated from the
                 // reserve.
-                features[featureSponsor] ? ter(tesSUCCESS) : ter(tecINSUF_RESERVE_LINE));
+                features[featureSponsor] ? Ter(tesSUCCESS) : Ter(tecINSUF_RESERVE_LINE));
         }
 
         // Invalid min
@@ -7042,7 +7042,7 @@ private:
         }
 
         // This test validates both invariant changes work together for
-        // the specific case of MPT/MPT pools with > maxDeletableAMMTrustLines.
+        // the specific case of MPT/MPT pools with > kMAX_DELETABLE_AMM_TRUST_LINES.
         {
             Env env(
                 *this,

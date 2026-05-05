@@ -906,8 +906,8 @@ class AccountTx_test : public beast::unit_test::Suite
         env.close();
 
         // check the latest sponsorship-related txn is in account tx list
-        auto const checkTx = [&](Account const& account, Json::StaticString txType) {
-            Json::Value params;
+        auto const checkTx = [&](Account const& account, json::StaticString txType) {
+            json::Value params;
             params[jss::account] = account.human();
             params[jss::limit] = 100;
             auto const jv = env.rpc("json", "account_tx", to_string(params))[jss::result];
@@ -915,33 +915,33 @@ class AccountTx_test : public beast::unit_test::Suite
             auto const& tx0(jv[jss::transactions][0u][jss::tx]);
             BEAST_EXPECT(tx0[jss::TransactionType] == txType);
 
-            std::string const txHash{env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+            std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
             BEAST_EXPECT(tx0[jss::hash] == txHash);
         };
 
         // fee sponsorship
-        env(noop(alice), sponsor::as(sponsor, spfSponsorFee), sig(sfSponsorSignature, sponsor));
+        env(noop(alice), sponsor::As(sponsor, spfSponsorFee), Sig(sfSponsorSignature, sponsor));
         env.close();
         checkTx(alice, jss::AccountSet);
         checkTx(sponsor, jss::AccountSet);
 
         // set sponsor
-        env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+        env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
         env.close();
         checkTx(alice, jss::SponsorshipSet);
         checkTx(sponsor, jss::SponsorshipSet);
 
         // create a ticket with sponsor
         auto const seq = env.seq(alice);
-        env(ticket::create(alice, 1), sponsor::as(sponsor, spfSponsorReserve));
+        env(ticket::create(alice, 1), sponsor::As(sponsor, spfSponsorReserve));
         env.close();
         checkTx(alice, jss::TicketCreate);
         checkTx(sponsor, jss::TicketCreate);
 
         // transfer object sponsorship
-        env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::ticket(alice, seq + 1).key),
-            sponsor::as(sponsor2, spfSponsorReserve),
-            sig(sfSponsorSignature, sponsor2));
+        env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::TicketT()(alice, seq + 1).key),
+            sponsor::As(sponsor2, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor2));
         env.close();
         checkTx(alice, jss::SponsorshipTransfer);
         checkTx(sponsor, jss::SponsorshipTransfer);
@@ -949,9 +949,9 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // use a ticket
         env(noop(alice),
-            ticket::use(seq + 1),
-            sponsor::as(sponsor, spfSponsorFee),
-            sig(sfSponsorSignature, sponsor));
+            ticket::Use(seq + 1),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor));
         env.close();
         checkTx(alice, jss::AccountSet);
         checkTx(sponsor, jss::AccountSet);
@@ -959,8 +959,8 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // account sponsorship
         env(sponsor::transfer(alice, tfSponsorshipCreate),
-            sponsor::as(sponsor, spfSponsorReserve),
-            sig(sfSponsorSignature, sponsor));
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
         env.close();
         checkTx(alice, jss::SponsorshipTransfer);
         checkTx(sponsor, jss::SponsorshipTransfer);

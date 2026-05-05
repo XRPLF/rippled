@@ -344,12 +344,11 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {{"account deletion left behind a sponsorship field"}},
-            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const a1 = A1.id();
-                auto const sleA1 = ac.view().peek(keylet::account(a1));
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
                 if (!sleA1)
                     return false;
-                sleA1->at(sfBalance) = beast::zero;
+                sleA1->at(sfBalance) = beast::kZERO;
                 sleA1->setFieldU32(sfSponsoredOwnerCount, 1);
 
                 ac.view().erase(sleA1);
@@ -361,12 +360,11 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {{"account deletion left behind a sponsorship field"}},
-            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const a1 = A1.id();
-                auto const sleA1 = ac.view().peek(keylet::account(a1));
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
                 if (!sleA1)
                     return false;
-                sleA1->at(sfBalance) = beast::zero;
+                sleA1->at(sfBalance) = beast::kZERO;
                 sleA1->setFieldU32(sfSponsoringOwnerCount, 1);
 
                 ac.view().erase(sleA1);
@@ -378,12 +376,12 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {{"account deletion left behind a sponsorship field"}},
-            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const a1 = A1.id();
-                auto const sleA1 = ac.view().peek(keylet::account(a1));
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const a1Id = a1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1Id));
                 if (!sleA1)
                     return false;
-                sleA1->at(sfBalance) = beast::zero;
+                sleA1->at(sfBalance) = beast::kZERO;
                 sleA1->setFieldU32(sfSponsoringAccountCount, 1);
 
                 ac.view().erase(sleA1);
@@ -395,13 +393,12 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {{"account deletion left behind a sponsorship field"}},
-            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const a1 = A1.id();
-                auto const sleA1 = ac.view().peek(keylet::account(a1));
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
                 if (!sleA1)
                     return false;
-                sleA1->at(sfBalance) = beast::zero;
-                sleA1->setAccountID(sfSponsor, A2.id());
+                sleA1->at(sfBalance) = beast::kZERO;
+                sleA1->setAccountID(sfSponsor, a2.id());
 
                 ac.view().erase(sleA1);
 
@@ -1868,7 +1865,7 @@ class Invariants_test : public beast::unit_test::Suite
         for (std::size_t n = 0; n < numCreds; ++n)
         {
             auto credType = "cred_type" + std::to_string(n);
-            credentials.push_back({a2, credType});
+            credentials.push_back({.issuer = a2, .credType = credType});
         }
 
         std::uint32_t const seq = env.seq(a1);
@@ -4455,13 +4452,13 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace std::string_literals;
         testcase << "Sponsorship";
         {
-            auto const expect_message =
+            auto const expectMessage =
                 "SponsoredOwnerCount does not equal "
                 "SponsoringOwnerCount delta.";
 
             doInvariantCheck(
-                {{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                {{expectMessage}}, [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
                     if (!sle)
                         return false;
                     sle->setFieldU32(sfSponsoredOwnerCount, 1);
@@ -4470,8 +4467,8 @@ class Invariants_test : public beast::unit_test::Suite
                 });
 
             doInvariantCheck(
-                {{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                {{expectMessage}}, [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
                     if (!sle)
                         return false;
                     sle->setFieldU32(sfSponsoringOwnerCount, 1);
@@ -4481,19 +4478,19 @@ class Invariants_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expect_message =
+            auto const expectMessage =
                 "OwnerCount must be greater than or equal to SponsoredOwnerCount.";
 
             doInvariantCheck(
-                {{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                {{expectMessage}}, [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
                     if (!sle)
                         return false;
                     sle->setFieldU32(sfOwnerCount, 0);
                     sle->setFieldU32(sfSponsoredOwnerCount, 1);
                     ac.view().update(sle);
 
-                    auto const sle2 = ac.view().peek(keylet::account(A2.id()));
+                    auto const sle2 = ac.view().peek(keylet::account(a2.id()));
                     if (!sle2)
                         return false;
                     sle2->setFieldU32(sfSponsoringOwnerCount, 1);
@@ -4503,13 +4500,13 @@ class Invariants_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expect_message =
+            auto const expectMessage =
                 "Invariant failed: Net delta of SponsoringAccountCount does "
                 "not match net delta of sfSponsor presence.";
 
             doInvariantCheck(
-                {{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                {{expectMessage}}, [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
                     if (!sle)
                         return false;
                     sle->setFieldU32(sfSponsoringAccountCount, 1);
@@ -4518,11 +4515,11 @@ class Invariants_test : public beast::unit_test::Suite
                 });
 
             doInvariantCheck(
-                {{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                {{expectMessage}}, [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
                     if (!sle)
                         return false;
-                    sle->setAccountID(sfSponsor, A2.id());
+                    sle->setAccountID(sfSponsor, a2.id());
                     ac.view().update(sle);
                     return true;
                 });

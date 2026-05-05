@@ -550,7 +550,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // autofill sponsor signature
 
-            auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
+            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, 2, env.current()->fees().base);
 
@@ -562,7 +562,7 @@ class Simulate_test : public beast::unit_test::Suite
 
                 if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                 {
-                    Json::Value const metadata = getJsonMetadata(result);
+                    json::Value const metadata = getJsonMetadata(result);
 
                     if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
                     {
@@ -596,14 +596,14 @@ class Simulate_test : public beast::unit_test::Suite
             env.fund(XRP(10000), sponsor);
             env.close();
 
-            Json::Value tx;
+            json::Value tx;
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = newDomain;
+            tx[sfDomain.jsonName] = kNEW_DOMAIN;
             tx[sfSponsor.jsonName] = sponsor.human();
             tx[sfSponsorFlags.jsonName] = spfSponsorFee;
-            tx[sfSponsorSignature.jsonName] = Json::objectValue;
+            tx[sfSponsorSignature.jsonName] = json::ObjectValue;
 
             // test with autofill
             testTx(env, tx, validateOutput);

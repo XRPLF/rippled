@@ -769,8 +769,8 @@ parseVault(
 
 static Expected<uint256, json::Value>
 parseSponsorship(
-    Json::Value const& params,
-    Json::StaticString const fieldName,
+    json::Value const& params,
+    json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
@@ -791,7 +791,7 @@ parseSponsorship(
     return keylet::sponsor(*sponsorAccountID, *sponseeAccountID).key;
 }
 
-static Expected<uint256, Json::Value>
+static Expected<uint256, json::Value>
 parseXChainOwnedClaimID(
     json::Value const& claimId,
     json::StaticString const fieldName,

@@ -1,15 +1,13 @@
 // Auto-generated unit tests for transaction SponsorshipTransfer
 
-
-#include <gtest/gtest.h>
-
-#include <protocol_autogen/TestHelpers.h>
-
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol_autogen/transactions/SponsorshipTransfer.h>
 #include <xrpl/protocol_autogen/transactions/AccountSet.h>
+#include <xrpl/protocol_autogen/transactions/SponsorshipTransfer.h>
+
+#include <gtest/gtest.h>
+#include <protocol_autogen/TestHelpers.h>
 
 #include <string>
 
@@ -21,7 +19,7 @@ TEST(TransactionsSponsorshipTransferTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSponsorshipTransfer"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSponsorshipTransfer"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -32,11 +30,7 @@ TEST(TransactionsSponsorshipTransferTests, BuilderSettersRoundTrip)
     auto const objectIDValue = canonical_UINT256();
     auto const sponseeValue = canonical_ACCOUNT();
 
-    SponsorshipTransferBuilder builder{
-        accountValue,
-        sequenceValue,
-        feeValue
-    };
+    SponsorshipTransferBuilder builder{accountValue, sequenceValue, feeValue};
 
     // Set optional fields
     builder.setObjectID(objectIDValue);
@@ -73,7 +67,6 @@ TEST(TransactionsSponsorshipTransferTests, BuilderSettersRoundTrip)
         expectEqualField(expected, *actualOpt, "sfSponsee");
         EXPECT_TRUE(tx.hasSponsee());
     }
-
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -82,7 +75,7 @@ TEST(TransactionsSponsorshipTransferTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSponsorshipTransferFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSponsorshipTransferFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -94,11 +87,7 @@ TEST(TransactionsSponsorshipTransferTests, BuilderFromStTxRoundTrip)
     auto const sponseeValue = canonical_ACCOUNT();
 
     // Build an initial transaction
-    SponsorshipTransferBuilder initialBuilder{
-        accountValue,
-        sequenceValue,
-        feeValue
-    };
+    SponsorshipTransferBuilder initialBuilder{accountValue, sequenceValue, feeValue};
 
     initialBuilder.setObjectID(objectIDValue);
     initialBuilder.setSponsee(sponseeValue);
@@ -133,15 +122,13 @@ TEST(TransactionsSponsorshipTransferTests, BuilderFromStTxRoundTrip)
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSponsee should be present";
         expectEqualField(expected, *actualOpt, "sfSponsee");
     }
-
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
 TEST(TransactionsSponsorshipTransferTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
-    auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const [pk, sk] = generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -154,8 +141,7 @@ TEST(TransactionsSponsorshipTransferTests, WrapperThrowsOnWrongTxType)
 TEST(TransactionsSponsorshipTransferTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
-    auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const [pk, sk] = generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -169,7 +155,7 @@ TEST(TransactionsSponsorshipTransferTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSponsorshipTransferNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSponsorshipTransferNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -178,11 +164,7 @@ TEST(TransactionsSponsorshipTransferTests, OptionalFieldsReturnNullopt)
 
     // Transaction-specific required field values
 
-    SponsorshipTransferBuilder builder{
-        accountValue,
-        sequenceValue,
-        feeValue
-    };
+    SponsorshipTransferBuilder builder{accountValue, sequenceValue, feeValue};
 
     // Do NOT set optional fields
 
@@ -195,4 +177,4 @@ TEST(TransactionsSponsorshipTransferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getSponsee().has_value());
 }
 
-}
+}  // namespace xrpl::transactions
