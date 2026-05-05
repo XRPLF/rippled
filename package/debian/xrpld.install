@@ -3,4 +3,4 @@ xrpld.cfg        etc/xrpld/
 validators.txt   etc/xrpld/
 
 update-xrpld.sh  usr/libexec/xrpld/
-xrpld.logrotate  etc/logrotate.d/
+xrpld.logrotate  etc/logrotate.d/xrpld
