@@ -96,6 +96,19 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                         and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
+                elif os["distro_version"] == "trixie":
+                    if (
+                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-21"
+                        and build_type == "Release"
+                        and architecture["platform"] == "linux/amd64"
+                    ):
+                        skip = False
+                    if (
+                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-22"
+                        and build_type == "Debug"
+                        and architecture["platform"] == "linux/amd64"
+                    ):
+                        skip = False
                 if skip:
                     continue
 
@@ -189,7 +202,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # We skip all clang 20+ on arm64 due to Boost build error.
         if (
             f"{os['compiler_name']}-{os['compiler_version']}"
-            in ["clang-20", "clang-21"]
+            in ["clang-20", "clang-21", "clang-22"]
             and architecture["platform"] == "linux/arm64"
         ):
             continue
@@ -244,7 +257,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
             "gcc-15",
             "clang-20",
         ]:
-            # Add ASAN configuration.
+            # Add ASAN configuration for both gcc-15 and clang-20
             configurations.append(
                 {
                     "config_name": config_name + "-asan",
@@ -257,19 +270,20 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "sanitizers": "address",
                 }
             )
-            # Add UBSAN configuration.
-            configurations.append(
-                {
-                    "config_name": config_name + "-ubsan",
-                    "cmake_args": cmake_args,
-                    "cmake_target": cmake_target,
-                    "build_only": build_only,
-                    "build_type": build_type,
-                    "os": os,
-                    "architecture": architecture,
-                    "sanitizers": "undefinedbehavior",
-                }
-            )
+            # Add UBSAN configuration only for gcc-15 (UBSAN is enabled for clang-22)
+            if f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15":
+                configurations.append(
+                    {
+                        "config_name": config_name + "-ubsan",
+                        "cmake_args": cmake_args,
+                        "cmake_target": cmake_target,
+                        "build_only": build_only,
+                        "build_type": build_type,
+                        "os": os,
+                        "architecture": architecture,
+                        "sanitizers": "undefinedbehavior",
+                    }
+                )
             # TSAN is deactivated due to seg faults with latest compilers.
             activate_tsan = False
             if activate_tsan:
@@ -285,6 +299,24 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                         "sanitizers": "thread,undefinedbehavior",
                     }
                 )
+        elif os[
+            "distro_version"
+        ] == "trixie" and f"{os['compiler_name']}-{os['compiler_version']}" in [
+            "clang-22",
+        ]:
+            # Add UBSAN configuration
+            configurations.append(
+                {
+                    "config_name": config_name + "-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "undefinedbehavior",
+                }
+            )
         else:
             configurations.append(
                 {
