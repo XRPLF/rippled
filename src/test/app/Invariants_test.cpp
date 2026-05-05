@@ -24,6 +24,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -50,6 +51,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
@@ -2037,6 +2039,68 @@ class Invariants_test : public beast::unit_test::Suite
                         tx.setFieldAmount(sfTakerGets, XRP(1));
                     }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+        }
+    }
+
+    void
+    testBookDirectoryExchangeRate()
+    {
+        using namespace test::jtx;
+        testcase << "book directory exchange rate";
+
+        auto const makeBookRoot = [](Account const& account) {
+            Book const book{xrpIssue(), account["USD"], std::nullopt};
+            return keylet::quality(keylet::kBOOK(book), STAmount::kU_RATE_ONE);
+        };
+
+        auto const makeRootPage = [](Keylet const& dir, std::uint64_t exchangeRate) {
+            auto sleDir = std::make_shared<SLE>(dir);
+            sleDir->setFieldH256(sfRootIndex, dir.key);
+            STVector256 indexes;
+            indexes.pushBack(uint256{1});
+            sleDir->setFieldV256(sfIndexes, indexes);
+            sleDir->setFieldU64(sfExchangeRate, exchangeRate);
+            return sleDir;
+        };
+
+        auto const makeChildPage = [](Keylet const& rootDir) {
+            auto sleDir = std::make_shared<SLE>(keylet::page(rootDir, 1));
+            sleDir->setFieldH256(sfRootIndex, rootDir.key);
+            STVector256 indexes;
+            indexes.pushBack(uint256{2});
+            sleDir->setFieldV256(sfIndexes, indexes);
+            return sleDir;
+        };
+
+        doInvariantCheck(
+            {{"book directory exchange rate does not match directory quality"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const dir = makeBookRoot(a1);
+                ac.view().insert(makeRootPage(dir, STAmount::kU_RATE_ONE + 1));
+                return true;
+            });
+
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1);
+            env.close();
+
+            OpenView view{*env.current()};
+            auto const rootDir = makeBookRoot(a1);
+            view.rawInsert(makeRootPage(rootDir, STAmount::kU_RATE_ONE + 1));
+
+            ValidBookDirectory invariant;
+            invariant.visitEntry(false, nullptr, makeChildPage(rootDir));
+
+            test::StreamSink sink{beast::severities::KWarning};
+            beast::Journal const jlog{sink};
+            BEAST_EXPECT(!invariant.finalize(
+                STTx{ttACCOUNT_SET, [](STObject&) {}}, tesSUCCESS, XRPAmount{}, view, jlog));
+            BEAST_EXPECT(
+                sink.messages().str().find(
+                    "book directory exchange rate does not match directory quality") !=
+                std::string::npos);
         }
     }
 
@@ -4388,6 +4452,7 @@ public:
             (defaultAmendments() | fixPermissionedDomainInvariant) - fixSecurity3_1_3);
         testPermissionedDEX(
             defaultAmendments() - fixPermissionedDomainInvariant - fixSecurity3_1_3);
+        testBookDirectoryExchangeRate();
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
         testValidLoanBroker();

@@ -18,14 +18,6 @@
 
 namespace xrpl {
 
-bool
-LedgerStateFix::checkExtraFeatures(PreflightContext const& ctx)
-{
-    if (static_cast<FixType>(ctx.tx[sfLedgerFixType]) == FixType::BookExchangeRate)
-        return ctx.rules.enabled(fixCleanup3_2_0);
-    return true;
-}
-
 NotTEC
 LedgerStateFix::preflight(PreflightContext const& ctx)
 {
@@ -37,6 +29,9 @@ LedgerStateFix::preflight(PreflightContext const& ctx)
             break;
 
         case FixType::BookExchangeRate:
+            if (!ctx.rules.enabled(fixCleanup3_2_0))
+                return temDISABLED;
+
             if (!ctx.tx.isFieldPresent(sfBookDirectory))
                 return temINVALID;
             break;
@@ -79,6 +74,7 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
         if (!sle->isFieldPresent(sfExchangeRate))
             return tecNO_PERMISSION;
 
+        // ExchangeRate is already correct, nothing to fix.
         if (getQuality(sle->key()) == sle->getFieldU64(sfExchangeRate))
             return tecNO_PERMISSION;
 
