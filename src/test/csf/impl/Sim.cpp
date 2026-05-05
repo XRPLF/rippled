@@ -13,7 +13,7 @@ namespace xrpl::test::csf {
 void
 Sim::run(int ledgers)
 {
-    for (auto& p : peers)
+    for (auto& p : peers_)
     {
         p.targetLedgers = p.completedLedgers + ledgers;
         p.start();
@@ -24,18 +24,18 @@ Sim::run(int ledgers)
 void
 Sim::run(SimDuration const& dur)
 {
-    for (auto& p : peers)
+    for (auto& p : peers_)
     {
         p.targetLedgers = std::numeric_limits<decltype(p.targetLedgers)>::max();
         p.start();
     }
-    scheduler.step_for(dur);
+    scheduler.stepFor(dur);
 }
 
 bool
 Sim::synchronized() const
 {
-    return synchronized(allPeers);
+    return synchronized(allPeers_);
 }
 
 bool
@@ -53,7 +53,7 @@ Sim::synchronized(PeerGroup const& g)
 std::size_t
 Sim::branches() const
 {
-    return branches(allPeers);
+    return branches(allPeers_);
 }
 std::size_t
 Sim::branches(PeerGroup const& g) const

@@ -19,9 +19,9 @@ class UNLModifyBuilder;
  * @brief Transaction: UNLModify
  *
  * Type: ttUNL_MODIFY (102)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use UNLModifyBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfUNLModifyDisabling (soeREQUIRED)
+     * @brief Get sfUNLModifyDisabling (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfLedgerSequence (soeREQUIRED)
+     * @brief Get sfLedgerSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfUNLModifyValidator (soeREQUIRED)
+     * @brief Get sfUNLModifyValidator (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -85,7 +85,7 @@ public:
  * @brief Builder for UNLModify transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class UNLModifyBuilder : public TransactionBuilderBase<UNLModifyBuilder>
@@ -128,7 +128,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfUNLModifyDisabling (soeREQUIRED)
+     * @brief Set sfUNLModifyDisabling (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&
@@ -139,7 +139,7 @@ public:
     }
 
     /**
-     * @brief Set sfLedgerSequence (soeREQUIRED)
+     * @brief Set sfLedgerSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&
@@ -150,7 +150,7 @@ public:
     }
 
     /**
-     * @brief Set sfUNLModifyValidator (soeREQUIRED)
+     * @brief Set sfUNLModifyValidator (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&

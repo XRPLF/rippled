@@ -30,7 +30,7 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
 
-    if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > maxMPTokenAmount)
+    if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > kMAX_MP_TOKEN_AMOUNT)
         return temBAD_AMOUNT;
 
     if (!isValidCompressedECPoint(ctx.tx[sfBalanceCommitment]))
@@ -42,7 +42,7 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
         return res;
 
     // ConvertBack proof = compact sigma proof (128 bytes) + single bulletproof (688 bytes)
-    if (ctx.tx[sfZKProof].size() != ecConvertBackProofLength)
+    if (ctx.tx[sfZKProof].size() != kEC_CONVERT_BACK_PROOF_LENGTH)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -212,15 +212,15 @@ ConfidentialMPTConvertBack::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const amtToConvertBack = ctx_.tx[sfMPTAmount];
-    auto const amt = (*sleMptoken)[~sfMPTAmount].value_or(0);
+    auto const amt = (*sleMptoken)[~sfMPTAmount].valueOr(0);
 
     // Converting back increases regular balance and decreases confidential
     // outstanding. This is the inverse of Convert.
-    if (amt > maxMPTokenAmount - amtToConvertBack)
+    if (amt > kMAX_MP_TOKEN_AMOUNT - amtToConvertBack)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleMptoken)[sfMPTAmount] = amt + amtToConvertBack;
 
-    auto const coa = (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
+    auto const coa = (*sleIssuance)[~sfConfidentialOutstandingAmount].valueOr(0);
     if (coa < amtToConvertBack)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleIssuance)[sfConfidentialOutstandingAmount] = coa - amtToConvertBack;

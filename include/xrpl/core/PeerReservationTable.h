@@ -22,12 +22,14 @@ public:
     PublicKey nodeId;
     std::string description = {};  // NOLINT(readability-redundant-member-init)
 
-    auto
-    toJson() const -> Json::Value;
+    [[nodiscard]] auto
+    toJson() const -> json::Value;
 
     template <typename Hasher>
     friend void
-    hash_append(Hasher& h, PeerReservation const& x) noexcept
+    hash_append(
+        Hasher& h,
+        PeerReservation const& x) noexcept  // NOLINT(readability-identifier-naming)
     {
         using beast::hash_append;
         hash_append(h, x.nodeId);
@@ -67,7 +69,7 @@ public:
     bool
     contains(PublicKey const& nodeId)
     {
-        std::lock_guard const lock(this->mutex_);
+        std::scoped_lock const lock(this->mutex_);
         return table_.contains({.nodeId = nodeId, .description = {}});
     }
 
@@ -81,7 +83,7 @@ public:
      * @throw soci::soci_error
      */
     std::optional<PeerReservation>
-    insert_or_assign(PeerReservation const& reservation);
+    insertOrAssign(PeerReservation const& reservation);
 
     /**
      * @return the erased reservation if it existed
@@ -93,7 +95,7 @@ private:
     beast::Journal mutable journal_;
     std::mutex mutable mutex_;
     DatabaseCon* connection_{};
-    std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table_;
+    std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual> table_;
 };
 
 }  // namespace xrpl

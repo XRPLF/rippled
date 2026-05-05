@@ -28,33 +28,33 @@ fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs
 
 void
 fromNetwork(
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     std::string const& strIp,
     std::uint16_t const iPort,
     std::string const& strUsername,
     std::string const& strPassword,
     std::string const& strPath,
     std::string const& strMethod,
-    Json::Value const& jvParams,
+    json::Value const& jvParams,
     bool const bSSL,
     bool quiet,
     Logs& logs,
-    std::function<void(Json::Value const& jvInput)> callbackFuncP =
-        std::function<void(Json::Value const& jvInput)>(),
+    std::function<void(json::Value const& jvInput)> callbackFuncP =
+        std::function<void(json::Value const& jvInput)>(),
     std::unordered_map<std::string, std::string> headers = {});
 }  // namespace RPCCall
 
-Json::Value
+json::Value
 rpcCmdToJson(
     std::vector<std::string> const& args,
-    Json::Value& retParams,
+    json::Value& retParams,
     unsigned int apiVersion,
     beast::Journal j);
 
 /** Internal invocation of RPC client.
  *  Used by both xrpld command line as well as xrpld unit tests
  */
-std::pair<int, Json::Value>
+std::pair<int, json::Value>
 rpcClient(
     std::vector<std::string> const& args,
     Config const& config,

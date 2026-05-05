@@ -33,7 +33,7 @@ namespace xrpl {
 class ConfidentialMPTSend : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit ConfidentialMPTSend(ApplyContext& ctx) : Transactor(ctx)
     {

@@ -19,9 +19,9 @@ class ConfidentialMPTConvertBackBuilder;
  * @brief Transaction: ConfidentialMPTConvertBack
  *
  * Type: ttCONFIDENTIAL_MPT_CONVERT_BACK (87)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTConvertBackBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfMPTAmount (soeREQUIRED)
+     * @brief Get sfMPTAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfHolderEncryptedAmount (soeREQUIRED)
+     * @brief Get sfHolderEncryptedAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * @brief Get sfIssuerEncryptedAmount (soeREQUIRED)
+     * @brief Get sfIssuerEncryptedAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -92,7 +92,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuditorEncryptedAmount (soeOPTIONAL)
+     * @brief Get sfAuditorEncryptedAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -118,7 +118,7 @@ public:
     }
 
     /**
-     * @brief Get sfBlindingFactor (soeREQUIRED)
+     * @brief Get sfBlindingFactor (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -129,7 +129,7 @@ public:
     }
 
     /**
-     * @brief Get sfZKProof (soeREQUIRED)
+     * @brief Get sfZKProof (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -140,7 +140,7 @@ public:
     }
 
     /**
-     * @brief Get sfBalanceCommitment (soeREQUIRED)
+     * @brief Get sfBalanceCommitment (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -155,7 +155,7 @@ public:
  * @brief Builder for ConfidentialMPTConvertBack transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ConfidentialMPTConvertBackBuilder : public TransactionBuilderBase<ConfidentialMPTConvertBackBuilder>
@@ -206,7 +206,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
@@ -217,7 +217,7 @@ public:
     }
 
     /**
-     * @brief Set sfMPTAmount (soeREQUIRED)
+     * @brief Set sfMPTAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
@@ -228,7 +228,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolderEncryptedAmount (soeREQUIRED)
+     * @brief Set sfHolderEncryptedAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
@@ -239,7 +239,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuerEncryptedAmount (soeREQUIRED)
+     * @brief Set sfIssuerEncryptedAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
@@ -250,7 +250,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuditorEncryptedAmount (soeOPTIONAL)
+     * @brief Set sfAuditorEncryptedAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
@@ -261,7 +261,7 @@ public:
     }
 
     /**
-     * @brief Set sfBlindingFactor (soeREQUIRED)
+     * @brief Set sfBlindingFactor (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
@@ -272,7 +272,7 @@ public:
     }
 
     /**
-     * @brief Set sfZKProof (soeREQUIRED)
+     * @brief Set sfZKProof (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
@@ -283,7 +283,7 @@ public:
     }
 
     /**
-     * @brief Set sfBalanceCommitment (soeREQUIRED)
+     * @brief Set sfBalanceCommitment (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&

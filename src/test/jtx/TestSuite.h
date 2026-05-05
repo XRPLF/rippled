@@ -6,7 +6,7 @@
 
 namespace xrpl {
 
-class TestSuite : public beast::unit_test::suite
+class TestSuite : public beast::unit_test::Suite
 {
 public:
     template <class S, class T>
