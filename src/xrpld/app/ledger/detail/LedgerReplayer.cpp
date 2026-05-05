@@ -51,7 +51,7 @@ LedgerReplayer::replay(
 {
     XRPL_ASSERT(
         finishLedgerHash.isNonZero() && totalNumLedgers > 0 &&
-            totalNumLedgers <= LedgerReplayParameters::MAX_TASK_SIZE,
+            totalNumLedgers <= LedgerReplayParameters::kMAX_TASK_SIZE,
         "xrpl::LedgerReplayer::replay : valid inputs");
 
     // NOLINTNEXTLINE(misc-const-correctness)
@@ -64,9 +64,9 @@ LedgerReplayer::replay(
         std::scoped_lock const lock(mtx_);
         if (app_.isStopping())
             return;
-        if (tasks_.size() >= LedgerReplayParameters::MAX_TASKS)
+        if (tasks_.size() >= LedgerReplayParameters::kMAX_TASKS)
         {
-            JLOG(j_.info()) << "Too many replay tasks, dropping new task " << parameter.finishHash_;
+            JLOG(j_.info()) << "Too many replay tasks, dropping new task " << parameter.finishHash;
             return;
         }
 
@@ -74,23 +74,23 @@ LedgerReplayer::replay(
         {
             if (parameter.canMergeInto(t->getTaskParameter()))
             {
-                JLOG(j_.info()) << "Task " << parameter.finishHash_ << " with " << totalNumLedgers
+                JLOG(j_.info()) << "Task " << parameter.finishHash << " with " << totalNumLedgers
                                 << " ledgers merged into an existing task.";
                 return;
             }
         }
         JLOG(j_.info()) << "Replay " << totalNumLedgers << " ledgers. Finish ledger hash "
-                        << parameter.finishHash_;
+                        << parameter.finishHash;
 
-        auto i = skipLists_.find(parameter.finishHash_);
+        auto i = skipLists_.find(parameter.finishHash);
         if (i != skipLists_.end())
             skipList = i->second.lock();
 
         if (!skipList)  // cannot find, or found but cannot lock
         {
             skipList = std::make_shared<SkipListAcquire>(
-                app_, inboundLedgers_, parameter.finishHash_, peerSetBuilder_->build());
-            skipLists_[parameter.finishHash_] = skipList;
+                app_, inboundLedgers_, parameter.finishHash, peerSetBuilder_->build());
+            skipLists_[parameter.finishHash] = skipList;
             newSkipList = true;
         }
 
@@ -116,24 +116,24 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
     }
 
     auto const& parameter = task->getTaskParameter();
-    JLOG(j_.trace()) << "Creating " << parameter.totalLedgers_ - 1 << " deltas";
-    if (parameter.totalLedgers_ > 1)
+    JLOG(j_.trace()) << "Creating " << parameter.totalLedgers - 1 << " deltas";
+    if (parameter.totalLedgers > 1)
     {
-        auto skipListItem = std::ranges::find(parameter.skipList_, parameter.startHash_);
-        auto const wasLast = skipListItem == parameter.skipList_.end();
+        auto skipListItem = std::ranges::find(parameter.skipList, parameter.startHash);
+        auto const wasLast = skipListItem == parameter.skipList.end();
         if (not wasLast)
             ++skipListItem;
-        auto const isLast = skipListItem == parameter.skipList_.end();
+        auto const isLast = skipListItem == parameter.skipList.end();
 
         if (wasLast || isLast)
         {
             JLOG(j_.error()) << "Task parameter error when creating deltas "
-                             << parameter.finishHash_;
+                             << parameter.finishHash;
             return;
         }
 
-        for (std::uint32_t seq = parameter.startSeq_ + 1;
-             seq <= parameter.finishSeq_ && skipListItem != parameter.skipList_.end();
+        for (std::uint32_t seq = parameter.startSeq + 1;
+             seq <= parameter.finishSeq && skipListItem != parameter.skipList.end();
              ++seq, ++skipListItem)
         {
             std::shared_ptr<LedgerDeltaAcquire> delta;
@@ -224,7 +224,7 @@ LedgerReplayer::sweep()
                 [this](auto const& t) -> bool {
                     if (t->finished())
                     {
-                        JLOG(j_.debug()) << "Sweep task " << t->getTaskParameter().finishHash_;
+                        JLOG(j_.debug()) << "Sweep task " << t->getTaskParameter().finishHash;
                         return true;
                     }
                     return false;

@@ -13,14 +13,14 @@
 
 namespace xrpl {
 
-csprng_engine::csprng_engine()
+CsprngEngine::CsprngEngine()
 {
     // This is not strictly necessary
     if (RAND_poll() != 1)
         Throw<std::runtime_error>("CSPRNG: Initial polling failed");
 }
 
-csprng_engine::~csprng_engine()
+CsprngEngine::~CsprngEngine()
 {
     // This cleanup function is not needed in newer versions of OpenSSL
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
@@ -29,7 +29,7 @@ csprng_engine::~csprng_engine()
 }
 
 void
-csprng_engine::mix_entropy(void* buffer, std::size_t count)
+CsprngEngine::mixEntropy(void* buffer, std::size_t count)
 {
     std::array<std::random_device::result_type, 128> entropy{};
 
@@ -54,7 +54,7 @@ csprng_engine::mix_entropy(void* buffer, std::size_t count)
 }
 
 void
-csprng_engine::operator()(void* ptr, std::size_t count)
+CsprngEngine::operator()(void* ptr, std::size_t count)
 {
     // RAND_bytes is thread-safe on OpenSSL 1.1.0 and later when compiled
     // with thread support, so we don't need to grab a mutex.
@@ -69,19 +69,19 @@ csprng_engine::operator()(void* ptr, std::size_t count)
         Throw<std::runtime_error>("CSPRNG: Insufficient entropy");
 }
 
-csprng_engine::result_type
-csprng_engine::operator()()
+CsprngEngine::result_type
+CsprngEngine::operator()()
 {
     result_type ret = 0;
     (*this)(&ret, sizeof(result_type));
     return ret;
 }
 
-csprng_engine&
-crypto_prng()
+CsprngEngine&
+cryptoPrng()
 {
-    static csprng_engine engine;
-    return engine;
+    static CsprngEngine kENGINE;
+    return kENGINE;
 }
 
 }  // namespace xrpl

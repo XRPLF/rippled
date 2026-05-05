@@ -44,30 +44,30 @@ using is_engine = std::is_invocable_r<Result, Engine>;
     will be randomly seeded.
 */
 inline beast::xor_shift_engine&
-default_prng()
+defaultPrng()
 {
     // This is used to seed the thread-specific PRNGs on demand
-    static beast::xor_shift_engine seeder = [] {
+    static beast::xor_shift_engine kSEEDER = [] {
         std::random_device rng;
         std::uniform_int_distribution<std::uint64_t> distribution{1};
         return beast::xor_shift_engine(distribution(rng));
     }();
 
     // This protects the seeder
-    static std::mutex m;
+    static std::mutex kM;
 
     // The thread-specific PRNGs:
-    thread_local beast::xor_shift_engine engine = [] {
+    thread_local beast::xor_shift_engine kENGINE = [] {
         std::uint64_t seed = 0;
         {
-            std::scoped_lock const lk(m);
+            std::scoped_lock const lk(kM);
             std::uniform_int_distribution<std::uint64_t> distribution{1};
-            seed = distribution(seeder);
+            seed = distribution(kSEEDER);
         }
         return beast::xor_shift_engine{seed};
     }();
 
-    return engine;
+    return kENGINE;
 }
 
 /** Return a uniformly distributed random integer.
@@ -92,7 +92,7 @@ default_prng()
 /** @{ */
 template <class Engine, class Integral>
 std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
-rand_int(Engine& engine, Integral min, Integral max)
+randInt(Engine& engine, Integral min, Integral max)
 {
     XRPL_ASSERT(max > min, "xrpl::rand_int : max over min inputs");
 
@@ -104,37 +104,37 @@ rand_int(Engine& engine, Integral min, Integral max)
 
 template <class Integral>
 std::enable_if_t<std::is_integral_v<Integral>, Integral>
-rand_int(Integral min, Integral max)
+randInt(Integral min, Integral max)
 {
-    return rand_int(default_prng(), min, max);
+    return randInt(defaultPrng(), min, max);
 }
 
 template <class Engine, class Integral>
 std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
-rand_int(Engine& engine, Integral max)
+randInt(Engine& engine, Integral max)
 {
-    return rand_int(engine, Integral(0), max);
+    return randInt(engine, Integral(0), max);
 }
 
 template <class Integral>
 std::enable_if_t<std::is_integral_v<Integral>, Integral>
-rand_int(Integral max)
+randInt(Integral max)
 {
-    return rand_int(default_prng(), max);
+    return randInt(defaultPrng(), max);
 }
 
 template <class Integral, class Engine>
 std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
-rand_int(Engine& engine)
+randInt(Engine& engine)
 {
-    return rand_int(engine, std::numeric_limits<Integral>::max());
+    return randInt(engine, std::numeric_limits<Integral>::max());
 }
 
 template <class Integral = int>
 std::enable_if_t<std::is_integral_v<Integral>, Integral>
-rand_int()
+randInt()
 {
-    return rand_int(default_prng(), std::numeric_limits<Integral>::max());
+    return randInt(defaultPrng(), std::numeric_limits<Integral>::max());
 }
 /** @} */
 
@@ -145,17 +145,17 @@ std::enable_if_t<
     (std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>) &&
         detail::is_engine<Engine>::value,
     Byte>
-rand_byte(Engine& engine)
+randByte(Engine& engine)
 {
-    return static_cast<Byte>(rand_int<Engine, std::uint32_t>(
+    return static_cast<Byte>(randInt<Engine, std::uint32_t>(
         engine, std::numeric_limits<Byte>::min(), std::numeric_limits<Byte>::max()));
 }
 
 template <class Byte = std::uint8_t>
 std::enable_if_t<(std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>), Byte>
-rand_byte()
+randByte()
 {
-    return rand_byte<Byte>(default_prng());
+    return randByte<Byte>(defaultPrng());
 }
 /** @} */
 
@@ -163,15 +163,15 @@ rand_byte()
 /** @{ */
 template <class Engine>
 inline bool
-rand_bool(Engine& engine)
+randBool(Engine& engine)
 {
-    return rand_int(engine, 1) == 1;
+    return randInt(engine, 1) == 1;
 }
 
 inline bool
-rand_bool()
+randBool()
 {
-    return rand_bool(default_prng());
+    return randBool(defaultPrng());
 }
 /** @} */
 

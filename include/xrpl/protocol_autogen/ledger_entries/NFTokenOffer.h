@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfNFTokenID (soeREQUIRED)
+     * @brief Get sfNFTokenID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfNFTokenOfferNode (soeREQUIRED)
+     * @brief Get sfNFTokenOfferNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -101,7 +101,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestination (soeOPTIONAL)
+     * @brief Get sfDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -125,7 +125,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -149,7 +149,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -160,7 +160,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -175,7 +175,7 @@ public:
  * @brief Builder for NFTokenOffer ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class NFTokenOfferBuilder : public LedgerEntryBuilderBase<NFTokenOfferBuilder>
@@ -220,7 +220,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -231,7 +231,7 @@ public:
     }
 
     /**
-     * @brief Set sfNFTokenID (soeREQUIRED)
+     * @brief Set sfNFTokenID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -242,7 +242,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -253,7 +253,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -264,7 +264,7 @@ public:
     }
 
     /**
-     * @brief Set sfNFTokenOfferNode (soeREQUIRED)
+     * @brief Set sfNFTokenOfferNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -275,7 +275,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -286,7 +286,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -297,7 +297,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
@@ -308,7 +308,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&

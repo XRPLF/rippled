@@ -23,7 +23,7 @@ struct FlowDebugInfo
     struct PassInfo
     {
         PassInfo() = delete;
-        PassInfo(bool nativeIn_, bool nativeOut_) : nativeIn(nativeIn_), nativeOut(nativeOut_)
+        PassInfo(bool nativeIn, bool nativeOut) : nativeIn(nativeIn), nativeOut(nativeOut)
         {
         }
         bool const nativeIn;
@@ -52,10 +52,10 @@ struct FlowDebugInfo
         }
 
         void
-        push_back(EitherAmount const& in_amt, EitherAmount const& out_amt, std::size_t active)
+        pushBack(EitherAmount const& inAmt, EitherAmount const& outAmt, std::size_t active)
         {
-            in.push_back(in_amt);
-            out.push_back(out_amt);
+            in.push_back(inAmt);
+            out.push_back(outAmt);
             numActive.push_back(active);
         }
 
@@ -167,7 +167,7 @@ struct FlowDebugInfo
     void
     pushPass(EitherAmount const& in, EitherAmount const& out, std::size_t activeStrands)
     {
-        passInfo.push_back(in, out, activeStrands);
+        passInfo.pushBack(in, out, activeStrands);
     }
 
     void
@@ -183,7 +183,7 @@ struct FlowDebugInfo
     }
 
     [[nodiscard]] std::string
-    to_string(bool writePassInfo) const
+    toString(bool writePassInfo) const
     {
         std::ostringstream ostr;
 
@@ -193,7 +193,7 @@ struct FlowDebugInfo
 
         if (writePassInfo)
         {
-            auto write_list = [&ostr](auto const& vals, auto&& fun, char delim = ';') {
+            auto writeList = [&ostr](auto const& vals, auto&& fun, char delim = ';') {
                 ostr << '[';
                 if (!vals.empty())
                 {
@@ -203,24 +203,24 @@ struct FlowDebugInfo
                 }
                 ostr << ']';
             };
-            auto writeXrpAmtList = [&write_list](
+            auto writeXrpAmtList = [&writeList](
                                        std::vector<EitherAmount> const& amts, char delim = ';') {
-                auto get_val = [](EitherAmount const& a) -> std::string {
+                auto getVal = [](EitherAmount const& a) -> std::string {
                     return xrpl::to_string(a.get<XRPAmount>());
                 };
-                write_list(amts, get_val, delim);
+                writeList(amts, getVal, delim);
             };
-            auto writeIouAmtList = [&write_list](
+            auto writeIouAmtList = [&writeList](
                                        std::vector<EitherAmount> const& amts, char delim = ';') {
-                auto get_val = [](EitherAmount const& a) -> std::string {
+                auto getVal = [](EitherAmount const& a) -> std::string {
                     return xrpl::to_string(a.get<IOUAmount>());
                 };
-                write_list(amts, get_val, delim);
+                writeList(amts, getVal, delim);
             };
-            auto writeIntList = [&write_list](std::vector<size_t> const& vals, char delim = ';') {
+            auto writeIntList = [&writeList](std::vector<size_t> const& vals, char delim = ';') {
                 // NOLINTNEXTLINE(bugprone-return-const-ref-from-parameter)
-                auto get_val = [](size_t const& v) -> size_t const& { return v; };
-                write_list(vals, get_val);
+                auto getVal = [](size_t const& v) -> size_t const& { return v; };
+                writeList(vals, getVal);
             };
             auto writeNestedIouAmtList =
                 [&ostr, &writeIouAmtList](std::vector<std::vector<EitherAmount>> const& amts) {

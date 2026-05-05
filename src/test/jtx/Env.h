@@ -73,9 +73,9 @@ noripple(Account const& account, Args const&... args)
 }
 
 inline FeatureBitset
-testable_amendments()
+testableAmendments()
 {
-    static FeatureBitset const ids = [] {
+    static FeatureBitset const kIDS = [] {
         auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -93,18 +93,18 @@ testable_amendments()
         }
         return FeatureBitset(feats);
     }();
-    return ids;
+    return kIDS;
 }
 
 //------------------------------------------------------------------------------
 
 class SuiteLogs : public Logs
 {
-    beast::unit_test::suite& suite_;
+    beast::unit_test::Suite& suite_;
 
 public:
-    explicit SuiteLogs(beast::unit_test::suite& suite)
-        : Logs(beast::severities::kError), suite_(suite)
+    explicit SuiteLogs(beast::unit_test::Suite& suite)
+        : Logs(beast::severities::KError), suite_(suite)
     {
     }
 
@@ -123,9 +123,9 @@ public:
 class Env
 {
 public:
-    beast::unit_test::suite& test;
+    beast::unit_test::Suite& test;
 
-    Account const& master = Account::master;
+    Account const& master = Account::kMASTER;
 
     /// Used by parseResult() and postConditions()
     struct ParsedResult
@@ -135,7 +135,7 @@ public:
         // with an "error" that corresponds to the "code"), or with an "error"
         // and an "exception". However, this structure allows all possible
         // combinations.
-        std::optional<error_code_i> rpcCode;
+        std::optional<ErrorCodeI> rpcCode;
         std::string rpcMessage;
         std::string rpcError;
         std::string rpcException;
@@ -152,7 +152,7 @@ private:
 
         AppBundle() = default;
         AppBundle(
-            beast::unit_test::suite& suite,
+            beast::unit_test::Suite& suite,
             std::unique_ptr<Config> config,
             std::unique_ptr<Logs> logs,
             beast::severities::Severity thresh,
@@ -177,7 +177,7 @@ public:
      * and takes ownership the passed Config pointer. Features will be enabled
      * according to rules described below (see next constructor).
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::Suite
      * @param config The desired Config - ownership will be taken by moving
      * the pointer. See envconfig and related functions for common config
      * tweaks.
@@ -185,22 +185,22 @@ public:
      * supported_features_except() to enable all and disable specific features.
      */
     // VFALCO Could wrap the suite::log in a Journal here
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         std::unique_ptr<Config> config,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr,
         std::optional<beast::severities::Severity> thresh = std::nullopt,
         std::optional<XRPAmount> referenceFee = std::nullopt)
-        : test(suite_)
+        : test(suite)
         , bundle_(
-              suite_,
+              suite,
               std::move(config),
               std::move(logs),
-              thresh.value_or(beast::severities::kError),
+              thresh.value_or(beast::severities::KError),
               referenceFee)
         , journal{bundle_.app->getJournal("Env")}
     {
-        memoize(Account::master);
+        memoize(Account::kMASTER);
         Pathfinder::initPathTable();
         foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) {
             appFeats.insert(f);
@@ -216,17 +216,17 @@ public:
      * with_only_features(...) or supported_features_except(...) to create a
      * collection of features appropriate for passing here.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::Suite
      * @param features collection of features
      * @param logs log handler
      * @param referenceFee non-default reference fee
      *
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         FeatureBitset features,
         std::unique_ptr<Logs> logs,
         std::optional<XRPAmount> referenceFee = std::nullopt)
-        : Env(suite_, envconfig(), features, std::move(logs), std::nullopt, referenceFee)
+        : Env(suite, envconfig(), features, std::move(logs), std::nullopt, referenceFee)
     {
     }
     /**
@@ -238,15 +238,15 @@ public:
      * with_only_features(...) or supported_features_except(...) to create a
      * collection of features appropriate for passing here.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::Suite
      * @param features collection of features
      * @param referenceFee non-default reference fee
      *
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         FeatureBitset features,
         std::optional<XRPAmount> referenceFee = std::nullopt)
-        : Env(suite_, envconfig(), features, nullptr, std::nullopt, referenceFee)
+        : Env(suite, envconfig(), features, nullptr, std::nullopt, referenceFee)
     {
     }
 
@@ -257,22 +257,17 @@ public:
      * and takes ownership the passed Config pointer. All supported amendments
      * are enabled by this version of the constructor.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::Suite
      * @param config The desired Config - ownership will be taken by moving
      * the pointer. See envconfig and related functions for common config
      * tweaks.
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr,
         std::optional<beast::severities::Severity> thresh = std::nullopt,
         std::optional<XRPAmount> referenceFee = std::nullopt)
-        : Env(suite_,
-              std::move(config),
-              testable_amendments(),
-              std::move(logs),
-              thresh,
-              referenceFee)
+        : Env(suite, std::move(config), testableAmendments(), std::move(logs), thresh, referenceFee)
     {
     }
 
@@ -283,16 +278,16 @@ public:
      * and takes ownership the passed Config pointer. All supported amendments
      * are enabled by this version of the constructor.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::Suite
      * @param config The desired Config - ownership will be taken by moving
      * the pointer. See envconfig and related functions for common config
      * tweaks.
      * @param referenceFee Optional reference fee to use in fee settings.
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::Suite& suite,
         std::unique_ptr<Config> config,
         std::optional<XRPAmount> referenceFee)
-        : Env(suite_, std::move(config), testable_amendments(), nullptr, std::nullopt, referenceFee)
+        : Env(suite, std::move(config), testableAmendments(), nullptr, std::nullopt, referenceFee)
     {
     }
 
@@ -303,10 +298,10 @@ public:
      * test Env configuration (from envconfig()) and all supported
      * amendments enabled.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::Suite
      */
-    Env(beast::unit_test::suite& suite_, std::optional<XRPAmount> referenceFee)
-        : Env(suite_, envconfig(), referenceFee)
+    Env(beast::unit_test::Suite& suite, std::optional<XRPAmount> referenceFee)
+        : Env(suite, envconfig(), referenceFee)
     {
     }
 
@@ -317,12 +312,12 @@ public:
      * test Env configuration (from envconfig()) and all supported
      * amendments enabled.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::Suite
      */
-    Env(beast::unit_test::suite& suite_,
-        beast::severities::Severity thresh = beast::severities::kError,
+    Env(beast::unit_test::Suite& suite,
+        beast::severities::Severity thresh = beast::severities::KError,
         std::optional<XRPAmount> referenceFee = std::nullopt)
-        : Env(suite_, envconfig(), nullptr, thresh, referenceFee)
+        : Env(suite, envconfig(), nullptr, thresh, referenceFee)
     {
     }
 
@@ -374,24 +369,24 @@ public:
         the correct JSON as per the arguments.
     */
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(unsigned apiVersion,
         std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(unsigned apiVersion, std::string const& cmd, Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
     template <class... Args>
-    Json::Value
+    json::Value
     rpc(std::string const& cmd, Args&&... args);
 
     /** Returns the current ledger.
@@ -530,21 +525,21 @@ public:
     }
 
     void
-    set_parse_failure_expected(bool b)
+    setParseFailureExpected(bool b)
     {
         parseFailureExpected_ = b;
     }
 
     /** Turn off signature checks. */
     void
-    disable_sigs()
+    disableSigs()
     {
         app().checkSigs(false);
     }
 
     // set rpc retries
     void
-    set_retries(unsigned r = 5)
+    setRetries(unsigned r = 5)
     {
         retries_ = r;
     }
@@ -632,7 +627,7 @@ public:
     {
         JTx jt(std::forward<JsonValue>(jv));
         invoke(jt, fN...);
-        autofill_sig(jt);
+        autofillSig(jt);
         jt.stx = st(jt);
         return jt;
     }
@@ -641,7 +636,7 @@ public:
         This will apply funclets and autofill.
     */
     template <class JsonValue, class... FN>
-    Json::Value
+    json::Value
     json(JsonValue&& jv, FN const&... fN)
     {
         auto tj = jt(std::forward<JsonValue>(jv), fN...);
@@ -663,7 +658,7 @@ public:
     /** Gets the TER result and `didApply` flag from a RPC Json result object.
      */
     static ParsedResult
-    parseResult(Json::Value const& jr);
+    parseResult(json::Value const& jr);
 
     /** Submit an existing JTx.
         This calls postconditions.
@@ -675,9 +670,9 @@ public:
         This calls postconditions.
     */
     void
-    sign_and_submit(
+    signAndSubmit(
         JTx const& jt,
-        Json::Value params = Json::nullValue,
+        json::Value params = json::NullValue,
         std::source_location const& loc = std::source_location::current());
 
     /** Check expected postconditions
@@ -687,14 +682,14 @@ public:
     postconditions(
         JTx const& jt,
         ParsedResult const& parsed,
-        Json::Value const& jr = Json::Value(),
+        json::Value const& jr = json::Value(),
         std::source_location const& loc = std::source_location::current());
 
     /** Apply funclets and submit. */
     /** @{ */
     template <class... FN>
     Env&
-    apply(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    apply(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         submit(jt(std::move(jv.value), fN...), jv.loc);
         return *this;
@@ -710,7 +705,7 @@ public:
 
     template <class... FN>
     Env&
-    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    operator()(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         return apply(std::move(jv), fN...);
     }
@@ -775,14 +770,14 @@ private:
     fund(bool setDefaultRipple, STAmount const& amount, Account const& account);
 
     void
-    fund_arg(STAmount const& amount, Account const& account)
+    fundArg(STAmount const& amount, Account const& account)
     {
         fund(true, amount, account);
     }
 
     template <std::size_t N>
     void
-    fund_arg(STAmount const& amount, std::array<Account, N> const& list)
+    fundArg(STAmount const& amount, std::array<Account, N> const& list)
     {
         for (auto const& account : list)
             fund(false, amount, account);
@@ -819,7 +814,7 @@ public:
     void
     fund(STAmount const& amount, Arg const& arg, Args const&... args)
     {
-        fund_arg(amount, arg);
+        fundArg(amount, arg);
         if constexpr (sizeof...(args) > 0)
             fund(amount, args...);
     }
@@ -869,14 +864,14 @@ protected:
     bool parseFailureExpected_ = false;
     unsigned retries_ = 5;
 
-    Json::Value
-    do_rpc(
+    json::Value
+    doRpc(
         unsigned apiVersion,
         std::vector<std::string> const& args,
         std::unordered_map<std::string, std::string> const& headers = {});
 
     void
-    autofill_sig(JTx& jt);
+    autofillSig(JTx& jt);
 
     virtual void
     autofill(JTx& jt);
@@ -886,7 +881,7 @@ protected:
         On a parse error, the JSON is logged and
         an exception thrown.
         Throws:
-            parse_error
+            ParseError
     */
     std::shared_ptr<STTx const>
     st(JTx const& jt);
@@ -913,18 +908,18 @@ protected:
 };
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(
     unsigned apiVersion,
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(apiVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
+    return doRpc(apiVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 {
     return rpc(
@@ -935,20 +930,20 @@ Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(
-        RPC::apiCommandLineVersion,
+    return doRpc(
+        RPC::kAPI_COMMAND_LINE_VERSION,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);
 }
 
 template <class... Args>
-Json::Value
+json::Value
 Env::rpc(std::string const& cmd, Args&&... args)
 {
     return rpc(std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);

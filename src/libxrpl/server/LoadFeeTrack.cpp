@@ -27,9 +27,9 @@ LoadFeeTrack::raiseLocalFee()
     localTxnLoadFee_ = std::max(localTxnLoadFee_, remoteTxnLoadFee_);
 
     // Increase slowly
-    localTxnLoadFee_ += (localTxnLoadFee_ / lftFeeIncFraction);
+    localTxnLoadFee_ += (localTxnLoadFee_ / kLFT_FEE_INC_FRACTION);
 
-    localTxnLoadFee_ = std::min(localTxnLoadFee_, lftFeeMax);
+    localTxnLoadFee_ = std::min(localTxnLoadFee_, kLFT_FEE_MAX);
 
     if (origFee == localTxnLoadFee_)
         return false;
@@ -46,9 +46,9 @@ LoadFeeTrack::lowerLocalFee()
     raiseCount_ = 0;
 
     // Reduce slowly
-    localTxnLoadFee_ -= (localTxnLoadFee_ / lftFeeDecFraction);
+    localTxnLoadFee_ -= (localTxnLoadFee_ / kLFT_FEE_DEC_FRACTION);
 
-    localTxnLoadFee_ = std::max(localTxnLoadFee_, lftNormalFee);
+    localTxnLoadFee_ = std::max(localTxnLoadFee_, kLFT_NORMAL_FEE);
 
     if (origFee == localTxnLoadFee_)
         return false;
@@ -78,7 +78,7 @@ scaleFeeLoad(XRPAmount fee, LoadFeeTrack const& feeTrack, Fees const& fees, bool
     // fee = fee * feeFactor / (lftNormalFee);
     // without overflow, and as accurately as possible
 
-    auto const result = mulDiv(fee, feeFactor, safe_cast<std::uint64_t>(feeTrack.getLoadBase()));
+    auto const result = mulDiv(fee, feeFactor, safeCast<std::uint64_t>(feeTrack.getLoadBase()));
     if (!result)
         Throw<std::overflow_error>("scaleFeeLoad");
     return *result;

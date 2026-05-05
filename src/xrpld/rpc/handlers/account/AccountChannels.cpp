@@ -36,9 +36,9 @@
 namespace xrpl {
 
 void
-addChannel(Json::Value& jsonLines, SLE const& line)
+addChannel(json::Value& jsonLines, SLE const& line)
 {
-    Json::Value& jDst(jsonLines.append(Json::objectValue));
+    json::Value& jDst(jsonLines.append(json::ObjectValue));
     jDst[jss::channel_id] = to_string(line.key());
     jDst[jss::account] = to_string(line[sfAccount]);
     jDst[jss::destination_account] = to_string(line[sfDestination]);
@@ -68,15 +68,15 @@ addChannel(Json::Value& jsonLines, SLE const& line)
 //   limit: integer                 // optional
 //   marker: opaque                 // optional, resume previous query
 // }
-Json::Value
+json::Value
 doAccountChannels(RPC::JsonContext& context)
 {
     auto const& params(context.params);
     if (!params.isMember(jss::account))
-        return RPC::missing_field_error(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return RPC::invalid_field_error(jss::account);
+        return RPC::invalidFieldError(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
@@ -86,18 +86,18 @@ doAccountChannels(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        return rpcError(rpcACT_MALFORMED);
+        return rpcError(RpcActMalformed);
     }
     AccountID const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
-        return rpcError(rpcACT_NOT_FOUND);
+        return rpcError(RpcActNotFound);
 
     std::string strDst;
     if (params.isMember(jss::destination_account))
     {
         if (!params[jss::destination_account].isString())
-            return RPC::invalid_field_error(jss::destination_account);
+            return RPC::invalidFieldError(jss::destination_account);
         strDst = params[jss::destination_account].asString();
     }
 
@@ -105,13 +105,13 @@ doAccountChannels(RPC::JsonContext& context)
         return strDst.empty() ? std::nullopt : parseBase58<AccountID>(strDst);
     }();
     if (!strDst.empty() && !raDstAccount)
-        return rpcError(rpcACT_MALFORMED);
+        return rpcError(RpcActMalformed);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::accountChannels, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_CHANNELS, context))
         return *err;
 
-    Json::Value jsonChannels{Json::arrayValue};
+    json::Value jsonChannels{json::ArrayValue};
     struct VisitData
     {
         std::vector<std::shared_ptr<SLE const>> items;
@@ -120,26 +120,26 @@ doAccountChannels(RPC::JsonContext& context)
     };
     VisitData visitData = {.items = {}, .accountID = accountID, .raDstAccount = raDstAccount};
     visitData.items.reserve(limit);
-    uint256 startAfter = beast::zero;
+    uint256 startAfter = beast::kZERO;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
     {
         if (!params[jss::marker].isString())
-            return RPC::expected_field_error(jss::marker, "string");
+            return RPC::expectedFieldError(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
         // former will be read as hex, and the latter using boost lexical cast.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         if (!startAfter.parseHex(value))
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         if (!std::getline(marker, value, ','))
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         try
         {
@@ -147,7 +147,7 @@ doAccountChannels(RPC::JsonContext& context)
         }
         catch (boost::bad_lexical_cast&)
         {
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
         }
 
         // We then must check if the object pointed to by the marker is actually
@@ -155,10 +155,10 @@ doAccountChannels(RPC::JsonContext& context)
         auto const sle = ledger->read({ltANY, startAfter});
 
         if (!sle)
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
     }
 
     auto count = 0;
@@ -197,7 +197,7 @@ doAccountChannels(RPC::JsonContext& context)
                 return true;
             }))
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
     }
 
     // Both conditions need to be checked because marker is set on the limit-th
@@ -214,7 +214,7 @@ doAccountChannels(RPC::JsonContext& context)
     for (auto const& item : visitData.items)
         addChannel(jsonChannels, *item);
 
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
     result[jss::channels] = std::move(jsonChannels);
     return result;
 }

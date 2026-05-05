@@ -38,7 +38,7 @@ class Digraph
     Graph graph_;
 
     // Allows returning empty iterables for unknown vertices
-    Links empty;
+    Links empty_;
 
 public:
     /** Connect two vertices
@@ -144,7 +144,7 @@ public:
         if (it != graph_.end())
             return boost::adaptors::transform(it->second, transform);
 
-        return boost::adaptors::transform(empty, transform);
+        return boost::adaptors::transform(empty_, transform);
     }
 
     /** Vertices and data associated with an Edge
@@ -173,7 +173,7 @@ public:
         if (it != graph_.end())
             return boost::adaptors::transform(it->second, transform);
 
-        return boost::adaptors::transform(empty, transform);
+        return boost::adaptors::transform(empty_, transform);
     }
 
     /** Vertex out-degree

@@ -59,7 +59,7 @@ static uint256
 ledgerHash(LedgerHeader const& info)
 {
     return xrpl::sha512Half(
-        HashPrefix::ledgerMaster,
+        HashPrefix::LedgerMaster,
         std::uint32_t(info.seq),
         std::uint64_t(info.drops.drops()),
         info.parentHash,
@@ -71,7 +71,7 @@ ledgerHash(LedgerHeader const& info)
         std::uint8_t(info.closeFlags));
 }
 
-class compression_test : public beast::unit_test::suite
+class compression_test : public beast::unit_test::Suite
 {
     using Compressed = compression::Compressed;
     using Algorithm = compression::Algorithm;
@@ -128,7 +128,7 @@ public:
         auto uncompressed = m.getBuffer(Compressed::Off);
         BEAST_EXPECT(
             std::equal(
-                uncompressed.begin() + xrpl::compression::headerBytes,
+                uncompressed.begin() + xrpl::compression::kHEADER_BYTES,
                 uncompressed.end(),
                 decompressed.begin()));
     }
@@ -140,17 +140,17 @@ public:
         manifests->mutable_list()->Reserve(n);
         for (int i = 0; i < n; i++)
         {
-            auto master = randomKeyPair(KeyType::ed25519);
-            auto signing = randomKeyPair(KeyType::ed25519);
-            STObject st(sfGeneric);
+            auto master = randomKeyPair(KeyType::Ed25519);
+            auto signing = randomKeyPair(KeyType::Ed25519);
+            STObject st(kSF_GENERIC);
             st[sfSequence] = i;
             st[sfPublicKey] = std::get<0>(master);
             st[sfSigningPubKey] = std::get<0>(signing);
             st[sfDomain] =
                 makeSlice(std::string("example") + std::to_string(i) + std::string(".com"));
             sign(
-                st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
-            sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+                st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
+            sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
             Serializer s;
             st.add(s);
             auto* manifest = manifests->add_list();
@@ -195,10 +195,10 @@ public:
         std::string usdTxBlob;
         auto wsc = makeWSClient(env.app().config());
         {
-            Json::Value requestUSD;
+            json::Value requestUSD;
             requestUSD[jss::secret] = toBase58(generateSeed("bob"));
             requestUSD[jss::tx_json] = pay("bob", "alice", bob["USD"](fund / 2));
-            Json::Value replyUSD = wsc->invoke("sign", requestUSD);
+            json::Value replyUSD = wsc->invoke("sign", requestUSD);
 
             usdTxBlob = toBinary(replyUSD[jss::result][jss::tx_blob].asString());
         }
@@ -206,7 +206,7 @@ public:
         auto transaction = std::make_shared<protocol::TMTransaction>();
         transaction->set_rawtransaction(usdTxBlob);
         transaction->set_status(protocol::tsNEW);
-        transaction->set_receivetimestamp(rand_int<std::uint64_t>());
+        transaction->set_receivetimestamp(randInt<std::uint64_t>());
         transaction->set_deferred(true);
 
         return transaction;
@@ -297,21 +297,21 @@ public:
     {
         auto list = std::make_shared<protocol::TMValidatorList>();
 
-        auto master = randomKeyPair(KeyType::ed25519);
-        auto signing = randomKeyPair(KeyType::ed25519);
-        STObject st(sfGeneric);
+        auto master = randomKeyPair(KeyType::Ed25519);
+        auto signing = randomKeyPair(KeyType::Ed25519);
+        STObject st(kSF_GENERIC);
         st[sfSequence] = 0;
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
         st[sfDomain] = makeSlice(std::string("example.com"));
-        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
-        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
         Serializer s;
         st.add(s);
         list->set_manifest(s.data(), s.size());
         list->set_version(3);
         STObject const signature(sfSignature);
-        xrpl::sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        xrpl::sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
         Serializer s1;
         st.add(s1);
         list->set_signature(s1.data(), s1.size());
@@ -324,21 +324,21 @@ public:
     {
         auto list = std::make_shared<protocol::TMValidatorListCollection>();
 
-        auto master = randomKeyPair(KeyType::ed25519);
-        auto signing = randomKeyPair(KeyType::ed25519);
-        STObject st(sfGeneric);
+        auto master = randomKeyPair(KeyType::Ed25519);
+        auto signing = randomKeyPair(KeyType::Ed25519);
+        STObject st(kSF_GENERIC);
         st[sfSequence] = 0;
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
         st[sfDomain] = makeSlice(std::string("example.com"));
-        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
-        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
         Serializer s;
         st.add(s);
         list->set_manifest(s.data(), s.size());
         list->set_version(4);
         STObject const signature(sfSignature);
-        xrpl::sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        xrpl::sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
         Serializer s1;
         st.add(s1);
         auto& blob = *list->add_blobs();
@@ -350,17 +350,17 @@ public:
     void
     testProtocol()
     {
-        auto thresh = beast::severities::Severity::kInfo;
+        auto thresh = beast::severities::Severity::KInfo;
         auto logs = std::make_unique<Logs>(thresh);
 
         protocol::TMManifests const manifests;
         protocol::TMEndpoints const endpoints;
         protocol::TMTransaction const transaction;
-        protocol::TMGetLedger const get_ledger;
-        protocol::TMLedgerData const ledger_data;
-        protocol::TMGetObjectByHash const get_object;
-        protocol::TMValidatorList const validator_list;
-        protocol::TMValidatorListCollection const validator_list_collection;
+        protocol::TMGetLedger const getLedger;
+        protocol::TMLedgerData const ledgerData;
+        protocol::TMGetObjectByHash const getObject;
+        protocol::TMValidatorList const validatorList;
+        protocol::TMValidatorListCollection const validatorListCollection;
 
         // 4.5KB
         doTest(buildManifests(20), protocol::mtMANIFESTS, 4, "TMManifests20");
@@ -423,26 +423,26 @@ public:
                 false,
                 env->app().config().TX_REDUCE_RELAY_ENABLE,
                 env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
-            http_request_type http_request;
-            http_request.version(request.version());
-            http_request.base() = request.base();
+            http_request_type httpRequest;
+            httpRequest.version(request.version());
+            httpRequest.base() = request.base();
             // feature enabled on the peer's connection only if both sides are
             // enabled
             auto const peerEnabled = inboundEnable && outboundEnable;
             // inbound is enabled if the request's header has the feature
             // enabled and the peer's configuration is enabled
             auto const inboundEnabled =
-                peerFeatureEnabled(http_request, FEATURE_COMPR, "lz4", inboundEnable);
+                peerFeatureEnabled(httpRequest, kFEATURE_COMPR, "lz4", inboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
             env.reset();
             env = getEnv(inboundEnable);
-            auto http_resp = xrpl::makeResponse(
-                true, http_request, addr, addr, uint256{1}, 1, {1, 0}, env->app());
+            auto httpResp = xrpl::makeResponse(
+                true, httpRequest, addr, addr, uint256{1}, 1, {1, 0}, env->app());
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
             auto const outboundEnabled =
-                peerFeatureEnabled(http_resp, FEATURE_COMPR, "lz4", outboundEnable);
+                peerFeatureEnabled(httpResp, kFEATURE_COMPR, "lz4", outboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
         };
         handshake(1, 1);

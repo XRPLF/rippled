@@ -20,16 +20,16 @@
 namespace xrpl {
 
 // This interface is deprecated.
-Json::Value
+json::Value
 doRipplePathFind(RPC::JsonContext& context)
 {
     if (context.app.config().PATH_SEARCH_MAX == 0)
-        return rpcError(rpcNOT_SUPPORTED);
+        return rpcError(RpcNotSupported);
 
-    context.loadType = Resource::feeHeavyBurdenRPC;
+    context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
 
     std::shared_ptr<ReadView const> lpLedger;
-    Json::Value jvResult;
+    json::Value jvResult;
 
     if (!context.app.config().standalone() && !context.params.isMember(jss::ledger) &&
         !context.params.isMember(jss::ledger_index) && !context.params.isMember(jss::ledger_hash))
@@ -37,11 +37,11 @@ doRipplePathFind(RPC::JsonContext& context)
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine
         if (context.app.getLedgerMaster().getValidatedLedgerAge() >
-            RPC::Tuning::maxValidatedLedgerAge)
+            RPC::Tuning::kMAX_VALIDATED_LEDGER_AGE)
         {
             if (context.apiVersion == 1)
-                return rpcError(rpcNO_NETWORK);
-            return rpcError(rpcNOT_SYNCED);
+                return rpcError(RpcNoNetwork);
+            return rpcError(RpcNotSynced);
         }
 
         PathRequest::pointer request;
@@ -152,7 +152,7 @@ doRipplePathFind(RPC::JsonContext& context)
 
     RPC::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
     if (!lpf.isOk())
-        return rpcError(rpcTOO_BUSY);
+        return rpcError(RpcTooBusy);
 
     auto result = context.app.getPathRequestManager().doLegacyPathRequest(
         context.consumer, lpLedger, context.params);
