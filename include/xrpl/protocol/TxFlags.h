@@ -39,10 +39,10 @@ namespace xrpl {
 using FlagValue = std::uint32_t;
 
 // Universal Transaction flags:
-inline constexpr FlagValue kTF_FULLY_CANONICAL_SIG = 0x80000000;
-inline constexpr FlagValue kTF_INNER_BATCH_TXN = 0x40000000;
-inline constexpr FlagValue tfUniversal = kTF_FULLY_CANONICAL_SIG | kTF_INNER_BATCH_TXN;
-inline constexpr FlagValue kTF_UNIVERSAL_MASK = ~tfUniversal;
+inline constexpr FlagValue tfFullyCanonicalSig = 0x80000000;
+inline constexpr FlagValue tfInnerBatchTxn = 0x40000000;
+inline constexpr FlagValue tfUniversal = tfFullyCanonicalSig | tfInnerBatchTxn;
+inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
 
 #pragma push_macro("XMACRO")
 #pragma push_macro("TO_VALUE")
@@ -83,137 +83,137 @@ inline constexpr FlagValue kTF_UNIVERSAL_MASK = ~tfUniversal;
 // TODO: Consider rewriting this using reflection in C++26 or later. Alternatively this could be a DSL processed by a script at build time.
 #define XMACRO(TRANSACTION, TF_FLAG, TF_FLAG2, MASK_ADJ)                                                                                                       \
     TRANSACTION(AccountSet,                                                                                                                                    \
-        TF_FLAG(kTF_REQUIRE_DEST_TAG, 0x00010000)                                                                                                                  \
-        TF_FLAG(kTF_OPTIONAL_DEST_TAG, 0x00020000)                                                                                                                 \
-        TF_FLAG(kTF_REQUIRE_AUTH, 0x00040000)                                                                                                                     \
-        TF_FLAG(kTF_OPTIONAL_AUTH, 0x00080000)                                                                                                                    \
-        TF_FLAG(kTF_DISALLOW_XRP, 0x00100000)                                                                                                                     \
-        TF_FLAG(kTF_ALLOW_XRP, 0x00200000),                                                                                                                       \
+        TF_FLAG(tfRequireDestTag, 0x00010000)                                                                                                                  \
+        TF_FLAG(tfOptionalDestTag, 0x00020000)                                                                                                                 \
+        TF_FLAG(tfRequireAuth, 0x00040000)                                                                                                                     \
+        TF_FLAG(tfOptionalAuth, 0x00080000)                                                                                                                    \
+        TF_FLAG(tfDisallowXRP, 0x00100000)                                                                                                                     \
+        TF_FLAG(tfAllowXRP, 0x00200000),                                                                                                                       \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(OfferCreate,                                                                                                                                   \
-        TF_FLAG(kTF_PASSIVE, 0x00010000)                                                                                                                         \
-        TF_FLAG(kTF_IMMEDIATE_OR_CANCEL, 0x00020000)                                                                                                               \
-        TF_FLAG(kTF_FILL_OR_KILL, 0x00040000)                                                                                                                      \
-        TF_FLAG(kTF_SELL, 0x00080000)                                                                                                                            \
-        TF_FLAG(kTF_HYBRID, 0x00100000),                                                                                                                         \
+        TF_FLAG(tfPassive, 0x00010000)                                                                                                                         \
+        TF_FLAG(tfImmediateOrCancel, 0x00020000)                                                                                                               \
+        TF_FLAG(tfFillOrKill, 0x00040000)                                                                                                                      \
+        TF_FLAG(tfSell, 0x00080000)                                                                                                                            \
+        TF_FLAG(tfHybrid, 0x00100000),                                                                                                                         \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(Payment,                                                                                                                                       \
-        TF_FLAG(kTF_NO_RIPPLE_DIRECT, 0x00010000)                                                                                                                  \
-        TF_FLAG(kTF_PARTIAL_PAYMENT, 0x00020000)                                                                                                                  \
-        TF_FLAG(kTF_LIMIT_QUALITY, 0x00040000),                                                                                                                   \
+        TF_FLAG(tfNoRippleDirect, 0x00010000)                                                                                                                  \
+        TF_FLAG(tfPartialPayment, 0x00020000)                                                                                                                  \
+        TF_FLAG(tfLimitQuality, 0x00040000),                                                                                                                   \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(TrustSet,                                                                                                                                      \
-        TF_FLAG(kTF_SETF_AUTH, 0x00010000)                                                                                                                        \
-        TF_FLAG(kTF_SET_NO_RIPPLE, 0x00020000)                                                                                                                     \
-        TF_FLAG(kTF_CLEAR_NO_RIPPLE, 0x00040000)                                                                                                                   \
-        TF_FLAG(kTF_SET_FREEZE, 0x00100000)                                                                                                                       \
-        TF_FLAG(kTF_CLEAR_FREEZE, 0x00200000)                                                                                                                     \
-        TF_FLAG(kTF_SET_DEEP_FREEZE, 0x00400000)                                                                                                                   \
-        TF_FLAG(kTF_CLEAR_DEEP_FREEZE, 0x00800000),                                                                                                                \
+        TF_FLAG(tfSetfAuth, 0x00010000)                                                                                                                        \
+        TF_FLAG(tfSetNoRipple, 0x00020000)                                                                                                                     \
+        TF_FLAG(tfClearNoRipple, 0x00040000)                                                                                                                   \
+        TF_FLAG(tfSetFreeze, 0x00100000)                                                                                                                       \
+        TF_FLAG(tfClearFreeze, 0x00200000)                                                                                                                     \
+        TF_FLAG(tfSetDeepFreeze, 0x00400000)                                                                                                                   \
+        TF_FLAG(tfClearDeepFreeze, 0x00800000),                                                                                                                \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(EnableAmendment,                                                                                                                               \
-        TF_FLAG(kTF_GOT_MAJORITY, 0x00010000)                                                                                                                     \
-        TF_FLAG(kTF_LOST_MAJORITY, 0x00020000),                                                                                                                   \
+        TF_FLAG(tfGotMajority, 0x00010000)                                                                                                                     \
+        TF_FLAG(tfLostMajority, 0x00020000),                                                                                                                   \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(PaymentChannelClaim,                                                                                                                           \
-        TF_FLAG(kTF_RENEW, 0x00010000)                                                                                                                           \
-        TF_FLAG(kTF_CLOSE, 0x00020000),                                                                                                                          \
+        TF_FLAG(tfRenew, 0x00010000)                                                                                                                           \
+        TF_FLAG(tfClose, 0x00020000),                                                                                                                          \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(NFTokenMint,                                                                                                                                   \
-        TF_FLAG(kTF_BURNABLE, 0x00000001)                                                                                                                        \
-        TF_FLAG(kTF_ONLY_XRP, 0x00000002)                                                                                                                         \
+        TF_FLAG(tfBurnable, 0x00000001)                                                                                                                        \
+        TF_FLAG(tfOnlyXRP, 0x00000002)                                                                                                                         \
         /* deprecated TF_FLAG(tfTrustLine, 0x00000004) */                                                                                                      \
-        TF_FLAG(kTF_TRANSFERABLE, 0x00000008)                                                                                                                    \
-        TF_FLAG(kTF_MUTABLE, 0x00000010),                                                                                                                        \
+        TF_FLAG(tfTransferable, 0x00000008)                                                                                                                    \
+        TF_FLAG(tfMutable, 0x00000010),                                                                                                                        \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenIssuanceCreate,                                                                                                                         \
         /* Note: tf/lsfMPTLocked is intentionally omitted since this transaction is not allowed to modify it. */                                               \
-        TF_FLAG(kTF_MPT_CAN_LOCK, LsfMptCanLock)                                                                                                                   \
-        TF_FLAG(kTF_MPT_REQUIRE_AUTH, LsfMptRequireAuth)                                                                                                           \
-        TF_FLAG(kTF_MPT_CAN_ESCROW, LsfMptCanEscrow)                                                                                                               \
-        TF_FLAG(kTF_MPT_CAN_TRADE, LsfMptCanTrade)                                                                                                                 \
-        TF_FLAG(kTF_MPT_CAN_TRANSFER, LsfMptCanTransfer)                                                                                                           \
-        TF_FLAG(kTF_MPT_CAN_CLAWBACK, LsfMptCanClawback),                                                                                                          \
+        TF_FLAG(tfMPTCanLock, lsfMPTCanLock)                                                                                                                   \
+        TF_FLAG(tfMPTRequireAuth, lsfMPTRequireAuth)                                                                                                           \
+        TF_FLAG(tfMPTCanEscrow, lsfMPTCanEscrow)                                                                                                               \
+        TF_FLAG(tfMPTCanTrade, lsfMPTCanTrade)                                                                                                                 \
+        TF_FLAG(tfMPTCanTransfer, lsfMPTCanTransfer)                                                                                                           \
+        TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback),                                                                                                          \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenAuthorize,                                                                                                                              \
-        TF_FLAG(kTF_MPT_UNAUTHORIZE, 0x00000001),                                                                                                                 \
+        TF_FLAG(tfMPTUnauthorize, 0x00000001),                                                                                                                 \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenIssuanceSet,                                                                                                                            \
-        TF_FLAG(kTF_MPT_LOCK, 0x00000001)                                                                                                                         \
-        TF_FLAG(kTF_MPT_UNLOCK, 0x00000002),                                                                                                                      \
+        TF_FLAG(tfMPTLock, 0x00000001)                                                                                                                         \
+        TF_FLAG(tfMPTUnlock, 0x00000002),                                                                                                                      \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(NFTokenCreateOffer,                                                                                                                            \
-        TF_FLAG(kTF_SELL_NF_TOKEN, 0x00000001),                                                                                                                    \
+        TF_FLAG(tfSellNFToken, 0x00000001),                                                                                                                    \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(AMMDeposit,                                                                                                                                    \
-        TF_FLAG(kTF_LP_TOKEN, 0x00010000)                                                                                                                         \
-        TF_FLAG(kTF_SINGLE_ASSET, 0x00080000)                                                                                                                     \
-        TF_FLAG(kTF_TWO_ASSET, 0x00100000)                                                                                                                        \
-        TF_FLAG(kTF_ONE_ASSET_LP_TOKEN, 0x00200000)                                                                                                                 \
-        TF_FLAG(kTF_LIMIT_LP_TOKEN, 0x00400000)                                                                                                                    \
-        TF_FLAG(kTF_TWO_ASSET_IF_EMPTY, 0x00800000),                                                                                                                \
+        TF_FLAG(tfLPToken, 0x00010000)                                                                                                                         \
+        TF_FLAG(tfSingleAsset, 0x00080000)                                                                                                                     \
+        TF_FLAG(tfTwoAsset, 0x00100000)                                                                                                                        \
+        TF_FLAG(tfOneAssetLPToken, 0x00200000)                                                                                                                 \
+        TF_FLAG(tfLimitLPToken, 0x00400000)                                                                                                                    \
+        TF_FLAG(tfTwoAssetIfEmpty, 0x00800000),                                                                                                                \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(AMMWithdraw,                                                                                                                                   \
-        TF_FLAG2(kTF_LP_TOKEN, 0x00010000)                                                                                                                        \
-        TF_FLAG(kTF_WITHDRAW_ALL, 0x00020000)                                                                                                                     \
-        TF_FLAG(kTF_ONE_ASSET_WITHDRAW_ALL, 0x00040000)                                                                                                             \
-        TF_FLAG2(kTF_SINGLE_ASSET, 0x00080000)                                                                                                                    \
-        TF_FLAG2(kTF_TWO_ASSET, 0x00100000)                                                                                                                       \
-        TF_FLAG2(kTF_ONE_ASSET_LP_TOKEN, 0x00200000)                                                                                                                \
-        TF_FLAG2(kTF_LIMIT_LP_TOKEN, 0x00400000),                                                                                                                  \
+        TF_FLAG2(tfLPToken, 0x00010000)                                                                                                                        \
+        TF_FLAG(tfWithdrawAll, 0x00020000)                                                                                                                     \
+        TF_FLAG(tfOneAssetWithdrawAll, 0x00040000)                                                                                                             \
+        TF_FLAG2(tfSingleAsset, 0x00080000)                                                                                                                    \
+        TF_FLAG2(tfTwoAsset, 0x00100000)                                                                                                                       \
+        TF_FLAG2(tfOneAssetLPToken, 0x00200000)                                                                                                                \
+        TF_FLAG2(tfLimitLPToken, 0x00400000),                                                                                                                  \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(AMMClawback,                                                                                                                                   \
-        TF_FLAG(kTF_CLAW_TWO_ASSETS, 0x00000001),                                                                                                                  \
+        TF_FLAG(tfClawTwoAssets, 0x00000001),                                                                                                                  \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(XChainModifyBridge,                                                                                                                            \
-        TF_FLAG(kTF_CLEAR_ACCOUNT_CREATE_AMOUNT, 0x00010000),                                                                                                       \
+        TF_FLAG(tfClearAccountCreateAmount, 0x00010000),                                                                                                       \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(VaultCreate,                                                                                                                                   \
-        TF_FLAG(kTF_VAULT_PRIVATE, LsfVaultPrivate)                                                                                                               \
-        TF_FLAG(kTF_VAULT_SHARE_NON_TRANSFERABLE, 0x00020000),                                                                                                      \
+        TF_FLAG(tfVaultPrivate, lsfVaultPrivate)                                                                                                               \
+        TF_FLAG(tfVaultShareNonTransferable, 0x00020000),                                                                                                      \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(Batch,                                                                                                                                         \
-        TF_FLAG(kTF_ALL_OR_NOTHING, 0x00010000)                                                                                                                    \
-        TF_FLAG(kTF_ONLY_ONE, 0x00020000)                                                                                                                         \
-        TF_FLAG(kTF_UNTIL_FAILURE, 0x00040000)                                                                                                                    \
-        TF_FLAG(kTF_INDEPENDENT, 0x00080000),                                                                                                                    \
-        MASK_ADJ(kTF_INNER_BATCH_TXN))                      /* Batch must reject tfInnerBatchTxn - only inner transactions should have this flag */                \
+        TF_FLAG(tfAllOrNothing, 0x00010000)                                                                                                                    \
+        TF_FLAG(tfOnlyOne, 0x00020000)                                                                                                                         \
+        TF_FLAG(tfUntilFailure, 0x00040000)                                                                                                                    \
+        TF_FLAG(tfIndependent, 0x00080000),                                                                                                                    \
+        MASK_ADJ(tfInnerBatchTxn))                      /* Batch must reject tfInnerBatchTxn - only inner transactions should have this flag */                \
                                                                                                                                                                \
     TRANSACTION(LoanSet,                                /* True indicates the loan supports overpayments */                                                    \
-        TF_FLAG(kTF_LOAN_OVERPAYMENT, 0x00010000),                                                                                                                \
+        TF_FLAG(tfLoanOverpayment, 0x00010000),                                                                                                                \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(LoanPay,                                /* True indicates any excess in this payment can be used as an overpayment. */                         \
                                                         /* False: no overpayments will be taken. */                                                            \
-        TF_FLAG2(kTF_LOAN_OVERPAYMENT, 0x00010000)                                                                                                                \
-        TF_FLAG(kTF_LOAN_FULL_PAYMENT, 0x00020000)          /* True indicates that the payment is an early full payment. */                                        \
+        TF_FLAG2(tfLoanOverpayment, 0x00010000)                                                                                                                \
+        TF_FLAG(tfLoanFullPayment, 0x00020000)          /* True indicates that the payment is an early full payment. */                                        \
                                                         /* It must pay the entire loan including close interest and fees, or it will fail. */                  \
                                                         /* False: Not a full payment. */                                                                       \
-        TF_FLAG(kTF_LOAN_LATE_PAYMENT, 0x00040000),         /* True indicates that the payment is late, and includes late interest and fees. */                    \
+        TF_FLAG(tfLoanLatePayment, 0x00040000),         /* True indicates that the payment is late, and includes late interest and fees. */                    \
                                                         /* If the loan is not late, it will fail. */                                                           \
                                                         /* False: not a late payment. If the current payment is overdue, the transaction will fail.*/          \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(LoanManage,                                                                                                                                    \
-        TF_FLAG(kTF_LOAN_DEFAULT, 0x00010000)                                                                                                                     \
-        TF_FLAG(kTF_LOAN_IMPAIR, 0x00020000)                                                                                                                      \
-        TF_FLAG(kTF_LOAN_UNIMPAIR, 0x00040000),                                                                                                                   \
+        TF_FLAG(tfLoanDefault, 0x00010000)                                                                                                                     \
+        TF_FLAG(tfLoanImpair, 0x00020000)                                                                                                                      \
+        TF_FLAG(tfLoanUnimpair, 0x00040000),                                                                                                                   \
         MASK_ADJ(0))
 
 // clang-format on
@@ -246,16 +246,16 @@ XMACRO(TO_MASK, VALUE_TO_MASK, VALUE_TO_MASK, MASK_ADJ_TO_MASK)
 // The outer Batch transaction must NOT have tfInnerBatchTxn set; only inner transactions should
 // have it.
 static_assert(
-    (tfBatchMask & kTF_INNER_BATCH_TXN) == kTF_INNER_BATCH_TXN,
+    (tfBatchMask & tfInnerBatchTxn) == tfInnerBatchTxn,
     "tfBatchMask must include tfInnerBatchTxn to reject it on outer Batch");
 
 // Verify that other transaction masks correctly allow tfInnerBatchTxn.
 // Inner transactions need tfInnerBatchTxn to be valid, so these masks must not reject it.
 static_assert(
-    (tfPaymentMask & kTF_INNER_BATCH_TXN) == 0,
+    (tfPaymentMask & tfInnerBatchTxn) == 0,
     "tfPaymentMask must not reject tfInnerBatchTxn");
 static_assert(
-    (tfAccountSetMask & kTF_INNER_BATCH_TXN) == 0,
+    (tfAccountSetMask & tfInnerBatchTxn) == 0,
     "tfAccountSetMask must not reject tfInnerBatchTxn");
 
 // Create getter functions for each set of flags using Meyer's singleton pattern.
@@ -284,9 +284,9 @@ XMACRO(TO_MAP, VALUE_TO_MAP, VALUE_TO_MAP, NULL_MASK_ADJ)
 inline FlagMap const&
 getUniversalFlags()
 {
-    static FlagMap const kFLAGS = {
-        {"tfFullyCanonicalSig", kTF_FULLY_CANONICAL_SIG}, {"tfInnerBatchTxn", kTF_INNER_BATCH_TXN}};
-    return kFLAGS;
+    static FlagMap const flags = {
+        {"tfFullyCanonicalSig", tfFullyCanonicalSig}, {"tfInnerBatchTxn", tfInnerBatchTxn}};
+    return flags;
 }
 
 // Create a getter function for all transaction flag maps using Meyer's singleton pattern.
@@ -304,10 +304,10 @@ using FlagMapPairList = std::vector<std::pair<std::string, FlagMap>>;
 inline FlagMapPairList const&
 getAllTxFlags()
 {
-    static FlagMapPairList const kFLAGS = {
+    static FlagMapPairList const flags = {
         {"universal", getUniversalFlags()},
         XMACRO(ALL_TX_FLAGS, NULL_OUTPUT, NULL_OUTPUT, NULL_MASK_ADJ)};
-    return kFLAGS;
+    return flags;
 }
 
 #undef XMACRO
@@ -335,46 +335,44 @@ getAllTxFlags()
 #pragma pop_macro("MASK_ADJ_TO_MASK")
 
 // Additional transaction masks and combos
-inline constexpr FlagValue kTF_MPT_PAYMENT_MASK = ~(tfUniversal | kTF_PARTIAL_PAYMENT);
-inline constexpr FlagValue kTF_TRUST_SET_PERMISSION_MASK =
-    ~(tfUniversal | kTF_SETF_AUTH | kTF_SET_FREEZE | kTF_CLEAR_FREEZE);
+inline constexpr FlagValue tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
+inline constexpr FlagValue tfTrustSetPermissionMask =
+    ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
 
 // MPTokenIssuanceCreate MutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
-inline constexpr FlagValue kTMF_MPT_CAN_MUTATE_CAN_LOCK = LsmfMptCanMutateCanLock;
-inline constexpr FlagValue kTMF_MPT_CAN_MUTATE_REQUIRE_AUTH = LsmfMptCanMutateRequireAuth;
-inline constexpr FlagValue kTMF_MPT_CAN_MUTATE_CAN_ESCROW = LsmfMptCanMutateCanEscrow;
-inline constexpr FlagValue kTMF_MPT_CAN_MUTATE_CAN_TRADE = LsmfMptCanMutateCanTrade;
-inline constexpr FlagValue kTMF_MPT_CAN_MUTATE_CAN_TRANSFER = LsmfMptCanMutateCanTransfer;
-inline constexpr FlagValue kTMF_MPT_CAN_MUTATE_CAN_CLAWBACK = LsmfMptCanMutateCanClawback;
-inline constexpr FlagValue kTMF_MPT_CAN_MUTATE_METADATA = LsmfMptCanMutateMetadata;
-inline constexpr FlagValue kTMF_MPT_CAN_MUTATE_TRANSFER_FEE = LsmfMptCanMutateTransferFee;
-inline constexpr FlagValue kTMF_MP_TOKEN_ISSUANCE_CREATE_MUTABLE_MASK =
-    ~(kTMF_MPT_CAN_MUTATE_CAN_LOCK | kTMF_MPT_CAN_MUTATE_REQUIRE_AUTH |
-      kTMF_MPT_CAN_MUTATE_CAN_ESCROW | kTMF_MPT_CAN_MUTATE_CAN_TRADE |
-      kTMF_MPT_CAN_MUTATE_CAN_TRANSFER | kTMF_MPT_CAN_MUTATE_CAN_CLAWBACK |
-      kTMF_MPT_CAN_MUTATE_METADATA | kTMF_MPT_CAN_MUTATE_TRANSFER_FEE);
+inline constexpr FlagValue tmfMPTCanMutateCanLock = lsmfMPTCanMutateCanLock;
+inline constexpr FlagValue tmfMPTCanMutateRequireAuth = lsmfMPTCanMutateRequireAuth;
+inline constexpr FlagValue tmfMPTCanMutateCanEscrow = lsmfMPTCanMutateCanEscrow;
+inline constexpr FlagValue tmfMPTCanMutateCanTrade = lsmfMPTCanMutateCanTrade;
+inline constexpr FlagValue tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTransfer;
+inline constexpr FlagValue tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
+inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
+inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
+inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
+    ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow |
+      tmfMPTCanMutateCanTrade | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback |
+      tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
 
 // MPTokenIssuanceSet MutableFlags:
 // Set or Clear flags.
 
-inline constexpr FlagValue kTMF_MPT_SET_CAN_LOCK = 0x00000001;
-inline constexpr FlagValue kTMF_MPT_CLEAR_CAN_LOCK = 0x00000002;
-inline constexpr FlagValue kTMF_MPT_SET_REQUIRE_AUTH = 0x00000004;
-inline constexpr FlagValue kTMF_MPT_CLEAR_REQUIRE_AUTH = 0x00000008;
-inline constexpr FlagValue kTMF_MPT_SET_CAN_ESCROW = 0x00000010;
-inline constexpr FlagValue kTMF_MPT_CLEAR_CAN_ESCROW = 0x00000020;
-inline constexpr FlagValue kTMF_MPT_SET_CAN_TRADE = 0x00000040;
-inline constexpr FlagValue kTMF_MPT_CLEAR_CAN_TRADE = 0x00000080;
-inline constexpr FlagValue kTMF_MPT_SET_CAN_TRANSFER = 0x00000100;
-inline constexpr FlagValue kTMF_MPT_CLEAR_CAN_TRANSFER = 0x00000200;
-inline constexpr FlagValue kTMF_MPT_SET_CAN_CLAWBACK = 0x00000400;
-inline constexpr FlagValue kTMF_MPT_CLEAR_CAN_CLAWBACK = 0x00000800;
-inline constexpr FlagValue kTMF_MP_TOKEN_ISSUANCE_SET_MUTABLE_MASK =
-    ~(kTMF_MPT_SET_CAN_LOCK | kTMF_MPT_CLEAR_CAN_LOCK | kTMF_MPT_SET_REQUIRE_AUTH |
-      kTMF_MPT_CLEAR_REQUIRE_AUTH | kTMF_MPT_SET_CAN_ESCROW | kTMF_MPT_CLEAR_CAN_ESCROW |
-      kTMF_MPT_SET_CAN_TRADE | kTMF_MPT_CLEAR_CAN_TRADE | kTMF_MPT_SET_CAN_TRANSFER |
-      kTMF_MPT_CLEAR_CAN_TRANSFER | kTMF_MPT_SET_CAN_CLAWBACK | kTMF_MPT_CLEAR_CAN_CLAWBACK);
+inline constexpr FlagValue tmfMPTSetCanLock = 0x00000001;
+inline constexpr FlagValue tmfMPTClearCanLock = 0x00000002;
+inline constexpr FlagValue tmfMPTSetRequireAuth = 0x00000004;
+inline constexpr FlagValue tmfMPTClearRequireAuth = 0x00000008;
+inline constexpr FlagValue tmfMPTSetCanEscrow = 0x00000010;
+inline constexpr FlagValue tmfMPTClearCanEscrow = 0x00000020;
+inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000040;
+inline constexpr FlagValue tmfMPTClearCanTrade = 0x00000080;
+inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000100;
+inline constexpr FlagValue tmfMPTClearCanTransfer = 0x00000200;
+inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000400;
+inline constexpr FlagValue tmfMPTClearCanClawback = 0x00000800;
+inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask = ~(
+    tmfMPTSetCanLock | tmfMPTClearCanLock | tmfMPTSetRequireAuth | tmfMPTClearRequireAuth |
+    tmfMPTSetCanEscrow | tmfMPTClearCanEscrow | tmfMPTSetCanTrade | tmfMPTClearCanTrade |
+    tmfMPTSetCanTransfer | tmfMPTClearCanTransfer | tmfMPTSetCanClawback | tmfMPTClearCanClawback);
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
 // TrustLine to be added to the issuer of that token without explicit permission from that issuer.
@@ -387,46 +385,44 @@ inline constexpr FlagValue kTMF_MP_TOKEN_ISSUANCE_SET_MUTABLE_MASK =
 // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the tfTrustLine flag as a way
 // to prevent the attack. But until the amendment passes we still need to keep the old behavior
 // available.
-inline constexpr FlagValue kTF_TRUST_LINE = 0x00000004;  // needed for backwards compatibility
-inline constexpr FlagValue kTF_NF_TOKEN_MINT_MASK_WITHOUT_MUTABLE =
-    ~(tfUniversal | kTF_BURNABLE | kTF_ONLY_XRP | kTF_TRANSFERABLE);
+inline constexpr FlagValue tfTrustLine = 0x00000004;  // needed for backwards compatibility
+inline constexpr FlagValue tfNFTokenMintMaskWithoutMutable =
+    ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
 
-inline constexpr FlagValue kTF_NF_TOKEN_MINT_OLD_MASK =
-    ~(~kTF_NF_TOKEN_MINT_MASK_WITHOUT_MUTABLE | kTF_TRUST_LINE);
+inline constexpr FlagValue tfNFTokenMintOldMask = ~(~tfNFTokenMintMaskWithoutMutable | tfTrustLine);
 
 // if featureDynamicNFT enabled then new flag allowing mutable URI available.
-inline constexpr FlagValue kTF_NF_TOKEN_MINT_OLD_MASK_WITH_MUTABLE =
-    ~(~kTF_NF_TOKEN_MINT_OLD_MASK | kTF_MUTABLE);
+inline constexpr FlagValue tfNFTokenMintOldMaskWithMutable = ~(~tfNFTokenMintOldMask | tfMutable);
 
-inline constexpr FlagValue kTF_WITHDRAW_SUB_TX = kTF_LP_TOKEN | kTF_SINGLE_ASSET | kTF_TWO_ASSET |
-    kTF_ONE_ASSET_LP_TOKEN | kTF_LIMIT_LP_TOKEN | kTF_WITHDRAW_ALL | kTF_ONE_ASSET_WITHDRAW_ALL;
-inline constexpr FlagValue kTF_DEPOSIT_SUB_TX = kTF_LP_TOKEN | kTF_SINGLE_ASSET | kTF_TWO_ASSET |
-    kTF_ONE_ASSET_LP_TOKEN | kTF_LIMIT_LP_TOKEN | kTF_TWO_ASSET_IF_EMPTY;
+inline constexpr FlagValue tfWithdrawSubTx = tfLPToken | tfSingleAsset | tfTwoAsset |
+    tfOneAssetLPToken | tfLimitLPToken | tfWithdrawAll | tfOneAssetWithdrawAll;
+inline constexpr FlagValue tfDepositSubTx =
+    tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfTwoAssetIfEmpty;
 
 #pragma push_macro("ACCOUNTSET_FLAGS")
 #pragma push_macro("ACCOUNTSET_FLAG_TO_VALUE")
 #pragma push_macro("ACCOUNTSET_FLAG_TO_MAP")
 
 // AccountSet SetFlag/ClearFlag values
-#define ACCOUNTSET_FLAGS(ASF_FLAG)                      \
-    ASF_FLAG(kASF_REQUIRE_DEST, 1)                      \
-    ASF_FLAG(kASF_REQUIRE_AUTH, 2)                      \
-    ASF_FLAG(kASF_DISALLOW_XRP, 3)                      \
-    ASF_FLAG(kASF_DISABLE_MASTER, 4)                    \
-    ASF_FLAG(kASF_ACCOUNT_TXN_ID, 5)                    \
-    ASF_FLAG(kASF_NO_FREEZE, 6)                         \
-    ASF_FLAG(kASF_GLOBAL_FREEZE, 7)                     \
-    ASF_FLAG(kASF_DEFAULT_RIPPLE, 8)                    \
-    ASF_FLAG(kASF_DEPOSIT_AUTH, 9)                      \
-    ASF_FLAG(kASF_AUTHORIZED_NF_TOKEN_MINTER, 10)       \
-    /*  11 is reserved for Hooks amendment */           \
-    /* ASF_FLAG(asfTshCollect, 11) */                   \
-    ASF_FLAG(kASF_DISALLOW_INCOMING_NF_TOKEN_OFFER, 12) \
-    ASF_FLAG(kASF_DISALLOW_INCOMING_CHECK, 13)          \
-    ASF_FLAG(kASF_DISALLOW_INCOMING_PAY_CHAN, 14)       \
-    ASF_FLAG(kASF_DISALLOW_INCOMING_TRUSTLINE, 15)      \
-    ASF_FLAG(kASF_ALLOW_TRUST_LINE_CLAWBACK, 16)        \
-    ASF_FLAG(kASF_ALLOW_TRUST_LINE_LOCKING, 17)
+#define ACCOUNTSET_FLAGS(ASF_FLAG)                \
+    ASF_FLAG(asfRequireDest, 1)                   \
+    ASF_FLAG(asfRequireAuth, 2)                   \
+    ASF_FLAG(asfDisallowXRP, 3)                   \
+    ASF_FLAG(asfDisableMaster, 4)                 \
+    ASF_FLAG(asfAccountTxnID, 5)                  \
+    ASF_FLAG(asfNoFreeze, 6)                      \
+    ASF_FLAG(asfGlobalFreeze, 7)                  \
+    ASF_FLAG(asfDefaultRipple, 8)                 \
+    ASF_FLAG(asfDepositAuth, 9)                   \
+    ASF_FLAG(asfAuthorizedNFTokenMinter, 10)      \
+    /*  11 is reserved for Hooks amendment */     \
+    /* ASF_FLAG(asfTshCollect, 11) */             \
+    ASF_FLAG(asfDisallowIncomingNFTokenOffer, 12) \
+    ASF_FLAG(asfDisallowIncomingCheck, 13)        \
+    ASF_FLAG(asfDisallowIncomingPayChan, 14)      \
+    ASF_FLAG(asfDisallowIncomingTrustline, 15)    \
+    ASF_FLAG(asfAllowTrustLineClawback, 16)       \
+    ASF_FLAG(asfAllowTrustLineLocking, 17)
 
 #define ACCOUNTSET_FLAG_TO_VALUE(name, value) inline constexpr FlagValue name = value;
 #define ACCOUNTSET_FLAG_TO_MAP(name, value) {#name, value},
@@ -436,9 +432,9 @@ ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_VALUE)
 inline std::map<std::string, FlagValue> const&
 getAsfFlagMap()
 {
-    static std::map<std::string, FlagValue> const kFLAGS = {
+    static std::map<std::string, FlagValue> const flags = {
         ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_MAP)};
-    return kFLAGS;
+    return flags;
 }
 
 #undef ACCOUNTSET_FLAG_TO_VALUE

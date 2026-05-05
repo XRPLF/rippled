@@ -100,7 +100,7 @@ get(STObject const& st, TypedField<U> const& f)
     if (!b)
         return t;
     auto const id = b->getSType();
-    if (id == StiNotpresent)
+    if (id == STI_NOTPRESENT)
         return t;
     auto const u = dynamic_cast<U const*>(b);
     // This should never happen

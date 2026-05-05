@@ -179,4 +179,36 @@ to_string(IOUAmount const& amount);
 IOUAmount
 mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp);
 
+// Since many uses of the number class do not have access to a ledger,
+// getSTNumberSwitchover needs to be globally accessible.
+
+bool
+getSTNumberSwitchover();
+
+void
+setSTNumberSwitchover(bool v);
+
+/** RAII class to set and restore the Number switchover.
+ */
+
+class NumberSO
+{
+    bool saved_;
+
+public:
+    ~NumberSO()
+    {
+        setSTNumberSwitchover(saved_);
+    }
+
+    NumberSO(NumberSO const&) = delete;
+    NumberSO&
+    operator=(NumberSO const&) = delete;
+
+    explicit NumberSO(bool v) : saved_(getSTNumberSwitchover())
+    {
+        setSTNumberSwitchover(v);
+    }
+};
+
 }  // namespace xrpl

@@ -106,28 +106,28 @@ template <>
 inline SerializedTypeID
 STUInt128::getSType() const
 {
-    return StiUinT128;
+    return STI_UINT128;
 }
 
 template <>
 inline SerializedTypeID
 STUInt160::getSType() const
 {
-    return StiUinT160;
+    return STI_UINT160;
 }
 
 template <>
 inline SerializedTypeID
 STUInt192::getSType() const
 {
-    return StiUinT192;
+    return STI_UINT192;
 }
 
 template <>
 inline SerializedTypeID
 STUInt256::getSType() const
 {
-    return StiUinT256;
+    return STI_UINT256;
 }
 
 template <int Bits>

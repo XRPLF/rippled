@@ -118,7 +118,7 @@ isDeepFrozen(
 [[nodiscard]] inline TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 {
-    return isDeepFrozen(view, account, issue) ? (TER)TecFrozen : (TER)TesSuccess;
+    return isDeepFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------

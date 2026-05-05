@@ -40,7 +40,7 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     auto const flags = router.getFlags(id);
 
     // Ignore signature check on batch inner transactions
-    if (tx.isFlag(kTF_INNER_BATCH_TXN) && rules.enabled(featureBatch))
+    if (tx.isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (tx.isFieldPresent(sfTxnSignature) || !tx.getSigningPubKey().empty() ||
@@ -203,13 +203,13 @@ applyBatchTransactions(
 
         if (!isTesSuccess(result.ter))
         {
-            if ((mode & kTF_ALL_OR_NOTHING) != 0u)
+            if ((mode & tfAllOrNothing) != 0u)
                 return false;
 
-            if ((mode & kTF_UNTIL_FAILURE) != 0u)
+            if ((mode & tfUntilFailure) != 0u)
                 break;
         }
-        else if ((mode & kTF_ONLY_ONE) != 0u)
+        else if ((mode & tfOnlyOne) != 0u)
         {
             break;
         }

@@ -22,48 +22,48 @@ private:
     {
         switch (flag)
         {
-            case kASF_REQUIRE_DEST:
-                mask_ |= LsfRequireDestTag;
+            case asfRequireDest:
+                mask_ |= lsfRequireDestTag;
                 break;
-            case kASF_REQUIRE_AUTH:
-                mask_ |= LsfRequireAuth;
+            case asfRequireAuth:
+                mask_ |= lsfRequireAuth;
                 break;
-            case kASF_DISALLOW_XRP:
-                mask_ |= LsfDisallowXrp;
+            case asfDisallowXRP:
+                mask_ |= lsfDisallowXRP;
                 break;
-            case kASF_DISABLE_MASTER:
-                mask_ |= LsfDisableMaster;
+            case asfDisableMaster:
+                mask_ |= lsfDisableMaster;
                 break;
             // case asfAccountTxnID: // ???
-            case kASF_NO_FREEZE:
-                mask_ |= LsfNoFreeze;
+            case asfNoFreeze:
+                mask_ |= lsfNoFreeze;
                 break;
-            case kASF_GLOBAL_FREEZE:
-                mask_ |= LsfGlobalFreeze;
+            case asfGlobalFreeze:
+                mask_ |= lsfGlobalFreeze;
                 break;
-            case kASF_DEFAULT_RIPPLE:
-                mask_ |= LsfDefaultRipple;
+            case asfDefaultRipple:
+                mask_ |= lsfDefaultRipple;
                 break;
-            case kASF_DEPOSIT_AUTH:
-                mask_ |= LsfDepositAuth;
+            case asfDepositAuth:
+                mask_ |= lsfDepositAuth;
                 break;
-            case kASF_ALLOW_TRUST_LINE_CLAWBACK:
-                mask_ |= LsfAllowTrustLineClawback;
+            case asfAllowTrustLineClawback:
+                mask_ |= lsfAllowTrustLineClawback;
                 break;
-            case kASF_DISALLOW_INCOMING_CHECK:
-                mask_ |= LsfDisallowIncomingCheck;
+            case asfDisallowIncomingCheck:
+                mask_ |= lsfDisallowIncomingCheck;
                 break;
-            case kASF_DISALLOW_INCOMING_NF_TOKEN_OFFER:
-                mask_ |= LsfDisallowIncomingNfTokenOffer;
+            case asfDisallowIncomingNFTokenOffer:
+                mask_ |= lsfDisallowIncomingNFTokenOffer;
                 break;
-            case kASF_DISALLOW_INCOMING_PAY_CHAN:
-                mask_ |= LsfDisallowIncomingPayChan;
+            case asfDisallowIncomingPayChan:
+                mask_ |= lsfDisallowIncomingPayChan;
                 break;
-            case kASF_DISALLOW_INCOMING_TRUSTLINE:
-                mask_ |= LsfDisallowIncomingTrustline;
+            case asfDisallowIncomingTrustline:
+                mask_ |= lsfDisallowIncomingTrustline;
                 break;
-            case kASF_ALLOW_TRUST_LINE_LOCKING:
-                mask_ |= LsfAllowTrustLineLocking;
+            case asfAllowTrustLineLocking:
+                mask_ |= lsfAllowTrustLineLocking;
                 break;
             default:
                 Throw<std::runtime_error>("unknown flag");

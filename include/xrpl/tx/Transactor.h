@@ -220,7 +220,7 @@ public:
     {
         // Most transactors do nothing
         // after checkSeq/Fee/Sign.
-        return TesSuccess;
+        return tesSUCCESS;
     }
 
     static NotTEC
@@ -456,10 +456,10 @@ Transactor::invokePreflight(PreflightContext const& ctx)
     auto const feature = Permission::getInstance().getTxFeature(ctx.tx.getTxnType());
 
     if (feature && !ctx.rules.enabled(*feature))
-        return TemDisabled;
+        return temDISABLED;
 
     if (!T::checkExtraFeatures(ctx))
-        return TemDisabled;
+        return temDISABLED;
 
     if (auto const ret = preflight1(ctx, T::getFlagsMask(ctx)))
         return ret;
