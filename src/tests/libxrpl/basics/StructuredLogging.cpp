@@ -74,7 +74,8 @@ TEST(AppendEscapedJsonString, escapes_double_quote)
 {
     std::string dest;
     detail::appendEscapedJsonString(dest, R"(say "hi")");
-    EXPECT_EQ(dest, R"("say \"hi\"")");
+    auto const expected = R"("say \"hi\"")";
+    EXPECT_EQ(dest, expected);
 }
 
 TEST(AppendEscapedJsonString, escapes_backslash)
@@ -120,7 +121,8 @@ TEST(AppendJsonValue, string_with_quotes_escaped)
     std::string dest;
     std::string const val = R"(say "hi")";
     detail::appendJsonValue(dest, val);
-    EXPECT_EQ(dest, R"("say \"hi\"")");
+    auto const expected = R"("say \"hi\"")";
+    EXPECT_EQ(dest, expected);
 }
 
 TEST(AppendJsonValue, string_with_backslash_escaped)
@@ -145,7 +147,8 @@ TEST(AppendJsonField, key_with_quotes_escaped)
 {
     std::string dest;
     detail::appendJsonField(dest, R"(my"key)", 42);
-    EXPECT_EQ(dest, R"("my\"key":42)");
+    auto const expected = R"("my\"key":42)";
+    EXPECT_EQ(dest, expected);
 }
 
 TEST(AppendJsonField, key_with_backslash_escaped)
