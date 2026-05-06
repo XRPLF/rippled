@@ -1074,23 +1074,23 @@ class Delegate_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             Account const gw{"gw"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(10000), alice, bob, gw);
-            env.trust(USD(200), alice);
+            env.trust(usd(200), alice);
             env.close();
 
             env(delegate::set(gw, bob, {"PaymentMint"}));
             env.close();
 
             // sfSendMax with same asset as sfAmount, still a direct payment
-            env(pay(gw, alice, USD(50)), Sendmax(USD(50)), delegate::As(bob));
-            env.require(Balance(alice, USD(50)));
+            env(pay(gw, alice, usd(50)), Sendmax(usd(50)), delegate::As(bob));
+            env.require(Balance(alice, usd(50)));
 
             env(delegate::set(alice, bob, {"PaymentBurn"}));
             env.close();
 
-            env(pay(alice, gw, USD(30)), Sendmax(USD(30)), delegate::As(bob));
-            env.require(Balance(alice, USD(20)));
+            env(pay(alice, gw, usd(30)), Sendmax(usd(30)), delegate::As(bob));
+            env.require(Balance(alice, usd(20)));
         }
 
         // Test invalid fields or flags not allowed in granular permission template
@@ -1099,9 +1099,9 @@ class Delegate_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             Account const gw{"gw"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(10000), alice, bob, gw);
-            env.trust(USD(200), alice);
+            env.trust(usd(200), alice);
             env.close();
 
             env(delegate::set(gw, bob, {"PaymentMint"}));
@@ -1110,23 +1110,23 @@ class Delegate_test : public beast::unit_test::Suite
 
             // sfDeliverMin (with tfPartialPayment) is not in the PaymentMint
             // or PaymentBurn template.
-            env(pay(gw, alice, USD(100)),
-                DeliverMin(USD(50)),
+            env(pay(gw, alice, usd(100)),
+                DeliverMin(usd(50)),
                 Txflags(tfPartialPayment),
                 delegate::As(bob),
                 Ter(terNO_DELEGATE_PERMISSION));
-            env(pay(alice, gw, USD(50)),
-                DeliverMin(USD(25)),
+            env(pay(alice, gw, usd(50)),
+                DeliverMin(usd(25)),
                 Txflags(tfPartialPayment),
                 delegate::As(bob),
                 Ter(terNO_DELEGATE_PERMISSION));
 
             // sfDomainID is not in the PaymentMint or PaymentBurn template.
-            env(pay(gw, alice, USD(100)),
+            env(pay(gw, alice, usd(100)),
                 Domain(uint256{1}),
                 delegate::As(bob),
                 Ter(terNO_DELEGATE_PERMISSION));
-            env(pay(alice, gw, USD(50)),
+            env(pay(alice, gw, usd(50)),
                 Domain(uint256{1}),
                 delegate::As(bob),
                 Ter(terNO_DELEGATE_PERMISSION));
@@ -1139,9 +1139,9 @@ class Delegate_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             Account const gw{"gw"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(10000), alice, bob, gw);
-            env.trust(USD(200), alice);
+            env.trust(usd(200), alice);
             env.close();
 
             // Bob holds only an AccountSet granular permission.
@@ -1151,7 +1151,7 @@ class Delegate_test : public beast::unit_test::Suite
             // Payment has granular permissions defined in permissions.macro,
             // but bob only holds AccountSet's granular permission,
             // getGranularPermission returns empty.
-            env(pay(alice, gw, USD(50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+            env(pay(alice, gw, usd(50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
         }
 
         // PaymentMint and PaymentBurn for MPT
@@ -1218,9 +1218,9 @@ class Delegate_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             Account const gw{"gw"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(10000), alice, bob, gw);
-            env.trust(USD(200), alice);
+            env.trust(usd(200), alice);
             env.close();
 
             // Alice granted bob with both AccountDomainSet and PaymentMint.
@@ -1228,7 +1228,7 @@ class Delegate_test : public beast::unit_test::Suite
             env.close();
 
             // PaymentMint fails at granular semantic check because alice is not the issuer.
-            env(pay(alice, gw, USD(50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+            env(pay(alice, gw, usd(50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
 
             // AccountDomainSet applies correctly to AccountSet
             std::string const domain = "example.com";
@@ -1241,8 +1241,8 @@ class Delegate_test : public beast::unit_test::Suite
             // gw gives bob PaymentMint and bob can mint on gw's behalf
             env(delegate::set(gw, bob, {"PaymentMint"}));
             env.close();
-            env(pay(gw, alice, USD(50)), delegate::As(bob));
-            env.require(Balance(alice, USD(50)));
+            env(pay(gw, alice, usd(50)), delegate::As(bob));
+            env.require(Balance(alice, usd(50)));
         }
     }
 
