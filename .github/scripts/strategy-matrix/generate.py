@@ -72,7 +72,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                         skip = False
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
-                        and build_type == "Debug"
+                        and build_type == "Release"
                         and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
@@ -90,19 +90,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     ):
                         cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}"
                         skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
-                        and build_type == "Debug"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
                 elif os["distro_version"] == "trixie":
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-21"
-                        and build_type == "Release"
-                        and architecture["platform"] == "linux/amd64"
-                    ):
-                        skip = False
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "clang-22"
                         and build_type == "Debug"
@@ -201,8 +189,8 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
 
         # We skip all clang 20+ on arm64 due to Boost build error.
         if (
-            f"{os['compiler_name']}-{os['compiler_version']}"
-            in ["clang-20", "clang-21", "clang-22"]
+            os["compiler_name"] == "clang"
+            and int(os["compiler_version"]) >= 20
             and architecture["platform"] == "linux/arm64"
         ):
             continue
@@ -251,13 +239,14 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Add Address and UB sanitizers as separate configurations for specific
         # bookworm distros. Thread sanitizer is currently disabled (see below).
         # GCC-Asan xrpld-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
-        if os[
-            "distro_version"
-        ] == "bookworm" and f"{os['compiler_name']}-{os['compiler_version']}" in [
+        if os["distro_version"] in [
+            "bookworm",
+            "trixie",
+        ] and f"{os['compiler_name']}-{os['compiler_version']}" in [
             "gcc-15",
-            "clang-20",
+            "clang-22",
         ]:
-            # Add ASAN configuration for both gcc-15 and clang-20
+            # Add ASAN and UBSAN configurations for both gcc-15 and clang-22
             configurations.append(
                 {
                     "config_name": config_name + "-asan",
@@ -270,20 +259,18 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "sanitizers": "address",
                 }
             )
-            # Add UBSAN configuration only for gcc-15 (UBSAN is enabled for clang-22)
-            if f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15":
-                configurations.append(
-                    {
-                        "config_name": config_name + "-ubsan",
-                        "cmake_args": cmake_args,
-                        "cmake_target": cmake_target,
-                        "build_only": build_only,
-                        "build_type": build_type,
-                        "os": os,
-                        "architecture": architecture,
-                        "sanitizers": "undefinedbehavior",
-                    }
-                )
+            configurations.append(
+                {
+                    "config_name": config_name + "-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "undefinedbehavior",
+                }
+            )
             # TSAN is deactivated due to seg faults with latest compilers.
             activate_tsan = False
             if activate_tsan:
@@ -299,24 +286,6 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                         "sanitizers": "thread,undefinedbehavior",
                     }
                 )
-        elif os[
-            "distro_version"
-        ] == "trixie" and f"{os['compiler_name']}-{os['compiler_version']}" in [
-            "clang-22",
-        ]:
-            # Add UBSAN configuration
-            configurations.append(
-                {
-                    "config_name": config_name + "-ubsan",
-                    "cmake_args": cmake_args,
-                    "cmake_target": cmake_target,
-                    "build_only": build_only,
-                    "build_type": build_type,
-                    "os": os,
-                    "architecture": architecture,
-                    "sanitizers": "undefinedbehavior",
-                }
-            )
         else:
             configurations.append(
                 {
