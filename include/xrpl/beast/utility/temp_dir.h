@@ -10,20 +10,25 @@
 
 namespace beast {
 
-/** Generate a unique, non-existing path under @p base with a random hex suffix.
+/** Generate a unique, non-existing path under @p base with an optional @p prefix
+    and a random hex suffix.
 
     Attempts up to @p maxAttempts paths. Throws `std::runtime_error` if a
     unique path cannot be found or if the filesystem returns an error while
     checking for existence.
 */
 inline std::filesystem::path
-uniqueRandomPath(std::filesystem::path const& base, std::size_t maxAttempts = 100)
+uniqueRandomPath(
+    std::filesystem::path const& base,
+    std::size_t maxAttempts = 100,
+    std::string const& prefix = "")
 {
     std::random_device rd;
     for (std::size_t attempt = 0; attempt < maxAttempts; ++attempt)
     {
         std::ostringstream oss;
-        oss << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8) << rd();
+        oss << prefix << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8)
+            << rd();
         auto candidate = base / oss.str();
         std::error_code ec;
         bool const exists = std::filesystem::exists(candidate, ec);

@@ -4,6 +4,7 @@
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 
@@ -14,14 +15,10 @@
 #include <grpcpp/support/status.h>
 
 #include <chrono>
-#include <cstddef>
 #include <filesystem>
 #include <fstream>
-#include <iomanip>
 #include <ios>
 #include <memory>
-#include <random>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -258,30 +255,8 @@ public:
 
     TemporaryTLSCertificates()
     {
-        auto tmpDir = std::filesystem::temp_directory_path();
-        std::random_device rd;
-        constexpr std::size_t kMAX_ATTEMPTS = 100;
-        for (std::size_t attempt = 0; attempt < kMAX_ATTEMPTS; ++attempt)
-        {
-            std::ostringstream oss;
-            oss << kCERTS_DIR_PREFIX << std::hex << std::setfill('0') << std::setw(8) << rd();
-            tempDir_ = tmpDir / oss.str();
-            std::error_code ec;
-            bool const exists = std::filesystem::exists(tempDir_, ec);
-            if (ec)
-            {
-                throw std::runtime_error(
-                    "Unable to check path '" + tempDir_.string() + "': " + ec.message());
-            }
-            if (!exists)
-                break;
-            tempDir_.clear();
-        }
-        if (tempDir_.empty())
-        {
-            throw std::runtime_error(
-                "Unable to generate a unique temporary TLS certificate directory");
-        }
+        tempDir_ = beast::uniqueRandomPath(
+            std::filesystem::temp_directory_path(), 100, std::string(kCERTS_DIR_PREFIX));
         std::filesystem::create_directories(tempDir_);
 
         writeFile(tempDir_ / kCA_CERT_FILENAME, kCA_CERT_CONTENT);
