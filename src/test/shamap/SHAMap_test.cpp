@@ -33,11 +33,11 @@ static_assert(!std::is_copy_assignable<SHAMap>{}, "");
 static_assert(!std::is_move_constructible<SHAMap>{}, "");
 static_assert(!std::is_move_assignable<SHAMap>{}, "");
 
-static_assert(std::is_nothrow_destructible<SHAMap::const_iterator>{}, "");
-static_assert(std::is_copy_constructible<SHAMap::const_iterator>{}, "");
-static_assert(std::is_copy_assignable<SHAMap::const_iterator>{}, "");
-static_assert(std::is_move_constructible<SHAMap::const_iterator>{}, "");
-static_assert(std::is_move_assignable<SHAMap::const_iterator>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMap::ConstIterator>{}, "");
+static_assert(std::is_copy_constructible<SHAMap::ConstIterator>{}, "");
+static_assert(std::is_copy_assignable<SHAMap::ConstIterator>{}, "");
+static_assert(std::is_move_constructible<SHAMap::ConstIterator>{}, "");
+static_assert(std::is_move_assignable<SHAMap::ConstIterator>{}, "");
 
 static_assert(std::is_nothrow_destructible<SHAMapItem>{}, "");
 static_assert(!std::is_default_constructible<SHAMapItem>{}, "");
@@ -100,11 +100,11 @@ operator!=(SHAMapItem const& a, uint256 const& b)
     return a.key() != b;
 }
 
-class SHAMap_test : public beast::unit_test::suite
+class SHAMap_test : public beast::unit_test::Suite
 {
 public:
     static Buffer
-    IntToVUC(int v)
+    intToVuc(int v)
     {
         Buffer vuc(32);
         std::fill_n(vuc.data(), vuc.size(), static_cast<std::uint8_t>(v));
@@ -136,26 +136,26 @@ public:
         tests::TestNodeFamily f(journal);
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
-        constexpr uint256 h1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
-        constexpr uint256 h2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
-        constexpr uint256 h3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
-        constexpr uint256 h4("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
-        constexpr uint256 h5("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+        constexpr uint256 kH1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+        constexpr uint256 kH2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
+        constexpr uint256 kH3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+        constexpr uint256 kH4("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
+        constexpr uint256 kH5("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
         SHAMap sMap(SHAMapType::FREE, f);
         sMap.invariants();
         if (!backed)
             sMap.setUnbacked();
 
-        auto i1 = make_shamapitem(h1, IntToVUC(1));
-        auto i2 = make_shamapitem(h2, IntToVUC(2));
-        auto i3 = make_shamapitem(h3, IntToVUC(3));
-        auto i4 = make_shamapitem(h4, IntToVUC(4));
-        auto i5 = make_shamapitem(h5, IntToVUC(5));
+        auto i1 = makeShamapitem(kH1, intToVuc(1));
+        auto i2 = makeShamapitem(kH2, intToVuc(2));
+        auto i3 = makeShamapitem(kH3, intToVuc(3));
+        auto i4 = makeShamapitem(kH4, intToVuc(4));
+        auto i5 = makeShamapitem(kH5, intToVuc(5));
 
-        unexpected(!sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i2)), "no add");
+        unexpected(!sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i2)), "no add");
         sMap.invariants();
-        unexpected(!sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i1)), "no add");
+        unexpected(!sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i1)), "no add");
         sMap.invariants();
 
         auto i = sMap.begin();
@@ -165,11 +165,11 @@ public:
         unexpected(i == e || (*i != *i2), "bad traverse");
         ++i;
         unexpected(i != e, "bad traverse");
-        sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i4));
+        sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i4));
         sMap.invariants();
         sMap.delItem(i2->key());
         sMap.invariants();
-        sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i3));
+        sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i3));
         sMap.invariants();
         i = sMap.begin();
         e = sMap.end();
@@ -207,9 +207,9 @@ public:
 
         BEAST_EXPECT(sMap.compare(*map2, delta, 100));
         BEAST_EXPECT(delta.size() == 1);
-        BEAST_EXPECT(delta.begin()->first == h1);
+        BEAST_EXPECT(delta.begin()->first == kH1);
         BEAST_EXPECT(delta.begin()->second.first == nullptr);
-        BEAST_EXPECT(delta.begin()->second.second->key() == h1);
+        BEAST_EXPECT(delta.begin()->second.second->key() == kH1);
 
         sMap.dump();
 
@@ -222,7 +222,7 @@ public:
             testcase("build/tear unbacked");
         }
         {
-            constexpr std::array keys{
+            constexpr std::array kEYS{
                 uint256(
                     "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                     "5a772c6ca8"),
@@ -248,7 +248,7 @@ public:
                     "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                     "5a772c6ca8")};
 
-            constexpr std::array hashes{
+            constexpr std::array kHASHES{
                 uint256(
                     "B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C"
                     "64B6281F7F"),
@@ -278,21 +278,21 @@ public:
             if (!backed)
                 map.setUnbacked();
 
-            BEAST_EXPECT(map.getHash() == beast::zero);
-            for (int k = 0; k < keys.size(); ++k)
+            BEAST_EXPECT(map.getHash() == beast::kZERO);
+            for (int k = 0; k < kEYS.size(); ++k)
             {
                 BEAST_EXPECT(map.addItem(
-                    SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(keys[k], IntToVUC(k))));
-                BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
+                    SHAMapNodeType::TnTransactionNm, makeShamapitem(kEYS[k], intToVuc(k))));
+                BEAST_EXPECT(map.getHash().asUint256() == kHASHES[k]);
                 map.invariants();
             }
-            for (int k = keys.size() - 1; k >= 0; --k)
+            for (int k = kEYS.size() - 1; k >= 0; --k)
             {
-                BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
-                BEAST_EXPECT(map.delItem(keys[k]));
+                BEAST_EXPECT(map.getHash().asUint256() == kHASHES[k]);
+                BEAST_EXPECT(map.delItem(kEYS[k]));
                 map.invariants();
             }
-            BEAST_EXPECT(map.getHash() == beast::zero);
+            BEAST_EXPECT(map.getHash() == beast::kZERO);
         }
 
         if (backed)
@@ -305,7 +305,7 @@ public:
         }
 
         {
-            constexpr std::array keys{
+            constexpr std::array kEYS{
                 uint256(
                     "f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                     "5a772c6ca8"),
@@ -335,23 +335,23 @@ public:
             SHAMap map{SHAMapType::FREE, tf};
             if (!backed)
                 map.setUnbacked();
-            for (auto const& k : keys)
+            for (auto const& k : kEYS)
             {
-                map.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(k, IntToVUC(0)));
+                map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(k, intToVuc(0)));
                 map.invariants();
             }
 
             int h = 7;
             for (auto const& k : map)
             {
-                BEAST_EXPECT(k.key() == keys[h]);
+                BEAST_EXPECT(k.key() == kEYS[h]);
                 --h;
             }
         }
     }
 };
 
-class SHAMapPathProof_test : public beast::unit_test::suite
+class SHAMapPathProof_test : public beast::unit_test::Suite
 {
     void
     run() override
@@ -370,10 +370,10 @@ class SHAMapPathProof_test : public beast::unit_test::suite
         {
             uint256 k(c);
             map.addItem(
-                SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(k, Slice{k.data(), k.size()}));
+                SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()}));
             map.invariants();
 
-            auto root = map.getHash().as_uint256();
+            auto root = map.getHash().asUint256();
             auto path = map.getProofPath(k);
             BEAST_EXPECT(path);
             if (!path)

@@ -8,13 +8,13 @@
 
 namespace xrpl {
 
-struct SeqProxy_test : public beast::unit_test::suite
+struct SeqProxy_test : public beast::unit_test::Suite
 {
     // Exercise value(), isSeq(), and isTicket().
     static constexpr bool
     expectValues(SeqProxy seqProx, std::uint32_t value, SeqProxy::Type type)
     {
-        bool const expectSeq{type == SeqProxy::Type::seq};
+        bool const expectSeq{type == SeqProxy::Type::Seq};
         return (seqProx.value() == value) && (seqProx.isSeq() == expectSeq) &&
             (seqProx.isTicket() == !expectSeq);
     }
@@ -64,157 +64,157 @@ struct SeqProxy_test : public beast::unit_test::suite
         // While SeqProxy supports values of zero, they are not
         // expected in the wild.  Nevertheless they are tested here.
         // But so are values of 1, which are expected to occur in the wild.
-        static constexpr std::uint32_t uintMax{std::numeric_limits<std::uint32_t>::max()};
-        static constexpr SeqProxy::Type seq{SeqProxy::Type::seq};
-        static constexpr SeqProxy::Type ticket{SeqProxy::Type::ticket};
+        static constexpr std::uint32_t kUINT_MAX{std::numeric_limits<std::uint32_t>::max()};
+        static constexpr SeqProxy::Type kSEQ{SeqProxy::Type::Seq};
+        static constexpr SeqProxy::Type kTICKET{SeqProxy::Type::Ticket};
 
-        static constexpr SeqProxy seqZero{seq, 0};
-        static constexpr SeqProxy seqSmall{seq, 1};
-        static constexpr SeqProxy seqMid0{seq, 2};
-        static constexpr SeqProxy seqMid1{seqMid0};
-        static constexpr SeqProxy seqBig{seq, uintMax};
+        static constexpr SeqProxy kSEQ_ZERO{kSEQ, 0};
+        static constexpr SeqProxy kSEQ_SMALL{kSEQ, 1};
+        static constexpr SeqProxy kSEQ_MID0{kSEQ, 2};
+        static constexpr SeqProxy kSEQ_MID1{kSEQ_MID0};
+        static constexpr SeqProxy kSEQ_BIG{kSEQ, kUINT_MAX};
 
-        static constexpr SeqProxy ticZero{ticket, 0};
-        static constexpr SeqProxy ticSmall{ticket, 1};
-        static constexpr SeqProxy ticMid0{ticket, 2};
-        static constexpr SeqProxy ticMid1{ticMid0};
-        static constexpr SeqProxy ticBig{ticket, uintMax};
+        static constexpr SeqProxy kTIC_ZERO{kTICKET, 0};
+        static constexpr SeqProxy kTIC_SMALL{kTICKET, 1};
+        static constexpr SeqProxy kTIC_MID0{kTICKET, 2};
+        static constexpr SeqProxy kTIC_MID1{kTIC_MID0};
+        static constexpr SeqProxy kTIC_BIG{kTICKET, kUINT_MAX};
 
         // Verify operation of value(), isSeq() and isTicket().
-        static_assert(expectValues(seqZero, 0, seq), "");
-        static_assert(expectValues(seqSmall, 1, seq), "");
-        static_assert(expectValues(seqMid0, 2, seq), "");
-        static_assert(expectValues(seqMid1, 2, seq), "");
-        static_assert(expectValues(seqBig, uintMax, seq), "");
+        static_assert(expectValues(kSEQ_ZERO, 0, kSEQ), "");
+        static_assert(expectValues(kSEQ_SMALL, 1, kSEQ), "");
+        static_assert(expectValues(kSEQ_MID0, 2, kSEQ), "");
+        static_assert(expectValues(kSEQ_MID1, 2, kSEQ), "");
+        static_assert(expectValues(kSEQ_BIG, kUINT_MAX, kSEQ), "");
 
-        static_assert(expectValues(ticZero, 0, ticket), "");
-        static_assert(expectValues(ticSmall, 1, ticket), "");
-        static_assert(expectValues(ticMid0, 2, ticket), "");
-        static_assert(expectValues(ticMid1, 2, ticket), "");
-        static_assert(expectValues(ticBig, uintMax, ticket), "");
+        static_assert(expectValues(kTIC_ZERO, 0, kTICKET), "");
+        static_assert(expectValues(kTIC_SMALL, 1, kTICKET), "");
+        static_assert(expectValues(kTIC_MID0, 2, kTICKET), "");
+        static_assert(expectValues(kTIC_MID1, 2, kTICKET), "");
+        static_assert(expectValues(kTIC_BIG, kUINT_MAX, kTICKET), "");
 
         // Verify expected behavior of comparison operators.
-        static_assert(expectEq(seqZero, seqZero), "");
-        static_assert(expectLt(seqZero, seqSmall), "");
-        static_assert(expectLt(seqZero, seqMid0), "");
-        static_assert(expectLt(seqZero, seqMid1), "");
-        static_assert(expectLt(seqZero, seqBig), "");
-        static_assert(expectLt(seqZero, ticZero), "");
-        static_assert(expectLt(seqZero, ticSmall), "");
-        static_assert(expectLt(seqZero, ticMid0), "");
-        static_assert(expectLt(seqZero, ticMid1), "");
-        static_assert(expectLt(seqZero, ticBig), "");
+        static_assert(expectEq(kSEQ_ZERO, kSEQ_ZERO), "");
+        static_assert(expectLt(kSEQ_ZERO, kSEQ_SMALL), "");
+        static_assert(expectLt(kSEQ_ZERO, kSEQ_MID0), "");
+        static_assert(expectLt(kSEQ_ZERO, kSEQ_MID1), "");
+        static_assert(expectLt(kSEQ_ZERO, kSEQ_BIG), "");
+        static_assert(expectLt(kSEQ_ZERO, kTIC_ZERO), "");
+        static_assert(expectLt(kSEQ_ZERO, kTIC_SMALL), "");
+        static_assert(expectLt(kSEQ_ZERO, kTIC_MID0), "");
+        static_assert(expectLt(kSEQ_ZERO, kTIC_MID1), "");
+        static_assert(expectLt(kSEQ_ZERO, kTIC_BIG), "");
 
-        static_assert(expectGt(seqSmall, seqZero), "");
-        static_assert(expectEq(seqSmall, seqSmall), "");
-        static_assert(expectLt(seqSmall, seqMid0), "");
-        static_assert(expectLt(seqSmall, seqMid1), "");
-        static_assert(expectLt(seqSmall, seqBig), "");
-        static_assert(expectLt(seqSmall, ticZero), "");
-        static_assert(expectLt(seqSmall, ticSmall), "");
-        static_assert(expectLt(seqSmall, ticMid0), "");
-        static_assert(expectLt(seqSmall, ticMid1), "");
-        static_assert(expectLt(seqSmall, ticBig), "");
+        static_assert(expectGt(kSEQ_SMALL, kSEQ_ZERO), "");
+        static_assert(expectEq(kSEQ_SMALL, kSEQ_SMALL), "");
+        static_assert(expectLt(kSEQ_SMALL, kSEQ_MID0), "");
+        static_assert(expectLt(kSEQ_SMALL, kSEQ_MID1), "");
+        static_assert(expectLt(kSEQ_SMALL, kSEQ_BIG), "");
+        static_assert(expectLt(kSEQ_SMALL, kTIC_ZERO), "");
+        static_assert(expectLt(kSEQ_SMALL, kTIC_SMALL), "");
+        static_assert(expectLt(kSEQ_SMALL, kTIC_MID0), "");
+        static_assert(expectLt(kSEQ_SMALL, kTIC_MID1), "");
+        static_assert(expectLt(kSEQ_SMALL, kTIC_BIG), "");
 
-        static_assert(expectGt(seqMid0, seqZero), "");
-        static_assert(expectGt(seqMid0, seqSmall), "");
-        static_assert(expectEq(seqMid0, seqMid0), "");
-        static_assert(expectEq(seqMid0, seqMid1), "");
-        static_assert(expectLt(seqMid0, seqBig), "");
-        static_assert(expectLt(seqMid0, ticZero), "");
-        static_assert(expectLt(seqMid0, ticSmall), "");
-        static_assert(expectLt(seqMid0, ticMid0), "");
-        static_assert(expectLt(seqMid0, ticMid1), "");
-        static_assert(expectLt(seqMid0, ticBig), "");
+        static_assert(expectGt(kSEQ_MID0, kSEQ_ZERO), "");
+        static_assert(expectGt(kSEQ_MID0, kSEQ_SMALL), "");
+        static_assert(expectEq(kSEQ_MID0, kSEQ_MID0), "");
+        static_assert(expectEq(kSEQ_MID0, kSEQ_MID1), "");
+        static_assert(expectLt(kSEQ_MID0, kSEQ_BIG), "");
+        static_assert(expectLt(kSEQ_MID0, kTIC_ZERO), "");
+        static_assert(expectLt(kSEQ_MID0, kTIC_SMALL), "");
+        static_assert(expectLt(kSEQ_MID0, kTIC_MID0), "");
+        static_assert(expectLt(kSEQ_MID0, kTIC_MID1), "");
+        static_assert(expectLt(kSEQ_MID0, kTIC_BIG), "");
 
-        static_assert(expectGt(seqMid1, seqZero), "");
-        static_assert(expectGt(seqMid1, seqSmall), "");
-        static_assert(expectEq(seqMid1, seqMid0), "");
-        static_assert(expectEq(seqMid1, seqMid1), "");
-        static_assert(expectLt(seqMid1, seqBig), "");
-        static_assert(expectLt(seqMid1, ticZero), "");
-        static_assert(expectLt(seqMid1, ticSmall), "");
-        static_assert(expectLt(seqMid1, ticMid0), "");
-        static_assert(expectLt(seqMid1, ticMid1), "");
-        static_assert(expectLt(seqMid1, ticBig), "");
+        static_assert(expectGt(kSEQ_MID1, kSEQ_ZERO), "");
+        static_assert(expectGt(kSEQ_MID1, kSEQ_SMALL), "");
+        static_assert(expectEq(kSEQ_MID1, kSEQ_MID0), "");
+        static_assert(expectEq(kSEQ_MID1, kSEQ_MID1), "");
+        static_assert(expectLt(kSEQ_MID1, kSEQ_BIG), "");
+        static_assert(expectLt(kSEQ_MID1, kTIC_ZERO), "");
+        static_assert(expectLt(kSEQ_MID1, kTIC_SMALL), "");
+        static_assert(expectLt(kSEQ_MID1, kTIC_MID0), "");
+        static_assert(expectLt(kSEQ_MID1, kTIC_MID1), "");
+        static_assert(expectLt(kSEQ_MID1, kTIC_BIG), "");
 
-        static_assert(expectGt(seqBig, seqZero), "");
-        static_assert(expectGt(seqBig, seqSmall), "");
-        static_assert(expectGt(seqBig, seqMid0), "");
-        static_assert(expectGt(seqBig, seqMid1), "");
-        static_assert(expectEq(seqBig, seqBig), "");
-        static_assert(expectLt(seqBig, ticZero), "");
-        static_assert(expectLt(seqBig, ticSmall), "");
-        static_assert(expectLt(seqBig, ticMid0), "");
-        static_assert(expectLt(seqBig, ticMid1), "");
-        static_assert(expectLt(seqBig, ticBig), "");
+        static_assert(expectGt(kSEQ_BIG, kSEQ_ZERO), "");
+        static_assert(expectGt(kSEQ_BIG, kSEQ_SMALL), "");
+        static_assert(expectGt(kSEQ_BIG, kSEQ_MID0), "");
+        static_assert(expectGt(kSEQ_BIG, kSEQ_MID1), "");
+        static_assert(expectEq(kSEQ_BIG, kSEQ_BIG), "");
+        static_assert(expectLt(kSEQ_BIG, kTIC_ZERO), "");
+        static_assert(expectLt(kSEQ_BIG, kTIC_SMALL), "");
+        static_assert(expectLt(kSEQ_BIG, kTIC_MID0), "");
+        static_assert(expectLt(kSEQ_BIG, kTIC_MID1), "");
+        static_assert(expectLt(kSEQ_BIG, kTIC_BIG), "");
 
-        static_assert(expectGt(ticZero, seqZero), "");
-        static_assert(expectGt(ticZero, seqSmall), "");
-        static_assert(expectGt(ticZero, seqMid0), "");
-        static_assert(expectGt(ticZero, seqMid1), "");
-        static_assert(expectGt(ticZero, seqBig), "");
-        static_assert(expectEq(ticZero, ticZero), "");
-        static_assert(expectLt(ticZero, ticSmall), "");
-        static_assert(expectLt(ticZero, ticMid0), "");
-        static_assert(expectLt(ticZero, ticMid1), "");
-        static_assert(expectLt(ticZero, ticBig), "");
+        static_assert(expectGt(kTIC_ZERO, kSEQ_ZERO), "");
+        static_assert(expectGt(kTIC_ZERO, kSEQ_SMALL), "");
+        static_assert(expectGt(kTIC_ZERO, kSEQ_MID0), "");
+        static_assert(expectGt(kTIC_ZERO, kSEQ_MID1), "");
+        static_assert(expectGt(kTIC_ZERO, kSEQ_BIG), "");
+        static_assert(expectEq(kTIC_ZERO, kTIC_ZERO), "");
+        static_assert(expectLt(kTIC_ZERO, kTIC_SMALL), "");
+        static_assert(expectLt(kTIC_ZERO, kTIC_MID0), "");
+        static_assert(expectLt(kTIC_ZERO, kTIC_MID1), "");
+        static_assert(expectLt(kTIC_ZERO, kTIC_BIG), "");
 
-        static_assert(expectGt(ticSmall, seqZero), "");
-        static_assert(expectGt(ticSmall, seqSmall), "");
-        static_assert(expectGt(ticSmall, seqMid0), "");
-        static_assert(expectGt(ticSmall, seqMid1), "");
-        static_assert(expectGt(ticSmall, seqBig), "");
-        static_assert(expectGt(ticSmall, ticZero), "");
-        static_assert(expectEq(ticSmall, ticSmall), "");
-        static_assert(expectLt(ticSmall, ticMid0), "");
-        static_assert(expectLt(ticSmall, ticMid1), "");
-        static_assert(expectLt(ticSmall, ticBig), "");
+        static_assert(expectGt(kTIC_SMALL, kSEQ_ZERO), "");
+        static_assert(expectGt(kTIC_SMALL, kSEQ_SMALL), "");
+        static_assert(expectGt(kTIC_SMALL, kSEQ_MID0), "");
+        static_assert(expectGt(kTIC_SMALL, kSEQ_MID1), "");
+        static_assert(expectGt(kTIC_SMALL, kSEQ_BIG), "");
+        static_assert(expectGt(kTIC_SMALL, kTIC_ZERO), "");
+        static_assert(expectEq(kTIC_SMALL, kTIC_SMALL), "");
+        static_assert(expectLt(kTIC_SMALL, kTIC_MID0), "");
+        static_assert(expectLt(kTIC_SMALL, kTIC_MID1), "");
+        static_assert(expectLt(kTIC_SMALL, kTIC_BIG), "");
 
-        static_assert(expectGt(ticMid0, seqZero), "");
-        static_assert(expectGt(ticMid0, seqSmall), "");
-        static_assert(expectGt(ticMid0, seqMid0), "");
-        static_assert(expectGt(ticMid0, seqMid1), "");
-        static_assert(expectGt(ticMid0, seqBig), "");
-        static_assert(expectGt(ticMid0, ticZero), "");
-        static_assert(expectGt(ticMid0, ticSmall), "");
-        static_assert(expectEq(ticMid0, ticMid0), "");
-        static_assert(expectEq(ticMid0, ticMid1), "");
-        static_assert(expectLt(ticMid0, ticBig), "");
+        static_assert(expectGt(kTIC_MID0, kSEQ_ZERO), "");
+        static_assert(expectGt(kTIC_MID0, kSEQ_SMALL), "");
+        static_assert(expectGt(kTIC_MID0, kSEQ_MID0), "");
+        static_assert(expectGt(kTIC_MID0, kSEQ_MID1), "");
+        static_assert(expectGt(kTIC_MID0, kSEQ_BIG), "");
+        static_assert(expectGt(kTIC_MID0, kTIC_ZERO), "");
+        static_assert(expectGt(kTIC_MID0, kTIC_SMALL), "");
+        static_assert(expectEq(kTIC_MID0, kTIC_MID0), "");
+        static_assert(expectEq(kTIC_MID0, kTIC_MID1), "");
+        static_assert(expectLt(kTIC_MID0, kTIC_BIG), "");
 
-        static_assert(expectGt(ticMid1, seqZero), "");
-        static_assert(expectGt(ticMid1, seqSmall), "");
-        static_assert(expectGt(ticMid1, seqMid0), "");
-        static_assert(expectGt(ticMid1, seqMid1), "");
-        static_assert(expectGt(ticMid1, seqBig), "");
-        static_assert(expectGt(ticMid1, ticZero), "");
-        static_assert(expectGt(ticMid1, ticSmall), "");
-        static_assert(expectEq(ticMid1, ticMid0), "");
-        static_assert(expectEq(ticMid1, ticMid1), "");
-        static_assert(expectLt(ticMid1, ticBig), "");
+        static_assert(expectGt(kTIC_MID1, kSEQ_ZERO), "");
+        static_assert(expectGt(kTIC_MID1, kSEQ_SMALL), "");
+        static_assert(expectGt(kTIC_MID1, kSEQ_MID0), "");
+        static_assert(expectGt(kTIC_MID1, kSEQ_MID1), "");
+        static_assert(expectGt(kTIC_MID1, kSEQ_BIG), "");
+        static_assert(expectGt(kTIC_MID1, kTIC_ZERO), "");
+        static_assert(expectGt(kTIC_MID1, kTIC_SMALL), "");
+        static_assert(expectEq(kTIC_MID1, kTIC_MID0), "");
+        static_assert(expectEq(kTIC_MID1, kTIC_MID1), "");
+        static_assert(expectLt(kTIC_MID1, kTIC_BIG), "");
 
-        static_assert(expectGt(ticBig, seqZero), "");
-        static_assert(expectGt(ticBig, seqSmall), "");
-        static_assert(expectGt(ticBig, seqMid0), "");
-        static_assert(expectGt(ticBig, seqMid1), "");
-        static_assert(expectGt(ticBig, seqBig), "");
-        static_assert(expectGt(ticBig, ticZero), "");
-        static_assert(expectGt(ticBig, ticSmall), "");
-        static_assert(expectGt(ticBig, ticMid0), "");
-        static_assert(expectGt(ticBig, ticMid1), "");
-        static_assert(expectEq(ticBig, ticBig), "");
+        static_assert(expectGt(kTIC_BIG, kSEQ_ZERO), "");
+        static_assert(expectGt(kTIC_BIG, kSEQ_SMALL), "");
+        static_assert(expectGt(kTIC_BIG, kSEQ_MID0), "");
+        static_assert(expectGt(kTIC_BIG, kSEQ_MID1), "");
+        static_assert(expectGt(kTIC_BIG, kSEQ_BIG), "");
+        static_assert(expectGt(kTIC_BIG, kTIC_ZERO), "");
+        static_assert(expectGt(kTIC_BIG, kTIC_SMALL), "");
+        static_assert(expectGt(kTIC_BIG, kTIC_MID0), "");
+        static_assert(expectGt(kTIC_BIG, kTIC_MID1), "");
+        static_assert(expectEq(kTIC_BIG, kTIC_BIG), "");
 
         // Verify streaming.
-        BEAST_EXPECT(streamTest(seqZero));
-        BEAST_EXPECT(streamTest(seqSmall));
-        BEAST_EXPECT(streamTest(seqMid0));
-        BEAST_EXPECT(streamTest(seqMid1));
-        BEAST_EXPECT(streamTest(seqBig));
-        BEAST_EXPECT(streamTest(ticZero));
-        BEAST_EXPECT(streamTest(ticSmall));
-        BEAST_EXPECT(streamTest(ticMid0));
-        BEAST_EXPECT(streamTest(ticMid1));
-        BEAST_EXPECT(streamTest(ticBig));
+        BEAST_EXPECT(streamTest(kSEQ_ZERO));
+        BEAST_EXPECT(streamTest(kSEQ_SMALL));
+        BEAST_EXPECT(streamTest(kSEQ_MID0));
+        BEAST_EXPECT(streamTest(kSEQ_MID1));
+        BEAST_EXPECT(streamTest(kSEQ_BIG));
+        BEAST_EXPECT(streamTest(kTIC_ZERO));
+        BEAST_EXPECT(streamTest(kTIC_SMALL));
+        BEAST_EXPECT(streamTest(kTIC_MID0));
+        BEAST_EXPECT(streamTest(kTIC_MID1));
+        BEAST_EXPECT(streamTest(kTIC_BIG));
     }
 };
 

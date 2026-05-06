@@ -19,9 +19,9 @@ class AccountDeleteBuilder;
  * @brief Transaction: AccountDelete
  *
  * Type: ttACCOUNT_DELETE (21)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: mustDeleteAcct
+ * Privileges: MustDeleteAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AccountDeleteBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +85,7 @@ public:
     }
 
     /**
-     * @brief Get sfCredentialIDs (soeOPTIONAL)
+     * @brief Get sfCredentialIDs (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -115,7 +115,7 @@ public:
  * @brief Builder for AccountDelete transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class AccountDeleteBuilder : public TransactionBuilderBase<AccountDeleteBuilder>
@@ -154,7 +154,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountDeleteBuilder&
@@ -165,7 +165,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountDeleteBuilder&
@@ -176,7 +176,7 @@ public:
     }
 
     /**
-     * @brief Set sfCredentialIDs (soeOPTIONAL)
+     * @brief Set sfCredentialIDs (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountDeleteBuilder&

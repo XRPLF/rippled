@@ -39,7 +39,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
@@ -63,7 +63,7 @@ private:
 };
 
 STCurrency
-currencyFromJson(SField const& name, Json::Value const& v);
+currencyFromJson(SField const& name, json::Value const& v);
 
 inline Currency const&
 STCurrency::currency() const

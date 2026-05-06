@@ -3,17 +3,17 @@
 
 namespace beast {
 
-class basic_seconds_clock_test : public unit_test::suite
+class BasicSecondsClock_test : public unit_test::Suite
 {
 public:
     void
     run() override
     {
-        basic_seconds_clock::now();
+        BasicSecondsClock::now();
         pass();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(basic_seconds_clock, beast, beast);
+BEAST_DEFINE_TESTSUITE(BasicSecondsClock, beast, beast);
 
 }  // namespace beast

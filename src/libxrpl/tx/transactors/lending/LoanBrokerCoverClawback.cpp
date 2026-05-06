@@ -48,7 +48,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
     if (!brokerID && !amount)
         return temINVALID;
 
-    if (brokerID && *brokerID == beast::zero)
+    if (brokerID && *brokerID == beast::kZERO)
         return temINVALID;
 
     if (amount)
@@ -58,7 +58,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
             return temBAD_AMOUNT;
 
         // Zero is OK, and indicates "take it all" (down to the minimum cover)
-        if (*amount < beast::zero)
+        if (*amount < beast::kZERO)
             return temBAD_AMOUNT;
 
         // This should be redundant
@@ -75,7 +75,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
             // broker's pseudo-account, but we don't know yet whether it is, so
             // use a generic placeholder name.
             auto const holder = amount->getIssuer();
-            if (holder == account || holder == beast::zero)
+            if (holder == account || holder == beast::kZERO)
                 return temINVALID;
         }
     }
@@ -164,20 +164,20 @@ determineClawAmount(
 {
     auto const maxClawAmount = [&]() {
         // Always round the minimum required up
-        NumberRoundModeGuard const mg1(Number::rounding_mode::upward);
+        NumberRoundModeGuard const mg1(Number::RoundingMode::Upward);
         auto const minRequiredCover =
             tenthBipsOfValue(sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
         // The subtraction probably won't round, but round down if it does.
-        NumberRoundModeGuard const mg2(Number::rounding_mode::downward);
+        NumberRoundModeGuard const mg2(Number::RoundingMode::Downward);
         return sleBroker[sfCoverAvailable] - minRequiredCover;
     }();
-    if (maxClawAmount <= beast::zero)
+    if (maxClawAmount <= beast::kZERO)
         return Unexpected(tecINSUFFICIENT_FUNDS);
 
     // Use the vaultAsset here, because it will be the right type in all
     // circumstances. The amount may be an IOU indicating the pseudo-account's
     // asset, which is correct, but not what is needed here.
-    if (!amount || *amount == beast::zero)
+    if (!amount || *amount == beast::kZERO)
         return STAmount{vaultAsset, maxClawAmount};
     Number const magnitude{*amount};
     if (magnitude > maxClawAmount)
@@ -298,8 +298,8 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
             ctx.view,
             brokerPseudoAccountID,
             vaultAsset,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             ctx.j) < clawAmount)
         return tecINTERNAL;  // tecINSUFFICIENT_FUNDS; LCOV_EXCL_LINE
 

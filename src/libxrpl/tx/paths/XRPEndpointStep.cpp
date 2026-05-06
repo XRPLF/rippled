@@ -88,7 +88,7 @@ public:
     [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
-        return DebtDirection::issues;
+        return DebtDirection::Issues;
     }
 
     [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
@@ -253,7 +253,7 @@ template <class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
 XRPEndpointStep<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
-    return {Quality{STAmount::uRateOne}, this->debtDirection(v, StrandDirection::forward)};
+    return {Quality{STAmount::kU_RATE_ONE}, this->debtDirection(v, StrandDirection::Forward)};
 }
 
 template <class TDerived>
@@ -272,7 +272,7 @@ XRPEndpointStep<TDerived>::revImp(
     auto& receiver = isLast_ ? acc_ : xrpAccount();
     auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
     if (!isTesSuccess(ter))
-        return {XRPAmount{beast::zero}, XRPAmount{beast::zero}};
+        return {XRPAmount{beast::kZERO}, XRPAmount{beast::kZERO}};
 
     cache_.emplace(result);
     return {result, result};
@@ -295,7 +295,7 @@ XRPEndpointStep<TDerived>::fwdImp(
     auto& receiver = isLast_ ? acc_ : xrpAccount();
     auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
     if (!isTesSuccess(ter))
-        return {XRPAmount{beast::zero}, XRPAmount{beast::zero}};
+        return {XRPAmount{beast::kZERO}, XRPAmount{beast::kZERO}};
 
     cache_.emplace(result);
     return {result, result};
@@ -308,7 +308,7 @@ XRPEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
     if (!cache_)
     {
         JLOG(j_.error()) << "Expected valid cache in validFwd";
-        return {false, EitherAmount(XRPAmount(beast::zero))};
+        return {false, EitherAmount(XRPAmount(beast::kZERO))};
     }
 
     XRPL_ASSERT(in.holds<XRPAmount>(), "xrpl::XRPEndpointStep::validFwd : input is XRP");
@@ -392,11 +392,11 @@ xrpEndpointStepEqual(Step const& step, AccountID const& acc)
 //------------------------------------------------------------------------------
 
 std::pair<TER, std::unique_ptr<Step>>
-make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
+makeXrpEndpointStep(StrandContext const& ctx, AccountID const& acc)
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing != OfferCrossing::no)
+    if (ctx.offerCrossing != OfferCrossing::No)
     {
         auto offerCrossingStep = std::make_unique<XRPEndpointOfferCrossingStep>(ctx, acc);
         ter = offerCrossingStep->check(ctx);

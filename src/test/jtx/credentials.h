@@ -16,13 +16,13 @@ keylet(
 }
 
 // Sets the optional URI.
-class uri
+class Uri
 {
 private:
     std::string const uri_;
 
 public:
-    explicit uri(std::string_view u) : uri_(strHex(u))
+    explicit Uri(std::string_view u) : uri_(strHex(u))
     {
     }
 
@@ -34,46 +34,46 @@ public:
 };
 
 // Set credentialsIDs array
-class ids
+class Ids
 {
 private:
     std::vector<std::string> const credentials_;
 
 public:
-    explicit ids(std::vector<std::string> const& creds) : credentials_(creds)
+    explicit Ids(std::vector<std::string> const& creds) : credentials_(creds)
     {
     }
 
     void
     operator()(jtx::Env&, jtx::JTx& jtx) const
     {
-        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = json::ArrayValue);
         for (auto const& hash : credentials_)
             arr.append(hash);
     }
 };
 
-Json::Value
+json::Value
 create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
-Json::Value
+json::Value
 accept(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
-Json::Value
+json::Value
 deleteCred(
     jtx::Account const& acc,
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType);
 
-Json::Value
+json::Value
 ledgerEntry(
     jtx::Env& env,
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType);
 
-Json::Value
+json::Value
 ledgerEntry(jtx::Env& env, std::string const& credIdx);
 
 }  // namespace xrpl::test::jtx::credentials

@@ -45,7 +45,7 @@ LoanManage::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanManage::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::zero)
+    if (ctx.tx[sfLoanID] == beast::kZERO)
         return temINVALID;
 
     // Flags are mutually exclusive
@@ -167,7 +167,7 @@ LoanManage::defaultLoan(
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
     auto const defaultCovered = [&]() {
         // Always round the minimum required up.
-        NumberRoundModeGuard const mg(Number::rounding_mode::upward);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
         auto const covered = roundToAsset(
@@ -207,7 +207,7 @@ LoanManage::defaultLoan(
         }
 
         auto const vaultDefaultRounded = roundToAsset(
-            vaultAsset, vaultDefaultAmount, vaultScale, Number::rounding_mode::downward);
+            vaultAsset, vaultDefaultAmount, vaultScale, Number::RoundingMode::Downward);
         vaultTotalProxy -= vaultDefaultRounded;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
@@ -418,7 +418,7 @@ LoanManage::doApply()
             return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
         if (tx.isFlag(tfLoanUnimpair))
             return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-        // Noop, as described above.
+        // NoOp, as described above.
         return tesSUCCESS;
     }();
 

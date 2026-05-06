@@ -16,7 +16,7 @@ public:
 
     /** Issue an asynchronous stop request. */
     virtual void
-    stop_async() = 0;
+    stopAsync() = 0;
 
     /** Issue a synchronous stop request. */
     virtual void

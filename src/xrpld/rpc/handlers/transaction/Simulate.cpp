@@ -42,24 +42,24 @@
 
 namespace xrpl {
 
-static Expected<std::uint32_t, Json::Value>
-getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
+static Expected<std::uint32_t, json::Value>
+getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
 {
     // autofill Sequence
-    bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
-    auto const& accountStr = tx_json[jss::Account];
+    bool const hasTicketSeq = txJson.isMember(sfTicketSequence.jsonName);
+    auto const& accountStr = txJson[jss::Account];
     if (!accountStr.isString())
     {
         // sanity check, should fail earlier
         // LCOV_EXCL_START
-        return Unexpected(RPC::invalid_field_error("tx.Account"));
+        return Unexpected(RPC::invalidFieldError("tx.Account"));
         // LCOV_EXCL_STOP
     }
     auto const srcAddressID = parseBase58<AccountID>(accountStr.asString());
     if (!srcAddressID.has_value())
     {
         return Unexpected(
-            RPC::make_error(rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
+            RPC::makeError(RpcSrcActMalformed, RPC::invalidFieldMessage("tx.Account")));
     }
     std::shared_ptr<SLE const> const sle =
         context.app.getOpenLedger().current()->read(keylet::account(*srcAddressID));
@@ -69,14 +69,14 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
             << "Failed to find source account "
             << "in current ledger: " << toBase58(*srcAddressID);
 
-        return Unexpected(rpcError(rpcSRC_ACT_NOT_FOUND));
+        return Unexpected(rpcError(RpcSrcActNotFound));
     }
 
     return hasTicketSeq ? 0 : context.app.getTxQ().nextQueuableSeq(sle).value();
 }
 
-static std::optional<Json::Value>
-autofillSignature(Json::Value& sigObject)
+static std::optional<json::Value>
+autofillSignature(json::Value& sigObject)
 {
     if (!sigObject.isMember(jss::SigningPubKey))
     {
@@ -87,14 +87,14 @@ autofillSignature(Json::Value& sigObject)
     if (sigObject.isMember(jss::Signers))
     {
         if (!sigObject[jss::Signers].isArray())
-            return RPC::invalid_field_error("tx.Signers");
+            return RPC::invalidFieldError("tx.Signers");
         // check multisigned signers
         for (unsigned index = 0; index < sigObject[jss::Signers].size(); index++)
         {
             auto& signer = sigObject[jss::Signers][index];
             if (!signer.isObject() || !signer.isMember(jss::Signer) ||
                 !signer[jss::Signer].isObject())
-                return RPC::invalid_field_error("tx.Signers[" + std::to_string(index) + "]");
+                return RPC::invalidFieldError("tx.Signers[" + std::to_string(index) + "]");
 
             if (!signer[jss::Signer].isMember(jss::SigningPubKey))
             {
@@ -110,7 +110,7 @@ autofillSignature(Json::Value& sigObject)
             else if (signer[jss::Signer][jss::TxnSignature] != "")
             {
                 // Transaction must not be signed
-                return rpcError(rpcTX_SIGNED);
+                return rpcError(RpcTxSigned);
             }
         }
     }
@@ -123,15 +123,15 @@ autofillSignature(Json::Value& sigObject)
     else if (sigObject[jss::TxnSignature] != "")
     {
         // Transaction must not be signed
-        return rpcError(rpcTX_SIGNED);
+        return rpcError(RpcTxSigned);
     }
     return std::nullopt;
 }
 
-static std::optional<Json::Value>
-autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
+static std::optional<json::Value>
+autofillTx(json::Value& txJson, RPC::JsonContext& context)
 {
-    if (!tx_json.isMember(jss::Fee))
+    if (!txJson.isMember(jss::Fee))
     {
         // autofill Fee
         // Must happen after all the other autofills happen
@@ -142,100 +142,100 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
             context.app.getFeeTrack(),
             context.app.getTxQ(),
             context.app,
-            tx_json);
+            txJson);
         if (feeOrError.isMember(jss::error))
             return feeOrError;
-        tx_json[jss::Fee] = feeOrError;
+        txJson[jss::Fee] = feeOrError;
     }
 
-    if (auto error = autofillSignature(tx_json))
+    if (auto error = autofillSignature(txJson))
         return error;
 
-    if (!tx_json.isMember(jss::Sequence))
+    if (!txJson.isMember(jss::Sequence))
     {
-        auto const seq = getAutofillSequence(tx_json, context);
+        auto const seq = getAutofillSequence(txJson, context);
         if (!seq)
             return seq.error();
-        tx_json[sfSequence.jsonName] = *seq;
+        txJson[sfSequence.jsonName] = *seq;
     }
 
-    if (!tx_json.isMember(jss::NetworkID))
+    if (!txJson.isMember(jss::NetworkID))
     {
         auto const networkId = context.app.getNetworkIDService().getNetworkID();
         if (networkId > 1024)
-            tx_json[jss::NetworkID] = to_string(networkId);
+            txJson[jss::NetworkID] = to_string(networkId);
     }
 
     return std::nullopt;
 }
 
-static Json::Value
-getTxJsonFromParams(Json::Value const& params)
+static json::Value
+getTxJsonFromParams(json::Value const& params)
 {
-    Json::Value tx_json;
+    json::Value txJson;
 
     if (params.isMember(jss::tx_blob))
     {
         if (params.isMember(jss::tx_json))
         {
-            return RPC::make_param_error("Can only include one of `tx_blob` and `tx_json`.");
+            return RPC::makeParamError("Can only include one of `tx_blob` and `tx_json`.");
         }
 
-        auto const tx_blob = params[jss::tx_blob];
-        if (!tx_blob.isString())
+        auto const txBlob = params[jss::tx_blob];
+        if (!txBlob.isString())
         {
-            return RPC::invalid_field_error(jss::tx_blob);
+            return RPC::invalidFieldError(jss::tx_blob);
         }
 
-        auto unHexed = strUnHex(tx_blob.asString());
+        auto unHexed = strUnHex(txBlob.asString());
         if (!unHexed || unHexed->empty())
-            return RPC::invalid_field_error(jss::tx_blob);
+            return RPC::invalidFieldError(jss::tx_blob);
 
         try
         {
             SerialIter sitTrans(makeSlice(*unHexed));
-            tx_json = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
+            txJson = STObject(std::ref(sitTrans), kSF_GENERIC).getJson(JsonOptions::KNone);
         }
         catch (std::runtime_error const&)
         {
-            return RPC::invalid_field_error(jss::tx_blob);
+            return RPC::invalidFieldError(jss::tx_blob);
         }
     }
     else if (params.isMember(jss::tx_json))
     {
-        tx_json = params[jss::tx_json];
-        if (!tx_json.isObject())
+        txJson = params[jss::tx_json];
+        if (!txJson.isObject())
         {
-            return RPC::object_field_error(jss::tx_json);
+            return RPC::objectFieldError(jss::tx_json);
         }
     }
     else
     {
-        return RPC::make_param_error("Neither `tx_blob` nor `tx_json` included.");
+        return RPC::makeParamError("Neither `tx_blob` nor `tx_json` included.");
     }
 
     // basic sanity checks for transaction shape
-    if (!tx_json.isMember(jss::TransactionType))
+    if (!txJson.isMember(jss::TransactionType))
     {
-        return RPC::missing_field_error("tx.TransactionType");
+        return RPC::missingFieldError("tx.TransactionType");
     }
 
-    if (!tx_json.isMember(jss::Account))
+    if (!txJson.isMember(jss::Account))
     {
-        return RPC::missing_field_error("tx.Account");
+        return RPC::missingFieldError("tx.Account");
     }
 
-    return tx_json;
+    return txJson;
 }
 
-static Json::Value
+static json::Value
 simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 {
-    Json::Value jvResult;
+    json::Value jvResult;
     // Process the transaction
     OpenView view = *context.app.getOpenLedger().current();
     auto const result = context.app.getTxQ().apply(
-        context.app, view, transaction->getSTransaction(), tapDRY_RUN, context.j);
+        context.app, view, transaction->getSTransaction(), TapDryRun, context.j);
 
     jvResult[jss::applied] = result.applied;
     jvResult[jss::ledger_index] = view.seq();
@@ -276,7 +276,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
         }
         else
         {
-            jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
+            jvResult[jss::meta] = result.metadata->getJson(JsonOptions::KNone);
             RPC::insertDeliveredAmount(
                 jvResult[jss::meta], view, transaction->getSTransaction(), *result.metadata);
             RPC::insertNFTSyntheticInJson(
@@ -293,7 +293,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
     }
     else
     {
-        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
+        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::KNone);
     }
 
     return jvResult;
@@ -303,37 +303,37 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 //   tx_blob: <string> XOR tx_json: <object>,
 //   binary: <bool>
 // }
-Json::Value
+json::Value
 doSimulate(RPC::JsonContext& context)
 {
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
-    Json::Value tx_json;  // the tx as a JSON
+    json::Value txJson;  // the tx as a JSON
 
     // check validity of `binary` param
     if (context.params.isMember(jss::binary) && !context.params[jss::binary].isBool())
     {
-        return RPC::invalid_field_error(jss::binary);
+        return RPC::invalidFieldError(jss::binary);
     }
 
     for (auto const field : {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
     {
         if (context.params.isMember(field))
         {
-            return RPC::invalid_field_error(field);
+            return RPC::invalidFieldError(field);
         }
     }
 
     // get JSON equivalent of transaction
-    tx_json = getTxJsonFromParams(context.params);
-    if (tx_json.isMember(jss::error))
-        return tx_json;
+    txJson = getTxJsonFromParams(context.params);
+    if (txJson.isMember(jss::error))
+        return txJson;
 
     // autofill fields if they're not included (e.g. `Fee`, `Sequence`)
-    if (auto error = autofillTx(tx_json, context))
+    if (auto error = autofillTx(txJson, context))
         return *error;
 
-    STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
+    STParsedJSONObject parsed(std::string(jss::tx_json), txJson);
     if (!parsed.object.has_value())
         return parsed.error;
 
@@ -344,7 +344,7 @@ doSimulate(RPC::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        Json::Value jvResult = Json::objectValue;
+        json::Value jvResult = json::ObjectValue;
         jvResult[jss::error] = "invalidTransaction";
         jvResult[jss::error_exception] = e.what();
         return jvResult;
@@ -352,7 +352,7 @@ doSimulate(RPC::JsonContext& context)
 
     if (stTx->getTxnType() == ttBATCH)
     {
-        return RPC::make_error(rpcNOT_IMPL);
+        return RPC::makeError(RpcNotImpl);
     }
 
     std::string reason;
@@ -365,7 +365,7 @@ doSimulate(RPC::JsonContext& context)
     // LCOV_EXCL_START this is just in case, so xrpld doesn't crash
     catch (std::exception const& e)
     {
-        Json::Value jvResult = Json::objectValue;
+        json::Value jvResult = json::ObjectValue;
         jvResult[jss::error] = "internalSimulate";
         jvResult[jss::error_exception] = e.what();
         return jvResult;

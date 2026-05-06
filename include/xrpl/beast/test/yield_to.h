@@ -23,7 +23,7 @@ namespace beast::test {
     functions inside coroutines. This is handy for testing
     asynchronous asio code.
 */
-class enable_yield_to
+class EnableYieldTo
 {
 protected:
     boost::asio::io_context ios_;
@@ -39,8 +39,7 @@ public:
     /// The type of yield context passed to functions.
     using yield_context = boost::asio::yield_context;
 
-    explicit enable_yield_to(std::size_t concurrency = 1)
-        : work_(boost::asio::make_work_guard(ios_))
+    explicit EnableYieldTo(std::size_t concurrency = 1) : work_(boost::asio::make_work_guard(ios_))
     {
         threads_.reserve(concurrency);
         for (std::size_t i = 0; i < concurrency; ++i)
@@ -49,7 +48,7 @@ public:
         }
     }
 
-    ~enable_yield_to()
+    ~EnableYieldTo()
     {
         work_ = boost::none;
         for (auto& t : threads_)
@@ -58,7 +57,7 @@ public:
 
     /// Return the `io_context` associated with the object
     boost::asio::io_context&
-    get_io_context()
+    getIoContext()
     {
         return ios_;
     }
@@ -81,7 +80,7 @@ public:
 #else
     template <class F0, class... FN>
     void
-    yield_to(F0&& f0, FN&&... fn);
+    yieldTo(F0&& f0, FN&&... fn);
 #endif
 
 private:
@@ -97,7 +96,7 @@ private:
 
 template <class F0, class... FN>
 void
-enable_yield_to::yield_to(F0&& f0, FN&&... fn)
+EnableYieldTo::yieldTo(F0&& f0, FN&&... fn)
 {
     running_ = 1 + sizeof...(FN);
     spawn(f0, fn...);
@@ -107,7 +106,7 @@ enable_yield_to::yield_to(F0&& f0, FN&&... fn)
 
 template <class F0, class... FN>
 inline void
-enable_yield_to::spawn(F0&& f, FN&&... fn)
+EnableYieldTo::spawn(F0&& f, FN&&... fn)
 {
     boost::asio::spawn(
         ios_,

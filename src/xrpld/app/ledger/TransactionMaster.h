@@ -24,10 +24,10 @@ public:
     operator=(TransactionMaster const&) = delete;
 
     std::shared_ptr<Transaction>
-    fetch_from_cache(uint256 const&);
+    fetchFromCache(uint256 const&);
 
     std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-    fetch(uint256 const&, error_code_i& ec);
+    fetch(uint256 const&, ErrorCodeI& ec);
 
     /**
      * Fetch transaction from the cache or database.
@@ -39,7 +39,7 @@ public:
      *         the database while the search was conducted.
      */
     std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-    fetch(uint256 const&, ClosedInterval<uint32_t> const& range, error_code_i& ec);
+    fetch(uint256 const&, ClosedInterval<uint32_t> const& range, ErrorCodeI& ec);
 
     std::shared_ptr<STTx const>
     fetch(
@@ -65,8 +65,8 @@ public:
     getCache();
 
 private:
-    Application& mApp;
-    TaggedCache<uint256, Transaction> mCache;
+    Application& app_;
+    TaggedCache<uint256, Transaction> cache_;
 };
 
 }  // namespace xrpl

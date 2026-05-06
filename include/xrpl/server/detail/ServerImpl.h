@@ -64,7 +64,7 @@ private:
 
     // Need to be named before converting
     // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { historySize = 100 };
+    enum { HistorySize = 100 };
 
     Handler& handler_;
     beast::Journal const j_;
@@ -78,10 +78,10 @@ private:
     int high_ = 0;
     std::array<std::size_t, 64> hist_{};
 
-    io_list ios_;
+    IoList ios_;
 
 public:
-    ServerImpl(Handler& handler, boost::asio::io_context& io_context, beast::Journal journal);
+    ServerImpl(Handler& handler, boost::asio::io_context& ioContext, beast::Journal journal);
 
     ~ServerImpl() override;
 
@@ -97,14 +97,14 @@ public:
     void
     close() override;
 
-    io_list&
+    IoList&
     ios()
     {
         return ios_;
     }
 
     boost::asio::io_context&
-    get_io_context()
+    getIoContext()
     {
         return io_context_;
     }
@@ -114,17 +114,17 @@ public:
 
 private:
     static int
-    ceil_log2(unsigned long long x);
+    ceilLog2(unsigned long long x);
 };
 
 template <class Handler>
 ServerImpl<Handler>::ServerImpl(
     Handler& handler,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     beast::Journal journal)
     : handler_(handler)
     , j_(journal)
-    , io_context_(io_context)
+    , io_context_(ioContext)
     , strand_(boost::asio::make_strand(io_context_))
     , work_(std::in_place, boost::asio::make_work_guard(io_context_))
 {
@@ -156,7 +156,7 @@ ServerImpl<Handler>::ports(std::vector<Port> const& ports)
         {
             list_.push_back(sp);
 
-            auto ep = sp->get_endpoint();
+            auto ep = sp->getEndpoint();
             if (internalPort.port == 0u)
                 internalPort.port = ep.port();
             eps.emplace(port.name, std::move(ep));
