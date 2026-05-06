@@ -1579,7 +1579,7 @@ LedgerMaster::missingFromCompleteLedgerRange(LedgerIndex first, LedgerIndex last
 {
     // Make a copy of the range to avoid holding the lock
     auto const range = [&] {
-        std::lock_guard const sl(completeLock_);
+        std::scoped_lock const sl(completeLock_);
         return completeLedgers_;
     }();
 
