@@ -2088,7 +2088,6 @@ class Invariants_test : public beast::unit_test::Suite
 
             OpenView view{*env.current()};
             auto const rootDir = makeBookRoot(a1);
-            view.rawInsert(makeRootPage(rootDir, STAmount::kU_RATE_ONE + 1));
 
             ValidBookDirectory invariant;
             invariant.visitEntry(false, nullptr, makeChildPage(rootDir));
@@ -2098,9 +2097,26 @@ class Invariants_test : public beast::unit_test::Suite
             BEAST_EXPECT(!invariant.finalize(
                 STTx{ttACCOUNT_SET, [](STObject&) {}}, tesSUCCESS, XRPAmount{}, view, jlog));
             BEAST_EXPECT(
-                sink.messages().str().find(
-                    "book directory exchange rate does not match directory quality") !=
-                std::string::npos);
+                sink.messages().str().find("book directory root missing") != std::string::npos);
+        }
+
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1);
+            env.close();
+
+            OpenView view{*env.current()};
+            auto const rootDir = makeBookRoot(a1);
+            view.rawInsert(makeRootPage(rootDir, STAmount::kU_RATE_ONE + 1));
+
+            ValidBookDirectory invariant;
+            invariant.visitEntry(false, nullptr, makeChildPage(rootDir));
+
+            test::StreamSink sink{beast::severities::KWarning};
+            beast::Journal const jlog{sink};
+            BEAST_EXPECT(invariant.finalize(
+                STTx{ttACCOUNT_SET, [](STObject&) {}}, tesSUCCESS, XRPAmount{}, view, jlog));
         }
     }
 

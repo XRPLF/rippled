@@ -19,8 +19,9 @@ namespace xrpl {
 namespace {
 
 [[nodiscard]] bool
-isBookDirectory(SLE const& dir)
+isRootBookDirectory(SLE const& dir)
 {
+    // Child page keys do not encode book quality.
     return dir.isFieldPresent(sfExchangeRate) || dir.isFieldPresent(sfTakerPaysCurrency) ||
         dir.isFieldPresent(sfTakerPaysIssuer) || dir.isFieldPresent(sfTakerPaysMPT) ||
         dir.isFieldPresent(sfTakerGetsCurrency) || dir.isFieldPresent(sfTakerGetsIssuer) ||
@@ -30,7 +31,7 @@ isBookDirectory(SLE const& dir)
 [[nodiscard]] bool
 badExchangeRate(SLE const& dir)
 {
-    return isBookDirectory(dir) &&
+    return isRootBookDirectory(dir) &&
         (!dir.isFieldPresent(sfExchangeRate) ||
          dir.getFieldU64(sfExchangeRate) != getQuality(dir.key()));
 }
@@ -43,6 +44,11 @@ ValidBookDirectory::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    // New root directories must have matching exchange-rate metadata. New
+    // child directories must point to an existing root.
+
+    // Only validate newly-created directories; LedgerStateFix handles legacy
+    // bad exchange-rate metadata.
     if (before || !after || after->getType() != ltDIR_NODE)
         return;
 
@@ -77,10 +83,9 @@ ValidBookDirectory::finalize(
     for (auto const& rootIndex : rootIndexes_)
     {
         auto const root = view.read(Keylet(ltDIR_NODE, rootIndex));
-        if (root && badExchangeRate(*root))
+        if (!root)
         {
-            JLOG(j.fatal()) << "Invariant failed: book directory exchange rate "
-                               "does not match directory quality";
+            JLOG(j.fatal()) << "Invariant failed: book directory root missing";
             return false;
         }
     }
