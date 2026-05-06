@@ -147,7 +147,7 @@ into the staging area, and invokes the platform build tool.
 
 1. Creates a staging source tree at `debbuild/source/` inside the build directory.
 2. Stages the binary, configs, `README.md`, and `LICENSE.md`.
-3. Copies `package/deb/debian/` control files into `debbuild/source/debian/`.
+3. Copies `package/debian/` control files into `debbuild/source/debian/`.
 4. Copies shared service/sysusers/tmpfiles into `debian/` where `dh_installsystemd`, `dh_installsysusers`, and `dh_installtmpfiles` pick them up automatically.
 5. Generates a minimal `debian/changelog` (pre-release versions use `~` instead of `-`).
 6. Runs `dpkg-buildpackage -b --no-sign`. `debian/rules` uses manual `install` commands.
