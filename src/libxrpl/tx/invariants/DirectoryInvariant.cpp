@@ -16,8 +16,6 @@
 
 namespace xrpl {
 
-namespace {
-
 [[nodiscard]] bool
 isRootBookDirectory(SLE const& dir)
 {
@@ -35,8 +33,6 @@ badExchangeRate(SLE const& dir)
         (!dir.isFieldPresent(sfExchangeRate) ||
          dir.getFieldU64(sfExchangeRate) != getQuality(dir.key()));
 }
-
-}  // namespace
 
 void
 ValidBookDirectory::visitEntry(

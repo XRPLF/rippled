@@ -1477,6 +1477,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         //   - Post-fix: open-book key quality == domain-book key quality.
         //   - Pre-fix: open-book key quality != domain-book key quality
         //     (key used post-crossing rate, sfExchangeRate used pre-crossing).
+
         Env env(*this, features);
         auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
             PermissionedDEX(env);
@@ -1516,14 +1517,20 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
         auto const domainExRate = domainDirSle->getFieldU64(sfExchangeRate);
         auto const openExRate = openDirSle->getFieldU64(sfExchangeRate);
+        auto const preCrossingQuality = std::uint64_t{5623825668291712342ULL};
+        auto const postCrossingQuality = std::uint64_t{5623825668291712341ULL};
 
         // Domain directory: sfExchangeRate should always match key quality
         // (both use the pre-crossing rate).
+        BEAST_EXPECT(domainQuality == preCrossingQuality);
+        BEAST_EXPECT(domainExRate == preCrossingQuality);
         BEAST_EXPECT(domainExRate == domainQuality);
 
         if (fixEnabled)
         {
             // Post-fix: both directory keys use the pre-crossing rate.
+            BEAST_EXPECT(openQuality == preCrossingQuality);
+            BEAST_EXPECT(openExRate == preCrossingQuality);
             BEAST_EXPECT(domainQuality == openQuality);
             // sfExchangeRate matches key quality on both directories.
             BEAST_EXPECT(openExRate == openQuality);
@@ -1532,6 +1539,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         {
             // Pre-fix: the open-book directory uses the post-crossing
             // rate, which may differ from the domain-book directory.
+            BEAST_EXPECT(openQuality == postCrossingQuality);
+            BEAST_EXPECT(openExRate == preCrossingQuality);
             BEAST_EXPECT(domainQuality != openQuality);
             // sfExchangeRate (pre-crossing rate) does NOT match the
             // open-book key quality (post-crossing rate).
