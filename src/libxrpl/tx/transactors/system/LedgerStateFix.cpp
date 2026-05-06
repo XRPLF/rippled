@@ -37,7 +37,7 @@ fixField(FixType const fixType)
         kLEDGER_FIX_FIELDS, [fixType](auto const& entry) { return entry.first == fixType; });
 
     if (iter == kLEDGER_FIX_FIELDS.end())
-        return nullptr;
+        return nullptr;  // LCOV_EXCL_LINE
 
     return iter->second;
 }

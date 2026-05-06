@@ -1603,32 +1603,54 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
 
         {
-            // A directory with a correct sfExchangeRate must fail.
             Env env(*this, features);
             auto const setup = PermissionedDEX(env);
+            auto const fixFee = drops(env.current()->fees().increment);
 
-            auto const bobOfferSeq{env.seq(setup.bob)};
-            env(offer(setup.bob, XRP(100), setup.USD(40)));
-            env.close();
-
-            auto const sle = env.le(keylet::offer(setup.bob.id(), bobOfferSeq));
-            BEAST_EXPECT(sle);
-
-            auto const dirKey = sle->getFieldH256(sfBookDirectory);
             {
-                auto const dirSle = env.le(Keylet(ltDIR_NODE, dirKey));
-                BEAST_EXPECT(dirSle);
-                auto const exchangeRate = dirSle->getFieldU64(sfExchangeRate);
-                auto const quality = getQuality(dirKey);
-                BEAST_EXPECT(exchangeRate == quality);
+                // Preclaim check: the target directory must exist.
+                env(ledgerStateFix::bookExchangeRate(setup.carol, uint256{1}),
+                    Fee(fixFee),
+                    Ter(tecOBJECT_NOT_FOUND));
             }
 
-            // There is nothing to repair when sfExchangeRate already matches
-            // the directory key quality.
-            auto const fixFee = drops(env.current()->fees().increment);
-            env(ledgerStateFix::bookExchangeRate(setup.carol, dirKey),
-                Fee(fixFee),
-                Ter(tecNO_PERMISSION));
+            {
+                // Preclaim check: the target directory must be a book root
+                // page. Owner directories are ltDIR_NODE entries, but they do
+                // not carry sfExchangeRate.
+                auto const ownerDir = keylet::ownerDir(setup.bob.id());
+                auto const ownerDirSle = env.le(ownerDir);
+                BEAST_EXPECT(ownerDirSle);
+                BEAST_EXPECT(!ownerDirSle->isFieldPresent(sfExchangeRate));
+
+                env(ledgerStateFix::bookExchangeRate(setup.carol, ownerDir.key),
+                    Fee(fixFee),
+                    Ter(tecNO_PERMISSION));
+            }
+
+            {
+                // Preclaim check: a correct sfExchangeRate leaves nothing to
+                // repair.
+                auto const bobOfferSeq{env.seq(setup.bob)};
+                env(offer(setup.bob, XRP(100), setup.USD(40)));
+                env.close();
+
+                auto const sle = env.le(keylet::offer(setup.bob.id(), bobOfferSeq));
+                BEAST_EXPECT(sle);
+
+                auto const dirKey = sle->getFieldH256(sfBookDirectory);
+                {
+                    auto const dirSle = env.le(Keylet(ltDIR_NODE, dirKey));
+                    BEAST_EXPECT(dirSle);
+                    auto const exchangeRate = dirSle->getFieldU64(sfExchangeRate);
+                    auto const quality = getQuality(dirKey);
+                    BEAST_EXPECT(exchangeRate == quality);
+                }
+
+                env(ledgerStateFix::bookExchangeRate(setup.carol, dirKey),
+                    Fee(fixFee),
+                    Ter(tecNO_PERMISSION));
+            }
         }
 
         {
