@@ -7235,7 +7235,10 @@ protected:
     //
     // Caller MUST pass features with fixCleanup3_2_0 enabled — this
     // setup reproduces the bug the amendment fixes; the disabled path
-    // would crash on the strict-inequality assertion.
+    // would crash on the strict-inequality assertion. For that reason a
+    // direct side-by-side comparison of principal/interest values
+    // between the two feature states is not possible: the amendment-off
+    // run aborts before producing any post-payment state to compare.
     void
     testIntegerScalePrincipalSticks(FeatureBitset features)
     {
@@ -7331,10 +7334,11 @@ public:
         // original assertion crash, so it runs only with the amendment on.
         testIntegerScalePrincipalSticks(all_);
 
-        // Run each remaining test twice: once with the full feature set
-        // (incl. fixCleanup3_2_0, the dual-rounding amendment) and once with
-        // the amendment disabled, to ensure neither code path regresses.
-        for (auto const& features : {all_, all_ - fixCleanup3_2_0})
+        // Run each amendment-sensitive test under three feature sets:
+        //   - all_                       : everything (incl. fixCleanup3_2_0)
+        //   - all_ - fixCleanup3_2_0     : pre-amendment rounding path
+        //   - all_ - featureMPTokensV2   : MPTokensV2 disabled
+        for (auto const& features : {all_, all_ - fixCleanup3_2_0, all_ - featureMPTokensV2})
         {
 #if LOAN_TODO
             testLoanPayLateFullPaymentBypassesPenalties(features);
@@ -7374,16 +7378,11 @@ public:
             testLoanPayBrokerOwnerNoPermissionedDomainMPT(features);
             testLoanSetBrokerOwnerNoPermissionedDomainMPT(features);
             testSequentialFLCDepletion(features);
+            testCoverDepositWithdrawNonTransferableMPT(features);
         }
 
-        // Tests below do not depend on fixCleanup3_2_0 (they don't use the
-        // class's `all` feature set) and run once.
+        // Tests below take no FeatureBitset and run once.
         testInvalidLoanSet();
-
-        auto const allLocal = jtx::testableAmendments();
-        testCoverDepositWithdrawNonTransferableMPT(allLocal);
-        testCoverDepositWithdrawNonTransferableMPT(allLocal - featureMPTokensV2);
-
         testDisabled();
         testIssuerLoan();
         testServiceFeeOnBrokerDeepFreeze();
