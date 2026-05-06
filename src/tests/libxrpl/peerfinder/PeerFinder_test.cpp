@@ -419,8 +419,8 @@ TEST(PeerFinderConfig, AppliesLegacyAndExplicitPeerLimits)
         }
         else
         {
-            EXPECT_EQ(serverConfig.PEERS_IN_MAX, *testCase.maxIn);
-            EXPECT_EQ(serverConfig.PEERS_OUT_MAX, *testCase.maxOut);
+            EXPECT_EQ(serverConfig.PEERS_IN_MAX, testCase.maxIn.value_or(0));
+            EXPECT_EQ(serverConfig.PEERS_OUT_MAX, testCase.maxOut.value_or(0));
         }
 
         Config const config = Config::makeConfig(serverConfig, testCase.port, false, 0);
