@@ -4848,7 +4848,7 @@ protected:
                 stateAfter.paymentRemaining == stateBefore.paymentRemaining - expectedChange);
         };
 
-        std::int64_t constexpr maxFeeIncrements =
+        std::int64_t constexpr kMAX_FEE_INCREMENTS =
             kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION / kLOAN_PAYMENTS_PER_FEE_INCREMENT;
 
         TER const failWithoutFix = feeCapped ? (TER)tesSUCCESS : (TER)telINSUF_FEE_P;
@@ -4857,12 +4857,12 @@ protected:
         // The original test case - way over the limit - more fee is always ok
         test(1819878, 363976);
         // The capped fee is only sufficient if the amendment is enabled.
-        test(1819878, maxFeeIncrements, failWithoutFix);
+        test(1819878, kMAX_FEE_INCREMENTS, failWithoutFix);
 
         // * Amount exactly at threshold -> capped fee
-        test(kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION, maxFeeIncrements);
+        test(kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION, kMAX_FEE_INCREMENTS);
         // More fee is always ok
-        test(kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION, maxFeeIncrements + 10);
+        test(kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION, kMAX_FEE_INCREMENTS + 10);
 
         // * Amount below threshold -> normal calculation
         test(1, 1);
@@ -4886,18 +4886,18 @@ protected:
         {
             test(
                 kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION - under,
-                maxFeeIncrements - 1,
+                kMAX_FEE_INCREMENTS - 1,
                 telINSUF_FEE_P);
-            test(kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION - under, maxFeeIncrements);
+            test(kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION - under, kMAX_FEE_INCREMENTS);
         }
         // Only when you get one less fee increment can you pay less
         test(
             kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION - kLOAN_PAYMENTS_PER_FEE_INCREMENT,
-            maxFeeIncrements - 1);
+            kMAX_FEE_INCREMENTS - 1);
         // And again, more fee is always ok.
         test(
             kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION - kLOAN_PAYMENTS_PER_FEE_INCREMENT,
-            maxFeeIncrements);
+            kMAX_FEE_INCREMENTS);
     }
 
     void

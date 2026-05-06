@@ -143,7 +143,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
                                      : Number::RoundingMode::Downward);
 
     static_assert(kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION % kLOAN_PAYMENTS_PER_FEE_INCREMENT == 0);
-    std::int64_t constexpr maxFeeIncrements =
+    std::int64_t constexpr kMAX_FEE_INCREMENTS =
         kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION / kLOAN_PAYMENTS_PER_FEE_INCREMENT;
 
     if (view.rules().enabled(fixSecurity3_1_3) &&
@@ -155,7 +155,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         // loanPaymentsPerFeeIncrement, so don't charge more than
         // loanMaximumPaymentsPerTransaction / loanPaymentsPerFeeIncrement fee
         // increments.
-        return maxFeeIncrements * normalCost;
+        return kMAX_FEE_INCREMENTS * normalCost;
     }
 
     // Estimate how many payments will be made
@@ -167,7 +167,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         std::int64_t(1),
         static_cast<std::int64_t>(numPaymentEstimate / kLOAN_PAYMENTS_PER_FEE_INCREMENT));
     XRPL_ASSERT(
-        !view.rules().enabled(fixSecurity3_1_3) || feeIncrements <= maxFeeIncrements,
+        !view.rules().enabled(fixSecurity3_1_3) || feeIncrements <= kMAX_FEE_INCREMENTS,
         "xrpl::LoanPay::calculateBaseFee : number of fee increments is in "
         "range");
 
