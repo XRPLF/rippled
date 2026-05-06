@@ -756,27 +756,26 @@ LoanPay::doApply()
                      << ", total " << to_string(totalBalanceChangeRounded) << " ("
                      << Number(totalBalanceChange) << ")";
 
+    bool const goodRounding = totalBalanceBeforeRounded == totalBalanceAfterRounded ||
+        totalBalanceChangeRounded == beast::kZERO;
     if (totalBalanceBeforeRounded != totalBalanceAfterRounded)
     {
-        JLOG(j_.warn()) << "Total rounded balances don't match"
-                        << (totalBalanceChangeRounded == beast::kZERO ? ", but total changes do"
-                                                                      : "");
+        JLOG((goodRounding ? j_.debug() : j_.warn()))
+            << "Total rounded balances don't match"
+            << (totalBalanceChangeRounded == beast::kZERO ? ", but total changes do" : "");
     }
     if (totalBalanceChangeRounded != beast::kZERO)
     {
-        JLOG(j_.warn()) << "Total balance changes don't match"
-                        << (totalBalanceBeforeRounded == totalBalanceAfterRounded
-                                ? ", but total balances do"
-                                : "");
+        JLOG((goodRounding ? j_.debug() : j_.warn()))
+            << "Total balance changes don't match"
+            << (totalBalanceBeforeRounded == totalBalanceAfterRounded ? ", but total balances do"
+                                                                      : "");
     }
 
     // Rounding for IOUs can be weird, so check a few different ways to show
     // that funds are conserved.
     XRPL_ASSERT_PARTS(
-        totalBalanceBeforeRounded == totalBalanceAfterRounded ||
-            totalBalanceChangeRounded == beast::kZERO,
-        "xrpl::LoanPay::doApply",
-        "funds are conserved (with rounding)");
+        goodRounding, "xrpl::LoanPay::doApply", "funds are conserved (with rounding)");
 
     XRPL_ASSERT_PARTS(
         accountBalanceAfter < accountBalanceBefore || account_ == asset.getIssuer(),

@@ -7115,6 +7115,9 @@ protected:
             });
         auto const [currentSeq, vaultKeylet] = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
+            if (!BEAST_EXPECT(brokerSle))
+                // throw std::runtime_error("null brokerSLE in testYieldTheftRounding");
+                return std::make_tuple(0u, keylet::unchecked(beast::kZERO));
             auto const currentSeq = brokerSle->at(sfLoanSequence);
             auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
             return std::make_tuple(currentSeq, vaultKeylet);
