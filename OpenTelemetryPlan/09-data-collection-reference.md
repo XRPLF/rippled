@@ -515,7 +515,7 @@ Example:
 
 ### Implementation
 
-The trace context injection is implemented in `Logs::format()` (`src/libxrpl/basics/Log.cpp`), guarded by `#ifdef XRPL_ENABLE_TELEMETRY`. It reads the current span from OTel's thread-local runtime context via `opentelemetry::trace::GetSpan()` and `opentelemetry::context::RuntimeContext::GetCurrent()`. Both calls are lock-free thread-local reads measured at <10ns per call.
+The trace context injection is implemented in `Logs::format()` (`src/libxrpl/basics/Log.cpp`), guarded by `#ifdef XRPL_ENABLE_TELEMETRY`. It checks the thread-local runtime context value directly (via `RuntimeContext::GetCurrent().GetValue(kSpanKey)`) to avoid the heap allocation that `GetSpan()` performs on the no-span path. On threads without an active span, the cost is a thread-local read + variant type check (~15-20ns). On the active-span path, total cost is ~50ns per log call.
 
 ### Log Ingestion Pipeline
 

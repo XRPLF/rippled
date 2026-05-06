@@ -387,7 +387,187 @@ The `StatsDMeterImpl` in `StatsDCollector.cpp:706` sends metrics with `|m` suffi
 
 ---
 
-## 6.8.1 Phase 8: Log-Trace Correlation and Centralized Log Ingestion (Week 13)
+## 6.8 Phase 7: Native OTel Metrics Migration (Weeks 11-12)
+
+**Objective**: Replace `StatsDCollector` with a native OpenTelemetry Metrics SDK implementation behind the existing `beast::insight::Collector` interface, eliminating the StatsD UDP dependency and unifying traces and metrics into a single OTLP pipeline.
+
+### Motivation: Why Migrate from StatsD to Native OTel Metrics
+
+The Phase 6 StatsD bridge was a pragmatic first step, but it retains inherent limitations that native OTel export resolves.
+
+#### What We Gain
+
+1. **Unified telemetry pipeline** — Traces and metrics export via the same OTLP/HTTP endpoint to the same OTel Collector. One protocol, one endpoint, one config. Eliminates the split-brain architecture of "OTLP for traces, StatsD UDP for metrics."
+
+2. **Eliminates StatsD UDP limitations** — StatsD is fire-and-forget over UDP with no delivery guarantees, no backpressure, 1472-byte MTU packet fragmentation, and text-based encoding overhead. OTLP uses HTTP/gRPC with retries, binary protobuf encoding, and connection-level flow control.
+
+3. **Fixes the `|m` wire format issue** — The `StatsDMeterImpl` uses non-standard `|m` StatsD type that the OTel StatsD receiver silently drops. Native OTel counters eliminate this problem entirely (Phase 6 Task 6.1 — DEFERRED becomes resolved).
+
+4. **Richer metric semantics** — OTel Metrics SDK supports explicit histogram bucket boundaries, exemplars (linking metrics to traces), resource attributes, and metric views. StatsD has no concept of these.
+
+5. **Removes infrastructure dependency** — No more StatsD receiver needed in the OTel Collector. One less receiver to configure, monitor, and debug. Simplifies the collector YAML.
+
+6. **Metric-to-trace correlation** — OTel metrics and traces share the same resource attributes (service.name, service.instance.id). Grafana can link from a metric spike directly to the traces that caused it — impossible with StatsD-sourced metrics.
+
+7. **Production-grade export** — OTel's `PeriodicMetricReader` provides configurable export intervals, batch sizes, timeout handling, and graceful shutdown — all built into the SDK rather than hand-rolled in `StatsDCollectorImp`.
+
+#### What We Lose
+
+1. **StatsD ecosystem compatibility** — Operators using external StatsD-compatible backends (Datadog Agent, Graphite, Telegraph) will need to switch to OTLP-compatible backends or keep `server=statsd` as a fallback.
+
+2. **Simplicity of UDP** — StatsD's UDP fire-and-forget model is dead simple and has zero connection management. OTLP/HTTP requires a TCP connection, TLS negotiation (in production), and retry logic. The OTel SDK handles this, but it's more moving parts.
+
+3. **Slightly higher memory** — OTel SDK maintains internal aggregation state for metrics before export. StatsD just formats and sends strings. Expected overhead: ~1-2 MB additional for metric state.
+
+4. **Dependency on OTel C++ Metrics SDK stability** — The Metrics SDK is GA since 1.0 and on version 1.18.0, but it's less battle-tested than the tracing SDK in the C++ ecosystem.
+
+#### Decision
+
+The gains (unified pipeline, delivery guarantees, metric-trace correlation, simpler collector config) significantly outweigh the losses. `StatsDCollector` is retained as a fallback via `server=statsd` for operators who need StatsD ecosystem compatibility during the transition period.
+
+### Architecture
+
+#### Class Hierarchy (after Phase 7)
+
+```
+beast::insight::Collector (abstract interface — unchanged)
+    |
+    +-- StatsDCollector        (existing — retained as fallback, deprecated)
+    |     +-- StatsDCounterImpl    -> StatsD |c over UDP
+    |     +-- StatsDGaugeImpl      -> StatsD |g over UDP
+    |     +-- StatsDMeterImpl      -> StatsD |m over UDP (non-standard)
+    |     +-- StatsDEventImpl      -> StatsD |ms over UDP
+    |     +-- StatsDHookImpl       -> 1s periodic callback
+    |
+    +-- NullCollector          (existing — unchanged, used when disabled)
+    |     +-- NullCounterImpl      -> no-op
+    |     +-- NullGaugeImpl        -> no-op
+    |     +-- NullMeterImpl        -> no-op
+    |     +-- NullEventImpl        -> no-op
+    |     +-- NullHookImpl         -> no-op
+    |
+    +-- OTelCollector          (NEW — Phase 7)
+          +-- OTelCounterImpl      -> otel::Counter<int64_t>
+          +-- OTelGaugeImpl        -> otel::ObservableGauge<uint64_t>
+          +-- OTelMeterImpl        -> otel::Counter<uint64_t>
+          +-- OTelEventImpl        -> otel::Histogram<double>
+          +-- OTelHookImpl         -> 1s periodic callback (same pattern)
+```
+
+#### Data Flow (after Phase 7)
+
+```mermaid
+graph LR
+    subgraph xrpldNode["xrpld Node"]
+        A["Trace Macros<br/>XRPL_TRACE_SPAN"]
+        B["beast::insight<br/>OTelCollector"]
+    end
+
+    subgraph collector["OTel Collector  :4317 / :4318"]
+        direction TB
+        R1["OTLP Receiver<br/>:4317 gRPC  |  :4318 HTTP"]
+        BP["Batch Processor"]
+        SM["SpanMetrics Connector"]
+
+        R1 --> BP
+        BP --> SM
+    end
+
+    subgraph backends["Trace Backends"]
+        D["Jaeger / Tempo"]
+    end
+
+    subgraph metrics["Metrics Stack"]
+        E["Prometheus  :9090<br/>scrapes :8889<br/>span-derived + native OTel metrics"]
+    end
+
+    subgraph viz["Visualization"]
+        F["Grafana  :3000"]
+    end
+
+    A -->|"OTLP/HTTP :4318<br/>(traces)"| R1
+    B -->|"OTLP/HTTP :4318<br/>(metrics)"| R1
+
+    BP -->|"OTLP/gRPC"| D
+    SM -->|"RED metrics"| E
+    R1 -->|"xrpld_* metrics<br/>(native OTLP)"| E
+
+    E --> F
+    D --> F
+
+    style A fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style B fill:#d9534f,color:#fff,stroke:#b52d2d
+    style R1 fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style BP fill:#449d44,color:#fff,stroke:#2d6e2d
+    style SM fill:#449d44,color:#fff,stroke:#2d6e2d
+    style D fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style E fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style F fill:#5bc0de,color:#000,stroke:#3aa8c1
+    style xrpldNode fill:#1a2633,color:#ccc,stroke:#4a90d9
+    style collector fill:#1a3320,color:#ccc,stroke:#5cb85c
+    style backends fill:#332a1a,color:#ccc,stroke:#f0ad4e
+    style metrics fill:#332a1a,color:#ccc,stroke:#f0ad4e
+    style viz fill:#1a2d33,color:#ccc,stroke:#5bc0de
+```
+
+**Key change**: StatsD receiver removed from collector. Both traces and metrics enter via OTLP receiver on the same port.
+
+#### Configuration
+
+```ini
+# [insight] section — new "otel" server option
+[insight]
+server=otel              # NEW: uses OTel OTLP metrics exporter
+prefix=xrpld             # metric name prefix (preserved)
+
+# Endpoint and auth inherited from [telemetry] section:
+[telemetry]
+enabled=1
+endpoint=http://localhost:4318/v1/traces
+```
+
+The `OTelCollector` reads the OTLP endpoint from `[telemetry]` config (replacing `/v1/traces` with `/v1/metrics` for the metrics exporter). No additional config keys needed.
+
+**Backward compatibility**: `server=statsd` continues to work exactly as before.
+
+See [Phase7_taskList.md](./Phase7_taskList.md) for detailed per-task breakdown.
+
+### Instrument Type Mapping
+
+| beast::insight         | OTel Metrics SDK                 | Rationale                                                        |
+| ---------------------- | -------------------------------- | ---------------------------------------------------------------- |
+| Counter (int64, `\|c`) | `Counter<int64_t>`               | Direct 1:1 mapping                                               |
+| Gauge (uint64, `\|g`)  | `ObservableGauge<uint64_t>`      | Async callback matches existing Hook polling pattern             |
+| Meter (uint64, `\|m`)  | `Counter<uint64_t>`              | Fixes non-standard wire format; meters are semantically counters |
+| Event (ms, `\|ms`)     | `Histogram<double>`              | Duration distributions with explicit bucket boundaries           |
+| Hook (1s callback)     | `PeriodicMetricReader` alignment | Same 1s collection interval                                      |
+
+### Tasks
+
+| Task | Description                                                               |
+| ---- | ------------------------------------------------------------------------- |
+| 7.1  | Add OTel Metrics SDK to build deps (conan/cmake)                          |
+| 7.2  | Implement `OTelCollector` class (~400-500 lines)                          |
+| 7.3  | Update `CollectorManager` — add `server=otel`                             |
+| 7.4  | Update OTel Collector YAML (add metrics pipeline, remove StatsD receiver) |
+| 7.5  | Preserve metric names in Prometheus (naming strategy)                     |
+| 7.6  | Update Grafana dashboards (if names change)                               |
+| 7.7  | Update integration tests                                                  |
+| 7.8  | Update documentation (runbook, reference docs)                            |
+
+### Exit Criteria
+
+- [ ] All 255+ metrics visible in Prometheus via OTLP pipeline (no StatsD receiver)
+- [ ] `server=otel` is the default in development docker-compose
+- [ ] `server=statsd` still works as a fallback
+- [ ] Existing Grafana dashboards display data correctly
+- [ ] Integration test passes with OTLP-only metrics pipeline
+- [ ] No performance regression vs StatsD baseline (< 1% CPU overhead)
+- [ ] Deferred Task 6.1 (`|m` wire format) no longer relevant
+
+---
+
+## 6.9 Phase 8: Log-Trace Correlation and Centralized Log Ingestion (Week 13)
 
 ### Motivation
 
@@ -399,7 +579,7 @@ xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoin
 2. **Reverse lookup (log-to-trace)** — Loki derived fields make `trace_id` values clickable links back to Tempo.
 3. **Unified observability** — All three pillars (traces, metrics, logs) flow through the same OTel Collector pipeline and are visible in a single Grafana instance.
 4. **Zero new dependencies in xrpld** — Uses existing OTel SDK headers (`GetSpan`, `GetContext`) already linked in Phase 1.
-5. **Negligible overhead** — `GetSpan()` + `GetContext()` are thread-local reads (<10ns/call). At ~1000 JLOG calls/min, this adds <10us/min.
+5. **Negligible overhead** — The implementation checks the thread-local context value directly, avoiding heap allocation on the no-span path (~15-20ns). On the active-span path, total cost is ~50ns per log call. At typical logging rates, overhead is negligible.
 
 #### Losses / Risks
 

@@ -492,17 +492,17 @@ severity code and the message. Example:
 Lines emitted outside of an active span (background tasks, startup) will
 NOT have trace context — this is expected.
 
-### Step 2: Cross-check trace_id in Jaeger
+### Step 2: Cross-check trace_id in Tempo
 
-Extract a `trace_id` from the log and verify it exists in Jaeger:
+Extract a `trace_id` from the log and verify it exists in Tempo:
 
 ```bash
 TRACE_ID=$(grep -o 'trace_id=[a-f0-9]\{32\}' /path/to/debug.log | head -1 | cut -d= -f2)
 echo "Checking trace: $TRACE_ID"
-curl -s "http://localhost:16686/api/traces/$TRACE_ID" | jq '.data | length'
+curl -s "http://localhost:3200/api/traces/$TRACE_ID" | jq '.data | length'
 ```
 
-Expected result: `1` (the trace exists in Jaeger).
+Expected result: `1` (the trace exists in Tempo).
 
 ### Step 3: Verify Loki log ingestion
 
@@ -540,7 +540,7 @@ Expected: > 0 results.
 | `trace_id=` in debug.log       | Present in log lines within active spans |
 | `span_id=` in debug.log        | Present alongside trace_id               |
 | Logs without active span       | No trace_id/span_id fields               |
-| trace_id in Jaeger             | Matches a valid trace                    |
+| trace_id in Tempo              | Matches a valid trace                    |
 | Loki log ingestion             | Logs visible via LogQL                   |
 | Tempo -> Loki "Logs for trace" | Shows correlated log lines               |
 | Loki -> Tempo TraceID link     | Navigates to correct trace               |
