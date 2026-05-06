@@ -33,9 +33,8 @@ namespace xrpl::tests {
 class FetchPack_test : public beast::unit_test::Suite
 {
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { TableItems = 100, TableItemsExtra = 20 };
+    static constexpr auto kTABLE_ITEMS = 100;
+    static constexpr auto kTABLE_ITEMS_EXTRA = 20;
 
     using Map = hash_map<SHAMapHash, Blob>;
     using Table = SHAMap;

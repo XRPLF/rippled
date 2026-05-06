@@ -180,7 +180,7 @@ public:
     json::Value
     getJson()
     {
-        return getJson(WarningThreshold);
+        return getJson(kWARNING_THRESHOLD);
     }
 
     /** Returns a json::objectValue. */
@@ -243,7 +243,7 @@ public:
         {
             Gossip::Item item;
             item.balance = inboundEntry.local_balance.value(now);
-            if (item.balance >= MinimumGossipBalance)
+            if (item.balance >= kMINIMUM_GOSSIP_BALANCE)
             {
                 item.address = inboundEntry.key->address;
                 gossip.items.push_back(item);
@@ -363,10 +363,10 @@ public:
     static Disposition
     disposition(int balance)
     {
-        if (balance >= DropThreshold)
+        if (balance >= kDROP_THRESHOLD)
             return Disposition::Drop;
 
-        if (balance >= WarningThreshold)
+        if (balance >= kWARNING_THRESHOLD)
             return Disposition::Warn;
 
         return Disposition::Ok;
@@ -461,7 +461,7 @@ public:
         std::scoped_lock const _(lock_);
         bool notify(false);
         auto const elapsed = clock_.now();
-        if (entry.balance(clock_.now()) >= WarningThreshold && elapsed != entry.lastWarningTime)
+        if (entry.balance(clock_.now()) >= kWARNING_THRESHOLD && elapsed != entry.lastWarningTime)
         {
             charge(entry, kFEE_WARNING);
             notify = true;
@@ -485,10 +485,10 @@ public:
         bool drop(false);
         clock_type::time_point const now(clock_.now());
         int const balance(entry.balance(now));
-        if (balance >= DropThreshold)
+        if (balance >= kDROP_THRESHOLD)
         {
             JLOG(journal_.warn()) << "Consumer entry " << entry << " dropped with balance "
-                                  << balance << " at or above drop threshold " << DropThreshold;
+                                  << balance << " at or above drop threshold " << kDROP_THRESHOLD;
 
             // Adding feeDrop at this point keeps the dropped connection
             // from re-connecting for at least a little while after it is

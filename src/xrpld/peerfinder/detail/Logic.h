@@ -1205,7 +1205,7 @@ Logic<Checker>::onRedirects(
 {
     std::scoped_lock const _(lock);
     std::size_t n = 0;
-    for (; first != last && n < Tuning::MaxRedirects; ++first, ++n)
+    for (; first != last && n < Tuning::kMAX_REDIRECTS; ++first, ++n)
         bootcache.insert(beast::IPAddressConversion::fromAsio(*first));
     if (n > 0)
     {

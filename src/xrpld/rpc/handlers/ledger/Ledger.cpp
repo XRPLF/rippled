@@ -80,10 +80,13 @@ LedgerHandler::check()
     if (!queue.has_value())
         return queue.error();
 
-    options_ = (*full ? LedgerFill::Full : 0) | (*expand ? LedgerFill::Expand : 0) |
-        (*transactions ? LedgerFill::DumpTxrp : 0) | (*accounts ? LedgerFill::DumpState : 0) |
-        (*binary ? LedgerFill::Binary : 0) | (*ownerFunds ? LedgerFill::OwnerFunds : 0) |
-        (*queue ? LedgerFill::DumpQueue : 0);
+    options_ = (*full ? static_cast<int>(LedgerFill::Options::Full) : 0) |
+        (*expand ? static_cast<int>(LedgerFill::Options::Expand) : 0) |
+        (*transactions ? static_cast<int>(LedgerFill::Options::DumpTxrp) : 0) |
+        (*accounts ? static_cast<int>(LedgerFill::Options::DumpState) : 0) |
+        (*binary ? static_cast<int>(LedgerFill::Options::Binary) : 0) |
+        (*ownerFunds ? static_cast<int>(LedgerFill::Options::OwnerFunds) : 0) |
+        (*queue ? static_cast<int>(LedgerFill::Options::DumpQueue) : 0);
 
     bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
         params.isMember(jss::ledger_index);

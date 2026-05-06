@@ -38,19 +38,19 @@ namespace {
 bool
 isFull(LedgerFill const& fill)
 {
-    return (fill.options & LedgerFill::Full) != 0;
+    return (fill.options & static_cast<int>(LedgerFill::Options::Full)) != 0;
 }
 
 bool
 isExpanded(LedgerFill const& fill)
 {
-    return isFull(fill) || ((fill.options & LedgerFill::Expand) != 0);
+    return isFull(fill) || ((fill.options & static_cast<int>(LedgerFill::Options::Expand)) != 0);
 }
 
 bool
 isBinary(LedgerFill const& fill)
 {
-    return (fill.options & LedgerFill::Binary) != 0;
+    return (fill.options & static_cast<int>(LedgerFill::Options::Binary)) != 0;
 }
 
 void
@@ -193,7 +193,8 @@ fillJsonTx(
         }
     }
 
-    if (((fill.options & LedgerFill::OwnerFunds) != 0) && txn->getTxnType() == ttOFFER_CREATE)
+    if (((fill.options & static_cast<int>(LedgerFill::Options::OwnerFunds)) != 0) &&
+        txn->getTxnType() == ttOFFER_CREATE)
     {
         auto const account = txn->getAccountID(sfAccount);
         auto const amount = txn->getFieldAmount(sfTakerGets);
@@ -328,10 +329,10 @@ fillJson(json::Value& json, LedgerFill const& fill)
                                        : RPC::kAPI_MAXIMUM_SUPPORTED_VERSION));
     }
 
-    if (bFull || ((fill.options & LedgerFill::DumpTxrp) != 0))
+    if (bFull || ((fill.options & static_cast<int>(LedgerFill::Options::DumpTxrp)) != 0))
         fillJsonTx(json, fill);
 
-    if (bFull || ((fill.options & LedgerFill::DumpState) != 0))
+    if (bFull || ((fill.options & static_cast<int>(LedgerFill::Options::DumpState)) != 0))
         fillJsonState(json, fill);
 }
 
@@ -343,8 +344,11 @@ addJson(json::Value& json, LedgerFill const& fill)
     auto& object = json[jss::ledger] = json::ObjectValue;
     fillJson(object, fill);
 
-    if (((fill.options & LedgerFill::DumpQueue) != 0) && !fill.txQueue.empty())
+    if (((fill.options & static_cast<int>(LedgerFill::Options::DumpQueue)) != 0) &&
+        !fill.txQueue.empty())
+    {
         fillJsonQueue(json, fill);
+    }
 }
 
 json::Value

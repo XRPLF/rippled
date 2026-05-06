@@ -322,14 +322,14 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 
     auto sendqSize = sendQueue_.size();
 
-    if (sendqSize < Tuning::TargetSendQueue)
+    if (sendqSize < Tuning::kTARGET_SEND_QUEUE)
     {
         // To detect a peer that does not read from their
         // side of the connection, we expect a peer to have
         // a small senq periodically
         largeSendq_ = 0;
     }
-    else if (auto sink = journal_.debug(); sink && (sendqSize % Tuning::SendQueueLogFreq) == 0)
+    else if (auto sink = journal_.debug(); sink && (sendqSize % Tuning::kSEND_QUEUE_LOG_FREQ) == 0)
     {
         std::string const n = name();
         sink << n << " sendq: " << sendqSize;
@@ -802,7 +802,7 @@ PeerImp::onTimer(error_code const& ec)
         return;
     }
 
-    if (largeSendq_++ >= Tuning::SendqIntervals)
+    if (largeSendq_++ >= Tuning::kSENDQ_INTERVALS)
     {
         fail("Large send queue");
         return;
@@ -1640,7 +1640,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
     // Verify query depth
     if (m->has_querydepth())
     {
-        if (m->querydepth() > Tuning::MaxQueryDepth || itype == protocol::liBASE)
+        if (m->querydepth() > Tuning::kMAX_QUERY_DEPTH || itype == protocol::liBASE)
         {
             badData("Invalid query depth");
             return;
@@ -1810,7 +1810,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     }
 
     // Verify ledger nodes.
-    if (m->nodes_size() <= 0 || m->nodes_size() > Tuning::HardMaxReplyNodes)
+    if (m->nodes_size() <= 0 || m->nodes_size() > Tuning::kHARD_MAX_REPLY_NODES)
     {
         badData("Invalid Ledger/TXset nodes " + std::to_string(m->nodes_size()));
         return;
@@ -2152,13 +2152,13 @@ PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
 {
     int const diff = std::max(seq1, seq2) - std::min(seq1, seq2);
 
-    if (diff < Tuning::ConvergedLedgerLimit)
+    if (diff < Tuning::kCONVERGED_LEDGER_LIMIT)
     {
         // The peer's ledger sequence is close to the validation's
         tracking_ = Tracking::Converged;
     }
 
-    if ((diff > Tuning::DivergedLedgerLimit) && (tracking_.load() != Tracking::Diverged))
+    if ((diff > Tuning::kDIVERGED_LEDGER_LIMIT) && (tracking_.load() != Tracking::Diverged))
     {
         // The peer's ledger sequence is way off the validation's
         std::scoped_lock const sl(recentLock_);
@@ -2563,7 +2563,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
     if (packet.query())
     {
         // this is a query
-        if (sendQueue_.size() >= Tuning::DropSendQueue)
+        if (sendQueue_.size() >= Tuning::kDROP_SEND_QUEUE)
         {
             JLOG(pJournal_.debug()) << "GetObject: Large send queue";
             return;
@@ -2635,7 +2635,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
                     // Check if by adding this object, reply has reached its
                     // limit
-                    if (reply.objects_size() >= Tuning::HardMaxReplyNodes)
+                    if (reply.objects_size() >= Tuning::kHARD_MAX_REPLY_NODES)
                     {
                         fee_.update(
                             Resource::kFEE_MODERATE_BURDEN_PEER,
@@ -3392,7 +3392,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     }
     else
     {
-        if (sendQueue_.size() >= Tuning::DropSendQueue)
+        if (sendQueue_.size() >= Tuning::kDROP_SEND_QUEUE)
         {
             JLOG(pJournal_.debug()) << "processLedgerRequest: Large send queue";
             return;
@@ -3454,13 +3454,13 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         std::vector<std::pair<SHAMapNodeID, Blob>> data;
 
         for (int i = 0;
-             i < m->nodeids_size() && ledgerData.nodes_size() < Tuning::SoftMaxReplyNodes;
+             i < m->nodeids_size() && ledgerData.nodes_size() < Tuning::kSOFT_MAX_REPLY_NODES;
              ++i)
         {
             auto const shaMapNodeId{deserializeSHAMapNodeID(m->nodeids(i))};
 
             data.clear();
-            data.reserve(Tuning::SoftMaxReplyNodes);
+            data.reserve(Tuning::kSOFT_MAX_REPLY_NODES);
 
             try
             {
@@ -3472,7 +3472,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
 
                     for (auto const& d : data)
                     {
-                        if (ledgerData.nodes_size() >= Tuning::HardMaxReplyNodes)
+                        if (ledgerData.nodes_size() >= Tuning::kHARD_MAX_REPLY_NODES)
                             break;
                         protocol::TMLedgerNode* node{ledgerData.add_nodes()};
                         node->set_nodeid(d.first.getRawString());

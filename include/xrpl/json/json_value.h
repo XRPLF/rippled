@@ -476,9 +476,7 @@ operator>=(Value const& x, Value const& y)
 class ValueAllocator
 {
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { Unknown = (unsigned)-1 };
+    static constexpr auto kUNKNOWN = (unsigned)-1;
 
     virtual ~ValueAllocator() = default;
 
@@ -487,7 +485,7 @@ public:
     virtual void
     releaseMemberName(char* memberName) = 0;
     virtual char*
-    duplicateStringValue(char const* value, unsigned int length = Unknown) = 0;
+    duplicateStringValue(char const* value, unsigned int length = kUNKNOWN) = 0;
     virtual void
     releaseStringValue(char* value) = 0;
 };

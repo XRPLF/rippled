@@ -38,16 +38,9 @@ protected:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using yield_context = boost::asio::yield_context;
 
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum {
-        // Size of our read/write buffer
-        BufferSize = 4 * 1024,
-
-        // Max seconds without completing a message
-        TimeoutSeconds = 30,
-        TimeoutSecondsLocal = 3  // used for localhost clients
-    };
+    static constexpr auto kBUFFER_SIZE = 4 * 1024;     // size of read/write buffer
+    static constexpr auto kTIMEOUT_SECONDS = 30;       // max seconds without completing a message
+    static constexpr auto kTIMEOUT_SECONDS_LOCAL = 3;  // used for localhost clients
 
     struct Buffer
     {
@@ -252,7 +245,8 @@ BaseHTTPPeer<Handler, Impl>::startTimer()
     boost::beast::get_lowest_layer(impl().stream_)
         .expires_after(
             std::chrono::seconds(
-                remote_address_.address().is_loopback() ? TimeoutSecondsLocal : TimeoutSeconds));
+                remote_address_.address().is_loopback() ? kTIMEOUT_SECONDS_LOCAL
+                                                        : kTIMEOUT_SECONDS));
 }
 
 // Convenience for discarding the error code
@@ -364,7 +358,7 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
 
     for (;;)
     {
-        if (!writer->prepare(BufferSize, resume))
+        if (!writer->prepare(kBUFFER_SIZE, resume))
             return;
         error_code ec;
         auto const bytesTransferred = boost::asio::async_write(

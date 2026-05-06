@@ -292,9 +292,9 @@ Logs::format(
     output += message;
 
     // Limit the maximum length of the output
-    if (output.size() > MaximumMessageCharacters)
+    if (output.size() > kMAXIMUM_MESSAGE_CHARACTERS)
     {
-        output.resize(MaximumMessageCharacters - 3);
+        output.resize(kMAXIMUM_MESSAGE_CHARACTERS - 3);
         output += "...";
     }
 

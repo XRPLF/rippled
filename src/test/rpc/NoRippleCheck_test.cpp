@@ -293,11 +293,11 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
                 Endpoint::fromString(test::getEnvLocalhostAddr()));
 
             // if we go above the warning threshold, reset
-            if (c.balance() > WarningThreshold)
+            if (c.balance() > kWARNING_THRESHOLD)
             {
                 using ct = beast::AbstractClock<steady_clock>;
                 c.entry().local_balance =
-                    DecayingSample<DecayWindowSeconds, ct>{steady_clock::now()};
+                    DecayingSample<kDECAY_WINDOW_SECONDS, ct>{steady_clock::now()};
             }
         };
 

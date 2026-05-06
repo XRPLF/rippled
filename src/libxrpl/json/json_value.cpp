@@ -37,13 +37,13 @@ public:
     }
 
     char*
-    duplicateStringValue(char const* value, unsigned int length = Unknown) override
+    duplicateStringValue(char const* value, unsigned int length = kUNKNOWN) override
     {
         //@todo investigate this old optimization
         // if ( !value  ||  value[0] == 0 )
         //   return 0;
 
-        if (length == Unknown)
+        if (length == kUNKNOWN)
             length = (value != nullptr) ? (unsigned int)strlen(value) : 0;
 
         char* newString = static_cast<char*>(malloc(length + 1));

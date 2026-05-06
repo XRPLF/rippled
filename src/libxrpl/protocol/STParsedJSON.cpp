@@ -456,7 +456,7 @@ parseLeaf(
 
                     std::uint64_t val = 0;
 
-                    bool const useBase10 = field.shouldMeta(SField::SMdBaseTen);
+                    bool const useBase10 = field.shouldMeta(SField::kSMD_BASE_TEN);
 
                     // if the field is amount, serialize as base 10
                     auto [p, ec] = std::from_chars(

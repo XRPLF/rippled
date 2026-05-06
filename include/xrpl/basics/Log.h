@@ -189,14 +189,9 @@ public:
     fromString(std::string const& s);
 
 private:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum {
-        // Maximum line length for log messages.
-        // If the message exceeds this length it will be truncated with
-        // ellipses.
-        MaximumMessageCharacters = 12 * 1024
-    };
+    // Maximum line length for log messages.
+    // If the message exceeds this length it will be truncated with ellipses.
+    static constexpr auto kMAXIMUM_MESSAGE_CHARACTERS = 12 * 1024;
 
     static void
     format(

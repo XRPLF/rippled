@@ -86,7 +86,7 @@ public:
 
         TestLogic logic(j);
 
-        Charge const fee(DropThreshold + 1);
+        Charge const fee(kDROP_THRESHOLD + 1);
         beast::IP::Endpoint const addr(beast::IP::Endpoint::fromString("192.0.2.2"));
 
         std::function<Consumer(beast::IP::Endpoint)> const ep = limited
