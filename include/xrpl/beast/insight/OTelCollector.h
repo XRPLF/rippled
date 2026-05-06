@@ -49,7 +49,7 @@ namespace insight {
  * Replaces StatsD-based metric collection with native OTel Metrics SDK
  * instruments. Each beast::insight instrument maps to an OTel equivalent:
  *
- *   - Counter  -> OTel Counter<int64_t>
+ *   - Counter  -> OTel Counter<uint64_t>
  *   - Gauge    -> OTel ObservableGauge<int64_t> (async callback)
  *   - Event    -> OTel Histogram<double> (duration in milliseconds)
  *   - Meter    -> OTel Counter<uint64_t> (monotonic, unsigned)
