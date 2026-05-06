@@ -18,14 +18,14 @@
 
 namespace xrpl {
 
-class TransactionHistory_test : public beast::unit_test::suite
+class TransactionHistory_test : public beast::unit_test::Suite
 {
     void
     testBadInput()
     {
         testcase("Invalid request params");
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
 
         {
             // no params
@@ -36,7 +36,7 @@ class TransactionHistory_test : public beast::unit_test::suite
 
         {
             // test at 1 greater than the allowed non-admin limit
-            Json::Value params{Json::objectValue};
+            json::Value params{json::ObjectValue};
             params[jss::start] = 10001;  // limited to <= 10000 for non admin
             auto const result = env.client().invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "noPermission");
@@ -49,9 +49,9 @@ class TransactionHistory_test : public beast::unit_test::suite
     {
         testcase("Command retired from API v2");
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
 
-        Json::Value params{Json::objectValue};
+        json::Value params{json::ObjectValue};
         params[jss::api_version] = 2;
         auto const result = env.client().invoke("tx_history", params)[jss::result];
         BEAST_EXPECT(result[jss::error] == "unknownCmd");
@@ -86,7 +86,7 @@ class TransactionHistory_test : public beast::unit_test::suite
 
             // verify the latest transaction in env (offer)
             // is available in tx_history.
-            Json::Value params{Json::objectValue};
+            json::Value params{json::ObjectValue};
             params[jss::start] = 0;
             auto result = env.client().invoke("tx_history", params)[jss::result];
             if (!BEAST_EXPECT(result[jss::txs].isArray() && result[jss::txs].size() > 0))
@@ -94,7 +94,7 @@ class TransactionHistory_test : public beast::unit_test::suite
 
             // search for a tx in history matching the last offer
             bool const txFound = [&] {
-                auto const toFind = env.tx()->getJson(JsonOptions::none);
+                auto const toFind = env.tx()->getJson(JsonOptions::KNone);
                 for (auto tx : result[jss::txs])
                 {
                     tx.removeMember(jss::inLedger);
@@ -113,7 +113,7 @@ class TransactionHistory_test : public beast::unit_test::suite
         std::unordered_map<std::string, unsigned> typeCounts;
         while (start < 120)
         {
-            Json::Value params{Json::objectValue};
+            json::Value params{json::ObjectValue};
             params[jss::start] = start;
             auto result = env.client().invoke("tx_history", params)[jss::result];
             if (!BEAST_EXPECT(result[jss::txs].isArray() && result[jss::txs].size() > 0))
@@ -126,14 +126,14 @@ class TransactionHistory_test : public beast::unit_test::suite
             }
         }
         BEAST_EXPECT(total == 117);
-        BEAST_EXPECT(typeCounts[jss::AccountSet.c_str()] == 20);
-        BEAST_EXPECT(typeCounts[jss::TrustSet.c_str()] == 19);
-        BEAST_EXPECT(typeCounts[jss::Payment.c_str()] == 58);
-        BEAST_EXPECT(typeCounts[jss::OfferCreate.c_str()] == 20);
+        BEAST_EXPECT(typeCounts[jss::AccountSet.cStr()] == 20);
+        BEAST_EXPECT(typeCounts[jss::TrustSet.cStr()] == 19);
+        BEAST_EXPECT(typeCounts[jss::Payment.cStr()] == 58);
+        BEAST_EXPECT(typeCounts[jss::OfferCreate.cStr()] == 20);
 
         // also, try a request with max non-admin start value
         {
-            Json::Value params{Json::objectValue};
+            json::Value params{json::ObjectValue};
             params[jss::start] = 10000;  // limited to <= 10000 for non admin
             auto const result = env.client().invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::status] == "success");

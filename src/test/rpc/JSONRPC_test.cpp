@@ -49,17 +49,17 @@ struct TxnTestData
     //   3. sign_for, and
     //   4. submit_multisigned.
     // The JSON is not valid for all of these interfaces, but it should
-    // crash none of them, and should provide reliable error messages.
+    // crash kNONE of them, and should provide reliable error messages.
     //
     // The expMsg array contains the expected error string for the above cases.
     std::array<char const* const, 4> const expMsg;
 
     constexpr TxnTestData(
-        char const* description_,
-        int line_,
-        char const* json_,
-        std::array<char const* const, 4> const& expMsg_)
-        : description(description_), line(line_), json(json_), expMsg{expMsg_}
+        char const* description,
+        int line,
+        char const* json,
+        std::array<char const* const, 4> const& expMsg)
+        : description(description), line(line), json(json), expMsg{expMsg}
     {
     }
 
@@ -72,7 +72,7 @@ struct TxnTestData
     operator=(TxnTestData&&) = delete;
 };
 
-static constexpr TxnTestData txnTestArray[] = {
+static constexpr TxnTestData kTXN_TEST_ARRAY[] = {
 
     {"Minimal payment, no Amount only DeliverMax",
      __LINE__,
@@ -2094,7 +2094,7 @@ static constexpr TxnTestData txnTestArray[] = {
 
 };
 
-class JSONRPC_test : public beast::unit_test::suite
+class JSONRPC_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -2102,7 +2102,7 @@ public:
     {
         testcase("bad RPC command");
         test::jtx::Env env(*this);
-        Json::Value const result{env.rpc("bad_command", R"({"MakingThisUp": 0})")};
+        json::Value const result{env.rpc("bad_command", R"({"MakingThisUp": 0})")};
 
         BEAST_EXPECT(result[jss::result][jss::error] == "unknownCmd");
         BEAST_EXPECT(result[jss::result][jss::request][jss::command] == "bad_command");
@@ -2119,7 +2119,7 @@ public:
             Env env(*this);
             auto ledger = env.current();
             auto const& feeTrack = env.app().getFeeTrack();
-            Json::Value req;
+            json::Value req;
             Account const alice("alice");
             Account const bob("bob");
             env.fund(XRP(100000), alice);
@@ -2129,20 +2129,20 @@ public:
             auto const seq = env.seq(alice);
             auto jt = env.jtnofill(
                 batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                batch::inner(pay(alice, bob, XRP(3)), seq + 3),
-                batch::inner(pay(alice, bob, XRP(4)), seq + 4),
-                batch::inner(pay(alice, bob, XRP(5)), seq + 5),
-                batch::inner(pay(alice, bob, XRP(6)), seq + 6),
-                batch::inner(pay(alice, bob, XRP(7)), seq + 7),
-                batch::inner(pay(alice, bob, XRP(8)), seq + 8),
-                batch::inner(pay(alice, bob, XRP(9)), seq + 9));
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 2),
+                batch::Inner(pay(alice, bob, XRP(3)), seq + 3),
+                batch::Inner(pay(alice, bob, XRP(4)), seq + 4),
+                batch::Inner(pay(alice, bob, XRP(5)), seq + 5),
+                batch::Inner(pay(alice, bob, XRP(6)), seq + 6),
+                batch::Inner(pay(alice, bob, XRP(7)), seq + 7),
+                batch::Inner(pay(alice, bob, XRP(8)), seq + 8),
+                batch::Inner(pay(alice, bob, XRP(9)), seq + 9));
 
             jt.jv.removeMember(jss::Fee);
             jt.jv.removeMember(jss::TxnSignature);
             req[jss::tx_json] = jt.jv;
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2161,7 +2161,7 @@ public:
             Env env(*this);
             auto ledger = env.current();
             auto const& feeTrack = env.app().getFeeTrack();
-            Json::Value req;
+            json::Value req;
             Account const alice("alice");
             Account const bob("bob");
             env.fund(XRP(100000), alice, bob);
@@ -2169,7 +2169,7 @@ public:
 
             auto jt = env.jtnofill(
                 noop(alice),
-                msig(
+                Msig(
                     alice,
                     alice,
                     alice,
@@ -2212,7 +2212,7 @@ public:
                     alice));
 
             req[jss::tx_json] = jt.jv;
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2237,9 +2237,9 @@ public:
         auto const& feeTrack = env.app().getFeeTrack();
 
         {
-            Json::Value req;
-            Json::Reader().parse("{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
-            Json::Value const result = checkFee(
+            json::Value req;
+            json::Reader().parse("{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2248,18 +2248,18 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == baseFee);
         }
 
         {
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 2, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2268,15 +2268,15 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == baseFee);
         }
 
         {
-            Json::Value req;
-            Json::Reader().parse("{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
-            Json::Value const result = checkFee(
+            json::Value req;
+            json::Reader().parse("{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2285,19 +2285,19 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
             // 3/6 = 1/2, but use the bigger number make sure
             // we're dividing.
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 6, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2306,17 +2306,17 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 "{ \"fee_mult_max\" : 0, \"fee_div_max\" : 2, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2325,17 +2325,17 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 "{ \"fee_mult_max\" : 10, \"fee_div_max\" : 0, "
                 "\"tx_json\" : { } } ",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2344,16 +2344,16 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
             // transaction with a higher base fee
-            Json::Value req;
+            json::Value req;
             test::jtx::Account const alice("alice");
             req[jss::tx_json] = test::jtx::acctdelete(env.master.human(), alice.human());
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2383,14 +2383,14 @@ public:
 
         {
             // high mult, no tx
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 1000,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2399,20 +2399,20 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 10);
         }
 
         {
             // low mult, no tx
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 5,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2421,7 +2421,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -2433,14 +2433,14 @@ public:
 
         {
             // high mult, 4 txs
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 1000,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2449,21 +2449,21 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 8889);
         }
 
         {
             // low mult, 4 tx
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 5,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2472,21 +2472,21 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
             // different low mult, 4 tx
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 1000,
                 "fee_div_max" : 3,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2495,21 +2495,21 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
             // high mult, 4 tx
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : 8000,
                 "fee_div_max" : 3,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2518,21 +2518,21 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == 8889);
         }
 
         {
             // negative mult
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : -5,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2541,19 +2541,19 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
         }
 
         {
             // negative div
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_div_max" : -2,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2562,20 +2562,20 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
         }
 
         {
             // negative mult & div
-            Json::Value req;
-            Json::Reader().parse(
+            json::Value req;
+            json::Reader().parse(
                 R"({
                 "fee_mult_max" : -2,
                 "fee_div_max" : -3,
                 "tx_json" : { }
             })",
                 req);
-            Json::Value const result = checkFee(
+            json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
                 true,
@@ -2584,25 +2584,25 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(RPC::containsError(result));
         }
 
         env.close();
 
         {
             // Call "sign" with nothing in the open ledger
-            Json::Value toSign;
+            json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
             toSign[jss::secret] = "masterpassphrase";
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "10");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(Json::ValueType::uintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
         }
 
         {
@@ -2616,20 +2616,20 @@ public:
                 env(noop(env.master));
             }
 
-            Json::Value toSign;
+            json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
             toSign[jss::secret] = "masterpassphrase";
             toSign[jss::fee_mult_max] = 900;
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Fee) &&
                 result[jss::tx_json][jss::Fee] == "7813");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(Json::ValueType::uintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
 
             env.close();
         }
@@ -2644,18 +2644,18 @@ public:
                 BEAST_EXPECT(feeTrack.getLoadFactor() == 1220);
             }
 
-            Json::Value toSign;
+            json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
             toSign[jss::secret] = "masterpassphrase";
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "47");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(Json::ValueType::uintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
         }
 
         {
@@ -2668,12 +2668,12 @@ public:
                 auto metrics = env.app().getTxQ().getMetrics(*env.current());
                 if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
                     break;
-                env(noop(env.master), fee(47));
+                env(noop(env.master), Fee(47));
             }
 
-            Env_ss const envs(env);
+            EnvSs const envs(env);
 
-            Json::Value toSign;
+            json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
             toSign[jss::secret] = "masterpassphrase";
             // Max fee = 7000 drops
@@ -2681,13 +2681,13 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Fee) &&
                 result[jss::tx_json][jss::Fee] == "6806");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(Json::ValueType::uintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
         }
     }
 
@@ -2702,7 +2702,7 @@ public:
                 })};
 
         {
-            Json::Value toSign;
+            json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
 
             BEAST_EXPECT(!toSign[jss::tx_json].isMember(jss::NetworkID));
@@ -2710,7 +2710,7 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(!RPC::containsError(result));
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::NetworkID) &&
                 result[jss::tx_json][jss::NetworkID] == 1025);
@@ -2733,11 +2733,11 @@ public:
         // Use jtx to set up a ledger so the tests will do the right thing.
         Account const a{"a"};  // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
         Account const g{"g"};  // rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4
-        auto const USD = g["USD"];
+        auto const usd = g["USD"];
 
         // Account: rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi
         // seed:    sh1yJfwoi98zCygwijUzuHmJDeVKd
-        Account const ed{"ed", KeyType::ed25519};
+        Account const ed{"ed", KeyType::Ed25519};
         // master is rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh.
         // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
@@ -2749,25 +2749,25 @@ public:
         env.fund(XRP(100000), a, ed, g);
         env.close();
 
-        env(trust(a, USD(1000)));
-        env(trust(env.master, USD(1000)));
-        env(pay(g, a, USD(50)));
-        env(pay(g, env.master, USD(50)));
+        env(trust(a, usd(1000)));
+        env(trust(env.master, usd(1000)));
+        env(pay(g, a, usd(50)));
+        env(pay(g, env.master, usd(50)));
         env.close();
 
         ProcessTransactionFn const processTxn = fakeProcessTransaction;
 
         // A list of all the functions we want to test.
-        using signFunc = Json::Value (*)(
-            Json::Value params,
+        using signFunc = json::Value (*)(
+            json::Value params,
             unsigned int apiVersion,
             NetworkOPs::FailHard failType,
             Role role,
             std::chrono::seconds validatedLedgerAge,
             Application& app);
 
-        using submitFunc = Json::Value (*)(
-            Json::Value params,
+        using submitFunc = json::Value (*)(
+            json::Value params,
             unsigned int apiVersion,
             NetworkOPs::FailHard failType,
             Role role,
@@ -2777,44 +2777,44 @@ public:
 
         using TestStuff = std::tuple<signFunc, submitFunc, char const*, unsigned int>;
 
-        static TestStuff const testFuncs[] = {
+        static TestStuff const kTEST_FUNCS[] = {
             TestStuff{transactionSign, nullptr, "sign", 0},
             TestStuff{nullptr, transactionSubmit, "submit", 1},
             TestStuff{transactionSignFor, nullptr, "sign_for", 2},
             TestStuff{nullptr, transactionSubmitMultiSigned, "submit_multisigned", 3}};
 
-        for (auto testFunc : testFuncs)
+        for (auto testFunc : kTEST_FUNCS)
         {
             // For each JSON test.
-            for (auto const& txnTest : txnTestArray)
+            for (auto const& txnTest : kTXN_TEST_ARRAY)
             {
-                Json::Value req;
-                Json::Reader().parse(txnTest.json, req);
-                if (RPC::contains_error(req))
+                json::Value req;
+                json::Reader().parse(txnTest.json, req);
+                if (RPC::containsError(req))
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
-                static Role const testedRoles[] = {
+                static Role const kTESTED_ROLES[] = {
                     Role::GUEST, Role::USER, Role::ADMIN, Role::FORBID};
 
-                for (Role const testRole : testedRoles)
+                for (Role const testRole : kTESTED_ROLES)
                 {
-                    Json::Value result;
+                    json::Value result;
                     auto const signFn = get<0>(testFunc);
                     if (signFn != nullptr)
                     {
                         assert(get<1>(testFunc) == nullptr);
-                        result = signFn(req, 1, NetworkOPs::FailHard::yes, testRole, 1s, env.app());
+                        result = signFn(req, 1, NetworkOPs::FailHard::Yes, testRole, 1s, env.app());
                     }
                     else
                     {
                         auto const submitFn = get<1>(testFunc);
                         assert(submitFn != nullptr);
                         result = submitFn(
-                            req, 1, NetworkOPs::FailHard::yes, testRole, 1s, env.app(), processTxn);
+                            req, 1, NetworkOPs::FailHard::Yes, testRole, 1s, env.app(), processTxn);
                     }
 
                     std::string errStr;
-                    if (RPC::contains_error(result))
+                    if (RPC::containsError(result))
                         errStr = result["error_message"].asString();
 
                     if (errStr == txnTest.expMsg[get<3>(testFunc)])

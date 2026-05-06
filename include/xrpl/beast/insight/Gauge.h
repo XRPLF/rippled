@@ -31,7 +31,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Gauge(std::shared_ptr<GaugeImpl> const& impl) : m_impl(impl)
+    explicit Gauge(std::shared_ptr<GaugeImpl> const& impl) : impl_(impl)
     {
     }
 
@@ -44,8 +44,8 @@ public:
     void
     set(value_type value) const
     {
-        if (m_impl)
-            m_impl->set(value);
+        if (impl_)
+            impl_->set(value);
     }
 
     Gauge const&
@@ -61,8 +61,8 @@ public:
     void
     increment(difference_type amount) const
     {
-        if (m_impl)
-            m_impl->increment(amount);
+        if (impl_)
+            impl_->increment(amount);
     }
 
     Gauge const&
@@ -111,11 +111,11 @@ public:
     [[nodiscard]] std::shared_ptr<GaugeImpl> const&
     impl() const
     {
-        return m_impl;
+        return impl_;
     }
 
 private:
-    std::shared_ptr<GaugeImpl> m_impl;
+    std::shared_ptr<GaugeImpl> impl_;
 };
 
 }  // namespace beast::insight

@@ -12,10 +12,10 @@
 
 namespace xrpl::test::jtx::ticket {
 
-Json::Value
+json::Value
 create(Account const& account, std::uint32_t count)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::TicketCreate;
     jv[sfTicketCount.jsonName] = count;
@@ -23,9 +23,9 @@ create(Account const& account, std::uint32_t count)
 }
 
 void
-use::operator()(Env&, JTx& jt) const
+Use::operator()(Env&, JTx& jt) const
 {
-    jt.fill_seq = false;
+    jt.fillSeq = false;
     jt[sfSequence.jsonName] = 0u;
     jt[sfTicketSequence.jsonName] = ticketSeq_;
 }

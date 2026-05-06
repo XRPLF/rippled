@@ -13,7 +13,7 @@ namespace beast {
 
 template <typename T>
 std::string
-type_name()
+typeName()
 {
     using TR = std::remove_reference_t<T>;
 

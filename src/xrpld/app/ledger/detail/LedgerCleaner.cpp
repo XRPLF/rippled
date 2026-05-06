@@ -56,8 +56,8 @@ class LedgerCleanerImp : public LedgerCleaner
 
     std::thread thread_;
 
-    enum class State : char { notCleaning = 0, cleaning };
-    State state_ = State::notCleaning;
+    enum class State : char { NotCleaning = 0, Cleaning };
+    State state_ = State::NotCleaning;
     bool shouldExit_ = false;
 
     // The lowest ledger in the range we're checking.
@@ -84,7 +84,7 @@ public:
     ~LedgerCleanerImp() override
     {
         if (thread_.joinable())
-            LogicError("LedgerCleanerImp::stop not called.");
+            logicError("LedgerCleanerImp::stop not called.");
     }
 
     void
@@ -139,7 +139,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    clean(Json::Value const& params) override
+    clean(json::Value const& params) override
     {
         LedgerIndex minRange = 0;
         LedgerIndex maxRange = 0;
@@ -211,7 +211,7 @@ public:
             if (params.isMember(jss::stop) && params[jss::stop].asBool())
                 minRange_ = maxRange_ = 0;
 
-            state_ = State::cleaning;
+            state_ = State::Cleaning;
             wakeup_.notify_one();
         }
     }
@@ -232,11 +232,11 @@ private:
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                state_ = State::notCleaning;
-                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::cleaning); });
+                state_ = State::NotCleaning;
+                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::Cleaning); });
                 if (shouldExit_)
                     break;
-                XRPL_ASSERT(state_ == State::cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
+                XRPL_ASSERT(state_ == State::Cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
             }
             doLedgerCleaner();
         }
@@ -257,7 +257,7 @@ private:
             app_.getInboundLedgers().acquire(
                 ledger->header().hash, ledger->header().seq, InboundLedger::Reason::GENERIC);
         }
-        return hash ? *hash : beast::zero;  // kludge
+        return hash ? *hash : beast::kZERO;  // kludge
     }
 
     /** Process a single ledger
@@ -449,7 +449,7 @@ private:
 };
 
 std::unique_ptr<LedgerCleaner>
-make_LedgerCleaner(Application& app, beast::Journal journal)
+makeLedgerCleaner(Application& app, beast::Journal journal)
 {
     return std::make_unique<LedgerCleanerImp>(app, journal);
 }

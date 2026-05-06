@@ -26,23 +26,23 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doSubscribe(RPC::JsonContext& context)
 {
     InfoSub::pointer ispSub;
-    Json::Value jvResult(Json::objectValue);
+    json::Value jvResult(json::ObjectValue);
 
     if (!context.infoSub && !context.params.isMember(jss::url))
     {
         // Must be a JSON-RPC call.
         JLOG(context.j.info()) << "doSubscribe: RPC subscribe requires a url";
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
     }
 
     if (context.params.isMember(jss::url))
     {
         if (context.role != Role::ADMIN)
-            return rpcError(rpcNO_PERMISSION);
+            return rpcError(RpcNoPermission);
 
         std::string const strUrl = context.params[jss::url].asString();
         std::string strUsername = context.params.isMember(jss::url_username)
@@ -66,7 +66,7 @@ doSubscribe(RPC::JsonContext& context)
             JLOG(context.j.debug()) << "doSubscribe: building: " << strUrl;
             try
             {
-                auto rspSub = make_RPCSub(
+                auto rspSub = makeRPCSub(
                     context.app.getOPs(),
                     context.app.getIOContext(),
                     context.app.getJobQueue(),
@@ -79,7 +79,7 @@ doSubscribe(RPC::JsonContext& context)
             }
             catch (std::runtime_error const& ex)
             {
-                return RPC::make_param_error(ex.what());
+                return RPC::makeParamError(ex.what());
             }
         }
         else
@@ -110,13 +110,13 @@ doSubscribe(RPC::JsonContext& context)
         if (!context.params[jss::streams].isArray())
         {
             JLOG(context.j.info()) << "doSubscribe: streams requires an array.";
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
         }
 
         for (auto const& it : context.params[jss::streams])
         {
             if (!it.isString())
-                return rpcError(rpcSTREAM_MALFORMED);
+                return rpcError(RpcStreamMalformed);
 
             std::string const streamName = it.asString();
             if (streamName == "server")
@@ -152,7 +152,7 @@ doSubscribe(RPC::JsonContext& context)
             else if (streamName == "peer_status")
             {
                 if (context.role != Role::ADMIN)
-                    return rpcError(rpcNO_PERMISSION);
+                    return rpcError(RpcNoPermission);
                 context.netOps.subPeerStatus(ispSub);
             }
             else if (streamName == "consensus")
@@ -161,7 +161,7 @@ doSubscribe(RPC::JsonContext& context)
             }
             else
             {
-                return rpcError(rpcSTREAM_MALFORMED);
+                return rpcError(RpcStreamMalformed);
             }
         }
     }
@@ -172,22 +172,22 @@ doSubscribe(RPC::JsonContext& context)
     if (context.params.isMember(accountsProposed))
     {
         if (!context.params[accountsProposed].isArray())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         auto ids = RPC::parseAccountIds(context.params[accountsProposed]);
         if (ids.empty())
-            return rpcError(rpcACT_MALFORMED);
+            return rpcError(RpcActMalformed);
         context.netOps.subAccount(ispSub, ids, true);
     }
 
     if (context.params.isMember(jss::accounts))
     {
         if (!context.params[jss::accounts].isArray())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         auto ids = RPC::parseAccountIds(context.params[jss::accounts]);
         if (ids.empty())
-            return rpcError(rpcACT_MALFORMED);
+            return rpcError(RpcActMalformed);
         context.netOps.subAccount(ispSub, ids, false);
         JLOG(context.j.debug()) << "doSubscribe: accounts: " << ids.size();
     }
@@ -195,18 +195,18 @@ doSubscribe(RPC::JsonContext& context)
     if (context.params.isMember(jss::account_history_tx_stream))
     {
         if (!context.app.config().useTxTables())
-            return rpcError(rpcNOT_ENABLED);
+            return rpcError(RpcNotEnabled);
 
-        context.loadType = Resource::feeMediumBurdenRPC;
+        context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
         auto const& req = context.params[jss::account_history_tx_stream];
         if (!req.isMember(jss::account) || !req[jss::account].isString())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         auto const id = parseBase58<AccountID>(req[jss::account].asString());
         if (!id)
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
-        if (auto result = context.netOps.subAccountHistory(ispSub, *id); result != rpcSUCCESS)
+        if (auto result = context.netOps.subAccountHistory(ispSub, *id); result != RpcSuccess)
         {
             return rpcError(result);
         }
@@ -220,28 +220,28 @@ doSubscribe(RPC::JsonContext& context)
     if (context.params.isMember(jss::books))
     {
         if (!context.params[jss::books].isArray())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         for (auto& j : context.params[jss::books])
         {
             if (!j.isObject() || !j.isMember(jss::taker_pays) || !j.isMember(jss::taker_gets) ||
                 !j[jss::taker_pays].isObjectOrNull() || !j[jss::taker_gets].isObjectOrNull())
-                return rpcError(rpcINVALID_PARAMS);
+                return rpcError(RpcInvalidParams);
 
             Book book;
 
             if (auto const err = RPC::parseSubUnsubJson(book.in, j, jss::taker_pays, context.j);
-                err != rpcSUCCESS)
+                err != RpcSuccess)
                 return rpcError(err);
 
             if (auto const err = RPC::parseSubUnsubJson(book.out, j, jss::taker_gets, context.j);
-                err != rpcSUCCESS)
+                err != RpcSuccess)
                 return rpcError(err);
 
             if (book.in == book.out)
             {
                 JLOG(context.j.info()) << "taker_gets same as taker_pays.";
-                return rpcError(rpcBAD_MARKET);
+                return rpcError(RpcBadMarket);
             }
 
             std::optional<AccountID> takerID;
@@ -249,10 +249,10 @@ doSubscribe(RPC::JsonContext& context)
             if (j.isMember(jss::taker))
             {
                 if (!j[jss::taker].isString())
-                    return rpcError(rpcACT_MALFORMED);
+                    return rpcError(RpcActMalformed);
                 takerID = parseBase58<AccountID>(j[jss::taker].asString());
                 if (!takerID)
-                    return rpcError(rpcACT_MALFORMED);
+                    return rpcError(RpcActMalformed);
             }
 
             if (j.isMember(jss::domain))
@@ -260,7 +260,7 @@ doSubscribe(RPC::JsonContext& context)
                 uint256 domain;
                 if (!j[jss::domain].isString() || !domain.parseHex(j[jss::domain].asString()))
                 {
-                    return rpcError(rpcDOMAIN_MALFORMED);
+                    return rpcError(RpcDomainMalformed);
                 }
 
                 book.domain = domain;
@@ -269,7 +269,7 @@ doSubscribe(RPC::JsonContext& context)
             if (!isConsistent(book))
             {
                 JLOG(context.j.warn()) << "Bad market: " << book;
-                return rpcError(rpcBAD_MARKET);
+                return rpcError(RpcBadMarket);
             }
 
             context.netOps.subBook(ispSub, book);
@@ -285,27 +285,27 @@ doSubscribe(RPC::JsonContext& context)
             if ((j.isMember(jss::snapshot) && j[jss::snapshot].asBool()) ||
                 (j.isMember(jss::state_now) && j[jss::state_now].asBool()))
             {
-                context.loadType = Resource::feeMediumBurdenRPC;
+                context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
                 std::shared_ptr<ReadView const> lpLedger =
                     context.app.getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
                 {
-                    Json::Value const jvMarker = Json::Value(Json::nullValue);
-                    Json::Value jvOffers(Json::objectValue);
+                    json::Value const jvMarker = json::Value(json::NullValue);
+                    json::Value jvOffers(json::ObjectValue);
 
-                    auto add = [&](Json::StaticString field) {
+                    auto add = [&](json::StaticString field) {
                         context.netOps.getBookPage(
                             lpLedger,
                             field == jss::asks ? reversed(book) : book,
                             takerID ? *takerID : noAccount(),
                             false,
-                            RPC::Tuning::bookOffers.rDefault,
+                            RPC::Tuning::kBOOK_OFFERS.rDefault,
                             jvMarker,
                             jvOffers);
 
                         if (jvResult.isMember(field))
                         {
-                            Json::Value& results(jvResult[field]);
+                            json::Value& results(jvResult[field]);
                             for (auto const& e : jvOffers[jss::offers])
                                 results.append(e);
                         }

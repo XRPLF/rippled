@@ -64,11 +64,11 @@ public:
     [[nodiscard]] virtual std::optional<NetClock::time_point>
     firstUnsupportedExpected() const = 0;
 
-    [[nodiscard]] virtual Json::Value
+    [[nodiscard]] virtual json::Value
     getJson(bool isAdmin) const = 0;
 
-    /** Returns a Json::objectValue. */
-    [[nodiscard]] virtual Json::Value
+    /** Returns a json::objectValue. */
+    [[nodiscard]] virtual json::Value
     getJson(uint256 const& amendment, bool isAdmin) const = 0;
 
     /** Called when a new fully-validated ledger is accepted. */
@@ -163,14 +163,14 @@ public:
                             << amendTx;
 
             initialPosition->addGiveItem(
-                SHAMapNodeType::tnTRANSACTION_NM,
-                make_shamapitem(amendTx.getTransactionID(), s.slice()));
+                SHAMapNodeType::TnTransactionNm,
+                makeShamapitem(amendTx.getTransactionID(), s.slice()));
         }
     }
 };
 
 std::unique_ptr<AmendmentTable>
-make_AmendmentTable(
+makeAmendmentTable(
     ServiceRegistry& registry,
     std::chrono::seconds majorityTime,
     std::vector<AmendmentTable::FeatureInfo> const& supported,

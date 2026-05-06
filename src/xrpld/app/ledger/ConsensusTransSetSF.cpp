@@ -24,7 +24,7 @@
 namespace xrpl {
 
 ConsensusTransSetSF::ConsensusTransSetSF(Application& app, NodeCache& nodeCache)
-    : app_(app), m_nodeCache(nodeCache), j_(app.getJournal("TransactionAcquire"))
+    : app_(app), nodeCache_(nodeCache), j_(app.getJournal("TransactionAcquire"))
 {
 }
 
@@ -39,9 +39,9 @@ ConsensusTransSetSF::gotNode(
     if (fromFilter)
         return;
 
-    m_nodeCache.insert(nodeHash, nodeData);
+    nodeCache_.insert(nodeHash, nodeData);
 
-    if ((type == SHAMapNodeType::tnTRANSACTION_NM) && (nodeData.size() > 16))
+    if ((type == SHAMapNodeType::TnTransactionNm) && (nodeData.size() > 16))
     {
         // this is a transaction, and we didn't have it
         JLOG(j_.debug()) << "Node on our acquiring TX set is TXN we may not have";
@@ -53,12 +53,12 @@ ConsensusTransSetSF::gotNode(
             SerialIter sit(s.slice());
             auto stx = std::make_shared<STTx const>(std::ref(sit));
             XRPL_ASSERT(
-                stx->getTransactionID() == nodeHash.as_uint256(),
+                stx->getTransactionID() == nodeHash.asUint256(),
                 "xrpl::ConsensusTransSetSF::gotNode : transaction hash "
                 "match");
             auto const pap = &app_;
             app_.getJobQueue().addJob(
-                jtTRANSACTION, "TxsToTxn", [pap, stx]() { pap->getOPs().submitTransaction(stx); });
+                JtTransaction, "TxsToTxn", [pap, stx]() { pap->getOPs().submitTransaction(stx); });
         }
         catch (std::exception const& ex)
         {
@@ -72,20 +72,20 @@ std::optional<Blob>
 ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
 {
     Blob nodeData;
-    if (m_nodeCache.retrieve(nodeHash, nodeData))
+    if (nodeCache_.retrieve(nodeHash, nodeData))
         return nodeData;
 
-    auto txn = app_.getMasterTransaction().fetch_from_cache(nodeHash.as_uint256());
+    auto txn = app_.getMasterTransaction().fetchFromCache(nodeHash.asUint256());
 
     if (txn)
     {
         // this is a transaction, and we have it
         JLOG(j_.trace()) << "Node in our acquiring TX set is TXN we have";
         Serializer s;
-        s.add32(HashPrefix::transactionID);
+        s.add32(HashPrefix::TransactionId);
         txn->getSTransaction()->add(s);
         XRPL_ASSERT(
-            sha512Half(s.slice()) == nodeHash.as_uint256(),
+            sha512Half(s.slice()) == nodeHash.asUint256(),
             "xrpl::ConsensusTransSetSF::getNode : transaction hash match");
         nodeData = s.peekData();
         return nodeData;

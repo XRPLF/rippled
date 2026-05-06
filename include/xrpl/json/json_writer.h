@@ -6,7 +6,7 @@
 #include <ostream>
 #include <vector>
 
-namespace Json {
+namespace json {
 
 class Value;
 
@@ -182,7 +182,7 @@ std::string
 valueToQuotedString(char const* value);
 
 /// \brief Output using the StyledStreamWriter.
-/// \see Json::operator>>()
+/// \see json::operator>>()
 std::ostream&
 operator<<(std::ostream&, Value const& root);
 
@@ -193,55 +193,55 @@ namespace detail {
 
 template <class Write>
 void
-write_string(Write const& write, std::string const& s)
+writeString(Write const& write, std::string const& s)
 {
     write(s.data(), s.size());
 }
 
 template <class Write>
 void
-write_value(Write const& write, Value const& value)
+writeValue(Write const& write, Value const& value)
 {
     switch (value.type())
     {
-        case nullValue:
+        case NullValue:
             write("null", 4);
             break;
 
-        case intValue:
-            write_string(write, valueToString(value.asInt()));
+        case IntValue:
+            writeString(write, valueToString(value.asInt()));
             break;
 
-        case uintValue:
-            write_string(write, valueToString(value.asUInt()));
+        case UintValue:
+            writeString(write, valueToString(value.asUInt()));
             break;
 
-        case realValue:
-            write_string(write, valueToString(value.asDouble()));
+        case RealValue:
+            writeString(write, valueToString(value.asDouble()));
             break;
 
-        case stringValue:
-            write_string(write, valueToQuotedString(value.asCString()));
+        case StringValue:
+            writeString(write, valueToQuotedString(value.asCString()));
             break;
 
-        case booleanValue:
-            write_string(write, valueToString(value.asBool()));
+        case BooleanValue:
+            writeString(write, valueToString(value.asBool()));
             break;
 
-        case arrayValue: {
+        case ArrayValue: {
             write("[", 1);
             int const size = value.size();
             for (int index = 0; index < size; ++index)
             {
                 if (index > 0)
                     write(",", 1);
-                write_value(write, value[index]);
+                writeValue(write, value[index]);
             }
             write("]", 1);
             break;
         }
 
-        case objectValue: {
+        case ObjectValue: {
             Value::Members const members = value.getMemberNames();
             write("{", 1);
             for (auto it = members.begin(); it != members.end(); ++it)
@@ -250,9 +250,9 @@ write_value(Write const& write, Value const& value)
                 if (it != members.begin())
                     write(",", 1);
 
-                write_string(write, valueToQuotedString(name.c_str()));
+                writeString(write, valueToQuotedString(name.c_str()));
                 write(":", 1);
-                write_value(write, value[name]);
+                writeValue(write, value[name]);
             }
             write("}", 1);
             break;
@@ -264,15 +264,15 @@ write_value(Write const& write, Value const& value)
 
 /** Stream compact JSON to the specified function.
 
-    @param jv The Json::Value to write
+    @param jv The json::Value to write
     @param write Invocable with signature void(void const*, std::size_t) that
                  is called when output should be written to the stream.
 */
 template <class Write>
 void
-stream(Json::Value const& jv, Write const& write)
+stream(json::Value const& jv, Write const& write)
 {
-    detail::write_value(write, jv);
+    detail::writeValue(write, jv);
     write("\n", 1);
 }
 
@@ -280,37 +280,37 @@ stream(Json::Value const& jv, Write const& write)
 
     Use
 
-        Json::Value jv;
-        out << Json::Compact{jv}
+        json::Value jv;
+        out << json::Compact{jv}
 
     to write a single-line, compact version of `jv` to the stream, rather
     than the styled format that comes from undecorated streaming.
 */
 class Compact
 {
-    Json::Value jv_;
+    json::Value jv_;
 
 public:
-    /** Wrap a Json::Value for compact streaming
+    /** Wrap a json::Value for compact streaming
 
-        @param jv The Json::Value to stream
+        @param jv The json::Value to stream
 
         @note For now, we do not support wrapping lvalues to avoid
               potentially costly copies. If we find a need, we can consider
               adding support for compact lvalue streaming in the future.
     */
-    Compact(Json::Value&& jv) : jv_{std::move(jv)}
+    Compact(json::Value&& jv) : jv_{std::move(jv)}
     {
     }
 
     friend std::ostream&
     operator<<(std::ostream& o, Compact const& cJv)
     {
-        detail::write_value(
+        detail::writeValue(
             [&o](void const* data, std::size_t n) { o.write(static_cast<char const*>(data), n); },
             cJv.jv_);
         return o;
     }
 };
 
-}  // namespace Json
+}  // namespace json

@@ -348,8 +348,8 @@ For this reason:
 - Contract description for `UNREACHABLE` should describe the _unexpected_
   situation which caused the line to have been reached.
 - Example good name for an
-  `UNREACHABLE` macro `"Json::operator==(Value, Value) : invalid type"`; example
-  good name for an `XRPL_ASSERT` macro `"Json::Value::asCString : valid type"`.
+  `UNREACHABLE` macro `"json::operator==(Value, Value) : invalid type"`; example
+  good name for an `XRPL_ASSERT` macro `"json::Value::asCString : valid type"`.
 - Example **bad** name
   `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
   (missing namespace, unnecessary full function signature, description too verbose).

@@ -7,7 +7,7 @@ namespace xrpl {
 class PaymentChannelCreate : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Custom};
 
     explicit PaymentChannelCreate(ApplyContext& ctx) : Transactor(ctx)
     {

@@ -46,7 +46,7 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
     }
 
     auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
-    if (lpTokensBalance != beast::zero)
+    if (lpTokensBalance != beast::kZERO)
         return tecAMM_NOT_EMPTY;
 
     return tesSUCCESS;

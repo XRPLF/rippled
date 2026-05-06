@@ -35,49 +35,49 @@ namespace xrpl {
 namespace RPC {
 
 template <unsigned int Version>
-constexpr static std::integral_constant<unsigned, Version> apiVersion = {};
+constexpr static std::integral_constant<unsigned, Version> kAPI_VERSION = {};
 
-constexpr static auto apiInvalidVersion = apiVersion<0>;
-constexpr static auto apiMinimumSupportedVersion = apiVersion<1>;
-constexpr static auto apiMaximumSupportedVersion = apiVersion<2>;
-constexpr static auto apiVersionIfUnspecified = apiVersion<1>;
-constexpr static auto apiCommandLineVersion = apiVersion<1>;  // TODO Bump to 2 later
-constexpr static auto apiBetaVersion = apiVersion<3>;
-constexpr static auto apiMaximumValidVersion = apiBetaVersion;
+constexpr static auto kAPI_INVALID_VERSION = kAPI_VERSION<0>;
+constexpr static auto kAPI_MINIMUM_SUPPORTED_VERSION = kAPI_VERSION<1>;
+constexpr static auto kAPI_MAXIMUM_SUPPORTED_VERSION = kAPI_VERSION<2>;
+constexpr static auto kAPI_VERSION_IF_UNSPECIFIED = kAPI_VERSION<1>;
+constexpr static auto kAPI_COMMAND_LINE_VERSION = kAPI_VERSION<1>;  // TODO Bump to 2 later
+constexpr static auto kAPI_BETA_VERSION = kAPI_VERSION<3>;
+constexpr static auto kAPI_MAXIMUM_VALID_VERSION = kAPI_BETA_VERSION;
 
-static_assert(apiInvalidVersion < apiMinimumSupportedVersion);
+static_assert(kAPI_INVALID_VERSION < kAPI_MINIMUM_SUPPORTED_VERSION);
 static_assert(
-    apiVersionIfUnspecified >= apiMinimumSupportedVersion &&
-    apiVersionIfUnspecified <= apiMaximumSupportedVersion);
+    kAPI_VERSION_IF_UNSPECIFIED >= kAPI_MINIMUM_SUPPORTED_VERSION &&
+    kAPI_VERSION_IF_UNSPECIFIED <= kAPI_MAXIMUM_SUPPORTED_VERSION);
 static_assert(
-    apiCommandLineVersion >= apiMinimumSupportedVersion &&
-    apiCommandLineVersion <= apiMaximumSupportedVersion);
-static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
-static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
-static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
+    kAPI_COMMAND_LINE_VERSION >= kAPI_MINIMUM_SUPPORTED_VERSION &&
+    kAPI_COMMAND_LINE_VERSION <= kAPI_MAXIMUM_SUPPORTED_VERSION);
+static_assert(kAPI_MAXIMUM_SUPPORTED_VERSION >= kAPI_MINIMUM_SUPPORTED_VERSION);
+static_assert(kAPI_BETA_VERSION >= kAPI_MAXIMUM_SUPPORTED_VERSION);
+static_assert(kAPI_MAXIMUM_VALID_VERSION >= kAPI_MAXIMUM_SUPPORTED_VERSION);
 
 inline void
-setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
+setVersion(json::Value& parent, unsigned int apiVersion, bool betaEnabled)
 {
-    XRPL_ASSERT(apiVersion != apiInvalidVersion, "xrpl::RPC::setVersion : input is valid");
+    XRPL_ASSERT(apiVersion != kAPI_INVALID_VERSION, "xrpl::RPC::setVersion : input is valid");
 
-    auto& retObj = parent[jss::version] = Json::objectValue;
+    auto& retObj = parent[jss::version] = json::ObjectValue;
 
-    if (apiVersion == apiVersionIfUnspecified)
+    if (apiVersion == kAPI_VERSION_IF_UNSPECIFIED)
     {
         // API version numbers used in API version 1
-        static beast::SemanticVersion const firstVersion{"1.0.0"};
-        static beast::SemanticVersion const goodVersion{"1.0.0"};
-        static beast::SemanticVersion const lastVersion{"1.0.0"};
+        static beast::SemanticVersion const kFIRST_VERSION{"1.0.0"};
+        static beast::SemanticVersion const kGOOD_VERSION{"1.0.0"};
+        static beast::SemanticVersion const kLAST_VERSION{"1.0.0"};
 
-        retObj[jss::first] = firstVersion.print();
-        retObj[jss::good] = goodVersion.print();
-        retObj[jss::last] = lastVersion.print();
+        retObj[jss::first] = kFIRST_VERSION.print();
+        retObj[jss::good] = kGOOD_VERSION.print();
+        retObj[jss::last] = kLAST_VERSION.print();
     }
     else
     {
-        retObj[jss::first] = apiMinimumSupportedVersion.value;
-        retObj[jss::last] = betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
+        retObj[jss::first] = kAPI_MINIMUM_SUPPORTED_VERSION.value;
+        retObj[jss::last] = betaEnabled ? kAPI_BETA_VERSION : kAPI_MAXIMUM_SUPPORTED_VERSION;
     }
 }
 
@@ -96,11 +96,11 @@ setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
  * @return the api version number
  */
 inline unsigned int
-getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
+getAPIVersionNumber(json::Value const& jv, bool betaEnabled)
 {
-    static Json::Value const minVersion(RPC::apiMinimumSupportedVersion);
-    Json::Value const maxVersion(
-        betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
+    static json::Value const kMIN_VERSION(RPC::kAPI_MINIMUM_SUPPORTED_VERSION);
+    json::Value const maxVersion(
+        betaEnabled ? RPC::kAPI_BETA_VERSION : RPC::kAPI_MAXIMUM_SUPPORTED_VERSION);
 
     if (jv.isObject())
     {
@@ -109,52 +109,52 @@ getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
             auto const specifiedVersion = jv[jss::api_version];
             if (!specifiedVersion.isInt() && !specifiedVersion.isUInt())
             {
-                return RPC::apiInvalidVersion;
+                return RPC::kAPI_INVALID_VERSION;
             }
             auto const specifiedVersionInt = specifiedVersion.asInt();
-            if (specifiedVersionInt < minVersion || specifiedVersionInt > maxVersion)
+            if (specifiedVersionInt < kMIN_VERSION || specifiedVersionInt > maxVersion)
             {
-                return RPC::apiInvalidVersion;
+                return RPC::kAPI_INVALID_VERSION;
             }
             return specifiedVersionInt;
         }
     }
 
-    return RPC::apiVersionIfUnspecified;
+    return RPC::kAPI_VERSION_IF_UNSPECIFIED;
 }
 
 }  // namespace RPC
 
-template <unsigned minVer, unsigned maxVer, typename Fn, typename... Args>
+template <unsigned MinVer, unsigned MaxVer, typename Fn, typename... Args>
 void
 forApiVersions(Fn const& fn, Args&&... args)
-    requires                                        //
-    (maxVer >= minVer) &&                           //
-    (minVer >= RPC::apiMinimumSupportedVersion) &&  //
-    (RPC::apiMaximumValidVersion >= maxVer) && requires {
-        fn(std::integral_constant<unsigned int, minVer>{}, std::forward<Args>(args)...);
-        fn(std::integral_constant<unsigned int, maxVer>{}, std::forward<Args>(args)...);
+    requires                                            //
+    (MaxVer >= MinVer) &&                               //
+    (MinVer >= RPC::kAPI_MINIMUM_SUPPORTED_VERSION) &&  //
+    (RPC::kAPI_MAXIMUM_VALID_VERSION >= MaxVer) && requires {
+        fn(std::integral_constant<unsigned int, MinVer>{}, std::forward<Args>(args)...);
+        fn(std::integral_constant<unsigned int, MaxVer>{}, std::forward<Args>(args)...);
     }
 {
-    constexpr auto size = maxVer + 1 - minVer;
-    [&]<std::size_t... offset>(std::index_sequence<offset...>) {
+    constexpr auto kSIZE = MaxVer + 1 - MinVer;
+    [&]<std::size_t... Offset>(std::index_sequence<Offset...>) {
         // NOLINTBEGIN(bugprone-use-after-move)
         (((void)fn(
-             std::integral_constant<unsigned int, minVer + offset>{}, std::forward<Args>(args)...)),
+             std::integral_constant<unsigned int, MinVer + Offset>{}, std::forward<Args>(args)...)),
          ...);
         // NOLINTEND(bugprone-use-after-move)
-    }(std::make_index_sequence<size>{});
+    }(std::make_index_sequence<kSIZE>{});
 }
 
 template <typename Fn, typename... Args>
 void
 forAllApiVersions(Fn const& fn, Args&&... args)
     requires requires {
-        forApiVersions<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
+        forApiVersions<RPC::kAPI_MINIMUM_SUPPORTED_VERSION, RPC::kAPI_MAXIMUM_VALID_VERSION>(
             fn, std::forward<Args>(args)...);
     }
 {
-    forApiVersions<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
+    forApiVersions<RPC::kAPI_MINIMUM_SUPPORTED_VERSION, RPC::kAPI_MAXIMUM_VALID_VERSION>(
         fn, std::forward<Args>(args)...);
 }
 

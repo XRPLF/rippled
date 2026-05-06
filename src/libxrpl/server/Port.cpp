@@ -61,7 +61,7 @@ operator<<(std::ostream& os, Port const& p)
 
     if (!p.secure_gateway_nets_v4.empty() || !p.secure_gateway_nets_v6.empty())
     {
-        os << "secure_gateway nets:";
+        os << "secureGateway nets:";
         for (auto const& net : p.secure_gateway_nets_v4)
         {
             os << net.to_string();
@@ -106,10 +106,10 @@ populate(
         {
             // First, check to see if 0.0.0.0 or ipv6 equivalent was configured,
             // which means all IP addresses.
-            auto const addr = beast::IP::Endpoint::from_string_checked(ip);
+            auto const addr = beast::IP::Endpoint::fromStringChecked(ip);
             if (addr)
             {
-                if (is_unspecified(*addr))
+                if (isUnspecified(*addr))
                 {
                     nets4.push_back(boost::asio::ip::make_network_v4("0.0.0.0/0"));
                     nets6.push_back(boost::asio::ip::make_network_v6("::/0"));
@@ -121,8 +121,8 @@ populate(
                 // be unset). We need this to be a subnet, so append
                 // the number of network bits to make a subnet of 1,
                 // depending on type.
-                v4 = addr->is_v4();
-                std::string addressString = addr->to_string();
+                v4 = addr->isV4();
+                std::string addressString = addr->toString();
                 if (v4)
                 {
                     addressString += "/32";
@@ -191,7 +191,7 @@ populate(
 }
 
 void
-parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
+parsePort(ParsedPort& port, Section const& section, std::ostream& log)
 {
     port.name = section.name();
     {
@@ -206,7 +206,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
             {
                 log << "Invalid value '" << *optResult << "' for key 'ip' in [" << section.name()
                     << "]";
-                Rethrow();
+                rethrow();
             }
         }
     }
@@ -227,7 +227,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
             {
                 log << "Invalid value '" << *optResult << "' for key "
                     << "'port' in [" << section.name() << "]";
-                Rethrow();
+                rethrow();
             }
         }
     }
@@ -236,7 +236,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
         auto const optResult = section.get("protocol");
         if (optResult)
         {
-            for (auto const& s : beast::rfc2616::split_commas(optResult->begin(), optResult->end()))
+            for (auto const& s : beast::rfc2616::splitCommas(optResult->begin(), optResult->end()))
                 port.protocol.insert(s);
         }
     }
@@ -248,13 +248,13 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
         {
             try
             {
-                port.limit = safe_cast<int>(beast::lexicalCastThrow<std::uint16_t>(lim));
+                port.limit = safeCast<int>(beast::lexicalCastThrow<std::uint16_t>(lim));
             }
             catch (std::exception const&)
             {
                 log << "Invalid value '" << lim << "' for key "
                     << "'limit' in [" << section.name() << "]";
-                Rethrow();
+                rethrow();
             }
         }
     }
@@ -275,7 +275,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
             {
                 log << "Invalid value '" << *optResult << "' for key "
                     << "'send_queue_limit' in [" << section.name() << "]";
-                Rethrow();
+                rethrow();
             }
         }
         else
@@ -287,7 +287,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
 
     populate(section, "admin", log, port.admin_nets_v4, port.admin_nets_v6);
     populate(
-        section, "secure_gateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
+        section, "secureGateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
 
     set(port.user, "user", section);
     set(port.password, "password", section);
@@ -298,15 +298,15 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
     set(port.ssl_chain, "ssl_chain", section);
     set(port.ssl_ciphers, "ssl_ciphers", section);
 
-    port.pmd_options.server_enable = section.value_or("permessage_deflate", true);
-    port.pmd_options.client_max_window_bits = section.value_or("client_max_window_bits", 15);
-    port.pmd_options.server_max_window_bits = section.value_or("server_max_window_bits", 15);
+    port.pmd_options.server_enable = section.valueOr("permessage_deflate", true);
+    port.pmd_options.client_max_window_bits = section.valueOr("client_max_window_bits", 15);
+    port.pmd_options.server_max_window_bits = section.valueOr("server_max_window_bits", 15);
     port.pmd_options.client_no_context_takeover =
-        section.value_or("client_no_context_takeover", false);
+        section.valueOr("client_no_context_takeover", false);
     port.pmd_options.server_no_context_takeover =
-        section.value_or("server_no_context_takeover", false);
-    port.pmd_options.compLevel = section.value_or("compress_level", 8);
-    port.pmd_options.memLevel = section.value_or("memory_level", 4);
+        section.valueOr("server_no_context_takeover", false);
+    port.pmd_options.compLevel = section.valueOr("compress_level", 8);
+    port.pmd_options.memLevel = section.valueOr("memory_level", 4);
 }
 
 }  // namespace xrpl

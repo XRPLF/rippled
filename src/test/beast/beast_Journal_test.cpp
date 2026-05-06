@@ -5,42 +5,42 @@
 
 namespace beast {
 
-class Journal_test : public unit_test::suite
+class Journal_test : public unit_test::Suite
 {
 public:
     class TestSink : public Journal::Sink
     {
     private:
-        int m_count{0};
+        int count_{0};
 
     public:
-        TestSink() : Sink(severities::kWarning, false)
+        TestSink() : Sink(severities::KWarning, false)
         {
         }
 
         [[nodiscard]] int
         count() const
         {
-            return m_count;
+            return count_;
         }
 
         void
         reset()
         {
-            m_count = 0;
+            count_ = 0;
         }
 
         void
         write(severities::Severity level, std::string const&) override
         {
             if (level >= threshold())
-                ++m_count;
+                ++count_;
         }
 
         void
         writeAlways(severities::Severity level, std::string const&) override
         {
-            ++m_count;
+            ++count_;
         }
     };
 
@@ -50,7 +50,7 @@ public:
         TestSink sink;
 
         using namespace beast::severities;
-        sink.threshold(kInfo);
+        sink.threshold(KInfo);
 
         Journal const j(sink);
 
@@ -69,7 +69,7 @@ public:
 
         sink.reset();
 
-        sink.threshold(kDebug);
+        sink.threshold(KDebug);
 
         j.trace() << " ";
         BEAST_EXPECT(sink.count() == 0);

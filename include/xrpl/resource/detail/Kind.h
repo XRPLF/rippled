@@ -10,6 +10,6 @@ namespace xrpl::Resource {
  *                subjected to administrative restrictions, such as
  *                use of some RPC commands like "stop".
  */
-enum class Kind { kindInbound, kindOutbound, kindUnlimited };
+enum class Kind { Inbound, Outbound, Unlimited };
 
 }  // namespace xrpl::Resource

@@ -7,7 +7,7 @@ namespace xrpl {
 class SponsorshipTransfer : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit SponsorshipTransfer(ApplyContext& ctx) : Transactor(ctx)
     {

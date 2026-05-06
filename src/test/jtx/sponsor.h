@@ -8,42 +8,42 @@
 
 namespace xrpl::test::jtx::sponsor {
 
-Json::Value
+json::Value
 set(jtx::Account const& account,
     std::uint32_t flags,
     std::optional<std::uint32_t> reserveCount = std::nullopt,
     std::optional<STAmount> feeAmount = std::nullopt,
     std::optional<STAmount> maxFee = std::nullopt);
 
-Json::Value
+json::Value
 set_fee(
     jtx::Account const& account,
     std::uint32_t flags,
     STAmount feeAmount,
     std::optional<STAmount> maxFee = std::nullopt);
 
-Json::Value
+json::Value
 set_reserve(jtx::Account const& account, std::uint32_t flags, std::uint32_t reserveCount);
 
-Json::Value
+json::Value
 set_max_fee(jtx::Account const& account, std::uint32_t flags, STAmount maxFee);
 
-Json::Value
+json::Value
 del(jtx::Account const& account);
 
-Json::Value
+json::Value
 transfer(
     jtx::Account const& account,
     uint32_t flags,
     std::optional<uint256> const& index = std::nullopt);
 
-struct counterpartySponsor
+struct CounterpartySponsor
 {
 private:
     jtx::Account sponsor_;
 
 public:
-    counterpartySponsor(jtx::Account account) : sponsor_(std::move(account))
+    CounterpartySponsor(jtx::Account account) : sponsor_(std::move(account))
     {
     }
 
@@ -51,13 +51,13 @@ public:
     operator()(jtx::Env&, jtx::JTx& jtx) const;
 };
 
-struct sponseeAcc
+struct SponseeAcc
 {
 private:
     jtx::Account sponsee_;
 
 public:
-    sponseeAcc(jtx::Account account) : sponsee_(std::move(account))
+    SponseeAcc(jtx::Account account) : sponsee_(std::move(account))
     {
     }
 
@@ -65,14 +65,14 @@ public:
     operator()(jtx::Env&, jtx::JTx& jtx) const;
 };
 
-struct as
+struct As
 {
 private:
     jtx::Account sponsor_;
-    std::uint32_t flags;
+    std::uint32_t flags_;
 
 public:
-    as(jtx::Account account, std::uint32_t flags = 0) : sponsor_(std::move(account)), flags(flags)
+    As(jtx::Account account, std::uint32_t flags = 0) : sponsor_(std::move(account)), flags_(flags)
     {
     }
 
@@ -80,7 +80,7 @@ public:
     operator()(jtx::Env&, jtx::JTx& jtx) const;
 };
 
-Json::Value
+json::Value
 ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
 
 }  // namespace xrpl::test::jtx::sponsor

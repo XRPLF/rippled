@@ -7,7 +7,7 @@
 namespace xrpl::test::jtx::ledgerStateFix {
 
 /** Repair the links in an NFToken directory. */
-Json::Value
+json::Value
 nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
 
 }  // namespace xrpl::test::jtx::ledgerStateFix

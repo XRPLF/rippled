@@ -8,6 +8,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -20,18 +21,18 @@
 
 namespace xrpl::test {
 
-class DepositAuthorized_test : public beast::unit_test::suite
+class DepositAuthorized_test : public beast::unit_test::Suite
 {
 public:
     // Helper function that builds arguments for a deposit_authorized command.
-    static Json::Value
+    static json::Value
     depositAuthArgs(
         jtx::Account const& source,
         jtx::Account const& dest,
         std::string const& ledger = "",
         std::vector<std::string> const& credentials = {})
     {
-        Json::Value args{Json::objectValue};
+        json::Value args{json::ObjectValue};
         args[jss::source_account] = source.human();
         args[jss::destination_account] = dest.human();
         if (!ledger.empty())
@@ -39,7 +40,7 @@ public:
 
         if (!credentials.empty())
         {
-            auto& arr(args[jss::credentials] = Json::arrayValue);
+            auto& arr(args[jss::credentials] = json::ArrayValue);
             for (auto const& s : credentials)
                 arr.append(s);
         }
@@ -50,9 +51,9 @@ public:
     // Helper function that verifies a deposit_authorized request was
     // successful and returned the expected value.
     void
-    validateDepositAuthResult(Json::Value const& result, bool authorized)
+    validateDepositAuthResult(json::Value const& result, bool authorized)
     {
-        Json::Value const& results{result[jss::result]};
+        json::Value const& results{result[jss::result]};
         BEAST_EXPECT(results[jss::deposit_authorized] == authorized);
         BEAST_EXPECT(results[jss::status] == jss::success);
     }
@@ -154,7 +155,7 @@ public:
 
         // Lambda that checks the (error) result of deposit_authorized.
         auto verifyErr = [this](
-                             Json::Value const& result, char const* error, char const* errorMsg) {
+                             json::Value const& result, char const* error, char const* errorMsg) {
             BEAST_EXPECT(result[jss::result][jss::status] == jss::error);
             BEAST_EXPECT(result[jss::result][jss::error] == error);
             BEAST_EXPECT(result[jss::result][jss::error_message] == errorMsg);
@@ -163,94 +164,94 @@ public:
         Env env(*this);
         {
             // Missing source_account field.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            json::Value args{depositAuthArgs(alice, becky)};
             args.removeMember(jss::source_account);
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "invalidParams", "Missing field 'source_account'.");
         }
         {
             // Non-string source_account field.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            json::Value args{depositAuthArgs(alice, becky)};
             args[jss::source_account] = 7.3;
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "invalidParams", "Invalid field 'source_account', not a string.");
         }
         {
             // Corrupt source_account field.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            json::Value args{depositAuthArgs(alice, becky)};
             args[jss::source_account] = "rG1QQv2nh2gr7RCZ!P8YYcBUKCCN633jCn";
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "actMalformed", "Account malformed.");
         }
         {
             // Missing destination_account field.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            json::Value args{depositAuthArgs(alice, becky)};
             args.removeMember(jss::destination_account);
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "invalidParams", "Missing field 'destination_account'.");
         }
         {
             // Non-string destination_account field.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            json::Value args{depositAuthArgs(alice, becky)};
             args[jss::destination_account] = 7.3;
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(
                 result, "invalidParams", "Invalid field 'destination_account', not a string.");
         }
         {
             // Corrupt destination_account field.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            json::Value args{depositAuthArgs(alice, becky)};
             args[jss::destination_account] = "rP6P9ypfAmc!pw8SZHNwM4nvZHFXDraQas";
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "actMalformed", "Account malformed.");
         }
         {
             // Request an invalid ledger.
-            Json::Value const args{depositAuthArgs(alice, becky, "-1")};
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const args{depositAuthArgs(alice, becky, "-1")};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(
                 result, "invalidParams", "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Request a ledger that doesn't exist yet as a string.
-            Json::Value const args{depositAuthArgs(alice, becky, "17")};
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const args{depositAuthArgs(alice, becky, "17")};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "lgrNotFound", "ledgerNotFound");
         }
         {
             // Request a ledger that doesn't exist yet.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            json::Value args{depositAuthArgs(alice, becky)};
             args[jss::ledger_index] = 17;
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "lgrNotFound", "ledgerNotFound");
         }
         {
             // alice is not yet funded.
-            Json::Value const args{depositAuthArgs(alice, becky)};
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const args{depositAuthArgs(alice, becky)};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "srcActNotFound", "Source account not found.");
         }
         env.fund(XRP(1000), alice);
         env.close();
         {
             // becky is not yet funded.
-            Json::Value const args{depositAuthArgs(alice, becky)};
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const args{depositAuthArgs(alice, becky)};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "dstActNotFound", "Destination account not found.");
         }
         env.fund(XRP(1000), becky);
         env.close();
         {
             // Once becky is funded try it again and see it succeed.
-            Json::Value const args{depositAuthArgs(alice, becky)};
-            Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
+            json::Value const args{depositAuthArgs(alice, becky)};
+            json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             validateDepositAuthResult(result, true);
         }
     }
 
     void
     checkCredentialsResponse(
-        Json::Value const& result,
+        json::Value const& result,
         jtx::Account const& src,
         jtx::Account const& dst,
         bool authorized,
@@ -330,7 +331,7 @@ public:
             testcase("deposit_authorized with credentials failure: empty array.");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = Json::arrayValue;
+            args[jss::credentials] = json::ArrayValue;
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
             checkCredentialsResponse(jv[jss::result], alice, becky, false, {}, "invalidParams");
@@ -342,7 +343,7 @@ public:
                 "credentials");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = Json::arrayValue;
+            args[jss::credentials] = json::ArrayValue;
             args[jss::credentials].append(1);
             args[jss::credentials].append(3);
 
@@ -356,7 +357,7 @@ public:
                 "credentials");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = Json::arrayValue;
+            args[jss::credentials] = json::ArrayValue;
             args[jss::credentials].append("hello world");
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
@@ -414,7 +415,7 @@ public:
         }
 
         {
-            static std::vector<std::string> const credIds = {
+            static std::vector<std::string> const kCRED_IDS = {
                 "18004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "28004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "38004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
@@ -425,15 +426,15 @@ public:
                 "88004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "98004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
             };
-            assert(credIds.size() > maxCredentialsArraySize);
+            assert(kCRED_IDS.size() > kMAX_CREDENTIALS_ARRAY_SIZE);
 
             testcase("deposit_authorized too long credentials");
             auto const jv = env.rpc(
                 "json",
                 "deposit_authorized",
-                depositAuthArgs(alice, becky, "validated", credIds).toStyledString());
+                depositAuthArgs(alice, becky, "validated", kCRED_IDS).toStyledString());
             checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, credIds, "invalidParams");
+                jv[jss::result], alice, becky, false, kCRED_IDS, "invalidParams");
         }
 
         {

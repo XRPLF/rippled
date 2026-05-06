@@ -49,7 +49,7 @@ class CaptureLogs : public Logs
     };
 
 public:
-    explicit CaptureLogs(std::string* pResult) : Logs(beast::severities::kInfo), pResult_(pResult)
+    explicit CaptureLogs(std::string* pResult) : Logs(beast::severities::KInfo), pResult_(pResult)
     {
     }
 

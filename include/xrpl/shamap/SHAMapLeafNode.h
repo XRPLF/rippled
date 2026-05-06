@@ -37,7 +37,7 @@ public:
     }
 
     void
-    invariants(bool is_root = false) const final;
+    invariants(bool isRoot = false) const final;
 
 public:
     boost::intrusive_ptr<SHAMapItem const> const&

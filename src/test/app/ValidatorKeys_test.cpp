@@ -22,15 +22,15 @@
 
 namespace xrpl::test {
 
-class ValidatorKeys_test : public beast::unit_test::suite
+class ValidatorKeys_test : public beast::unit_test::Suite
 {
     // Used with [validation_seed]
-    std::string const seed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
+    std::string const seed_ = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
     // Used with [validation_token]
-    std::string const tokenSecretStr = "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi";
+    std::string const tokenSecretStr_ = "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi";
 
-    std::vector<std::string> const tokenBlob = {
+    std::vector<std::string> const tokenBlob_ = {
         "    eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n",
         " \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl     \n",
         "\tc3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE\n",
@@ -41,7 +41,7 @@ class ValidatorKeys_test : public beast::unit_test::suite
         "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n",
     };
 
-    std::string const tokenManifest =
+    std::string const tokenManifest_ =
         "JAAAAAFxIe1FtwmimvGtH2iCcMJqC9gVFKilGfw1/vCxHXXLplc2GnMhAkE1agqXxBwD"
         "wDbID6OMSYuM0FDAlpAgNk8SKFn7MO2fdkcwRQIhAOngu9sAKqXYouJ+l2V0W+sAOkVB"
         "+ZRS6PShlJAfUsXfAiBsVJGesaadOJc/aAZokS1vymGmVrlHPKWX3Yywu6in8HASQKPu"
@@ -49,7 +49,7 @@ class ValidatorKeys_test : public beast::unit_test::suite
         "2AiTzSCjIzditQ8=";
 
     // Manifest does not match private key
-    std::vector<std::string> const invalidTokenBlob = {
+    std::vector<std::string> const invalidTokenBlob_ = {
         "eyJtYW5pZmVzdCI6IkpBQUFBQVZ4SWUyOVVBdzViZFJudHJ1elVkREk4aDNGV1JWZl\n",
         "k3SXVIaUlKQUhJd3MxdzZzM01oQWtsa1VXQWR2RnFRVGRlSEpvS1pNY0hlS0RzOExo\n",
         "b3d3bDlHOEdkVGNJbmFka1l3UkFJZ0h2Q01lQU1aSzlqQnV2aFhlaFRLRzVDQ3BBR1\n",
@@ -66,23 +66,24 @@ public:
     {
         // We're only using Env for its Journal.  That Journal gives better
         // coverage in unit tests.
-        test::jtx::Env env{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
+        test::jtx::Env env{*this, test::jtx::envconfig(), nullptr, beast::severities::KDisabled};
         beast::Journal const journal{env.app().getJournal("ValidatorKeys_test")};
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
-        PublicKey const seedPublicKey = derivePublicKey(KeyType::secp256k1, seedSecretKey);
+            generateSecretKey(KeyType::Secp256k1, *parseBase58<Seed>(seed_));
+        PublicKey const seedPublicKey = derivePublicKey(KeyType::Secp256k1, seedSecretKey);
         NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const tokenSecretKey = *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr);
+        auto const tokenSecretKey =
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr_);
 
-        auto const tokenPublicKey = derivePublicKey(KeyType::secp256k1, tokenSecretKey);
+        auto const tokenPublicKey = derivePublicKey(KeyType::Secp256k1, tokenSecretKey);
 
-        auto const m = deserializeManifest(base64_decode(tokenManifest));
+        auto const m = deserializeManifest(base64Decode(tokenManifest_));
         BEAST_EXPECT(m);
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -99,7 +100,7 @@ public:
         {
             // validation seed section -> empty manifest and valid seeds
             Config c;
-            c.section(SECTION_VALIDATION_SEED).append(seed);
+            c.section(SECTION_VALIDATION_SEED).append(seed_);
 
             ValidatorKeys k{c, journal};
             if (BEAST_EXPECT(k.keys); k.keys.has_value())
@@ -126,7 +127,7 @@ public:
         {
             // validator token
             Config c;
-            c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
+            c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob_);
             ValidatorKeys k{c, journal};
 
             if (BEAST_EXPECT(k.keys); k.keys.has_value())
@@ -135,7 +136,7 @@ public:
                 BEAST_EXPECT(test::equal(k.keys->secretKey, tokenSecretKey));
             }
             BEAST_EXPECT(k.nodeID == tokenNodeID);
-            BEAST_EXPECT(k.manifest == tokenManifest);
+            BEAST_EXPECT(k.manifest == tokenManifest_);
             BEAST_EXPECT(!k.configInvalid());
         }
         {
@@ -151,8 +152,8 @@ public:
         {
             // Cannot specify both
             Config c;
-            c.section(SECTION_VALIDATION_SEED).append(seed);
-            c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
+            c.section(SECTION_VALIDATION_SEED).append(seed_);
+            c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob_);
             ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
@@ -163,7 +164,7 @@ public:
         {
             // Token manifest and private key must match
             Config c;
-            c.section(SECTION_VALIDATOR_TOKEN).append(invalidTokenBlob);
+            c.section(SECTION_VALIDATOR_TOKEN).append(invalidTokenBlob_);
             ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());

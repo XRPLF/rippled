@@ -58,11 +58,11 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     if ((flags & tfDeleteObject) != 0u)
     {
         // can not combine with any modification flags when deleting
-        constexpr std::uint32_t modifyFlags = tfSponsorshipSetRequireSignForFee |
+        constexpr std::uint32_t kMODIFY_FLAGS = tfSponsorshipSetRequireSignForFee |
             tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForFee |
             tfSponsorshipClearRequireSignForReserve;
 
-        if ((flags & modifyFlags) != 0u)
+        if ((flags & kMODIFY_FLAGS) != 0u)
             return temINVALID_FLAG;
 
         // can not include these fields when deleting
@@ -298,14 +298,14 @@ SponsorshipSet::doApply()
     // Update
     if (feeAmount)
     {
-        auto const currentFeeAmount = (*sponsorObjSle)[~sfFeeAmount].value_or(XRPAmount(0));
+        auto const currentFeeAmount = (*sponsorObjSle)[~sfFeeAmount].valueOr(XRPAmount(0));
         auto feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
 
-        if (feeAmountDelta > beast::zero && feeAmountDelta > (*sponsorAccSle)[sfBalance])
+        if (feeAmountDelta > beast::kZERO && feeAmountDelta > (*sponsorAccSle)[sfBalance])
             return tecUNFUNDED;
 
         // transfer feeAmount to ledger entry
-        if (feeAmountDelta != beast::zero)
+        if (feeAmountDelta != beast::kZERO)
         {
             (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
 

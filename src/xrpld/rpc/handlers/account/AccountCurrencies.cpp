@@ -18,25 +18,25 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doAccountCurrencies(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
     if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
-        return RPC::missing_field_error(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     std::string strIdent;
     if (params.isMember(jss::account))
     {
         if (!params[jss::account].isString())
-            return RPC::invalid_field_error(jss::account);
+            return RPC::invalidFieldError(jss::account);
         strIdent = params[jss::account].asString();
     }
     else if (params.isMember(jss::ident))
     {
         if (!params[jss::ident].isString())
-            return RPC::invalid_field_error(jss::ident);
+            return RPC::invalidFieldError(jss::ident);
         strIdent = params[jss::ident].asString();
     }
 
@@ -50,13 +50,13 @@ doAccountCurrencies(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
+        RPC::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
-        return rpcError(rpcACT_NOT_FOUND);
+        return rpcError(RpcActNotFound);
 
     std::set<Currency> send, receive;
     for (auto const& rspEntry : RPCTrustLine::getItems(accountID, *ledger))
@@ -72,11 +72,11 @@ doAccountCurrencies(RPC::JsonContext& context)
     send.erase(badCurrency());
     receive.erase(badCurrency());
 
-    Json::Value& sendCurrencies = (result[jss::send_currencies] = Json::arrayValue);
+    json::Value& sendCurrencies = (result[jss::send_currencies] = json::ArrayValue);
     for (auto const& c : send)
         sendCurrencies.append(to_string(c));
 
-    Json::Value& recvCurrencies = (result[jss::receive_currencies] = Json::arrayValue);
+    json::Value& recvCurrencies = (result[jss::receive_currencies] = json::ArrayValue);
     for (auto const& c : receive)
         recvCurrencies.append(to_string(c));
 

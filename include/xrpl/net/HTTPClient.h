@@ -20,7 +20,7 @@ class HTTPClient
 public:
     explicit HTTPClient() = default;
 
-    static constexpr auto maxClientHeaderBytes = kilobytes(32);
+    static constexpr auto kMAX_CLIENT_HEADER_BYTES = kilobytes(32);
 
     static void
     initializeSSLContext(
@@ -43,7 +43,7 @@ public:
 
     static void
     get(bool bSSL,
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         std::deque<std::string> deqSites,
         unsigned short const port,
         std::string const& strPath,
@@ -57,7 +57,7 @@ public:
 
     static void
     get(bool bSSL,
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         std::string strSite,
         unsigned short const port,
         std::string const& strPath,
@@ -72,7 +72,7 @@ public:
     static void
     request(
         bool bSSL,
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         std::string strSite,
         unsigned short const port,
         std::function<void(boost::asio::streambuf& sb, std::string const& strHost)> build,

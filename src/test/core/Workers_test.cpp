@@ -54,16 +54,16 @@ class PerfLogTest : public PerfLog
     {
     }
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     countersJson() const override
     {
-        return Json::Value();
+        return json::Value();
     }
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     currentJson() const override
     {
-        return Json::Value();
+        return json::Value();
     }
 
     void
@@ -81,7 +81,7 @@ class PerfLogTest : public PerfLog
 
 //------------------------------------------------------------------------------
 
-class Workers_test : public beast::unit_test::suite
+class Workers_test : public beast::unit_test::Suite
 {
 public:
     struct TestCallback : Workers::Callback

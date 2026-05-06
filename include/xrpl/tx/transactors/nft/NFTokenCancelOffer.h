@@ -7,7 +7,7 @@ namespace xrpl {
 class NFTokenCancelOffer : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit NFTokenCancelOffer(ApplyContext& ctx) : Transactor(ctx)
     {

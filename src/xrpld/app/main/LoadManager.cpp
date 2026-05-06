@@ -111,16 +111,16 @@ LoadManager::run()
         using namespace std::chrono;
         auto const timeSpentStalled = duration_cast<seconds>(steady_clock::now() - lastHeartbeat);
 
-        constexpr auto reportingIntervalSeconds = 10s;
-        constexpr auto stallFatalLogMessageTimeLimit = 90s;
-        constexpr auto stallLogicErrorTimeLimit = 600s;
+        constexpr auto kREPORTING_INTERVAL_SECONDS = 10s;
+        constexpr auto kSTALL_FATAL_LOG_MESSAGE_TIME_LIMIT = 90s;
+        constexpr auto kSTALL_LOGIC_ERROR_TIME_LIMIT = 600s;
 
-        if (armed && (timeSpentStalled >= reportingIntervalSeconds))
+        if (armed && (timeSpentStalled >= kREPORTING_INTERVAL_SECONDS))
         {
             // Report the stalled condition every reportingIntervalSeconds
-            if ((timeSpentStalled % reportingIntervalSeconds) == 0s)
+            if ((timeSpentStalled % kREPORTING_INTERVAL_SECONDS) == 0s)
             {
-                if (timeSpentStalled < stallFatalLogMessageTimeLimit)
+                if (timeSpentStalled < kSTALL_FATAL_LOG_MESSAGE_TIME_LIMIT)
                 {
                     JLOG(journal_.warn())
                         << "Server stalled for " << timeSpentStalled.count() << " seconds.";
@@ -141,12 +141,12 @@ LoadManager::run()
             // If we go over the stallLogicErrorTimeLimit spent stalled, it
             // means that the stall resolution code has failed, which qualifies
             // as a LogicError
-            if (timeSpentStalled >= stallLogicErrorTimeLimit)
+            if (timeSpentStalled >= kSTALL_LOGIC_ERROR_TIME_LIMIT)
             {
                 JLOG(journal_.fatal()) << "LogicError: Fatal server stall detected. Stalled time: "
                                        << timeSpentStalled.count() << "s";
                 JLOG(journal_.fatal()) << "JobQueue: " << app_.getJobQueue().getJson(0);
-                LogicError("Fatal server stall detected");
+                logicError("Fatal server stall detected");
             }
         }
     }
@@ -174,7 +174,7 @@ LoadManager::run()
 //------------------------------------------------------------------------------
 
 std::unique_ptr<LoadManager>
-make_LoadManager(Application& app, beast::Journal journal)
+makeLoadManager(Application& app, beast::Journal journal)
 {
     return std::unique_ptr<LoadManager>{new LoadManager{app, journal}};
 }

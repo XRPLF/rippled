@@ -7,7 +7,7 @@ namespace xrpl {
 class LoanBrokerSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit LoanBrokerSet(ApplyContext& ctx) : Transactor(ctx)
     {

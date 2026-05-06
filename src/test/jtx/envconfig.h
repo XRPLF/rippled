@@ -9,12 +9,12 @@ namespace xrpl::test {
 #define PORT_RPC "port_rpc"
 #define PORT_PEER "port_peer"
 
-extern std::atomic<bool> envUseIPv4;
+extern std::atomic<bool> gEnvUseIPv4;
 
 inline char const*
 getEnvLocalhostAddr()
 {
-    return envUseIPv4 ? "127.0.0.1" : "::1";
+    return gEnvUseIPv4 ? "127.0.0.1" : "::1";
 }
 
 /// @brief initializes a config object for use with jtx::Env
@@ -59,20 +59,20 @@ envconfig(F&& modfunc, Args&&... args)
 /// @brief adjust config so no admin ports are enabled
 ///
 /// this is intended for use with envconfig, as in
-/// envconfig(no_admin)
+/// envconfig(noAdmin)
 ///
 /// @param cfg config instance to be modified
 ///
 /// @return unique_ptr to Config instance
-std::unique_ptr<Config> no_admin(std::unique_ptr<Config>);
+std::unique_ptr<Config> noAdmin(std::unique_ptr<Config>);
 
-std::unique_ptr<Config> secure_gateway(std::unique_ptr<Config>);
+std::unique_ptr<Config> secureGateway(std::unique_ptr<Config>);
 
-std::unique_ptr<Config> admin_localnet(std::unique_ptr<Config>);
+std::unique_ptr<Config> adminLocalnet(std::unique_ptr<Config>);
 
-std::unique_ptr<Config> secure_gateway_localnet(std::unique_ptr<Config>);
+std::unique_ptr<Config> secureGatewayLocalnet(std::unique_ptr<Config>);
 
-std::unique_ptr<Config> single_thread_io(std::unique_ptr<Config>);
+std::unique_ptr<Config> singleThreadIo(std::unique_ptr<Config>);
 
 /// @brief adjust configuration with params needed to be a validator
 ///
@@ -96,7 +96,7 @@ validator(std::unique_ptr<Config>, std::string const&);
 /// @param cfg config instance to be modified
 std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
 
-/// @brief add a grpc address, port and secure_gateway to config
+/// @brief add a grpc address, port and secureGateway to config
 ///
 /// This is intended for use with envconfig, for tests that require a grpc
 /// server. If this function is not called, grpc server will not start

@@ -30,12 +30,12 @@
 
 namespace xrpl::tests {
 
-class FetchPack_test : public beast::unit_test::suite
+class FetchPack_test : public beast::unit_test::Suite
 {
 public:
     // Need to be named before converting
     // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { tableItems = 100, tableItemsExtra = 20 };
+    enum { TableItems = 100, TableItemsExtra = 20 };
 
     using Map = hash_map<SHAMapHash, Blob>;
     using Table = SHAMap;
@@ -52,7 +52,7 @@ public:
 
     struct TestFilter : SHAMapSyncFilter
     {
-        TestFilter(Map& map, beast::Journal journal) : mMap(map), mJournal(journal)
+        TestFilter(Map& map, beast::Journal journal) : map(map), journal(journal)
         {
         }
 
@@ -69,43 +69,43 @@ public:
         [[nodiscard]] std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
-            Map::iterator const it = mMap.find(nodeHash);
-            if (it == mMap.end())
+            Map::iterator const it = map.find(nodeHash);
+            if (it == map.end())
             {
-                JLOG(mJournal.fatal()) << "Test filter missing node";
+                JLOG(journal.fatal()) << "Test filter missing node";
                 return std::nullopt;
             }
             return it->second;
         }
 
-        Map& mMap;
-        beast::Journal mJournal;
+        Map& map;
+        beast::Journal journal;
     };
 
     static boost::intrusive_ptr<Item>
-    make_random_item(beast::xor_shift_engine& r)
+    makeRandomItemMember(beast::xor_shift_engine& r)
     {
         Serializer s;
         for (int d = 0; d < 3; ++d)
-            s.add32(xrpl::rand_int<std::uint32_t>(r));
-        return make_shamapitem(s.getSHA512Half(), s.slice());
+            s.add32(xrpl::randInt<std::uint32_t>(r));
+        return makeShamapitem(s.getSHA512Half(), s.slice());
     }
 
     static void
-    add_random_items(std::size_t n, Table& t, beast::xor_shift_engine& r)
+    addRandomItems(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
         while ((n--) != 0u)
         {
-            auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
+            auto const result(t.addItem(SHAMapNodeType::TnAccountState, makeRandomItemMember(r)));
             assert(result);
             (void)result;
         }
     }
 
     void
-    on_fetch(Map& map, SHAMapHash const& hash, Blob const& blob)
+    onFetch(Map& map, SHAMapHash const& hash, Blob const& blob)
     {
-        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.as_uint256());
+        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.asUint256());
         map.emplace(hash, blob);
     }
 
@@ -121,11 +121,11 @@ public:
         pass();
 
         //         beast::Random r;
-        //         add_random_items (tableItems, *t1, r);
+        //         add_random_items_ (tableItems, *t1, r);
         //         std::shared_ptr <Table> t2 (t1->snapShot (true));
         //
-        //         add_random_items (tableItemsExtra, *t1, r);
-        //         add_random_items (tableItemsExtra, *t2, r);
+        //         add_random_items_ (tableItemsExtra, *t1, r);
+        //         add_random_items_ (tableItemsExtra, *t2, r);
 
         // turn t1 into t2
         //         Map map;

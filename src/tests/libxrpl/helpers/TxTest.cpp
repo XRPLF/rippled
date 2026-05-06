@@ -41,7 +41,7 @@ namespace xrpl::test {
 FeatureBitset
 allFeatures()
 {
-    static FeatureBitset const features = [] {
+    static FeatureBitset const kFEATURES = [] {
         auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -52,7 +52,7 @@ allFeatures()
         }
         return FeatureBitset(feats);
     }();
-    return features;
+    return kFEATURES;
 }
 
 //------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
 
     // Create a genesis ledger as the base
     closedLedger_ = std::make_shared<Ledger>(
-        create_genesis,
+        kCREATE_GENESIS,
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         *rules_,
         fees,
@@ -85,7 +85,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
 
     // Create an open view on top of the genesis ledger
     openLedger_ =
-        std::make_shared<OpenView>(open_ledger, closedLedger_.get(), *rules_, closedLedger_);
+        std::make_shared<OpenView>(kOPEN_LEDGER, closedLedger_.get(), *rules_, closedLedger_);
 }
 
 bool
@@ -105,7 +105,7 @@ TxTest::getRules() const
 [[nodiscard]] TxResult
 TxTest::submit(std::shared_ptr<STTx const> stx)
 {
-    auto result = apply(registry_, *openLedger_, *stx, tapNONE, registry_.getJournal("apply"));
+    auto result = apply(registry_, *openLedger_, *stx, TapNone, registry_.getJournal("apply"));
 
     // Track successfully applied transactions for canonical reordering on close
     // We make a copy since the TransactionBase doesn't own the STTx
@@ -196,7 +196,7 @@ TxTest::close()
         OpenView accum(&*newLedger);
         for (auto const& [key, tx] : txSet)
         {
-            auto result = apply(registry_, accum, *tx, tapNONE, registry_.getJournal("apply"));
+            auto result = apply(registry_, accum, *tx, TapNone, registry_.getJournal("apply"));
             if (!result.applied)
             {
                 throw std::runtime_error("TxTest::close: failed to apply transaction");
@@ -213,7 +213,7 @@ TxTest::close()
 
     openLedger_ =
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        std::make_shared<OpenView>(open_ledger, closedLedger_.get(), *rules_, closedLedger_);
+        std::make_shared<OpenView>(kOPEN_LEDGER, closedLedger_.get(), *rules_, closedLedger_);
 }
 
 void

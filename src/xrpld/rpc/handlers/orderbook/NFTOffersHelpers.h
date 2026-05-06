@@ -20,9 +20,9 @@ inline void
 appendNftOfferJson(
     Application const& app,
     std::shared_ptr<SLE const> const& offer,
-    Json::Value& offers)
+    json::Value& offers)
 {
-    Json::Value& obj(offers.append(Json::objectValue));
+    json::Value& obj(offers.append(json::ObjectValue));
 
     obj[jss::nft_offer_index] = to_string(offer->key());
     obj[jss::flags] = (*offer)[sfFlags];
@@ -44,11 +44,11 @@ appendNftOfferJson(
 //   limit: integer                 // optional
 //   marker: opaque                 // optional, resume previous query
 // }
-inline Json::Value
+inline json::Value
 enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const& directory)
 {
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::nftOffers, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kNFT_OFFERS, context))
         return *err;
 
     std::shared_ptr<ReadView const> ledger;
@@ -57,12 +57,12 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
         return result;
 
     if (!ledger->exists(directory))
-        return rpcError(rpcOBJECT_NOT_FOUND);
+        return rpcError(RpcObjectNotFound);
 
-    Json::Value result;
+    json::Value result;
     result[jss::nft_id] = to_string(nftId);
 
-    Json::Value& jsonOffers(result[jss::offers] = Json::arrayValue);
+    json::Value& jsonOffers(result[jss::offers] = json::ArrayValue);
 
     std::vector<std::shared_ptr<SLE const>> offers;
     unsigned int reserve(limit);
@@ -73,18 +73,18 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     {
         // We have a start point. Use limit - 1 from the result and use the
         // very last one for the resume.
-        Json::Value const& marker(context.params[jss::marker]);
+        json::Value const& marker(context.params[jss::marker]);
 
         if (!marker.isString())
-            return RPC::expected_field_error(jss::marker, "string");
+            return RPC::expectedFieldError(jss::marker, "string");
 
         if (!startAfter.parseHex(marker.asString()))
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         auto const sle = ledger->read(keylet::nftoffer(startAfter));
 
         if (!sle || nftId != sle->getFieldH256(sfNFTokenID))
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         startHint = sle->getFieldU64(sfNFTokenOfferNode);
         appendNftOfferJson(context.app, sle, jsonOffers);
@@ -112,7 +112,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
                 return false;
             }))
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
     }
 
     if (offers.size() == reserve)
@@ -125,7 +125,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     for (auto const& offer : offers)
         appendNftOfferJson(context.app, offer, jsonOffers);
 
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
     return result;
 }
 

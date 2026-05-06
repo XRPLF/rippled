@@ -5,14 +5,14 @@
 
 namespace xrpl {
 
-constexpr size_t xbridgeMaxAccountCreateClaims = 128;
+constexpr size_t kXBRIDGE_MAX_ACCOUNT_CREATE_CLAIMS = 128;
 
 // Attach a new bridge to a door account. Once this is done, the cross-chain
 // transfer transactions may be used to transfer funds from this account.
 class XChainCreateBridge : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit XChainCreateBridge(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -45,7 +45,7 @@ public:
 class BridgeModify : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit BridgeModify(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -95,7 +95,7 @@ class XChainClaim : public Transactor
 {
 public:
     // Blocker since we cannot accurately calculate the consequences
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Blocker};
 
     explicit XChainClaim(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -133,7 +133,7 @@ public:
 class XChainCommit : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Custom};
 
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
@@ -179,7 +179,7 @@ public:
 class XChainCreateClaimID : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit XChainCreateClaimID(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -222,7 +222,7 @@ class XChainAddClaimAttestation : public Transactor
 {
 public:
     // Blocker since we cannot accurately calculate the consequences
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Blocker};
 
     explicit XChainAddClaimAttestation(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -256,7 +256,7 @@ class XChainAddAccountCreateAttestation : public Transactor
 {
 public:
     // Blocker since we cannot accurately calculate the consequences
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Blocker};
 
     explicit XChainAddAccountCreateAttestation(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -314,7 +314,7 @@ public:
 class XChainCreateAccountCommit : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit XChainCreateAccountCommit(ApplyContext& ctx) : Transactor(ctx)
     {

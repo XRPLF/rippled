@@ -15,7 +15,7 @@
 
 namespace xrpl::test {
 
-class LendingHelpers_test : public beast::unit_test::suite
+class LendingHelpers_test : public beast::unit_test::Suite
 {
     void
     testComputeRaisedRate()
@@ -249,7 +249,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace xrpl::detail;
 
         Account const issuer{"issuer"};
-        PrettyAsset const IOU = issuer["IOU"];
+        PrettyAsset const iou = issuer["IOU"];
         int32_t const loanScale = 1;
         auto const overpayment = Number{1'000};
         auto const overpaymentInterestRate = TenthBips32{10'000};  // 10%
@@ -263,7 +263,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const expectedPrincipalPortion = Number{400};          // 1,000 - 100 - 500
 
         auto const components = xrpl::detail::computeOverpaymentComponents(
-            IOU,
+            iou,
             loanScale,
             overpayment,
             overpaymentInterestRate,
@@ -304,7 +304,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         };
 
         Account const issuer{"issuer"};
-        PrettyAsset const IOU = issuer["IOU"];
+        PrettyAsset const iou = issuer["IOU"];
         std::int32_t const loanScale = 1;
 
         auto const testCases = std::vector<TestCase>{
@@ -330,7 +330,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             testcase("computeInterestAndFeeParts: " + tc.name);
 
             auto const [computedInterestPart, computedFeePart] =
-                computeInterestAndFeeParts(IOU, tc.interest, tc.managementFeeRate, loanScale);
+                computeInterestAndFeeParts(iou, tc.interest, tc.managementFeeRate, loanScale);
             BEAST_EXPECTS(
                 computedInterestPart == tc.expectedInterestPart,
                 "Interest part mismatch: expected " + to_string(tc.expectedInterestPart) +

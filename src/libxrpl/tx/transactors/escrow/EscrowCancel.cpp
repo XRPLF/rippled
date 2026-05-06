@@ -184,7 +184,7 @@ EscrowCancel::doApply()
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
                         ctx_.tx,
-                        parityRate,
+                        kPARITY_RATE,
                         slep,
                         preFeeBalance_,
                         amount,

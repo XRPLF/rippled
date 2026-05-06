@@ -7,7 +7,7 @@ class Sandbox;
 class AMMClawback : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit AMMClawback(ApplyContext& ctx) : Transactor(ctx)
     {

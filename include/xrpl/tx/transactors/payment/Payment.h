@@ -7,13 +7,13 @@ namespace xrpl {
 class Payment : public Transactor
 {
     /* The largest number of paths we allow */
-    static std::size_t const MaxPathSize = 6;
+    static std::size_t const kMAX_PATH_SIZE = 6;
 
     /* The longest path we allow */
-    static std::size_t const MaxPathLength = 8;
+    static std::size_t const kMAX_PATH_LENGTH = 8;
 
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Custom};
 
     explicit Payment(ApplyContext& ctx) : Transactor(ctx)
     {

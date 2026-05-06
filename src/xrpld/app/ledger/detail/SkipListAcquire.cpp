@@ -35,10 +35,10 @@ SkipListAcquire::SkipListAcquire(
     : TimeoutCounter(
           app,
           ledgerHash,
-          LedgerReplayParameters::SUB_TASK_TIMEOUT,
-          {.jobType = jtREPLAY_TASK,
+          LedgerReplayParameters::kSUB_TASK_TIMEOUT,
+          {.jobType = JtReplayTask,
            .jobName = "SkipListAcq",
-           .jobLimit = LedgerReplayParameters::MAX_QUEUED_TASKS},
+           .jobLimit = LedgerReplayParameters::kMAX_QUEUED_TASKS},
           app.getJournal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
@@ -94,10 +94,10 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                 {
                     JLOG(journal_.trace())
                         << "Add a no feature peer " << peer->id() << " for " << hash_;
-                    if (++noFeaturePeerCount_ >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
+                    if (++noFeaturePeerCount_ >= LedgerReplayParameters::kMAX_NO_FEATURE_PEER_COUNT)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
-                        timerInterval_ = LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
+                        timerInterval_ = LedgerReplayParameters::kSUB_TASK_FALLBACK_TIMEOUT;
                         fallBack_ = true;
                     }
                 }
@@ -111,8 +111,8 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
 void
 SkipListAcquire::onTimer(bool progress, ScopedLockType& sl)
 {
-    JLOG(journal_.trace()) << "mTimeouts=" << timeouts_ << " for " << hash_;
-    if (timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS)
+    JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
+    if (timeouts_ > LedgerReplayParameters::kSUB_TASK_MAX_TIMEOUTS)
     {
         failed_ = true;
         JLOG(journal_.debug()) << "too many timeouts " << hash_;

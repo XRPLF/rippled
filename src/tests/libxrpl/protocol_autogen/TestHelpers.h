@@ -159,14 +159,14 @@ canonical_ARRAY()
 inline STObject
 canonical_OBJECT()
 {
-    return STObject{sfGeneric};
+    return STObject{kSF_GENERIC};
 }
 
 inline STPathSet
 canonical_PATHSET()
 {
     STPathSet result{};
-    result.push_back(STPath{});
+    result.pushBack(STPath{});
     return result;
 }
 

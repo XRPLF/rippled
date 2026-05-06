@@ -8,23 +8,23 @@
 
 namespace xrpl::test {
 
-class LedgerTiming_test : public beast::unit_test::suite
+class LedgerTiming_test : public beast::unit_test::Suite
 {
     void
     testGetNextLedgerTimeResolution()
     {
         // helper to iteratively call into getNextLedgerTimeResolution
-        struct test_res
+        struct TestRes
         {
             std::uint32_t decrease = 0;
             std::uint32_t equal = 0;
             std::uint32_t increase = 0;
 
-            static test_res
+            static TestRes
             run(bool previousAgree, std::uint32_t rounds)
             {
-                test_res res;
-                auto closeResolution = ledgerDefaultTimeResolution;
+                TestRes res;
+                auto closeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
                 auto nextCloseResolution = closeResolution;
                 std::uint32_t round = 0;
                 do
@@ -51,14 +51,14 @@ class LedgerTiming_test : public beast::unit_test::suite
 
         // If we never agree on close time, only can increase resolution
         // until hit the max
-        auto decreases = test_res::run(false, 10);
+        auto decreases = TestRes::run(false, 10);
         BEAST_EXPECT(decreases.increase == 3);
         BEAST_EXPECT(decreases.decrease == 0);
         BEAST_EXPECT(decreases.equal == 7);
 
         // If we always agree on close time, only can decrease resolution
         // until hit the min
-        auto increases = test_res::run(false, 100);
+        auto increases = TestRes::run(false, 100);
         BEAST_EXPECT(increases.increase == 3);
         BEAST_EXPECT(increases.decrease == 0);
         BEAST_EXPECT(increases.equal == 97);

@@ -30,7 +30,7 @@ template <class Iterator>
 std::optional<Blob>
 strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 {
-    static constexpr std::array<int, 256> const digitLookupTable = []() {
+    static constexpr std::array<int, 256> const kDIGIT_LOOKUP_TABLE = []() {
         std::array<int, 256> t{};
 
         for (auto& x : t)
@@ -56,7 +56,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     if (strSize & 1)
     {
-        int c = digitLookupTable[*iter++];
+        int c = kDIGIT_LOOKUP_TABLE[*iter++];
 
         if (c < 0)
             return {};
@@ -66,12 +66,12 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     while (iter != end)
     {
-        int const cHigh = digitLookupTable[*iter++];
+        int const cHigh = kDIGIT_LOOKUP_TABLE[*iter++];
 
         if (cHigh < 0)
             return {};
 
-        int const cLow = digitLookupTable[*iter++];
+        int const cLow = kDIGIT_LOOKUP_TABLE[*iter++];
 
         if (cLow < 0)
             return {};
@@ -94,9 +94,9 @@ strViewUnHex(std::string_view strSrc)
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }
 
-struct parsedURL
+struct ParsedUrl
 {
-    explicit parsedURL() = default;
+    explicit ParsedUrl() = default;
 
     std::string scheme;
     std::string username;
@@ -106,7 +106,7 @@ struct parsedURL
     std::string path;
 
     bool
-    operator==(parsedURL const& other) const
+    operator==(ParsedUrl const& other) const
     {
         return scheme == other.scheme && domain == other.domain && port == other.port &&
             path == other.path;
@@ -114,13 +114,13 @@ struct parsedURL
 };
 
 bool
-parseUrl(parsedURL& pUrl, std::string const& strUrl);
+parseUrl(ParsedUrl& pUrl, std::string const& strUrl);
 
 std::string
-trim_whitespace(std::string str);
+trimWhitespace(std::string str);
 
 std::optional<std::uint64_t>
-to_uint64(std::string const& s);
+toUint64(std::string const& s);
 
 /** Determines if the given string looks like a TOML-file hosting domain.
 

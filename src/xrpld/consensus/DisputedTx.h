@@ -22,15 +22,15 @@ namespace xrpl {
 
     Refer to @ref Consensus for details on the template type requirements.
 
-    @tparam Tx_t The type for a transaction
-    @tparam NodeID_t The type for a node identifier
+    @tparam Tx The type for a transaction
+    @tparam NodeId The type for a node identifier
 */
 
-template <class Tx_t, class NodeID_t>
+template <class Tx, class NodeId>
 class DisputedTx
 {
-    using TxID_t = typename Tx_t::ID;
-    using Map_t = boost::container::flat_map<NodeID_t, bool>;
+    using TxID_t = typename Tx::ID;
+    using Map_t = boost::container::flat_map<NodeId, bool>;
 
 public:
     /** Constructor
@@ -40,7 +40,7 @@ public:
         @param numPeers Anticipated number of peer votes
         @param j Journal for debugging
     */
-    DisputedTx(Tx_t tx, bool ourVote, std::size_t numPeers, beast::Journal j)
+    DisputedTx(Tx tx, bool ourVote, std::size_t numPeers, beast::Journal j)
         : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
         votes_.reserve(numPeers);
@@ -48,7 +48,7 @@ public:
 
     //! The unique id/hash of the disputed transaction.
     [[nodiscard]] TxID_t const&
-    ID() const
+    id() const
     {
         return tx_.id();
     }
@@ -115,7 +115,7 @@ public:
             // stalling is an error condition for even a single
             // transaction.
             std::stringstream s;
-            s << "Transaction " << ID() << " is stalled. We have been voting "
+            s << "Transaction " << id() << " is stalled. We have been voting "
               << (getOurVote() ? "YES" : "NO") << " for " << currentVoteCounter_
               << " rounds. Peers have not changed their votes in " << peersUnchanged
               << " rounds. The transaction has " << weight << "% support. ";
@@ -127,7 +127,7 @@ public:
     }
 
     //! The disputed transaction.
-    [[nodiscard]] Tx_t const&
+    [[nodiscard]] Tx const&
     tx() const
     {
         return tx_;
@@ -149,14 +149,14 @@ public:
        change.)
     */
     [[nodiscard]] bool
-    setVote(NodeID_t const& peer, bool votesYes);
+    setVote(NodeId const& peer, bool votesYes);
 
     /** Remove a peer's vote
 
         @param peer Identifier of peer.
     */
     void
-    unVote(NodeID_t const& peer);
+    unVote(NodeId const& peer);
 
     /** Update our vote given progression of consensus.
 
@@ -173,28 +173,28 @@ public:
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
     //! JSON representation of dispute, used for debugging
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson() const;
 
 private:
     int yays_{0};   //< Number of yes votes
     int nays_{0};   //< Number of no votes
     bool ourVote_;  //< Our vote (true is yes)
-    Tx_t tx_;       //< Transaction under dispute
+    Tx tx_;         //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
     //! The number of rounds we've gone without changing our vote
     std::size_t currentVoteCounter_ = 0;
     //! Which minimum acceptance percentage phase we are currently in
-    ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::AvalancheState::init;
+    ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::AvalancheState::Init;
     //! How long we have been in the current acceptance phase
     std::size_t avalancheCounter_ = 0;
     beast::Journal const j_;
 };
 
 // Track a peer's yes/no vote on a particular disputed tx_
-template <class Tx_t, class NodeID_t>
+template <class Tx, class NodeId>
 bool
-DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
+DisputedTx<Tx, NodeId>::setVote(NodeId const& peer, bool votesYes)
 {
     auto const [it, inserted] = votes_.insert(std::make_pair(peer, votesYes));
 
@@ -235,9 +235,9 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
 }
 
 // Remove a peer's vote on this disputed transaction
-template <class Tx_t, class NodeID_t>
+template <class Tx, class NodeId>
 void
-DisputedTx<Tx_t, NodeID_t>::unVote(NodeID_t const& peer)
+DisputedTx<Tx, NodeId>::unVote(NodeId const& peer)
 {
     auto it = votes_.find(peer);
 
@@ -256,9 +256,9 @@ DisputedTx<Tx_t, NodeID_t>::unVote(NodeID_t const& peer)
     }
 }
 
-template <class Tx_t, class NodeID_t>
+template <class Tx, class NodeId>
 bool
-DisputedTx<Tx_t, NodeID_t>::updateVote(int percentTime, bool proposing, ConsensusParms const& p)
+DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusParms const& p)
 {
     if (ourVote_ && (nays_ == 0))
         return false;
@@ -303,24 +303,24 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(int percentTime, bool proposing, Consensu
         JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on " << tx_.id()
                         << " : weight " << weight << ", percent " << percentTime
                         << ", round(s) with this vote: " << currentVoteCounter_;
-        JLOG(j_.debug()) << Json::Compact{getJson()};
+        JLOG(j_.debug()) << json::Compact{getJson()};
         return false;
     }
 
     currentVoteCounter_ = 0;
     ourVote_ = newPosition;
     JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on " << tx_.id();
-    JLOG(j_.debug()) << Json::Compact{getJson()};
+    JLOG(j_.debug()) << json::Compact{getJson()};
     return true;
 }
 
-template <class Tx_t, class NodeID_t>
-Json::Value
-DisputedTx<Tx_t, NodeID_t>::getJson() const
+template <class Tx, class NodeId>
+json::Value
+DisputedTx<Tx, NodeId>::getJson() const
 {
     using std::to_string;
 
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ObjectValue);
 
     ret["yays"] = yays_;
     ret["nays"] = nays_;
@@ -328,7 +328,7 @@ DisputedTx<Tx_t, NodeID_t>::getJson() const
 
     if (!votes_.empty())
     {
-        Json::Value votes(Json::objectValue);
+        json::Value votes(json::ObjectValue);
         for (auto const& [nodeId, vote] : votes_)
             votes[to_string(nodeId)] = vote;
         ret["votes"] = std::move(votes);

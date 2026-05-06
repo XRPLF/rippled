@@ -52,7 +52,7 @@ iteratePriceData(
     std::function<bool(STObject const&)> const& f)
 {
     using Meta = std::shared_ptr<STObject const>;
-    constexpr std::uint8_t maxHistory = 3;
+    constexpr std::uint8_t kMAX_HISTORY = 3;
     bool isNew = false;
     std::uint8_t history = 0;
 
@@ -82,7 +82,7 @@ iteratePriceData(
         if ((oracle == nullptr) || f(*oracle) || isNew)
             return;
 
-        if (++history > maxHistory)
+        if (++history > kMAX_HISTORY)
             return;
 
         uint256 const prevTx = chain->getFieldH256(sfPreviousTxnID);
@@ -111,8 +111,8 @@ iteratePriceData(
             if (isNew && history == 1)
                 return;
 
-            oracle = isNew ? &safe_downcast<STObject const&>(node.peekAtField(sfNewFields))
-                           : &safe_downcast<STObject const&>(node.peekAtField(sfFinalFields));
+            oracle = isNew ? &safeDowncast<STObject const&>(node.peekAtField(sfNewFields))
+                           : &safeDowncast<STObject const&>(node.peekAtField(sfFinalFields));
             break;
         }
     }
@@ -146,31 +146,31 @@ getStats(Prices::right_const_iterator const& begin, Prices::right_const_iterator
  * time_threshold : defines a range of prices to include based on the timestamp
  *   range - {most recent, most recent - time_threshold} [optional]
  */
-Json::Value
+json::Value
 doGetAggregatePrice(RPC::JsonContext& context)
 {
-    Json::Value result;
+    json::Value result;
     auto const& params(context.params);
 
-    constexpr std::uint16_t maxOracles = 200;
+    constexpr std::uint16_t kMAX_ORACLES = 200;
     if (!params.isMember(jss::oracles))
-        return RPC::missing_field_error(jss::oracles);
+        return RPC::missingFieldError(jss::oracles);
     if (!params[jss::oracles].isArray() || params[jss::oracles].size() == 0 ||
-        params[jss::oracles].size() > maxOracles)
+        params[jss::oracles].size() > kMAX_ORACLES)
     {
-        RPC::inject_error(rpcORACLE_MALFORMED, result);
+        RPC::injectError(RpcOracleMalformed, result);
         return result;
     }
 
     if (!params.isMember(jss::base_asset))
-        return RPC::missing_field_error(jss::base_asset);
+        return RPC::missingFieldError(jss::base_asset);
 
     if (!params.isMember(jss::quote_asset))
-        return RPC::missing_field_error(jss::quote_asset);
+        return RPC::missingFieldError(jss::quote_asset);
 
     // Lambda to validate uint type
     // support positive int, uint, and a number represented as a string
-    auto validUInt = [](Json::Value const& params, Json::StaticString const& field) {
+    auto validUInt = [](json::Value const& params, json::StaticString const& field) {
         auto const& jv = params[field];
         std::uint32_t v = 0;
         return jv.isUInt() || (jv.isInt() && jv.asInt() >= 0) ||
@@ -180,12 +180,12 @@ doGetAggregatePrice(RPC::JsonContext& context)
     // Lambda to get `trim` and `time_threshold` fields. If the field
     // is not included in the input then a default value is returned.
     auto getField = [&params, &validUInt](
-                        Json::StaticString const& field,
-                        unsigned int def = 0) -> std::variant<std::uint32_t, error_code_i> {
+                        json::StaticString const& field,
+                        unsigned int def = 0) -> std::variant<std::uint32_t, ErrorCodeI> {
         if (params.isMember(field))
         {
             if (!validUInt(params, field))
-                return rpcINVALID_PARAMS;
+                return RpcInvalidParams;
             return params[field].asUInt();
         }
         return def;
@@ -193,51 +193,51 @@ doGetAggregatePrice(RPC::JsonContext& context)
 
     // Lambda to get `base_asset` and `quote_asset`. The values have
     // to conform to the Currency type.
-    auto getCurrency = [&params](SField const& sField, Json::StaticString const& field)
-        -> std::variant<Json::Value, error_code_i> {
+    auto getCurrency = [&params](SField const& sField, json::StaticString const& field)
+        -> std::variant<json::Value, ErrorCodeI> {
         try
         {
             if (params[field].asString().empty())
-                return rpcINVALID_PARAMS;
+                return RpcInvalidParams;
             currencyFromJson(sField, params[field]);
             return params[field];
         }
         catch (...)
         {
-            return rpcINVALID_PARAMS;
+            return RpcInvalidParams;
         }
     };
 
     auto const trim = getField(jss::trim);
-    if (std::holds_alternative<error_code_i>(trim))
+    if (std::holds_alternative<ErrorCodeI>(trim))
     {
-        RPC::inject_error(std::get<error_code_i>(trim), result);
+        RPC::injectError(std::get<ErrorCodeI>(trim), result);
         return result;
     }
     if (params.isMember(jss::trim) &&
-        (std::get<std::uint32_t>(trim) == 0 || std::get<std::uint32_t>(trim) > maxTrim))
+        (std::get<std::uint32_t>(trim) == 0 || std::get<std::uint32_t>(trim) > kMAX_TRIM))
     {
-        RPC::inject_error(rpcINVALID_PARAMS, result);
+        RPC::injectError(RpcInvalidParams, result);
         return result;
     }
 
     auto const timeThreshold = getField(jss::time_threshold, 0);
-    if (std::holds_alternative<error_code_i>(timeThreshold))
+    if (std::holds_alternative<ErrorCodeI>(timeThreshold))
     {
-        RPC::inject_error(std::get<error_code_i>(timeThreshold), result);
+        RPC::injectError(std::get<ErrorCodeI>(timeThreshold), result);
         return result;
     }
 
     auto const baseAsset = getCurrency(sfBaseAsset, jss::base_asset);
-    if (std::holds_alternative<error_code_i>(baseAsset))
+    if (std::holds_alternative<ErrorCodeI>(baseAsset))
     {
-        RPC::inject_error(std::get<error_code_i>(baseAsset), result);
+        RPC::injectError(std::get<ErrorCodeI>(baseAsset), result);
         return result;
     }
     auto const quoteAsset = getCurrency(sfQuoteAsset, jss::quote_asset);
-    if (std::holds_alternative<error_code_i>(quoteAsset))
+    if (std::holds_alternative<ErrorCodeI>(quoteAsset))
     {
-        RPC::inject_error(std::get<error_code_i>(quoteAsset), result);
+        RPC::injectError(std::get<ErrorCodeI>(quoteAsset), result);
         return result;
     }
 
@@ -253,7 +253,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     {
         if (!oracle.isMember(jss::oracle_document_id) || !oracle.isMember(jss::account))
         {
-            RPC::inject_error(rpcORACLE_MALFORMED, result);
+            RPC::injectError(RpcOracleMalformed, result);
             return result;
         }
         auto const documentID = validUInt(oracle, jss::oracle_document_id)
@@ -262,7 +262,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
         auto const account = parseBase58<AccountID>(oracle[jss::account].asString());
         if (!account || account->isZero() || !documentID)
         {
-            RPC::inject_error(rpcINVALID_PARAMS, result);
+            RPC::injectError(RpcInvalidParams, result);
             return result;
         }
 
@@ -274,9 +274,9 @@ doGetAggregatePrice(RPC::JsonContext& context)
                     series,
                     [&](STObject const& o) -> bool {
                         return o.getFieldCurrency(sfBaseAsset).getText() ==
-                            std::get<Json::Value>(baseAsset) &&
+                            std::get<json::Value>(baseAsset) &&
                             o.getFieldCurrency(sfQuoteAsset).getText() ==
-                            std::get<Json::Value>(quoteAsset) &&
+                            std::get<json::Value>(quoteAsset) &&
                             o.isFieldPresent(sfAssetPrice);
                     });
                 iter != series.end())
@@ -296,7 +296,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
 
     if (prices.empty())
     {
-        RPC::inject_error(rpcOBJECT_NOT_FOUND, result);
+        RPC::injectError(RpcObjectNotFound, result);
         return result;
     }
 
@@ -319,7 +319,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
         if (prices.empty())
         {
             // LCOV_EXCL_START
-            RPC::inject_error(rpcINTERNAL, result);
+            RPC::injectError(RpcInternal, result);
             return result;
             // LCOV_EXCL_STOP
         }
@@ -337,15 +337,15 @@ doGetAggregatePrice(RPC::JsonContext& context)
         return it;
     };
 
-    auto const median = [&prices, &itAdvance, &size_ = size]() {
-        auto const middle = size_ / 2;
-        if ((size_ % 2) == 0)
+    auto const median = [&prices, &itAdvance, &size = size]() {
+        auto const middle = size / 2;
+        if ((size % 2) == 0)
         {
-            static STAmount const two{noIssue(), 2, 0};
+            static STAmount const kTWO{noIssue(), 2, 0};
             auto it = itAdvance(prices.right.begin(), middle - 1);
             auto const& a1 = it->first;
             auto const& a2 = (++it)->first;
-            return divide(a1 + a2, two, noIssue());
+            return divide(a1 + a2, kTWO, noIssue());
         }
         return itAdvance(prices.right.begin(), middle)->first;
     }();

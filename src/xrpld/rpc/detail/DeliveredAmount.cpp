@@ -85,7 +85,7 @@ canHaveDeliveredAmount(
 
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     ReadView const& ledger,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
@@ -100,13 +100,13 @@ insertDeliveredAmount(
         auto amt = getDeliveredAmount(getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
         if (amt)
         {
-            meta[jss::delivered_amount] = amt->getJson(JsonOptions::include_date);
+            meta[jss::delivered_amount] = amt->getJson(JsonOptions::KIncludeDate);
         }
         else
         {
             // report "unavailable" which cannot be parsed into a sensible
             // amount.
-            meta[jss::delivered_amount] = Json::Value("unavailable");
+            meta[jss::delivered_amount] = json::Value("unavailable");
         }
     }
 }
@@ -144,7 +144,7 @@ getDeliveredAmount(
 
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     RPC::JsonContext const& context,
     std::shared_ptr<Transaction> const& transaction,
     TxMeta const& transactionMeta)
@@ -154,7 +154,7 @@ insertDeliveredAmount(
 
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     RPC::JsonContext const& context,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
@@ -167,13 +167,13 @@ insertDeliveredAmount(
 
         if (amt)
         {
-            meta[jss::delivered_amount] = amt->getJson(JsonOptions::include_date);
+            meta[jss::delivered_amount] = amt->getJson(JsonOptions::KIncludeDate);
         }
         else
         {
             // report "unavailable" which cannot be parsed into a sensible
             // amount.
-            meta[jss::delivered_amount] = Json::Value("unavailable");
+            meta[jss::delivered_amount] = json::Value("unavailable");
         }
     }
 }

@@ -22,49 +22,49 @@ namespace xrpl {
 
 TEST(json_value, limits)
 {
-    using namespace Json;
-    static_assert(Value::minInt == Int(~(UInt(-1) / 2)));
-    static_assert(Value::maxInt == Int(UInt(-1) / 2));
-    static_assert(Value::maxUInt == UInt(-1));
+    using namespace json;
+    static_assert(Value::kMIN_INT == Int(~(UInt(-1) / 2)));
+    static_assert(Value::kMAX_INT == Int(UInt(-1) / 2));
+    static_assert(Value::kMAX_U_INT == UInt(-1));
 }
 
 TEST(json_value, construct_and_compare_Json_StaticString)
 {
-    static constexpr char sample[]{"Contents of a Json::StaticString"};
+    static constexpr char kSAMPLE[]{"Contents of a json::StaticString"};
 
-    static constexpr Json::StaticString test1(sample);
-    char const* addrTest1{test1};
+    static constexpr json::StaticString kTEST1(kSAMPLE);
+    char const* addrTest1{kTEST1};
 
-    EXPECT_EQ(addrTest1, &sample[0]);
-    EXPECT_EQ(test1.c_str(), &sample[0]);
+    EXPECT_EQ(addrTest1, &kSAMPLE[0]);
+    EXPECT_EQ(kTEST1.cStr(), &kSAMPLE[0]);
 
-    static constexpr Json::StaticString test2{"Contents of a Json::StaticString"};
-    static constexpr Json::StaticString test3{"Another StaticString"};
+    static constexpr json::StaticString kTEST2{"Contents of a json::StaticString"};
+    static constexpr json::StaticString kTEST3{"Another StaticString"};
 
-    EXPECT_EQ(test1, test2);
-    EXPECT_NE(test1, test3);
+    EXPECT_EQ(kTEST1, kTEST2);
+    EXPECT_NE(kTEST1, kTEST3);
 
-    std::string const str{sample};
-    EXPECT_EQ(str, test2);
-    EXPECT_NE(str, test3);
-    EXPECT_EQ(test2, str);
-    EXPECT_NE(test3, str);
+    std::string const str{kSAMPLE};
+    EXPECT_EQ(str, kTEST2);
+    EXPECT_NE(str, kTEST3);
+    EXPECT_EQ(kTEST2, str);
+    EXPECT_NE(kTEST3, str);
 }
 
 TEST(json_value, different_types)
 {
     // Exercise ValueType constructor
-    static constexpr Json::StaticString staticStr{"staticStr"};
+    static constexpr json::StaticString kSTATIC_STR{"staticStr"};
 
-    auto testCopy = [](Json::ValueType typ) {
-        Json::Value val{typ};
-        Json::Value const cpy{val};
+    auto testCopy = [](json::ValueType typ) {
+        json::Value val{typ};
+        json::Value const cpy{val};
         EXPECT_EQ(val.type(), typ);
         EXPECT_EQ(cpy.type(), typ);
         return val;
     };
     {
-        Json::Value const nullV{testCopy(Json::nullValue)};
+        json::Value const nullV{testCopy(json::NullValue)};
         EXPECT_TRUE(nullV.isNull());
         EXPECT_FALSE(nullV.isBool());
         EXPECT_FALSE(nullV.isInt());
@@ -79,7 +79,7 @@ TEST(json_value, different_types)
         EXPECT_TRUE(nullV.isObjectOrNull());
     }
     {
-        Json::Value const intV{testCopy(Json::intValue)};
+        json::Value const intV{testCopy(json::IntValue)};
         EXPECT_FALSE(intV.isNull());
         EXPECT_FALSE(intV.isBool());
         EXPECT_TRUE(intV.isInt());
@@ -94,7 +94,7 @@ TEST(json_value, different_types)
         EXPECT_FALSE(intV.isObjectOrNull());
     }
     {
-        Json::Value const uintV{testCopy(Json::uintValue)};
+        json::Value const uintV{testCopy(json::UintValue)};
         EXPECT_FALSE(uintV.isNull());
         EXPECT_FALSE(uintV.isBool());
         EXPECT_FALSE(uintV.isInt());
@@ -109,7 +109,7 @@ TEST(json_value, different_types)
         EXPECT_FALSE(uintV.isObjectOrNull());
     }
     {
-        Json::Value const realV{testCopy(Json::realValue)};
+        json::Value const realV{testCopy(json::RealValue)};
         EXPECT_FALSE(realV.isNull());
         EXPECT_FALSE(realV.isBool());
         EXPECT_FALSE(realV.isInt());
@@ -124,7 +124,7 @@ TEST(json_value, different_types)
         EXPECT_FALSE(realV.isObjectOrNull());
     }
     {
-        Json::Value const stringV{testCopy(Json::stringValue)};
+        json::Value const stringV{testCopy(json::StringValue)};
         EXPECT_FALSE(stringV.isNull());
         EXPECT_FALSE(stringV.isBool());
         EXPECT_FALSE(stringV.isInt());
@@ -139,11 +139,11 @@ TEST(json_value, different_types)
         EXPECT_FALSE(stringV.isObjectOrNull());
     }
     {
-        Json::Value const staticStrV{staticStr};
+        json::Value const staticStrV{kSTATIC_STR};
         {
-            Json::Value const cpy{staticStrV};
-            EXPECT_EQ(staticStrV.type(), Json::stringValue);
-            EXPECT_EQ(cpy.type(), Json::stringValue);
+            json::Value const cpy{staticStrV};
+            EXPECT_EQ(staticStrV.type(), json::StringValue);
+            EXPECT_EQ(cpy.type(), json::StringValue);
         }
         EXPECT_FALSE(staticStrV.isNull());
         EXPECT_FALSE(staticStrV.isBool());
@@ -159,7 +159,7 @@ TEST(json_value, different_types)
         EXPECT_FALSE(staticStrV.isObjectOrNull());
     }
     {
-        Json::Value const boolV{testCopy(Json::booleanValue)};
+        json::Value const boolV{testCopy(json::BooleanValue)};
         EXPECT_FALSE(boolV.isNull());
         EXPECT_TRUE(boolV.isBool());
         EXPECT_FALSE(boolV.isInt());
@@ -174,7 +174,7 @@ TEST(json_value, different_types)
         EXPECT_FALSE(boolV.isObjectOrNull());
     }
     {
-        Json::Value const arrayV{testCopy(Json::arrayValue)};
+        json::Value const arrayV{testCopy(json::ArrayValue)};
         EXPECT_FALSE(arrayV.isNull());
         EXPECT_FALSE(arrayV.isBool());
         EXPECT_FALSE(arrayV.isInt());
@@ -189,7 +189,7 @@ TEST(json_value, different_types)
         EXPECT_FALSE(arrayV.isObjectOrNull());
     }
     {
-        Json::Value const objectV{testCopy(Json::objectValue)};
+        json::Value const objectV{testCopy(json::ObjectValue)};
         EXPECT_FALSE(objectV.isNull());
         EXPECT_FALSE(objectV.isBool());
         EXPECT_FALSE(objectV.isInt());
@@ -207,8 +207,8 @@ TEST(json_value, different_types)
 
 TEST(json_value, compare_strings)
 {
-    auto doCompare = [&](Json::Value const& lhs,
-                         Json::Value const& rhs,
+    auto doCompare = [&](json::Value const& lhs,
+                         json::Value const& rhs,
                          bool lhsEqRhs,
                          bool lhsLtRhs,
                          int line) {
@@ -221,28 +221,28 @@ TEST(json_value, compare_strings)
         EXPECT_EQ((lhs > rhs), (!lhsEqRhs && !lhsLtRhs));
     };
 
-    Json::Value const null0;
-    Json::Value const intNeg1{-1};
-    Json::Value const int0{Json::intValue};
-    Json::Value const intPos1{1};
-    Json::Value const uint0{Json::uintValue};
-    Json::Value const uint1{1u};
-    Json::Value const realNeg1{-1.0};
-    Json::Value const real0{Json::realValue};
-    Json::Value const realPos1{1.0};
-    Json::Value const str0{Json::stringValue};
-    Json::Value const str1{"1"};
-    Json::Value const boolF{false};
-    Json::Value const boolT{true};
-    Json::Value const array0{Json::arrayValue};
-    Json::Value const array1{[]() {
-        Json::Value array1;
+    json::Value const null0;
+    json::Value const intNeg1{-1};
+    json::Value const int0{json::IntValue};
+    json::Value const intPos1{1};
+    json::Value const uint0{json::UintValue};
+    json::Value const uint1{1u};
+    json::Value const realNeg1{-1.0};
+    json::Value const real0{json::RealValue};
+    json::Value const realPos1{1.0};
+    json::Value const str0{json::StringValue};
+    json::Value const str1{"1"};
+    json::Value const boolF{false};
+    json::Value const boolT{true};
+    json::Value const array0{json::ArrayValue};
+    json::Value const array1{[]() {
+        json::Value array1;
         array1[0u] = 1;
         return array1;
     }()};
-    Json::Value const obj0{Json::objectValue};
-    Json::Value const obj1{[]() {
-        Json::Value obj1;
+    json::Value const obj0{json::ObjectValue};
+    json::Value const obj1{[]() {
+        json::Value obj1;
         obj1["one"] = 1;
         return obj1;
     }()};
@@ -250,7 +250,7 @@ TEST(json_value, compare_strings)
 #pragma push_macro("DO_COMPARE")
     // DO_COMPARE(lhs, rhs, lhsEqualsToRhs lhsLessThanRhs)
 #define DO_COMPARE(lhs, rhs, eq, lt) doCompare(lhs, rhs, eq, lt, __LINE__)
-    DO_COMPARE(null0, Json::Value{}, true, false);
+    DO_COMPARE(null0, json::Value{}, true, false);
     DO_COMPARE(null0, intNeg1, false, true);
     DO_COMPARE(null0, int0, false, true);
     DO_COMPARE(null0, intPos1, false, true);
@@ -561,22 +561,22 @@ TEST(json_value, compare_strings)
 
 TEST(json_value, bool)
 {
-    EXPECT_FALSE(Json::Value());
+    EXPECT_FALSE(json::Value());
 
-    EXPECT_FALSE(Json::Value(""));
+    EXPECT_FALSE(json::Value(""));
 
-    EXPECT_TRUE(bool(Json::Value("empty")));
-    EXPECT_TRUE(bool(Json::Value(false)));
-    EXPECT_TRUE(bool(Json::Value(true)));
-    EXPECT_TRUE(bool(Json::Value(0)));
-    EXPECT_TRUE(bool(Json::Value(1)));
+    EXPECT_TRUE(bool(json::Value("empty")));
+    EXPECT_TRUE(bool(json::Value(false)));
+    EXPECT_TRUE(bool(json::Value(true)));
+    EXPECT_TRUE(bool(json::Value(0)));
+    EXPECT_TRUE(bool(json::Value(1)));
 
-    Json::Value array(Json::arrayValue);
+    json::Value array(json::ArrayValue);
     EXPECT_FALSE(array);
     array.append(0);
     EXPECT_TRUE(bool(array));
 
-    Json::Value object(Json::objectValue);
+    json::Value object(json::ObjectValue);
     EXPECT_FALSE(object);
     object[""] = false;
     EXPECT_TRUE(bool(object));
@@ -586,82 +586,82 @@ TEST(json_value, bad_json)
 {
     char const* s(R"({"method":"ledger","params":[{"ledger_index":1e300}]})");
 
-    Json::Value j;
-    Json::Reader r;
+    json::Value j;
+    json::Reader r;
 
     EXPECT_TRUE(r.parse(s, j));
 }
 
 TEST(json_value, edge_cases)
 {
-    std::uint32_t const max_uint = std::numeric_limits<std::uint32_t>::max();
-    std::int32_t const max_int = std::numeric_limits<std::int32_t>::max();
-    std::int32_t const min_int = std::numeric_limits<std::int32_t>::min();
+    std::uint32_t const maxUint = std::numeric_limits<std::uint32_t>::max();
+    std::int32_t const maxInt = std::numeric_limits<std::int32_t>::max();
+    std::int32_t const minInt = std::numeric_limits<std::int32_t>::min();
 
-    std::uint32_t const a_uint = max_uint - 1978;
-    std::int32_t const a_large_int = max_int - 1978;
-    std::int32_t const a_small_int = min_int + 1978;
+    std::uint32_t const aUint = maxUint - 1978;
+    std::int32_t const aLargeInt = maxInt - 1978;
+    std::int32_t const aSmallInt = minInt + 1978;
 
     {
-        std::string json = "{\"max_uint\":" + std::to_string(max_uint);
-        json += ",\"max_int\":" + std::to_string(max_int);
-        json += ",\"min_int\":" + std::to_string(min_int);
-        json += ",\"a_uint\":" + std::to_string(a_uint);
-        json += ",\"a_large_int\":" + std::to_string(a_large_int);
-        json += ",\"a_small_int\":" + std::to_string(a_small_int);
+        std::string json = "{\"max_uint\":" + std::to_string(maxUint);
+        json += ",\"max_int\":" + std::to_string(maxInt);
+        json += ",\"min_int\":" + std::to_string(minInt);
+        json += ",\"a_uint\":" + std::to_string(aUint);
+        json += ",\"a_large_int\":" + std::to_string(aLargeInt);
+        json += ",\"a_small_int\":" + std::to_string(aSmallInt);
         json += "}";
 
-        Json::Value j1;
-        Json::Reader r1;
+        json::Value j1;
+        json::Reader r1;
 
         EXPECT_TRUE(r1.parse(json, j1));
-        EXPECT_EQ(j1["max_uint"].asUInt(), max_uint);
-        EXPECT_EQ(j1["max_uint"].asAbsUInt(), max_uint);
-        EXPECT_EQ(j1["max_int"].asInt(), max_int);
-        EXPECT_EQ(j1["max_int"].asAbsUInt(), max_int);
-        EXPECT_EQ(j1["min_int"].asInt(), min_int);
-        EXPECT_EQ(j1["min_int"].asAbsUInt(), static_cast<std::int64_t>(min_int) * -1);
-        EXPECT_EQ(j1["a_uint"].asUInt(), a_uint);
-        EXPECT_EQ(j1["a_uint"].asAbsUInt(), a_uint);
-        EXPECT_GT(j1["a_uint"], a_large_int);
-        EXPECT_GT(j1["a_uint"], a_small_int);
-        EXPECT_EQ(j1["a_large_int"].asInt(), a_large_int);
-        EXPECT_EQ(j1["a_large_int"].asAbsUInt(), a_large_int);
-        EXPECT_EQ(j1["a_large_int"].asUInt(), a_large_int);
-        EXPECT_LT(j1["a_large_int"], a_uint);
-        EXPECT_EQ(j1["a_small_int"].asInt(), a_small_int);
-        EXPECT_EQ(j1["a_small_int"].asAbsUInt(), static_cast<std::int64_t>(a_small_int) * -1);
-        EXPECT_LT(j1["a_small_int"], a_uint);
+        EXPECT_EQ(j1["max_uint"].asUInt(), maxUint);
+        EXPECT_EQ(j1["max_uint"].asAbsUInt(), maxUint);
+        EXPECT_EQ(j1["max_int"].asInt(), maxInt);
+        EXPECT_EQ(j1["max_int"].asAbsUInt(), maxInt);
+        EXPECT_EQ(j1["min_int"].asInt(), minInt);
+        EXPECT_EQ(j1["min_int"].asAbsUInt(), static_cast<std::int64_t>(minInt) * -1);
+        EXPECT_EQ(j1["a_uint"].asUInt(), aUint);
+        EXPECT_EQ(j1["a_uint"].asAbsUInt(), aUint);
+        EXPECT_GT(j1["a_uint"], aLargeInt);
+        EXPECT_GT(j1["a_uint"], aSmallInt);
+        EXPECT_EQ(j1["a_large_int"].asInt(), aLargeInt);
+        EXPECT_EQ(j1["a_large_int"].asAbsUInt(), aLargeInt);
+        EXPECT_EQ(j1["a_large_int"].asUInt(), aLargeInt);
+        EXPECT_LT(j1["a_large_int"], aUint);
+        EXPECT_EQ(j1["a_small_int"].asInt(), aSmallInt);
+        EXPECT_EQ(j1["a_small_int"].asAbsUInt(), static_cast<std::int64_t>(aSmallInt) * -1);
+        EXPECT_LT(j1["a_small_int"], aUint);
     }
 
-    std::uint64_t const overflow = std::uint64_t(max_uint) + 1;
+    std::uint64_t const overflow = std::uint64_t(maxUint) + 1;
     {
         std::string json = "{\"overflow\":";
         json += std::to_string(overflow);
         json += "}";
 
-        Json::Value j2;
-        Json::Reader r2;
+        json::Value j2;
+        json::Reader r2;
 
         EXPECT_FALSE(r2.parse(json, j2));
     }
 
-    std::int64_t const underflow = std::int64_t(min_int) - 1;
+    std::int64_t const underflow = std::int64_t(minInt) - 1;
     {
         std::string json = "{\"underflow\":";
         json += std::to_string(underflow);
         json += "}";
 
-        Json::Value j3;
-        Json::Reader r3;
+        json::Value j3;
+        json::Reader r3;
 
         EXPECT_FALSE(r3.parse(json, j3));
     }
 
     {
-        Json::Value intString{std::to_string(overflow)};
+        json::Value intString{std::to_string(overflow)};
         EXPECT_THROW([&] { return intString.asUInt(); }(), beast::BadLexicalCast);
-        EXPECT_THROW([&] { return intString.asAbsUInt(); }(), Json::error);
+        EXPECT_THROW([&] { return intString.asAbsUInt(); }(), json::Error);
 
         intString = "4294967295";
         EXPECT_EQ(intString.asUInt(), 4294967295u);
@@ -679,7 +679,7 @@ TEST(json_value, edge_cases)
         EXPECT_EQ(intString.asAbsUInt(), 4294967295);
 
         intString = "-4294967296";
-        EXPECT_THROW([&] { return intString.asAbsUInt(); }(), Json::error);
+        EXPECT_THROW([&] { return intString.asAbsUInt(); }(), json::Error);
 
         intString = "2147483648";
         EXPECT_THROW([&] { return intString.asInt(); }(), beast::BadLexicalCast);
@@ -699,9 +699,9 @@ TEST(json_value, edge_cases)
     }
 
     {
-        Json::Value intReal{4294967297.0};
-        EXPECT_THROW([&] { return intReal.asUInt(); }(), Json::error);
-        EXPECT_THROW([&] { return intReal.asAbsUInt(); }(), Json::error);
+        json::Value intReal{4294967297.0};
+        EXPECT_THROW([&] { return intReal.asUInt(); }(), json::Error);
+        EXPECT_THROW([&] { return intReal.asAbsUInt(); }(), json::Error);
 
         intReal = 4294967295.0;
         EXPECT_EQ(intReal.asUInt(), 4294967295u);
@@ -712,17 +712,17 @@ TEST(json_value, edge_cases)
         EXPECT_EQ(intReal.asAbsUInt(), 0);
 
         intReal = -1.0;
-        EXPECT_THROW([&] { return intReal.asUInt(); }(), Json::error);
+        EXPECT_THROW([&] { return intReal.asUInt(); }(), json::Error);
         EXPECT_EQ(intReal.asAbsUInt(), 1);
 
         intReal = -4294967295.0;
         EXPECT_EQ(intReal.asAbsUInt(), 4294967295);
 
         intReal = -4294967296.0;
-        EXPECT_THROW([&] { return intReal.asAbsUInt(); }(), Json::error);
+        EXPECT_THROW([&] { return intReal.asAbsUInt(); }(), json::Error);
 
         intReal = 2147483648.0;
-        EXPECT_THROW([&] { return intReal.asInt(); }(), Json::error);
+        EXPECT_THROW([&] { return intReal.asInt(); }(), json::Error);
         EXPECT_EQ(intReal.asAbsUInt(), 2147483648);
 
         intReal = 2147483647.0;
@@ -734,18 +734,18 @@ TEST(json_value, edge_cases)
         EXPECT_EQ(intReal.asAbsUInt(), 2147483648LL);
 
         intReal = -2147483649.0;
-        EXPECT_THROW([&] { return intReal.asInt(); }(), Json::error);
+        EXPECT_THROW([&] { return intReal.asInt(); }(), json::Error);
         EXPECT_EQ(intReal.asAbsUInt(), 2147483649);
     }
 }
 
 TEST(json_value, copy)
 {
-    Json::Value v1{2.5};
+    json::Value v1{2.5};
     EXPECT_TRUE(v1.isDouble());
     EXPECT_EQ(v1.asDouble(), 2.5);
 
-    Json::Value const v2 = v1;
+    json::Value const v2 = v1;
     EXPECT_TRUE(v1.isDouble());
     EXPECT_EQ(v1.asDouble(), 2.5);
     EXPECT_TRUE(v2.isDouble());
@@ -762,11 +762,11 @@ TEST(json_value, copy)
 
 TEST(json_value, move)
 {
-    Json::Value v1{2.5};
+    json::Value v1{2.5};
     EXPECT_TRUE(v1.isDouble());
     EXPECT_EQ(v1.asDouble(), 2.5);
 
-    Json::Value v2 = std::move(v1);
+    json::Value v2 = std::move(v1);
     EXPECT_FALSE(v1);  // NOLINT(bugprone-use-after-move)
     EXPECT_TRUE(v2.isDouble());
     EXPECT_EQ(v2.asDouble(), 2.5);
@@ -781,7 +781,7 @@ TEST(json_value, move)
 
 TEST(json_value, comparisons)
 {
-    Json::Value a, b;
+    json::Value a, b;
     auto testEquals = [&](std::string const& name) {
         EXPECT_TRUE(a == b);
         EXPECT_TRUE(a <= b);
@@ -818,15 +818,15 @@ TEST(json_value, comparisons)
         EXPECT_FALSE(b > a);
     };
 
-    a["a"] = Json::UInt(0);
-    b["a"] = Json::Int(0);
+    a["a"] = json::UInt(0);
+    b["a"] = json::Int(0);
     testEquals("zero");
 
-    b["a"] = Json::Int(-1);
+    b["a"] = json::Int(-1);
     testGreaterThan("negative");
 
-    Json::Int const big = std::numeric_limits<int>::max();
-    Json::UInt bigger = big;
+    json::Int const big = std::numeric_limits<int>::max();
+    json::UInt bigger = big;
     bigger++;
 
     a["a"] = bigger;
@@ -836,8 +836,8 @@ TEST(json_value, comparisons)
 
 TEST(json_value, compact)
 {
-    Json::Value j;
-    Json::Reader r;
+    json::Value j;
+    json::Reader r;
     char const* s("{\"array\":[{\"12\":23},{},null,false,0.5]}");
 
     auto countLines = [](std::string const& str) {
@@ -852,20 +852,20 @@ TEST(json_value, compact)
     }
     {
         std::stringstream ss;
-        ss << Json::Compact(std::move(j));
+        ss << json::Compact(std::move(j));
         EXPECT_EQ(countLines(ss.str()), 1);
     }
 }
 
 TEST(json_value, conversions)
 {
-    // We have Json::Int, but not Json::Double or Json::Real.
-    // We have Json::Int, Json::Value::Int, and Json::ValueType::intValue.
-    // We have Json::ValueType::realValue but Json::Value::asDouble.
+    // We have json::Int, but not json::Double or json::Real.
+    // We have json::Int, json::Value::Int, and json::ValueType::intValue.
+    // We have json::ValueType::realValue but json::Value::asDouble.
     // TODO: What's the thinking here?
     {
         // null
-        Json::Value const val;
+        json::Value const val;
         EXPECT_TRUE(val.isNull());
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "");
@@ -875,39 +875,39 @@ TEST(json_value, conversions)
         EXPECT_EQ(val.asDouble(), 0.0);
         EXPECT_FALSE(val.asBool());
 
-        EXPECT_TRUE(val.isConvertibleTo(Json::nullValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::intValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::uintValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::realValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::stringValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::booleanValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::arrayValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::objectValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::NullValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::IntValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::UintValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::RealValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::StringValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::BooleanValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::ArrayValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::ObjectValue));
     }
     {
         // int
-        Json::Value const val = -1234;
+        json::Value const val = -1234;
         EXPECT_TRUE(val.isInt());
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "-1234");
         EXPECT_EQ(val.asInt(), -1234);
-        EXPECT_THROW([&] { return val.asUInt(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asUInt(); }(), json::Error);
         EXPECT_EQ(val.asAbsUInt(), 1234u);
         EXPECT_EQ(val.asDouble(), -1234.0);
         EXPECT_TRUE(val.asBool());
 
-        EXPECT_FALSE(val.isConvertibleTo(Json::nullValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::intValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::uintValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::realValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::stringValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::booleanValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::arrayValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::objectValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::NullValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::IntValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::UintValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::RealValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::StringValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::BooleanValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ArrayValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ObjectValue));
     }
     {
         // uint
-        Json::Value const val = 1234U;
+        json::Value const val = 1234U;
         EXPECT_TRUE(val.isUInt());
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "1234");
@@ -917,18 +917,18 @@ TEST(json_value, conversions)
         EXPECT_EQ(val.asDouble(), 1234.0);
         EXPECT_TRUE(val.asBool());
 
-        EXPECT_FALSE(val.isConvertibleTo(Json::nullValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::intValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::uintValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::realValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::stringValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::booleanValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::arrayValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::objectValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::NullValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::IntValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::UintValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::RealValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::StringValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::BooleanValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ArrayValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ObjectValue));
     }
     {
         // real
-        Json::Value const val = 2.0;
+        json::Value const val = 2.0;
         EXPECT_TRUE(val.isDouble());
         // val.asCString() should trigger an assertion failure
         EXPECT_TRUE(std::regex_match(val.asString(), std::regex("^2\\.0*$")));
@@ -938,39 +938,39 @@ TEST(json_value, conversions)
         EXPECT_EQ(val.asDouble(), 2.0);
         EXPECT_TRUE(val.asBool());
 
-        EXPECT_FALSE(val.isConvertibleTo(Json::nullValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::intValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::uintValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::realValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::stringValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::booleanValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::arrayValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::objectValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::NullValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::IntValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::UintValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::RealValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::StringValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::BooleanValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ArrayValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ObjectValue));
     }
     {
         // numeric string
-        Json::Value const val = "54321";
+        json::Value const val = "54321";
         EXPECT_TRUE(val.isString());
         EXPECT_EQ(strcmp(val.asCString(), "54321"), 0);
         EXPECT_EQ(val.asString(), "54321");
         EXPECT_EQ(val.asInt(), 54321);
         EXPECT_EQ(val.asUInt(), 54321u);
         EXPECT_EQ(val.asAbsUInt(), 54321);
-        EXPECT_THROW([&] { return val.asDouble(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asDouble(); }(), json::Error);
         EXPECT_TRUE(val.asBool());
 
-        EXPECT_FALSE(val.isConvertibleTo(Json::nullValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::intValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::uintValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::realValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::stringValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::booleanValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::arrayValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::objectValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::NullValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::IntValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::UintValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::RealValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::StringValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::BooleanValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ArrayValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ObjectValue));
     }
     {
         // non-numeric string
-        Json::Value const val(Json::stringValue);
+        json::Value const val(json::StringValue);
         EXPECT_TRUE(val.isString());
         EXPECT_EQ(val.asCString(), nullptr);
         EXPECT_EQ(val.asString(), "");
@@ -980,18 +980,18 @@ TEST(json_value, conversions)
         EXPECT_THROW([&] { return val.asDouble(); }(), std::exception);
         EXPECT_TRUE(val.asBool() == false);
 
-        EXPECT_TRUE(val.isConvertibleTo(Json::nullValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::intValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::uintValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::realValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::stringValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::booleanValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::arrayValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::objectValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::NullValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::IntValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::UintValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::RealValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::StringValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::BooleanValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ArrayValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ObjectValue));
     }
     {
         // bool false
-        Json::Value const val = false;
+        json::Value const val = false;
         EXPECT_TRUE(val.isBool());
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "false");
@@ -1001,18 +1001,18 @@ TEST(json_value, conversions)
         EXPECT_EQ(val.asDouble(), 0.0);
         EXPECT_FALSE(val.asBool());
 
-        EXPECT_TRUE(val.isConvertibleTo(Json::nullValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::intValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::uintValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::realValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::stringValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::booleanValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::arrayValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::objectValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::NullValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::IntValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::UintValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::RealValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::StringValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::BooleanValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ArrayValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ObjectValue));
     }
     {
         // bool true
-        Json::Value const val = true;
+        json::Value const val = true;
         EXPECT_TRUE(val.isBool());
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "true");
@@ -1022,71 +1022,71 @@ TEST(json_value, conversions)
         EXPECT_EQ(val.asDouble(), 1.0);
         EXPECT_TRUE(val.asBool());
 
-        EXPECT_FALSE(val.isConvertibleTo(Json::nullValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::intValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::uintValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::realValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::stringValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::booleanValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::arrayValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::objectValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::NullValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::IntValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::UintValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::RealValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::StringValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::BooleanValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ArrayValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ObjectValue));
     }
     {
         // array type
-        Json::Value const val(Json::arrayValue);
+        json::Value const val(json::ArrayValue);
         EXPECT_TRUE(val.isArray());
         // val.asCString should trigger an assertion failure
-        EXPECT_THROW([&] { return val.asString(); }(), Json::error);
-        EXPECT_THROW([&] { return val.asInt(); }(), Json::error);
-        EXPECT_THROW([&] { return val.asUInt(); }(), Json::error);
-        EXPECT_THROW([&] { return val.asAbsUInt(); }(), Json::error);
-        EXPECT_THROW([&] { return val.asDouble(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asString(); }(), json::Error);
+        EXPECT_THROW([&] { return val.asInt(); }(), json::Error);
+        EXPECT_THROW([&] { return val.asUInt(); }(), json::Error);
+        EXPECT_THROW([&] { return val.asAbsUInt(); }(), json::Error);
+        EXPECT_THROW([&] { return val.asDouble(); }(), json::Error);
         EXPECT_FALSE(val.asBool());  // empty or not
 
-        EXPECT_TRUE(val.isConvertibleTo(Json::nullValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::intValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::uintValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::realValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::stringValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::booleanValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::arrayValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::objectValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::NullValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::IntValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::UintValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::RealValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::StringValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::BooleanValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::ArrayValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ObjectValue));
     }
     {
         // object type
-        Json::Value const val(Json::objectValue);
+        json::Value const val(json::ObjectValue);
         EXPECT_TRUE(val.isObject());
         // val.asCString should trigger an assertion failure
-        EXPECT_THROW([&] { return val.asString(); }(), Json::error);
-        EXPECT_THROW([&] { return val.asInt(); }(), Json::error);
-        EXPECT_THROW([&] { return val.asUInt(); }(), Json::error);
-        EXPECT_THROW([&] { return val.asAbsUInt(); }(), Json::error);
-        EXPECT_THROW([&] { return val.asDouble(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asString(); }(), json::Error);
+        EXPECT_THROW([&] { return val.asInt(); }(), json::Error);
+        EXPECT_THROW([&] { return val.asUInt(); }(), json::Error);
+        EXPECT_THROW([&] { return val.asAbsUInt(); }(), json::Error);
+        EXPECT_THROW([&] { return val.asDouble(); }(), json::Error);
         EXPECT_FALSE(val.asBool());  // empty or not
 
-        EXPECT_TRUE(val.isConvertibleTo(Json::nullValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::intValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::uintValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::realValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::stringValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::booleanValue));
-        EXPECT_FALSE(val.isConvertibleTo(Json::arrayValue));
-        EXPECT_TRUE(val.isConvertibleTo(Json::objectValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::NullValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::IntValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::UintValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::RealValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::StringValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::BooleanValue));
+        EXPECT_FALSE(val.isConvertibleTo(json::ArrayValue));
+        EXPECT_TRUE(val.isConvertibleTo(json::ObjectValue));
     }
 }
 
 TEST(json_value, access_members)
 {
-    Json::Value val;
-    EXPECT_EQ(val.type(), Json::nullValue);
+    json::Value val;
+    EXPECT_EQ(val.type(), json::NullValue);
     EXPECT_EQ(val.size(), 0);
     EXPECT_FALSE(val.isValidIndex(0));
     EXPECT_FALSE(val.isMember("key"));
     {
-        Json::Value const constVal = val;
-        EXPECT_EQ(constVal[7u].type(), Json::nullValue);
+        json::Value const constVal = val;
+        EXPECT_EQ(constVal[7u].type(), json::NullValue);
         EXPECT_FALSE(constVal.isMember("key"));
-        EXPECT_EQ(constVal["key"].type(), Json::nullValue);
+        EXPECT_EQ(constVal["key"].type(), json::NullValue);
         EXPECT_TRUE(constVal.getMemberNames().empty());
         EXPECT_EQ(constVal.get(1u, "default0"), "default0");
         EXPECT_EQ(constVal.get(std::string("not"), "oh"), "oh");
@@ -1094,74 +1094,74 @@ TEST(json_value, access_members)
     }
 
     val = -7;
-    EXPECT_EQ(val.type(), Json::intValue);
+    EXPECT_EQ(val.type(), json::IntValue);
     EXPECT_EQ(val.size(), 0);
     EXPECT_FALSE(val.isValidIndex(0));
     EXPECT_FALSE(val.isMember("key"));
 
     val = 42u;
-    EXPECT_EQ(val.type(), Json::uintValue);
+    EXPECT_EQ(val.type(), json::UintValue);
     EXPECT_EQ(val.size(), 0);
     EXPECT_FALSE(val.isValidIndex(0));
     EXPECT_FALSE(val.isMember("key"));
 
     val = std::numbers::pi;
-    EXPECT_EQ(val.type(), Json::realValue);
+    EXPECT_EQ(val.type(), json::RealValue);
     EXPECT_EQ(val.size(), 0);
     EXPECT_FALSE(val.isValidIndex(0));
     EXPECT_FALSE(val.isMember("key"));
 
     val = true;
-    EXPECT_EQ(val.type(), Json::booleanValue);
+    EXPECT_EQ(val.type(), json::BooleanValue);
     EXPECT_EQ(val.size(), 0);
     EXPECT_FALSE(val.isValidIndex(0));
     EXPECT_FALSE(val.isMember("key"));
 
     val = "string";
-    EXPECT_EQ(val.type(), Json::stringValue);
+    EXPECT_EQ(val.type(), json::StringValue);
     EXPECT_EQ(val.size(), 0);
     EXPECT_FALSE(val.isValidIndex(0));
     EXPECT_FALSE(val.isMember("key"));
 
-    val = Json::Value(Json::objectValue);
-    EXPECT_EQ(val.type(), Json::objectValue);
+    val = json::Value(json::ObjectValue);
+    EXPECT_EQ(val.type(), json::ObjectValue);
     EXPECT_EQ(val.size(), 0);
-    static Json::StaticString const staticThree("three");
-    val[staticThree] = 3;
+    static json::StaticString const kSTATIC_THREE("three");
+    val[kSTATIC_THREE] = 3;
     val["two"] = 2;
     EXPECT_EQ(val.size(), 2);
     EXPECT_TRUE(val.isValidIndex(1));
     EXPECT_FALSE(val.isValidIndex(2));
-    EXPECT_EQ(val[staticThree], 3);
+    EXPECT_EQ(val[kSTATIC_THREE], 3);
     EXPECT_TRUE(val.isMember("two"));
-    EXPECT_TRUE(val.isMember(staticThree));
+    EXPECT_TRUE(val.isMember(kSTATIC_THREE));
     EXPECT_FALSE(val.isMember("key"));
     {
-        Json::Value const constVal = val;
+        json::Value const constVal = val;
         EXPECT_EQ(constVal["two"], 2);
-        EXPECT_EQ(constVal["four"].type(), Json::nullValue);
-        EXPECT_EQ(constVal[staticThree], 3);
+        EXPECT_EQ(constVal["four"].type(), json::NullValue);
+        EXPECT_EQ(constVal[kSTATIC_THREE], 3);
         EXPECT_TRUE(constVal.isMember("two"));
-        EXPECT_TRUE(constVal.isMember(staticThree));
+        EXPECT_TRUE(constVal.isMember(kSTATIC_THREE));
         EXPECT_FALSE(constVal.isMember("key"));
         EXPECT_EQ(val.get(std::string("two"), "backup"), 2);
         EXPECT_EQ(val.get("missing", "default2"), "default2");
     }
 
-    val = Json::Value(Json::arrayValue);
-    EXPECT_EQ(val.type(), Json::arrayValue);
+    val = json::Value(json::ArrayValue);
+    EXPECT_EQ(val.type(), json::ArrayValue);
     EXPECT_EQ(val.size(), 0);
     val[0u] = "zero";
     val[1u] = "one";
     EXPECT_EQ(val.size(), 2);
     EXPECT_TRUE(val.isValidIndex(1));
     EXPECT_FALSE(val.isValidIndex(2));
-    EXPECT_EQ(val[20u].type(), Json::nullValue);
+    EXPECT_EQ(val[20u].type(), json::NullValue);
     EXPECT_FALSE(val.isMember("key"));
     {
-        Json::Value const constVal = val;
+        json::Value const constVal = val;
         EXPECT_EQ(constVal[0u], "zero");
-        EXPECT_EQ(constVal[2u].type(), Json::nullValue);
+        EXPECT_EQ(constVal[2u].type(), json::NullValue);
         EXPECT_FALSE(constVal.isMember("key"));
         EXPECT_EQ(val.get(1u, "default0"), "one");
         EXPECT_EQ(val.get(3u, "default1"), "default1");
@@ -1170,28 +1170,28 @@ TEST(json_value, access_members)
 
 TEST(json_value, remove_members)
 {
-    Json::Value val;
-    EXPECT_EQ(val.removeMember(std::string("member")).type(), Json::nullValue);
+    json::Value val;
+    EXPECT_EQ(val.removeMember(std::string("member")).type(), json::NullValue);
 
-    val = Json::Value(Json::objectValue);
-    static Json::StaticString const staticThree("three");
-    val[staticThree] = 3;
+    val = json::Value(json::ObjectValue);
+    static json::StaticString const kSTATIC_THREE("three");
+    val[kSTATIC_THREE] = 3;
     val["two"] = 2;
     EXPECT_EQ(val.size(), 2);
 
-    EXPECT_EQ(val.removeMember(std::string("six")).type(), Json::nullValue);
+    EXPECT_EQ(val.removeMember(std::string("six")).type(), json::NullValue);
     EXPECT_EQ(val.size(), 2);
 
-    EXPECT_EQ(val.removeMember(staticThree), 3);
+    EXPECT_EQ(val.removeMember(kSTATIC_THREE), 3);
     EXPECT_EQ(val.size(), 1);
 
-    EXPECT_EQ(val.removeMember(staticThree).type(), Json::nullValue);
+    EXPECT_EQ(val.removeMember(kSTATIC_THREE).type(), json::NullValue);
     EXPECT_EQ(val.size(), 1);
 
     EXPECT_EQ(val.removeMember(std::string("two")), 2);
     EXPECT_EQ(val.size(), 0);
 
-    EXPECT_EQ(val.removeMember(std::string("two")).type(), Json::nullValue);
+    EXPECT_EQ(val.removeMember(std::string("two")).type(), json::NullValue);
     EXPECT_EQ(val.size(), 0);
 }
 
@@ -1199,17 +1199,17 @@ TEST(json_value, iterator)
 {
     {
         // Iterating an array.
-        Json::Value arr{Json::arrayValue};
+        json::Value arr{json::ArrayValue};
         arr[0u] = "zero";
         arr[1u] = "one";
         arr[2u] = "two";
         arr[3u] = "three";
 
-        Json::ValueIterator const b{arr.begin()};
-        Json::ValueIterator const e{arr.end()};
+        json::ValueIterator const b{arr.begin()};
+        json::ValueIterator const e{arr.end()};
 
-        Json::ValueIterator i1 = b;
-        Json::ValueIterator i2 = e;
+        json::ValueIterator i1 = b;
+        json::ValueIterator i2 = e;
         --i2;
 
         // key(), index(), and memberName() on an array iterator.
@@ -1236,8 +1236,8 @@ TEST(json_value, iterator)
     }
     {
         // Iterating a const object.
-        Json::Value const obj{[]() {
-            Json::Value obj{Json::objectValue};
+        json::Value const obj{[]() {
+            json::Value obj{json::ObjectValue};
             obj["0"] = 0;
             obj["1"] = 1;
             obj["2"] = 2;
@@ -1245,8 +1245,8 @@ TEST(json_value, iterator)
             return obj;
         }()};
 
-        Json::ValueConstIterator i1{obj.begin()};
-        Json::ValueConstIterator i2{obj.end()};
+        json::ValueConstIterator i1{obj.begin()};
+        json::ValueConstIterator i2{obj.end()};
         --i2;
 
         // key(), index(), and memberName() on an object iterator.
@@ -1271,19 +1271,19 @@ TEST(json_value, iterator)
     }
     {
         // Iterating a non-const null object.
-        Json::Value nul{};
+        json::Value nul{};
         EXPECT_EQ(nul.begin(), nul.end());
     }
     {
         // Iterating a const Int.
-        Json::Value const i{-3};
+        json::Value const i{-3};
         EXPECT_EQ(i.begin(), i.end());
     }
 }
 
 TEST(json_value, nest_limits)
 {
-    Json::Reader r;
+    json::Reader r;
     {
         auto nest = [](std::uint32_t depth) -> std::string {
             std::string s = "{";
@@ -1297,15 +1297,15 @@ TEST(json_value, nest_limits)
 
         {
             // Within object nest limit
-            auto json{nest(std::min(10u, Json::Reader::nest_limit))};
-            Json::Value j;
+            auto json{nest(std::min(10u, json::Reader::kNEST_LIMIT))};
+            json::Value j;
             EXPECT_TRUE(r.parse(json, j));
         }
 
         {
             // Exceed object nest limit
-            auto json{nest(Json::Reader::nest_limit + 1)};
-            Json::Value j;
+            auto json{nest(json::Reader::kNEST_LIMIT + 1)};
+            json::Value j;
             EXPECT_FALSE(r.parse(json, j));
         }
     }
@@ -1321,8 +1321,8 @@ TEST(json_value, nest_limits)
     };
     {
         // Exceed array nest limit
-        auto json{nest(Json::Reader::nest_limit + 1)};
-        Json::Value j;
+        auto json{nest(json::Reader::kNEST_LIMIT + 1)};
+        json::Value j;
         EXPECT_FALSE(r.parse(json, j));
     }
 }
@@ -1332,21 +1332,21 @@ TEST(json_value, memory_leak)
     // When run with the address sanitizer, this test confirms there is no
     // memory leak with the scenarios below.
     {
-        Json::Value a;
+        json::Value a;
         a[0u] = 1;
-        EXPECT_EQ(a.type(), Json::arrayValue);
-        EXPECT_EQ(a[0u].type(), Json::intValue);
+        EXPECT_EQ(a.type(), json::ArrayValue);
+        EXPECT_EQ(a[0u].type(), json::IntValue);
         a = std::move(a[0u]);
-        EXPECT_EQ(a.type(), Json::intValue);
+        EXPECT_EQ(a.type(), json::IntValue);
     }
     {
-        Json::Value b;
-        Json::Value temp;
+        json::Value b;
+        json::Value temp;
         temp["a"] = "Probably avoids the small string optimization";
         temp["b"] = "Also probably avoids the small string optimization";
-        EXPECT_EQ(temp.type(), Json::objectValue);
+        EXPECT_EQ(temp.type(), json::ObjectValue);
         b.append(temp);
-        EXPECT_EQ(temp.type(), Json::objectValue);
+        EXPECT_EQ(temp.type(), json::ObjectValue);
         EXPECT_EQ(b.size(), 1);
 
         b.append(std::move(temp));
@@ -1354,7 +1354,7 @@ TEST(json_value, memory_leak)
 
         // Note that the type() == nullValue check is implementation
         // specific and not guaranteed to be valid in the future.
-        EXPECT_EQ(temp.type(), Json::nullValue);  // NOLINT(bugprone-use-after-move)
+        EXPECT_EQ(temp.type(), json::NullValue);  // NOLINT(bugprone-use-after-move)
     }
 }
 

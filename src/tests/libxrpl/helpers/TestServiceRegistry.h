@@ -23,7 +23,7 @@ namespace test {
 class TestLogs : public Logs
 {
 public:
-    explicit TestLogs(beast::severities::Severity level = beast::severities::kWarning) : Logs(level)
+    explicit TestLogs(beast::severities::Severity level = beast::severities::KWarning) : Logs(level)
     {
     }
 
@@ -62,7 +62,7 @@ private:
 */
 class TestServiceRegistry : public ServiceRegistry
 {
-    TestLogs logs_{beast::severities::kWarning};
+    TestLogs logs_{beast::severities::KWarning};
     boost::asio::io_context io_context_;
     TestFamily family_{logs_.journal("TestFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};

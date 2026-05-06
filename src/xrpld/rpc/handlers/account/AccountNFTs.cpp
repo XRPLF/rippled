@@ -32,20 +32,20 @@ namespace xrpl {
       marker: <opaque> // optional, resume previous query
     }
 */
-Json::Value
+json::Value
 doAccountNFTs(RPC::JsonContext& context)
 {
     auto const& params = context.params;
     if (!params.isMember(jss::account))
-        return RPC::missing_field_error(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return RPC::invalid_field_error(jss::account);
+        return RPC::invalidFieldError(jss::account);
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        return rpcError(rpcACT_MALFORMED);
+        return rpcError(RpcActMalformed);
     }
 
     std::shared_ptr<ReadView const> ledger;
@@ -55,10 +55,10 @@ doAccountNFTs(RPC::JsonContext& context)
     auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
-        return rpcError(rpcACT_NOT_FOUND);
+        return rpcError(RpcActNotFound);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::accountNFTokens, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_NF_TOKENS, context))
         return *err;
 
     uint256 marker;
@@ -68,25 +68,25 @@ doAccountNFTs(RPC::JsonContext& context)
     {
         auto const& m = params[jss::marker];
         if (!m.isString())
-            return RPC::expected_field_error(jss::marker, "string");
+            return RPC::expectedFieldError(jss::marker, "string");
 
         if (!marker.parseHex(m.asString()))
-            return RPC::invalid_field_error(jss::marker);
+            return RPC::invalidFieldError(jss::marker);
     }
 
-    auto const first = keylet::nftpage(keylet::nftpage_min(accountID), marker);
-    auto const last = keylet::nftpage_max(accountID);
+    auto const first = keylet::nftpage(keylet::nftpageMin(accountID), marker);
+    auto const last = keylet::nftpageMax(accountID);
 
     auto cp = ledger->read(
         Keylet(ltNFTOKEN_PAGE, ledger->succ(first.key, last.key.next()).value_or(last.key)));
 
     std::uint32_t cnt = 0;
-    auto& nfts = (result[jss::account_nfts] = Json::arrayValue);
+    auto& nfts = (result[jss::account_nfts] = json::ArrayValue);
 
     // Continue iteration from the current page:
     bool pastMarker = marker.isZero();
     bool markerFound = false;
-    uint256 const maskedMarker = marker & nft::pageMask;
+    uint256 const maskedMarker = marker & nft::kPAGE_MASK;
     while (cp)
     {
         auto arr = cp->getFieldArray(sfNFTokens);
@@ -105,7 +105,7 @@ doAccountNFTs(RPC::JsonContext& context)
             //     in that case then we need to compare against the full
             //     256 bits.
             uint256 const nftokenID = o[sfNFTokenID];
-            uint256 const maskedNftokenID = nftokenID & nft::pageMask;
+            uint256 const maskedNftokenID = nftokenID & nft::kPAGE_MASK;
 
             if (!pastMarker)
             {
@@ -123,12 +123,12 @@ doAccountNFTs(RPC::JsonContext& context)
             }
 
             if (markerSet && !markerFound)
-                return RPC::invalid_field_error(jss::marker);
+                return RPC::invalidFieldError(jss::marker);
 
             pastMarker = true;
 
             {
-                Json::Value& obj = nfts.append(o.getJson(JsonOptions::none));
+                json::Value& obj = nfts.append(o.getJson(JsonOptions::KNone));
 
                 // Pull out the components of the nft ID.
                 obj[sfFlags.jsonName] = nft::getFlags(nftokenID);
@@ -158,10 +158,10 @@ doAccountNFTs(RPC::JsonContext& context)
     }
 
     if (markerSet && !markerFound)
-        return RPC::invalid_field_error(jss::marker);
+        return RPC::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
     return result;
 }
 

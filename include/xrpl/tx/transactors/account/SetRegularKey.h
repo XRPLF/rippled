@@ -7,7 +7,7 @@ namespace xrpl {
 class SetRegularKey : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Blocker};
 
     explicit SetRegularKey(ApplyContext& ctx) : Transactor(ctx)
     {

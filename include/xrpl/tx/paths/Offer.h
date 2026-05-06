@@ -19,13 +19,13 @@ template <StepAmount TIn, StepAmount TOut>
 class TOffer
 {
 private:
-    SLE::pointer m_entry;
-    Quality m_quality{};
-    AccountID m_account;
+    SLE::pointer entry_;
+    Quality quality_{};
+    AccountID account_;
     Asset assetIn_;
     Asset assetOut_;
 
-    TAmounts<TIn, TOut> m_amounts{};
+    TAmounts<TIn, TOut> amounts_{};
     void
     setFieldAmounts();
 
@@ -46,14 +46,14 @@ public:
     [[nodiscard]] Quality
     quality() const noexcept
     {
-        return m_quality;
+        return quality_;
     }
 
     /** Returns the account id of the offer's owner. */
     [[nodiscard]] AccountID const&
     owner() const
     {
-        return m_account;
+        return account_;
     }
 
     /** Returns the in and out amounts.
@@ -62,16 +62,16 @@ public:
     [[nodiscard]] TAmounts<TIn, TOut> const&
     amount() const
     {
-        return m_amounts;
+        return amounts_;
     }
 
     /** Returns `true` if no more funds can flow through this offer. */
     [[nodiscard]] bool
-    fully_consumed() const
+    fullyConsumed() const
     {
-        if (m_amounts.in <= beast::zero)
+        if (amounts_.in <= beast::kZERO)
             return true;
-        if (m_amounts.out <= beast::zero)
+        if (amounts_.out <= beast::kZERO)
             return true;
         return false;
     }
@@ -80,27 +80,27 @@ public:
     void
     consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed)
     {
-        if (consumed.in > m_amounts.in)
+        if (consumed.in > amounts_.in)
             Throw<std::logic_error>("can't consume more than is available.");
 
-        if (consumed.out > m_amounts.out)
+        if (consumed.out > amounts_.out)
             Throw<std::logic_error>("can't produce more than is available.");
 
-        m_amounts -= consumed;
+        amounts_ -= consumed;
         setFieldAmounts();
-        view.update(m_entry);
+        view.update(entry_);
     }
 
     [[nodiscard]] std::string
     id() const
     {
-        return to_string(m_entry->key());
+        return to_string(entry_->key());
     }
 
     [[nodiscard]] std::optional<uint256>
     key() const
     {
-        return m_entry->key();
+        return entry_->key();
     }
 
     [[nodiscard]] Asset const&
@@ -122,7 +122,7 @@ public:
     isFunded() const
     {
         // Offer owner is issuer; they have unlimited funds if IOU
-        return m_account == assetOut_.getIssuer() && assetOut_.holds<Issue>();
+        return account_ == assetOut_.getIssuer() && assetOut_.holds<Issue>();
     }
 
     static std::pair<std::uint32_t, std::uint32_t>
@@ -141,13 +141,13 @@ public:
         if (!isFeatureEnabled(fixAMMv1_3))
             return true;
 
-        if (consumed.in > m_amounts.in || consumed.out > m_amounts.out)
+        if (consumed.in > amounts_.in || consumed.out > amounts_.out)
         {
             // LCOV_EXCL_START
             JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed "
                             << to_string(consumed.in) << " " << to_string(consumed.out)
-                            << " amounts " << to_string(m_amounts.in) << " "
-                            << to_string(m_amounts.out);
+                            << " amounts " << to_string(amounts_.in) << " "
+                            << to_string(amounts_.out);
 
             return false;
             // LCOV_EXCL_STOP
@@ -159,12 +159,12 @@ public:
 
 template <StepAmount TIn, StepAmount TOut>
 TOffer<TIn, TOut>::TOffer(SLE::pointer entry, Quality quality)
-    : m_entry(std::move(entry)), m_quality(quality), m_account(m_entry->getAccountID(sfAccount))
+    : entry_(std::move(entry)), quality_(quality), account_(entry_->getAccountID(sfAccount))
 {
-    auto const tp = m_entry->getFieldAmount(sfTakerPays);
-    auto const tg = m_entry->getFieldAmount(sfTakerGets);
-    m_amounts.in = toAmount<TIn>(tp);
-    m_amounts.out = toAmount<TOut>(tg);
+    auto const tp = entry_->getFieldAmount(sfTakerPays);
+    auto const tg = entry_->getFieldAmount(sfTakerGets);
+    amounts_.in = toAmount<TIn>(tp);
+    amounts_.out = toAmount<TOut>(tg);
     assetIn_ = tp.asset();
     assetOut_ = tg.asset();
 }
@@ -175,20 +175,20 @@ TOffer<TIn, TOut>::setFieldAmounts()
 {
     if constexpr (std::is_same_v<TIn, XRPAmount>)
     {
-        m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
+        entry_->setFieldAmount(sfTakerPays, toSTAmount(amounts_.in));
     }
     else
     {
-        m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, assetIn_));
+        entry_->setFieldAmount(sfTakerPays, toSTAmount(amounts_.in, assetIn_));
     }
 
     if constexpr (std::is_same_v<TOut, XRPAmount>)
     {
-        m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
+        entry_->setFieldAmount(sfTakerGets, toSTAmount(amounts_.out));
     }
     else
     {
-        m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, assetOut_));
+        entry_->setFieldAmount(sfTakerGets, toSTAmount(amounts_.out, assetOut_));
     }
 }
 
@@ -199,7 +199,7 @@ TOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& 
 {
     // It turns out that the ceil_out implementation has some slop in
     // it, which ceil_out_strict removes.
-    return quality().ceil_out_strict(offerAmount, limit, roundUp);
+    return quality().ceilOutStrict(offerAmount, limit, roundUp);
 }
 
 template <StepAmount TIn, StepAmount TOut>
@@ -214,9 +214,9 @@ TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& li
         // it.  ceil_in_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
         // an amendment.
-        return quality().ceil_in_strict(offerAmount, limit, roundUp);
+        return quality().ceilInStrict(offerAmount, limit, roundUp);
     }
-    return m_quality.ceil_in(offerAmount, limit);
+    return quality_.ceilIn(offerAmount, limit);
 }
 
 template <StepAmount TIn, StepAmount TOut>
