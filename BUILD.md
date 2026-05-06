@@ -141,7 +141,7 @@ Alternatively, you can pull our recipes from the repository and export them loca
 
 ```bash
 # Define which recipes to export.
-recipes=('abseil' 'ed25519' 'grpc' 'm4' 'mpt-crypto' 'openssl' 'secp256k1' 'snappy' 'soci' 'wasm-xrplf' 'wasmi')
+recipes=('abseil' 'ed25519' 'mpt-crypto' 'openssl' 'secp256k1' 'snappy' 'soci' 'wasm-xrplf' 'wasmi')
 
 # Selectively check out the recipes from our CCI fork.
 cd external
