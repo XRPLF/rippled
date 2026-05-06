@@ -240,13 +240,13 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Add Address and UB sanitizers as separate configurations for specific
         # bookworm distros. Thread sanitizer is currently disabled (see below).
         # GCC-Asan xrpld-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
-        if os["distro_version"] in [
-            "bookworm",
-            "trixie",
-        ] and f"{os['compiler_name']}-{os['compiler_version']}" in [
-            "gcc-15",
-            "clang-22",
-        ]:
+        if (
+            os["distro_version"] == "bookworm"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
+        ) or (
+            os["distro_version"] == "trixie"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-22"
+        ):
             # Add ASAN and UBSAN configurations for both gcc-15 and clang-22
             configurations.append(
                 {
