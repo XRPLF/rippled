@@ -1150,8 +1150,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     // read threads) are started here because they use their own
     // threading and do not contend with io_context setup work.
 
-    m_resourceManager->start();
-    m_nodeStore->startReadThreads();
+    resourceManager_->start();
+    nodeStore_->startReadThreads();
 
     // We want to intercept CTRL-C and the standard termination signal SIGTERM
     // and terminate the process. This handler will NEVER be invoked twice.
