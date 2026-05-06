@@ -218,7 +218,7 @@ private:
     {
         TimePoint time;      ///< When the event was reconciled.
         uint256 ledgerHash;  ///< Ledger hash for late-repair matching.
-        bool agreed;         ///< Whether this was an agreement.
+        bool agreed{false};  ///< Whether this was an agreement.
     };
 
     /// Grace period before reconciling a ledger event.
