@@ -587,7 +587,7 @@ public:
 
     /** Returns `true` if the field is set.
 
-        Fields with soeDEFAULT and set to the
+        Fields with SoeDefault and set to the
         default value will return `true`
     */
     explicit

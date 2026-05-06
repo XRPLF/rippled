@@ -39,7 +39,7 @@ associateAsset(SLE& sle, Asset const& asset)
 
             // associateAsset in derived classes may change the underlying
             // value, but it won't know anything about how the value relates to
-            // the SLE. If the template element is soeDEFAULT, and the value
+            // the SLE. If the template element is SoeDefault, and the value
             // changed to the default value, remove the field.
             if (style == SoeDefault && ta.isDefault())
                 sle.makeFieldAbsent(field);

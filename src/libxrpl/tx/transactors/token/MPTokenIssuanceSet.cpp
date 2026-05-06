@@ -226,7 +226,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // sfMutableFlags is soeDEFAULT, defaulting to 0 if not specified on
+    // sfMutableFlags is SoeDefault, defaulting to 0 if not specified on
     // the ledger.
     auto const currentMutableFlags = sleMptIssuance->getFieldU32(sfMutableFlags);
 
@@ -329,7 +329,7 @@ MPTokenIssuanceSet::doApply()
 
     if (auto const transferFee = ctx_.tx[~sfTransferFee])
     {
-        // TransferFee uses soeDEFAULT style:
+        // TransferFee uses SoeDefault style:
         // - If the field is absent, it is interpreted as 0.
         // - If the field is present, it must be non-zero.
         // Therefore, when TransferFee is 0, the field should be removed.

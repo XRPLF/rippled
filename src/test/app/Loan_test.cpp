@@ -3639,7 +3639,7 @@ protected:
 
             auto const loan = objects[0u];
             BEAST_EXPECT(loan[sfBorrower] == lender.human());
-            // soeDEFAULT fields are not returned if they're in the default
+            // SoeDefault fields are not returned if they're in the default
             // state
             BEAST_EXPECT(!loan.isMember(sfCloseInterestRate));
             BEAST_EXPECT(!loan.isMember(sfClosePaymentFee));
