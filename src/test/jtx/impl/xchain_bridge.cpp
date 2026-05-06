@@ -72,8 +72,10 @@ bridgeCreate(
     jv[sfXChainBridge.getJsonName()] = bridge;
     jv[sfSignatureReward.getJsonName()] = reward.getJson(JsonOptions::Values::None);
     if (minAccountCreate)
+    {
         jv[sfMinAccountCreateAmount.getJsonName()] =
             minAccountCreate->getJson(JsonOptions::Values::None);
+    }
 
     jv[jss::TransactionType] = jss::XChainCreateBridge;
     return jv;
@@ -93,8 +95,10 @@ bridgeModify(
     if (reward)
         jv[sfSignatureReward.getJsonName()] = reward->getJson(JsonOptions::Values::None);
     if (minAccountCreate)
+    {
         jv[sfMinAccountCreateAmount.getJsonName()] =
             minAccountCreate->getJson(JsonOptions::Values::None);
+    }
 
     jv[jss::TransactionType] = jss::XChainModifyBridge;
     return jv;

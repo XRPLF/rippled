@@ -680,8 +680,10 @@ PathRequest::findPaths(
             jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::Values::None);
 
             if (convert_all_)
+            {
                 jvEntry[jss::destination_amount] =
                     rc.actualAmountOut.getJson(JsonOptions::Values::None);
+            }
 
             if (hasCompletion())
             {
