@@ -28,6 +28,7 @@
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <opentelemetry/common/attribute_value.h>
+#include <opentelemetry/common/key_value_iterable_view.h>
 #include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/context.h>
@@ -397,11 +398,17 @@ SpanGuard::addEvent(std::string_view name, std::initializer_list<EventAttribute>
 {
     if (!impl_)
         return;
-    std::vector<std::pair<std::string_view, opentelemetry::common::AttributeValue>> otelAttrs;
+    std::vector<std::pair<opentelemetry::nostd::string_view, opentelemetry::common::AttributeValue>>
+        otelAttrs;
     otelAttrs.reserve(attrs.size());
     for (auto const& [k, v] : attrs)
-        otelAttrs.emplace_back(k, opentelemetry::common::AttributeValue{v});
-    impl_->span->AddEvent(std::string(name), otelAttrs);
+        otelAttrs.emplace_back(
+            opentelemetry::nostd::string_view{k.data(), k.size()},
+            opentelemetry::common::AttributeValue{
+                opentelemetry::nostd::string_view{v.data(), v.size()}});
+    impl_->span->AddEvent(
+        opentelemetry::nostd::string_view{name.data(), name.size()},
+        opentelemetry::common::KeyValueIterableView<decltype(otelAttrs)>(otelAttrs));
 }
 
 void
