@@ -40,8 +40,7 @@ uniqueRandomPath(
         if (!exists)
             return candidate;
     }
-    throw std::runtime_error(
-        "Unable to generate a unique path under '" + base.string() + "'");
+    throw std::runtime_error("Unable to generate a unique path under '" + base.string() + "'");
 }
 
 /** RAII temporary directory.
