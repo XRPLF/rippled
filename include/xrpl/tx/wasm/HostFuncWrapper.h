@@ -276,8 +276,7 @@ using floatToInt_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int
 wasm_trap_t*
 floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using floatToMantExp_proto =
-    int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, uint8_t*, int32_t);
+using floatToMantExp_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 floatToMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 

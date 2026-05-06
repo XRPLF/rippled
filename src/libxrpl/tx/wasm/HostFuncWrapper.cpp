@@ -1808,8 +1808,7 @@ floatFromMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* r
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
-    return returnResult(
-        runtime, params, results, hf->floatFromMantExp(*mant, *exp, *rounding), i);
+    return returnResult(runtime, params, results, hf->floatFromMantExp(*mant, *exp, *rounding), i);
 }
 
 wasm_trap_t*

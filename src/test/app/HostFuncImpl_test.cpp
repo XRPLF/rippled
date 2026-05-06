@@ -5897,8 +5897,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {  // hfs.floatDivide(makeSlice(floatMax), makeSlice(*y), 0);
-            auto const y = hfs.floatFromMantExp(
-                STAmount::cMaxValue, -normalExp - 1, 0);  // 0.9999999...
+            auto const y =
+                hfs.floatFromMantExp(STAmount::cMaxValue, -normalExp - 1, 0);  // 0.9999999...
             if (BEAST_EXPECT(y))
             {
                 WasmValVec params(7), result(1);
@@ -6362,7 +6362,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             }
         }
 
-        {  // hfs.floatPower(makeSlice(*x), 2, 0);
+        {
+            // hfs.floatPower(makeSlice(*x), 2, 0);
             auto const x = hfs.floatFromMantExp(1, -1, 0);  // 0.1
             auto const y = hfs.floatFromMantExp(1, -2, 0);  // 0.01
             if (BEAST_EXPECT(x && y))

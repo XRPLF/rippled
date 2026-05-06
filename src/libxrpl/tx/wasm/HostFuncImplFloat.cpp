@@ -532,10 +532,7 @@ WasmHostFunctionsImpl::floatToMantExp(Slice const& x) const
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatFromMantExp(
-    int64_t mantissa,
-    int32_t exponent,
-    int32_t mode) const
+WasmHostFunctionsImpl::floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const
 {
     return wasm_float::floatFromMantExpImpl(mantissa, exponent, mode);
 }
