@@ -1,5 +1,6 @@
-#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Livecache.h>
+
+#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/basics/chrono.h>
