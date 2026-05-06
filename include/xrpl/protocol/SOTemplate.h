@@ -28,9 +28,9 @@ enum SOEStyle {
 enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
 enum SOEConstant {
-    soeCONSTANTINVALID = 0,
-    soeCONSTANT = 1,
-    soeNOTCONSTANT = 2,
+    SoeConstantinvalid = 0,
+    SoeConstant = 1,
+    SoeNotconstant = 2,
 };
 
 //------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOEConstant constant_ = soeCONSTANTINVALID;
+    SOEConstant constant_ = SoeConstantinvalid;
     SOETxMPTIssue supportMpt_ = SoeMptNone;
 
 private:
@@ -86,7 +86,7 @@ public:
         TypedField<T> const& fieldName,
         SOEStyle style,
         SOEConstant constant,
-        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+        SOETxMPTIssue supportMpt = SoeMptNotSupported)
         : sField_(fieldName), style_(style), constant_(constant), supportMpt_(supportMpt)
     {
         init(fieldName);

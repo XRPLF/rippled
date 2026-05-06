@@ -2144,8 +2144,8 @@ class Invariants_test : public beast::unit_test::Suite
         {
             doInvariantCheck(
                 {},
-                [&](Account const& A1, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(keylet::account(A1.id()));
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::account(a1.id()));
                     if (!sle)
                         return false;
                     sle->at(sfPreviousTxnID) = uint256(42u);
@@ -2170,8 +2170,8 @@ class Invariants_test : public beast::unit_test::Suite
                 doInvariantCheck(
                     Env(*this, defaultAmendments() - featureInvariantsV1_1),
                     {{"changed an unchangeable field"}},
-                    [&](Account const& A1, Account const&, ApplyContext& ac) {
-                        auto sle = ac.view().peek(keylet::account(A1.id()));
+                    [&](Account const& a1, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(keylet::account(a1.id()));
                         if (!sle)
                             return false;
                         mod(sle);
@@ -2188,11 +2188,11 @@ class Invariants_test : public beast::unit_test::Suite
             doInvariantCheck(
                 Env(*this, defaultAmendments() - featureInvariantsV1_1),
                 {},
-                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto sle = ac.view().peek(keylet::account(A1.id()));
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::account(a1.id()));
                     if (!sle)
                         return false;
-                    sle->at(sfAccount) = A2.id();
+                    sle->at(sfAccount) = a2.id();
                     ac.view().update(sle);
                     return true;
                 },
@@ -3013,8 +3013,8 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {"violation of vault immutable data", "changed an unchangeable field"},
-            [&](Account const& A1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;

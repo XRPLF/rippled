@@ -24,15 +24,15 @@
     \sa keylet::nftoffer
  */
 LEDGER_ENTRY(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, nft_offer, ({
-    {sfOwner,                SoeRequired, soeCONSTANT},
-    {sfNFTokenID,            SoeRequired, soeCONSTANT},
-    {sfAmount,               SoeRequired, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfNFTokenOfferNode,     SoeRequired, soeCONSTANT},
-    {sfDestination,          SoeOptional, soeCONSTANT},
-    {sfExpiration,           SoeOptional, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
+    {sfOwner,                SoeRequired, SoeConstant},
+    {sfNFTokenID,            SoeRequired, SoeConstant},
+    {sfAmount,               SoeRequired, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfNFTokenOfferNode,     SoeRequired, SoeConstant},
+    {sfDestination,          SoeOptional, SoeConstant},
+    {sfExpiration,           SoeOptional, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object which describes a check.
@@ -40,18 +40,18 @@ LEDGER_ENTRY(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, nft_offer, ({
     \sa keylet::check
  */
 LEDGER_ENTRY(ltCHECK, 0x0043, Check, check, ({
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfDestination,          SoeRequired, soeCONSTANT},
-    {sfSendMax,              SoeRequired, soeCONSTANT},
-    {sfSequence,             SoeRequired, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfDestinationNode,      SoeRequired, soeCONSTANT},
-    {sfExpiration,           SoeOptional, soeCONSTANT},
-    {sfInvoiceID,            SoeOptional, soeCONSTANT},
-    {sfSourceTag,            SoeOptional, soeCONSTANT},
-    {sfDestinationTag,       SoeOptional, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfDestination,          SoeRequired, SoeConstant},
+    {sfSendMax,              SoeRequired, SoeConstant},
+    {sfSequence,             SoeRequired, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfDestinationNode,      SoeRequired, SoeConstant},
+    {sfExpiration,           SoeOptional, SoeConstant},
+    {sfInvoiceID,            SoeOptional, SoeConstant},
+    {sfSourceTag,            SoeOptional, SoeConstant},
+    {sfDestinationTag,       SoeOptional, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
 }))
 
 /** The ledger object which tracks the DID.
@@ -59,13 +59,13 @@ LEDGER_ENTRY(ltCHECK, 0x0043, Check, check, ({
    \sa keylet::did
 */
 LEDGER_ENTRY(ltDID, 0x0049, DID, did, ({
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfDIDDocument,          SoeOptional, soeNOTCONSTANT},
-    {sfURI,                  SoeOptional, soeNOTCONSTANT},
-    {sfData,                 SoeOptional, soeNOTCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfDIDDocument,          SoeOptional, SoeNotconstant},
+    {sfURI,                  SoeOptional, SoeNotconstant},
+    {sfData,                 SoeOptional, SoeNotconstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
 }))
 
 /** The ledger object which tracks the current negative UNL state.
@@ -75,11 +75,11 @@ LEDGER_ENTRY(ltDID, 0x0049, DID, did, ({
     \sa keylet::negativeUNL
  */
 LEDGER_ENTRY(ltNEGATIVE_UNL, 0x004e, NegativeUNL, nunl, ({
-    {sfDisabledValidators,   SoeOptional, soeNOTCONSTANT},
-    {sfValidatorToDisable,   SoeOptional, soeNOTCONSTANT},
-    {sfValidatorToReEnable,  SoeOptional, soeNOTCONSTANT},
-    {sfPreviousTxnID,        SoeOptional, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeOptional, soeNOTCONSTANT},
+    {sfDisabledValidators,   SoeOptional, SoeNotconstant},
+    {sfValidatorToDisable,   SoeOptional, SoeNotconstant},
+    {sfValidatorToReEnable,  SoeOptional, SoeNotconstant},
+    {sfPreviousTxnID,        SoeOptional, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeOptional, SoeNotconstant},
 }))
 
 /** A ledger object which contains a list of NFTs
@@ -87,11 +87,11 @@ LEDGER_ENTRY(ltNEGATIVE_UNL, 0x004e, NegativeUNL, nunl, ({
     \sa keylet::nftpage_min, keylet::nftpage_max, keylet::nftpage
  */
 LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
-    {sfPreviousPageMin,      SoeOptional, soeNOTCONSTANT},
-    {sfNextPageMin,          SoeOptional, soeNOTCONSTANT},
-    {sfNFTokens,             SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
+    {sfPreviousPageMin,      SoeOptional, SoeNotconstant},
+    {sfNextPageMin,          SoeOptional, SoeNotconstant},
+    {sfNFTokens,             SoeRequired, SoeNotconstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object which contains a signer list for an account.
@@ -101,13 +101,13 @@ LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
 // All fields are SoeRequired because there is always a SignerEntries.
 // If there are no SignerEntries the node is deleted.
 LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, ({
-    {sfOwner,                SoeOptional, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfSignerQuorum,         SoeRequired, soeNOTCONSTANT},
-    {sfSignerEntries,        SoeRequired, soeNOTCONSTANT},
-    {sfSignerListID,         SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
+    {sfOwner,                SoeOptional, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfSignerQuorum,         SoeRequired, SoeNotconstant},
+    {sfSignerEntries,        SoeRequired, SoeNotconstant},
+    {sfSignerListID,         SoeRequired, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object which describes a ticket.
@@ -115,11 +115,11 @@ LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, ({
     \sa keylet::ticket
  */
 LEDGER_ENTRY(ltTICKET, 0x0054, Ticket, ticket, ({
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfTicketSequence,       SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfTicketSequence,       SoeRequired, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object which describes an account.
@@ -127,29 +127,29 @@ LEDGER_ENTRY(ltTICKET, 0x0054, Ticket, ticket, ({
     \sa keylet::account
  */
 LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfSequence,             SoeRequired, soeNOTCONSTANT},
-    {sfBalance,              SoeRequired, soeNOTCONSTANT},
-    {sfOwnerCount,           SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
-    {sfAccountTxnID,         SoeOptional, soeNOTCONSTANT},
-    {sfRegularKey,           SoeOptional, soeNOTCONSTANT},
-    {sfEmailHash,            SoeOptional, soeNOTCONSTANT},
-    {sfWalletLocator,        SoeOptional, soeNOTCONSTANT},
-    {sfWalletSize,           SoeOptional, soeNOTCONSTANT},
-    {sfMessageKey,           SoeOptional, soeNOTCONSTANT},
-    {sfTransferRate,         SoeOptional, soeNOTCONSTANT},
-    {sfDomain,               SoeOptional, soeNOTCONSTANT},
-    {sfTickSize,             SoeOptional, soeNOTCONSTANT},
-    {sfTicketCount,          SoeOptional, soeNOTCONSTANT},
-    {sfNFTokenMinter,        SoeOptional, soeNOTCONSTANT},
-    {sfMintedNFTokens,       SoeDefault,  soeNOTCONSTANT},
-    {sfBurnedNFTokens,       SoeDefault,  soeNOTCONSTANT},
-    {sfFirstNFTokenSequence, SoeOptional, soeCONSTANT},
-    {sfAMMID,                SoeOptional, soeCONSTANT}, // pseudo-account designator
-    {sfVaultID,              SoeOptional, soeCONSTANT}, // pseudo-account designator
-    {sfLoanBrokerID,         SoeOptional, soeCONSTANT}, // pseudo-account designator
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfSequence,             SoeRequired, SoeNotconstant},
+    {sfBalance,              SoeRequired, SoeNotconstant},
+    {sfOwnerCount,           SoeRequired, SoeNotconstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
+    {sfAccountTxnID,         SoeOptional, SoeNotconstant},
+    {sfRegularKey,           SoeOptional, SoeNotconstant},
+    {sfEmailHash,            SoeOptional, SoeNotconstant},
+    {sfWalletLocator,        SoeOptional, SoeNotconstant},
+    {sfWalletSize,           SoeOptional, SoeNotconstant},
+    {sfMessageKey,           SoeOptional, SoeNotconstant},
+    {sfTransferRate,         SoeOptional, SoeNotconstant},
+    {sfDomain,               SoeOptional, SoeNotconstant},
+    {sfTickSize,             SoeOptional, SoeNotconstant},
+    {sfTicketCount,          SoeOptional, SoeNotconstant},
+    {sfNFTokenMinter,        SoeOptional, SoeNotconstant},
+    {sfMintedNFTokens,       SoeDefault,  SoeNotconstant},
+    {sfBurnedNFTokens,       SoeDefault,  SoeNotconstant},
+    {sfFirstNFTokenSequence, SoeOptional, SoeConstant},
+    {sfAMMID,                SoeOptional, SoeConstant}, // pseudo-account designator
+    {sfVaultID,              SoeOptional, SoeConstant}, // pseudo-account designator
+    {sfLoanBrokerID,         SoeOptional, SoeConstant}, // pseudo-account designator
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -158,22 +158,22 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
         keylet::ownerDir
  */
 LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, ({
-    {sfOwner,                SoeOptional, soeCONSTANT},  // for owner directories
-    {sfTakerPaysCurrency,    SoeOptional, soeCONSTANT},  // order book directories
-    {sfTakerPaysIssuer,      SoeOptional, soeCONSTANT},  // order book directories
-    {sfTakerPaysMPT,         SoeOptional, soeCONSTANT},  // order book directories
-    {sfTakerGetsCurrency,    SoeOptional, soeCONSTANT},  // order book directories
-    {sfTakerGetsIssuer,      SoeOptional, soeCONSTANT},  // order book directories
-    {sfTakerGetsMPT,         SoeOptional, soeCONSTANT},  // order book directories
-    {sfExchangeRate,         SoeOptional, soeCONSTANT},  // order book directories
-    {sfIndexes,              SoeRequired, soeNOTCONSTANT},
-    {sfRootIndex,            SoeRequired, soeCONSTANT},
-    {sfIndexNext,            SoeOptional, soeNOTCONSTANT},
-    {sfIndexPrevious,        SoeOptional, soeNOTCONSTANT},
-    {sfNFTokenID,            SoeOptional, soeCONSTANT},
-    {sfPreviousTxnID,        SoeOptional, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeOptional, soeNOTCONSTANT},
-    {sfDomainID,             SoeOptional, soeCONSTANT},   // order book directories
+    {sfOwner,                SoeOptional, SoeConstant},  // for owner directories
+    {sfTakerPaysCurrency,    SoeOptional, SoeConstant},  // order book directories
+    {sfTakerPaysIssuer,      SoeOptional, SoeConstant},  // order book directories
+    {sfTakerPaysMPT,         SoeOptional, SoeConstant},  // order book directories
+    {sfTakerGetsCurrency,    SoeOptional, SoeConstant},  // order book directories
+    {sfTakerGetsIssuer,      SoeOptional, SoeConstant},  // order book directories
+    {sfTakerGetsMPT,         SoeOptional, SoeConstant},  // order book directories
+    {sfExchangeRate,         SoeOptional, SoeConstant},  // order book directories
+    {sfIndexes,              SoeRequired, SoeNotconstant},
+    {sfRootIndex,            SoeRequired, SoeConstant},
+    {sfIndexNext,            SoeOptional, SoeNotconstant},
+    {sfIndexPrevious,        SoeOptional, SoeNotconstant},
+    {sfNFTokenID,            SoeOptional, SoeConstant},
+    {sfPreviousTxnID,        SoeOptional, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeOptional, SoeNotconstant},
+    {sfDomainID,             SoeOptional, SoeConstant},   // order book directories
 }))
 
 /** The ledger object which lists details about amendments on the network.
@@ -183,10 +183,10 @@ LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, ({
     \sa keylet::amendments
  */
 LEDGER_ENTRY(ltAMENDMENTS, 0x0066, Amendments, amendments, ({
-    {sfAmendments,           SoeOptional, soeNOTCONSTANT},  // Enabled
-    {sfMajorities,           SoeOptional, soeNOTCONSTANT},
-    {sfPreviousTxnID,        SoeOptional, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeOptional, soeNOTCONSTANT},
+    {sfAmendments,           SoeOptional, SoeNotconstant},  // Enabled
+    {sfMajorities,           SoeOptional, SoeNotconstant},
+    {sfPreviousTxnID,        SoeOptional, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeOptional, SoeNotconstant},
 }))
 
 /** A ledger object that contains a list of ledger hashes.
@@ -198,9 +198,9 @@ LEDGER_ENTRY(ltAMENDMENTS, 0x0066, Amendments, amendments, ({
     \sa keylet::skip
  */
 LEDGER_ENTRY(ltLEDGER_HASHES, 0x0068, LedgerHashes, hashes, ({
-    {sfFirstLedgerSequence,  SoeOptional, soeCONSTANT},
-    {sfLastLedgerSequence,   SoeOptional, soeNOTCONSTANT},
-    {sfHashes,               SoeRequired, soeNOTCONSTANT},
+    {sfFirstLedgerSequence,  SoeOptional, SoeConstant},
+    {sfLastLedgerSequence,   SoeOptional, SoeNotconstant},
+    {sfHashes,               SoeRequired, SoeNotconstant},
 }))
 
 /** The ledger object which lists details about sidechains.
@@ -208,16 +208,16 @@ LEDGER_ENTRY(ltLEDGER_HASHES, 0x0068, LedgerHashes, hashes, ({
     \sa keylet::bridge
 */
 LEDGER_ENTRY(ltBRIDGE, 0x0069, Bridge, bridge, ({
-    {sfAccount,                  SoeRequired, soeCONSTANT},
-    {sfSignatureReward,          SoeRequired, soeNOTCONSTANT},
-    {sfMinAccountCreateAmount,   SoeOptional, soeNOTCONSTANT},
-    {sfXChainBridge,             SoeRequired, soeCONSTANT},
-    {sfXChainClaimID,            SoeRequired, soeNOTCONSTANT},
-    {sfXChainAccountCreateCount, SoeRequired, soeNOTCONSTANT},
-    {sfXChainAccountClaimCount,  SoeRequired, soeNOTCONSTANT},
-    {sfOwnerNode,                SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,            SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,        SoeRequired, soeNOTCONSTANT},
+    {sfAccount,                  SoeRequired, SoeConstant},
+    {sfSignatureReward,          SoeRequired, SoeNotconstant},
+    {sfMinAccountCreateAmount,   SoeOptional, SoeNotconstant},
+    {sfXChainBridge,             SoeRequired, SoeConstant},
+    {sfXChainClaimID,            SoeRequired, SoeNotconstant},
+    {sfXChainAccountCreateCount, SoeRequired, SoeNotconstant},
+    {sfXChainAccountClaimCount,  SoeRequired, SoeNotconstant},
+    {sfOwnerNode,                SoeRequired, SoeConstant},
+    {sfPreviousTxnID,            SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,        SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object which describes an offer on the DEX.
@@ -225,18 +225,18 @@ LEDGER_ENTRY(ltBRIDGE, 0x0069, Bridge, bridge, ({
     \sa keylet::offer
  */
 LEDGER_ENTRY(ltOFFER, 0x006f, Offer, offer, ({
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfSequence,             SoeRequired, soeCONSTANT},
-    {sfTakerPays,            SoeRequired, soeNOTCONSTANT},
-    {sfTakerGets,            SoeRequired, soeNOTCONSTANT},
-    {sfBookDirectory,        SoeRequired, soeCONSTANT},
-    {sfBookNode,             SoeRequired, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
-    {sfExpiration,           SoeOptional, soeCONSTANT},
-    {sfDomainID,             SoeOptional, soeCONSTANT},
-    {sfAdditionalBooks,      SoeOptional, soeCONSTANT},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfSequence,             SoeRequired, SoeConstant},
+    {sfTakerPays,            SoeRequired, SoeNotconstant},
+    {sfTakerGets,            SoeRequired, SoeNotconstant},
+    {sfBookDirectory,        SoeRequired, SoeConstant},
+    {sfBookNode,             SoeRequired, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
+    {sfExpiration,           SoeOptional, SoeConstant},
+    {sfDomainID,             SoeOptional, SoeConstant},
+    {sfAdditionalBooks,      SoeOptional, SoeConstant},
 }))
 
 /** A ledger object which describes a deposit pre-authorization.
@@ -244,12 +244,12 @@ LEDGER_ENTRY(ltOFFER, 0x006f, Offer, offer, ({
     \sa keylet::depositPreauth
  */
 LEDGER_ENTRY_DUPLICATE(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, deposit_preauth, ({
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfAuthorize,            SoeOptional, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
-    {sfAuthorizeCredentials, SoeOptional, soeCONSTANT},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfAuthorize,            SoeOptional, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
+    {sfAuthorizeCredentials, SoeOptional, SoeConstant},
 }))
 
 /** A claim id for a cross chain transaction.
@@ -257,15 +257,15 @@ LEDGER_ENTRY_DUPLICATE(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, deposit_preaut
     \sa keylet::xChainClaimID
 */
 LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, xchain_owned_claim_id, ({
-    {sfAccount,                 SoeRequired, soeCONSTANT},
-    {sfXChainBridge,            SoeRequired, soeCONSTANT},
-    {sfXChainClaimID,           SoeRequired, soeCONSTANT},
-    {sfOtherChainSource,        SoeRequired, soeCONSTANT},
-    {sfXChainClaimAttestations, SoeRequired, soeNOTCONSTANT},
-    {sfSignatureReward,         SoeRequired, soeCONSTANT},
-    {sfOwnerNode,               SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,           SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,       SoeRequired, soeNOTCONSTANT},
+    {sfAccount,                 SoeRequired, SoeConstant},
+    {sfXChainBridge,            SoeRequired, SoeConstant},
+    {sfXChainClaimID,           SoeRequired, SoeConstant},
+    {sfOtherChainSource,        SoeRequired, SoeConstant},
+    {sfXChainClaimAttestations, SoeRequired, SoeNotconstant},
+    {sfSignatureReward,         SoeRequired, SoeConstant},
+    {sfOwnerNode,               SoeRequired, SoeConstant},
+    {sfPreviousTxnID,           SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,       SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object which describes a bidirectional trust line.
@@ -275,17 +275,17 @@ LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, xchain_owned_c
     \sa keylet::line
  */
 LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
-    {sfBalance,              SoeRequired, soeNOTCONSTANT},
-    {sfLowLimit,             SoeRequired, soeNOTCONSTANT},
-    {sfHighLimit,            SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
-    {sfLowNode,              SoeOptional, soeNOTCONSTANT},
-    {sfLowQualityIn,         SoeOptional, soeNOTCONSTANT},
-    {sfLowQualityOut,        SoeOptional, soeNOTCONSTANT},
-    {sfHighNode,             SoeOptional, soeNOTCONSTANT},
-    {sfHighQualityIn,        SoeOptional, soeNOTCONSTANT},
-    {sfHighQualityOut,       SoeOptional, soeNOTCONSTANT},
+    {sfBalance,              SoeRequired, SoeNotconstant},
+    {sfLowLimit,             SoeRequired, SoeNotconstant},
+    {sfHighLimit,            SoeRequired, SoeNotconstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
+    {sfLowNode,              SoeOptional, SoeNotconstant},
+    {sfLowQualityIn,         SoeOptional, SoeNotconstant},
+    {sfLowQualityOut,        SoeOptional, SoeNotconstant},
+    {sfHighNode,             SoeOptional, SoeNotconstant},
+    {sfHighQualityIn,        SoeOptional, SoeNotconstant},
+    {sfHighQualityOut,       SoeOptional, SoeNotconstant},
 }))
 
 /** The ledger object which lists the network's fee settings.
@@ -296,16 +296,16 @@ LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
  */
 LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
     // Old version uses raw numbers
-    {sfBaseFee,                SoeOptional, soeNOTCONSTANT},
-    {sfReferenceFeeUnits,      SoeOptional, soeNOTCONSTANT},
-    {sfReserveBase,            SoeOptional, soeNOTCONSTANT},
-    {sfReserveIncrement,       SoeOptional, soeNOTCONSTANT},
+    {sfBaseFee,                SoeOptional, SoeNotconstant},
+    {sfReferenceFeeUnits,      SoeOptional, SoeNotconstant},
+    {sfReserveBase,            SoeOptional, SoeNotconstant},
+    {sfReserveIncrement,       SoeOptional, SoeNotconstant},
     // New version uses Amounts
-    {sfBaseFeeDrops,           SoeOptional, soeNOTCONSTANT},
-    {sfReserveBaseDrops,       SoeOptional, soeNOTCONSTANT},
-    {sfReserveIncrementDrops,  SoeOptional, soeNOTCONSTANT},
-    {sfPreviousTxnID,          SoeOptional, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,      SoeOptional, soeNOTCONSTANT},
+    {sfBaseFeeDrops,           SoeOptional, SoeNotconstant},
+    {sfReserveBaseDrops,       SoeOptional, SoeNotconstant},
+    {sfReserveIncrementDrops,  SoeOptional, SoeNotconstant},
+    {sfPreviousTxnID,          SoeOptional, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,      SoeOptional, SoeNotconstant},
 }))
 
 /** A claim id for a cross chain create account transaction.
@@ -313,13 +313,13 @@ LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
     \sa keylet::xChainCreateAccountClaimID
 */
 LEDGER_ENTRY(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountClaimID, xchain_owned_create_account_claim_id, ({
-    {sfAccount,                         SoeRequired, soeCONSTANT},
-    {sfXChainBridge,                    SoeRequired, soeCONSTANT},
-    {sfXChainAccountCreateCount,        SoeRequired, soeCONSTANT},
-    {sfXChainCreateAccountAttestations, SoeRequired, soeNOTCONSTANT},
-    {sfOwnerNode,                       SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,                   SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,               SoeRequired, soeNOTCONSTANT},
+    {sfAccount,                         SoeRequired, SoeConstant},
+    {sfXChainBridge,                    SoeRequired, SoeConstant},
+    {sfXChainAccountCreateCount,        SoeRequired, SoeConstant},
+    {sfXChainCreateAccountAttestations, SoeRequired, SoeNotconstant},
+    {sfOwnerNode,                       SoeRequired, SoeConstant},
+    {sfPreviousTxnID,                   SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,               SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object describing a single escrow.
@@ -327,21 +327,21 @@ LEDGER_ENTRY(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAc
     \sa keylet::escrow
  */
 LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfSequence,             SoeOptional, soeCONSTANT},
-    {sfDestination,          SoeRequired, soeCONSTANT},
-    {sfAmount,               SoeRequired, soeCONSTANT},
-    {sfCondition,            SoeOptional, soeCONSTANT},
-    {sfCancelAfter,          SoeOptional, soeCONSTANT},
-    {sfFinishAfter,          SoeOptional, soeCONSTANT},
-    {sfSourceTag,            SoeOptional, soeCONSTANT},
-    {sfDestinationTag,       SoeOptional, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
-    {sfDestinationNode,      SoeOptional, soeCONSTANT},
-    {sfTransferRate,         SoeOptional, soeCONSTANT},
-    {sfIssuerNode,           SoeOptional, soeCONSTANT},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfSequence,             SoeOptional, SoeConstant},
+    {sfDestination,          SoeRequired, SoeConstant},
+    {sfAmount,               SoeRequired, SoeConstant},
+    {sfCondition,            SoeOptional, SoeConstant},
+    {sfCancelAfter,          SoeOptional, SoeConstant},
+    {sfFinishAfter,          SoeOptional, SoeConstant},
+    {sfSourceTag,            SoeOptional, SoeConstant},
+    {sfDestinationTag,       SoeOptional, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
+    {sfDestinationNode,      SoeOptional, SoeConstant},
+    {sfTransferRate,         SoeOptional, SoeConstant},
+    {sfIssuerNode,           SoeOptional, SoeConstant},
 }))
 
 /** A ledger object describing a single unidirectional XRP payment channel.
@@ -349,21 +349,21 @@ LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
     \sa keylet::payChan
  */
 LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, payment_channel, ({
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfDestination,          SoeRequired, soeCONSTANT},
-    {sfSequence,             SoeOptional, soeCONSTANT},
-    {sfAmount,               SoeRequired, soeNOTCONSTANT},
-    {sfBalance,              SoeRequired, soeNOTCONSTANT},
-    {sfPublicKey,            SoeRequired, soeCONSTANT},
-    {sfSettleDelay,          SoeRequired, soeCONSTANT},
-    {sfExpiration,           SoeOptional, soeNOTCONSTANT},
-    {sfCancelAfter,          SoeOptional, soeCONSTANT},
-    {sfSourceTag,            SoeOptional, soeCONSTANT},
-    {sfDestinationTag,       SoeOptional, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
-    {sfDestinationNode,      SoeOptional, soeCONSTANT},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfDestination,          SoeRequired, SoeConstant},
+    {sfSequence,             SoeOptional, SoeConstant},
+    {sfAmount,               SoeRequired, SoeNotconstant},
+    {sfBalance,              SoeRequired, SoeNotconstant},
+    {sfPublicKey,            SoeRequired, SoeConstant},
+    {sfSettleDelay,          SoeRequired, SoeConstant},
+    {sfExpiration,           SoeOptional, SoeNotconstant},
+    {sfCancelAfter,          SoeOptional, SoeConstant},
+    {sfSourceTag,            SoeOptional, SoeConstant},
+    {sfDestinationTag,       SoeOptional, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
+    {sfDestinationNode,      SoeOptional, SoeConstant},
 }))
 
 /** The ledger object which tracks the AMM.
@@ -371,124 +371,124 @@ LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, payment_channel, ({
    \sa keylet::amm
 */
 LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfTradingFee,           SoeDefault,  soeNOTCONSTANT},
-    {sfVoteSlots,            SoeOptional, soeNOTCONSTANT},
-    {sfAuctionSlot,          SoeOptional, soeNOTCONSTANT},
-    {sfLPTokenBalance,       SoeRequired, soeNOTCONSTANT},
-    {sfAsset,                SoeRequired, soeCONSTANT},
-    {sfAsset2,               SoeRequired, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,        SoeOptional, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeOptional, soeNOTCONSTANT},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfTradingFee,           SoeDefault,  SoeNotconstant},
+    {sfVoteSlots,            SoeOptional, SoeNotconstant},
+    {sfAuctionSlot,          SoeOptional, SoeNotconstant},
+    {sfLPTokenBalance,       SoeRequired, SoeNotconstant},
+    {sfAsset,                SoeRequired, SoeConstant},
+    {sfAsset2,               SoeRequired, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfPreviousTxnID,        SoeOptional, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeOptional, SoeNotconstant},
 }))
 
 /** A ledger object which tracks MPTokenIssuance
     \sa keylet::mptIssuance
  */
 LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
-    {sfIssuer,                   SoeRequired, soeCONSTANT},
-    {sfSequence,                 SoeRequired, soeCONSTANT},
-    {sfTransferFee,              SoeDefault,  soeNOTCONSTANT},
-    {sfOwnerNode,                SoeRequired, soeCONSTANT},
-    {sfAssetScale,               SoeDefault,  soeNOTCONSTANT},
-    {sfMaximumAmount,            SoeOptional, soeCONSTANT},
-    {sfOutstandingAmount,        SoeRequired, soeNOTCONSTANT},
-    {sfLockedAmount,             SoeOptional, soeNOTCONSTANT},
-    {sfMPTokenMetadata,          SoeOptional, soeNOTCONSTANT},
-    {sfPreviousTxnID,            SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,        SoeRequired, soeNOTCONSTANT},
-    {sfDomainID,                 SoeOptional, soeNOTCONSTANT},
-    {sfMutableFlags,             SoeDefault,  soeNOTCONSTANT},
+    {sfIssuer,                   SoeRequired, SoeConstant},
+    {sfSequence,                 SoeRequired, SoeConstant},
+    {sfTransferFee,              SoeDefault,  SoeNotconstant},
+    {sfOwnerNode,                SoeRequired, SoeConstant},
+    {sfAssetScale,               SoeDefault,  SoeNotconstant},
+    {sfMaximumAmount,            SoeOptional, SoeConstant},
+    {sfOutstandingAmount,        SoeRequired, SoeNotconstant},
+    {sfLockedAmount,             SoeOptional, SoeNotconstant},
+    {sfMPTokenMetadata,          SoeOptional, SoeNotconstant},
+    {sfPreviousTxnID,            SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,        SoeRequired, SoeNotconstant},
+    {sfDomainID,                 SoeOptional, SoeNotconstant},
+    {sfMutableFlags,             SoeDefault,  SoeNotconstant},
 }))
 
 /** A ledger object which tracks MPToken
     \sa keylet::mptoken
  */
 LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
-    {sfAccount,                  SoeRequired, soeCONSTANT},
-    {sfMPTokenIssuanceID,        SoeRequired, soeCONSTANT},
-    {sfMPTAmount,                SoeDefault,  soeNOTCONSTANT},
-    {sfLockedAmount,             SoeOptional, soeNOTCONSTANT},
-    {sfOwnerNode,                SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,            SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,        SoeRequired, soeNOTCONSTANT},
+    {sfAccount,                  SoeRequired, SoeConstant},
+    {sfMPTokenIssuanceID,        SoeRequired, SoeConstant},
+    {sfMPTAmount,                SoeDefault,  SoeNotconstant},
+    {sfLockedAmount,             SoeOptional, SoeNotconstant},
+    {sfOwnerNode,                SoeRequired, SoeConstant},
+    {sfPreviousTxnID,            SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,        SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object which tracks Oracle
     \sa keylet::oracle
  */
 LEDGER_ENTRY(ltORACLE, 0x0080, Oracle, oracle, ({
-    {sfOwner,                SoeRequired, soeCONSTANT},
-    {sfOracleDocumentID,     SoeOptional, soeCONSTANT},
-    {sfProvider,             SoeRequired, soeCONSTANT},
-    {sfPriceDataSeries,      SoeRequired, soeNOTCONSTANT},
-    {sfAssetClass,           SoeRequired, soeNOTCONSTANT},
-    {sfLastUpdateTime,       SoeRequired, soeNOTCONSTANT},
-    {sfURI,                  SoeOptional, soeNOTCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
+    {sfOwner,                SoeRequired, SoeConstant},
+    {sfOracleDocumentID,     SoeOptional, SoeConstant},
+    {sfProvider,             SoeRequired, SoeConstant},
+    {sfPriceDataSeries,      SoeRequired, SoeNotconstant},
+    {sfAssetClass,           SoeRequired, SoeNotconstant},
+    {sfLastUpdateTime,       SoeRequired, SoeNotconstant},
+    {sfURI,                  SoeOptional, SoeNotconstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object which tracks Credential
     \sa keylet::credential
  */
 LEDGER_ENTRY(ltCREDENTIAL, 0x0081, Credential, credential, ({
-    {sfSubject,              SoeRequired, soeCONSTANT},
-    {sfIssuer,               SoeRequired, soeCONSTANT},
-    {sfCredentialType,       SoeRequired, soeCONSTANT},
-    {sfExpiration,           SoeOptional, soeCONSTANT},
-    {sfURI,                  SoeOptional, soeCONSTANT},
-    {sfIssuerNode,           SoeRequired, soeCONSTANT},
-    {sfSubjectNode,          SoeOptional, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
+    {sfSubject,              SoeRequired, SoeConstant},
+    {sfIssuer,               SoeRequired, SoeConstant},
+    {sfCredentialType,       SoeRequired, SoeConstant},
+    {sfExpiration,           SoeOptional, SoeConstant},
+    {sfURI,                  SoeOptional, SoeConstant},
+    {sfIssuerNode,           SoeRequired, SoeConstant},
+    {sfSubjectNode,          SoeOptional, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object which tracks PermissionedDomain
     \sa keylet::permissionedDomain
  */
 LEDGER_ENTRY(ltPERMISSIONED_DOMAIN, 0x0082, PermissionedDomain, permissioned_domain, ({
-    {sfOwner,               SoeRequired, soeCONSTANT},
-    {sfSequence,            SoeRequired, soeCONSTANT},
-    {sfAcceptedCredentials, SoeRequired, soeNOTCONSTANT},
-    {sfOwnerNode,           SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,       SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,   SoeRequired, soeNOTCONSTANT},
+    {sfOwner,               SoeRequired, SoeConstant},
+    {sfSequence,            SoeRequired, SoeConstant},
+    {sfAcceptedCredentials, SoeRequired, SoeNotconstant},
+    {sfOwnerNode,           SoeRequired, SoeConstant},
+    {sfPreviousTxnID,       SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,   SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object representing permissions an account has delegated to another account.
     \sa keylet::delegate
  */
 LEDGER_ENTRY(ltDELEGATE, 0x0083, Delegate, delegate, ({
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfAuthorize,            SoeRequired, soeCONSTANT},
-    {sfPermissions,          SoeRequired, soeNOTCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfAuthorize,            SoeRequired, SoeConstant},
+    {sfPermissions,          SoeRequired, SoeNotconstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
 }))
 
 /** A ledger object representing a single asset vault.
     \sa keylet::vault
  */
 LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
-    {sfSequence,             SoeRequired, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfOwner,                SoeRequired, soeCONSTANT},
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfData,                 SoeOptional, soeNOTCONSTANT},
-    {sfAsset,                SoeRequired, soeCONSTANT},
-    {sfAssetsTotal,          SoeDefault,  soeNOTCONSTANT},
-    {sfAssetsAvailable,      SoeDefault,  soeNOTCONSTANT},
-    {sfAssetsMaximum,        SoeDefault,  soeNOTCONSTANT},
-    {sfLossUnrealized,       SoeDefault,  soeNOTCONSTANT},
-    {sfShareMPTID,           SoeRequired, soeCONSTANT},
-    {sfWithdrawalPolicy,     SoeRequired, soeCONSTANT},
-    {sfScale,                SoeDefault,  soeCONSTANT},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
+    {sfSequence,             SoeRequired, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfOwner,                SoeRequired, SoeConstant},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfData,                 SoeOptional, SoeNotconstant},
+    {sfAsset,                SoeRequired, SoeConstant},
+    {sfAssetsTotal,          SoeDefault,  SoeNotconstant},
+    {sfAssetsAvailable,      SoeDefault,  SoeNotconstant},
+    {sfAssetsMaximum,        SoeDefault,  SoeNotconstant},
+    {sfLossUnrealized,       SoeDefault,  SoeNotconstant},
+    {sfShareMPTID,           SoeRequired, SoeConstant},
+    {sfWithdrawalPolicy,     SoeRequired, SoeConstant},
+    {sfScale,                SoeDefault,  SoeConstant},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))
@@ -500,23 +500,23 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     \sa keylet::loanbroker
  */
 LEDGER_ENTRY(ltLOAN_BROKER, 0x0088, LoanBroker, loan_broker, ({
-    {sfPreviousTxnID,        SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,    SoeRequired, soeNOTCONSTANT},
-    {sfSequence,             SoeRequired, soeCONSTANT},
-    {sfOwnerNode,            SoeRequired, soeCONSTANT},
-    {sfVaultNode,            SoeRequired, soeCONSTANT},
-    {sfVaultID,              SoeRequired, soeCONSTANT},
-    {sfAccount,              SoeRequired, soeCONSTANT},
-    {sfOwner,                SoeRequired, soeCONSTANT},
-    {sfLoanSequence,         SoeRequired, soeNOTCONSTANT},
-    {sfData,                 SoeDefault,  soeNOTCONSTANT},
-    {sfManagementFeeRate,    SoeDefault,  soeCONSTANT},
-    {sfOwnerCount,           SoeDefault,  soeNOTCONSTANT},
-    {sfDebtTotal,            SoeDefault,  soeNOTCONSTANT},
-    {sfDebtMaximum,          SoeDefault,  soeNOTCONSTANT},
-    {sfCoverAvailable,       SoeDefault,  soeNOTCONSTANT},
-    {sfCoverRateMinimum,     SoeDefault,  soeCONSTANT},
-    {sfCoverRateLiquidation, SoeDefault,  soeCONSTANT},
+    {sfPreviousTxnID,        SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,    SoeRequired, SoeNotconstant},
+    {sfSequence,             SoeRequired, SoeConstant},
+    {sfOwnerNode,            SoeRequired, SoeConstant},
+    {sfVaultNode,            SoeRequired, SoeConstant},
+    {sfVaultID,              SoeRequired, SoeConstant},
+    {sfAccount,              SoeRequired, SoeConstant},
+    {sfOwner,                SoeRequired, SoeConstant},
+    {sfLoanSequence,         SoeRequired, SoeNotconstant},
+    {sfData,                 SoeDefault,  SoeNotconstant},
+    {sfManagementFeeRate,    SoeDefault,  SoeConstant},
+    {sfOwnerCount,           SoeDefault,  SoeNotconstant},
+    {sfDebtTotal,            SoeDefault,  SoeNotconstant},
+    {sfDebtMaximum,          SoeDefault,  SoeNotconstant},
+    {sfCoverAvailable,       SoeDefault,  SoeNotconstant},
+    {sfCoverRateMinimum,     SoeDefault,  SoeConstant},
+    {sfCoverRateLiquidation, SoeDefault,  SoeConstant},
 }))
 
 /** A ledger object representing a loan between a Borrower and a Loan Broker
@@ -524,27 +524,27 @@ LEDGER_ENTRY(ltLOAN_BROKER, 0x0088, LoanBroker, loan_broker, ({
     \sa keylet::loan
  */
 LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
-    {sfPreviousTxnID,           SoeRequired, soeNOTCONSTANT},
-    {sfPreviousTxnLgrSeq,       SoeRequired, soeNOTCONSTANT},
-    {sfOwnerNode,               SoeRequired, soeCONSTANT},
-    {sfLoanBrokerNode,          SoeRequired, soeCONSTANT},
-    {sfLoanBrokerID,            SoeRequired, soeCONSTANT},
-    {sfLoanSequence,            SoeRequired, soeCONSTANT},
-    {sfBorrower,                SoeRequired, soeCONSTANT},
-    {sfLoanOriginationFee,      SoeDefault,  soeCONSTANT},
-    {sfLoanServiceFee,          SoeDefault,  soeCONSTANT},
-    {sfLatePaymentFee,          SoeDefault,  soeCONSTANT},
-    {sfClosePaymentFee,         SoeDefault,  soeCONSTANT},
-    {sfOverpaymentFee,          SoeDefault,  soeCONSTANT},
-    {sfInterestRate,            SoeDefault,  soeCONSTANT},
-    {sfLateInterestRate,        SoeDefault,  soeCONSTANT},
-    {sfCloseInterestRate,       SoeDefault,  soeCONSTANT},
-    {sfOverpaymentInterestRate, SoeDefault,  soeCONSTANT},
-    {sfStartDate,               SoeRequired, soeCONSTANT},
-    {sfPaymentInterval,         SoeRequired, soeCONSTANT},
-    {sfGracePeriod,             SoeDefault,  soeCONSTANT},
-    {sfPreviousPaymentDueDate,  SoeDefault,  soeNOTCONSTANT},
-    {sfNextPaymentDueDate,      SoeDefault,  soeNOTCONSTANT},
+    {sfPreviousTxnID,           SoeRequired, SoeNotconstant},
+    {sfPreviousTxnLgrSeq,       SoeRequired, SoeNotconstant},
+    {sfOwnerNode,               SoeRequired, SoeConstant},
+    {sfLoanBrokerNode,          SoeRequired, SoeConstant},
+    {sfLoanBrokerID,            SoeRequired, SoeConstant},
+    {sfLoanSequence,            SoeRequired, SoeConstant},
+    {sfBorrower,                SoeRequired, SoeConstant},
+    {sfLoanOriginationFee,      SoeDefault,  SoeConstant},
+    {sfLoanServiceFee,          SoeDefault,  SoeConstant},
+    {sfLatePaymentFee,          SoeDefault,  SoeConstant},
+    {sfClosePaymentFee,         SoeDefault,  SoeConstant},
+    {sfOverpaymentFee,          SoeDefault,  SoeConstant},
+    {sfInterestRate,            SoeDefault,  SoeConstant},
+    {sfLateInterestRate,        SoeDefault,  SoeConstant},
+    {sfCloseInterestRate,       SoeDefault,  SoeConstant},
+    {sfOverpaymentInterestRate, SoeDefault,  SoeConstant},
+    {sfStartDate,               SoeRequired, SoeConstant},
+    {sfPaymentInterval,         SoeRequired, SoeConstant},
+    {sfGracePeriod,             SoeDefault,  SoeConstant},
+    {sfPreviousPaymentDueDate,  SoeDefault,  SoeNotconstant},
+    {sfNextPaymentDueDate,      SoeDefault,  SoeNotconstant},
     // The loan object tracks these values:
     //
     // - PaymentRemaining: The number of payments left in the loan. When it
@@ -592,17 +592,17 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     //
     // Note the the "True" values may differ significantly from the tracked
     // rounded values.
-    {sfPaymentRemaining,         SoeDefault,  soeNOTCONSTANT},
-    {sfPeriodicPayment,          SoeRequired, soeNOTCONSTANT},
-    {sfPrincipalOutstanding,     SoeDefault,  soeNOTCONSTANT},
-    {sfTotalValueOutstanding,    SoeDefault,  soeNOTCONSTANT},
-    {sfManagementFeeOutstanding, SoeDefault,  soeNOTCONSTANT},
+    {sfPaymentRemaining,         SoeDefault,  SoeNotconstant},
+    {sfPeriodicPayment,          SoeRequired, SoeNotconstant},
+    {sfPrincipalOutstanding,     SoeDefault,  SoeNotconstant},
+    {sfTotalValueOutstanding,    SoeDefault,  SoeNotconstant},
+    {sfManagementFeeOutstanding, SoeDefault,  SoeNotconstant},
     // Based on the computed total value at creation, used for
     // rounding calculated values so they are all on a
     // consistent scale - that is, they all have the same
     // number of digits after the decimal point (excluding
     // trailing zeros).
-    {sfLoanScale,                SoeDefault,  soeCONSTANT},
+    {sfLoanScale,                SoeDefault,  SoeConstant},
 }))
 
 #undef EXPAND
