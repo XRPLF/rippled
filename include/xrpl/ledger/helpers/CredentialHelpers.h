@@ -67,6 +67,20 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j);
 
+// Check DepositPreauth authorization
+TER
+checkDepositPreauth(
+    STTx const& tx,
+    ReadView const& view,
+    AccountID const& src,
+    AccountID const& dst,
+    std::shared_ptr<SLE const> const& sleDst,
+    beast::Journal j);
+
+// Remove expired credentials
+TER
+cleanupExpiredCredentials(STTx const& tx, ApplyView& view, beast::Journal j);
+
 // Check expired credentials and for existing DepositPreauth ledger object
 TER
 verifyDepositPreauth(

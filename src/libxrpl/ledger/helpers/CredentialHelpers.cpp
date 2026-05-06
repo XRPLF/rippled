@@ -339,9 +339,9 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
 }
 
 TER
-verifyDepositPreauth(
+checkDepositPreauth(
     STTx const& tx,
-    ApplyView& view,
+    ReadView const& view,
     AccountID const& src,
     AccountID const& dst,
     std::shared_ptr<SLE const> const& sleDst,
@@ -353,25 +353,46 @@ verifyDepositPreauth(
     //  2. If src is deposit preauthorized by dst (either by account or by
     //  credentials).
 
-    bool const credentialsPresent = tx.isFieldPresent(sfCredentialIDs);
-
-    if (credentialsPresent && credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
-        return tecEXPIRED;
-
     if (sleDst && ((sleDst->getFlags() & lsfDepositAuth) != 0u))
     {
         if (src != dst)
         {
             if (!view.exists(keylet::depositPreauth(dst, src)))
             {
-                return !credentialsPresent ? tecNO_PERMISSION
-                                           : credentials::authorizedDepositPreauth(
-                                                 view, tx.getFieldV256(sfCredentialIDs), dst);
+                return !tx.isFieldPresent(sfCredentialIDs)
+                    ? tecNO_PERMISSION
+                    : credentials::authorizedDepositPreauth(
+                          view, tx.getFieldV256(sfCredentialIDs), dst);
             }
         }
     }
 
     return tesSUCCESS;
+}
+
+TER
+cleanupExpiredCredentials(STTx const& tx, ApplyView& view, beast::Journal j)
+{
+    if (tx.isFieldPresent(sfCredentialIDs) &&
+        credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
+        return tecEXPIRED;
+
+    return tesSUCCESS;
+}
+
+TER
+verifyDepositPreauth(
+    STTx const& tx,
+    ApplyView& view,
+    AccountID const& src,
+    AccountID const& dst,
+    std::shared_ptr<SLE const> const& sleDst,
+    beast::Journal j)
+{
+    if (auto const err = cleanupExpiredCredentials(tx, view, j); !isTesSuccess(err))
+        return err;
+
+    return checkDepositPreauth(tx, view, src, dst, sleDst, j);
 }
 
 }  // namespace xrpl

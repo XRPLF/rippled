@@ -4165,6 +4165,137 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             // Now Carol can send with credentials
             mpt.send({.account = carol, .dest = bob, .amt = 10, .credentials = {{credIdx}}});
         }
+
+        auto const expireTime = 30;
+
+        // Lambda function that returns the credential index after creating a
+        // credential that expires shortly after the current ledger time.
+        auto createExpiringCredential = [&](Env& env, Account const& subject) -> std::string {
+            auto jv = credentials::create(subject, dpIssuer, credType);
+            auto const expiry =
+                env.current()->header().parentCloseTime.time_since_epoch().count() + expireTime;
+            jv[sfExpiration.jsonName] = expiry;
+            env(jv);
+            env.close();
+            env(credentials::accept(subject, dpIssuer, credType));
+            env.close();
+            auto const credentials = credentials::ledgerEntry(env, subject, dpIssuer, credType);
+            return credentials[jss::result][jss::index].asString();
+        };
+
+        auto credentialDeleted = [&](Env& env, Account const& subject) -> bool {
+            auto const credentials = credentials::ledgerEntry(env, subject, dpIssuer, credType);
+            return credentials[jss::result].isMember(jss::error) &&
+                credentials[jss::result][jss::error] == "entryNotFound";
+        };
+
+        // TEST 4: Expired credential with matching depositPreauth entry.
+        // checkDepositPreauth in preclaim returns tesSUCCESS (the expired
+        // credential still exists and matches the depositPreauth key), so ZK
+        // proofs run. cleanupExpiredCredentials in doApply then removes the
+        // expired credential and returns tecEXPIRED.
+        {
+            Env env(*this, features);
+            env.fund(XRP(50000), dpIssuer);
+            env.close();
+
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            auto const credIdx = createExpiringCredential(env, carol);
+
+            // Bob authorizes carol's credential type
+            env(deposit::authCredentials(bob, {{.issuer = dpIssuer, .credType = credType}}));
+            env.close();
+
+            // Advance ledger past credential expiration
+            env.close(std::chrono::seconds(expireTime));
+
+            // Send fails with tecEXPIRED; the expired credential is cleaned up
+            mpt.send({
+                .account = carol,
+                .dest = bob,
+                .amt = 10,
+                .credentials = {{credIdx}},
+                .err = tecEXPIRED,
+            });
+            env.close();
+
+            BEAST_EXPECT(credentialDeleted(env, carol));
+        }
+
+        // TEST 5: Expired credential, destination has no depositAuth.
+        // checkDepositPreauth in preclaim returns tesSUCCESS even with expired credentials,
+        // because we want to keep the checkDepositPreauth part before the expensive proof
+        // verification. cleanupExpiredCredentials in doApply removes the expired credential and
+        // returns tecEXPIRED.
+        {
+            Env env(*this, features);
+            env.fund(XRP(50000), dpIssuer);
+            env.close();
+
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
+
+            auto const credIdx = createExpiringCredential(env, carol);
+
+            // Advance ledger past credential expiration
+            env.close(std::chrono::seconds(expireTime));
+
+            // Send fails with tecEXPIRED; the expired credential is cleaned up
+            mpt.send({
+                .account = carol,
+                .dest = bob,
+                .amt = 10,
+                .credentials = {{credIdx}},
+                .err = tecEXPIRED,
+            });
+            env.close();
+
+            BEAST_EXPECT(credentialDeleted(env, carol));
+        }
+
+        // TEST 6: Expired credential, depositAuth enabled but credential
+        // not authorized by bob.
+        // checkDepositPreauth in preclaim calls checkDepositPreauth which
+        // finds no match and returns tecNO_PERMISSION. doApply never runs, so
+        // the expired credential is not cleaned up by this transaction. This is
+        // a deliberate tradeoff: allowing doApply to run solely for cleanup
+        // would require bypassing the preclaim short-circuit, forcing every
+        // validator to run the expensive ZK proof verification before
+        // discovering the authorization failure. Expired credentials here will
+        // be cleaned up opportunistically by a future transaction that
+        // references them.
+        {
+            Env env(*this, features);
+            env.fund(XRP(50000), dpIssuer);
+            env.close();
+
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            auto const credIdx = createExpiringCredential(env, carol);
+
+            // Advance ledger past credential expiration
+            env.close(std::chrono::seconds(expireTime));
+
+            // Fails with tecNO_PERMISSION.
+            mpt.send({
+                .account = carol,
+                .dest = bob,
+                .amt = 10,
+                .credentials = {{credIdx}},
+                .err = tecNO_PERMISSION,
+            });
+            env.close();
+
+            // Expired credential is not deleted
+            BEAST_EXPECT(!credentialDeleted(env, carol));
+        }
     }
 
     void
@@ -9751,7 +9882,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         testHomomorphicCiphertextModification(features);
         testConvertBackHomomorphicUnderflow(features);
 
-        // invalid curve points
+        // Invalid curve points
         testSendInvalidCurvePoints(features);
         testSendWrongGroupPointInjection(features);
         testIdentityElementRejection(features);
