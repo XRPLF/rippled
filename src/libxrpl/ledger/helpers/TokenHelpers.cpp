@@ -511,9 +511,13 @@ canTransfer(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
             if constexpr (std::is_same_v<TIss, MPTIssue>)
+            {
                 return canTransfer(view, issue, from, to, waive, depth);
+            }
             else
+            {
                 return canTransfer(view, issue, from, to);
+            }
         },
         asset.value());
 }

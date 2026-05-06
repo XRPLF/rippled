@@ -2284,7 +2284,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const depositor{"depositor"};
             env.fund(XRP(10'000), issuer, owner, depositor);
             env.close();
-            Vault vault{env};
+            Vault const vault{env};
 
             MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
             mptt.create(
@@ -2328,7 +2328,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const bob{"bob"};
             env.fund(XRP(10'000), issuer, owner, alice, bob);
             env.close();
-            Vault vault{env};
+            Vault const vault{env};
 
             MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
             mptt.create(
@@ -2391,7 +2391,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const bob{"bob"};
             env.fund(XRP(10'000), issuer, owner, alice, bob);
             env.close();
-            Vault vault{env};
+            Vault const vault{env};
 
             MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
             mptt.create(
@@ -2437,7 +2437,7 @@ class Vault_test : public beast::unit_test::Suite
             Account const bob{"bob"};
             env.fund(XRP(100'000), issuer, owner, alice, bob);
             env.close();
-            Vault vault{env};
+            Vault const vault{env};
 
             MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
             mptt.create(
@@ -2483,7 +2483,8 @@ class Vault_test : public beast::unit_test::Suite
 
             // Control: clearing CanTrade on the underlying is also observable
             // on the AMM path for that asset.
-            AMM ammUnderlyingFails(env, alice, XRP(1'000), asset(1'000), Ter{tecNO_PERMISSION});
+            AMM const ammUnderlyingFails(
+                env, alice, XRP(1'000), asset(1'000), Ter{tecNO_PERMISSION});
 
             // Post-fixCleanup3_2_0: vault shares inherit the underlying's
             // CanTrade restriction on the DEX path (canTrade reads the
@@ -2494,7 +2495,7 @@ class Vault_test : public beast::unit_test::Suite
             // checkMPTAllowed mirrors the inheritance for AMM/Offer-
             // crossing/Check paths, so a share AMM also cannot be created
             // when the underlying CanTrade is cleared.
-            AMM ammShares(env, alice, XRP(1'000), shares(100), Ter{tecNO_PERMISSION});
+            AMM const ammShares(env, alice, XRP(1'000), shares(100), Ter{tecNO_PERMISSION});
 
             // Deposit still works (canAddHolding does not consult the field).
             env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
@@ -6562,7 +6563,7 @@ class Vault_test : public beast::unit_test::Suite
             env(pay(issuer, depositor, asset(1'000)));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -6602,7 +6603,7 @@ class Vault_test : public beast::unit_test::Suite
             mptt.authorize({.account = issuer, .holder = owner});
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -6644,7 +6645,7 @@ class Vault_test : public beast::unit_test::Suite
             env(pay(issuer, depositor, asset(1'000)));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -6679,7 +6680,7 @@ class Vault_test : public beast::unit_test::Suite
             env(pay(issuer, owner, asset(1'000)));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -6719,7 +6720,7 @@ class Vault_test : public beast::unit_test::Suite
             env(pay(issuer, owner, asset(1'000)));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -6755,7 +6756,7 @@ class Vault_test : public beast::unit_test::Suite
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();

@@ -4182,7 +4182,6 @@ class Invariants_test : public beast::unit_test::Suite
                     auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
                     if (!sleVault)
                         return false;
-                    auto const pseudoId = sleVault->at(sfAccount);
                     auto const sleIssuance =
                         ac.view().peek(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
                     if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
