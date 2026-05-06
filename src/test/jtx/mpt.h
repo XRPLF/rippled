@@ -605,7 +605,7 @@ private:
 
     template <typename A>
     TER
-    submit(A const& arg, json::Value const& jv)
+    submit(A const& arg, json::Value jv)
     {
         auto const expectedFlags = Txflags(arg.flags.value_or(0));
         auto const expectedTer = Ter(arg.err.value_or(tesSUCCESS));
