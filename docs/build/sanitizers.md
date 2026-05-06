@@ -1,15 +1,17 @@
 # Sanitizer Configuration for Xrpld
 
-This document explains how to properly configure and run sanitizers (AddressSanitizer, undefinedbehaviorSanitizer, ThreadSanitizer) with the xrpld project.
+This document explains how to properly configure and run sanitizers (`AddressSanitizer`, `UndefinedBehaviorSanitizer`, `ThreadSanitizer`) with the xrpld project.
 Corresponding suppression files are located in the `sanitizers/suppressions` directory.
+
+> [!CAUTION]
+> Do not mix Address and Thread sanitizers - they are incompatible.
+> Also, we don't yet support MSVC sanitizers, so this is only for Clang/GCC builds.
 
 - [Sanitizer Configuration for Xrpld](#sanitizer-configuration-for-xrpld)
   - [Building with Sanitizers](#building-with-sanitizers)
     - [Summary](#summary)
     - [Build steps:](#build-steps)
       - [Install dependencies](#install-dependencies)
-      - [Call CMake](#call-cmake)
-      - [Build](#build)
   - [Running Tests with Sanitizers](#running-tests-with-sanitizers)
     - [AddressSanitizer (ASAN)](#addresssanitizer-asan)
     - [ThreadSanitizer (TSan)](#threadsanitizer-tsan)
@@ -33,9 +35,13 @@ Corresponding suppression files are located in the `sanitizers/suppressions` dir
 Follow the same instructions as mentioned in [BUILD.md](../../BUILD.md) but with the following changes:
 
 1. Make sure you have a clean build directory.
-2. Set the `SANITIZERS` environment variable before calling conan install and cmake. Only set it once. Make sure both conan and cmake read the same values.
+2. Set the `SANITIZERS` environment variable before calling `conan install`. Only set it once.
    Example: `export SANITIZERS=address,undefinedbehavior`
-3. Optionally use `--profile:all sanitizers` with Conan to build dependencies with sanitizer instrumentation. [!NOTE]Building with sanitizer-instrumented dependencies is slower but produces fewer false positives.
+3. Use `--profile:all sanitizers` with Conan to build dependencies with sanitizer instrumentation.
+
+   > [!NOTE]
+   > Building with sanitizer-instrumented dependencies is slower but produces fewer false positives.
+
 4. Set `ASAN_OPTIONS`, `LSAN_OPTIONS`, `UBSAN_OPTIONS` and `TSAN_OPTIONS` environment variables to configure sanitizer behavior when running executables. [More details below](#running-tests-with-sanitizers).
 
 ---
@@ -51,36 +57,13 @@ cd .build
 
 #### Install dependencies
 
-The `SANITIZERS` environment variable is used by both Conan and CMake.
+The `SANITIZERS` environment variable is used during `conan install` command.
 
 ```bash
-export SANITIZERS=address,undefinedbehavior
-# Standard build (without instrumenting dependencies)
-conan install .. --output-folder . --build missing --settings build_type=Debug
-
-# Or with sanitizer-instrumented dependencies (takes longer but fewer false positives)
-conan install .. --output-folder . --profile:all sanitizers --build missing --settings build_type=Debug
+SANITIZERS=address,undefinedbehavior conan install .. --output-folder . --build missing --settings build_type=Debug --profile:all sanitizers
 ```
 
-[!CAUTION]
-Do not mix Address and Thread sanitizers - they are incompatible.
-
-Since you already set the `SANITIZERS` environment variable when running Conan, same values will be read for the next part.
-
-#### Call CMake
-
-```bash
-cmake .. -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -Dtests=ON -Dxrpld=ON
-```
-
-#### Build
-
-```bash
-cmake --build . --parallel 4
-```
+Proceed with the rest of the build instructions as mentioned in [BUILD.md](../../BUILD.md).
 
 ## Running Tests with Sanitizers
 
