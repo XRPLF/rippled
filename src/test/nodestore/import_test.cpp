@@ -67,7 +67,7 @@ namespace xrpl {
 
 namespace detail {
 
-class save_stream_state
+class SaveStreamState
 {
     std::ostream& os_;
     std::streamsize precision_;
@@ -75,16 +75,16 @@ class save_stream_state
     std::ios::char_type fill_;
 
 public:
-    ~save_stream_state()
+    ~SaveStreamState()
     {
         os_.precision(precision_);
         os_.flags(flags_);
         os_.fill(fill_);
     }
-    save_stream_state(save_stream_state const&) = delete;
-    save_stream_state&
-    operator=(save_stream_state const&) = delete;
-    explicit save_stream_state(std::ostream& os)
+    SaveStreamState(SaveStreamState const&) = delete;
+    SaveStreamState&
+    operator=(SaveStreamState const&) = delete;
+    explicit SaveStreamState(std::ostream& os)
         : os_(os), precision_(os.precision()), flags_(os.flags()), fill_(os.fill())
     {
     }
@@ -92,9 +92,9 @@ public:
 
 template <class Rep, class Period>
 std::ostream&
-pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
+prettyTime(std::ostream& os, std::chrono::duration<Rep, Period> d)
 {
-    save_stream_state const _(os);
+    SaveStreamState const _(os);
     using namespace std::chrono;
     if (d < microseconds{1})
     {
@@ -184,7 +184,7 @@ inline std::string
 fmtdur(std::chrono::duration<Period, Rep> const& d)
 {
     std::stringstream ss;
-    pretty_time(ss, d);
+    prettyTime(ss, d);
     return ss.str();
 }
 
@@ -194,10 +194,10 @@ namespace NodeStore {
 
 //------------------------------------------------------------------------------
 
-class progress
+class Progress
 {
 private:
-    using clock_type = beast::basic_seconds_clock;
+    using clock_type = beast::BasicSecondsClock;
 
     std::size_t const work_;
     clock_type::time_point start_ = clock_type::now();
@@ -207,7 +207,7 @@ private:
     bool estimate_ = false;
 
 public:
-    explicit progress(std::size_t work) : work_(work)
+    explicit Progress(std::size_t work) : work_(work)
     {
     }
 
@@ -250,10 +250,10 @@ public:
 };
 
 std::map<std::string, std::string, boost::beast::iless>
-parse_args(std::string const& s)
+parseArgs(std::string const& s)
 {
     // <key> '=' <value>
-    static boost::regex const re1(
+    static boost::regex const kRE1(
         "^"                        // start of line
         "(?:\\s*)"                 // whitespace (optional)
         "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
@@ -269,7 +269,7 @@ parse_args(std::string const& s)
     for (auto const& kv : v)
     {
         boost::smatch m;
-        if (!boost::regex_match(kv, m, re1))
+        if (!boost::regex_match(kv, m, kRE1))
             Throw<std::runtime_error>("invalid parameter " + kv);
         auto const result = map.emplace(m[1], m[2]);
         if (!result.second)
@@ -282,19 +282,19 @@ parse_args(std::string const& s)
 
 #if XRPL_ROCKSDB_AVAILABLE
 
-class import_test : public beast::unit_test::suite
+class import_test : public beast::unit_test::Suite
 {
 public:
     void
     run() override
     {
-        testcase(beast::unit_test::abort_t::abort_on_fail) << arg();
+        testcase(beast::unit_test::AbortT::AbortOnFail) << arg();
 
         using namespace nudb;
         using namespace nudb::detail;
 
         pass();
-        auto const args = parse_args(arg());
+        auto const args = parseArgs(arg());
         bool usage = args.empty();
 
         if (!usage && args.find("from") == args.end())
@@ -328,26 +328,26 @@ public:
         // For a 1TB data file, a 32GB bucket buffer is suggested.
         // The larger the buffer, the faster the import.
         //
-        std::size_t const buffer_size = std::stoull(args.at("buffer"));
-        auto const from_path = args.at("from");
-        auto const to_path = args.at("to");
+        std::size_t const bufferSize = std::stoull(args.at("buffer"));
+        auto const fromPath = args.at("from");
+        auto const toPath = args.at("to");
 
         using hash_type = nudb::xxhasher;
-        auto const bulk_size = 64 * 1024 * 1024;
-        float const load_factor = 0.5;
+        auto const bulkSize = 64 * 1024 * 1024;
+        float const loadFactor = 0.5;
 
-        auto const dp = to_path + ".dat";
-        auto const kp = to_path + ".key";
+        auto const dp = toPath + ".dat";
+        auto const kp = toPath + ".key";
 
         auto const start = std::chrono::steady_clock::now();
 
-        log << "from:    " << from_path
+        log << "from:    " << fromPath
             << "\n"
                "to:      "
-            << to_path
+            << toPath
             << "\n"
                "buffer:  "
-            << buffer_size;
+            << bufferSize;
 
         std::unique_ptr<rocksdb::DB> db;
         {
@@ -355,9 +355,9 @@ public:
             options.create_if_missing = false;
             options.max_open_files = 2000;  // 5000?
             rocksdb::DB* pdb = nullptr;
-            rocksdb::Status const status = rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
+            rocksdb::Status const status = rocksdb::DB::OpenForReadOnly(options, fromPath, &pdb);
             if (!status.ok() || (pdb == nullptr))
-                Throw<std::runtime_error>("Can't open '" + from_path + "': " + status.ToString());
+                Throw<std::runtime_error>("Can't open '" + fromPath + "': " + status.ToString());
             db.reset(pdb);
         }
         // Create data file with values
@@ -373,7 +373,7 @@ public:
         df.create(file_mode::append, dp, ec);
         if (ec)
             Throw<nudb::system_error>(ec);
-        bulk_writer<native_file> dw(df, 0, bulk_size);
+        bulk_writer<native_file> dw(df, 0, bulkSize);
         {
             {
                 auto os = dw.prepare(dat_file_header::size, ec);
@@ -399,12 +399,12 @@ public:
                 auto const size = it->value().size();
                 std::unique_ptr<char[]> const clean(new char[size]);
                 std::memcpy(clean.get(), data, size);
-                filter_inner(clean.get(), size);
-                auto const out = nodeobject_compress(clean.get(), size, buf);
+                filterInner(clean.get(), size);
+                auto const out = nodeobjectCompress(clean.get(), size, buf);
                 // Verify codec correctness
                 {
                     buffer buf2;
-                    auto const check = nodeobject_decompress(out.first, out.second, buf2);
+                    auto const check = nodeobjectDecompress(out.first, out.second, buf2);
                     BEAST_EXPECT(check.second == size);
                     BEAST_EXPECT(std::memcmp(check.first, clean.get(), size) == 0);
                 }
@@ -427,7 +427,7 @@ public:
         }
         db.reset();
         log << "Import data: " << detail::fmtdur(std::chrono::steady_clock::now() - start);
-        auto const df_size = df.size(ec);
+        auto const dfSize = df.size(ec);
         if (ec)
             Throw<nudb::system_error>(ec);
         // Create key file
@@ -439,8 +439,8 @@ public:
         kh.salt = make_salt();
         kh.pepper = pepper<hash_type>(kh.salt);
         kh.block_size = block_size(kp);
-        kh.load_factor = std::min<std::size_t>(65536.0 * load_factor, 65535);
-        kh.buckets = std::ceil(nitems / (bucket_capacity(kh.block_size) * load_factor));
+        kh.load_factor = std::min<std::size_t>(65536.0 * loadFactor, 65535);
+        kh.buckets = std::ceil(nitems / (bucket_capacity(kh.block_size) * loadFactor));
         kh.modulus = ceil_pow2(kh.buckets);
         native_file kf;
         kf.create(file_mode::append, kp, ec);
@@ -458,7 +458,7 @@ public:
         // Build contiguous sequential sections of the
         // key file using multiple passes over the data.
         //
-        auto const buckets = std::max<std::size_t>(1, buffer_size / kh.block_size);
+        auto const buckets = std::max<std::size_t>(1, bufferSize / kh.block_size);
         buf.reserve(buckets * kh.block_size);
         auto const passes = (kh.buckets + buckets - 1) / buckets;
         log << "items:   " << nitems
@@ -467,11 +467,11 @@ public:
             << kh.buckets
             << "\n"
                "data:    "
-            << df_size
+            << dfSize
             << "\n"
                "passes:  "
             << passes;
-        progress p(df_size * passes);
+        Progress p(dfSize * passes);
         std::size_t npass = 0;
         for (std::size_t b0 = 0; b0 < kh.buckets; b0 += buckets)
         {
@@ -485,7 +485,7 @@ public:
             }
             // Insert all keys into buckets
             // Iterate Data File
-            bulk_reader<native_file> r(df, dat_file_header::size, df_size, bulk_size);
+            bulk_reader<native_file> r(df, dat_file_header::size, dfSize, bulkSize);
             while (!r.eof())
             {
                 auto const offset = r.offset();
@@ -507,7 +507,7 @@ public:
                     std::uint8_t const* const key = is.data(dh.key_size);
                     auto const h = hash<hash_type>(key, kh.key_size, kh.salt);
                     auto const n = bucket_index(h, kh.buckets, kh.modulus);
-                    p(log, (npass * df_size) + r.offset());
+                    p(log, (npass * dfSize) + r.offset());
                     if (n < b0 || n >= b1)
                         continue;
                     bucket b(kh.block_size, buf.get() + ((n - b0) * kh.block_size));

@@ -26,12 +26,12 @@ namespace xrpl::NodeStore {
 ManagerImp&
 ManagerImp::instance()
 {
-    static ManagerImp _;
-    return _;
+    static ManagerImp k_;
+    return k_;
 }
 
 void
-ManagerImp::missing_backend()
+ManagerImp::missingBackend()
 {
     Throw<std::runtime_error>(
         "Your xrpld.cfg is missing a [node_db] entry, "
@@ -60,7 +60,7 @@ ManagerImp::ManagerImp()
 }
 
 std::unique_ptr<Backend>
-ManagerImp::make_Backend(
+ManagerImp::makeBackend(
     Section const& parameters,
     std::size_t burstSize,
     Scheduler& scheduler,
@@ -68,26 +68,27 @@ ManagerImp::make_Backend(
 {
     std::string const type{get(parameters, "type")};
     if (type.empty())
-        missing_backend();
+        missingBackend();
 
     auto factory{find(type)};
     if (factory == nullptr)
     {
-        missing_backend();
+        missingBackend();
     }
 
-    return factory->createInstance(NodeObject::keyBytes, parameters, burstSize, scheduler, journal);
+    return factory->createInstance(
+        NodeObject::kKEY_BYTES, parameters, burstSize, scheduler, journal);
 }
 
 std::unique_ptr<Database>
-ManagerImp::make_Database(
+ManagerImp::makeDatabase(
     std::size_t burstSize,
     Scheduler& scheduler,
     int readThreads,
     Section const& config,
     beast::Journal journal)
 {
-    auto backend{make_Backend(config, burstSize, scheduler, journal)};
+    auto backend{makeBackend(config, burstSize, scheduler, journal)};
     backend->open();
     return std::make_unique<DatabaseNodeImp>(
         scheduler, readThreads, std::move(backend), config, journal);

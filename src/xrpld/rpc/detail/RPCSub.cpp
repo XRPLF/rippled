@@ -32,22 +32,22 @@ class RPCSubImp : public RPCSub
 public:
     RPCSubImp(
         InfoSub::Source& source,
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         JobQueue& jobQueue,
         std::string const& strUrl,
         std::string strUsername,
         std::string strPassword,
         ServiceRegistry& registry)
         : RPCSub(source)
-        , m_io_context(io_context)
-        , m_jobQueue(jobQueue)
-        , mUrl(strUrl)
-        , mUsername(std::move(strUsername))
-        , mPassword(std::move(strPassword))
+        , io_context_(ioContext)
+        , jobQueue_(jobQueue)
+        , url_(strUrl)
+        , username_(std::move(strUsername))
+        , password_(std::move(strPassword))
         , j_(registry.getJournal("RPCSub"))
         , logs_(registry.getLogs())
     {
-        parsedURL pUrl;
+        ParsedUrl pUrl;
 
         if (!parseUrl(pUrl, strUrl))
         {
@@ -55,66 +55,66 @@ public:
         }
         else if (pUrl.scheme == "https")
         {
-            mSSL = true;
+            ssl_ = true;
         }
         else if (pUrl.scheme != "http")
         {
             Throw<std::runtime_error>("Only http and https is supported.");
         }
 
-        mSeq = 1;
+        seq_ = 1;
 
-        mIp = pUrl.domain;
+        ip_ = pUrl.domain;
         if (!pUrl.port)
         {
-            mPort = mSSL ? 443 : 80;
+            port_ = ssl_ ? 443 : 80;
         }
         else
         {
-            mPort = *pUrl.port;
+            port_ = *pUrl.port;
         }
-        mPath = pUrl.path;
+        path_ = pUrl.path;
 
-        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << mIp << " port=" << mPort
-                        << " ssl= " << (mSSL ? "yes" : "no") << " path='" << mPath << "'";
+        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << ip_ << " port=" << port_
+                        << " ssl= " << (ssl_ ? "yes" : "no") << " path='" << path_ << "'";
     }
 
     ~RPCSubImp() override = default;
 
     void
-    send(Json::Value const& jvObj, bool broadcast) override
+    send(json::Value const& jvObj, bool broadcast) override
     {
-        std::scoped_lock const sl(mLock);
+        std::scoped_lock const sl(lock_);
 
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
 
-        mDeque.emplace_back(mSeq++, jvObj);
+        deque_.emplace_back(seq_++, jvObj);
 
-        if (!mSending)
+        if (!sending_)
         {
             // Start a sending thread.
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
-            mSending =
-                m_jobQueue.addJob(jtCLIENT_SUBSCRIBE, "RPCSubSendThr", [this]() { sendThread(); });
+            sending_ =
+                jobQueue_.addJob(JtClientSubscribe, "RPCSubSendThr", [this]() { sendThread(); });
         }
     }
 
     void
     setUsername(std::string const& strUsername) override
     {
-        std::scoped_lock const sl(mLock);
+        std::scoped_lock const sl(lock_);
 
-        mUsername = strUsername;
+        username_ = strUsername;
     }
 
     void
     setPassword(std::string const& strPassword) override
     {
-        std::scoped_lock const sl(mLock);
+        std::scoped_lock const sl(lock_);
 
-        mPassword = strPassword;
+        password_ = strPassword;
     }
 
 private:
@@ -123,25 +123,25 @@ private:
     void
     sendThread()
     {
-        Json::Value jvEvent;
+        json::Value jvEvent;
         bool bSend = false;
 
         do
         {
             {
                 // Obtain the lock to manipulate the queue and change sending.
-                std::scoped_lock const sl(mLock);
+                std::scoped_lock const sl(lock_);
 
-                if (mDeque.empty())
+                if (deque_.empty())
                 {
-                    mSending = false;
+                    sending_ = false;
                     bSend = false;
                 }
                 else
                 {
-                    auto const [seq, env] = mDeque.front();
+                    auto const [seq, env] = deque_.front();
 
-                    mDeque.pop_front();
+                    deque_.pop_front();
 
                     jvEvent = env;
                     jvEvent["seq"] = seq;
@@ -156,18 +156,18 @@ private:
                 // XXX Might not need this in a try.
                 try
                 {
-                    JLOG(j_.info()) << "RPCCall::fromNetwork: " << mIp;
+                    JLOG(j_.info()) << "RPCCall::fromNetwork: " << ip_;
 
                     RPCCall::fromNetwork(
-                        m_io_context,
-                        mIp,
-                        mPort,
-                        mUsername,
-                        mPassword,
-                        mPath,
+                        io_context_,
+                        ip_,
+                        port_,
+                        username_,
+                        password_,
+                        path_,
                         "event",
                         jvEvent,
-                        mSSL,
+                        ssl_,
                         true,
                         logs_);
                 }
@@ -180,22 +180,22 @@ private:
     }
 
 private:
-    boost::asio::io_context& m_io_context;
-    JobQueue& m_jobQueue;
+    boost::asio::io_context& io_context_;
+    JobQueue& jobQueue_;
 
-    std::string mUrl;
-    std::string mIp;
-    std::uint16_t mPort;
-    bool mSSL{false};
-    std::string mUsername;
-    std::string mPassword;
-    std::string mPath;
+    std::string url_;
+    std::string ip_;
+    std::uint16_t port_;
+    bool ssl_{false};
+    std::string username_;
+    std::string password_;
+    std::string path_;
 
-    int mSeq;  // Next id to allocate.
+    int seq_;  // Next id to allocate.
 
-    bool mSending{false};  // Sending thread is active.
+    bool sending_{false};  // Sending thread is active.
 
-    std::deque<std::pair<int, Json::Value>> mDeque;
+    std::deque<std::pair<int, json::Value>> deque_;
 
     beast::Journal const j_;
     Logs& logs_;
@@ -208,9 +208,9 @@ RPCSub::RPCSub(InfoSub::Source& source) : InfoSub(source, Consumer())
 }
 
 std::shared_ptr<RPCSub>
-make_RPCSub(
+makeRPCSub(
     InfoSub::Source& source,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     JobQueue& jobQueue,
     std::string const& strUrl,
     std::string const& strUsername,
@@ -219,7 +219,7 @@ make_RPCSub(
 {
     return std::make_shared<RPCSubImp>(
         std::ref(source),
-        std::ref(io_context),
+        std::ref(ioContext),
         std::ref(jobQueue),
         strUrl,
         strUsername,

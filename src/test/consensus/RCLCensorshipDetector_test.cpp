@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-class RCLCensorshipDetector_test : public beast::unit_test::suite
+class RCLCensorshipDetector_test : public beast::unit_test::Suite
 {
     void
     test(

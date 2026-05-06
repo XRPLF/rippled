@@ -78,10 +78,10 @@ STIssue::getText() const
     return asset_.getText();
 }
 
-Json::Value
+json::Value
 STIssue::getJson(JsonOptions) const
 {
-    Json::Value jv;
+    json::Value jv;
     asset_.setJson(jv);
     return jv;
 }
@@ -132,7 +132,7 @@ STIssue::move(std::size_t n, void* buf)
 }
 
 STIssue
-issueFromJson(SField const& name, Json::Value const& v)
+issueFromJson(SField const& name, json::Value const& v)
 {
     return STIssue{name, assetFromJson(v)};
 }

@@ -12,11 +12,11 @@ namespace xrpl::test::csf {
     @param g  A pseudo-random number generator
     @return A vector with entries randomly sampled without replacement
             from the original vector based on the provided weights.
-            I.e.  res[0] comes from sample v[i] with weight w[i]/sum_k w[k]
+            I.e.  res[0] comes from sample v[i] with weight w[i]/suk_ w[k]
 */
 template <class T, class G>
 std::vector<T>
-random_weighted_shuffle(std::vector<T> v, std::vector<double> w, G& g)
+randomWeightedShuffle(std::vector<T> v, std::vector<double> w, G& g)
 {
     using std::swap;
 

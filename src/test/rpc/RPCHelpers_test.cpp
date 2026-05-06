@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-class RPCHelpers_test : public beast::unit_test::suite
+class RPCHelpers_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -18,51 +18,51 @@ public:
         testcase("ChooseLedgerEntryType");
 
         // Test no type.
-        Json::Value tx = Json::objectValue;
+        json::Value tx = json::ObjectValue;
         auto result = RPC::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RPC::Status::OK);
+        BEAST_EXPECT(result.first == RPC::Status::kOK);
         BEAST_EXPECT(result.second == 0);
 
         // Test empty type.
         tx[jss::type] = "";
         result = RPC::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RPC::Status{rpcINVALID_PARAMS});
+        BEAST_EXPECT(result.first == RPC::Status{RpcInvalidParams});
         BEAST_EXPECT(result.second == 0);
 
         // Test type using canonical name in mixedcase.
         tx[jss::type] = "MPTokenIssuance";
         result = RPC::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RPC::Status::OK);
+        BEAST_EXPECT(result.first == RPC::Status::kOK);
         BEAST_EXPECT(result.second == ltMPTOKEN_ISSUANCE);
 
         // Test type using canonical name in lowercase.
         tx[jss::type] = "mptokenissuance";
         result = RPC::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RPC::Status::OK);
+        BEAST_EXPECT(result.first == RPC::Status::kOK);
         BEAST_EXPECT(result.second == ltMPTOKEN_ISSUANCE);
 
         // Test type using RPC name with exact match.
         tx[jss::type] = "mpt_issuance";
         result = RPC::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RPC::Status::OK);
+        BEAST_EXPECT(result.first == RPC::Status::kOK);
         BEAST_EXPECT(result.second == ltMPTOKEN_ISSUANCE);
 
         // Test type using RPC name with inexact match.
         tx[jss::type] = "MPT_Issuance";
         result = RPC::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RPC::Status{rpcINVALID_PARAMS});
+        BEAST_EXPECT(result.first == RPC::Status{RpcInvalidParams});
         BEAST_EXPECT(result.second == 0);
 
         // Test invalid type.
         tx[jss::type] = 1234;
         result = RPC::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RPC::Status{rpcINVALID_PARAMS});
+        BEAST_EXPECT(result.first == RPC::Status{RpcInvalidParams});
         BEAST_EXPECT(result.second == 0);
 
         // Test unknown type.
         tx[jss::type] = "unknown";
         result = RPC::chooseLedgerEntryType(tx);
-        BEAST_EXPECT(result.first == RPC::Status{rpcINVALID_PARAMS});
+        BEAST_EXPECT(result.first == RPC::Status{RpcInvalidParams});
         BEAST_EXPECT(result.second == 0);
     }
 

@@ -35,12 +35,12 @@
 namespace xrpl {
 
 void
-addLine(Json::Value& jsonLines, RPCTrustLine const& line)
+addLine(json::Value& jsonLines, RPCTrustLine const& line)
 {
     STAmount const& saBalance(line.getBalance());
     STAmount const& saLimit(line.getLimit());
     STAmount const& saLimitPeer(line.getLimitPeer());
-    Json::Value& jPeer(jsonLines.append(Json::objectValue));
+    json::Value& jPeer(jsonLines.append(json::ObjectValue));
 
     jPeer[jss::account] = to_string(line.getAccountIDPeer());
     // Amount reported is positive if current account holds other
@@ -81,15 +81,15 @@ addLine(Json::Value& jsonLines, RPCTrustLine const& line)
 //   ignore_default: bool           // do not return lines in default state (on
 //   this account's side)
 // }
-Json::Value
+json::Value
 doAccountLines(RPC::JsonContext& context)
 {
     auto const& params(context.params);
     if (!params.isMember(jss::account))
-        return RPC::missing_field_error(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return RPC::invalid_field_error(jss::account);
+        return RPC::invalidFieldError(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
@@ -99,13 +99,13 @@ doAccountLines(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
+        RPC::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
-        return rpcError(rpcACT_NOT_FOUND);
+        return rpcError(RpcActNotFound);
 
     std::string strPeer;
     if (params.isMember(jss::peer))
@@ -116,12 +116,12 @@ doAccountLines(RPC::JsonContext& context)
     }();
     if (!strPeer.empty() && !raPeerAccount)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
+        RPC::injectError(RpcActMalformed, result);
         return result;
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::accountLines, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_LINES, context))
         return *err;
 
     // this flag allows the requester to ask incoming trustlines in default
@@ -129,7 +129,7 @@ doAccountLines(RPC::JsonContext& context)
     bool const ignoreDefault =
         params.isMember(jss::ignore_default) && params[jss::ignore_default].asBool();
 
-    Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
+    json::Value& jsonLines(result[jss::lines] = json::ArrayValue);
     struct VisitData
     {
         std::vector<RPCTrustLine> items;
@@ -144,26 +144,26 @@ doAccountLines(RPC::JsonContext& context)
         .raPeerAccount = raPeerAccount,
         .ignoreDefault = ignoreDefault,
         .foundCount = 0};
-    uint256 startAfter = beast::zero;
+    uint256 startAfter = beast::kZERO;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
     {
         if (!params[jss::marker].isString())
-            return RPC::expected_field_error(jss::marker, "string");
+            return RPC::expectedFieldError(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
         // former will be read as hex, and the latter using boost lexical cast.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         if (!startAfter.parseHex(value))
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         if (!std::getline(marker, value, ','))
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         try
         {
@@ -171,7 +171,7 @@ doAccountLines(RPC::JsonContext& context)
         }
         catch (boost::bad_lexical_cast&)
         {
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
         }
 
         // We then must check if the object pointed to by the marker is actually
@@ -179,10 +179,10 @@ doAccountLines(RPC::JsonContext& context)
         auto const sle = ledger->read({ltANY, startAfter});
 
         if (!sle)
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
     }
 
     auto count = 0;
@@ -242,7 +242,7 @@ doAccountLines(RPC::JsonContext& context)
                     return true;
                 }))
         {
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
         }
     }
 
@@ -260,7 +260,7 @@ doAccountLines(RPC::JsonContext& context)
     for (auto const& item : visitData.items)
         addLine(jsonLines, item);
 
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
     return result;
 }
 

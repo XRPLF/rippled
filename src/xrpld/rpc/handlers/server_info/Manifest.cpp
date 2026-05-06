@@ -11,23 +11,23 @@
 #include <xrpl/protocol/tokens.h>
 
 namespace xrpl {
-Json::Value
+json::Value
 doManifest(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
     if (!params.isMember(jss::public_key))
-        return RPC::missing_field_error(jss::public_key);
+        return RPC::missingFieldError(jss::public_key);
 
     auto const requested = params[jss::public_key].asString();
 
-    Json::Value ret;
+    json::Value ret;
     ret[jss::requested] = requested;
 
     auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, requested);
     if (!pk)
     {
-        RPC::inject_error(rpcINVALID_PARAMS, ret);
+        RPC::injectError(RpcInvalidParams, ret);
         return ret;
     }
 
@@ -43,8 +43,8 @@ doManifest(RPC::JsonContext& context)
         return ret;
 
     if (auto const manifest = context.app.getValidatorManifests().getManifest(mk))
-        ret[jss::manifest] = base64_encode(*manifest);
-    Json::Value details;
+        ret[jss::manifest] = base64Encode(*manifest);
+    json::Value details;
 
     details[jss::master_key] = toBase58(TokenType::NodePublic, mk);
     details[jss::ephemeral_key] = toBase58(TokenType::NodePublic, *ek);

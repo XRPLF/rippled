@@ -92,7 +92,7 @@ public:
 
 inline IOUAmount::IOUAmount(beast::Zero)
 {
-    *this = beast::zero;
+    *this = beast::kZERO;
 }
 
 inline IOUAmount::IOUAmount(mantissa_type mantissa, exponent_type exponent)
