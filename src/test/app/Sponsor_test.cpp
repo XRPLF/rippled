@@ -64,6 +64,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <cstdio>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -5119,6 +5120,28 @@ public:
             // XChainOwnedClaimID deleted
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        }
+        // XChainCreateAccountClaimID
+        {
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, doorA) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, doorA) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            env(create_account_attestation(
+                    alice, jvb, alice, XRP(20), XRP(0), bob, false, 2, bob, signer),
+                sponsor::as(sponsor, spfSponsorReserve),
+                sig(sfSponsorSignature, sponsor),
+                ter(tesSUCCESS));
+            env.close();
+
+            // XChainCreateAccountClaimID not sponsored
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, doorA) == 3);
+            BEAST_EXPECT(sponsoredOwnerCount(env, doorA) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
         }
     }
