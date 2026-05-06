@@ -16,7 +16,7 @@ public:
               that were previously considered valid to no longer
               be allowed.
     */
-    static constexpr std::size_t maxSerializedFulfillment = 256;
+    static constexpr std::size_t kMAX_SERIALIZED_FULFILLMENT = 256;
 
     /** Load a fulfillment from its binary form
 
@@ -41,15 +41,15 @@ public:
         with respect to other conditions of the
         same type.
    */
-    virtual Buffer
+    [[nodiscard]] virtual Buffer
     fingerprint() const = 0;
 
     /** Returns the type of this condition. */
-    virtual Type
+    [[nodiscard]] virtual Type
     type() const = 0;
 
     /** Validates a fulfillment. */
-    virtual bool
+    [[nodiscard]] virtual bool
     validate(Slice data) const = 0;
 
     /** Calculates the cost associated with this fulfillment. *
@@ -58,7 +58,7 @@ public:
         type and properties of the condition and the fulfillment
         that the condition is generated from.
     */
-    virtual std::uint32_t
+    [[nodiscard]] virtual std::uint32_t
     cost() const = 0;
 
     /** Returns the condition associated with the given fulfillment.
@@ -67,7 +67,7 @@ public:
         will, if compliant, produce the identical condition for the
         same fulfillment.
     */
-    virtual Condition
+    [[nodiscard]] virtual Condition
     condition() const = 0;
 };
 

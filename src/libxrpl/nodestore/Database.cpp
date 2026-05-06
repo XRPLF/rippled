@@ -38,7 +38,7 @@ Database::Database(
     beast::Journal journal)
     : j_(journal)
     , scheduler_(scheduler)
-    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
+    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", kXRP_LEDGER_EARLIEST_SEQ))
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , desiredReadThreads_(std::max(1, readThreads))
 {
@@ -101,7 +101,7 @@ Database::startReadThreads()
                         auto const& data = it->second;
                         auto const seqn = data[0].first;
 
-                        auto obj = fetchNodeObject(hash, seqn, FetchType::async);
+                        auto obj = fetchNodeObject(hash, seqn, FetchType::Async);
 
                         // This could be further optimized: if there are
                         // multiple requests for sequence numbers mapping to
@@ -113,7 +113,7 @@ Database::startReadThreads()
                             req.second(
                                 (seqn == req.first) || isSameDB(req.first, seqn)
                                     ? obj
-                                    : fetchNodeObject(hash, req.first, FetchType::async));
+                                    : fetchNodeObject(hash, req.first, FetchType::Async));
                         }
                     }
 
@@ -149,7 +149,7 @@ void
 Database::stop()
 {
     {
-        std::lock_guard const lock(readLock_);
+        std::scoped_lock const lock(readLock_);
 
         if (!readStopping_.exchange(true, std::memory_order_relaxed))
         {
@@ -185,7 +185,7 @@ Database::asyncFetch(
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
-    std::lock_guard const lock(readLock_);
+    std::scoped_lock const lock(readLock_);
 
     if (!isStopping())
     {
@@ -198,7 +198,7 @@ void
 Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch batch;
-    batch.reserve(batchWritePreallocationSize);
+    batch.reserve(BatchWritePreallocationSize);
     auto storeBatch = [&, fname = __func__]() {
         try
         {
@@ -217,13 +217,13 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
         batch.clear();
     };
 
-    srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
+    srcDB.forEach([&](std::shared_ptr<NodeObject> nodeObject) {
         XRPL_ASSERT(nodeObject, "xrpl::NodeStore::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;
 
         batch.emplace_back(std::move(nodeObject));
-        if (batch.size() >= batchWritePreallocationSize)
+        if (batch.size() >= BatchWritePreallocationSize)
             storeBatch();
     });
 
@@ -260,13 +260,13 @@ Database::fetchNodeObject(
 }
 
 void
-Database::getCountsJson(Json::Value& obj)
+Database::getCountsJson(json::Value& obj)
 {
     XRPL_ASSERT(obj.isObject(), "xrpl::NodeStore::Database::getCountsJson : valid input type");
 
     {
         std::unique_lock<std::mutex> const lock(readLock_);
-        obj["read_queue"] = static_cast<Json::UInt>(read_.size());
+        obj["read_queue"] = static_cast<json::UInt>(read_.size());
     }
 
     obj["read_threads_total"] = readThreads_.load();

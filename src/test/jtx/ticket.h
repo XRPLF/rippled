@@ -18,17 +18,17 @@ namespace xrpl::test::jtx {
 namespace ticket {
 
 /** Create one of more tickets */
-Json::Value
+json::Value
 create(Account const& account, std::uint32_t count);
 
 /** Set a ticket sequence on a JTx. */
-class use
+class Use
 {
 private:
     std::uint32_t ticketSeq_;
 
 public:
-    use(std::uint32_t ticketSeq) : ticketSeq_{ticketSeq}
+    Use(std::uint32_t ticketSeq) : ticketSeq_{ticketSeq}
     {
     }
 
@@ -39,6 +39,6 @@ public:
 }  // namespace ticket
 
 /** Match the number of tickets on the account. */
-using tickets = owner_count<ltTICKET>;
+using tickets = OwnerCount<ltTICKET>;
 
 }  // namespace xrpl::test::jtx

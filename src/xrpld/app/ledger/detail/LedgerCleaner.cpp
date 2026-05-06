@@ -56,8 +56,8 @@ class LedgerCleanerImp : public LedgerCleaner
 
     std::thread thread_;
 
-    enum class State : char { notCleaning = 0, cleaning };
-    State state_ = State::notCleaning;
+    enum class State : char { NotCleaning = 0, Cleaning };
+    State state_ = State::NotCleaning;
     bool shouldExit_ = false;
 
     // The lowest ledger in the range we're checking.
@@ -84,7 +84,7 @@ public:
     ~LedgerCleanerImp() override
     {
         if (thread_.joinable())
-            LogicError("LedgerCleanerImp::stop not called.");
+            logicError("LedgerCleanerImp::stop not called.");
     }
 
     void
@@ -98,7 +98,7 @@ public:
     {
         JLOG(j_.info()) << "Stopping";
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             shouldExit_ = true;
             wakeup_.notify_one();
         }
@@ -114,7 +114,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map) override
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
 
         if (maxRange_ == 0)
         {
@@ -139,14 +139,14 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    clean(Json::Value const& params) override
+    clean(json::Value const& params) override
     {
         LedgerIndex minRange = 0;
         LedgerIndex maxRange = 0;
         app_.getLedgerMaster().getFullValidatedRange(minRange, maxRange);
 
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
 
             maxRange_ = maxRange;
             minRange_ = minRange;
@@ -211,7 +211,7 @@ public:
             if (params.isMember(jss::stop) && params[jss::stop].asBool())
                 minRange_ = maxRange_ = 0;
 
-            state_ = State::cleaning;
+            state_ = State::Cleaning;
             wakeup_.notify_one();
         }
     }
@@ -232,11 +232,11 @@ private:
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                state_ = State::notCleaning;
-                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::cleaning); });
+                state_ = State::NotCleaning;
+                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::Cleaning); });
                 if (shouldExit_)
                     break;
-                XRPL_ASSERT(state_ == State::cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
+                XRPL_ASSERT(state_ == State::Cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
             }
             doLedgerCleaner();
         }
@@ -257,7 +257,7 @@ private:
             app_.getInboundLedgers().acquire(
                 ledger->header().hash, ledger->header().seq, InboundLedger::Reason::GENERIC);
         }
-        return hash ? *hash : beast::zero;  // kludge
+        return hash ? *hash : beast::kZERO;  // kludge
     }
 
     /** Process a single ledger
@@ -376,7 +376,7 @@ private:
     doLedgerCleaner()
     {
         auto shouldExit = [this] {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             return shouldExit_;
         };
 
@@ -397,7 +397,7 @@ private:
             }
 
             {
-                std::lock_guard const lock(mutex_);
+                std::scoped_lock const lock(mutex_);
                 if ((minRange_ > maxRange_) || (maxRange_ == 0) || (minRange_ == 0))
                 {
                     minRange_ = maxRange_ = 0;
@@ -425,7 +425,7 @@ private:
             if (fail)
             {
                 {
-                    std::lock_guard const lock(mutex_);
+                    std::scoped_lock const lock(mutex_);
                     ++failures_;
                 }
                 // Wait for acquiring to catch up to us
@@ -434,7 +434,7 @@ private:
             else
             {
                 {
-                    std::lock_guard const lock(mutex_);
+                    std::scoped_lock const lock(mutex_);
                     if (ledgerIndex == minRange_)
                         ++minRange_;
                     if (ledgerIndex == maxRange_)
@@ -449,7 +449,7 @@ private:
 };
 
 std::unique_ptr<LedgerCleaner>
-make_LedgerCleaner(Application& app, beast::Journal journal)
+makeLedgerCleaner(Application& app, beast::Journal journal)
 {
     return std::make_unique<LedgerCleanerImp>(app, journal);
 }

@@ -43,8 +43,8 @@ class PublicKey
 protected:
     // All the constructed public keys are valid, non-empty and contain 33
     // bytes of data.
-    static constexpr std::size_t size_ = 33;
-    std::uint8_t buf_[size_]{};  // should be large enough
+    static constexpr std::size_t kSIZE = 33;
+    std::uint8_t buf_[kSIZE]{};  // should be large enough
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -63,7 +63,7 @@ public:
     */
     explicit PublicKey(Slice const& slice);
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
         return buf_;
@@ -72,37 +72,37 @@ public:
     static std::size_t
     size() noexcept
     {
-        return size_;
+        return kSIZE;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
-        return buf_ + size_;
+        return buf_ + kSIZE;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
-        return buf_ + size_;
+        return buf_ + kSIZE;
     }
 
-    Slice
+    [[nodiscard]] Slice
     slice() const noexcept
     {
-        return {buf_, size_};
+        return {buf_, kSIZE};
     }
 
     operator Slice() const noexcept
@@ -168,7 +168,7 @@ template <>
 std::optional<PublicKey>
 parseBase58(TokenType type, std::string const& s);
 
-enum class ECDSACanonicality { canonical, fullyCanonical };
+enum class ECDSACanonicality { Canonical, FullyCanonical };
 
 /** Determines the canonicality of a signature.
 
@@ -260,10 +260,10 @@ getFingerprint(
 
 //------------------------------------------------------------------------------
 
-namespace Json {
+namespace json {
 template <>
 inline xrpl::PublicKey
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
     std::string const b58 = getOrThrow<std::string>(v, field);
@@ -279,4 +279,4 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
     }
     Throw<JsonTypeMismatchError>(field.getJsonName(), "PublicKey");
 }
-}  // namespace Json
+}  // namespace json

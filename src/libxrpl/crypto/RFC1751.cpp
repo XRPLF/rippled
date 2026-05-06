@@ -21,7 +21,7 @@ namespace xrpl {
 // RFC 1751 code converted to C++/Boost.
 //
 
-char const* RFC1751::s_dictionary[2048] = {
+char const* RFC1751::dictionary[2048] = {
     "A",    "ABE",  "ACE",  "ACT",  "AD",   "ADA",  "ADD",  "AGO",  "AID",  "AIM",  "AIR",  "ALL",
     "ALP",  "AM",   "AMY",  "AN",   "ANA",  "AND",  "ANN",  "ANT",  "ANY",  "APE",  "APS",  "APT",
     "ARC",  "ARE",  "ARK",  "ARM",  "ART",  "AS",   "ASH",  "ASK",  "AT",   "ATE",  "AUG",  "AUK",
@@ -237,10 +237,10 @@ RFC1751::btoe(std::string& strHuman, std::string const& strData)
 
     caBuffer[8] = char(p) << 6;
 
-    strHuman = std::string() + s_dictionary[extract(caBuffer, 0, 11)] + " " +
-        s_dictionary[extract(caBuffer, 11, 11)] + " " + s_dictionary[extract(caBuffer, 22, 11)] +
-        " " + s_dictionary[extract(caBuffer, 33, 11)] + " " +
-        s_dictionary[extract(caBuffer, 44, 11)] + " " + s_dictionary[extract(caBuffer, 55, 11)];
+    strHuman = std::string() + dictionary[extract(caBuffer, 0, 11)] + " " +
+        dictionary[extract(caBuffer, 11, 11)] + " " + dictionary[extract(caBuffer, 22, 11)] + " " +
+        dictionary[extract(caBuffer, 33, 11)] + " " + dictionary[extract(caBuffer, 44, 11)] + " " +
+        dictionary[extract(caBuffer, 55, 11)];
 }
 
 void
@@ -314,7 +314,7 @@ RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
     {
         // Have a range to search.
         int const iMid = iMin + ((iMax - iMin) / 2);
-        int const iDir = strWord.compare(s_dictionary[iMid]);
+        int const iDir = strWord.compare(dictionary[iMid]);
 
         if (iDir == 0)
         {
@@ -447,7 +447,7 @@ RFC1751::getWordFromBlob(void const* blob, size_t bytes)
     hash ^= (hash >> 11);
     hash += (hash << 15);
 
-    return s_dictionary[hash % (sizeof(s_dictionary) / sizeof(s_dictionary[0]))];
+    return dictionary[hash % (sizeof(dictionary) / sizeof(dictionary[0]))];
 }
 
 }  // namespace xrpl

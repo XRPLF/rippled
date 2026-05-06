@@ -125,7 +125,7 @@ public:
     fetchNodeObject(
         uint256 const& hash,
         std::uint32_t ledgerSeq = 0,
-        FetchType fetchType = FetchType::synchronous,
+        FetchType fetchType = FetchType::Synchronous,
         bool duplicate = false);
 
     /** Fetch an object without waiting.
@@ -181,7 +181,7 @@ public:
     }
 
     void
-    getCountsJson(Json::Value& obj);
+    getCountsJson(json::Value& obj);
 
     /** Returns the number of file descriptors the database expects to need */
     int
@@ -284,7 +284,7 @@ private:
         @see import
     */
     virtual void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
 
     void
     threadEntry();

@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -18,7 +19,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 #include <memory>
 #include <vector>
@@ -28,7 +28,7 @@ namespace xrpl {
 bool
 LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
@@ -38,15 +38,15 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 
     auto const& tx = ctx.tx;
     if (auto const data = tx[~sfData];
-        data && !data->empty() && !validDataLength(tx[~sfData], maxDataPayloadLength))
+        data && !data->empty() && !validDataLength(tx[~sfData], kMAX_DATA_PAYLOAD_LENGTH))
         return temINVALID;
-    if (!validNumericRange(tx[~sfManagementFeeRate], maxManagementFeeRate))
+    if (!validNumericRange(tx[~sfManagementFeeRate], kMAX_MANAGEMENT_FEE_RATE))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateMinimum], maxCoverRate))
+    if (!validNumericRange(tx[~sfCoverRateMinimum], kMAX_COVER_RATE))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateLiquidation], maxCoverRate))
+    if (!validNumericRange(tx[~sfCoverRateLiquidation], kMAX_COVER_RATE))
         return temINVALID;
-    if (!validNumericRange(tx[~sfDebtMaximum], Number(maxMPTokenAmount), Number(0)))
+    if (!validNumericRange(tx[~sfDebtMaximum], Number(kMAX_MP_TOKEN_AMOUNT), Number(0)))
         return temINVALID;
 
     if (tx.isFieldPresent(sfLoanBrokerID))
@@ -57,13 +57,13 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
             tx.isFieldPresent(sfCoverRateLiquidation))
             return temINVALID;
 
-        if (tx[sfLoanBrokerID] == beast::zero)
+        if (tx[sfLoanBrokerID] == beast::kZERO)
             return temINVALID;
     }
 
     if (auto const vaultID = tx.at(~sfVaultID))
     {
-        if (*vaultID == beast::zero)
+        if (*vaultID == beast::kZERO)
             return temINVALID;
     }
 
@@ -83,9 +83,9 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 std::vector<OptionaledField<STNumber>> const&
 LoanBrokerSet::getValueFields()
 {
-    static std::vector<OptionaledField<STNumber>> const valueFields{~sfDebtMaximum};
+    static std::vector<OptionaledField<STNumber>> const kVALUE_FIELDS{~sfDebtMaximum};
 
-    return valueFields;
+    return kVALUE_FIELDS;
 }
 
 TER

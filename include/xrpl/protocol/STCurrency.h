@@ -24,30 +24,30 @@ public:
 
     explicit STCurrency(SField const& name);
 
-    Currency const&
+    [[nodiscard]] Currency const&
     currency() const;
 
-    Currency const&
+    [[nodiscard]] Currency const&
     value() const noexcept;
 
     void
     setCurrency(Currency const& currency);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
 private:
@@ -63,7 +63,7 @@ private:
 };
 
 STCurrency
-currencyFromJson(SField const& name, Json::Value const& v);
+currencyFromJson(SField const& name, json::Value const& v);
 
 inline Currency const&
 STCurrency::currency() const
