@@ -1004,7 +1004,7 @@ hasConstantFieldChanged(STObject const& before, STObject const& after, SOTemplat
             constant != SoeImmutable, "xrpl::hasConstantFieldChanged : constant is invalid");
         if (constant == SoeImmutable)
         {
-            if (elem.style() == soeOPTIONAL)
+            if (elem.style() == SoeOptional)
             {
                 // Optional constant fields may be added or removed,
                 // but their value must not change once present.
@@ -1020,7 +1020,7 @@ hasConstantFieldChanged(STObject const& before, STObject const& after, SOTemplat
                     return true;
             }
         }
-        // soeNOTCONSTANT fields may change freely — no recursion
+        // SoeMutable fields may change freely — no recursion
         // into inner objects/arrays is needed because the parent
         // field explicitly allows changes to its entire contents.
     }

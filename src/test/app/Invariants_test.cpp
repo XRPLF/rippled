@@ -2138,7 +2138,7 @@ class Invariants_test : public beast::unit_test::Suite
             }
         }
 
-        // Template-based checks: soeNOTCONSTANT field
+        // Template-based checks: SoeMutable field
         // (sfPreviousTxnID) on AccountRoot should NOT fail when
         // modified — no invariant checks this field.
         {
@@ -2181,7 +2181,7 @@ class Invariants_test : public beast::unit_test::Suite
             }
         }
 
-        // Without featureInvariantsV1_1, modifying a soeCONSTANT field
+        // Without featureInvariantsV1_1, modifying a SoeImmutable field
         // that is NOT sfLedgerEntryType/sfLedgerIndex on a non-loan
         // type should NOT fail (old code doesn't check it)
         {
