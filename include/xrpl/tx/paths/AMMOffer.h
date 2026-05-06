@@ -75,7 +75,7 @@ public:
     consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed);
 
     [[nodiscard]] bool
-    fully_consumed() const
+    fullyConsumed() const
     {
         return consumed_;
     }

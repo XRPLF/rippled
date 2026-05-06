@@ -1,5 +1,7 @@
 #pragma once
 
+// NOLINTBEGIN(readability-identifier-naming)
+
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 
@@ -366,37 +368,37 @@ enum TECcodes : TERUnderlyingType {
 constexpr TERUnderlyingType
 TERtoInt(TELcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEMcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEFcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TERcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEScodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TECcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 //------------------------------------------------------------------------------
@@ -457,11 +459,11 @@ public:
         return code_ != tesSUCCESS;
     }
 
-    // Conversion to Json::Value allows assignment to Json::Objects
+    // Conversion to json::Value allows assignment to json::Objects
     // without casting.
-    operator Json::Value() const
+    operator json::Value() const
     {
-        return Json::Value{code_};
+        return json::Value{code_};
     }
 
     // Streaming operator.
@@ -682,3 +684,5 @@ std::optional<TER>
 transCode(std::string const& token);
 
 }  // namespace xrpl
+
+// NOLINTEND(readability-identifier-naming)

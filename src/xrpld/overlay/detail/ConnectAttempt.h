@@ -69,7 +69,7 @@ private:
     };
 
     // A timeout for connection process, greater than all step timeouts
-    static constexpr std::chrono::seconds connectTimeout{25};
+    static constexpr std::chrono::seconds kCONNECT_TIMEOUT{25};
 
     /**
      * @struct StepTimeouts
@@ -81,15 +81,15 @@ private:
     struct StepTimeouts
     {
         // TCP connection timeout
-        static constexpr std::chrono::seconds tcpConnect{8};
+        static constexpr std::chrono::seconds kTCP_CONNECT{8};
         // SSL handshake timeout
-        static constexpr std::chrono::seconds tlsHandshake{8};
+        static constexpr std::chrono::seconds kTLS_HANDSHAKE{8};
         // HTTP write timeout
-        static constexpr std::chrono::seconds httpWrite{3};
+        static constexpr std::chrono::seconds kHTTP_WRITE{3};
         // HTTP read timeout
-        static constexpr std::chrono::seconds httpRead{3};
+        static constexpr std::chrono::seconds kHTTP_READ{3};
         // SSL shutdown timeout
-        static constexpr std::chrono::seconds tlsShutdown{2};
+        static constexpr std::chrono::seconds kTLS_SHUTDOWN{2};
     };
 
     // Core application and networking components
@@ -97,17 +97,17 @@ private:
     Peer::id_t const id_;
     beast::WrappedSink sink_;
     beast::Journal const journal_;
-    endpoint_type remote_endpoint_;
+    endpoint_type remoteEndpoint_;
     Resource::Consumer usage_;
 
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> stepTimer_;
 
-    std::unique_ptr<stream_type> stream_ptr_;  // SSL stream (owned)
+    std::unique_ptr<stream_type> streamPtr_;  // SSL stream (owned)
     socket_type& socket_;
     stream_type& stream_;
-    boost::beast::multi_buffer read_buf_;
+    boost::beast::multi_buffer readBuf_;
 
     response_type response_;
     std::shared_ptr<PeerFinder::Slot> slot_;
@@ -122,8 +122,8 @@ public:
      * @brief Construct a new ConnectAttempt object
      *
      * @param app Application context providing configuration and services
-     * @param io_context ASIO I/O context for async operations
-     * @param remote_endpoint Target peer endpoint to connect to
+     * @param ioContext ASIO I/O context for async operations
+     * @param remoteEndpoint Target peer endpoint to connect to
      * @param usage Resource usage tracker for rate limiting
      * @param context Shared SSL context for encryption
      * @param id Unique peer identifier for this connection attempt
@@ -136,8 +136,8 @@ public:
      */
     ConnectAttempt(
         Application& app,
-        boost::asio::io_context& io_context,
-        endpoint_type remote_endpoint,
+        boost::asio::io_context& ioContext,
+        endpoint_type remoteEndpoint,
         Resource::Consumer usage,
         shared_context const& context,
         Peer::id_t id,
@@ -254,7 +254,7 @@ private:
 
     template <class = void>
     static boost::asio::ip::tcp::endpoint
-    parse_endpoint(std::string const& s, boost::system::error_code& ec)
+    parseEndpoint(std::string const& s, boost::system::error_code& ec)
     {
         beast::IP::Endpoint bep;
         std::istringstream is(s);
@@ -265,7 +265,7 @@ private:
             return boost::asio::ip::tcp::endpoint{};
         }
 
-        return beast::IPAddressConversion::to_asio_endpoint(bep);
+        return beast::IPAddressConversion::toAsioEndpoint(bep);
     }
 };
 
