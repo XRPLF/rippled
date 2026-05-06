@@ -2,12 +2,15 @@
 #
 # Provides services for local development:
 #   - otel-collector: receives OTLP traces from xrpld, batches and
-#     forwards them to Tempo. Listens on ports 4317 (gRPC)
-#     and 4318 (HTTP).
+#     forwards them to Tempo. Also tails xrpld log files
+#     via filelog receiver and exports to Loki. Listens on ports
+#     4317 (gRPC) and 4318 (HTTP).
 #   - tempo: Grafana Tempo tracing backend, queryable via Grafana Explore
 #     on port 3000. Recommended for production (S3/GCS storage, TraceQL).
-#   - grafana: dashboards on port 3000, pre-configured with Tempo
-#     and Prometheus datasources.
+#   - loki: Grafana Loki log aggregation backend for centralized log
+#     ingestion and log-trace correlation (Phase 8).
+#   - grafana: dashboards on port 3000, pre-configured with Tempo,
+#     Prometheus, and Loki datasources.
 #
 # Usage:
 #   docker compose -f docker/telemetry/docker-compose.yml up -d
@@ -33,8 +36,13 @@ services:
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+      # Phase 8: Mount rippled log directory for filelog receiver.
+      # The integration test writes logs to /tmp/xrpld-integration/;
+      # mount it read-only so the collector can tail debug.log files.
+      - /tmp/xrpld-integration:/var/log/rippled:ro
     depends_on:
       - tempo
+      - loki
     networks:
       - xrpld-telemetry
 
@@ -53,12 +61,27 @@ services:
     networks:
       - xrpld-telemetry
 
+  # Phase 8: Grafana Loki for centralized log ingestion and log-trace
+  # correlation. Loki 3.x supports native OTLP ingestion, so the OTel
+  # Collector exports via otlphttp to Loki's /otlp endpoint.
+  # Query logs via Grafana Explore -> Loki at http://localhost:3000.
+  loki:
+    image: grafana/loki:3.4.2
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+    networks:
+      - xrpld-telemetry
+
   prometheus:
     image: prom/prometheus:latest
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
     depends_on:
       - otel-collector
     networks:
@@ -80,6 +103,7 @@ services:
     depends_on:
       - tempo
       - prometheus
+      - loki
     networks:
       - xrpld-telemetry
 
@@ -88,6 +112,8 @@ services:
 #   docker compose -f docker/telemetry/docker-compose.yml down -v
 volumes:
   tempo-data:
+  prometheus-data:
+  loki-data:
 
 # Isolated bridge network so services communicate by container name
 # (e.g., the collector reaches Tempo at http://tempo:4317).
