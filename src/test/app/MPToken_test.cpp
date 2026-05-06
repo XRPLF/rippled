@@ -3148,6 +3148,38 @@ class MPToken_test : public beast::unit_test::Suite
                 .err = tecNO_PERMISSION,
             });
         }
+
+        // Can clear DomainID and RequireAuth in the same transaction.
+        {
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const credIssuer{"credIssuer"};
+            pdomain::Credentials const credentials{
+                {.issuer = credIssuer, .credType = "credential"}};
+
+            Env env{*this, features};
+            env.fund(XRP(1000), credIssuer);
+            env.close();
+
+            env(pdomain::setTx(credIssuer, credentials));
+            env.close();
+            auto const domainId = pdomain::getNewDomain(env.meta());
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTRequireAuth,
+                .mutableFlags = tmfMPTCanMutateRequireAuth,
+                .domainID = domainId,
+            });
+
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTClearRequireAuth,
+                .domainID = uint256{},
+            });
+            BEAST_EXPECT(mptAlice.checkDomainID(std::nullopt));
+        }
     }
 
     void
