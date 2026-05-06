@@ -113,29 +113,29 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 // building with Visual Studio 2017 we can consider replacing the four
 // templates with a single template function that uses if constexpr.
 //
-// For Transactor::Normal
+// For ConsequencesFactoryType::Normal
 //
 
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Normal)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Normal)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
 
-// For Transactor::Blocker
+// For ConsequencesFactoryType::Blocker
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Blocker)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Blocker)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx, TxConsequences::Category::Blocker);
 };
 
-// For Transactor::Custom
+// For ConsequencesFactoryType::Custom
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Custom)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Custom)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
