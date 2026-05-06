@@ -26,27 +26,27 @@ public:
 
     LockFreeStackIterator() = default;
 
-    LockFreeStackIterator(NodePtr node) : m_node(node)
+    LockFreeStackIterator(NodePtr node) : node_(node)
     {
     }
 
     template <bool OtherIsConst>
     explicit LockFreeStackIterator(LockFreeStackIterator<Container, OtherIsConst> const& other)
-        : m_node(other.m_node)
+        : node_(other.node_)
     {
     }
 
     LockFreeStackIterator&
     operator=(NodePtr node)
     {
-        m_node = node;
+        node_ = node;
         return static_cast<LockFreeStackIterator&>(*this);
     }
 
     LockFreeStackIterator&
     operator++()
     {
-        m_node = m_node->m_next.load();
+        node_ = node_->next_.load();
         return static_cast<LockFreeStackIterator&>(*this);
     }
 
@@ -54,14 +54,14 @@ public:
     operator++(int)
     {
         LockFreeStackIterator result(*this);
-        m_node = m_node->m_next;
+        node_ = node_->next_;
         return result;
     }
 
     NodePtr
     node() const
     {
-        return m_node;
+        return node_;
     }
 
     reference
@@ -73,11 +73,11 @@ public:
     pointer
     operator->() const
     {
-        return static_cast<pointer>(m_node);
+        return static_cast<pointer>(node_);
     }
 
 private:
-    NodePtr m_node{};
+    NodePtr node_{};
 };
 
 //------------------------------------------------------------------------------
@@ -121,11 +121,11 @@ public:
     class Node
     {
     public:
-        Node() : m_next(nullptr)
+        Node() : next_(nullptr)
         {
         }
 
-        explicit Node(Node* next) : m_next(next)
+        explicit Node(Node* next) : next_(next)
         {
         }
 
@@ -139,7 +139,7 @@ public:
         template <class Container, bool IsConst>
         friend class LockFreeStackIterator;
 
-        std::atomic<Node*> m_next;
+        std::atomic<Node*> next_;
     };
 
 public:
@@ -153,7 +153,7 @@ public:
     using iterator = LockFreeStackIterator<LockFreeStack<Element, Tag>, false>;
     using const_iterator = LockFreeStackIterator<LockFreeStack<Element, Tag>, true>;
 
-    LockFreeStack() : m_end(nullptr), m_head(&m_end)
+    LockFreeStack() : end_(nullptr), head_(&end_)
     {
     }
 
@@ -165,7 +165,7 @@ public:
     [[nodiscard]] bool
     empty() const
     {
-        return m_head.load() == &m_end;
+        return head_.load() == &end_;
     }
 
     /** Push a node onto the stack.
@@ -181,16 +181,16 @@ public:
     */
     // VFALCO NOTE Fix this, shouldn't it be a reference like intrusive list?
     bool
-    push_front(Node* node)
+    pushFront(Node* node)
     {
         bool first = false;
-        Node* old_head = m_head.load(std::memory_order_relaxed);
+        Node* oldHead = head_.load(std::memory_order_relaxed);
         do
         {
-            first = (old_head == &m_end);
-            node->m_next = old_head;
-        } while (!m_head.compare_exchange_strong(
-            old_head, node, std::memory_order_release, std::memory_order_relaxed));
+            first = (oldHead == &end_);
+            node->next_ = oldHead;
+        } while (!head_.compare_exchange_strong(
+            oldHead, node, std::memory_order_release, std::memory_order_relaxed));
         return first;
     }
 
@@ -204,17 +204,17 @@ public:
                 was empty.
     */
     Element*
-    pop_front()
+    popFront()
     {
-        Node* node = m_head.load();
-        Node* new_head = nullptr;
+        Node* node = head_.load();
+        Node* newHead = nullptr;
         do
         {
-            if (node == &m_end)
+            if (node == &end_)
                 return nullptr;
-            new_head = node->m_next.load();
-        } while (!m_head.compare_exchange_strong(
-            node, new_head, std::memory_order_release, std::memory_order_relaxed));
+            newHead = node->next_.load();
+        } while (!head_.compare_exchange_strong(
+            node, newHead, std::memory_order_release, std::memory_order_relaxed));
         return static_cast<Element*>(node);
     }
 
@@ -228,43 +228,43 @@ public:
     iterator
     begin()
     {
-        return iterator(m_head.load());
+        return iterator(head_.load());
     }
 
     iterator
     end()
     {
-        return iterator(&m_end);
+        return iterator(&end_);
     }
 
     [[nodiscard]] const_iterator
     begin() const
     {
-        return const_iterator(m_head.load());
+        return const_iterator(head_.load());
     }
 
     [[nodiscard]] const_iterator
     end() const
     {
-        return const_iterator(&m_end);
+        return const_iterator(&end_);
     }
 
     [[nodiscard]] const_iterator
     cbegin() const
     {
-        return const_iterator(m_head.load());
+        return const_iterator(head_.load());
     }
 
     [[nodiscard]] const_iterator
     cend() const
     {
-        return const_iterator(&m_end);
+        return const_iterator(&end_);
     }
     /** @} */
 
 private:
-    Node m_end;
-    std::atomic<Node*> m_head;
+    Node end_;
+    std::atomic<Node*> head_;
 };
 
 }  // namespace beast

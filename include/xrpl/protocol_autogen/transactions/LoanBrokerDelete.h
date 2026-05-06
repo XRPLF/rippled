@@ -19,9 +19,9 @@ class LoanBrokerDeleteBuilder;
  * @brief Transaction: LoanBrokerDelete
  *
  * Type: ttLOAN_BROKER_DELETE (75)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: mustDeleteAcct | mayAuthorizeMPT
+ * Privileges: MustDeleteAcct | MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanBrokerDeleteBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLoanBrokerID (soeREQUIRED)
+     * @brief Get sfLoanBrokerID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -63,7 +63,7 @@ public:
  * @brief Builder for LoanBrokerDelete transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class LoanBrokerDeleteBuilder : public TransactionBuilderBase<LoanBrokerDeleteBuilder>
@@ -102,7 +102,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLoanBrokerID (soeREQUIRED)
+     * @brief Set sfLoanBrokerID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerDeleteBuilder&

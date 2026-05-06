@@ -27,12 +27,12 @@ namespace xrpl {
 static void
 fillTransaction(
     RPC::JsonContext& context,
-    Json::Value& txArray,
+    json::Value& txArray,
     AccountID const& accountID,
     std::uint32_t& sequence,
     ReadView const& ledger)
 {
-    txArray["Sequence"] = Json::UInt(sequence++);
+    txArray["Sequence"] = json::UInt(sequence++);
     txArray["Account"] = toBase58(accountID);
     auto& fees = ledger.fees();
     // Convert the reference transaction cost in fee units to drops
@@ -48,18 +48,18 @@ fillTransaction(
 //   role: gateway|user             // account role to assume
 //   transactions: true             // optional, recommend transactions
 // }
-Json::Value
+json::Value
 doNoRippleCheck(RPC::JsonContext& context)
 {
     auto const& params(context.params);
     if (!params.isMember(jss::account))
-        return RPC::missing_field_error("account");
+        return RPC::missingFieldError("account");
 
     if (!params.isMember("role"))
-        return RPC::missing_field_error("role");
+        return RPC::missingFieldError("role");
 
     if (!params[jss::account].isString())
-        return RPC::invalid_field_error(jss::account);
+        return RPC::invalidFieldError(jss::account);
 
     bool roleGateway = false;
     {
@@ -70,12 +70,12 @@ doNoRippleCheck(RPC::JsonContext& context)
         }
         else if (role != "user")
         {
-            return RPC::invalid_field_error("role");
+            return RPC::invalidFieldError("role");
         }
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::noRippleCheck, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kNO_RIPPLE_CHECK, context))
         return *err;
 
     bool transactions = false;
@@ -89,7 +89,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (context.apiVersion > 1u && params.isMember(jss::transactions) &&
         !params[jss::transactions].isBool())
     {
-        return RPC::invalid_field_error(jss::transactions);
+        return RPC::invalidFieldError(jss::transactions);
     }
 
     std::shared_ptr<ReadView const> ledger;
@@ -97,24 +97,24 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    Json::Value dummy;  // NOLINT(misc-const-correctness)
-    Json::Value& jvTransactions =
-        transactions ? (result[jss::transactions] = Json::arrayValue) : dummy;
+    json::Value dummy;  // NOLINT(misc-const-correctness)
+    json::Value& jvTransactions =
+        transactions ? (result[jss::transactions] = json::ArrayValue) : dummy;
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
+        RPC::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
     auto const sle = ledger->read(keylet::account(accountID));
     if (!sle)
-        return rpcError(rpcACT_NOT_FOUND);
+        return rpcError(RpcActNotFound);
 
     std::uint32_t seq = sle->getFieldU32(sfSequence);
 
-    Json::Value& problems = (result["problems"] = Json::arrayValue);
+    json::Value& problems = (result["problems"] = json::ArrayValue);
 
     bool const bDefaultRipple = (sle->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
 
@@ -130,7 +130,7 @@ doNoRippleCheck(RPC::JsonContext& context)
         problems.append("You should immediately set your default ripple flag");
         if (transactions)
         {
-            Json::Value& tx = jvTransactions.append(Json::objectValue);
+            json::Value& tx = jvTransactions.append(json::ObjectValue);
             tx["TransactionType"] = jss::AccountSet;
             tx["SetFlag"] = 8;
             fillTransaction(context, tx, accountID, seq, *ledger);
@@ -173,9 +173,9 @@ doNoRippleCheck(RPC::JsonContext& context)
                         ownedItem->getFieldAmount(bLow ? sfLowLimit : sfHighLimit));
                     limitAmount.get<Issue>().account = peer;
 
-                    Json::Value& tx = jvTransactions.append(Json::objectValue);
+                    json::Value& tx = jvTransactions.append(json::ObjectValue);
                     tx["TransactionType"] = jss::TrustSet;
-                    tx["LimitAmount"] = limitAmount.getJson(JsonOptions::none);
+                    tx["LimitAmount"] = limitAmount.getJson(JsonOptions::KNone);
                     tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
                     fillTransaction(context, tx, accountID, seq, *ledger);
 

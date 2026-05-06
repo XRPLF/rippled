@@ -8,20 +8,20 @@ template <class = void>
 secp256k1_context const*
 secp256k1Context()
 {
-    struct holder
+    struct Holder
     {
         secp256k1_context* impl;
-        holder() : impl(secp256k1_context_create(SECP256K1_CONTEXT_VERIFY | SECP256K1_CONTEXT_SIGN))
+        Holder() : impl(secp256k1_context_create(SECP256K1_CONTEXT_VERIFY | SECP256K1_CONTEXT_SIGN))
         {
         }
 
-        ~holder()
+        ~Holder()
         {
             secp256k1_context_destroy(impl);
         }
     };
-    static holder const h;
-    return h.impl;
+    static Holder const kH;
+    return kH.impl;
 }
 
 }  // namespace xrpl

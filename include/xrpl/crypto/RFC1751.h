@@ -38,7 +38,7 @@ private:
     static int
     etob(std::string& strData, std::vector<std::string> vsHuman);
 
-    static char const* s_dictionary[];
+    static char const* dictionary[];
 };
 
 }  // namespace xrpl

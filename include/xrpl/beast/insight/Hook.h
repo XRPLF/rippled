@@ -20,18 +20,18 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Hook(std::shared_ptr<HookImpl> const& impl) : m_impl(impl)
+    explicit Hook(std::shared_ptr<HookImpl> const& impl) : impl_(impl)
     {
     }
 
     [[nodiscard]] std::shared_ptr<HookImpl> const&
     impl() const
     {
-        return m_impl;
+        return impl_;
     }
 
 private:
-    std::shared_ptr<HookImpl> m_impl;
+    std::shared_ptr<HookImpl> impl_;
 };
 
 }  // namespace beast::insight

@@ -348,9 +348,9 @@ updateTrustLine(
         return false;
 
     // YYY Could skip this if rippling in reverse.
-    if (before > beast::zero
+    if (before > beast::kZERO
         // Sender balance was positive.
-        && after <= beast::zero
+        && after <= beast::kZERO
         // Sender is zero or negative.
         && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
         // Sender reserve is set.
@@ -405,28 +405,28 @@ issueIOU(
 
     if (auto state = view.peek(index))
     {
-        STAmount final_balance = state->getFieldAmount(sfBalance);
+        STAmount finalBalance = state->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
-            final_balance.negate();  // Put balance in sender terms.
+            finalBalance.negate();  // Put balance in sender terms.
 
-        STAmount const start_balance = final_balance;
+        STAmount const startBalance = finalBalance;
 
-        final_balance -= amount;
+        finalBalance -= amount;
 
-        auto const must_delete = updateTrustLine(
-            view, state, bSenderHigh, issue.account, start_balance, final_balance, j);
+        auto const mustDelete =
+            updateTrustLine(view, state, bSenderHigh, issue.account, startBalance, finalBalance, j);
 
-        view.creditHookIOU(issue.account, account, amount, start_balance);
+        view.creditHookIOU(issue.account, account, amount, startBalance);
 
         if (bSenderHigh)
-            final_balance.negate();
+            finalBalance.negate();
 
         // Adjust the balance on the trust line if necessary. We do this even
         // if we are going to delete the line to reflect the correct balance
         // at the time of deletion.
-        state->setFieldAmount(sfBalance, final_balance);
-        if (must_delete)
+        state->setFieldAmount(sfBalance, finalBalance);
+        if (mustDelete)
         {
             return trustDelete(
                 view,
@@ -445,9 +445,9 @@ issueIOU(
     // this is unnecessarily inefficient as copying which could be avoided
     // is now required. Consider available options.
     STAmount const limit(Issue{issue.currency, account});
-    STAmount final_balance = amount;
+    STAmount finalBalance = amount;
 
-    final_balance.get<Issue>().account = noAccount();
+    finalBalance.get<Issue>().account = noAccount();
 
     auto const receiverAccount = view.peek(keylet::account(account));
     if (!receiverAccount)
@@ -466,7 +466,7 @@ issueIOU(
         noRipple,
         false,
         false,
-        final_balance,
+        finalBalance,
         limit,
         0,
         0,
@@ -497,29 +497,29 @@ redeemIOU(
 
     if (auto state = view.peek(keylet::line(account, issue.account, issue.currency)))
     {
-        STAmount final_balance = state->getFieldAmount(sfBalance);
+        STAmount finalBalance = state->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
-            final_balance.negate();  // Put balance in sender terms.
+            finalBalance.negate();  // Put balance in sender terms.
 
-        STAmount const start_balance = final_balance;
+        STAmount const startBalance = finalBalance;
 
-        final_balance -= amount;
+        finalBalance -= amount;
 
-        auto const must_delete =
-            updateTrustLine(view, state, bSenderHigh, account, start_balance, final_balance, j);
+        auto const mustDelete =
+            updateTrustLine(view, state, bSenderHigh, account, startBalance, finalBalance, j);
 
-        view.creditHookIOU(account, issue.account, amount, start_balance);
+        view.creditHookIOU(account, issue.account, amount, startBalance);
 
         if (bSenderHigh)
-            final_balance.negate();
+            finalBalance.negate();
 
         // Adjust the balance on the trust line if necessary. We do this even
         // if we are going to delete the line to reflect the correct balance
         // at the time of deletion.
-        state->setFieldAmount(sfBalance, final_balance);
+        state->setFieldAmount(sfBalance, finalBalance);
 
-        if (must_delete)
+        if (mustDelete)
         {
             return trustDelete(
                 view,
@@ -698,7 +698,7 @@ removeEmptyHolding(
     auto const line = view.peek(keylet::line(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
-    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::zero)
+    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZERO)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
