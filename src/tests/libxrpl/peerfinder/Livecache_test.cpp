@@ -91,7 +91,7 @@ sameEndpoints(std::vector<Endpoint> const& lhs, std::vector<Endpoint> const& rhs
 
 }  // namespace
 
-TEST(Livecache, BasicInsert)
+TEST(Livecache, basic_insert)
 {
     TestStopwatch clock;
     Livecache<> cache(clock, journal());
@@ -110,7 +110,7 @@ TEST(Livecache, BasicInsert)
     EXPECT_EQ(cache.size(), 20u);
 }
 
-TEST(Livecache, InsertUpdateKeepsLowestHopCount)
+TEST(Livecache, insert_update_keeps_lowest_hop_count)
 {
     TestStopwatch clock;
     Livecache<> cache(clock, journal());
@@ -136,7 +136,7 @@ TEST(Livecache, InsertUpdateKeepsLowestHopCount)
     EXPECT_EQ((cache.hops.begin() + 1)->begin()->hops, 1u);
 }
 
-TEST(Livecache, ExpireRemovesEntriesAfterTtl)
+TEST(Livecache, expire_removes_entries_after_ttl)
 {
     using namespace std::chrono_literals;
 
@@ -158,7 +158,7 @@ TEST(Livecache, ExpireRemovesEntriesAfterTtl)
     EXPECT_TRUE(cache.empty());
 }
 
-TEST(Livecache, HistogramCountsAllEntries)
+TEST(Livecache, histogram_counts_all_entries)
 {
     constexpr auto kNUM_ENDPOINTS = 40;
 
@@ -185,7 +185,7 @@ TEST(Livecache, HistogramCountsAllEntries)
     EXPECT_EQ(sum, kNUM_ENDPOINTS);
 }
 
-TEST(Livecache, ShufflePreservesBucketContents)
+TEST(Livecache, shuffle_preserves_bucket_contents)
 {
     TestStopwatch clock;
     Livecache<> cache(clock, journal());

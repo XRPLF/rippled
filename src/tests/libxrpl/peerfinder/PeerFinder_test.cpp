@@ -99,7 +99,7 @@ protected:
     Logic<NiceMock<MockChecker>> logic_{clock_, store_, checker_, journal()};
 };
 
-TEST_F(PeerFinderTest, BackoffLimitsRepeatedConnectionAttempts)
+TEST_F(PeerFinderTest, backoff_limits_repeated_connection_attempts)
 {
     auto constexpr kSECONDS = 10000;
 
@@ -127,7 +127,7 @@ TEST_F(PeerFinderTest, BackoffLimitsRepeatedConnectionAttempts)
     EXPECT_LT(attempts, 20u);
 }
 
-TEST_F(PeerFinderTest, ActivatedPeerBackoffAllowsAtMostOneAttemptPerMinute)
+TEST_F(PeerFinderTest, activated_peer_backoff_allows_at_most_one_attempt_per_minute)
 {
     auto constexpr kSECONDS = 10000;
 
@@ -158,7 +158,7 @@ TEST_F(PeerFinderTest, ActivatedPeerBackoffAllowsAtMostOneAttemptPerMinute)
     EXPECT_LE(attempts, (kSECONDS + 59u) / 60u);
 }
 
-TEST_F(PeerFinderTest, DuplicateInboundSlotIsRejectedForExistingOutboundSlot)
+TEST_F(PeerFinderTest, duplicate_inbound_slot_is_rejected_for_existing_outbound_slot)
 {
     configure();
 
@@ -179,7 +179,7 @@ TEST_F(PeerFinderTest, DuplicateInboundSlotIsRejectedForExistingOutboundSlot)
     logic_.onClosed(slot1);
 }
 
-TEST_F(PeerFinderTest, DuplicateOutboundSlotIsRejectedForExistingInboundSlot)
+TEST_F(PeerFinderTest, duplicate_outbound_slot_is_rejected_for_existing_inbound_slot)
 {
     configure();
 
@@ -201,7 +201,7 @@ TEST_F(PeerFinderTest, DuplicateOutboundSlotIsRejectedForExistingInboundSlot)
     logic_.onClosed(slot1);
 }
 
-TEST_F(PeerFinderTest, PeerLimitExceededRejectsAdditionalInboundSlot)
+TEST_F(PeerFinderTest, peer_limit_exceeded_rejects_additional_inbound_slot)
 {
     configure();
 
@@ -224,7 +224,7 @@ TEST_F(PeerFinderTest, PeerLimitExceededRejectsAdditionalInboundSlot)
     logic_.onClosed(slot);
 }
 
-TEST_F(PeerFinderTest, ActivateRejectsDuplicatePublicKey)
+TEST_F(PeerFinderTest, activate_rejects_duplicate_public_key)
 {
     configure();
 
@@ -251,7 +251,7 @@ TEST_F(PeerFinderTest, ActivateRejectsDuplicatePublicKey)
     logic_.onClosed(slot2);
 }
 
-TEST_F(PeerFinderTest, ActivateRejectsInboundWhenInboundConnectionsAreDisabled)
+TEST_F(PeerFinderTest, activate_rejects_inbound_when_inbound_connections_are_disabled)
 {
     configure();
 
@@ -286,12 +286,12 @@ TEST_F(PeerFinderTest, ActivateRejectsInboundWhenInboundConnectionsAreDisabled)
     logic_.onClosed(slot);
 }
 
-TEST_F(PeerFinderTest, AddFixedPeerRejectsEndpointWithoutPort)
+TEST_F(PeerFinderTest, add_fixed_peer_rejects_endpoint_without_port)
 {
     EXPECT_THROW(logic_.addFixedPeer("test", endpoint("65.0.0.2")), std::runtime_error);
 }
 
-TEST_F(PeerFinderTest, OnConnectedRejectsSelfConnection)
+TEST_F(PeerFinderTest, on_connected_rejects_self_connection)
 {
     auto const local = endpoint("65.0.0.2:1234");
     auto const [slot, result] = logic_.newOutboundSlot(local);
@@ -302,7 +302,7 @@ TEST_F(PeerFinderTest, OnConnectedRejectsSelfConnection)
     logic_.onClosed(slot);
 }
 
-TEST(PeerFinderConfig, AppliesLegacyAndExplicitPeerLimits)
+TEST(PeerFinderConfig, applies_legacy_and_explicit_peer_limits)
 {
     struct ConfigCase
     {
@@ -442,7 +442,7 @@ TEST(PeerFinderConfig, AppliesLegacyAndExplicitPeerLimits)
     }
 }
 
-TEST(PeerFinderConfig, RejectsIncompleteOrOutOfRangePeerLimits)
+TEST(PeerFinderConfig, rejects_incomplete_or_out_of_range_peer_limits)
 {
     std::vector<std::string> const configs{
         R"xrpldConfig(
