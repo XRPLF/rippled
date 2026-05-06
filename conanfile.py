@@ -32,7 +32,7 @@ class Xrpl(ConanFile):
         "grpc/1.78.1",
         "libarchive/3.8.1",
         "nudb/2.0.9",
-        "openssl/3.6.1",
+        "openssl/3.6.2",
         "secp256k1/0.7.1",
         "soci/4.0.3",
         "zlib/1.3.1",
