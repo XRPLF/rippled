@@ -159,7 +159,7 @@ Logs::partitionSeverities() const
     std::scoped_lock const lock(mutex_);
     list.reserve(sinks_.size());
     for (auto const& [name, sink] : sinks_)
-        list.emplace_back(name, toString(fromSeverity(sink->threshold())));
+        list.emplace_back(name, toString(sink->threshold()));
     return list;
 }
 
@@ -197,110 +197,53 @@ Logs::makeSink(std::string const& name, beast::Severity threshold)
     return std::make_unique<Sink>(name, threshold, *this);
 }
 
-LogSeverity
-Logs::fromSeverity(beast::Severity level)
-{
-    using beast::Severity;
-    switch (level)
-    {
-        case Severity::Trace:
-            return LSTrace;
-        case Severity::Debug:
-            return LSDebug;
-        case Severity::Info:
-            return LSInfo;
-        case Severity::Warning:
-            return LSWarning;
-        case Severity::Error:
-            return LSError;
-
-        // LCOV_EXCL_START
-        default:
-            UNREACHABLE("xrpl::Logs::fromSeverity : invalid severity");
-            [[fallthrough]];
-        // LCOV_EXCL_STOP
-        case Severity::Fatal:
-            break;
-    }
-
-    return LSFatal;
-}
-
-beast::Severity
-Logs::toSeverity(LogSeverity level)
-{
-    using beast::Severity;
-    switch (level)
-    {
-        case LSTrace:
-            return Severity::Trace;
-        case LSDebug:
-            return Severity::Debug;
-        case LSInfo:
-            return Severity::Info;
-        case LSWarning:
-            return Severity::Warning;
-        case LSError:
-            return Severity::Error;
-        // LCOV_EXCL_START
-        default:
-            UNREACHABLE("xrpl::Logs::toSeverity : invalid severity");
-            [[fallthrough]];
-        // LCOV_EXCL_STOP
-        case LSFatal:
-            break;
-    }
-
-    return Severity::Fatal;
-}
-
 std::string
-Logs::toString(LogSeverity s)
+Logs::toString(beast::Severity s)
 {
     switch (s)
     {
-        case LSTrace:
+        case beast::Severity::Trace:
             return "Trace";
-        case LSDebug:
+        case beast::Severity::Debug:
             return "Debug";
-        case LSInfo:
+        case beast::Severity::Info:
             return "Info";
-        case LSWarning:
+        case beast::Severity::Warning:
             return "Warning";
-        case LSError:
+        case beast::Severity::Error:
             return "Error";
-        case LSFatal:
+        case beast::Severity::Fatal:
             return "Fatal";
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("xrpl::Logs::to_string : invalid severity");
+            UNREACHABLE("xrpl::Logs::toString : invalid severity");
             return "Unknown";
             // LCOV_EXCL_STOP
     }
 }
 
-LogSeverity
+std::optional<beast::Severity>
 Logs::fromString(std::string const& s)
 {
     if (boost::iequals(s, "trace"))
-        return LSTrace;
+        return beast::Severity::Trace;
 
     if (boost::iequals(s, "debug"))
-        return LSDebug;
+        return beast::Severity::Debug;
 
     if (boost::iequals(s, "info") || boost::iequals(s, "information"))
-        return LSInfo;
+        return beast::Severity::Info;
 
     if (boost::iequals(s, "warn") || boost::iequals(s, "warning") || boost::iequals(s, "warnings"))
-        return LSWarning;
+        return beast::Severity::Warning;
 
     if (boost::iequals(s, "error") || boost::iequals(s, "errors"))
-        return LSError;
+        return beast::Severity::Error;
 
     if (boost::iequals(s, "fatal") || boost::iequals(s, "fatals"))
-        return LSFatal;
+        return beast::Severity::Fatal;
 
-    return LSInvalid;
+    return std::nullopt;
 }
 
 void

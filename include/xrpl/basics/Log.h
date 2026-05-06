@@ -10,23 +10,10 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <utility>
 
 namespace xrpl {
-
-// DEPRECATED use beast::Severity instead
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum LogSeverity {
-    LSInvalid = -1,  // used to indicate an invalid severity
-    LSTrace = 0,     // Very low-level progress information, details inside
-                     // an operation
-    LSDebug = 1,     // Function-level progress information, operations
-    LSInfo = 2,      // Server-level progress information, major operations
-    LSWarning = 3,   // Conditions that warrant human attention, may indicate
-                     // a problem
-    LSError = 4,     // A condition that indicates a problem
-    LSFatal = 5      // A severe condition that indicates a server problem
-};
 
 /** Manages partitions for logging. */
 class Logs
@@ -195,16 +182,10 @@ public:
     makeSink(std::string const& partition, beast::Severity startingLevel);
 
 public:
-    static LogSeverity
-    fromSeverity(beast::Severity level);
-
-    static beast::Severity
-    toSeverity(LogSeverity level);
-
     static std::string
-    toString(LogSeverity s);
+    toString(beast::Severity s);
 
-    static LogSeverity
+    static std::optional<beast::Severity>
     fromString(std::string const& s);
 
 private:
