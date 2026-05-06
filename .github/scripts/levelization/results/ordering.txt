@@ -143,12 +143,6 @@ test.overlay > xrpl.protocol
 test.overlay > xrpl.resource
 test.overlay > xrpl.server
 test.overlay > xrpl.shamap
-test.peerfinder > test.beast
-test.peerfinder > test.unit_test
-test.peerfinder > xrpl.basics
-test.peerfinder > xrpld.core
-test.peerfinder > xrpld.peerfinder
-test.peerfinder > xrpl.protocol
 test.protocol > test.jtx
 test.protocol > test.unit_test
 test.protocol > xrpl.basics
@@ -189,6 +183,8 @@ test.unit_test > xrpl.basics
 test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.core
+tests.libxrpl > xrpld.core
+tests.libxrpl > xrpld.peerfinder
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.ledger
 tests.libxrpl > xrpl.net
