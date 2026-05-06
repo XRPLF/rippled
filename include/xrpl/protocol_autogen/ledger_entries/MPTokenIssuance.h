@@ -278,6 +278,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfMutableFlags);
     }
+
+    /**
+     * @brief Get sfReferenceHolding (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getReferenceHolding() const
+    {
+        if (hasReferenceHolding())
+            return this->sle_->at(sfReferenceHolding);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfReferenceHolding is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasReferenceHolding() const
+    {
+        return this->sle_->isFieldPresent(sfReferenceHolding);
+    }
 };
 
 /**
@@ -466,6 +490,17 @@ public:
     setMutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfMutableFlags] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfReferenceHolding (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setReferenceHolding(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfReferenceHolding] = value;
         return *this;
     }
 

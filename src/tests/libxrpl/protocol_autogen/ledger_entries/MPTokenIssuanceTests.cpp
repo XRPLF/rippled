@@ -33,6 +33,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
     auto const mutableFlagsValue = canonical_UINT32();
+    auto const referenceHoldingValue = canonical_UINT256();
 
     MPTokenIssuanceBuilder builder{
         issuerValue,
@@ -50,6 +51,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setDomainID(domainIDValue);
     builder.setMutableFlags(mutableFlagsValue);
+    builder.setReferenceHolding(referenceHoldingValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -152,6 +154,14 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasMutableFlags());
     }
 
+    {
+        auto const& expected = referenceHoldingValue;
+        auto const actualOpt = entry.getReferenceHolding();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfReferenceHolding");
+        EXPECT_TRUE(entry.hasReferenceHolding());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -178,6 +188,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
     auto const mutableFlagsValue = canonical_UINT32();
+    auto const referenceHoldingValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(MPTokenIssuance::entryType, index);
 
@@ -194,6 +205,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
     sle->at(sfDomainID) = domainIDValue;
     sle->at(sfMutableFlags) = mutableFlagsValue;
+    sle->at(sfReferenceHolding) = referenceHoldingValue;
 
     MPTokenIssuanceBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -355,6 +367,19 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfMutableFlags");
     }
 
+    {
+        auto const& expected = referenceHoldingValue;
+
+        auto const fromSleOpt = entryFromSle.getReferenceHolding();
+        auto const fromBuilderOpt = entryFromBuilder.getReferenceHolding();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfReferenceHolding");
+        expectEqualField(expected, *fromBuilderOpt, "sfReferenceHolding");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -433,5 +458,7 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getDomainID().has_value());
     EXPECT_FALSE(entry.hasMutableFlags());
     EXPECT_FALSE(entry.getMutableFlags().has_value());
+    EXPECT_FALSE(entry.hasReferenceHolding());
+    EXPECT_FALSE(entry.getReferenceHolding().has_value());
 }
 }
