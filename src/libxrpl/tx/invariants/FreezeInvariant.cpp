@@ -197,8 +197,11 @@ TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
     if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
     {
-        // Create a non-owning shared_ptr. The SLE is kept alive by the apply
-        // view for the duration of the invariant check.
+        // The raw pointer is valid for the lifetime of the invariant check:
+        // the apply view keeps the SLE alive until finalize completes. We
+        // use the aliasing constructor to produce a non-owning shared_ptr so
+        // that callers can use the existing shared_ptr-based API without
+        // taking a copy or changing the calling convention.
         return std::shared_ptr<SLE const>(std::shared_ptr<SLE const>{}, it->second);
     }
 

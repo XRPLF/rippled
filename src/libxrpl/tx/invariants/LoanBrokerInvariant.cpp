@@ -134,12 +134,12 @@ ValidLoanBroker::finalize(
         // If the broker was modified in this transaction, use the stored raw
         // pointer (which is valid for the life of the invariant check). Otherwise
         // read it from the view.
-        std::shared_ptr<SLE const> afterFromView;
+        std::shared_ptr<SLE const> brokerFromView;
         SLE const* afterPtr = broker.brokerAfter;
         if (!afterPtr)
         {
-            afterFromView = view.read(keylet::loanbroker(brokerID));
-            afterPtr = afterFromView.get();
+            brokerFromView = view.read(keylet::loanbroker(brokerID));
+            afterPtr = brokerFromView.get();
         }
 
         if (!afterPtr)
