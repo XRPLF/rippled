@@ -24,7 +24,7 @@
 #include <xrpl/server/Wallet.h>
 
 #include <boost/algorithm/string/join.hpp>
-#include <boost/optional/optional.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>

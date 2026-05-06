@@ -20,7 +20,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
-#include <boost/optional/optional.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
 #include <cstdint>
 #include <exception>
