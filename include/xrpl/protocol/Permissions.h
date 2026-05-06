@@ -20,6 +20,8 @@ class STTx;
  * conflicts with TxType, the GranularPermissionType is always set to a value
  * greater than the maximum value of uint16.
  */
+// Macro-generated, complex
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum GranularPermissionType : std::uint32_t {
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
@@ -32,7 +34,10 @@ enum GranularPermissionType : std::uint32_t {
 #pragma pop_macro("GRANULAR_PERMISSION")
 };
 
-enum Delegation { delegable, notDelegable };
+// Injected bare enumerators (xrpl::delegable / xrpl::notDelegable) are required by preprocessor
+// tricks in tests and macro-generated code; enum class would break that.
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum Delegation { Delegable, NotDelegable };
 
 class Permission
 {

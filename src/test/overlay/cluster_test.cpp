@@ -42,7 +42,7 @@ public:
     static PublicKey
     randomNode()
     {
-        return derivePublicKey(KeyType::secp256k1, randomSecretKey());
+        return derivePublicKey(KeyType::Secp256k1, randomSecretKey());
     }
 
     void

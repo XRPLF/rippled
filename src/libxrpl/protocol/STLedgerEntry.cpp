@@ -38,7 +38,7 @@ STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.
     {
         Throw<std::runtime_error>(
             "Attempt to create a SLE of unknown type " +
-            std::to_string(safe_cast<std::uint16_t>(k.type)));
+            std::to_string(safeCast<std::uint16_t>(k.type)));
     }
 
     set(format->getSOTemplate());
@@ -63,7 +63,7 @@ void
 STLedgerEntry::setSLEType()
 {
     auto format = LedgerFormats::getInstance().findByType(
-        safe_cast<LedgerEntryType>(getFieldU16(sfLedgerEntryType)));
+        safeCast<LedgerEntryType>(getFieldU16(sfLedgerEntryType)));
 
     if (format == nullptr)
         Throw<std::runtime_error>("invalid ledger entry type");
@@ -114,10 +114,10 @@ STLedgerEntry::getText() const
     return str(boost::format("{ %s, %s }") % to_string(key_) % STObject::getText());
 }
 
-Json::Value
+json::Value
 STLedgerEntry::getJson(JsonOptions options) const
 {
-    Json::Value ret(STObject::getJson(options));
+    json::Value ret(STObject::getJson(options));
 
     ret[jss::index] = to_string(key_);
 
@@ -133,12 +133,13 @@ STLedgerEntry::getJson(JsonOptions options) const
 bool
 STLedgerEntry::isThreadedType(Rules const& rules) const
 {
-    static constexpr std::array<LedgerEntryType, 5> newPreviousTxnIDTypes = {
+    static constexpr std::array<LedgerEntryType, 5> kNEW_PREVIOUS_TXN_ID_TYPES = {
         ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM};
     // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
     // enabled and the ledger object type is in the above set
     bool const excludePrevTxnID = !rules.enabled(fixPreviousTxnID) &&
-        (std::count(newPreviousTxnIDTypes.cbegin(), newPreviousTxnIDTypes.cend(), type_) != 0);
+        (std::count(
+             kNEW_PREVIOUS_TXN_ID_TYPES.cbegin(), kNEW_PREVIOUS_TXN_ID_TYPES.cend(), type_) != 0);
     return !excludePrevTxnID && getFieldIndex(sfPreviousTxnID) != -1;
 }
 

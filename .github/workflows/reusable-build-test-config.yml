@@ -116,7 +116,7 @@ jobs:
         run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >> "${GITHUB_ENV}"
 
       - name: Print build environment
-        uses: ./.github/actions/print-env
+        uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
 
       - name: Get number of processors
         uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
@@ -143,7 +143,6 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
-          SANITIZERS: ${{ inputs.sanitizers }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: |
           cmake \

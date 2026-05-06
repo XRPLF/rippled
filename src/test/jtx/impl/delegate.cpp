@@ -13,21 +13,21 @@
 
 namespace xrpl::test::jtx::delegate {
 
-Json::Value
+json::Value
 set(jtx::Account const& account,
     jtx::Account const& authorize,
     std::vector<std::string> const& permissions)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::DelegateSet;
     jv[jss::Account] = account.human();
     jv[sfAuthorize.jsonName] = authorize.human();
-    Json::Value permissionsJson(Json::arrayValue);
+    json::Value permissionsJson(json::ArrayValue);
     for (auto const& permission : permissions)
     {
-        Json::Value permissionValue;
+        json::Value permissionValue;
         permissionValue[sfPermissionValue.jsonName] = permission;
-        Json::Value permissionObj;
+        json::Value permissionObj;
         permissionObj[sfPermission.jsonName] = permissionValue;
         permissionsJson.append(permissionObj);
     }
@@ -37,10 +37,10 @@ set(jtx::Account const& account,
     return jv;
 }
 
-Json::Value
+json::Value
 entry(jtx::Env& env, jtx::Account const& account, jtx::Account const& authorize)
 {
-    Json::Value jvParams;
+    json::Value jvParams;
     jvParams[jss::ledger_index] = jss::validated;
     jvParams[jss::delegate][jss::account] = account.human();
     jvParams[jss::delegate][jss::authorize] = authorize.human();

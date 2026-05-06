@@ -105,7 +105,7 @@ struct TxMetrics
     /** Get json representation of the metrics
        @return json object
      */
-    Json::Value
+    json::Value
     json() const;
 };
 

@@ -7,7 +7,7 @@ namespace xrpl {
 class MPTokenIssuanceSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit MPTokenIssuanceSet(ApplyContext& ctx) : Transactor(ctx)
     {
