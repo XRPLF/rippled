@@ -1001,8 +1001,8 @@ hasConstantFieldChanged(STObject const& before, STObject const& after, SOTemplat
         bool const aPresent = (aField != nullptr) && aField->getSType() != STI_NOTPRESENT;
 
         XRPL_ASSERT(
-            constant != SoeConstantinvalid, "xrpl::hasConstantFieldChanged : constant is invalid");
-        if (constant == SoeConstant)
+            constant != SoeImmutable, "xrpl::hasConstantFieldChanged : constant is invalid");
+        if (constant == SoeImmutable)
         {
             if (elem.style() == soeOPTIONAL)
             {

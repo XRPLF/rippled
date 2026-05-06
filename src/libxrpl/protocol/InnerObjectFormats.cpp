@@ -13,154 +13,154 @@ InnerObjectFormats::InnerObjectFormats()
     add(sfSignerEntry.jsonName,
         sfSignerEntry.getCode(),
         {
-            {sfAccount, SoeRequired, SoeConstant},
-            {sfSignerWeight, SoeRequired, SoeNotconstant},
-            {sfWalletLocator, SoeOptional, SoeNotconstant},
+            {sfAccount, SoeRequired, SoeImmutable},
+            {sfSignerWeight, SoeRequired, SoeMutable},
+            {sfWalletLocator, SoeOptional, SoeMutable},
         });
 
     add(sfSigner.jsonName,
         sfSigner.getCode(),
         {
-            {sfAccount, SoeRequired, SoeConstant},
-            {sfSigningPubKey, SoeRequired, SoeConstant},
-            {sfTxnSignature, SoeRequired, SoeConstant},
+            {sfAccount, SoeRequired, SoeImmutable},
+            {sfSigningPubKey, SoeRequired, SoeImmutable},
+            {sfTxnSignature, SoeRequired, SoeImmutable},
         });
 
     add(sfMajority.jsonName,
         sfMajority.getCode(),
         {
-            {sfAmendment, SoeRequired, SoeConstant},
-            {sfCloseTime, SoeRequired, SoeConstant},
+            {sfAmendment, SoeRequired, SoeImmutable},
+            {sfCloseTime, SoeRequired, SoeImmutable},
         });
 
     add(sfDisabledValidator.jsonName,
         sfDisabledValidator.getCode(),
         {
-            {sfPublicKey, SoeRequired, SoeConstant},
-            {sfFirstLedgerSequence, SoeRequired, SoeConstant},
+            {sfPublicKey, SoeRequired, SoeImmutable},
+            {sfFirstLedgerSequence, SoeRequired, SoeImmutable},
         });
 
     add(sfNFToken.jsonName,
         sfNFToken.getCode(),
         {
-            {sfNFTokenID, SoeRequired, SoeConstant},
-            {sfURI, SoeOptional, SoeNotconstant},
+            {sfNFTokenID, SoeRequired, SoeImmutable},
+            {sfURI, SoeOptional, SoeMutable},
         });
 
     add(sfVoteEntry.jsonName,
         sfVoteEntry.getCode(),
         {
-            {sfAccount, SoeRequired, SoeConstant},
-            {sfTradingFee, SoeDefault, SoeNotconstant},
-            {sfVoteWeight, SoeRequired, SoeNotconstant},
+            {sfAccount, SoeRequired, SoeImmutable},
+            {sfTradingFee, SoeDefault, SoeMutable},
+            {sfVoteWeight, SoeRequired, SoeMutable},
         });
 
     add(sfAuctionSlot.jsonName,
         sfAuctionSlot.getCode(),
-        {{sfAccount, SoeRequired, SoeConstant},
-         {sfExpiration, SoeRequired, SoeConstant},
-         {sfDiscountedFee, SoeDefault, SoeConstant},
-         {sfPrice, SoeRequired, SoeConstant},
-         {sfAuthAccounts, SoeOptional, SoeConstant}});
+        {{sfAccount, SoeRequired, SoeImmutable},
+         {sfExpiration, SoeRequired, SoeImmutable},
+         {sfDiscountedFee, SoeDefault, SoeImmutable},
+         {sfPrice, SoeRequired, SoeImmutable},
+         {sfAuthAccounts, SoeOptional, SoeImmutable}});
 
     add(sfXChainClaimAttestationCollectionElement.jsonName,
         sfXChainClaimAttestationCollectionElement.getCode(),
         {
-            {sfAttestationSignerAccount, SoeRequired, SoeConstant},
-            {sfPublicKey, SoeRequired, SoeConstant},
-            {sfSignature, SoeRequired, SoeConstant},
-            {sfAmount, SoeRequired, SoeConstant},
-            {sfAccount, SoeRequired, SoeConstant},
-            {sfAttestationRewardAccount, SoeRequired, SoeConstant},
-            {sfWasLockingChainSend, SoeRequired, SoeConstant},
-            {sfXChainClaimID, SoeRequired, SoeConstant},
-            {sfDestination, SoeOptional, SoeConstant},
+            {sfAttestationSignerAccount, SoeRequired, SoeImmutable},
+            {sfPublicKey, SoeRequired, SoeImmutable},
+            {sfSignature, SoeRequired, SoeImmutable},
+            {sfAmount, SoeRequired, SoeImmutable},
+            {sfAccount, SoeRequired, SoeImmutable},
+            {sfAttestationRewardAccount, SoeRequired, SoeImmutable},
+            {sfWasLockingChainSend, SoeRequired, SoeImmutable},
+            {sfXChainClaimID, SoeRequired, SoeImmutable},
+            {sfDestination, SoeOptional, SoeImmutable},
         });
 
     add(sfXChainCreateAccountAttestationCollectionElement.jsonName,
         sfXChainCreateAccountAttestationCollectionElement.getCode(),
         {
-            {sfAttestationSignerAccount, SoeRequired, SoeConstant},
-            {sfPublicKey, SoeRequired, SoeConstant},
-            {sfSignature, SoeRequired, SoeConstant},
-            {sfAmount, SoeRequired, SoeConstant},
-            {sfAccount, SoeRequired, SoeConstant},
-            {sfAttestationRewardAccount, SoeRequired, SoeConstant},
-            {sfWasLockingChainSend, SoeRequired, SoeConstant},
-            {sfXChainAccountCreateCount, SoeRequired, SoeConstant},
-            {sfDestination, SoeRequired, SoeConstant},
-            {sfSignatureReward, SoeRequired, SoeConstant},
+            {sfAttestationSignerAccount, SoeRequired, SoeImmutable},
+            {sfPublicKey, SoeRequired, SoeImmutable},
+            {sfSignature, SoeRequired, SoeImmutable},
+            {sfAmount, SoeRequired, SoeImmutable},
+            {sfAccount, SoeRequired, SoeImmutable},
+            {sfAttestationRewardAccount, SoeRequired, SoeImmutable},
+            {sfWasLockingChainSend, SoeRequired, SoeImmutable},
+            {sfXChainAccountCreateCount, SoeRequired, SoeImmutable},
+            {sfDestination, SoeRequired, SoeImmutable},
+            {sfSignatureReward, SoeRequired, SoeImmutable},
         });
 
     add(sfXChainClaimProofSig.jsonName,
         sfXChainClaimProofSig.getCode(),
         {
-            {sfAttestationSignerAccount, SoeRequired, SoeConstant},
-            {sfPublicKey, SoeRequired, SoeConstant},
-            {sfAmount, SoeRequired, SoeConstant},
-            {sfAttestationRewardAccount, SoeRequired, SoeConstant},
-            {sfWasLockingChainSend, SoeRequired, SoeConstant},
-            {sfDestination, SoeOptional, SoeConstant},
+            {sfAttestationSignerAccount, SoeRequired, SoeImmutable},
+            {sfPublicKey, SoeRequired, SoeImmutable},
+            {sfAmount, SoeRequired, SoeImmutable},
+            {sfAttestationRewardAccount, SoeRequired, SoeImmutable},
+            {sfWasLockingChainSend, SoeRequired, SoeImmutable},
+            {sfDestination, SoeOptional, SoeImmutable},
         });
 
     add(sfXChainCreateAccountProofSig.jsonName,
         sfXChainCreateAccountProofSig.getCode(),
         {
-            {sfAttestationSignerAccount, SoeRequired, SoeConstant},
-            {sfPublicKey, SoeRequired, SoeConstant},
-            {sfAmount, SoeRequired, SoeConstant},
-            {sfSignatureReward, SoeRequired, SoeConstant},
-            {sfAttestationRewardAccount, SoeRequired, SoeConstant},
-            {sfWasLockingChainSend, SoeRequired, SoeConstant},
-            {sfDestination, SoeRequired, SoeConstant},
+            {sfAttestationSignerAccount, SoeRequired, SoeImmutable},
+            {sfPublicKey, SoeRequired, SoeImmutable},
+            {sfAmount, SoeRequired, SoeImmutable},
+            {sfSignatureReward, SoeRequired, SoeImmutable},
+            {sfAttestationRewardAccount, SoeRequired, SoeImmutable},
+            {sfWasLockingChainSend, SoeRequired, SoeImmutable},
+            {sfDestination, SoeRequired, SoeImmutable},
         });
 
     add(sfAuthAccount.jsonName,
         sfAuthAccount.getCode(),
         {
-            {sfAccount, SoeRequired, SoeConstant},
+            {sfAccount, SoeRequired, SoeImmutable},
         });
 
     add(sfPriceData.jsonName,
         sfPriceData.getCode(),
         {
-            {sfBaseAsset, SoeRequired, SoeConstant},
-            {sfQuoteAsset, SoeRequired, SoeConstant},
-            {sfAssetPrice, SoeOptional, SoeConstant},
-            {sfScale, SoeDefault, SoeConstant},
+            {sfBaseAsset, SoeRequired, SoeImmutable},
+            {sfQuoteAsset, SoeRequired, SoeImmutable},
+            {sfAssetPrice, SoeOptional, SoeImmutable},
+            {sfScale, SoeDefault, SoeImmutable},
         });
 
     add(sfCredential.jsonName,
         sfCredential.getCode(),
         {
-            {sfIssuer, SoeRequired, SoeConstant},
-            {sfCredentialType, SoeRequired, SoeConstant},
+            {sfIssuer, SoeRequired, SoeImmutable},
+            {sfCredentialType, SoeRequired, SoeImmutable},
         });
 
     add(sfPermission.jsonName.c_str(),
         sfPermission.getCode(),
-        {{sfPermissionValue, SoeRequired, SoeConstant}});
+        {{sfPermissionValue, SoeRequired, SoeImmutable}});
 
     add(sfBatchSigner.jsonName.c_str(),
         sfBatchSigner.getCode(),
-        {{sfAccount, SoeRequired, SoeConstant},
-         {sfSigningPubKey, SoeOptional, SoeConstant},
-         {sfTxnSignature, SoeOptional, SoeConstant},
-         {sfSigners, SoeOptional, SoeConstant}});
+        {{sfAccount, SoeRequired, SoeImmutable},
+         {sfSigningPubKey, SoeOptional, SoeImmutable},
+         {sfTxnSignature, SoeOptional, SoeImmutable},
+         {sfSigners, SoeOptional, SoeImmutable}});
 
     add(sfBook.jsonName,
         sfBook.getCode(),
         {
-            {sfBookDirectory, SoeRequired, SoeConstant},
-            {sfBookNode, SoeRequired, SoeConstant},
+            {sfBookDirectory, SoeRequired, SoeImmutable},
+            {sfBookNode, SoeRequired, SoeImmutable},
         });
 
     add(sfCounterpartySignature.jsonName,
         sfCounterpartySignature.getCode(),
         {
-            {sfSigningPubKey, SoeOptional, SoeConstant},
-            {sfTxnSignature, SoeOptional, SoeConstant},
-            {sfSigners, SoeOptional, SoeConstant},
+            {sfSigningPubKey, SoeOptional, SoeImmutable},
+            {sfTxnSignature, SoeOptional, SoeImmutable},
+            {sfSigners, SoeOptional, SoeImmutable},
         });
 }
 
