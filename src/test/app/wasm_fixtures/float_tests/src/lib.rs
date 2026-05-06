@@ -50,7 +50,7 @@ unsafe extern "C" {
         rounding: i32,
     ) -> i32;
 
-    #[link_name = "float_to_m_e"]
+    #[link_name = "float_to_mant_exp"]
     fn float_to_mantissa_and_exponent(
         float_ptr: *const u8,
         float_len: i32,
@@ -60,10 +60,10 @@ unsafe extern "C" {
         exponent_len: i32,
     ) -> i32;
 
-   #[link_name = "float_from_m_e"]
+   #[link_name = "float_from_mant_exp"]
     fn float_from_mantissa_and_exponent(
-        exponent: i32,
         mantissa: i64,
+        exponent: i32,
         out_ptr: *mut u8,
         out_len: i32,
         rounding: i32,
@@ -114,10 +114,10 @@ fn test_float_from_wasm() -> bool {
         all_pass = false;
     }
 
-    if FLOAT_SIZE as i32 == unsafe { float_from_mantissa_and_exponent(2, 123, f.as_mut_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) } {
+    if FLOAT_SIZE as i32 == unsafe { float_from_mantissa_and_exponent(123, 2, f.as_mut_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) } {
         let _ = trace_float("  float from exp 2, mantissa 123:", &f);
     } else {
-        let _ = trace("  float from exp 2, mantissa 3: failed");
+        let _ = trace("  float from exp 2, mantissa 123: failed");
         all_pass = false;
     }
 
@@ -270,7 +270,7 @@ fn test_float_multiply_divide() -> bool {
         };
     }
     let mut f01: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
-    unsafe { float_from_mantissa_and_exponent(-1, 1, f01.as_mut_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+    unsafe { float_from_mantissa_and_exponent(1, -1, f01.as_mut_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
 
     if 0 == unsafe { float_compare(f_compute.as_ptr(), FLOAT_SIZE, f01.as_ptr(), FLOAT_SIZE) } {
         let _ = trace("  repeated divide: good");
@@ -590,7 +590,7 @@ fn test_float_to_int() -> bool {
 
     // Test rounding with fractional value (0.1)
     let mut f01: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
-    unsafe { float_from_mantissa_and_exponent(-1, 1, f01.as_mut_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+    unsafe { float_from_mantissa_and_exponent(1, -1, f01.as_mut_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
     let ret = unsafe {
         float_to_int(
             f01.as_ptr(),

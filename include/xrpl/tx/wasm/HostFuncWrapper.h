@@ -281,7 +281,7 @@ using floatToMantissaAndExponent_proto =
 wasm_trap_t*
 floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using floatFromMantissaAndExponent_proto = int32_t(int32_t, int64_t, uint8_t*, int32_t, int32_t);
+using floatFromMantissaAndExponent_proto = int32_t(int64_t, int32_t, uint8_t*, int32_t, int32_t);
 wasm_trap_t*
 floatFromMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 

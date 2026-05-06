@@ -1793,13 +1793,14 @@ floatFromMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
 
     int i = 0;
-    auto const exp = getDataInt32(runtime, params, i);
-    if (!exp)
-        return hfResult(results, exp.error());  // LCOV_EXCL_LINE
 
     auto const mant = getDataInt64(runtime, params, i);
     if (!mant)
         return hfResult(results, mant.error());  // LCOV_EXCL_LINE
+
+    auto const exp = getDataInt32(runtime, params, i);
+    if (!exp)
+        return hfResult(results, exp.error());  // LCOV_EXCL_LINE
 
     i = 4;
     auto const rounding = getDataInt32(runtime, params, i);

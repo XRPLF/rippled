@@ -602,7 +602,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             TestHostFunctions hfs(env, 0);
             auto re = runEscrowWasm(floatTestWasm, hfs, 200'000, funcName, {});
-            checkResult(re, 1, 144'054);
+            checkResult(re, 1, 134'938);
             env.close();
         }
 
