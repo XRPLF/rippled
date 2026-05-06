@@ -64,7 +64,6 @@
 
 #include <chrono>
 #include <cstdint>
-#include <cstdio>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -5130,11 +5129,11 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, doorA) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-            env(create_account_attestation(
+            env(createAccountAttestation(
                     alice, jvb, alice, XRP(20), XRP(0), bob, false, 2, bob, signer),
-                sponsor::as(sponsor, spfSponsorReserve),
-                sig(sfSponsorSignature, sponsor),
-                ter(tesSUCCESS));
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(tesSUCCESS));
             env.close();
 
             // XChainCreateAccountClaimID not sponsored
