@@ -243,16 +243,16 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
                         ((*mutableFlags & (f.setFlag | f.clearFlag)));
                 }))
             return tecNO_PERMISSION;
+
+        auto const domain = ctx.tx[~sfDomainID];
+        // A zero DomainID clears the field; otherwise use the tx value if
+        // present, or the current ledger state if the tx leaves it unchanged.
+        auto const willHaveDomainID =
+            domain ? *domain != beast::kZERO : sleMptIssuance->isFieldPresent(sfDomainID);
+
+        if (willHaveDomainID && ((*mutableFlags & tmfMPTClearRequireAuth) != 0u))
+            return tecNO_PERMISSION;
     }
-
-    auto const domain = ctx.tx[~sfDomainID];
-    // A zero DomainID clears the field; otherwise use the tx value if
-    // present, or the current ledger state if the tx leaves it unchanged.
-    auto const willHaveDomainID =
-        domain ? *domain != beast::kZERO : sleMptIssuance->isFieldPresent(sfDomainID);
-
-    if (willHaveDomainID && mutableFlags && ((*mutableFlags & tmfMPTClearRequireAuth) != 0u))
-        return tecNO_PERMISSION;
 
     if (!isMutableFlag(lsmfMPTCanMutateMetadata) && ctx.tx.isFieldPresent(sfMPTokenMetadata))
         return tecNO_PERMISSION;
