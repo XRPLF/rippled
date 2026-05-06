@@ -144,9 +144,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::NullValue));
+            testInvalidAccountParam(json::Value(json::ValueType::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ValueType::ArrayValue));
         }
         // test error on  malformed account string.
         {
@@ -1180,9 +1180,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::NullValue));
+            testInvalidAccountParam(json::Value(json::ValueType::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ValueType::ArrayValue));
         }
     }
 

@@ -374,9 +374,9 @@ class AccountTx_test : public beast::unit_test::Suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::NullValue));
+            testInvalidAccountParam(json::Value(json::ValueType::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ValueType::ArrayValue));
         }
         // test binary and forward for bool/non bool values
         {
@@ -449,13 +449,13 @@ class AccountTx_test : public beast::unit_test::Suite
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = [] should fail (array instead of integer)
-            p[jss::limit] = json::Value(json::ArrayValue);
+            p[jss::limit] = json::Value(json::ValueType::ArrayValue);
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = {} should fail (object instead of integer)
-            p[jss::limit] = json::Value(json::ObjectValue);
+            p[jss::limit] = json::Value(json::ValueType::ObjectValue);
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
@@ -467,7 +467,7 @@ class AccountTx_test : public beast::unit_test::Suite
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = ["limit"] should fail (array with string)
-            p[jss::limit] = json::Value(json::ArrayValue);
+            p[jss::limit] = json::Value(json::ValueType::ArrayValue);
             p[jss::limit].append("limit");
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
@@ -475,7 +475,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
             // Test case: limit = {"limit": 10} should fail (object with
             // property)
-            p[jss::limit] = json::Value(json::ObjectValue);
+            p[jss::limit] = json::Value(json::ValueType::ObjectValue);
             p[jss::limit][jss::limit] = 10;
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==

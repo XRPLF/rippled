@@ -202,7 +202,7 @@ struct Regression_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         env.fund(XRP(100000), alice);
 
-        auto params = json::Value(json::ObjectValue);
+        auto params = json::Value(json::ValueType::ObjectValue);
         // Max fee = 50k drops
         params[jss::fee_mult_max] = 5000;
         std::vector<int> const expectedFees({10, 10, 8889, 13889, 20000});

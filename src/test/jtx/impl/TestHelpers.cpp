@@ -146,7 +146,7 @@ rpf(jtx::Account const& src,
     std::optional<PathAsset> const& srcAsset,
     std::optional<AccountID> const& srcIssuer)
 {
-    json::Value jv = json::ObjectValue;
+    json::Value jv = json::ValueType::ObjectValue;
     jv[jss::command] = "ripple_path_find";
     jv[jss::source_account] = toBase58(src);
     jv[jss::destination_account] = toBase58(dst);
@@ -155,8 +155,8 @@ rpf(jtx::Account const& src,
         jv[jss::send_max] = sendMax->getJson(JsonOptions::KNone);
     if (srcAsset)
     {
-        auto& sc = jv[jss::source_currencies] = json::ArrayValue;
-        json::Value j = json::ObjectValue;
+        auto& sc = jv[jss::source_currencies] = json::ValueType::ArrayValue;
+        json::Value j = json::ValueType::ObjectValue;
         addSourceAsset(j, *srcAsset, srcIssuer);
         sc.append(j);
     }
@@ -210,7 +210,7 @@ findPathsRequest(
         {},
         {}};
 
-    json::Value params = json::ObjectValue;
+    json::Value params = json::ValueType::ObjectValue;
     params[jss::command] = "ripple_path_find";
     params[jss::source_account] = toBase58(src);
     params[jss::destination_account] = toBase58(dst);
@@ -220,8 +220,8 @@ findPathsRequest(
 
     if (srcAsset)
     {
-        auto& sc = params[jss::source_currencies] = json::ArrayValue;
-        json::Value j = json::ObjectValue;
+        auto& sc = params[jss::source_currencies] = json::ValueType::ArrayValue;
+        json::Value j = json::ValueType::ObjectValue;
         addSourceAsset(j, *srcAsset, srcIssuer);
         sc.append(j);
     }
@@ -434,7 +434,7 @@ ledgerEntryState(Env& env, Account const& acctA, Account const& acctB, std::stri
     json::Value jvParams;
     jvParams[jss::ledger_index] = "current";
     jvParams[jss::ripple_state][jss::currency] = currency;
-    jvParams[jss::ripple_state][jss::accounts] = json::ArrayValue;
+    jvParams[jss::ripple_state][jss::accounts] = json::ValueType::ArrayValue;
     jvParams[jss::ripple_state][jss::accounts].append(acctA.human());
     jvParams[jss::ripple_state][jss::accounts].append(acctB.human());
     return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];

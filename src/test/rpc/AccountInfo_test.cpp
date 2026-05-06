@@ -75,9 +75,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::NullValue));
+            testInvalidAccountParam(json::Value(json::ValueType::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ValueType::ArrayValue));
         }
         {
             // Cannot pass a non-string into the `ident` param
@@ -93,9 +93,9 @@ public:
             testInvalidIdentParam(1);
             testInvalidIdentParam(1.1);
             testInvalidIdentParam(true);
-            testInvalidIdentParam(json::Value(json::NullValue));
-            testInvalidIdentParam(json::Value(json::ObjectValue));
-            testInvalidIdentParam(json::Value(json::ArrayValue));
+            testInvalidIdentParam(json::Value(json::ValueType::NullValue));
+            testInvalidIdentParam(json::Value(json::ValueType::ObjectValue));
+            testInvalidIdentParam(json::Value(json::ValueType::ArrayValue));
         }
     }
 

@@ -300,7 +300,7 @@ public:
     json::Value
     getInfo() override
     {
-        json::Value ret(json::ObjectValue);
+        json::Value ret(json::ValueType::ObjectValue);
 
         std::vector<std::pair<uint256, std::shared_ptr<InboundLedger>>> acqs;
 

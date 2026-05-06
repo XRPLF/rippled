@@ -75,9 +75,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::NullValue));
+            testInvalidAccountParam(json::Value(json::ValueType::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ValueType::ArrayValue));
         }
         Account const alice{"alice"};
         {
@@ -215,7 +215,7 @@ public:
             // Invalid index
             json::Value params;
             params[jss::account] = alice.human();
-            params[jss::ledger_index] = json::ObjectValue;
+            params[jss::ledger_index] = json::ValueType::ObjectValue;
             auto const lines = env.rpc("json", "account_lines", to_string(params))[jss::result];
             BEAST_EXPECT(lines[jss::error] == "invalidParams");
             BEAST_EXPECT(
@@ -618,7 +618,7 @@ public:
             // the list will be empty for most calls.
             auto getNextLine =
                 [](Env& env, Account const& alice, std::optional<std::string> const marker) {
-                    json::Value params(json::ObjectValue);
+                    json::Value params(json::ValueType::ObjectValue);
                     params[jss::account] = alice.human();
                     params[jss::limit] = 1;
                     if (marker)

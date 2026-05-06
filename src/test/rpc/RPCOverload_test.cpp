@@ -40,7 +40,7 @@ public:
         std::unique_ptr<AbstractClient> client =
             useWS ? makeWSClient(env.app().config()) : makeJSONRPCClient(env.app().config());
 
-        json::Value tx = json::ObjectValue;
+        json::Value tx = json::ValueType::ObjectValue;
         tx[jss::tx_json] = pay(alice, bob, XRP(1));
         tx[jss::secret] = toBase58(generateSeed("alice"));
 

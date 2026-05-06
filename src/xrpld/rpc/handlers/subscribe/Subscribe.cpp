@@ -30,7 +30,7 @@ json::Value
 doSubscribe(RPC::JsonContext& context)
 {
     InfoSub::pointer ispSub;
-    json::Value jvResult(json::ObjectValue);
+    json::Value jvResult(json::ValueType::ObjectValue);
 
     if (!context.infoSub && !context.params.isMember(jss::url))
     {
@@ -290,8 +290,8 @@ doSubscribe(RPC::JsonContext& context)
                     context.app.getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
                 {
-                    json::Value const jvMarker = json::Value(json::NullValue);
-                    json::Value jvOffers(json::ObjectValue);
+                    json::Value const jvMarker = json::Value(json::ValueType::NullValue);
+                    json::Value jvOffers(json::ValueType::ObjectValue);
 
                     auto add = [&](json::StaticString field) {
                         context.netOps.getBookPage(

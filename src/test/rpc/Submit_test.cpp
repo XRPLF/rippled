@@ -60,8 +60,8 @@ public:
         testInvalidFailHard(1);
         testInvalidFailHard(0);
         testInvalidFailHard(1.5);
-        testInvalidFailHard(json::Value(json::ObjectValue));
-        testInvalidFailHard(json::Value(json::ArrayValue));
+        testInvalidFailHard(json::Value(json::ValueType::ObjectValue));
+        testInvalidFailHard(json::Value(json::ValueType::ArrayValue));
 
         // Valid boolean values should work (not return invalidParams)
         {

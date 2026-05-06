@@ -204,31 +204,31 @@ writeValue(Write const& write, Value const& value)
 {
     switch (value.type())
     {
-        case NullValue:
+        case ValueType::NullValue:
             write("null", 4);
             break;
 
-        case IntValue:
+        case ValueType::IntValue:
             writeString(write, valueToString(value.asInt()));
             break;
 
-        case UintValue:
+        case ValueType::UintValue:
             writeString(write, valueToString(value.asUInt()));
             break;
 
-        case RealValue:
+        case ValueType::RealValue:
             writeString(write, valueToString(value.asDouble()));
             break;
 
-        case StringValue:
+        case ValueType::StringValue:
             writeString(write, valueToQuotedString(value.asCString()));
             break;
 
-        case BooleanValue:
+        case ValueType::BooleanValue:
             writeString(write, valueToString(value.asBool()));
             break;
 
-        case ArrayValue: {
+        case ValueType::ArrayValue: {
             write("[", 1);
             int const size = value.size();
             for (int index = 0; index < size; ++index)
@@ -241,7 +241,7 @@ writeValue(Write const& write, Value const& value)
             break;
         }
 
-        case ObjectValue: {
+        case ValueType::ObjectValue: {
             Value::Members const members = value.getMemberNames();
             write("{", 1);
             for (auto it = members.begin(); it != members.end(); ++it)

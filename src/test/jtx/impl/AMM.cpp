@@ -217,7 +217,7 @@ AMM::ammRpcInfo(
              : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
     if (jr.isObject() && jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
         return jr[jss::result];
-    return json::NullValue;
+    return json::ValueType::NullValue;
 }
 
 std::tuple<STAmount, STAmount, STAmount>
@@ -758,7 +758,7 @@ AMM::bid(BidArg const& arg)
     }
     if (!arg.authAccounts.empty())
     {
-        json::Value accounts(json::ArrayValue);
+        json::Value accounts(json::ValueType::ArrayValue);
         for (auto const& account : arg.authAccounts)
         {
             json::Value acct;

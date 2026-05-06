@@ -2333,7 +2333,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             .minAccountCreate = XRP(20),  // minAccountCreate
             .quorum = 4,                  // quorum
             .signers = signers,
-            .jvb = json::NullValue};
+            .jvb = json::ValueType::NullValue};
 
         xrpB.initBridge(mcEnv, scEnv);
 
@@ -4514,7 +4514,7 @@ public:
             .minAccountCreate = XRP(20),
             .quorum = quorum,
             .signers = signers,
-            .jvb = json::NullValue};
+            .jvb = json::ValueType::NullValue};
 
         initBridge(xrpB);
 
@@ -4529,7 +4529,7 @@ public:
             .minAccountCreate = XRP(20),
             .quorum = quorum,
             .signers = signers,
-            .jvb = json::NullValue};
+            .jvb = json::ValueType::NullValue};
 
         initBridge(usdB);
 

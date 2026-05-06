@@ -14,37 +14,37 @@ outputJson(json::Value const& value, Writer& writer)
 {
     switch (value.type())
     {
-        case json::NullValue: {
+        case json::ValueType::NullValue: {
             writer.output(nullptr);
             break;
         }
 
-        case json::IntValue: {
+        case json::ValueType::IntValue: {
             writer.output(value.asInt());
             break;
         }
 
-        case json::UintValue: {
+        case json::ValueType::UintValue: {
             writer.output(value.asUInt());
             break;
         }
 
-        case json::RealValue: {
+        case json::ValueType::RealValue: {
             writer.output(value.asDouble());
             break;
         }
 
-        case json::StringValue: {
+        case json::ValueType::StringValue: {
             writer.output(value.asString());
             break;
         }
 
-        case json::BooleanValue: {
+        case json::ValueType::BooleanValue: {
             writer.output(value.asBool());
             break;
         }
 
-        case json::ArrayValue: {
+        case json::ValueType::ArrayValue: {
             writer.startRoot(Writer::CollectionType::Array);
             for (auto const& i : value)
             {
@@ -55,7 +55,7 @@ outputJson(json::Value const& value, Writer& writer)
             break;
         }
 
-        case json::ObjectValue: {
+        case json::ValueType::ObjectValue: {
             writer.startRoot(Writer::CollectionType::Object);
             auto members = value.getMemberNames();
             for (auto const& tag : members)

@@ -1247,7 +1247,7 @@ InboundLedger::runData()
 json::Value
 InboundLedger::getJson(int)
 {
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::ObjectValue);
 
     ScopedLockType const sl(mtx_);
 
@@ -1274,7 +1274,7 @@ InboundLedger::getJson(int)
 
     if (haveHeader_ && !haveState_)
     {
-        json::Value hv(json::ArrayValue);
+        json::Value hv(json::ValueType::ArrayValue);
         for (auto const& h : neededStateHashes(16, nullptr))
         {
             hv.append(to_string(h));
@@ -1284,7 +1284,7 @@ InboundLedger::getJson(int)
 
     if (haveHeader_ && !haveTransactions_)
     {
-        json::Value hv(json::ArrayValue);
+        json::Value hv(json::ValueType::ArrayValue);
         for (auto const& h : neededTxHashes(16, nullptr))
         {
             hv.append(to_string(h));

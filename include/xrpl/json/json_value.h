@@ -15,9 +15,7 @@ namespace json {
 
 /** \brief Type of the value held by a Value object.
  */
-// Used throughout JSON layer
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum ValueType {
+enum class ValueType {
     NullValue = 0,  ///< 'null' value
     IntValue,       ///< signed integer value
     UintValue,      ///< unsigned integer value
@@ -190,11 +188,11 @@ public:
            Examples:
     \code
     json::Value null_value; // null
-    json::Value arr_value(json::arrayValue); // []
-    json::Value obj_value(json::objectValue); // {}
+    json::Value arr_value(json::ValueType::ArrayValue); // []
+    json::Value obj_value(json::ValueType::ObjectValue); // {}
     \endcode
          */
-    Value(ValueType type = NullValue);
+    Value(ValueType type = ValueType::NullValue);
     Value(Int value);
     Value(UInt value);
     Value(double value);
@@ -469,9 +467,9 @@ operator>=(Value const& x, Value const& y)
  * string value memory management done by Value.
  *
  * - makeMemberName() and releaseMemberName() are called to respectively
- * duplicate and free an json::objectValue member name.
+ * duplicate and free an json::ValueType::ObjectValue member name.
  * - duplicateStringValue() and releaseStringValue() are called similarly to
- *   duplicate and free a json::stringValue value.
+ *   duplicate and free a json::ValueType::StringValue value.
  */
 class ValueAllocator
 {

@@ -2735,7 +2735,7 @@ class Vault_test : public beast::unit_test::Suite
 
                     {
                         // Create MPToken for shares held by Charlie
-                        json::Value tx{json::ObjectValue};
+                        json::Value tx{json::ValueType::ObjectValue};
                         tx[sfAccount] = charlie.human();
                         tx[sfMPTokenIssuanceID] =
                             to_string(shares.raw().get<MPTIssue>().getMptID());
@@ -4276,7 +4276,7 @@ class Vault_test : public beast::unit_test::Suite
 
         auto const check = [&, keylet = keylet, sle = sleVault, this](
                                json::Value const& vault,
-                               json::Value const& issuance = json::NullValue) {
+                               json::Value const& issuance = json::ValueType::NullValue) {
             BEAST_EXPECT(vault.isObject());
 
             constexpr auto kCHECK_STRING =

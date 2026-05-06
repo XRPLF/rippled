@@ -411,7 +411,7 @@ private:
 
                 // LPTokenOut can not be MPT
                 {
-                    json::Value jv = json::ObjectValue;
+                    json::Value jv = json::ValueType::ObjectValue;
                     jv[jss::Account] = alice_.human();
                     jv[jss::TransactionType] = jss::AMMDeposit;
                     jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::KNone);
@@ -425,7 +425,7 @@ private:
                 // Provided LPTokenOut does not match AMM pool's LPToken
                 // asset
                 {
-                    json::Value jv = json::ObjectValue;
+                    json::Value jv = json::ValueType::ObjectValue;
                     jv[jss::Account] = alice_.human();
                     jv[jss::TransactionType] = jss::AMMDeposit;
                     jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::KNone);

@@ -834,7 +834,7 @@ STObject::setFieldObject(SField const& field, STObject const& v)
 json::Value
 STObject::getJson(JsonOptions options) const
 {
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::ObjectValue);
 
     for (auto const& elem : v_)
     {

@@ -27,7 +27,7 @@ private:
         }
 
         void
-        operator()(json::Value const& params = json::NullValue)
+        operator()(json::Value const& params = json::ValueType::NullValue)
         {
             env_.signAndSubmit(jt_, params, loc_);
         }

@@ -1678,7 +1678,7 @@ public:
             auto const danOfferSeq = env.seq(dan);
             env(offer(dan, XRP(500), eur(50)));
 
-            json::Value jtp{json::ArrayValue};
+            json::Value jtp{json::ValueType::ArrayValue};
             jtp[0u][0u][jss::currency] = "XRP";
             env(pay(alice, bob, eur(30)), Json(jss::Paths, jtp), Sendmax(usd(333)));
 

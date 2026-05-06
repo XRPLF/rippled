@@ -293,7 +293,7 @@ populateJsonResponse(
         response[jss::ledger_index_min] = result.ledgerRange.min;
         response[jss::ledger_index_max] = result.ledgerRange.max;
 
-        json::Value& jvTxns = (response[jss::transactions] = json::ArrayValue);
+        json::Value& jvTxns = (response[jss::transactions] = json::ValueType::ArrayValue);
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
@@ -303,7 +303,7 @@ populateJsonResponse(
             {
                 if (txn)
                 {
-                    json::Value& jvObj = jvTxns.append(json::ObjectValue);
+                    json::Value& jvObj = jvTxns.append(json::ValueType::ObjectValue);
                     jvObj[jss::validated] = true;
 
                     auto const jsonTx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
@@ -351,7 +351,7 @@ populateJsonResponse(
 
             for (auto const& binaryData : std::get<TxnsDataBinary>(result.transactions))
             {
-                json::Value& jvObj = jvTxns.append(json::ObjectValue);
+                json::Value& jvObj = jvTxns.append(json::ValueType::ObjectValue);
 
                 jvObj[jss::tx_blob] = strHex(std::get<0>(binaryData));
                 auto const jsonMeta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
@@ -363,7 +363,7 @@ populateJsonResponse(
 
         if (result.marker)
         {
-            response[jss::marker] = json::ObjectValue;
+            response[jss::marker] = json::ValueType::ObjectValue;
             response[jss::marker][jss::ledger] = result.marker->ledgerSeq;
             response[jss::marker][jss::seq] = result.marker->txnSeq;
         }

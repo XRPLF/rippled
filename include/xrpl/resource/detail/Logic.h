@@ -183,13 +183,13 @@ public:
         return getJson(kWARNING_THRESHOLD);
     }
 
-    /** Returns a json::objectValue. */
+    /** Returns a json::ValueType::ObjectValue. */
     json::Value
     getJson(int threshold)
     {
         clock_type::time_point const now(clock_.now());
 
-        json::Value ret(json::ObjectValue);
+        json::Value ret(json::ValueType::ObjectValue);
         std::scoped_lock const _(lock_);
 
         for (auto& inboundEntry : inbound_)
@@ -197,7 +197,7 @@ public:
             int const localBalance = inboundEntry.local_balance.value(now);
             if ((localBalance + inboundEntry.remote_balance) >= threshold)
             {
-                json::Value& entry = (ret[inboundEntry.toString()] = json::ObjectValue);
+                json::Value& entry = (ret[inboundEntry.toString()] = json::ValueType::ObjectValue);
                 entry[jss::local] = localBalance;
                 entry[jss::remote] = inboundEntry.remote_balance;
                 entry[jss::type] = "inbound";
@@ -208,7 +208,7 @@ public:
             int const localBalance = outboundEntry.local_balance.value(now);
             if ((localBalance + outboundEntry.remote_balance) >= threshold)
             {
-                json::Value& entry = (ret[outboundEntry.toString()] = json::ObjectValue);
+                json::Value& entry = (ret[outboundEntry.toString()] = json::ValueType::ObjectValue);
                 entry[jss::local] = localBalance;
                 entry[jss::remote] = outboundEntry.remote_balance;
                 entry[jss::type] = "outbound";
@@ -219,7 +219,7 @@ public:
             int const localBalance = adminEntry.local_balance.value(now);
             if ((localBalance + adminEntry.remote_balance) >= threshold)
             {
-                json::Value& entry = (ret[adminEntry.toString()] = json::ObjectValue);
+                json::Value& entry = (ret[adminEntry.toString()] = json::ValueType::ObjectValue);
                 entry[jss::local] = localBalance;
                 entry[jss::remote] = adminEntry.remote_balance;
                 entry[jss::type] = "admin";

@@ -388,8 +388,8 @@ class Batch_test : public beast::unit_test::Suite
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = pay(alice, bob, XRP(1));
-            tx1[sfSigners.jsonName] = json::ArrayValue;
-            tx1[sfSigners.jsonName][0U][sfSigner.jsonName] = json::ObjectValue;
+            tx1[sfSigners.jsonName] = json::ValueType::ArrayValue;
+            tx1[sfSigners.jsonName][0U][sfSigner.jsonName] = json::ValueType::ObjectValue;
             tx1[sfSigners.jsonName][0U][sfSigner.jsonName][sfAccount.jsonName] = alice.human();
             tx1[sfSigners.jsonName][0U][sfSigner.jsonName][sfSigningPubKey.jsonName] =
                 strHex(alice.pk());
@@ -2346,7 +2346,7 @@ class Batch_test : public beast::unit_test::Suite
         // + has `tfInnerBatchTxn` flag
         {
             auto txn = batch::Inner(pay(alice, bob, XRP(1)), env.seq(alice));
-            txn[sfSigners] = json::ArrayValue;
+            txn[sfSigners] = json::ValueType::ArrayValue;
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)

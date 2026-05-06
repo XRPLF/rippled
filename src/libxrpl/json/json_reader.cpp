@@ -407,7 +407,7 @@ Reader::readObject(Token& tokenStart, unsigned depth)
 {
     Token tokenName{};
     std::string name;
-    currentValue() = Value(ObjectValue);
+    currentValue() = Value(ValueType::ObjectValue);
 
     while (readToken(tokenName))
     {
@@ -475,7 +475,7 @@ Reader::readObject(Token& tokenStart, unsigned depth)
 bool
 Reader::readArray(Token& tokenStart, unsigned depth)
 {
-    currentValue() = Value(ArrayValue);
+    currentValue() = Value(ValueType::ArrayValue);
     skipSpaces();
 
     if (*current_ == ']')  // empty array

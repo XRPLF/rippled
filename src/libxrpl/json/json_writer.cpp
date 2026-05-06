@@ -188,31 +188,31 @@ FastWriter::writeValue(Value const& value)
 {
     switch (value.type())
     {
-        case NullValue:
+        case ValueType::NullValue:
             document_ += "null";
             break;
 
-        case IntValue:
+        case ValueType::IntValue:
             document_ += valueToString(value.asInt());
             break;
 
-        case UintValue:
+        case ValueType::UintValue:
             document_ += valueToString(value.asUInt());
             break;
 
-        case RealValue:
+        case ValueType::RealValue:
             document_ += valueToString(value.asDouble());
             break;
 
-        case StringValue:
+        case ValueType::StringValue:
             document_ += valueToQuotedString(value.asCString());
             break;
 
-        case BooleanValue:
+        case ValueType::BooleanValue:
             document_ += valueToString(value.asBool());
             break;
 
-        case ArrayValue: {
+        case ValueType::ArrayValue: {
             document_ += "[";
             int const size = value.size();
 
@@ -228,7 +228,7 @@ FastWriter::writeValue(Value const& value)
         }
         break;
 
-        case ObjectValue: {
+        case ValueType::ObjectValue: {
             Value::Members members(value.getMemberNames());
             document_ += "{";
 
@@ -271,35 +271,35 @@ StyledWriter::writeValue(Value const& value)
 {
     switch (value.type())
     {
-        case NullValue:
+        case ValueType::NullValue:
             pushValue("null");
             break;
 
-        case IntValue:
+        case ValueType::IntValue:
             pushValue(valueToString(value.asInt()));
             break;
 
-        case UintValue:
+        case ValueType::UintValue:
             pushValue(valueToString(value.asUInt()));
             break;
 
-        case RealValue:
+        case ValueType::RealValue:
             pushValue(valueToString(value.asDouble()));
             break;
 
-        case StringValue:
+        case ValueType::StringValue:
             pushValue(valueToQuotedString(value.asCString()));
             break;
 
-        case BooleanValue:
+        case ValueType::BooleanValue:
             pushValue(valueToString(value.asBool()));
             break;
 
-        case ArrayValue:
+        case ValueType::ArrayValue:
             writeArrayValue(value);
             break;
 
-        case ObjectValue: {
+        case ValueType::ObjectValue: {
             Value::Members members(value.getMemberNames());
 
             if (members.empty())
@@ -506,35 +506,35 @@ StyledStreamWriter::writeValue(Value const& value)
 {
     switch (value.type())
     {
-        case NullValue:
+        case ValueType::NullValue:
             pushValue("null");
             break;
 
-        case IntValue:
+        case ValueType::IntValue:
             pushValue(valueToString(value.asInt()));
             break;
 
-        case UintValue:
+        case ValueType::UintValue:
             pushValue(valueToString(value.asUInt()));
             break;
 
-        case RealValue:
+        case ValueType::RealValue:
             pushValue(valueToString(value.asDouble()));
             break;
 
-        case StringValue:
+        case ValueType::StringValue:
             pushValue(valueToQuotedString(value.asCString()));
             break;
 
-        case BooleanValue:
+        case ValueType::BooleanValue:
             pushValue(valueToString(value.asBool()));
             break;
 
-        case ArrayValue:
+        case ValueType::ArrayValue:
             writeArrayValue(value);
             break;
 
-        case ObjectValue: {
+        case ValueType::ObjectValue: {
             Value::Members members(value.getMemberNames());
 
             if (members.empty())

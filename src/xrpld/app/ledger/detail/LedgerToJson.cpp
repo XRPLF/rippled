@@ -119,7 +119,7 @@ fillJsonTx(
     if (!bExpanded)
         return to_string(txn->getTransactionID());
 
-    json::Value txJson{json::ObjectValue};
+    json::Value txJson{json::ValueType::ObjectValue};
     auto const txnType = txn->getTxnType();
     if (bBinary)
     {
@@ -219,7 +219,7 @@ fillJsonTx(
 void
 fillJsonTx(json::Value& json, LedgerFill const& fill)
 {
-    auto& txns = json[jss::transactions] = json::ArrayValue;
+    auto& txns = json[jss::transactions] = json::ValueType::ArrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
@@ -248,7 +248,7 @@ void
 fillJsonState(json::Value& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
-    auto& array = json[jss::accountState] = json::ArrayValue;
+    auto& array = json[jss::accountState] = json::ValueType::ArrayValue;
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
@@ -256,7 +256,7 @@ fillJsonState(json::Value& json, LedgerFill const& fill)
     {
         if (binary)
         {
-            auto& obj = array.append(json::ObjectValue);
+            auto& obj = array.append(json::ValueType::ObjectValue);
             obj[jss::hash] = to_string(sle->key());
             obj[jss::tx_blob] = serializeHex(*sle);
         }
@@ -274,13 +274,13 @@ fillJsonState(json::Value& json, LedgerFill const& fill)
 void
 fillJsonQueue(json::Value& json, LedgerFill const& fill)
 {
-    auto& queueData = json[jss::queue_data] = json::ArrayValue;
+    auto& queueData = json[jss::queue_data] = json::ValueType::ArrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
     for (auto const& tx : fill.txQueue)
     {
-        auto& txJson = queueData.append(json::ObjectValue);
+        auto& txJson = queueData.append(json::ValueType::ObjectValue);
         txJson[jss::fee_level] = to_string(tx.feeLevel);
         if (tx.lastValid)
             txJson[jss::LastLedgerSequence] = *tx.lastValid;
@@ -341,7 +341,7 @@ fillJson(json::Value& json, LedgerFill const& fill)
 void
 addJson(json::Value& json, LedgerFill const& fill)
 {
-    auto& object = json[jss::ledger] = json::ObjectValue;
+    auto& object = json[jss::ledger] = json::ValueType::ObjectValue;
     fillJson(object, fill);
 
     if (((fill.options & static_cast<int>(LedgerFill::Options::DumpQueue)) != 0) &&

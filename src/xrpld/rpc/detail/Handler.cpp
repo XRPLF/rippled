@@ -28,7 +28,7 @@ byRef(Function const& f)
 {
     return [f](JsonContext& context, json::Value& result) {
         result = f(context);
-        if (result.type() != json::ObjectValue)
+        if (result.type() != json::ValueType::ObjectValue)
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::RPC::byRef : result is object");

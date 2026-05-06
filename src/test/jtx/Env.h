@@ -604,7 +604,7 @@ public:
     void
     signAndSubmit(
         JTx const& jt,
-        json::Value params = json::NullValue,
+        json::Value params = json::ValueType::NullValue,
         std::source_location const& loc = std::source_location::current());
 
     /** Check expected postconditions
