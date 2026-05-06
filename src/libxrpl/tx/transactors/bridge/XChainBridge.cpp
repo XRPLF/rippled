@@ -1030,7 +1030,8 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            // Door account should not have a sponsor
+            // Don't sponsor door account objects in transactions not sent by the door account
+            // itself
             if (auto const ret = checkInsufficientReserve(psb, tx, sleDoor, balance, {}, 1, 0, j);
                 !isTesSuccess(ret))
                 return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
@@ -1138,10 +1139,9 @@ applyCreateAccountAttestations(
         if (!sleDoor)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        // Reserve was already checked
-        auto const sponsor = getTxReserveSponsor(psb, tx);
-        adjustOwnerCount(psb, sleDoor, sponsor, 1, j);
-        addSponsorToLedgerEntry(createdSleClaimID, sponsor);
+        // Don't sponsor door account objects in transactions not sent by the door account
+        // itself
+        adjustOwnerCount(psb, sleDoor, {}, 1, j);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
     }

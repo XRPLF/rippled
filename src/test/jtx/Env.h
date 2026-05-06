@@ -533,19 +533,19 @@ public:
     /** Return the number of sponsored objects owned by an account.
      * Returns 0 if the account does not exist.
      */
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     sponsoredOwnerCount(Account const& account) const;
 
     /** Return the number of sponsoring objects owned by an account.
      * Returns 0 if the account does not exist.
      */
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     sponsoringOwnerCount(Account const& account) const;
 
     /** Return the number of sponsoring accounts owned by an account.
      * Returns 0 if the account does not exist.
      */
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     sponsoringAccountCount(Account const& account) const;
 
     /** Return an account root.
