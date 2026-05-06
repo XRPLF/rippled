@@ -53,9 +53,9 @@ XRPAmount
 ConfidentialMPTConvertBack::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge confidentialFeeMultiplier extra base fees so the total is
+    // We charge kCONFIDENTIAL_FEE_MULTIPLIER extra base fees so the total is
     // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * confidentialFeeMultiplier;
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kCONFIDENTIAL_FEE_MULTIPLIER;
 }
 
 /**
