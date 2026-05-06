@@ -14,31 +14,71 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <algorithm>
+#include <array>
 #include <memory>
+#include <utility>
 
 namespace xrpl {
+
+namespace {
+
+using FixType = LedgerStateFix::FixType;
+
+std::array<std::pair<FixType, SField const*>, 2> const kLEDGER_FIX_FIELDS = {{
+    {FixType::NfTokenPageLink, &sfOwner},
+    {FixType::BookExchangeRate, &sfBookDirectory},
+}};
+
+[[nodiscard]] SField const*
+fixField(FixType const fixType)
+{
+    auto const iter = std::ranges::find_if(
+        kLEDGER_FIX_FIELDS, [fixType](auto const& entry) { return entry.first == fixType; });
+
+    if (iter == kLEDGER_FIX_FIELDS.end())
+        return nullptr;
+
+    return iter->second;
+}
+
+[[nodiscard]] bool
+hasUnexpectedFixField(STTx const& tx, SField const& expected)
+{
+    return std::ranges::any_of(kLEDGER_FIX_FIELDS, [&tx, &expected](auto const& entry) {
+        auto const field = entry.second;
+        return field != &expected && tx.isFieldPresent(*field);
+    });
+}
+
+}  // namespace
 
 NotTEC
 LedgerStateFix::preflight(PreflightContext const& ctx)
 {
-    switch (static_cast<FixType>(ctx.tx[sfLedgerFixType]))
+    auto const fixType = static_cast<FixType>(ctx.tx[sfLedgerFixType]);
+
+    switch (fixType)
     {
         case FixType::NfTokenPageLink:
-            if (!ctx.tx.isFieldPresent(sfOwner))
-                return temINVALID;
             break;
 
         case FixType::BookExchangeRate:
             if (!ctx.rules.enabled(fixCleanup3_2_0))
                 return temDISABLED;
-
-            if (!ctx.tx.isFieldPresent(sfBookDirectory))
-                return temINVALID;
             break;
 
         default:
             return tefINVALID_LEDGER_FIX_TYPE;
     }
+
+    auto const expectedField = fixField(fixType);
+    if (expectedField == nullptr)
+        return tefINVALID_LEDGER_FIX_TYPE;  // LCOV_EXCL_LINE
+
+    // Each fix type allows exactly one fix-specific field.
+    if (!ctx.tx.isFieldPresent(*expectedField) || hasUnexpectedFixField(ctx.tx, *expectedField))
+        return temINVALID;
 
     return tesSUCCESS;
 }

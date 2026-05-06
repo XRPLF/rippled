@@ -1521,32 +1521,33 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         auto const postCrossingQuality = std::uint64_t{5623825668291712341ULL};
 
         // Domain directory: sfExchangeRate should always match key quality
-        // (both use the pre-crossing rate).
+        // (both use the pre-crossing rate). Correct behavior.
         BEAST_EXPECT(domainQuality == preCrossingQuality);
         BEAST_EXPECT(domainExRate == preCrossingQuality);
         BEAST_EXPECT(domainExRate == domainQuality);
 
         if (fixEnabled)
         {
-            // Post-fix: both directory keys use the pre-crossing rate.
+            // Correct behavior: both directory keys use the pre-crossing rate.
             BEAST_EXPECT(openQuality == preCrossingQuality);
-            BEAST_EXPECT(openExRate == preCrossingQuality);
             BEAST_EXPECT(domainQuality == openQuality);
+
             // sfExchangeRate matches key quality on both directories.
+            BEAST_EXPECT(openExRate == preCrossingQuality);
             BEAST_EXPECT(openExRate == openQuality);
         }
         else
         {
-            // Pre-fix: the open-book directory uses the post-crossing
-            // rate, which may differ from the domain-book directory.
+            // Wrong legacy behavior: the open-book directory key uses the
+            // post-crossing rate instead of the domain-book rate.
             BEAST_EXPECT(openQuality == postCrossingQuality);
-            BEAST_EXPECT(openExRate == preCrossingQuality);
             BEAST_EXPECT(domainQuality != openQuality);
-            // sfExchangeRate (pre-crossing rate) does NOT match the
-            // open-book key quality (post-crossing rate).
+
+            // The open-book sfExchangeRate still uses the pre-crossing rate,
+            // so it no longer matches the actual quality encoded in the
+            // open-book directory key.
+            BEAST_EXPECT(openExRate == preCrossingQuality);
             BEAST_EXPECT(openExRate != openQuality);
-            // But sfExchangeRate does match the domain quality (both
-            // are the pre-crossing rate).
             BEAST_EXPECT(openExRate == domainQuality);
         }
     }
@@ -1570,17 +1571,69 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         //   - After fix: sfExchangeRate == getQuality(key).
 
         {
-            Env disabledEnv(*this, features - fixCleanup3_2_0);
+            // Amendment gate: BookExchangeRate fixes require fixCleanup3_2_0.
+            Env env(*this, features - fixCleanup3_2_0);
             Account const carol{"carol"};
 
-            disabledEnv.fund(XRP(1000), carol);
-            disabledEnv.close();
+            env.fund(XRP(1000), carol);
+            env.close();
 
-            disabledEnv(ledgerStateFix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
+            env(ledgerStateFix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
         }
 
         {
-            // Start without fixCleanup3_2_0 to produce the mismatch.
+            // Preflight check: BookExchangeRate fixes only accept their
+            // required fix-specific field.
+            Env env(*this, features);
+            Account const carol{"carol"};
+
+            env.fund(XRP(1000), carol);
+            env.close();
+
+            // BookExchangeRate fixes require sfBookDirectory.
+            auto missingBookDirectory = ledgerStateFix::bookExchangeRate(carol, uint256{1});
+            missingBookDirectory.removeMember(sfBookDirectory.jsonName);
+            env(missingBookDirectory, Ter(temINVALID));
+
+            // BookExchangeRate fixes reject fields that belong to other
+            // LedgerStateFix types.
+            auto extraOwner = ledgerStateFix::bookExchangeRate(carol, uint256{1});
+            extraOwner[sfOwner.jsonName] = carol.human();
+            env(extraOwner, Ter(temINVALID));
+        }
+
+        {
+            // A directory with a correct sfExchangeRate must fail.
+            Env env(*this, features);
+            auto const setup = PermissionedDEX(env);
+
+            auto const bobOfferSeq{env.seq(setup.bob)};
+            env(offer(setup.bob, XRP(100), setup.USD(40)));
+            env.close();
+
+            auto const sle = env.le(keylet::offer(setup.bob.id(), bobOfferSeq));
+            BEAST_EXPECT(sle);
+
+            auto const dirKey = sle->getFieldH256(sfBookDirectory);
+            {
+                auto const dirSle = env.le(Keylet(ltDIR_NODE, dirKey));
+                BEAST_EXPECT(dirSle);
+                auto const exchangeRate = dirSle->getFieldU64(sfExchangeRate);
+                auto const quality = getQuality(dirKey);
+                BEAST_EXPECT(exchangeRate == quality);
+            }
+
+            // There is nothing to repair when sfExchangeRate already matches
+            // the directory key quality.
+            auto const fixFee = drops(env.current()->fees().increment);
+            env(ledgerStateFix::bookExchangeRate(setup.carol, dirKey),
+                Fee(fixFee),
+                Ter(tecNO_PERMISSION));
+        }
+
+        {
+            // Repair path: start without fixCleanup3_2_0 to produce the
+            // mismatch, then enable the amendment and fix it.
             Env env(*this, features - fixCleanup3_2_0);
             auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
                 PermissionedDEX(env);
