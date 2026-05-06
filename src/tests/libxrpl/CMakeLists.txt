@@ -35,6 +35,21 @@ xrpl_add_test(json)
 target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.json)
 
+xrpl_add_test(
+    peerfinder
+    ${CMAKE_SOURCE_DIR}/src/xrpld/core/detail/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/xrpld/peerfinder/detail/Bootcache.cpp
+    ${CMAKE_SOURCE_DIR}/src/xrpld/peerfinder/detail/Endpoint.cpp
+    ${CMAKE_SOURCE_DIR}/src/xrpld/peerfinder/detail/PeerfinderConfig.cpp
+    ${CMAKE_SOURCE_DIR}/src/xrpld/peerfinder/detail/SlotImp.cpp
+)
+target_include_directories(xrpl.test.peerfinder PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(
+    xrpl.test.peerfinder
+    PRIVATE xrpl.imports.test Xrpl::boost Xrpl::libs Xrpl::opts
+)
+add_dependencies(xrpl.tests xrpl.test.peerfinder)
+
 xrpl_add_test(tx)
 target_link_libraries(xrpl.test.tx PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.tx)

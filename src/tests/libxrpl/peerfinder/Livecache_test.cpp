@@ -1,214 +1,239 @@
-#include <test/beast/IPEndpointCommon.h>
-#include <test/unit_test/SuiteJournal.h>
-
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Livecache.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/net/IPAddressV4.h>
+#include <xrpl/beast/net/IPAddressV6.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <gtest/gtest.h>
+#include <helpers/TestSink.h>
+
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <iterator>
+#include <string>
 #include <utility>
 #include <vector>
 
 namespace xrpl::PeerFinder {
+namespace {
 
-bool
-operator==(Endpoint const& a, Endpoint const& b)
+beast::Journal
+journal()
 {
-    return (a.hops == b.hops && a.address == b.address);
+    return beast::Journal{TestSink::instance()};
 }
 
-class Livecache_test : public beast::unit_test::Suite
+beast::IP::Endpoint
+endpoint(std::uint16_t index, bool v4 = true)
 {
-    TestStopwatch clock_;
-    test::SuiteJournal journal_;
+    auto const port = static_cast<std::uint16_t>(10000 + index);
 
-public:
-    Livecache_test() : journal_("Livecache_test", *this)
+    if (v4)
     {
+        auto bytes = beast::IP::AddressV4::bytes_type{
+            {54,
+             static_cast<std::uint8_t>((index / 256) % 256),
+             static_cast<std::uint8_t>(index % 256),
+             1}};
+        return beast::IP::Endpoint{beast::IP::Address{beast::IP::AddressV4{bytes}}, port};
     }
 
-    // Add the address as an endpoint
-    template <class C>
-    void
-    add(beast::IP::Endpoint ep, C& c, std::uint32_t hops = 0)
+    auto bytes = beast::IP::AddressV6::bytes_type{
+        {0x20,
+         0x01,
+         0x0d,
+         0xb8,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0,
+         static_cast<std::uint8_t>((index / 256) % 256),
+         static_cast<std::uint8_t>(index % 256),
+         1}};
+    return beast::IP::Endpoint{beast::IP::Address{beast::IP::AddressV6{bytes}}, port};
+}
+
+template <class Cache>
+void
+addEndpoint(beast::IP::Endpoint const& ep, Cache& cache, std::uint32_t hops = 0)
+{
+    cache.insert(Endpoint{ep, hops});
+}
+
+bool
+sameEndpoint(Endpoint const& lhs, Endpoint const& rhs)
+{
+    return lhs.hops == rhs.hops && lhs.address == rhs.address;
+}
+
+bool
+sameEndpoints(std::vector<Endpoint> const& lhs, std::vector<Endpoint> const& rhs)
+{
+    return lhs.size() == rhs.size() &&
+        std::equal(lhs.begin(), lhs.end(), rhs.begin(), sameEndpoint);
+}
+
+}  // namespace
+
+TEST(Livecache, BasicInsert)
+{
+    TestStopwatch clock;
+    Livecache<> cache(clock, journal());
+    EXPECT_TRUE(cache.empty());
+
+    for (auto i = 0; i < 10; ++i)
+        addEndpoint(endpoint(i, true), cache);
+
+    EXPECT_FALSE(cache.empty());
+    EXPECT_EQ(cache.size(), 10u);
+
+    for (auto i = 10; i < 20; ++i)
+        addEndpoint(endpoint(i, false), cache);
+
+    EXPECT_FALSE(cache.empty());
+    EXPECT_EQ(cache.size(), 20u);
+}
+
+TEST(Livecache, InsertUpdateKeepsLowestHopCount)
+{
+    TestStopwatch clock;
+    Livecache<> cache(clock, journal());
+
+    auto const ep1 = Endpoint{endpoint(1), 2};
+    cache.insert(ep1);
+    ASSERT_EQ(cache.size(), 1u);
+    EXPECT_EQ((cache.hops.begin() + 2)->begin()->hops, 2u);
+
+    auto const ep2 = Endpoint{ep1.address, 4};
+    cache.insert(ep2);
+    EXPECT_EQ(cache.size(), 1u);
+    EXPECT_EQ((cache.hops.begin() + 2)->begin()->hops, 2u);
+
+    auto const ep3 = Endpoint{ep1.address, 2};
+    cache.insert(ep3);
+    EXPECT_EQ(cache.size(), 1u);
+    EXPECT_EQ((cache.hops.begin() + 2)->begin()->hops, 2u);
+
+    auto const ep4 = Endpoint{ep1.address, 1};
+    cache.insert(ep4);
+    EXPECT_EQ(cache.size(), 1u);
+    EXPECT_EQ((cache.hops.begin() + 1)->begin()->hops, 1u);
+}
+
+TEST(Livecache, ExpireRemovesEntriesAfterTtl)
+{
+    using namespace std::chrono_literals;
+
+    TestStopwatch clock;
+    Livecache<> cache(clock, journal());
+
+    cache.insert(Endpoint{endpoint(1), 1});
+    ASSERT_EQ(cache.size(), 1u);
+
+    cache.expire();
+    EXPECT_EQ(cache.size(), 1u);
+
+    clock.advance(Tuning::kLIVE_CACHE_SECONDS_TO_LIVE - 1s);
+    cache.expire();
+    EXPECT_EQ(cache.size(), 1u);
+
+    clock.advance(1s);
+    cache.expire();
+    EXPECT_TRUE(cache.empty());
+}
+
+TEST(Livecache, HistogramCountsAllEntries)
+{
+    constexpr auto kNUM_ENDPOINTS = 40;
+
+    TestStopwatch clock;
+    Livecache<> cache(clock, journal());
+    for (auto i = 0; i < kNUM_ENDPOINTS; ++i)
     {
-        Endpoint const cep{ep, hops};
-        c.insert(cep);
+        addEndpoint(endpoint(static_cast<std::uint16_t>(i)), cache, xrpl::randInt<std::uint32_t>());
     }
 
-    void
-    testBasicInsert()
+    auto const histogram = cache.hops.histogram();
+    ASSERT_FALSE(histogram.empty());
+
+    std::vector<std::string> values;
+    boost::split(values, histogram, boost::algorithm::is_any_of(","));
+
+    auto sum = 0;
+    for (auto const& value : values)
     {
-        testcase("Basic Insert");
-        Livecache<> c(clock_, journal_);
-        BEAST_EXPECT(c.empty());
+        auto const count = boost::lexical_cast<int>(boost::trim_copy(value));
+        sum += count;
+        EXPECT_GE(count, 0);
+    }
+    EXPECT_EQ(sum, kNUM_ENDPOINTS);
+}
 
-        for (auto i = 0; i < 10; ++i)
-            add(beast::IP::randomEP(true), c);
-
-        BEAST_EXPECT(!c.empty());
-        BEAST_EXPECT(c.size() == 10);
-
-        for (auto i = 0; i < 10; ++i)
-            add(beast::IP::randomEP(false), c);
-
-        BEAST_EXPECT(!c.empty());
-        BEAST_EXPECT(c.size() == 20);
+TEST(Livecache, ShufflePreservesBucketContents)
+{
+    TestStopwatch clock;
+    Livecache<> cache(clock, journal());
+    for (auto i = 0; i < 100; ++i)
+    {
+        addEndpoint(
+            endpoint(static_cast<std::uint16_t>(i)), cache, xrpl::randInt(Tuning::kMAX_HOPS + 1));
     }
 
-    void
-    testInsertUpdate()
+    using AtHop = std::vector<Endpoint>;
+    using AllHops = std::array<AtHop, 1 + Tuning::kMAX_HOPS + 1>;
+
+    auto const compareEndpoint = [](Endpoint const& lhs, Endpoint const& rhs) {
+        return rhs.hops < lhs.hops || (rhs.hops == lhs.hops && rhs.address < lhs.address);
+    };
+
+    AllHops before;
+    AllHops beforeSorted;
+    for (auto i = std::make_pair(0, cache.hops.begin()); i.second != cache.hops.end();
+         ++i.first, ++i.second)
     {
-        testcase("Insert/Update");
-        Livecache<> c(clock_, journal_);
-
-        auto ep1 = Endpoint{beast::IP::randomEP(), 2};
-        c.insert(ep1);
-        BEAST_EXPECT(c.size() == 1);
-        // third position list will contain the entry
-        BEAST_EXPECT((c.hops.begin() + 2)->begin()->hops == 2);
-
-        auto ep2 = Endpoint{ep1.address, 4};
-        // this will not change the entry has higher hops
-        c.insert(ep2);
-        BEAST_EXPECT(c.size() == 1);
-        // still in third position list
-        BEAST_EXPECT((c.hops.begin() + 2)->begin()->hops == 2);
-
-        auto ep3 = Endpoint{ep1.address, 2};
-        // this will not change the entry has the same hops as existing
-        c.insert(ep3);
-        BEAST_EXPECT(c.size() == 1);
-        // still in third position list
-        BEAST_EXPECT((c.hops.begin() + 2)->begin()->hops == 2);
-
-        auto ep4 = Endpoint{ep1.address, 1};
-        c.insert(ep4);
-        BEAST_EXPECT(c.size() == 1);
-        // now at second position list
-        BEAST_EXPECT((c.hops.begin() + 1)->begin()->hops == 1);
+        std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before[i.first]));
+        std::copy(
+            (*i.second).begin(), (*i.second).end(), std::back_inserter(beforeSorted[i.first]));
+        std::sort(beforeSorted[i.first].begin(), beforeSorted[i.first].end(), compareEndpoint);
     }
 
-    void
-    testExpire()
-    {
-        testcase("Expire");
-        using namespace std::chrono_literals;
-        Livecache<> c(clock_, journal_);
+    cache.hops.shuffle();
 
-        auto ep1 = Endpoint{beast::IP::randomEP(), 1};
-        c.insert(ep1);
-        BEAST_EXPECT(c.size() == 1);
-        c.expire();
-        BEAST_EXPECT(c.size() == 1);
-        // verify that advancing to 1 sec before expiration
-        // leaves our entry intact
-        clock_.advance(Tuning::kLIVE_CACHE_SECONDS_TO_LIVE - 1s);
-        c.expire();
-        BEAST_EXPECT(c.size() == 1);
-        // now advance to the point of expiration
-        clock_.advance(1s);
-        c.expire();
-        BEAST_EXPECT(c.empty());
+    AllHops after;
+    AllHops afterSorted;
+    for (auto i = std::make_pair(0, cache.hops.begin()); i.second != cache.hops.end();
+         ++i.first, ++i.second)
+    {
+        std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after[i.first]));
+        std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(afterSorted[i.first]));
+        std::sort(afterSorted[i.first].begin(), afterSorted[i.first].end(), compareEndpoint);
     }
 
-    void
-    testHistogram()
+    auto allBucketsKeptOriginalOrder = true;
+    for (auto i = 0u; i < before.size(); ++i)
     {
-        testcase("Histogram");
-        constexpr auto kNUM_EPS = 40;
-        Livecache<> c(clock_, journal_);
-        for (auto i = 0; i < kNUM_EPS; ++i)
-            add(beast::IP::randomEP(true), c, xrpl::randInt<std::uint32_t>());
-        auto h = c.hops.histogram();
-        if (!BEAST_EXPECT(!h.empty()))
-            return;
-        std::vector<std::string> v;
-        boost::split(v, h, boost::algorithm::is_any_of(","));
-        auto sum = 0;
-        for (auto const& n : v)
-        {
-            auto val = boost::lexical_cast<int>(boost::trim_copy(n));
-            sum += val;
-            BEAST_EXPECT(val >= 0);
-        }
-        BEAST_EXPECT(sum == kNUM_EPS);
+        EXPECT_EQ(before[i].size(), after[i].size());
+        allBucketsKeptOriginalOrder =
+            allBucketsKeptOriginalOrder && sameEndpoints(before[i], after[i]);
+        EXPECT_TRUE(sameEndpoints(beforeSorted[i], afterSorted[i]));
     }
-
-    void
-    testShuffle()
-    {
-        testcase("Shuffle");
-        Livecache<> c(clock_, journal_);
-        for (auto i = 0; i < 100; ++i)
-            add(beast::IP::randomEP(true), c, xrpl::randInt(Tuning::kMAX_HOPS + 1));
-
-        using at_hop = std::vector<xrpl::PeerFinder::Endpoint>;
-        using all_hops = std::array<at_hop, 1 + Tuning::kMAX_HOPS + 1>;
-
-        auto cmpEp = [](Endpoint const& a, Endpoint const& b) {
-            return (b.hops < a.hops || (b.hops == a.hops && b.address < a.address));
-        };
-        all_hops before;
-        all_hops beforeSorted;
-        for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end();
-             ++i.first, ++i.second)
-        {
-            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before[i.first]));
-            std::copy(
-                (*i.second).begin(), (*i.second).end(), std::back_inserter(beforeSorted[i.first]));
-            std::sort(beforeSorted[i.first].begin(), beforeSorted[i.first].end(), cmpEp);
-        }
-
-        c.hops.shuffle();
-
-        all_hops after;
-        all_hops afterSorted;
-        for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end();
-             ++i.first, ++i.second)
-        {
-            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after[i.first]));
-            std::copy(
-                (*i.second).begin(), (*i.second).end(), std::back_inserter(afterSorted[i.first]));
-            std::sort(afterSorted[i.first].begin(), afterSorted[i.first].end(), cmpEp);
-        }
-
-        // each hop bucket should contain the same items
-        // before and after sort, albeit in different order
-        bool allMatch = true;
-        for (auto i = 0; i < before.size(); ++i)
-        {
-            BEAST_EXPECT(before[i].size() == after[i].size());
-            allMatch = allMatch && (before[i] == after[i]);
-            BEAST_EXPECT(beforeSorted[i] == afterSorted[i]);
-        }
-        BEAST_EXPECT(!allMatch);
-    }
-
-    void
-    run() override
-    {
-        testBasicInsert();
-        testInsertUpdate();
-        testExpire();
-        testHistogram();
-        testShuffle();
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(Livecache, peerfinder, xrpl);
+    EXPECT_FALSE(allBucketsKeptOriginalOrder);
+}
 
 }  // namespace xrpl::PeerFinder
