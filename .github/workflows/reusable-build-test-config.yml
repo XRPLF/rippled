@@ -143,7 +143,6 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
-          SANITIZERS: ${{ inputs.sanitizers }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: |
           cmake \
