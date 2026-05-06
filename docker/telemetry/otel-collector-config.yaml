@@ -39,15 +39,20 @@ receivers:
     include: [/var/log/rippled/*/debug.log]
     operators:
       - type: regex_parser
-        regex: '^(?P<timestamp>\S+)\s+(?P<partition>\S+):(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
+        regex: '^(?P<timestamp>\S+\s+\S+)\s+\S+\s+(?P<partition>\S+):(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
         timestamp:
           parse_from: attributes.timestamp
-          layout: "%Y-%b-%d %H:%M:%S.%f"
+          layout: "%Y-%b-%d %H:%M:%S"
 
 processors:
   batch:
     timeout: 1s
     send_batch_size: 100
+  resource/logs:
+    attributes:
+      - key: service.name
+        value: xrpld
+        action: upsert
 
 connectors:
   spanmetrics:
@@ -96,5 +101,5 @@ service:
     # batches entries, and exports to Loki for log-trace correlation.
     logs:
       receivers: [filelog]
-      processors: [batch]
+      processors: [resource/logs, batch]
       exporters: [otlphttp/loki]

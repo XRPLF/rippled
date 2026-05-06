@@ -21,4 +21,4 @@ datasources:
         - datasourceUid: tempo
           matcherRegex: "trace_id=(\\w+)"
           name: TraceID
-          url: ""
+          url: "$${__value.raw}"
