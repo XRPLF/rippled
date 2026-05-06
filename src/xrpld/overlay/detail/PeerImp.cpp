@@ -651,7 +651,7 @@ PeerImp::fail(std::string const& reason)
         return;
 
     // Call to name() locks, log only if the message will be outputted
-    if (journal_.active(beast::severities::KWarning))
+    if (journal_.active(beast::Severity::Warning))
     {
         std::string const n = name();
         JLOG(journal_.warn()) << n << " failed: " << reason;

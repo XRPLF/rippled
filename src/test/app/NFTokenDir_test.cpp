@@ -381,7 +381,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Lambda that exercises the split.
         auto exercise = [this, &features](std::initializer_list<std::string_view const> seeds) {
-            Env env{*this, envconfig(), features, nullptr, beast::severities::KDisabled};
+            Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
 
             // Eventually all of the NFTokens will be owned by buyer.
             Account const buyer{"buyer"};

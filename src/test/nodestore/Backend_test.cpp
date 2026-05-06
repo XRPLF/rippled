@@ -40,7 +40,7 @@ public:
         // Create a batch
         auto batch = createPredictableBatch(numObjsToTest, rng());
 
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("Backend_test", *this);
 
         {

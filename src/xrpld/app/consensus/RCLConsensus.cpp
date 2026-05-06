@@ -1090,7 +1090,7 @@ RclConsensusLogger::~RclConsensusLogger()
     std::stringstream outSs;
     outSs << header_ << "duration " << (duration.count() / 1000) << '.' << std::setw(3)
           << std::setfill('0') << (duration.count() % 1000) << "s. " << ss_->str();
-    j_.sink().writeAlways(beast::severities::KInfo, outSs.str());
+    j_.sink().writeAlways(beast::Severity::Info, outSs.str());
 }
 
 }  // namespace xrpl

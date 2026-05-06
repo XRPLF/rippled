@@ -4654,7 +4654,7 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace loanBroker;
         using namespace loan;
-        Env env(*this, beast::severities::KWarning);
+        Env env(*this, beast::Severity::Warning);
 
         auto const vaultAssetBalance = [&](Keylet const& vaultKeylet) {
             auto const sleVault = env.le(vaultKeylet);

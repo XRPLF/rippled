@@ -1176,9 +1176,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         if (!logs_->open(debugLog))
             std::cerr << "Can't open log file " << debugLog << '\n';
 
-        using namespace beast::severities;
-        if (logs_->threshold() > KDebug)
-            logs_->threshold(KDebug);
+        using beast::Severity;
+        if (logs_->threshold() > Severity::Debug)
+            logs_->threshold(Severity::Debug);
     }
 
     JLOG(journal_.info()) << "Process starting: " << BuildInfo::getFullVersionString()

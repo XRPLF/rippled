@@ -27,7 +27,7 @@ public:
     run() override
     {
         using namespace std::chrono_literals;
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("TaggedCache_test", *this);
 
         TestStopwatch clock;

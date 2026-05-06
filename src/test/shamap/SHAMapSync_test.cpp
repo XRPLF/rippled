@@ -83,7 +83,7 @@ public:
     void
     run() override
     {
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("SHAMapSync_test", *this);
 
         TestNodeFamily f(journal), f2(journal);

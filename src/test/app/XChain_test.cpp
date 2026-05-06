@@ -69,7 +69,7 @@ struct SEnv
         std::unique_ptr<Config> config,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr,
-        beast::severities::Severity thresh = beast::severities::KError)
+        beast::Severity thresh = beast::Severity::Error)
         : env(s, std::move(config), features, std::move(logs), thresh)
     {
     }

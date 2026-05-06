@@ -62,7 +62,7 @@ private:
 
         using namespace jtx;
 
-        Env env(*this, envconfig(), nullptr, beast::severities::KDisabled);
+        Env env(*this, envconfig(), nullptr, beast::Severity::Disabled);
         auto trustedSites = std::make_unique<ValidatorSite>(env.app(), env.journal);
 
         // load should accept empty sites list

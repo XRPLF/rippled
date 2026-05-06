@@ -3784,7 +3784,7 @@ class Batch_test : public beast::unit_test::Suite
                 makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
                 features,
                 nullptr,
-                beast::severities::KError};
+                beast::Severity::Error};
 
             auto alice = Account("alice");
             auto bob = Account("bob");
@@ -3840,7 +3840,7 @@ class Batch_test : public beast::unit_test::Suite
                 makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
                 features,
                 nullptr,
-                beast::severities::KError};
+                beast::Severity::Error};
 
             auto alice = Account("alice");
             auto bob = Account("bob");
@@ -3885,7 +3885,7 @@ class Batch_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        Env env(*this, envconfig(), features, nullptr, beast::severities::KDisabled);
+        Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
 
         auto alice = Account("alice");
         auto bob = Account("bob");

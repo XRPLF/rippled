@@ -867,7 +867,7 @@ public:
                     return cfg;
                 }),
                 nullptr,
-                beast::severities::KDisabled};
+                beast::Severity::Disabled};
         });
         pass();
     }

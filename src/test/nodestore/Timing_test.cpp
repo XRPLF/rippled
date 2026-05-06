@@ -653,7 +653,7 @@ public:
             log << ss.str() << std::endl;
         }
 
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("Timing_test", *this);
 
         for (auto const& configString : configStrings)

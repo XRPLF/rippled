@@ -278,7 +278,7 @@ public:
     void
     run() override
     {
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("ResourceManager_test", *this);
 
         testDrop(journal, true);

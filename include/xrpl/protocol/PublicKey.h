@@ -267,10 +267,10 @@ getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
     std::string const b58 = getOrThrow<std::string>(v, field);
-    if (auto pubKeyBlob = strUnHex(b58); pubKeyBlob && publicKeyType(makeSlice(*pubKeyBlob)))
+    if (auto pubKeyBlob = strUnHex(b58);
+        pubKeyBlob.has_value() && publicKeyType(makeSlice(*pubKeyBlob)))
     {
-        return PublicKey{makeSlice(
-            *pubKeyBlob)};  // NOLINT(bugprone-unchecked-optional-access) checked in condition above
+        return PublicKey{makeSlice(*pubKeyBlob)};
     }
     for (auto const tokenType : {TokenType::NodePublic, TokenType::AccountPublic})
     {

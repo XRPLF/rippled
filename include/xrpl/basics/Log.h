@@ -14,7 +14,7 @@
 
 namespace xrpl {
 
-// DEPRECATED use beast::severities::Severity instead
+// DEPRECATED use beast::Severity instead
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LogSeverity {
     LSInvalid = -1,  // used to indicate an invalid severity
@@ -39,17 +39,17 @@ private:
         std::string partition_;
 
     public:
-        Sink(std::string partition, beast::severities::Severity thresh, Logs& logs);
+        Sink(std::string partition, beast::Severity thresh, Logs& logs);
 
         Sink(Sink const&) = delete;
         Sink&
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string const& text) override;
+        write(beast::Severity level, std::string const& text) override;
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text) override;
+        writeAlways(beast::Severity level, std::string const& text) override;
     };
 
     /** Manages a system file containing logged output.
@@ -136,12 +136,12 @@ private:
 
     std::mutex mutable mutex_;
     std::map<std::string, std::unique_ptr<beast::Journal::Sink>, boost::beast::iless> sinks_;
-    beast::severities::Severity thresh_;
+    beast::Severity thresh_;
     File file_;
     bool silent_ = false;
 
 public:
-    Logs(beast::severities::Severity level);
+    Logs(beast::Severity level);
 
     Logs(Logs const&) = delete;
     Logs&
@@ -161,18 +161,18 @@ public:
     beast::Journal
     journal(std::string const& name);
 
-    beast::severities::Severity
+    beast::Severity
     threshold() const;
 
     void
-    threshold(beast::severities::Severity thresh);
+    threshold(beast::Severity thresh);
 
     std::vector<std::pair<std::string, std::string>>
     partitionSeverities() const;
 
     void
     write(
-        beast::severities::Severity level,
+        beast::Severity level,
         std::string const& partition,
         std::string const& text,
         bool console);
@@ -192,13 +192,13 @@ public:
     }
 
     virtual std::unique_ptr<beast::Journal::Sink>
-    makeSink(std::string const& partition, beast::severities::Severity startingLevel);
+    makeSink(std::string const& partition, beast::Severity startingLevel);
 
 public:
     static LogSeverity
-    fromSeverity(beast::severities::Severity level);
+    fromSeverity(beast::Severity level);
 
-    static beast::severities::Severity
+    static beast::Severity
     toSeverity(LogSeverity level);
 
     static std::string
@@ -221,7 +221,7 @@ private:
     format(
         std::string& output,
         std::string const& message,
-        beast::severities::Severity severity,
+        beast::Severity severity,
         std::string const& partition);
 };
 
