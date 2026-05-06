@@ -137,11 +137,11 @@ InnerObjectFormats::InnerObjectFormats()
             {sfCredentialType, SoeRequired, SoeImmutable},
         });
 
-    add(sfPermission.jsonName.c_str(),
+    add(sfPermission.jsonName,
         sfPermission.getCode(),
         {{sfPermissionValue, SoeRequired, SoeImmutable}});
 
-    add(sfBatchSigner.jsonName.c_str(),
+    add(sfBatchSigner.jsonName,
         sfBatchSigner.getCode(),
         {{sfAccount, SoeRequired, SoeImmutable},
          {sfSigningPubKey, SoeOptional, SoeImmutable},
