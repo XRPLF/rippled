@@ -1753,7 +1753,7 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
                         if (!jvObjects.isMember(jss::offers))
                             jvObjects[jss::offers] = json::Value(json::ValueType::Array);
 
-                        jvObjects[jss::offers].append(sleCur->getJson(JsonOptions::KNone));
+                        jvObjects[jss::offers].append(sleCur->getJson(JsonOptions::Values::None));
                         break;
 
                     case ltRIPPLE_STATE:
@@ -1762,7 +1762,8 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
                             jvObjects[jss::ripple_lines] = json::Value(json::ValueType::Array);
                         }
 
-                        jvObjects[jss::ripple_lines].append(sleCur->getJson(JsonOptions::KNone));
+                        jvObjects[jss::ripple_lines].append(
+                            sleCur->getJson(JsonOptions::Values::None));
                         break;
 
                     case ltACCOUNT_ROOT:
@@ -3210,11 +3211,11 @@ NetworkOPsImp::transJson(
     // NOTE jvObj is not a finished object for either API version. After
     // it's populated, we need to finish it for a specific API version. This is
     // done in a loop, near the end of this function.
-    jvObj[jss::transaction] = transaction->getJson(JsonOptions::KDisableApiPriorV2, false);
+    jvObj[jss::transaction] = transaction->getJson(JsonOptions::Values::DisableApiPriorV2, false);
 
     if (meta)
     {
-        jvObj[jss::meta] = meta->get().getJson(JsonOptions::KNone);
+        jvObj[jss::meta] = meta->get().getJson(JsonOptions::Values::None);
         RPC::insertDeliveredAmount(jvObj[jss::meta], *ledger, transaction, meta->get());
         RPC::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
         RPC::insertMPTokenIssuanceID(jvObj[jss::meta], transaction, meta->get());
@@ -4413,7 +4414,7 @@ NetworkOPsImp::getBookPage(
                     }
                 }
 
-                json::Value jvOffer = sleOffer->getJson(JsonOptions::KNone);
+                json::Value jvOffer = sleOffer->getJson(JsonOptions::Values::None);
 
                 STAmount saTakerGetsFunded;
                 STAmount saOwnerFundsLimit = saOwnerFunds;
@@ -4559,7 +4560,7 @@ NetworkOPsImp::getBookPage(
                 }
             }
 
-            json::Value jvOffer = sleOffer->getJson(JsonOptions::KNone);
+            json::Value jvOffer = sleOffer->getJson(JsonOptions::Values::None);
 
             STAmount saTakerGetsFunded;
             STAmount saOwnerFundsLimit = saOwnerFunds;

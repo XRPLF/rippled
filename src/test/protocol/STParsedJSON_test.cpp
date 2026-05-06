@@ -2173,7 +2173,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 {
                     std::string const& serialized(
                         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                        to_string(parsed.object->getJson(JsonOptions::KNone)));
+                        to_string(parsed.object->getJson(JsonOptions::Values::None)));
                     BEAST_EXPECT(serialized == goodJson);
                 }
             }
@@ -2198,7 +2198,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 {
                     std::string const& serialized(
                         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                        to_string(parsed.object->getJson(JsonOptions::KNone)));
+                        to_string(parsed.object->getJson(JsonOptions::Values::None)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
@@ -2223,7 +2223,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 {
                     std::string const& serialized(
                         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                        to_string(parsed.object->getJson(JsonOptions::KNone)));
+                        to_string(parsed.object->getJson(JsonOptions::Values::None)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
@@ -2332,7 +2332,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 {
                     std::string const& serialized(
                         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                        to_string(parsed.object->getJson(JsonOptions::KNone)));
+                        to_string(parsed.object->getJson(JsonOptions::Values::None)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }

@@ -133,13 +133,13 @@ fillJsonTx(
     }
     else if (fill.context->apiVersion > 1)
     {
-        copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::KDisableApiPriorV2, false));
+        copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::Values::DisableApiPriorV2, false));
         txJson[jss::hash] = to_string(txn->getTransactionID());
         RPC::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
 
         if (stMeta)
         {
-            txJson[jss::meta] = stMeta->getJson(JsonOptions::KNone);
+            txJson[jss::meta] = stMeta->getJson(JsonOptions::Values::None);
 
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
@@ -171,11 +171,11 @@ fillJsonTx(
     }
     else
     {
-        copyFrom(txJson, txn->getJson(JsonOptions::KNone));
+        copyFrom(txJson, txn->getJson(JsonOptions::Values::None));
         RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
-            txJson[jss::metaData] = stMeta->getJson(JsonOptions::KNone);
+            txJson[jss::metaData] = stMeta->getJson(JsonOptions::Values::None);
 
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
@@ -262,7 +262,7 @@ fillJsonState(json::Value& json, LedgerFill const& fill)
         }
         else if (expanded)
         {
-            array.append(sle->getJson(JsonOptions::KNone));
+            array.append(sle->getJson(JsonOptions::Values::None));
         }
         else
         {

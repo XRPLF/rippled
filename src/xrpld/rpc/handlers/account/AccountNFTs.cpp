@@ -128,7 +128,7 @@ doAccountNFTs(RPC::JsonContext& context)
             pastMarker = true;
 
             {
-                json::Value& obj = nfts.append(o.getJson(JsonOptions::KNone));
+                json::Value& obj = nfts.append(o.getJson(JsonOptions::Values::None));
 
                 // Pull out the components of the nft ID.
                 obj[sfFlags.jsonName] = nft::getFlags(nftokenID);

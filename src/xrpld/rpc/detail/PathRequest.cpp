@@ -676,11 +676,12 @@ PathRequest::findPaths(
             json::Value jvEntry(json::ValueType::Object);
             if (rc.actualAmountIn.holds<Issue>())
                 rc.actualAmountIn.get<Issue>().account = sourceAccount;
-            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::KNone);
-            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::KNone);
+            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::Values::None);
+            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::Values::None);
 
             if (convert_all_)
-                jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(JsonOptions::KNone);
+                jvEntry[jss::destination_amount] =
+                    rc.actualAmountOut.getJson(JsonOptions::Values::None);
 
             if (hasCompletion())
             {
@@ -738,7 +739,7 @@ PathRequest::doUpdate(
     newStatus[jss::source_account] = toBase58(*raSrcAccount_);
     newStatus[jss::destination_account] = toBase58(*raDstAccount_);
     // NOLINTEND(bugprone-unchecked-optional-access)
-    newStatus[jss::destination_amount] = saDstAmount_.getJson(JsonOptions::KNone);
+    newStatus[jss::destination_amount] = saDstAmount_.getJson(JsonOptions::Values::None);
     newStatus[jss::full_reply] = !fast;
 
     if (jvId_)

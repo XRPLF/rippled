@@ -163,7 +163,7 @@ public:
     [[nodiscard]] OV
     value() const override
     {
-        return value_.getJson(JsonOptions::KNone);
+        return value_.getJson(JsonOptions::Values::None);
     }
 };
 
@@ -714,7 +714,7 @@ create(A const& account, A const& dest, STAmount const& sendMax)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = to_string(account);
-    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::KNone);
+    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::Values::None);
     jv[sfDestination.jsonName] = to_string(dest);
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
     return jv;

@@ -1425,7 +1425,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::EscrowCreate;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
+            jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
             jv[sfFinishAfter.jsonName] = cancelAfter.time_since_epoch().count() + 2;
             return jv;
         };
@@ -1694,7 +1694,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::PaymentChannelCreate;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
+            jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
             jv[sfSettleDelay.jsonName] = settleDelay.count();
             jv[sfPublicKey.jsonName] = strHex(pk.slice());
             return jv;

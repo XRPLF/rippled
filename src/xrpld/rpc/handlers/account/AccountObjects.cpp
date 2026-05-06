@@ -95,7 +95,7 @@ getAccountObjects(
 
         while (cp)
         {
-            jvObjects.append(cp->getJson(JsonOptions::KNone));
+            jvObjects.append(cp->getJson(JsonOptions::Values::None));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
             {
@@ -187,7 +187,7 @@ getAccountObjects(
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
-                jvObjects.append(sleNode->getJson(JsonOptions::KNone));
+                jvObjects.append(sleNode->getJson(JsonOptions::Values::None));
             }
 
             if (++i == mlimit)

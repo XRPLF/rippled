@@ -1363,8 +1363,8 @@ class Batch_test : public beast::unit_test::Suite
             auto const ammCreate = [&alice](STAmount const& amount, STAmount const& amount2) {
                 json::Value jv;
                 jv[jss::Account] = alice.human();
-                jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
-                jv[jss::Amount2] = amount2.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
+                jv[jss::Amount2] = amount2.getJson(JsonOptions::Values::None);
                 jv[jss::TradingFee] = 0;
                 jv[jss::TransactionType] = jss::AMMCreate;
                 return jv;
@@ -2401,7 +2401,7 @@ class Batch_test : public beast::unit_test::Suite
                 obj.setFieldU32(sfLedgerSequence, seq);
                 obj.setFieldU32(sfFlags, tfInnerBatchTxn);
             });
-            auto txn = batch::Inner(amendTx.getJson(JsonOptions::KNone), env.seq(alice));
+            auto txn = batch::Inner(amendTx.getJson(JsonOptions::Values::None), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)

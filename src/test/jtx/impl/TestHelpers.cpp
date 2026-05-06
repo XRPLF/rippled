@@ -150,9 +150,9 @@ rpf(jtx::Account const& src,
     jv[jss::command] = "ripple_path_find";
     jv[jss::source_account] = toBase58(src);
     jv[jss::destination_account] = toBase58(dst);
-    jv[jss::destination_amount] = dstAmount.getJson(JsonOptions::KNone);
+    jv[jss::destination_amount] = dstAmount.getJson(JsonOptions::Values::None);
     if (sendMax)
-        jv[jss::send_max] = sendMax->getJson(JsonOptions::KNone);
+        jv[jss::send_max] = sendMax->getJson(JsonOptions::Values::None);
     if (srcAsset)
     {
         auto& sc = jv[jss::source_currencies] = json::ValueType::Array;
@@ -214,9 +214,9 @@ findPathsRequest(
     params[jss::command] = "ripple_path_find";
     params[jss::source_account] = toBase58(src);
     params[jss::destination_account] = toBase58(dst);
-    params[jss::destination_amount] = saDstAmount.getJson(JsonOptions::KNone);
+    params[jss::destination_amount] = saDstAmount.getJson(JsonOptions::Values::None);
     if (saSendMax)
-        params[jss::send_max] = saSendMax->getJson(JsonOptions::KNone);
+        params[jss::send_max] = saSendMax->getJson(JsonOptions::Values::None);
 
     if (srcAsset)
     {
@@ -499,7 +499,7 @@ create(
     jv[jss::TransactionType] = jss::PaymentChannelCreate;
     jv[jss::Account] = to_string(account);
     jv[jss::Destination] = to_string(to);
-    jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
+    jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
     jv[jss::SettleDelay] = settleDelay.count();
     jv[sfPublicKey.fieldName] = strHex(pk.slice());
     if (cancelAfter)
@@ -520,7 +520,7 @@ fund(
     jv[jss::TransactionType] = jss::PaymentChannelFund;
     jv[jss::Account] = to_string(account);
     jv[sfChannel.fieldName] = to_string(channel);
-    jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
+    jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
     if (expiration)
         jv[sfExpiration.fieldName] = expiration->time_since_epoch().count();
     return jv;
@@ -540,9 +540,9 @@ claim(
     jv[jss::Account] = to_string(account);
     jv["Channel"] = to_string(channel);
     if (amount)
-        jv[jss::Amount] = amount->getJson(JsonOptions::KNone);
+        jv[jss::Amount] = amount->getJson(JsonOptions::Values::None);
     if (balance)
-        jv["Balance"] = balance->getJson(JsonOptions::KNone);
+        jv["Balance"] = balance->getJson(JsonOptions::Values::None);
     if (signature)
         jv["Signature"] = strHex(*signature);
     if (pk)
@@ -760,7 +760,7 @@ coverDeposit(
     jv[sfTransactionType] = jss::LoanBrokerCoverDeposit;
     jv[sfAccount] = to_string(account);
     jv[sfLoanBrokerID] = to_string(brokerID);
-    jv[sfAmount] = amount.getJson(JsonOptions::KNone);
+    jv[sfAmount] = amount.getJson(JsonOptions::Values::None);
     jv[sfFlags] = flags;
     return jv;
 }
@@ -776,7 +776,7 @@ coverWithdraw(
     jv[sfTransactionType] = jss::LoanBrokerCoverWithdraw;
     jv[sfAccount] = to_string(account);
     jv[sfLoanBrokerID] = to_string(brokerID);
-    jv[sfAmount] = amount.getJson(JsonOptions::KNone);
+    jv[sfAmount] = amount.getJson(JsonOptions::Values::None);
     jv[sfFlags] = flags;
     return jv;
 }

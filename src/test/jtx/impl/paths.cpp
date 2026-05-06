@@ -61,14 +61,14 @@ Paths::operator()(Env& env, JTx& jt) const
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
     if (!found.isDefault())
-        jv[jss::Paths] = found.getJson(JsonOptions::KNone);
+        jv[jss::Paths] = found.getJson(JsonOptions::Values::None);
 }
 
 //------------------------------------------------------------------------------
 
 Path::Path(STPath const& p)
 {
-    jv_ = p.getJson(JsonOptions::KNone);
+    jv_ = p.getJson(JsonOptions::Values::None);
 }
 
 json::Value&

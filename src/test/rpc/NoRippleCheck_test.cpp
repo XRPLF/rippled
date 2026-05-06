@@ -241,7 +241,7 @@ class NoRippleCheck_test : public beast::unit_test::Suite
                 result[jss::transactions][txs.size() - 1][jss::TransactionType] == jss::TrustSet);
             BEAST_EXPECT(
                 result[jss::transactions][txs.size() - 1][jss::LimitAmount] ==
-                gw["USD"](100).value().getJson(JsonOptions::KNone));
+                gw["USD"](100).value().getJson(JsonOptions::Values::None));
         }
         else
         {

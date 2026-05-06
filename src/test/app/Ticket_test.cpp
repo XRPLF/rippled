@@ -55,7 +55,7 @@ class Ticket_test : public beast::unit_test::Suite
     {
         using namespace std::string_literals;
 
-        json::Value const& tx{env.tx()->getJson(JsonOptions::KNone)};
+        json::Value const& tx{env.tx()->getJson(JsonOptions::Values::None)};
         {
             std::string const txType = tx[sfTransactionType.jsonName].asString();
 
@@ -71,7 +71,7 @@ class Ticket_test : public beast::unit_test::Suite
         std::uint32_t const txSeq = {tx[sfSequence.jsonName].asUInt()};
         std::string const account = tx[sfAccount.jsonName].asString();
 
-        json::Value const& metadata = env.meta()->getJson(JsonOptions::KNone);
+        json::Value const& metadata = env.meta()->getJson(JsonOptions::Values::None);
         if (!BEAST_EXPECTS(
                 metadata.isMember(sfTransactionResult.jsonName) &&
                     metadata[sfTransactionResult.jsonName].asString() == "tesSUCCESS",
@@ -241,7 +241,7 @@ class Ticket_test : public beast::unit_test::Suite
     void
     checkTicketConsumeMeta(test::jtx::Env& env)
     {
-        json::Value const& tx{env.tx()->getJson(JsonOptions::KNone)};
+        json::Value const& tx{env.tx()->getJson(JsonOptions::Values::None)};
 
         // Verify that the transaction includes a TicketSequence.
 
@@ -274,7 +274,7 @@ class Ticket_test : public beast::unit_test::Suite
 
         std::uint32_t const ticketSeq{tx[sfTicketSequence.jsonName].asUInt()};
 
-        json::Value const& metadata{env.meta()->getJson(JsonOptions::KNone)};
+        json::Value const& metadata{env.meta()->getJson(JsonOptions::Values::None)};
         if (!BEAST_EXPECTS(
                 metadata.isMember(sfTransactionResult.jsonName),
                 "Metadata is missing TransactionResult."))

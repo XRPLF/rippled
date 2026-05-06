@@ -717,7 +717,7 @@ public:
             jv[jss::books] = json::ValueType::Array;
             jv[jss::books][0u] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             jv[jss::books][0u][jss::taker_gets] = json::ValueType::Object;
             auto const jr = wsc->invoke(method, jv)[jss::result];
             // NOTE: this error is slightly incongruous with the equivalent source currency error
@@ -731,7 +731,7 @@ public:
             jv[jss::books] = json::ValueType::Array;
             jv[jss::books][0u] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "ZZZZ";
             auto const jr = wsc->invoke(method, jv)[jss::result];
             // NOTE: this error is slightly incongruous with the
@@ -746,7 +746,7 @@ public:
             jv[jss::books] = json::ValueType::Array;
             jv[jss::books][0u] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = 1;
             auto const jr = wsc->invoke(method, jv)[jss::result];
@@ -759,7 +759,7 @@ public:
             jv[jss::books] = json::ValueType::Array;
             jv[jss::books][0u] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = Account{"gateway"}.human() + "DEAD";
             auto const jr = wsc->invoke(method, jv)[jss::result];
@@ -772,9 +772,9 @@ public:
             jv[jss::books] = json::ValueType::Array;
             jv[jss::books][0u] = json::ValueType::Object;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             jv[jss::books][0u][jss::taker_gets] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "badMarket");
             BEAST_EXPECT(jr[jss::error_message] == "No such market.");
@@ -815,7 +815,7 @@ public:
                 jv[jss::books] = json::ValueType::Array;
                 jv[jss::books][0u] = json::ValueType::Object;
                 jv[jss::books][0u][jss::taker_pays] =
-                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
                 jv[jss::books][0u][jss::taker_gets][jss::currency] = "XRP";
                 jv[jss::books][0u][jss::taker] = 1;
                 auto const jr = wsc->invoke(method, jv)[jss::result];
@@ -829,7 +829,7 @@ public:
                 jv[jss::books] = json::ValueType::Array;
                 jv[jss::books][0u] = json::ValueType::Object;
                 jv[jss::books][0u][jss::taker_pays] =
-                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
                 jv[jss::books][0u][jss::taker_gets][jss::currency] = "XRP";
                 jv[jss::books][0u][jss::taker] = "not_an_account";
                 auto const jr = wsc->invoke(method, jv)[jss::result];
@@ -843,7 +843,7 @@ public:
                 jv[jss::books] = json::ValueType::Array;
                 jv[jss::books][0u] = json::ValueType::Object;
                 jv[jss::books][0u][jss::taker_pays] =
-                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::KIncludeDate);
+                    Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
                 jv[jss::books][0u][jss::taker_gets][jss::currency] = "XRP";
                 jv[jss::books][0u][jss::taker] = Account{"alice"}.human() + "DEAD";
                 auto const jr = wsc->invoke(method, jv)[jss::result];

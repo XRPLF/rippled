@@ -555,8 +555,8 @@ private:
                 json::Value jv = json::ValueType::Object;
                 jv[jss::Account] = alice_.human();
                 jv[jss::TransactionType] = jss::AMMDeposit;
-                jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::KNone);
-                jv[jss::Asset2] = STIssue(sfAsset, USD).getJson(JsonOptions::KNone);
+                jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::Values::None);
+                jv[jss::Asset2] = STIssue(sfAsset, USD).getJson(JsonOptions::Values::None);
                 jv[jss::Fee] = "-1";
                 env(jv, Ter(temBAD_FEE));
             }
@@ -570,9 +570,9 @@ private:
                 json::Value jv = json::ValueType::Object;
                 jv[jss::Account] = alice_.human();
                 jv[jss::TransactionType] = jss::AMMDeposit;
-                jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::KNone);
-                jv[jss::Asset2] = STIssue(sfAsset, USD).getJson(JsonOptions::KNone);
-                jv[jss::LPTokenOut] = USD(100).value().getJson(JsonOptions::KNone);
+                jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::Values::None);
+                jv[jss::Asset2] = STIssue(sfAsset, USD).getJson(JsonOptions::Values::None);
+                jv[jss::LPTokenOut] = USD(100).value().getJson(JsonOptions::Values::None);
                 jv[jss::Flags] = tfLPToken;
                 env(jv, Ter(temBAD_AMM_TOKENS));
             }
@@ -5215,7 +5215,8 @@ private:
                 fail();
             }
             amm.deposit(carol_, 1'000);
-            auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+            auto affected =
+                env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
             try
             {
                 bool found = false;

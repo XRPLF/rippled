@@ -528,7 +528,7 @@ public:
             jv[jss::TransactionType] = jss::PaymentChannelCreate;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
+            jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
             jv["SettleDelay"] = settleDelay.count();
             jv["PublicKey"] = strHex(pk.slice());
             return jv;

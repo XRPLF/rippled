@@ -49,7 +49,7 @@ namespace xrpl {
 void
 injectSLE(json::Value& jv, SLE const& sle)
 {
-    jv = sle.getJson(JsonOptions::KNone);
+    jv = sle.getJson(JsonOptions::Values::None);
     if (sle.getType() == ltACCOUNT_ROOT)
     {
         if (sle.isFieldPresent(sfEmailHash))
@@ -224,7 +224,7 @@ doAccountInfo(RPC::JsonContext& context)
             // multiple SignerLists on one account.
             auto const sleSigners = ledger->read(keylet::signers(accountID));
             if (sleSigners)
-                jvSignerList.append(sleSigners->getJson(JsonOptions::KNone));
+                jvSignerList.append(sleSigners->getJson(JsonOptions::Values::None));
 
             // Documentation states this is returned as part of the account_info
             // response, but previously the code put it under account_data. We

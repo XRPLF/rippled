@@ -194,7 +194,7 @@ getTxJsonFromParams(json::Value const& params)
         try
         {
             SerialIter sitTrans(makeSlice(*unHexed));
-            txJson = STObject(std::ref(sitTrans), kSF_GENERIC).getJson(JsonOptions::KNone);
+            txJson = STObject(std::ref(sitTrans), kSF_GENERIC).getJson(JsonOptions::Values::None);
         }
         catch (std::runtime_error const&)
         {
@@ -276,7 +276,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
         }
         else
         {
-            jvResult[jss::meta] = result.metadata->getJson(JsonOptions::KNone);
+            jvResult[jss::meta] = result.metadata->getJson(JsonOptions::Values::None);
             RPC::insertDeliveredAmount(
                 jvResult[jss::meta], view, transaction->getSTransaction(), *result.metadata);
             RPC::insertNFTSyntheticInJson(
@@ -293,7 +293,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
     }
     else
     {
-        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::KNone);
+        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::Values::None);
     }
 
     return jvResult;

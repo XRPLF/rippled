@@ -674,7 +674,7 @@ public:
             jvEscrow[jss::TransactionType] = jss::EscrowCreate;
             jvEscrow[jss::Account] = gw.human();
             jvEscrow[jss::Destination] = gw.human();
-            jvEscrow[jss::Amount] = XRP(100).value().getJson(JsonOptions::KNone);
+            jvEscrow[jss::Amount] = XRP(100).value().getJson(JsonOptions::Values::None);
             jvEscrow[sfFinishAfter.jsonName] = env.now().time_since_epoch().count() + 1;
             env(jvEscrow);
             env.close();
@@ -860,7 +860,7 @@ public:
             jvPayChan[jss::TransactionType] = jss::PaymentChannelCreate;
             jvPayChan[jss::Account] = gw.human();
             jvPayChan[jss::Destination] = alice.human();
-            jvPayChan[jss::Amount] = XRP(300).value().getJson(JsonOptions::KNone);
+            jvPayChan[jss::Amount] = XRP(300).value().getJson(JsonOptions::Values::None);
             jvPayChan[sfSettleDelay.jsonName] = 24 * 60 * 60;
             jvPayChan[sfPublicKey.jsonName] = strHex(gw.pk().slice());
             env(jvPayChan);
