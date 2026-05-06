@@ -1,7 +1,7 @@
 // Auto-generated unit tests for ledger entry ${name}
 <%
-    required_fields = [f for f in fields if f["requirement"] == "soeREQUIRED"]
-    optional_fields = [f for f in fields if f["requirement"] != "soeREQUIRED"]
+    required_fields = [f for f in fields if f["requirement"] == "SoeRequired"]
+    optional_fields = [f for f in fields if f["requirement"] != "SoeRequired"]
 
     def canonical_expr(field):
         return f"canonical_{field['stiSuffix']}()"

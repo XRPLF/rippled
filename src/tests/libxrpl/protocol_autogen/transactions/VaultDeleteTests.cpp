@@ -21,7 +21,7 @@ TEST(TransactionsVaultDeleteTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultDelete"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultDelete"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -70,7 +70,7 @@ TEST(TransactionsVaultDeleteTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultDeleteFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultDeleteFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -119,7 +119,7 @@ TEST(TransactionsVaultDeleteTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -133,7 +133,7 @@ TEST(TransactionsVaultDeleteTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};

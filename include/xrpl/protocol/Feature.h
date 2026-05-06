@@ -65,11 +65,11 @@
 namespace xrpl {
 
 // Feature names must not exceed this length (in characters, excluding the null terminator).
-static constexpr std::size_t maxFeatureNameSize = 63;
+static constexpr std::size_t kMAX_FEATURE_NAME_SIZE = 63;
 // Reserve this exact feature-name length (in characters/bytes, excluding the null terminator)
 // so that a 32-byte uint256 (for example, in WASM or other interop contexts) can be used
 // as a compact, fixed-size feature selector without conflicting with human-readable names.
-static constexpr std::size_t reservedFeatureNameSize = 32;
+static constexpr std::size_t kRESERVED_FEATURE_NAME_SIZE = 32;
 
 // Both validFeatureNameSize and validFeatureName are consteval functions that can be used in
 // static_asserts to validate feature names at compile time. They are only used inside
@@ -79,27 +79,27 @@ static constexpr std::size_t reservedFeatureNameSize = 32;
 consteval auto
 validFeatureNameSize(auto fn) -> bool
 {
-    constexpr char const* n = fn();
+    constexpr char const* kN = fn();
     // Note, std::strlen is not constexpr, we need to implement our own here.
-    constexpr std::size_t N = [](auto n) {
+    constexpr std::size_t kLEN = [](auto n) {
         std::size_t ret = 0;
         for (auto ptr = n; *ptr != '\0'; ret++, ++ptr)
             ;
         return ret;
-    }(n);
-    return N != reservedFeatureNameSize &&  //
-        N <= maxFeatureNameSize;
+    }(kN);
+    return kLEN != kRESERVED_FEATURE_NAME_SIZE &&  //
+        kLEN <= kMAX_FEATURE_NAME_SIZE;
 }
 
 consteval auto
 validFeatureName(auto fn) -> bool
 {
-    constexpr char const* n = fn();
+    constexpr char const* kN = fn();
     // Prevent the use of visually confusable characters and enforce that feature names
     // are always valid ASCII. This is needed because C++ allows Unicode identifiers.
     // Characters below 0x20 are nonprintable control characters, and characters with the 0x80 bit
     // set are non-ASCII (e.g. UTF-8 encoding of Unicode), so both are disallowed.
-    for (auto ptr = n; *ptr != '\0'; ++ptr)
+    for (auto ptr = kN; *ptr != '\0'; ++ptr)
     {
         if (*ptr & 0x80 || *ptr < 0x20)
             return false;
@@ -136,7 +136,7 @@ namespace detail {
 // Feature.cpp. Because it's only used to reserve storage, and determine how
 // large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
 // the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t numFeatures =
+static constexpr std::size_t kNUM_FEATURES =
     (0 +
 #include <xrpl/protocol/detail/features.macro>
     );
@@ -184,9 +184,9 @@ bitsetIndexToFeature(size_t i);
 std::string
 featureToName(uint256 const& f);
 
-class FeatureBitset : private std::bitset<detail::numFeatures>
+class FeatureBitset : private std::bitset<detail::kNUM_FEATURES>
 {
-    using base = std::bitset<detail::numFeatures>;
+    using base = std::bitset<detail::kNUM_FEATURES>;
 
     template <class... Fs>
     void

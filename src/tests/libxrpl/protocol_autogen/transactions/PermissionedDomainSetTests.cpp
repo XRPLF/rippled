@@ -21,7 +21,7 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPermissionedDomainSet"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPermissionedDomainSet"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -80,7 +80,7 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPermissionedDomainSetFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPermissionedDomainSetFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -138,7 +138,7 @@ TEST(TransactionsPermissionedDomainSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -152,7 +152,7 @@ TEST(TransactionsPermissionedDomainSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -166,7 +166,7 @@ TEST(TransactionsPermissionedDomainSetTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testPermissionedDomainSetNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testPermissionedDomainSetNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);

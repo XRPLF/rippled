@@ -55,8 +55,9 @@ DIDSet::preflight(PreflightContext const& ctx)
         return false;
     };
 
-    if (isTooLong(sfURI, maxDIDURILength) || isTooLong(sfDIDDocument, maxDIDDocumentLength) ||
-        isTooLong(sfData, maxDIDDataLength))
+    if (isTooLong(sfURI, kMAX_DIDURI_LENGTH) ||
+        isTooLong(sfDIDDocument, kMAX_DID_DOCUMENT_LENGTH) ||
+        isTooLong(sfData, kMAX_DID_DATA_LENGTH))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -155,11 +156,13 @@ DIDSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 DIDSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

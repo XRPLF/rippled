@@ -11,17 +11,21 @@
 namespace xrpl {
 
 /** Kind of element in each entry of an SOTemplate. */
+// 2026 usages, 129 files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOEStyle {
-    soeINVALID = -1,
-    soeREQUIRED = 0,  // required
-    soeOPTIONAL = 1,  // optional, may be present with default value
-    soeDEFAULT = 2,   // optional, if present, must not have default value
+    SoeInvalid = -1,
+    SoeRequired = 0,  // required
+    SoeOptional = 1,  // optional, may be present with default value
+    SoeDefault = 2,   // optional, if present, must not have default value
                       // inner object with the default fields has to be
                       // constructed with STObject::makeInnerObject()
 };
 
+// Part of a Python-parsed DSL (transactions.macro); bare enumerator names required by the parser
 /** Amount fields that can support MPT */
-enum SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
 enum SOEConstant {
     soeCONSTANTINVALID = 0,
@@ -38,7 +42,7 @@ class SOElement
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
     SOEConstant constant_ = soeCONSTANTINVALID;
-    SOETxMPTIssue supportMpt_ = soeMPTNone;
+    SOETxMPTIssue supportMpt_ = SoeMptNone;
 
 private:
     void
@@ -70,7 +74,7 @@ public:
     SOElement(
         TypedField<T> const& fieldName,
         SOEStyle style,
-        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+        SOETxMPTIssue supportMpt = SoeMptNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);

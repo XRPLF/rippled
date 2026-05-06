@@ -10,10 +10,10 @@ namespace RPC {
 struct JsonContext;
 }  // namespace RPC
 
-Json::Value
+json::Value
 doPing(RPC::JsonContext& context)
 {
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ObjectValue);
     switch (context.role)
     {
         case Role::ADMIN:
