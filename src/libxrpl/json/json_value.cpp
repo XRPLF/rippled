@@ -93,26 +93,30 @@ Value::CZString::CZString(int index) : cstr_(0), index_(index)
 }
 
 Value::CZString::CZString(char const* cstr, DuplicationPolicy allocate)
-    : cstr_(allocate == Duplicate ? valueAllocator()->makeMemberName(cstr) : cstr), index_(allocate)
+    : cstr_(
+          allocate == DuplicationPolicy::Duplicate ? valueAllocator()->makeMemberName(cstr) : cstr)
+    , index_(static_cast<int>(allocate))
 {
 }
 
 Value::CZString::CZString(CZString const& other)
     : cstr_(
-          other.index_ != NoDuplication && other.cstr_ != 0
+          other.index_ != static_cast<int>(DuplicationPolicy::NoDuplication) && other.cstr_ != 0
               ? valueAllocator()->makeMemberName(other.cstr_)
               : other.cstr_)
     , index_([&]() -> int {
         if (!other.cstr_)
             return other.index_;
-        return other.index_ == NoDuplication ? NoDuplication : Duplicate;
+        return other.index_ == static_cast<int>(DuplicationPolicy::NoDuplication)
+            ? static_cast<int>(DuplicationPolicy::NoDuplication)
+            : static_cast<int>(DuplicationPolicy::Duplicate);
     }())
 {
 }
 
 Value::CZString::~CZString()
 {
-    if ((cstr_ != nullptr) && index_ == Duplicate)
+    if ((cstr_ != nullptr) && index_ == static_cast<int>(DuplicationPolicy::Duplicate))
         valueAllocator()->releaseMemberName(const_cast<char*>(cstr_));
 }
 
@@ -149,7 +153,7 @@ Value::CZString::cStr() const
 bool
 Value::CZString::isStaticString() const
 {
-    return index_ == NoDuplication;
+    return index_ == static_cast<int>(DuplicationPolicy::NoDuplication);
 }
 
 // //////////////////////////////////////////////////////////////////
@@ -905,7 +909,10 @@ Value::resolveReference(char const* key, bool isStatic)
     if (type_ == ValueType::Null)
         *this = Value(ValueType::Object);
 
-    CZString const actualKey(key, isStatic ? CZString::NoDuplication : CZString::DuplicateOnCopy);
+    CZString const actualKey(
+        key,
+        isStatic ? CZString::DuplicationPolicy::NoDuplication
+                 : CZString::DuplicationPolicy::DuplicateOnCopy);
     ObjectValues::iterator it = value_.mapVal->lower_bound(actualKey);
 
     if (it != value_.mapVal->end() && (*it).first == actualKey)
@@ -940,7 +947,7 @@ Value::operator[](char const* key) const
     if (type_ == ValueType::Null)
         return kNULL;
 
-    CZString const actualKey(key, CZString::NoDuplication);
+    CZString const actualKey(key, CZString::DuplicationPolicy::NoDuplication);
     ObjectValues::const_iterator const it = value_.mapVal->find(actualKey);
 
     if (it == value_.mapVal->end())
@@ -1008,7 +1015,7 @@ Value::removeMember(char const* key)
     if (type_ == ValueType::Null)
         return kNULL;
 
-    CZString const actualKey(key, CZString::NoDuplication);
+    CZString const actualKey(key, CZString::DuplicationPolicy::NoDuplication);
     ObjectValues::iterator const it = value_.mapVal->find(actualKey);
 
     if (it == value_.mapVal->end())

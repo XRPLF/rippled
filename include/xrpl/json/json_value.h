@@ -147,9 +147,7 @@ private:
     class CZString
     {
     public:
-        // Stored as int field, implicit conversion
-        // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-        enum DuplicationPolicy { NoDuplication = 0, Duplicate, DuplicateOnCopy };
+        enum class DuplicationPolicy { NoDuplication = 0, Duplicate, DuplicateOnCopy };
 
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
