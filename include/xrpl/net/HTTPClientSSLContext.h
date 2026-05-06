@@ -120,7 +120,7 @@ public:
             {
                 strm.set_verify_callback(
                     std::bind(
-                        &rfc6125_verify, host, std::placeholders::_1, std::placeholders::_2, j_),
+                        &rfc6125Verify, host, std::placeholders::_1, std::placeholders::_2, j_),
                     ec);
             }
         }
@@ -138,7 +138,7 @@ public:
      * @param j journal for logging
      */
     static bool
-    rfc6125_verify(
+    rfc6125Verify(
         std::string const& domain,
         bool preverified,
         boost::asio::ssl::verify_context& ctx,

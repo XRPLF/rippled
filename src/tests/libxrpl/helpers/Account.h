@@ -36,7 +36,7 @@ public:
      * @param name Human-readable name for the account.
      * @param type Key type to use (defaults to secp256k1).
      */
-    explicit Account(std::string_view name, KeyType type = KeyType::secp256k1);
+    explicit Account(std::string_view name, KeyType type = KeyType::Secp256k1);
 
     /** @brief Return the human-readable name. */
     std::string const&

@@ -17,11 +17,11 @@ struct TestAMMArg
 {
     std::optional<std::pair<STAmount, STAmount>> pool = std::nullopt;
     std::uint16_t tfee = 0;
-    std::optional<jtx::ter> ter = std::nullopt;
+    std::optional<jtx::Ter> ter = std::nullopt;
     std::vector<FeatureBitset> features = {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+        jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
 
     bool noLog = false;
 };
@@ -30,7 +30,7 @@ struct TestAMMArg
 // A distinct MPT is created if both AMM assets
 // are MPT. The actual MPT asset can be accessed
 // via AMM::operator[](0|1).
-inline static auto AMMMPT = MPT("AMM");
+inline static auto gAmmmpt = MPT("AMM");
 
 [[maybe_unused]] std::vector<STAmount>
 fund(
@@ -62,32 +62,32 @@ struct TestAMMArgs
 {
     std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt;
     std::uint16_t tfee = 0;
-    std::optional<jtx::ter> const& ter = std::nullopt;
-    std::vector<FeatureBitset> const& features = {testable_amendments()};
+    std::optional<jtx::Ter> const& ter = std::nullopt;
+    std::vector<FeatureBitset> const& features = {testableAmendments()};
 };
 
-class AMMTestBase : public beast::unit_test::suite
+class AMMTestBase : public beast::unit_test::Suite
 {
 protected:
-    jtx::Account const gw;
-    jtx::Account const carol;
-    jtx::Account const alice;
-    jtx::Account const bob;
-    jtx::IOU const USD;
-    jtx::IOU const EUR;
-    jtx::IOU const GBP;
-    jtx::IOU const BTC;
-    jtx::IOU const BAD;
+    jtx::Account const gw_;
+    jtx::Account const carol_;
+    jtx::Account const alice_;
+    jtx::Account const bob_;
+    jtx::IOU const USD;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const EUR;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const GBP;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const BTC;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const BAD;  // NOLINT(readability-identifier-naming)
 
 public:
     AMMTestBase();
 
     static FeatureBitset
-    testable_amendments()
+    testableAmendments()
     {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        return jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol;
+        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
     }
 
 protected:
@@ -99,8 +99,8 @@ protected:
         std::function<void(jtx::AMM&, jtx::Env&)> const& cb,
         std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt,
         std::uint16_t tfee = 0,
-        std::optional<jtx::ter> const& ter = std::nullopt,
-        std::vector<FeatureBitset> const& features = {testable_amendments()});
+        std::optional<jtx::Ter> const& ter = std::nullopt,
+        std::vector<FeatureBitset> const& features = {testableAmendments()});
 
     void
     testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAMMArg const& arg);
@@ -117,7 +117,7 @@ protected:
 
     /* Path_test */
     /************************************************/
-    class gate
+    class Gate
     {
     private:
         std::condition_variable cv_;
@@ -129,10 +129,10 @@ protected:
         // Returns `true` if signaled.
         template <class Rep, class Period>
         bool
-        wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+        waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }

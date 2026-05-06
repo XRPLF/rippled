@@ -14,9 +14,9 @@
 namespace xrpl::NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
-    : m_callback(callback), m_scheduler(scheduler)
+    : callback_(callback), scheduler_(scheduler)
 {
-    mWriteSet.reserve(batchWritePreallocationSize);
+    writeSet_.reserve(BatchWritePreallocationSize);
 }
 
 BatchWriter::~BatchWriter()
@@ -27,29 +27,29 @@ BatchWriter::~BatchWriter()
 void
 BatchWriter::store(std::shared_ptr<NodeObject> const& object)
 {
-    std::unique_lock<decltype(mWriteMutex)> sl(mWriteMutex);
+    std::unique_lock<decltype(writeMutex_)> sl(writeMutex_);
 
     // If the batch has reached its limit, we wait
     // until the batch writer is finished
-    while (mWriteSet.size() >= batchWriteLimitSize)
-        mWriteCondition.wait(sl);
+    while (writeSet_.size() >= BatchWriteLimitSize)
+        writeCondition_.wait(sl);
 
-    mWriteSet.push_back(object);
+    writeSet_.push_back(object);
 
-    if (!mWritePending)
+    if (!writePending_)
     {
-        mWritePending = true;
+        writePending_ = true;
 
-        m_scheduler.scheduleTask(*this);
+        scheduler_.scheduleTask(*this);
     }
 }
 
 int
 BatchWriter::getWriteLoad()
 {
-    std::scoped_lock const sl(mWriteMutex);
+    std::scoped_lock const sl(writeMutex_);
 
-    return std::max(mWriteLoad, static_cast<int>(mWriteSet.size()));
+    return std::max(writeLoad_, static_cast<int>(writeSet_.size()));
 }
 
 void
@@ -65,20 +65,20 @@ BatchWriter::writeBatch()
     {
         std::vector<std::shared_ptr<NodeObject>> set;
 
-        set.reserve(batchWritePreallocationSize);
+        set.reserve(BatchWritePreallocationSize);
 
         {
-            std::scoped_lock const sl(mWriteMutex);
+            std::scoped_lock const sl(writeMutex_);
 
-            mWriteSet.swap(set);
+            writeSet_.swap(set);
             XRPL_ASSERT(
-                mWriteSet.empty(), "xrpl::NodeStore::BatchWriter::writeBatch : writes not set");
-            mWriteLoad = set.size();
+                writeSet_.empty(), "xrpl::NodeStore::BatchWriter::writeBatch : writes not set");
+            writeLoad_ = set.size();
 
             if (set.empty())
             {
-                mWritePending = false;
-                mWriteCondition.notify_all();
+                writePending_ = false;
+                writeCondition_.notify_all();
 
                 // VFALCO NOTE Fix this function to not return from the middle
                 return;
@@ -89,22 +89,22 @@ BatchWriter::writeBatch()
         report.writeCount = set.size();
         auto const before = std::chrono::steady_clock::now();
 
-        m_callback.writeBatch(set);
+        callback_.writeBatch(set);
 
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - before);
 
-        m_scheduler.onBatchWrite(report);
+        scheduler_.onBatchWrite(report);
     }
 }
 
 void
 BatchWriter::waitForWriting()
 {
-    std::unique_lock<decltype(mWriteMutex)> sl(mWriteMutex);
+    std::unique_lock<decltype(writeMutex_)> sl(writeMutex_);
 
-    while (mWritePending)
-        mWriteCondition.wait(sl);
+    while (writePending_)
+        writeCondition_.wait(sl);
 }
 
 }  // namespace xrpl::NodeStore

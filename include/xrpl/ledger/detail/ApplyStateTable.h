@@ -20,10 +20,10 @@ public:
 
 private:
     enum class Action {
-        cache,
-        erase,
-        insert,
-        modify,
+        Cache,
+        Erase,
+        Insert,
+        Modify,
     };
 
     using items_t = std::map<key_type, std::pair<Action, std::shared_ptr<SLE>>>;

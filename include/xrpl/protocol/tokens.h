@@ -62,7 +62,7 @@ decodeBase58Token(std::string const& s, TokenType type);
 namespace detail {
 // Expose detail functions for unit tests only
 std::string
-encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp_size);
+encodeBase58(void const* message, std::size_t size, void* temp, std::size_t tempSize);
 
 std::string
 decodeBase58(std::string const& s);
@@ -75,7 +75,7 @@ namespace b58_fast {
 // particular)
 [[nodiscard]] B58Result<std::span<std::uint8_t>>
 encodeBase58Token(
-    TokenType token_type,
+    TokenType tokenType,
     std::span<std::uint8_t const> input,
     std::span<std::uint8_t> out);
 
@@ -93,10 +93,10 @@ decodeBase58Token(std::string const& s, TokenType type);
 namespace detail {
 // Expose detail functions for unit tests only
 B58Result<std::span<std::uint8_t>>
-b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out);
+b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out);
 
 B58Result<std::span<std::uint8_t>>
-b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out);
+b58ToB256Be(std::string_view input, std::span<std::uint8_t> out);
 }  // namespace detail
 
 }  // namespace b58_fast

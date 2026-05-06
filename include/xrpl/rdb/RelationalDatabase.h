@@ -417,7 +417,7 @@ public:
     getTransaction(
         uint256 const& id,
         std::optional<ClosedInterval<uint32_t>> const& range,
-        error_code_i& ec) = 0;
+        ErrorCodeI& ec) = 0;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.

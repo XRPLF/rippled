@@ -11,24 +11,24 @@ namespace beast::unit_test::detail {
     provide additional behavior.
 */
 template <class Container>
-class const_container
+class ConstContainer
 {
 private:
     using cont_type = Container;
 
-    cont_type m_cont;
+    cont_type cont_;
 
 protected:
     cont_type&
     cont()
     {
-        return m_cont;
+        return cont_;
     }
 
     [[nodiscard]] cont_type const&
     cont() const
     {
-        return m_cont;
+        return cont_;
     }
 
 public:
@@ -42,14 +42,14 @@ public:
     [[nodiscard]] bool
     empty() const
     {
-        return m_cont.empty();
+        return cont_.empty();
     }
 
     /** Returns the number of items in the container. */
     [[nodiscard]] size_type
     size() const
     {
-        return m_cont.size();
+        return cont_.size();
     }
 
     /** Returns forward iterators for traversal. */
@@ -57,25 +57,25 @@ public:
     [[nodiscard]] const_iterator
     begin() const
     {
-        return m_cont.cbegin();
+        return cont_.cbegin();
     }
 
     [[nodiscard]] const_iterator
     cbegin() const
     {
-        return m_cont.cbegin();
+        return cont_.cbegin();
     }
 
     [[nodiscard]] const_iterator
     end() const
     {
-        return m_cont.cend();
+        return cont_.cend();
     }
 
     [[nodiscard]] const_iterator
     cend() const
     {
-        return m_cont.cend();
+        return cont_.cend();
     }
     /** @} */
 };

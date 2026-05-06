@@ -55,11 +55,11 @@ protected:
         DebtDirection srcDebtDir;
 
         Cache(
-            IOUAmount const& in_,
-            IOUAmount const& srcToDst_,
-            IOUAmount const& out_,
-            DebtDirection srcDebtDir_)
-            : in(in_), srcToDst(srcToDst_), out(out_), srcDebtDir(srcDebtDir_)
+            IOUAmount const& in,
+            IOUAmount const& srcToDst,
+            IOUAmount const& out,
+            DebtDirection srcDebtDir)
+            : in(in), srcToDst(srcToDst), out(out), srcDebtDir(srcDebtDir)
         {
         }
     };
@@ -350,7 +350,7 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
         return QUALITY_ONE;
 
     auto const& field = [&, this]() -> SF_UINT32 const& {
-        if (qDir == QualityDirection::in)
+        if (qDir == QualityDirection::In)
         {
             // compute dst quality in
             if (this->dst_ < this->src_)
@@ -409,7 +409,7 @@ DirectIOfferCrossingStep::maxFlow(ReadView const& sb, IOUAmount const& desired) 
     // "dstQIn" is always QUALITY_ONE for offer crossing.
 
     if (isLast_)
-        return {desired, DebtDirection::issues};
+        return {desired, DebtDirection::Issues};
 
     return maxPaymentFlow(sb);
 }
@@ -430,7 +430,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
         if ((((*sleSrc)[sfFlags] & lsfRequireAuth) != 0u) &&
-            (((*sleLine)[sfFlags] & authField) == 0u) && (*sleLine)[sfBalance] == beast::zero)
+            (((*sleLine)[sfFlags] & authField) == 0u) && (*sleLine)[sfBalance] == beast::kZERO)
         {
             JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
                              << " src: " << src_;
@@ -451,7 +451,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
 
     {
         auto const owed = creditBalance(ctx.view, dst_, src_, currency_);
-        if (owed <= beast::zero)
+        if (owed <= beast::kZERO)
         {
             auto const limit = creditLimit(ctx.view, dst_, src_, currency_);
             if (-owed >= limit)
@@ -480,25 +480,24 @@ std::pair<IOUAmount, DebtDirection>
 DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
     auto const srcOwed = toAmount<IOUAmount>(
-        accountHolds(sb, src_, currency_, dst_, FreezeHandling::fhIGNORE_FREEZE, j_));
+        accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_));
 
     if (srcOwed.signum() > 0)
-        return {srcOwed, DebtDirection::redeems};
+        return {srcOwed, DebtDirection::Redeems};
 
     // srcOwed is negative or zero
-    return {creditLimit2(sb, dst_, src_, currency_) + srcOwed, DebtDirection::issues};
+    return {creditLimit2(sb, dst_, src_, currency_) + srcOwed, DebtDirection::Issues};
 }
 
 template <class TDerived>
 DebtDirection
 DirectStepI<TDerived>::debtDirection(ReadView const& sb, StrandDirection dir) const
 {
-    if (dir == StrandDirection::forward && cache_)
+    if (dir == StrandDirection::Forward && cache_)
         return cache_->srcDebtDir;
 
-    auto const srcOwed =
-        accountHolds(sb, src_, currency_, dst_, FreezeHandling::fhIGNORE_FREEZE, j_);
-    return srcOwed.signum() > 0 ? DebtDirection::redeems : DebtDirection::issues;
+    auto const srcOwed = accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_);
+    return srcOwed.signum() > 0 ? DebtDirection::Redeems : DebtDirection::Issues;
 }
 
 template <class TDerived>
@@ -513,7 +512,7 @@ DirectStepI<TDerived>::revImp(
 
     auto const [maxSrcToDst, srcDebtDir] = static_cast<TDerived const*>(this)->maxFlow(sb, out);
 
-    auto const [srcQOut, dstQIn] = qualities(sb, srcDebtDir, StrandDirection::reverse);
+    auto const [srcQOut, dstQIn] = qualities(sb, srcDebtDir, StrandDirection::Reverse);
     XRPL_ASSERT(
         static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn),
         "xrpl::DirectStepI : valid destination quality");
@@ -529,8 +528,8 @@ DirectStepI<TDerived>::revImp(
     {
         JLOG(j_.trace()) << "DirectStepI::rev: dry";
         cache_.emplace(
-            IOUAmount(beast::zero), IOUAmount(beast::zero), IOUAmount(beast::zero), srcDebtDir);
-        return {beast::zero, beast::zero};
+            IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), srcDebtDir);
+        return {beast::kZERO, beast::kZERO};
     }
 
     IOUAmount const srcToDst = mulRatio(out, QUALITY_ONE, dstQIn, /*roundUp*/ true);
@@ -629,7 +628,7 @@ DirectStepI<TDerived>::fwdImp(
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
 
-    auto const [srcQOut, dstQIn] = qualities(sb, srcDebtDir, StrandDirection::forward);
+    auto const [srcQOut, dstQIn] = qualities(sb, srcDebtDir, StrandDirection::Forward);
 
     Issue const srcToDstIss(currency_, redeems(srcDebtDir) ? dst_ : src_);
 
@@ -642,8 +641,8 @@ DirectStepI<TDerived>::fwdImp(
     {
         JLOG(j_.trace()) << "DirectStepI::fwd: dry";
         cache_.emplace(
-            IOUAmount(beast::zero), IOUAmount(beast::zero), IOUAmount(beast::zero), srcDebtDir);
-        return {beast::zero, beast::zero};
+            IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), srcDebtDir);
+        return {beast::kZERO, beast::kZERO};
     }
 
     IOUAmount const srcToDst = mulRatio(in, QUALITY_ONE, srcQOut, /*roundUp*/ false);
@@ -691,7 +690,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
     if (!cache_)
     {
         JLOG(j_.trace()) << "Expected valid cache in validFwd";
-        return {false, EitherAmount(IOUAmount(beast::zero))};
+        return {false, EitherAmount(IOUAmount(beast::kZERO))};
     }
 
     auto const savCache = *cache_;
@@ -709,7 +708,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
     }
     catch (FlowException const&)
     {
-        return {false, EitherAmount(IOUAmount(beast::zero))};
+        return {false, EitherAmount(IOUAmount(beast::kZERO))};
     }
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access) fwdImp sets cache_ on success
@@ -744,7 +743,7 @@ DirectStepI<TDerived>::qualitiesSrcRedeems(ReadView const& sb) const
         return {QUALITY_ONE, QUALITY_ONE};
 
     auto const prevStepQIn = prevStep_->lineQualityIn(sb);
-    auto srcQOut = static_cast<TDerived const*>(this)->quality(sb, QualityDirection::out);
+    auto srcQOut = static_cast<TDerived const*>(this)->quality(sb, QualityDirection::Out);
 
     if (prevStepQIn > srcQOut)
         srcQOut = prevStepQIn;
@@ -766,7 +765,7 @@ DirectStepI<TDerived>::qualitiesSrcIssues(ReadView const& sb, DebtDirection prev
 
     std::uint32_t const srcQOut =
         redeems(prevStepDebtDirection) ? transferRate(sb, src_).value : QUALITY_ONE;
-    auto dstQIn = static_cast<TDerived const*>(this)->quality(sb, QualityDirection::in);
+    auto dstQIn = static_cast<TDerived const*>(this)->quality(sb, QualityDirection::In);
 
     if (isLast_ && dstQIn > QUALITY_ONE)
         dstQIn = QUALITY_ONE;
@@ -789,7 +788,7 @@ DirectStepI<TDerived>::qualities(
     auto const prevStepDebtDirection = [&] {
         if (prevStep_)
             return prevStep_->debtDirection(sb, strandDir);
-        return DebtDirection::issues;
+        return DebtDirection::Issues;
     }();
     return qualitiesSrcIssues(sb, prevStepDebtDirection);
 }
@@ -799,14 +798,14 @@ std::uint32_t
 DirectStepI<TDerived>::lineQualityIn(ReadView const& v) const
 {
     // dst quality in
-    return static_cast<TDerived const*>(this)->quality(v, QualityDirection::in);
+    return static_cast<TDerived const*>(this)->quality(v, QualityDirection::In);
 }
 
 template <class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
 DirectStepI<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
-    auto const dir = this->debtDirection(v, StrandDirection::forward);
+    auto const dir = this->debtDirection(v, StrandDirection::Forward);
 
     auto const [srcQOut, dstQIn] =
         redeems(dir) ? qualitiesSrcRedeems(v) : qualitiesSrcIssues(v, prevStepDir);
@@ -923,7 +922,7 @@ directStepEqual(
 //------------------------------------------------------------------------------
 
 std::pair<TER, std::unique_ptr<Step>>
-make_DirectStepI(
+makeDirectStepI(
     StrandContext const& ctx,
     AccountID const& src,
     AccountID const& dst,
@@ -931,7 +930,7 @@ make_DirectStepI(
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing != OfferCrossing::no)
+    if (ctx.offerCrossing != OfferCrossing::No)
     {
         auto offerCrossingStep = std::make_unique<DirectIOfferCrossingStep>(ctx, src, dst, c);
         ter = offerCrossingStep->check(ctx);

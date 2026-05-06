@@ -19,9 +19,9 @@ class AMMBidBuilder;
  * @brief Transaction: AMMBid
  *
  * Type: ttAMM_BID (39)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureAMM
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMBidBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -60,7 +60,7 @@ public:
     }
 
     /**
-     * @brief Get sfAsset2 (soeREQUIRED)
+     * @brief Get sfAsset2 (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -72,7 +72,7 @@ public:
     }
 
     /**
-     * @brief Get sfBidMin (soeOPTIONAL)
+     * @brief Get sfBidMin (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -98,7 +98,7 @@ public:
     }
 
     /**
-     * @brief Get sfBidMax (soeOPTIONAL)
+     * @brief Get sfBidMax (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -123,7 +123,7 @@ public:
         return this->tx_->isFieldPresent(sfBidMax);
     }
     /**
-     * @brief Get sfAuthAccounts (soeOPTIONAL)
+     * @brief Get sfAuthAccounts (SoeOptional)
      * @note This is an untyped field.
      * @return The field value, or std::nullopt if not present.
      */
@@ -152,7 +152,7 @@ public:
  * @brief Builder for AMMBid transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class AMMBidBuilder : public TransactionBuilderBase<AMMBidBuilder>
@@ -193,7 +193,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -205,7 +205,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -217,7 +217,7 @@ public:
     }
 
     /**
-     * @brief Set sfBidMin (soeOPTIONAL)
+     * @brief Set sfBidMin (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -228,7 +228,7 @@ public:
     }
 
     /**
-     * @brief Set sfBidMax (soeOPTIONAL)
+     * @brief Set sfBidMax (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -239,7 +239,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuthAccounts (soeOPTIONAL)
+     * @brief Set sfAuthAccounts (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&

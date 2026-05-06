@@ -24,34 +24,34 @@ using int128_t = xrpl::detail::int128_t;
 
 namespace xrpl {
 
-thread_local Number::rounding_mode Number::mode_ = Number::rounding_mode::to_nearest;
-thread_local std::reference_wrapper<MantissaRange const> Number::range_ = largeRange;
+thread_local Number::RoundingMode Number::mode = Number::RoundingMode::ToNearest;
+thread_local std::reference_wrapper<MantissaRange const> Number::kRANGE = kLARGE_RANGE;
 
-Number::rounding_mode
+Number::RoundingMode
 Number::getround()
 {
-    return mode_;
+    return mode;
 }
 
-Number::rounding_mode
-Number::setround(rounding_mode mode)
+Number::RoundingMode
+Number::setround(RoundingMode inMode)
 {
-    return std::exchange(mode_, mode);
+    return std::exchange(Number::mode, inMode);
 }
 
-MantissaRange::mantissa_scale
+MantissaRange::MantissaScale
 Number::getMantissaScale()
 {
-    return range_.get().scale;
+    return kRANGE.get().scale;
 }
 
 void
-Number::setMantissaScale(MantissaRange::mantissa_scale scale)
+Number::setMantissaScale(MantissaRange::MantissaScale scale)
 {
-    if (scale != MantissaRange::mantissa_scale::small &&
-        scale != MantissaRange::mantissa_scale::large)
-        LogicError("Unknown mantissa scale");
-    range_ = scale == MantissaRange::mantissa_scale::small ? smallRange : largeRange;
+    if (scale != MantissaRange::MantissaScale::Small &&
+        scale != MantissaRange::MantissaScale::Large)
+        logicError("Unknown mantissa scale");
+    kRANGE = scale == MantissaRange::MantissaScale::Small ? kSMALL_RANGE : kLARGE_RANGE;
 }
 
 // Guard
@@ -71,11 +71,11 @@ public:
 
     // set & test the sign bit
     void
-    set_positive() noexcept;
+    setPositive() noexcept;
     void
-    set_negative() noexcept;
+    setNegative() noexcept;
     [[nodiscard]] bool
-    is_negative() const noexcept;
+    isNegative() const noexcept;
 
     // add a digit
     template <class T>
@@ -122,19 +122,19 @@ private:
 };
 
 inline void
-Number::Guard::set_positive() noexcept
+Number::Guard::setPositive() noexcept
 {
     sbit_ = 0;
 }
 
 inline void
-Number::Guard::set_negative() noexcept
+Number::Guard::setNegative() noexcept
 {
     sbit_ = 1;
 }
 
 inline bool
-Number::Guard::is_negative() const noexcept
+Number::Guard::isNegative() const noexcept
 {
     return sbit_ == 1;
 }
@@ -171,10 +171,10 @@ Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
-    if (mode == rounding_mode::towards_zero)
+    if (mode == RoundingMode::TowardsZero)
         return -1;
 
-    if (mode == rounding_mode::downward)
+    if (mode == RoundingMode::Downward)
     {
         if (sbit_)
         {
@@ -184,7 +184,7 @@ Number::Guard::round() const noexcept
         return -1;
     }
 
-    if (mode == rounding_mode::upward)
+    if (mode == RoundingMode::Upward)
     {
         if (sbit_)
             return -1;
@@ -218,11 +218,11 @@ Number::Guard::bringIntoRange(
         mantissa *= 10;
         --exponent;
     }
-    if (exponent < minExponent)
+    if (exponent < kMIN_EXPONENT)
     {
-        constexpr Number zero = Number{};
+        constexpr Number kZERO = Number{};
 
-        std::tie(negative, mantissa, exponent) = zero.toInternal();
+        std::tie(negative, mantissa, exponent) = kZERO.toInternal();
     }
 }
 
@@ -249,7 +249,7 @@ Number::Guard::doRoundUp(
         }
     }
     bringIntoRange(negative, mantissa, exponent, minMantissa);
-    if (exponent > maxExponent)
+    if (exponent > kMAX_EXPONENT)
         Throw<std::overflow_error>(std::string(location));
 }
 
@@ -281,7 +281,7 @@ Number::Guard::doRound(internalrep& drops, std::string_view location) const
     auto r = round();
     if (r == 1 || (r == 0 && (drops & 1) == 1))
     {
-        auto const& range = range_.get();
+        auto const& range = kRANGE.get();
         if (drops >= range.max)
         {
             static_assert(sizeof(internalrep) == sizeof(rep));
@@ -320,7 +320,7 @@ Number::externalToInternal(rep mantissa)
 
 /** Breaks down the number into components, potentially de-normalizing it.
  *
- * Ensures that the mantissa always has range_.log + 1 digits.
+ * Ensures that the mantissa always has kRANGE.log + 1 digits.
  *
  */
 template <detail::UnsignedMantissa Rep>
@@ -352,14 +352,14 @@ Number::toInternal(MantissaRange const& range) const
 
 /** Breaks down the number into components, potentially de-normalizing it.
  *
- * Ensures that the mantissa always has exactly range_.log + 1 digits.
+ * Ensures that the mantissa always has exactly kRANGE.log + 1 digits.
  *
  */
 template <detail::UnsignedMantissa Rep>
 std::tuple<bool, Rep, int>
 Number::toInternal() const
 {
-    return toInternal(range_);
+    return toInternal(kRANGE);
 }
 
 /** Rebuilds the number from components.
@@ -428,7 +428,7 @@ Number::fromInternal(bool negative, Rep mantissa, int exponent)
     MantissaRange const* pRange = nullptr;
     if constexpr (std::is_same_v<std::bool_constant<expectNormal>, std::false_type>)
     {
-        pRange = &Number::range_.get();
+        pRange = &Number::kRANGE.get();
     }
 
     fromInternal(negative, mantissa, exponent, pRange);
@@ -438,33 +438,33 @@ constexpr Number
 Number::oneSmall()
 {
     return Number{
-        false, Number::smallRange.internalMin, -Number::smallRange.log, Number::unchecked{}};
+        false, Number::kSMALL_RANGE.internalMin, -Number::kSMALL_RANGE.log, Number::Unchecked{}};
 };
 
-constexpr Number oneSml = Number::oneSmall();
+constexpr Number kONE_SML = Number::oneSmall();
 
 constexpr Number
 Number::oneLarge()
 {
     return Number{
-        false, Number::largeRange.internalMin, -Number::largeRange.log, Number::unchecked{}};
+        false, Number::kLARGE_RANGE.internalMin, -Number::kLARGE_RANGE.log, Number::Unchecked{}};
 };
 
-constexpr Number oneLrg = Number::oneLarge();
+constexpr Number kONE_LRG = Number::oneLarge();
 
 Number
 Number::one(MantissaRange const& range)
 {
-    if (&range == &smallRange)
-        return oneSml;
-    XRPL_ASSERT(&range == &largeRange, "Number::one() : valid range");
-    return oneLrg;
+    if (&range == &kSMALL_RANGE)
+        return kONE_SML;
+    XRPL_ASSERT(&kRANGE.get() == &kLARGE_RANGE, "Number::one() : valid range");
+    return kONE_LRG;
 }
 
 Number
 Number::one()
 {
-    return one(range_);
+    return one(kRANGE);
 }
 
 // Use the member names in this static function for now so the diff is cleaner
@@ -477,39 +477,39 @@ doNormalize(
     MantissaRange::rep const& minMantissa,
     MantissaRange::rep const& maxMantissa)
 {
-    auto constexpr minExponent = Number::minExponent;
-    auto constexpr maxExponent = Number::maxExponent;
+    auto constexpr kMIN_EXPONENT = Number::kMIN_EXPONENT;
+    auto constexpr kMAX_EXPONENT = Number::kMAX_EXPONENT;
 
     using Guard = Number::Guard;
 
-    constexpr Number zero = Number{};
-    auto const& range = Number::range_.get();
-    if (mantissa == 0 || (mantissa < minMantissa && exponent <= minExponent))
+    constexpr Number kZERO = Number{};
+    auto const& range = Number::kRANGE.get();
+    if (mantissa == 0 || (mantissa < minMantissa && exponent <= kMIN_EXPONENT))
     {
-        std::tie(negative, mantissa, exponent) = zero.toInternal(range);
+        std::tie(negative, mantissa, exponent) = kZERO.toInternal(range);
         return;
     }
 
     auto m = mantissa;
-    while ((m < minMantissa) && (exponent > minExponent))
+    while ((m < minMantissa) && (exponent > kMIN_EXPONENT))
     {
         m *= 10;
         --exponent;
     }
     Guard g;
     if (negative)
-        g.set_negative();
+        g.setNegative();
     while (m > maxMantissa)
     {
-        if (exponent >= maxExponent)
+        if (exponent >= kMAX_EXPONENT)
             throw std::overflow_error("Number::normalize 1");
         g.push(m % 10);
         m /= 10;
         ++exponent;
     }
-    if ((exponent < minExponent) || (m == 0))
+    if ((exponent < kMIN_EXPONENT) || (m == 0))
     {
-        std::tie(negative, mantissa, exponent) = zero.toInternal(range);
+        std::tie(negative, mantissa, exponent) = kZERO.toInternal(range);
         return;
     }
 
@@ -523,7 +523,7 @@ doNormalize(
         "xrpl::doNormalize",
         "final mantissa fits in range");
     XRPL_ASSERT_PARTS(
-        exponent >= minExponent && exponent <= maxExponent,
+        exponent >= kMIN_EXPONENT && exponent <= kMAX_EXPONENT,
         "xrpl::doNormalize",
         "final exponent fits in range");
 }
@@ -577,7 +577,7 @@ Number::normalize(MantissaRange const& range)
 void
 Number::normalize()
 {
-    normalize(range_);
+    normalize(kRANGE);
 }
 
 // Copy the number, but set a new exponent. Because the mantissa doesn't change,
@@ -592,9 +592,9 @@ Number::shiftExponent(int exponentDelta) const
 
     result.exponent_ += exponentDelta;
 
-    if (result.exponent_ >= maxExponent)
+    if (result.exponent_ >= kMAX_EXPONENT)
         throw std::overflow_error("Number::shiftExponent");
-    if (result.exponent_ < minExponent)
+    if (result.exponent_ < kMIN_EXPONENT)
     {
         return Number{};
     }
@@ -602,9 +602,9 @@ Number::shiftExponent(int exponentDelta) const
     return result;
 }
 
-Number::Number(bool negative, internalrep mantissa, int exponent, normalized)
+Number::Number(bool negative, internalrep mantissa, int exponent, Normalized)
 {
-    auto const& range = range_.get();
+    auto const& range = kRANGE.get();
     normalize(negative, mantissa, exponent, range.min, range.max);
     fromInternal(negative, mantissa, exponent, &range);
 }
@@ -612,19 +612,19 @@ Number::Number(bool negative, internalrep mantissa, int exponent, normalized)
 Number&
 Number::operator+=(Number const& y)
 {
-    auto const& range = range_.get();
+    auto const& range = kRANGE.get();
 
-    constexpr Number zero = Number{};
-    if (y == zero)
+    constexpr Number kZERO = Number{};
+    if (y == kZERO)
         return *this;
-    if (*this == zero)
+    if (*this == kZERO)
     {
         *this = y;
         return *this;
     }
     if (*this == -y)
     {
-        *this = zero;
+        *this = kZERO;
         return *this;
     }
 
@@ -645,7 +645,7 @@ Number::operator+=(Number const& y)
     if (xe < ye)
     {
         if (xn)
-            g.set_negative();
+            g.setNegative();
         do
         {
             g.push(xm % 10);
@@ -656,7 +656,7 @@ Number::operator+=(Number const& y)
     else if (xe > ye)
     {
         if (yn)
-            g.set_negative();
+            g.setNegative();
         do
         {
             g.push(ym % 10);
@@ -736,12 +736,12 @@ divu10(uint128_t& u)
 Number&
 Number::operator*=(Number const& y)
 {
-    auto const& range = range_.get();
+    auto const& range = kRANGE.get();
 
-    constexpr Number zero = Number{};
-    if (*this == zero)
+    constexpr Number kZERO = Number{};
+    if (*this == kZERO)
         return *this;
-    if (y == zero)
+    if (y == kZERO)
     {
         *this = y;
         return *this;
@@ -763,7 +763,7 @@ Number::operator*=(Number const& y)
     bool zn = (zs == -1);
     Guard g;
     if (zn)
-        g.set_negative();
+        g.setNegative();
 
     auto const& minMantissa = range.min;
     auto const& maxMantissa = range.max;
@@ -794,12 +794,12 @@ Number::operator*=(Number const& y)
 Number&
 Number::operator/=(Number const& y)
 {
-    auto const& range = range_.get();
+    auto const& range = kRANGE.get();
 
-    constexpr Number zero = Number{};
-    if (y == zero)
+    constexpr Number kZERO = Number{};
+    if (y == kZERO)
         throw std::overflow_error("Number: divide by 0");
-    if (*this == zero)
+    if (*this == kZERO)
         return *this;
     // n* = numerator
     // d* = denominator
@@ -819,13 +819,13 @@ Number::operator/=(Number const& y)
 
     // Shift by 10^17 gives greatest precision while not overflowing
     // uint128_t or the cast back to int64_t
-    // TODO: Can/should this be made bigger for largeRange?
+    // TODO: Can/should this be made bigger for kLARGE_RANGE?
     // log(2^128,10) ~ 38.5
-    // largeRange.log = 18, fits in 10^19
+    // kLARGE_RANGE.log = 18, fits in 10^19
     // f can be up to 10^(38-19) = 10^19 safely
-    static_assert(smallRange.log == 15);
-    static_assert(largeRange.log == 18);
-    bool const small = range.scale == MantissaRange::mantissa_scale::small;
+    static_assert(kSMALL_RANGE.log == 15);
+    static_assert(kLARGE_RANGE.log == 18);
+    bool const small = range.scale == MantissaRange::MantissaScale::Small;
     uint128_t const f = small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
     XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
 
@@ -833,8 +833,8 @@ Number::operator/=(Number const& y)
     auto const dmu = static_cast<uint128_t>(dm);
     // correctionFactor can be anything between 10 and f, depending on how much
     // extra precision we want to only use for rounding with the
-    // largeRange. Three digits seems like plenty, and is more than
-    // the smallRange uses.
+    // kLARGE_RANGE. Three digits seems like plenty, and is more than
+    // the kSMALL_RANGE uses.
     uint128_t const correctionFactor = 1'000;
 
     auto const numerator = uint128_t(nm) * f;
@@ -895,7 +895,7 @@ operator rep() const
 
     if (m < 0)
     {
-        g.set_negative();
+        g.setNegative();
     }
     for (; offset < 0; ++offset)
     {
@@ -904,13 +904,13 @@ operator rep() const
     }
     for (; offset > 0; --offset)
     {
-        if (drops >= largeRange.min)
+        if (drops >= kLARGE_RANGE.min)
             throw std::overflow_error("Number::operator rep() overflow");
         drops *= 10;
     }
     g.doRound(drops, "Number::operator rep() rounding overflow");
 
-    if (g.is_negative())
+    if (g.isNegative())
         return -drops;
     else
         return drops;
@@ -937,11 +937,11 @@ Number::truncate() const noexcept
 std::string
 to_string(Number const& amount)
 {
-    auto const& range = Number::range_.get();
+    auto const& range = Number::kRANGE.get();
 
     // keep full internal accuracy, but make more human friendly if possible
-    constexpr Number zero = Number{};
-    if (amount == zero)
+    constexpr Number kZERO = Number{};
+    if (amount == kZERO)
         return "0";
 
     // The mantissa must have a set number of decimal places for this to work
@@ -953,7 +953,7 @@ to_string(Number const& amount)
          ((exponent < -(rangeLog + 10)) || (exponent > -(rangeLog - 10)))))
     {
         // Remove trailing zeroes from the mantissa.
-        while (mantissa != 0 && mantissa % 10 == 0 && exponent < Number::maxExponent)
+        while (mantissa != 0 && mantissa % 10 == 0 && exponent < Number::kMAX_EXPONENT)
         {
             mantissa /= 10;
             ++exponent;
@@ -970,46 +970,46 @@ to_string(Number const& amount)
 
     XRPL_ASSERT(exponent + 43 > 0, "xrpl::to_string(Number) : minimum exponent");
 
-    ptrdiff_t const pad_prefix = rangeLog + 12;
-    ptrdiff_t const pad_suffix = rangeLog + 8;
+    ptrdiff_t const padPrefix = rangeLog + 12;
+    ptrdiff_t const padSuffix = rangeLog + 8;
 
-    std::string const raw_value(std::to_string(mantissa));
+    std::string const rawValue(std::to_string(mantissa));
     std::string val;
 
-    val.reserve(raw_value.length() + pad_prefix + pad_suffix);
-    val.append(pad_prefix, '0');
-    val.append(raw_value);
-    val.append(pad_suffix, '0');
+    val.reserve(rawValue.length() + padPrefix + padSuffix);
+    val.append(padPrefix, '0');
+    val.append(rawValue);
+    val.append(padSuffix, '0');
 
-    ptrdiff_t const offset(exponent + pad_prefix + rangeLog + 1);
+    ptrdiff_t const offset(exponent + padPrefix + rangeLog + 1);
 
-    auto pre_from(val.begin());
-    auto const pre_to(val.begin() + offset);
+    auto preFrom(val.begin());
+    auto const preTo(val.begin() + offset);
 
-    auto const post_from(val.begin() + offset);
-    auto post_to(val.end());
+    auto const postFrom(val.begin() + offset);
+    auto postTo(val.end());
 
     // Crop leading zeroes. Take advantage of the fact that there's always a
     // fixed amount of leading zeroes and skip them.
-    if (std::distance(pre_from, pre_to) > pad_prefix)
-        pre_from += pad_prefix;
+    if (std::distance(preFrom, preTo) > padPrefix)
+        preFrom += padPrefix;
 
-    XRPL_ASSERT(post_to >= post_from, "xrpl::to_string(Number) : first distance check");
+    XRPL_ASSERT(postTo >= postFrom, "xrpl::to_string(Number) : first distance check");
 
-    pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
+    preFrom = std::find_if(preFrom, preTo, [](char c) { return c != '0'; });
 
     // Crop trailing zeroes. Take advantage of the fact that there's always a
     // fixed amount of trailing zeroes and skip them.
-    if (std::distance(post_from, post_to) > pad_suffix)
-        post_to -= pad_suffix;
+    if (std::distance(postFrom, postTo) > padSuffix)
+        postTo -= padSuffix;
 
-    XRPL_ASSERT(post_to >= post_from, "xrpl::to_string(Number) : second distance check");
+    XRPL_ASSERT(postTo >= postFrom, "xrpl::to_string(Number) : second distance check");
 
-    post_to = std::find_if(
-                  std::make_reverse_iterator(post_to),
-                  std::make_reverse_iterator(post_from),
-                  [](char c) { return c != '0'; })
-                  .base();
+    postTo = std::find_if(
+                 std::make_reverse_iterator(postTo),
+                 std::make_reverse_iterator(postFrom),
+                 [](char c) { return c != '0'; })
+                 .base();
 
     std::string ret;
 
@@ -1017,19 +1017,19 @@ to_string(Number const& amount)
         ret.append(1, '-');
 
     // Assemble the output:
-    if (pre_from == pre_to)
+    if (preFrom == preTo)
     {
         ret.append(1, '0');
     }
     else
     {
-        ret.append(pre_from, pre_to);
+        ret.append(preFrom, preTo);
     }
 
-    if (post_to != post_from)
+    if (postTo != postFrom)
     {
         ret.append(1, '.');
-        ret.append(post_from, post_to);
+        ret.append(postFrom, postTo);
     }
 
     return ret;
@@ -1055,7 +1055,7 @@ power(Number const& f, unsigned n)
 Number
 Number::root(MantissaRange const& range, Number f, unsigned d)
 {
-    constexpr Number zero = Number{};
+    constexpr Number kZERO = Number{};
     auto const one = Number::one(range);
 
     if (f == one || d == 1)
@@ -1065,12 +1065,12 @@ Number::root(MantissaRange const& range, Number f, unsigned d)
         if (f == -one)
             return one;
         if (abs(f) < one)
-            return zero;
+            return kZERO;
         throw std::overflow_error("Number::root infinity");
     }
-    if (f < zero && d % 2 == 0)
+    if (f < kZERO && d % 2 == 0)
         throw std::overflow_error("Number::root nan");
-    if (f == zero)
+    if (f == kZERO)
         return f;
 
     auto const [e, di] = [&]() {
@@ -1096,14 +1096,14 @@ Number::root(MantissaRange const& range, Number f, unsigned d)
     XRPL_ASSERT_PARTS(e % di == 0, "xrpl::root(Number, unsigned)", "e is divisible by d");
     XRPL_ASSERT_PARTS(f.isnormal(range), "xrpl::root(Number, unsigned)", "f is normalized");
     bool neg = false;
-    if (f < zero)
+    if (f < kZERO)
     {
         neg = true;
         f = -f;
     }
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = (((6 * di + 11) * di + 6) * di) + 1;
+    auto const D = (((6 * di + 11) * di + 6) * di) + 1;  // NOLINT(readability-identifier-naming)
     auto const a0 = 3 * di * ((2 * di - 3) * di + 1);
     auto const a1 = 24 * di * (2 * di - 1);
     auto const a2 = -30 * (di - 1) * di;
@@ -1144,22 +1144,22 @@ Number::root(MantissaRange const& range, Number f, unsigned d)
 Number
 root(Number f, unsigned d)
 {
-    auto const& range = Number::range_.get();
+    auto const& range = Number::kRANGE.get();
     return Number::root(range, f, d);
 }
 
 Number
 root2(Number f)
 {
-    auto const& range = Number::range_.get();
-    constexpr Number zero = Number{};
+    auto const& range = Number::kRANGE.get();
+    constexpr Number kZERO = Number{};
     auto const one = Number::one(range);
 
     if (f == one)
         return f;
-    if (f < zero)
+    if (f < kZERO)
         throw std::overflow_error("Number::root nan");
-    if (f == zero)
+    if (f == kZERO)
         return f;
 
     auto const e = [&]() {
@@ -1176,7 +1176,7 @@ root2(Number f)
     XRPL_ASSERT_PARTS(f.isnormal(range), "xrpl::root2(Number)", "f is normalized");
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = 105;
+    auto const D = 105;  // NOLINT(readability-identifier-naming)
     auto const a0 = 18;
     auto const a1 = 144;
     auto const a2 = -60;
@@ -1205,9 +1205,9 @@ root2(Number f)
 Number
 power(Number const& f, unsigned n, unsigned d)
 {
-    auto const& range = Number::range_.get();
+    auto const& range = Number::kRANGE.get();
 
-    constexpr Number zero = Number{};
+    constexpr Number kZERO = Number{};
     auto const one = Number::one(range);
 
     if (f == one)
@@ -1220,7 +1220,7 @@ power(Number const& f, unsigned n, unsigned d)
         if (f == -one)
             return one;
         if (abs(f) < one)
-            return zero;
+            return kZERO;
         // abs(f) > one
         throw std::overflow_error("Number::power infinity");
     }
@@ -1228,7 +1228,7 @@ power(Number const& f, unsigned n, unsigned d)
         return one;
     n /= g;
     d /= g;
-    if ((n % 2) == 1 && (d % 2) == 0 && f < zero)
+    if ((n % 2) == 1 && (d % 2) == 0 && f < kZERO)
         throw std::overflow_error("Number::power nan");
     return Number::root(range, power(f, n), d);
 }

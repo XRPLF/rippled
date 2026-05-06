@@ -13,7 +13,7 @@ namespace xrpl::RPC {
 
 void
 insertNFTSyntheticInJson(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {

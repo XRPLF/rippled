@@ -10,7 +10,7 @@
 
 namespace xrpl {
 
-class KeyCache_test : public beast::unit_test::suite
+class KeyCache_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -33,14 +33,14 @@ public:
             BEAST_EXPECT(c.insert("one"));
             BEAST_EXPECT(!c.insert("one"));
             BEAST_EXPECT(c.size() == 1);
-            BEAST_EXPECT(c.touch_if_exists("one"));
+            BEAST_EXPECT(c.touchIfExists("one"));
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.size() == 1);
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.size() == 0);
-            BEAST_EXPECT(!c.touch_if_exists("one"));
+            BEAST_EXPECT(!c.touchIfExists("one"));
         }
 
         // Insert two items, have one expire
@@ -54,7 +54,7 @@ public:
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.size() == 2);
-            BEAST_EXPECT(c.touch_if_exists("two"));
+            BEAST_EXPECT(c.touchIfExists("two"));
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.size() == 1);

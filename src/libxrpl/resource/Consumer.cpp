@@ -14,27 +14,27 @@
 
 namespace xrpl::Resource {
 
-Consumer::Consumer(Logic& logic, Entry& entry) : m_logic(&logic), m_entry(&entry)
+Consumer::Consumer(Logic& logic, Entry& entry) : logic_(&logic), entry_(&entry)
 {
 }
 
-Consumer::Consumer() : m_logic(nullptr), m_entry(nullptr)
+Consumer::Consumer() : logic_(nullptr), entry_(nullptr)
 {
 }
 
-Consumer::Consumer(Consumer const& other) : m_logic(other.m_logic), m_entry(nullptr)
+Consumer::Consumer(Consumer const& other) : logic_(other.logic_), entry_(nullptr)
 {
-    if ((m_logic != nullptr) && (other.m_entry != nullptr))
+    if ((logic_ != nullptr) && (other.entry_ != nullptr))
     {
-        m_entry = other.m_entry;
-        m_logic->acquire(*m_entry);
+        entry_ = other.entry_;
+        logic_->acquire(*entry_);
     }
 }
 
 Consumer::~Consumer()
 {
-    if ((m_logic != nullptr) && (m_entry != nullptr))
-        m_logic->release(*m_entry);
+    if ((logic_ != nullptr) && (entry_ != nullptr))
+        logic_->release(*entry_);
 }
 
 Consumer&
@@ -44,33 +44,33 @@ Consumer::operator=(Consumer const& other)
         return *this;
 
     // remove old ref
-    if ((m_logic != nullptr) && (m_entry != nullptr))
-        m_logic->release(*m_entry);
+    if ((logic_ != nullptr) && (entry_ != nullptr))
+        logic_->release(*entry_);
 
-    m_logic = other.m_logic;
-    m_entry = other.m_entry;
+    logic_ = other.logic_;
+    entry_ = other.entry_;
 
     // add new ref
-    if ((m_logic != nullptr) && (m_entry != nullptr))
-        m_logic->acquire(*m_entry);
+    if ((logic_ != nullptr) && (entry_ != nullptr))
+        logic_->acquire(*entry_);
 
     return *this;
 }
 
 std::string
-Consumer::to_string() const
+Consumer::toString() const
 {
-    if (m_logic == nullptr)
+    if (logic_ == nullptr)
         return "(none)";
 
-    return m_entry->to_string();
+    return entry_->toString();
 }
 
 bool
 Consumer::isUnlimited() const
 {
-    if (m_entry != nullptr)
-        return m_entry->isUnlimited();
+    if (entry_ != nullptr)
+        return entry_->isUnlimited();
 
     return false;
 }
@@ -78,9 +78,9 @@ Consumer::isUnlimited() const
 Disposition
 Consumer::disposition() const
 {
-    Disposition d = Disposition::ok;
-    if ((m_logic != nullptr) && (m_entry != nullptr))
-        d = m_logic->charge(*m_entry, Charge(0));
+    Disposition d = Disposition::Ok;
+    if ((logic_ != nullptr) && (entry_ != nullptr))
+        d = logic_->charge(*entry_, Charge(0));
 
     return d;
 }
@@ -88,10 +88,10 @@ Consumer::disposition() const
 Disposition
 Consumer::charge(Charge const& what, std::string const& context)
 {
-    Disposition d = Disposition::ok;
+    Disposition d = Disposition::Ok;
 
-    if ((m_logic != nullptr) && (m_entry != nullptr) && !m_entry->isUnlimited())
-        d = m_logic->charge(*m_entry, what, context);
+    if ((logic_ != nullptr) && (entry_ != nullptr) && !entry_->isUnlimited())
+        d = logic_->charge(*entry_, what, context);
 
     return d;
 }
@@ -99,18 +99,18 @@ Consumer::charge(Charge const& what, std::string const& context)
 bool
 Consumer::warn()
 {
-    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::warn : non-null entry");
-    return m_logic->warn(*m_entry);
+    XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::warn : non-null entry");
+    return logic_->warn(*entry_);
 }
 
 bool
 Consumer::disconnect(beast::Journal const& j)
 {
-    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::disconnect : non-null entry");
-    bool const d = m_logic->disconnect(*m_entry);
+    XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::disconnect : non-null entry");
+    bool const d = logic_->disconnect(*entry_);
     if (d)
     {
-        JLOG(j.debug()) << "disconnecting " << m_entry->to_string();
+        JLOG(j.debug()) << "disconnecting " << entry_->toString();
     }
     return d;
 }
@@ -118,27 +118,27 @@ Consumer::disconnect(beast::Journal const& j)
 int
 Consumer::balance()
 {
-    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::balance : non-null entry");
-    return m_logic->balance(*m_entry);
+    XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::balance : non-null entry");
+    return logic_->balance(*entry_);
 }
 
 Entry&
 Consumer::entry()
 {
-    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::entry : non-null entry");
-    return *m_entry;
+    XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::entry : non-null entry");
+    return *entry_;
 }
 
 void
 Consumer::setPublicKey(PublicKey const& publicKey)
 {
-    m_entry->publicKey = publicKey;
+    entry_->publicKey = publicKey;
 }
 
 std::ostream&
 operator<<(std::ostream& os, Consumer const& v)
 {
-    os << v.to_string();
+    os << v.toString();
     return os;
 }
 

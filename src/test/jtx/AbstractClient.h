@@ -25,12 +25,12 @@ public:
         is using the JSON-RPC over HTTP/S or WebSocket transport.
 
         @param cmd The command to execute
-        @param params Json::Value of null or object type
+        @param params json::Value of null or object type
                       with zero or more key/value pairs.
         @return The server response in normalized format.
     */
-    virtual Json::Value
-    invoke(std::string const& cmd, Json::Value const& params = {}) = 0;
+    virtual json::Value
+    invoke(std::string const& cmd, json::Value const& params = {}) = 0;
 
     /// Get RPC 1.0 or RPC 2.0
     [[nodiscard]] virtual unsigned

@@ -7,7 +7,7 @@ namespace xrpl {
 class VaultDelete : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit VaultDelete(ApplyContext& ctx) : Transactor(ctx)
     {

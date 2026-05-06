@@ -17,16 +17,16 @@ class TxQ;
 
 namespace RPC {
 
-Json::Value
+json::Value
 getCurrentNetworkFee(
     Role const role,
     Config const& config,
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
     Application const& app,
-    Json::Value const& tx,
-    int mult = Tuning::defaultAutoFillFeeMultiplier,
-    int div = Tuning::defaultAutoFillFeeDivisor);
+    json::Value const& tx,
+    int mult = Tuning::kDEFAULT_AUTO_FILL_FEE_MULTIPLIER,
+    int div = Tuning::kDEFAULT_AUTO_FILL_FEE_DIVISOR);
 
 /** Fill in the fee on behalf of the client.
     This is called when the client does not explicitly specify the fee.
@@ -55,9 +55,9 @@ getCurrentNetworkFee(
 
     @return         A JSON object containing the error results, if any
 */
-Json::Value
+json::Value
 checkFee(
-    Json::Value& request,
+    json::Value& request,
     Role const role,
     bool doAutoFill,
     Config const& config,
@@ -84,20 +84,20 @@ getProcessTxnFn(NetworkOPs& netOPs)
     };
 }
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSign(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    json::Value params,  // Passed by value so it can be modified locally.
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSubmit(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    json::Value params,  // Passed by value so it can be modified locally.
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
@@ -105,20 +105,20 @@ transactionSubmit(
     Application& app,
     ProcessTransactionFn const& processTransaction);
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSignFor(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    json::Value params,  // Passed by value so it can be modified locally.
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-/** Returns a Json::objectValue. */
-Json::Value
+/** Returns a json::objectValue. */
+json::Value
 transactionSubmitMultiSigned(
-    Json::Value params,  // Passed by value so it can be modified locally.
+    json::Value params,  // Passed by value so it can be modified locally.
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
