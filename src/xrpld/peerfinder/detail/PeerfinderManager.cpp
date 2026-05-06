@@ -243,7 +243,7 @@ private:
     void
     collect_metrics()
     {
-        std::scoped_lock const lock(m_statsMutex);
+        std::lock_guard const lock(m_statsMutex);
         m_stats.activeInboundPeers = m_logic.counts_.inboundActive();
         m_stats.activeOutboundPeers = m_logic.counts_.out_active();
     }

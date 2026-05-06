@@ -2,7 +2,7 @@
 #
 # Pipelines:
 #   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
-#   metrics: spanmetrics connector -> Prometheus exporter
+#   metrics: OTLP receiver + spanmetrics connector -> Prometheus exporter
 #
 # xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
 # them, forwards to Tempo, and derives RED metrics via the spanmetrics
@@ -55,5 +55,5 @@ service:
       processors: [batch]
       exporters: [debug, otlp/tempo, spanmetrics]
     metrics:
-      receivers: [spanmetrics]
+      receivers: [otlp, spanmetrics]
       exporters: [prometheus]

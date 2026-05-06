@@ -45,7 +45,7 @@ outputJson(Json::Value const& value, Writer& writer)
         }
 
         case Json::arrayValue: {
-            writer.startRoot(Writer::CollectionType::array);
+            writer.startRoot(Writer::array);
             for (auto const& i : value)
             {
                 writer.rawAppend();
@@ -56,7 +56,7 @@ outputJson(Json::Value const& value, Writer& writer)
         }
 
         case Json::objectValue: {
-            writer.startRoot(Writer::CollectionType::object);
+            writer.startRoot(Writer::object);
             auto members = value.getMemberNames();
             for (auto const& tag : members)
             {

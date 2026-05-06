@@ -22,8 +22,6 @@ private:
     using CacheType = KeyCache;
 
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { defaultCacheTargetSize = 0 };
 
     using key_type = uint256;

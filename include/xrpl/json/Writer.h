@@ -107,7 +107,7 @@ namespace Json {
 class Writer
 {
 public:
-    enum class CollectionType { array, object };
+    enum CollectionType { array, object };
 
     explicit Writer(Output const& output);
     Writer(Writer&&) noexcept;

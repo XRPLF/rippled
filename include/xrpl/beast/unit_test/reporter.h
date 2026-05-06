@@ -62,8 +62,6 @@ private:
     {
         using run_time = std::pair<std::string, typename clock_type::duration>;
 
-        // Need to be named before converting
-        // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
         enum { max_top = 10 };
 
         std::size_t suites = 0;

@@ -48,7 +48,7 @@ Transaction::Transaction(
         return;
     }
 
-    mStatus = TransStatus::NEW;
+    mStatus = NEW;
 }
 
 //
@@ -78,22 +78,22 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
     switch (static_cast<TxnSql>(c))
     {
         case TxnSql::txnSqlNew:
-            return TransStatus::NEW;
+            return NEW;
         case TxnSql::txnSqlConflict:
-            return TransStatus::CONFLICTED;
+            return CONFLICTED;
         case TxnSql::txnSqlHeld:
-            return TransStatus::HELD;
+            return HELD;
         case TxnSql::txnSqlValidated:
-            return TransStatus::COMMITTED;
+            return COMMITTED;
         case TxnSql::txnSqlIncluded:
-            return TransStatus::INCLUDED;
+            return INCLUDED;
         default:
             XRPL_ASSERT(
                 c == TxnSql::txnSqlUnknown,
                 "xrpl::Transaction::sqlTransactionStatus : unknown transaction status");
     }
 
-    return TransStatus::INVALID;
+    return INVALID;
 }
 
 Transaction::pointer
