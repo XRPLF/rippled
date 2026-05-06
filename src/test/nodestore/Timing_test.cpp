@@ -329,7 +329,7 @@ public:
                     std::shared_ptr<NodeObject> obj;
                     std::shared_ptr<NodeObject> result;
                     obj = seq1_.obj(dist_(gen_));
-                    backend_.fetch(obj->getHash().data(), &result);
+                    backend_.fetch(obj->getHash(), &result);
                     suite_.expect(result && isSame(result, obj));
                 }
                 catch (std::exception const& e)
@@ -392,9 +392,9 @@ public:
             {
                 try
                 {
-                    auto const key = seq2_.key(i);
+                    auto const hash = seq2_.key(i);
                     std::shared_ptr<NodeObject> result;
-                    backend_.fetch(key.data(), &result);
+                    backend_.fetch(hash, &result);
                     suite_.expect(!result);
                 }
                 catch (std::exception const& e)
@@ -464,9 +464,9 @@ public:
                 {
                     if (rand_(gen_) < missingNodePercent)
                     {
-                        auto const key = seq2_.key(dist_(gen_));
+                        auto const hash = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
-                        backend_.fetch(key.data(), &result);
+                        backend_.fetch(hash, &result);
                         suite_.expect(!result);
                     }
                     else
@@ -474,7 +474,7 @@ public:
                         std::shared_ptr<NodeObject> obj;
                         std::shared_ptr<NodeObject> result;
                         obj = seq1_.obj(dist_(gen_));
-                        backend_.fetch(obj->getHash().data(), &result);
+                        backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result && isSame(result, obj));
                     }
                 }
@@ -555,8 +555,7 @@ public:
                         std::shared_ptr<NodeObject> result;
                         auto const j = older_(gen_);
                         obj = seq1_.obj(j);
-                        std::shared_ptr<NodeObject> result1;
-                        backend_.fetch(obj->getHash().data(), &result);
+                        backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result != nullptr);
                         suite_.expect(isSame(result, obj));
                     }
@@ -575,7 +574,7 @@ public:
                                 std::shared_ptr<NodeObject> result;
                                 auto const j = recent_(gen_);
                                 obj = seq1_.obj(j);
-                                backend_.fetch(obj->getHash().data(), &result);
+                                backend_.fetch(obj->getHash(), &result);
                                 suite_.expect(!result || isSame(result, obj));
                                 break;
                             }
