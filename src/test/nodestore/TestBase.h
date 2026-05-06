@@ -67,16 +67,16 @@ public:
                 switch (rand_int(rng, 3))
                 {
                     case 0:
-                        return NodeObjectType::hotLEDGER;
+                        return hotLEDGER;
                     case 1:
-                        return NodeObjectType::hotACCOUNT_NODE;
+                        return hotACCOUNT_NODE;
                     case 2:
-                        return NodeObjectType::hotTRANSACTION_NODE;
+                        return hotTRANSACTION_NODE;
                     case 3:
-                        return NodeObjectType::hotUNKNOWN;
+                        return hotUNKNOWN;
                     default:
                         // will never happen, but make static analysis tool happy.
-                        return NodeObjectType::hotUNKNOWN;
+                        return hotUNKNOWN;
                 }
             }();
 
@@ -138,11 +138,11 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash(), &object);
+            Status const status = backend.fetch(batch[i]->getHash().cbegin(), &object);
 
-            BEAST_EXPECT(status == Status::ok);
+            BEAST_EXPECT(status == ok);
 
-            if (status == Status::ok)
+            if (status == ok)
             {
                 BEAST_EXPECT(object != nullptr);
 
@@ -158,9 +158,9 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash(), &object);
+            Status const status = backend.fetch(batch[i]->getHash().cbegin(), &object);
 
-            BEAST_EXPECT(status == Status::notFound);
+            BEAST_EXPECT(status == notFound);
         }
     }
 

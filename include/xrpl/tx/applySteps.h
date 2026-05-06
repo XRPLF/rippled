@@ -39,7 +39,7 @@ class TxConsequences
 public:
     /// Describes how the transaction affects subsequent
     /// transactions
-    enum class Category {
+    enum Category {
         /// Moves currency around, creates offers, etc.
         normal = 0,
         /// Affects the ability of subsequent transactions

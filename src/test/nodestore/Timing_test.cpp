@@ -77,8 +77,6 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
 class Sequence
 {
 private:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { minLedger = 1, maxLedger = 1000000, minSize = 250, maxSize = 1250 };
 
     beast::xor_shift_engine gen_;
@@ -137,8 +135,6 @@ public:
 class Timing_test : public beast::unit_test::suite
 {
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // percent of fetches for missing nodes
         missingNodePercent = 20
@@ -333,7 +329,7 @@ public:
                     std::shared_ptr<NodeObject> obj;
                     std::shared_ptr<NodeObject> result;
                     obj = seq1_.obj(dist_(gen_));
-                    backend_.fetch(obj->getHash(), &result);
+                    backend_.fetch(obj->getHash().data(), &result);
                     suite_.expect(result && isSame(result, obj));
                 }
                 catch (std::exception const& e)
@@ -396,9 +392,9 @@ public:
             {
                 try
                 {
-                    auto const hash = seq2_.key(i);
+                    auto const key = seq2_.key(i);
                     std::shared_ptr<NodeObject> result;
-                    backend_.fetch(hash, &result);
+                    backend_.fetch(key.data(), &result);
                     suite_.expect(!result);
                 }
                 catch (std::exception const& e)
@@ -468,9 +464,9 @@ public:
                 {
                     if (rand_(gen_) < missingNodePercent)
                     {
-                        auto const hash = seq2_.key(dist_(gen_));
+                        auto const key = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
-                        backend_.fetch(hash, &result);
+                        backend_.fetch(key.data(), &result);
                         suite_.expect(!result);
                     }
                     else
@@ -478,7 +474,7 @@ public:
                         std::shared_ptr<NodeObject> obj;
                         std::shared_ptr<NodeObject> result;
                         obj = seq1_.obj(dist_(gen_));
-                        backend_.fetch(obj->getHash(), &result);
+                        backend_.fetch(obj->getHash().data(), &result);
                         suite_.expect(result && isSame(result, obj));
                     }
                 }
@@ -559,7 +555,8 @@ public:
                         std::shared_ptr<NodeObject> result;
                         auto const j = older_(gen_);
                         obj = seq1_.obj(j);
-                        backend_.fetch(obj->getHash(), &result);
+                        std::shared_ptr<NodeObject> result1;
+                        backend_.fetch(obj->getHash().data(), &result);
                         suite_.expect(result != nullptr);
                         suite_.expect(isSame(result, obj));
                     }
@@ -578,7 +575,7 @@ public:
                                 std::shared_ptr<NodeObject> result;
                                 auto const j = recent_(gen_);
                                 obj = seq1_.obj(j);
-                                backend_.fetch(obj->getHash(), &result);
+                                backend_.fetch(obj->getHash().data(), &result);
                                 suite_.expect(!result || isSame(result, obj));
                                 break;
                             }
@@ -682,7 +679,7 @@ public:
     void
     run() override
     {
-        testcase("Timing", beast::unit_test::abort_t::abort_on_fail);
+        testcase("Timing", beast::unit_test::abort_on_fail);
 
         /*  Parameters:
 

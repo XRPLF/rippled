@@ -207,7 +207,7 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
-        Status status = Status::ok;
+        Status status = ok;
         pno->reset();
         nudb::error_code ec;
         db_.fetch(
@@ -218,15 +218,15 @@ public:
                 DecodedBlob decoded(hash.data(), result.first, result.second);
                 if (!decoded.wasOk())
                 {
-                    status = Status::dataCorrupt;
+                    status = dataCorrupt;
                     return;
                 }
                 *pno = decoded.createObject();
-                status = Status::ok;
+                status = ok;
             },
             ec);
         if (ec == nudb::error::key_not_found)
-            return Status::notFound;
+            return notFound;
         if (ec)
             Throw<nudb::system_error>(ec);
         return status;
@@ -241,7 +241,7 @@ public:
         {
             std::shared_ptr<NodeObject> nObj;
             Status const status = fetch(h, &nObj);
-            if (status != Status::ok)
+            if (status != ok)
             {
                 results.push_back({});
             }
@@ -251,7 +251,7 @@ public:
             }
         }
 
-        return {results, Status::ok};
+        return {results, ok};
     }
 
     void

@@ -40,9 +40,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // the value is needed. That could get expensive fast.
     bool const enableLargeNumbers =
         !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
-    Number::setMantissaScale(
-        enableLargeNumbers ? MantissaRange::mantissa_scale::large
-                           : MantissaRange::mantissa_scale::small);
+    Number::setMantissaScale(enableLargeNumbers ? MantissaRange::large : MantissaRange::small);
 
     *getCurrentTransactionRulesRef() = std::move(r);
 }

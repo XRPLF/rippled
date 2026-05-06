@@ -35,8 +35,6 @@ namespace xrpl {
     @ingroup protocol
 */
 // clang-format off
-// Protocol-critical, hundreds of usages
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TxType : std::uint16_t
 {
 

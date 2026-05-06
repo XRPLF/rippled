@@ -285,7 +285,7 @@ public:
         XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
 
-        Status status(Status::ok);
+        Status status(ok);
 
         rocksdb::ReadOptions const options;
         rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), m_keyBytes);
@@ -306,23 +306,22 @@ public:
             {
                 // Decoding failed, probably corrupted!
                 //
-                status = Status::dataCorrupt;
+                status = dataCorrupt;
             }
         }
         else
         {
             if (getStatus.IsCorruption())
             {
-                status = Status::dataCorrupt;
+                status = dataCorrupt;
             }
             else if (getStatus.IsNotFound())
             {
-                status = Status::notFound;
+                status = notFound;
             }
             else
             {
-                status = static_cast<Status>(
-                    static_cast<int>(Status::customCode) + unsafe_cast<int>(getStatus.code()));
+                status = Status(customCode + unsafe_cast<int>(getStatus.code()));
 
                 JLOG(m_journal.error()) << getStatus.ToString();
             }
@@ -340,7 +339,7 @@ public:
         {
             std::shared_ptr<NodeObject> nObj;
             Status const status = fetch(h, &nObj);
-            if (status != Status::ok)
+            if (status != ok)
             {
                 results.push_back({});
             }
@@ -350,7 +349,7 @@ public:
             }
         }
 
-        return {results, Status::ok};
+        return {results, ok};
     }
 
     void

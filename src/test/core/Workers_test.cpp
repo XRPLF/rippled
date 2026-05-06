@@ -89,7 +89,7 @@ public:
         void
         processTask(int instance) override
         {
-            std::scoped_lock const lk{mut};
+            std::lock_guard const lk{mut};
             if (--count == 0)
                 cv.notify_all();
         }

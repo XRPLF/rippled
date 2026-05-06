@@ -4025,7 +4025,7 @@ private:
         ChainStateTrack b_;
     };
 
-    enum class SmState {
+    enum SmState {
         st_initial,
         st_claim_id_created,
         st_attesting,
@@ -4033,6 +4033,8 @@ private:
         st_completed,
         st_closed,
     };
+
+    enum Act_Flags { af_a2b = 1 << 0 };
 
     // --------------------------------------------------
     template <class T>
@@ -4167,7 +4169,7 @@ private:
                 st.spend(dstDoor(), reward, num_attestors);
                 st.transfer(dstDoor(), cr.to, cr.amt);
                 st.env.env_.memoize(cr.to);
-                sm_state = SmState::st_completed;
+                sm_state = st_completed;
             };
 
             counters.create_callbacks[cr.claim_id - 1] = std::move(complete_cb);
@@ -4178,12 +4180,12 @@ private:
         {
             switch (sm_state)
             {
-                case SmState::st_initial:
+                case st_initial:
                     cr.claim_id = issue_account_create();
-                    sm_state = SmState::st_attesting;
+                    sm_state = st_attesting;
                     break;
 
-                case SmState::st_attesting:
+                case st_attesting:
                     attest(time, rnd);
                     break;
 
@@ -4191,14 +4193,14 @@ private:
                     assert(0);
                     break;
 
-                case SmState::st_completed:
+                case st_completed:
                     break;  // will get this once
             }
             return sm_state;
         }
 
     private:
-        SmState sm_state{SmState::st_initial};
+        SmState sm_state{st_initial};
         AccountCreate cr;
     };
 
@@ -4327,36 +4329,35 @@ private:
         {
             switch (sm_state)
             {
-                case SmState::st_initial:
+                case st_initial:
                     xfer.claim_id = create_claim_id();
-                    sm_state = SmState::st_claim_id_created;
+                    sm_state = st_claim_id_created;
                     break;
 
-                case SmState::st_claim_id_created:
+                case st_claim_id_created:
                     commit();
-                    sm_state = SmState::st_attesting;
+                    sm_state = st_attesting;
                     break;
 
-                case SmState::st_attesting:
+                case st_attesting:
                     if (attest(time, rnd))
                     {
-                        sm_state = xfer.with_claim == WithClaim::yes ? SmState::st_attested
-                                                                     : SmState::st_completed;
+                        sm_state = xfer.with_claim == WithClaim::yes ? st_attested : st_completed;
                     }
                     else
                     {
-                        sm_state = SmState::st_attesting;
+                        sm_state = st_attesting;
                     }
                     break;
 
-                case SmState::st_attested:
+                case st_attested:
                     assert(xfer.with_claim == WithClaim::yes);
                     claim();
-                    sm_state = SmState::st_completed;
+                    sm_state = st_completed;
                     break;
 
                 default:
-                case SmState::st_completed:
+                case st_completed:
                     assert(0);  // should have been removed
                     break;
             }
@@ -4365,7 +4366,7 @@ private:
 
     private:
         Transfer xfer;
-        SmState sm_state{SmState::st_initial};
+        SmState sm_state{st_initial};
     };
 
     // --------------------------------------------------
@@ -4412,7 +4413,7 @@ public:
                     return sm.advance(time, rnd);
                 };
                 auto& [t, sm] = *it;
-                if (t <= time && std::visit(vis, sm) == SmState::st_completed)
+                if (t <= time && std::visit(vis, sm) == st_completed)
                 {
                     it = sm_.erase(it);
                 }

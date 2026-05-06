@@ -53,12 +53,12 @@ void
 NodeFamily::reset()
 {
     {
-        std::scoped_lock const lock(maxSeqMutex_);
+        std::lock_guard const lock(maxSeqMutex_);
         maxSeq_ = 0;
     }
 
-    (*fbCache_).reset();
-    (*tnCache_).reset();
+    fbCache_->reset();
+    tnCache_->reset();
 }
 
 void
