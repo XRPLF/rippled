@@ -245,28 +245,14 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    // Enforce invariant: sfDomainID requires lsfMPTRequireAuth.
-    // Check the combined post-apply state, not each field independently.
-    {
-        auto flagsOut = sleMptIssuance->getFieldU32(sfFlags);
-        if (mutableFlags)
-        {
-            if ((*mutableFlags & tmfMPTSetRequireAuth) != 0u)
-            {
-                flagsOut |= lsfMPTRequireAuth;
-            }
-            else if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u)
-            {
-                flagsOut &= ~lsfMPTRequireAuth;
-            }
-        }
+    auto const domain = ctx.tx[~sfDomainID];
+    // A zero DomainID clears the field; otherwise use the tx value if
+    // present, or the current ledger state if the tx leaves it unchanged.
+    auto const willHaveDomainID =
+        domain ? *domain != beast::kZERO : sleMptIssuance->isFieldPresent(sfDomainID);
 
-        auto const willHaveDomainID =
-            ctx.tx.isFieldPresent(sfDomainID) || sleMptIssuance->isFieldPresent(sfDomainID);
-
-        if (willHaveDomainID && (flagsOut & lsfMPTRequireAuth) == 0u)
-            return tecNO_PERMISSION;
-    }
+    if (willHaveDomainID && mutableFlags && ((*mutableFlags & tmfMPTClearRequireAuth) != 0u))
+        return tecNO_PERMISSION;
 
     if (!isMutableFlag(lsmfMPTCanMutateMetadata) && ctx.tx.isFieldPresent(sfMPTokenMetadata))
         return tecNO_PERMISSION;
