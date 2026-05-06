@@ -886,7 +886,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // Empty list of tokens to delete.
         {
             json::Value jv = token::cancelOffer(buyer);
-            jv[sfNFTokenOffers.jsonName] = json::ValueType::ArrayValue;
+            jv[sfNFTokenOffers.jsonName] = json::ValueType::Array;
             env(jv, Ter(temMALFORMED));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
@@ -4489,7 +4489,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                                int expectMarkerCount,
                                int line) {
             int markerCount = 0;
-            json::Value allOffers(json::ValueType::ArrayValue);
+            json::Value allOffers(json::ValueType::Array);
             std::string marker;
 
             // The do/while collects results until no marker is returned.

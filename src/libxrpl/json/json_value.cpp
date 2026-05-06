@@ -168,28 +168,28 @@ Value::Value(ValueType type) : type_(type)
 {
     switch (type)
     {
-        case ValueType::NullValue:
+        case ValueType::Null:
             break;
 
-        case ValueType::IntValue:
-        case ValueType::UintValue:
+        case ValueType::Int:
+        case ValueType::Uint:
             value_.intVal = 0;
             break;
 
-        case ValueType::RealValue:
+        case ValueType::Real:
             value_.realVal = 0.0;
             break;
 
-        case ValueType::StringValue:
+        case ValueType::String:
             value_.stringVal = 0;
             break;
 
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             value_.mapVal = new ObjectValues();
             break;
 
-        case ValueType::BooleanValue:
+        case ValueType::Boolean:
             value_.boolVal = false;
             break;
 
@@ -200,44 +200,44 @@ Value::Value(ValueType type) : type_(type)
     }
 }
 
-Value::Value(Int value) : type_(ValueType::IntValue)
+Value::Value(Int value) : type_(ValueType::Int)
 {
     value_.intVal = value;
 }
 
-Value::Value(UInt value) : type_(ValueType::UintValue)
+Value::Value(UInt value) : type_(ValueType::Uint)
 {
     value_.uintVal = value;
 }
 
-Value::Value(double value) : type_(ValueType::RealValue)
+Value::Value(double value) : type_(ValueType::Real)
 {
     value_.realVal = value;
 }
 
-Value::Value(char const* value) : type_(ValueType::StringValue), allocated_(true)
+Value::Value(char const* value) : type_(ValueType::String), allocated_(true)
 {
     value_.stringVal = valueAllocator()->duplicateStringValue(value);
 }
 
-Value::Value(xrpl::Number const& value) : type_(ValueType::StringValue), allocated_(true)
+Value::Value(xrpl::Number const& value) : type_(ValueType::String), allocated_(true)
 {
     auto const tmp = to_string(value);
     value_.stringVal = valueAllocator()->duplicateStringValue(tmp.c_str(), tmp.length());
 }
 
-Value::Value(std::string const& value) : type_(ValueType::StringValue), allocated_(true)
+Value::Value(std::string const& value) : type_(ValueType::String), allocated_(true)
 {
     value_.stringVal =
         valueAllocator()->duplicateStringValue(value.c_str(), (unsigned int)value.length());
 }
 
-Value::Value(StaticString const& value) : type_(ValueType::StringValue)
+Value::Value(StaticString const& value) : type_(ValueType::String)
 {
     value_.stringVal = const_cast<char*>(value.cStr());
 }
 
-Value::Value(bool value) : type_(ValueType::BooleanValue)
+Value::Value(bool value) : type_(ValueType::Boolean)
 {
     value_.boolVal = value;
 }
@@ -246,15 +246,15 @@ Value::Value(Value const& other) : type_(other.type_)
 {
     switch (type_)
     {
-        case ValueType::NullValue:
-        case ValueType::IntValue:
-        case ValueType::UintValue:
-        case ValueType::RealValue:
-        case ValueType::BooleanValue:
+        case ValueType::Null:
+        case ValueType::Int:
+        case ValueType::Uint:
+        case ValueType::Real:
+        case ValueType::Boolean:
             value_ = other.value_;
             break;
 
-        case ValueType::StringValue:
+        case ValueType::String:
             if (other.value_.stringVal != nullptr)
             {
                 value_.stringVal = valueAllocator()->duplicateStringValue(other.value_.stringVal);
@@ -267,8 +267,8 @@ Value::Value(Value const& other) : type_(other.type_)
 
             break;
 
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             value_.mapVal = new ObjectValues(*other.value_.mapVal);
             break;
 
@@ -283,21 +283,21 @@ Value::~Value()
 {
     switch (type_)
     {
-        case ValueType::NullValue:
-        case ValueType::IntValue:
-        case ValueType::UintValue:
-        case ValueType::RealValue:
-        case ValueType::BooleanValue:
+        case ValueType::Null:
+        case ValueType::Int:
+        case ValueType::Uint:
+        case ValueType::Real:
+        case ValueType::Boolean:
             break;
 
-        case ValueType::StringValue:
+        case ValueType::String:
             if (allocated_)
                 valueAllocator()->releaseStringValue(value_.stringVal);
 
             break;
 
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             if (value_.mapVal != nullptr)
                 delete value_.mapVal;
             break;
@@ -320,7 +320,7 @@ Value::operator=(Value const& other)
 Value::Value(Value&& other) noexcept
     : value_(other.value_), type_(other.type_), allocated_(other.allocated_)
 {
-    other.type_ = ValueType::NullValue;
+    other.type_ = ValueType::Null;
     other.allocated_ = 0;
 }
 
@@ -370,11 +370,11 @@ operator<(Value const& x, Value const& y)
 {
     if (auto signum = static_cast<int>(x.type_) - static_cast<int>(y.type_))
     {
-        if (x.type_ == ValueType::IntValue && y.type_ == ValueType::UintValue)
+        if (x.type_ == ValueType::Int && y.type_ == ValueType::Uint)
         {
             signum = integerCmp(x.value_.intVal, y.value_.uintVal);
         }
-        else if (x.type_ == ValueType::UintValue && y.type_ == ValueType::IntValue)
+        else if (x.type_ == ValueType::Uint && y.type_ == ValueType::Int)
         {
             signum = -integerCmp(y.value_.intVal, x.value_.uintVal);
         }
@@ -383,28 +383,28 @@ operator<(Value const& x, Value const& y)
 
     switch (x.type_)
     {
-        case ValueType::NullValue:
+        case ValueType::Null:
             return false;
 
-        case ValueType::IntValue:
+        case ValueType::Int:
             return x.value_.intVal < y.value_.intVal;
 
-        case ValueType::UintValue:
+        case ValueType::Uint:
             return x.value_.uintVal < y.value_.uintVal;
 
-        case ValueType::RealValue:
+        case ValueType::Real:
             return x.value_.realVal < y.value_.realVal;
 
-        case ValueType::BooleanValue:
+        case ValueType::Boolean:
             return static_cast<int>(x.value_.boolVal) < static_cast<int>(y.value_.boolVal);
 
-        case ValueType::StringValue:
+        case ValueType::String:
             return (x.value_.stringVal == 0 && (y.value_.stringVal != nullptr)) ||
                 ((y.value_.stringVal != nullptr) && (x.value_.stringVal != nullptr) &&
                  strcmp(x.value_.stringVal, y.value_.stringVal) < 0);
 
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue: {
+        case ValueType::Array:
+        case ValueType::Object: {
             if (int const signum = int(x.value_.mapVal->size()) - y.value_.mapVal->size())
                 return signum < 0;
 
@@ -425,37 +425,37 @@ operator==(Value const& x, Value const& y)
 {
     if (x.type_ != y.type_)
     {
-        if (x.type_ == ValueType::IntValue && y.type_ == ValueType::UintValue)
+        if (x.type_ == ValueType::Int && y.type_ == ValueType::Uint)
             return integerCmp(x.value_.intVal, y.value_.uintVal) == 0;
-        if (x.type_ == ValueType::UintValue && y.type_ == ValueType::IntValue)
+        if (x.type_ == ValueType::Uint && y.type_ == ValueType::Int)
             return integerCmp(y.value_.intVal, x.value_.uintVal) == 0;
         return false;
     }
 
     switch (x.type_)
     {
-        case ValueType::NullValue:
+        case ValueType::Null:
             return true;
 
-        case ValueType::IntValue:
+        case ValueType::Int:
             return x.value_.intVal == y.value_.intVal;
 
-        case ValueType::UintValue:
+        case ValueType::Uint:
             return x.value_.uintVal == y.value_.uintVal;
 
-        case ValueType::RealValue:
+        case ValueType::Real:
             return x.value_.realVal == y.value_.realVal;
 
-        case ValueType::BooleanValue:
+        case ValueType::Boolean:
             return x.value_.boolVal == y.value_.boolVal;
 
-        case ValueType::StringValue:
+        case ValueType::String:
             return x.value_.stringVal == y.value_.stringVal ||
                 ((y.value_.stringVal != nullptr) && (x.value_.stringVal != nullptr) &&
                  (strcmp(x.value_.stringVal, y.value_.stringVal) == 0));
 
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             return x.value_.mapVal->size() == y.value_.mapVal->size() &&
                 *x.value_.mapVal == *y.value_.mapVal;
 
@@ -471,7 +471,7 @@ operator==(Value const& x, Value const& y)
 char const*
 Value::asCString() const
 {
-    XRPL_ASSERT(type_ == ValueType::StringValue, "json::Value::asCString : valid type");
+    XRPL_ASSERT(type_ == ValueType::String, "json::Value::asCString : valid type");
     return value_.stringVal;
 }
 
@@ -480,26 +480,26 @@ Value::asString() const
 {
     switch (type_)
     {
-        case ValueType::NullValue:
+        case ValueType::Null:
             return "";
 
-        case ValueType::StringValue:
+        case ValueType::String:
             return (value_.stringVal != nullptr) ? value_.stringVal : "";
 
-        case ValueType::BooleanValue:
+        case ValueType::Boolean:
             return value_.boolVal ? "true" : "false";
 
-        case ValueType::IntValue:
+        case ValueType::Int:
             return std::to_string(value_.intVal);
 
-        case ValueType::UintValue:
+        case ValueType::Uint:
             return std::to_string(value_.uintVal);
 
-        case ValueType::RealValue:
+        case ValueType::Real:
             return std::to_string(value_.realVal);
 
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to string");
 
             // LCOV_EXCL_START
@@ -516,33 +516,33 @@ Value::asInt() const
 {
     switch (type_)
     {
-        case ValueType::NullValue:
+        case ValueType::Null:
             return 0;
 
-        case ValueType::IntValue:
+        case ValueType::Int:
             return value_.intVal;
 
-        case ValueType::UintValue:
+        case ValueType::Uint:
             JSON_ASSERT_MESSAGE(
                 value_.uintVal < (unsigned)kMAX_INT, "integer out of signed integer range");
             return value_.uintVal;
 
-        case ValueType::RealValue:
+        case ValueType::Real:
             JSON_ASSERT_MESSAGE(
                 (value_.realVal >= kMIN_INT && value_.realVal <= kMAX_INT),
                 "Real out of signed integer range");
             return Int(value_.realVal);
 
-        case ValueType::BooleanValue:
+        case ValueType::Boolean:
             return value_.boolVal ? 1 : 0;
 
-        case ValueType::StringValue: {
+        case ValueType::String: {
             char const* const str{(value_.stringVal != nullptr) ? value_.stringVal : ""};
             return beast::lexicalCastThrow<int>(str);
         }
 
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to int");
 
             // LCOV_EXCL_START
@@ -559,10 +559,10 @@ Value::asAbsUInt() const
 {
     switch (type_)
     {
-        case ValueType::NullValue:
+        case ValueType::Null:
             return 0;
 
-        case ValueType::IntValue: {
+        case ValueType::Int: {
             // Doing this conversion through int64 avoids overflow error for
             // value_.intVal = -1 * 2^31 i.e. numeric_limits<int>::min().
             if (value_.intVal < 0)
@@ -570,38 +570,37 @@ Value::asAbsUInt() const
             return value_.intVal;
         }
 
-        case ValueType::UintValue:
+        case ValueType::Uint:
             return value_.uintVal;
 
-        case ValueType::RealValue: {
+        case ValueType::Real: {
             if (value_.realVal < 0)
             {
                 JSON_ASSERT_MESSAGE(
-                    -1 * value_.realVal <= kMAX_U_INT, "Real out of unsigned integer range");
+                    -1 * value_.realVal <= kMAX_UINT, "Real out of unsigned integer range");
                 return UInt(-1 * value_.realVal);
             }
-            JSON_ASSERT_MESSAGE(value_.realVal <= kMAX_U_INT, "Real out of unsigned integer range");
+            JSON_ASSERT_MESSAGE(value_.realVal <= kMAX_UINT, "Real out of unsigned integer range");
             return UInt(value_.realVal);
         }
 
-        case ValueType::BooleanValue:
+        case ValueType::Boolean:
             return value_.boolVal ? 1 : 0;
 
-        case ValueType::StringValue: {
+        case ValueType::String: {
             char const* const str{(value_.stringVal != nullptr) ? value_.stringVal : ""};
             auto const temp = beast::lexicalCastThrow<std::int64_t>(str);
             if (temp < 0)
             {
-                JSON_ASSERT_MESSAGE(
-                    -1 * temp <= kMAX_U_INT, "String out of unsigned integer range");
+                JSON_ASSERT_MESSAGE(-1 * temp <= kMAX_UINT, "String out of unsigned integer range");
                 return -1 * temp;
             }
-            JSON_ASSERT_MESSAGE(temp <= kMAX_U_INT, "String out of unsigned integer range");
+            JSON_ASSERT_MESSAGE(temp <= kMAX_UINT, "String out of unsigned integer range");
             return temp;
         }
 
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to int");
 
             // LCOV_EXCL_START
@@ -618,33 +617,33 @@ Value::asUInt() const
 {
     switch (type_)
     {
-        case ValueType::NullValue:
+        case ValueType::Null:
             return 0;
 
-        case ValueType::IntValue:
+        case ValueType::Int:
             JSON_ASSERT_MESSAGE(
                 value_.intVal >= 0, "Negative integer can not be converted to unsigned integer");
             return value_.intVal;
 
-        case ValueType::UintValue:
+        case ValueType::Uint:
             return value_.uintVal;
 
-        case ValueType::RealValue:
+        case ValueType::Real:
             JSON_ASSERT_MESSAGE(
-                (value_.realVal >= 0 && value_.realVal <= kMAX_U_INT),
+                (value_.realVal >= 0 && value_.realVal <= kMAX_UINT),
                 "Real out of unsigned integer range");
             return UInt(value_.realVal);
 
-        case ValueType::BooleanValue:
+        case ValueType::Boolean:
             return value_.boolVal ? 1 : 0;
 
-        case ValueType::StringValue: {
+        case ValueType::String: {
             char const* const str{(value_.stringVal != nullptr) ? value_.stringVal : ""};
             return beast::lexicalCastThrow<unsigned int>(str);
         }
 
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to uint");
 
             // LCOV_EXCL_START
@@ -661,24 +660,24 @@ Value::asDouble() const
 {
     switch (type_)
     {
-        case ValueType::NullValue:
+        case ValueType::Null:
             return 0.0;
 
-        case ValueType::IntValue:
+        case ValueType::Int:
             return value_.intVal;
 
-        case ValueType::UintValue:
+        case ValueType::Uint:
             return value_.uintVal;
 
-        case ValueType::RealValue:
+        case ValueType::Real:
             return value_.realVal;
 
-        case ValueType::BooleanValue:
+        case ValueType::Boolean:
             return value_.boolVal ? 1.0 : 0.0;
 
-        case ValueType::StringValue:
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::String:
+        case ValueType::Array:
+        case ValueType::Object:
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to double");
 
             // LCOV_EXCL_START
@@ -695,24 +694,24 @@ Value::asBool() const
 {
     switch (type_)
     {
-        case ValueType::NullValue:
+        case ValueType::Null:
             return false;
 
-        case ValueType::IntValue:
-        case ValueType::UintValue:
+        case ValueType::Int:
+        case ValueType::Uint:
             return value_.intVal != 0;
 
-        case ValueType::RealValue:
+        case ValueType::Real:
             return value_.realVal != 0.0;
 
-        case ValueType::BooleanValue:
+        case ValueType::Boolean:
             return value_.boolVal;
 
-        case ValueType::StringValue:
+        case ValueType::String:
             return (value_.stringVal != nullptr) && value_.stringVal[0] != 0;
 
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             return !value_.mapVal->empty();
 
             // LCOV_EXCL_START
@@ -729,51 +728,47 @@ Value::isConvertibleTo(ValueType other) const
 {
     switch (type_)
     {
-        case ValueType::NullValue:
+        case ValueType::Null:
             return true;
 
-        case ValueType::IntValue:
-            return (other == ValueType::NullValue && value_.intVal == 0) ||
-                other == ValueType::IntValue ||
-                (other == ValueType::UintValue && value_.intVal >= 0) ||
-                other == ValueType::RealValue || other == ValueType::StringValue ||
-                other == ValueType::BooleanValue;
+        case ValueType::Int:
+            return (other == ValueType::Null && value_.intVal == 0) || other == ValueType::Int ||
+                (other == ValueType::Uint && value_.intVal >= 0) || other == ValueType::Real ||
+                other == ValueType::String || other == ValueType::Boolean;
 
-        case ValueType::UintValue:
-            return (other == ValueType::NullValue && value_.uintVal == 0) ||
-                (other == ValueType::IntValue && value_.uintVal <= (unsigned)kMAX_INT) ||
-                other == ValueType::UintValue || other == ValueType::RealValue ||
-                other == ValueType::StringValue || other == ValueType::BooleanValue;
+        case ValueType::Uint:
+            return (other == ValueType::Null && value_.uintVal == 0) ||
+                (other == ValueType::Int && value_.uintVal <= (unsigned)kMAX_INT) ||
+                other == ValueType::Uint || other == ValueType::Real ||
+                other == ValueType::String || other == ValueType::Boolean;
 
-        case ValueType::RealValue:
-            return (other == ValueType::NullValue && value_.realVal == 0.0) ||
-                (other == ValueType::IntValue && value_.realVal >= kMIN_INT &&
+        case ValueType::Real:
+            return (other == ValueType::Null && value_.realVal == 0.0) ||
+                (other == ValueType::Int && value_.realVal >= kMIN_INT &&
                  value_.realVal <= kMAX_INT) ||
-                (other == ValueType::UintValue && value_.realVal >= 0 &&
-                 value_.realVal <= kMAX_U_INT &&
+                (other == ValueType::Uint && value_.realVal >= 0 && value_.realVal <= kMAX_UINT &&
                  std::fabs(round(value_.realVal) - value_.realVal) <
                      std::numeric_limits<double>::epsilon()) ||
-                other == ValueType::RealValue || other == ValueType::StringValue ||
-                other == ValueType::BooleanValue;
+                other == ValueType::Real || other == ValueType::String ||
+                other == ValueType::Boolean;
 
-        case ValueType::BooleanValue:
-            return (other == ValueType::NullValue && !value_.boolVal) ||
-                other == ValueType::IntValue || other == ValueType::UintValue ||
-                other == ValueType::RealValue || other == ValueType::StringValue ||
-                other == ValueType::BooleanValue;
+        case ValueType::Boolean:
+            return (other == ValueType::Null && !value_.boolVal) || other == ValueType::Int ||
+                other == ValueType::Uint || other == ValueType::Real ||
+                other == ValueType::String || other == ValueType::Boolean;
 
-        case ValueType::StringValue:
-            return other == ValueType::StringValue ||
-                (other == ValueType::NullValue &&
+        case ValueType::String:
+            return other == ValueType::String ||
+                (other == ValueType::Null &&
                  ((value_.stringVal == nullptr) || value_.stringVal[0] == 0));
 
-        case ValueType::ArrayValue:
-            return other == ValueType::ArrayValue ||
-                (other == ValueType::NullValue && value_.mapVal->empty());
+        case ValueType::Array:
+            return other == ValueType::Array ||
+                (other == ValueType::Null && value_.mapVal->empty());
 
-        case ValueType::ObjectValue:
-            return other == ValueType::ObjectValue ||
-                (other == ValueType::NullValue && value_.mapVal->empty());
+        case ValueType::Object:
+            return other == ValueType::Object ||
+                (other == ValueType::Null && value_.mapVal->empty());
 
         // LCOV_EXCL_START
         default:
@@ -790,15 +785,15 @@ Value::size() const
 {
     switch (type_)
     {
-        case ValueType::NullValue:
-        case ValueType::IntValue:
-        case ValueType::UintValue:
-        case ValueType::RealValue:
-        case ValueType::BooleanValue:
-        case ValueType::StringValue:
+        case ValueType::Null:
+        case ValueType::Int:
+        case ValueType::Uint:
+        case ValueType::Real:
+        case ValueType::Boolean:
+        case ValueType::String:
             return 0;
 
-        case ValueType::ArrayValue:  // size of the array is highest index + 1
+        case ValueType::Array:  // size of the array is highest index + 1
             if (!value_.mapVal->empty())
             {
                 ObjectValues::const_iterator itLast = value_.mapVal->end();
@@ -808,7 +803,7 @@ Value::size() const
 
             return 0;
 
-        case ValueType::ObjectValue:
+        case ValueType::Object:
             return Int(value_.mapVal->size());
 
             // LCOV_EXCL_START
@@ -839,14 +834,13 @@ void
 Value::clear()
 {
     XRPL_ASSERT(
-        type_ == ValueType::NullValue || type_ == ValueType::ArrayValue ||
-            type_ == ValueType::ObjectValue,
+        type_ == ValueType::Null || type_ == ValueType::Array || type_ == ValueType::Object,
         "json::Value::clear : valid type");
 
     switch (type_)
     {
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             value_.mapVal->clear();
             break;
 
@@ -859,11 +853,11 @@ Value&
 Value::operator[](UInt index)
 {
     XRPL_ASSERT(
-        type_ == ValueType::NullValue || type_ == ValueType::ArrayValue,
+        type_ == ValueType::Null || type_ == ValueType::Array,
         "json::Value::operator[](UInt) : valid type");
 
-    if (type_ == ValueType::NullValue)
-        *this = Value(ValueType::ArrayValue);
+    if (type_ == ValueType::Null)
+        *this = Value(ValueType::Array);
 
     CZString const key(index);
     ObjectValues::iterator it = value_.mapVal->lower_bound(key);
@@ -880,10 +874,10 @@ Value const&
 Value::operator[](UInt index) const
 {
     XRPL_ASSERT(
-        type_ == ValueType::NullValue || type_ == ValueType::ArrayValue,
+        type_ == ValueType::Null || type_ == ValueType::Array,
         "json::Value::operator[](UInt) const : valid type");
 
-    if (type_ == ValueType::NullValue)
+    if (type_ == ValueType::Null)
         return kNULL;
 
     CZString const key(index);
@@ -905,11 +899,11 @@ Value&
 Value::resolveReference(char const* key, bool isStatic)
 {
     XRPL_ASSERT(
-        type_ == ValueType::NullValue || type_ == ValueType::ObjectValue,
+        type_ == ValueType::Null || type_ == ValueType::Object,
         "json::Value::resolveReference : valid type");
 
-    if (type_ == ValueType::NullValue)
-        *this = Value(ValueType::ObjectValue);
+    if (type_ == ValueType::Null)
+        *this = Value(ValueType::Object);
 
     CZString const actualKey(key, isStatic ? CZString::NoDuplication : CZString::DuplicateOnCopy);
     ObjectValues::iterator it = value_.mapVal->lower_bound(actualKey);
@@ -940,10 +934,10 @@ Value const&
 Value::operator[](char const* key) const
 {
     XRPL_ASSERT(
-        type_ == ValueType::NullValue || type_ == ValueType::ObjectValue,
+        type_ == ValueType::Null || type_ == ValueType::Object,
         "json::Value::operator[](const char*) const : valid type");
 
-    if (type_ == ValueType::NullValue)
+    if (type_ == ValueType::Null)
         return kNULL;
 
     CZString const actualKey(key, CZString::NoDuplication);
@@ -1008,10 +1002,10 @@ Value
 Value::removeMember(char const* key)
 {
     XRPL_ASSERT(
-        type_ == ValueType::NullValue || type_ == ValueType::ObjectValue,
+        type_ == ValueType::Null || type_ == ValueType::Object,
         "json::Value::removeMember : valid type");
 
-    if (type_ == ValueType::NullValue)
+    if (type_ == ValueType::Null)
         return kNULL;
 
     CZString const actualKey(key, CZString::NoDuplication);
@@ -1034,7 +1028,7 @@ Value::removeMember(std::string const& key)
 bool
 Value::isMember(char const* key) const
 {
-    if (type_ != ValueType::ObjectValue)
+    if (type_ != ValueType::Object)
         return false;
 
     Value const* value = &((*this)[key]);
@@ -1057,10 +1051,10 @@ Value::Members
 Value::getMemberNames() const
 {
     XRPL_ASSERT(
-        type_ == ValueType::NullValue || type_ == ValueType::ObjectValue,
+        type_ == ValueType::Null || type_ == ValueType::Object,
         "json::Value::getMemberNames : valid type");
 
-    if (type_ == ValueType::NullValue)
+    if (type_ == ValueType::Null)
         return Value::Members();
 
     Members members;
@@ -1077,38 +1071,37 @@ Value::getMemberNames() const
 bool
 Value::isNull() const
 {
-    return type_ == ValueType::NullValue;
+    return type_ == ValueType::Null;
 }
 
 bool
 Value::isBool() const
 {
-    return type_ == ValueType::BooleanValue;
+    return type_ == ValueType::Boolean;
 }
 
 bool
 Value::isInt() const
 {
-    return type_ == ValueType::IntValue;
+    return type_ == ValueType::Int;
 }
 
 bool
 Value::isUInt() const
 {
-    return type_ == ValueType::UintValue;
+    return type_ == ValueType::Uint;
 }
 
 bool
 Value::isIntegral() const
 {
-    return type_ == ValueType::IntValue || type_ == ValueType::UintValue ||
-        type_ == ValueType::BooleanValue;
+    return type_ == ValueType::Int || type_ == ValueType::Uint || type_ == ValueType::Boolean;
 }
 
 bool
 Value::isDouble() const
 {
-    return type_ == ValueType::RealValue;
+    return type_ == ValueType::Real;
 }
 
 bool
@@ -1120,31 +1113,31 @@ Value::isNumeric() const
 bool
 Value::isString() const
 {
-    return type_ == ValueType::StringValue;
+    return type_ == ValueType::String;
 }
 
 bool
 Value::isArray() const
 {
-    return type_ == ValueType::ArrayValue;
+    return type_ == ValueType::Array;
 }
 
 bool
 Value::isArrayOrNull() const
 {
-    return type_ == ValueType::NullValue || type_ == ValueType::ArrayValue;
+    return type_ == ValueType::Null || type_ == ValueType::Array;
 }
 
 bool
 Value::isObject() const
 {
-    return type_ == ValueType::ObjectValue;
+    return type_ == ValueType::Object;
 }
 
 bool
 Value::isObjectOrNull() const
 {
-    return type_ == ValueType::NullValue || type_ == ValueType::ObjectValue;
+    return type_ == ValueType::Null || type_ == ValueType::Object;
 }
 
 std::string
@@ -1159,8 +1152,8 @@ Value::begin() const
 {
     switch (type_)
     {
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             if (value_.mapVal != nullptr)
                 return const_iterator(value_.mapVal->begin());
 
@@ -1177,8 +1170,8 @@ Value::end() const
 {
     switch (type_)
     {
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             if (value_.mapVal != nullptr)
                 return const_iterator(value_.mapVal->end());
 
@@ -1195,8 +1188,8 @@ Value::begin()
 {
     switch (type_)
     {
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             if (value_.mapVal != nullptr)
                 return iterator(value_.mapVal->begin());
             break;
@@ -1212,8 +1205,8 @@ Value::end()
 {
     switch (type_)
     {
-        case ValueType::ArrayValue:
-        case ValueType::ObjectValue:
+        case ValueType::Array:
+        case ValueType::Object:
             if (value_.mapVal != nullptr)
                 return iterator(value_.mapVal->end());
             break;

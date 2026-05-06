@@ -59,7 +59,7 @@ PathRequest::PathRequest(
     , owner_(owner)
     , wpSubscriber_(subscriber)
     , consumer_(subscriber->getConsumer())
-    , jvStatus_(json::ValueType::ObjectValue)
+    , jvStatus_(json::ValueType::Object)
     , lastIndex_(0)
     , inProgress_(false)
     , iLevel_(0)
@@ -82,7 +82,7 @@ PathRequest::PathRequest(
     , owner_(owner)
     , fCompletion_(completion)
     , consumer_(consumer)
-    , jvStatus_(json::ValueType::ObjectValue)
+    , jvStatus_(json::ValueType::Object)
     , lastIndex_(0)
     , inProgress_(false)
     , iLevel_(0)
@@ -198,7 +198,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 
     auto const sleDest = lrLedger->read(keylet::account(*raDstAccount_));
 
-    json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = json::ValueType::ArrayValue);
+    json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = json::ValueType::Array);
 
     if (!sleDest)
     {
@@ -673,7 +673,7 @@ PathRequest::findPaths(
 
         if (rc.result() == tesSUCCESS)
         {
-            json::Value jvEntry(json::ValueType::ObjectValue);
+            json::Value jvEntry(json::ValueType::Object);
             if (rc.actualAmountIn.holds<Issue>())
                 rc.actualAmountIn.get<Issue>().account = sourceAccount;
             jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::KNone);
@@ -685,7 +685,7 @@ PathRequest::findPaths(
             if (hasCompletion())
             {
                 // Old ripple_path_find API requires this
-                jvEntry[jss::paths_canonical] = json::ValueType::ArrayValue;
+                jvEntry[jss::paths_canonical] = json::ValueType::Array;
             }
 
             jvArray.append(jvEntry);
@@ -722,12 +722,12 @@ PathRequest::doUpdate(
             return jvStatus_;
     }
 
-    json::Value newStatus = json::ValueType::ObjectValue;
+    json::Value newStatus = json::ValueType::Object;
 
     if (hasCompletion())
     {
         // Old ripple_path_find API gives destination_currencies
-        auto& destAssets = (newStatus[jss::destination_currencies] = json::ValueType::ArrayValue);
+        auto& destAssets = (newStatus[jss::destination_currencies] = json::ValueType::Array);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto const assets = accountDestAssets(*raDstAccount_, cache, true);
         for (auto const& asset : assets)
@@ -783,7 +783,7 @@ PathRequest::doUpdate(
 
     JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_;
 
-    json::Value jvArray = json::ValueType::ArrayValue;
+    json::Value jvArray = json::ValueType::Array;
     if (findPaths(cache, iLevel_, jvArray, continueCallback))
     {
         bLastSuccess_ = jvArray.size() != 0;

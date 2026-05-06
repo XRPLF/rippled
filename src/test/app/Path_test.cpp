@@ -63,14 +63,14 @@ namespace xrpl::test {
 json::Value
 rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t numSrc)
 {
-    json::Value jv = json::ValueType::ObjectValue;
+    json::Value jv = json::ValueType::Object;
     jv[jss::command] = "ripple_path_find";
     jv[jss::source_account] = toBase58(src);
 
     if (numSrc > 0)
     {
-        auto& sc = (jv[jss::source_currencies] = json::ValueType::ArrayValue);
-        json::Value j = json::ValueType::ObjectValue;
+        auto& sc = (jv[jss::source_currencies] = json::ValueType::Array);
+        json::Value j = json::ValueType::Object;
         while ((numSrc--) != 0u)
         {
             j[jss::currency] = std::to_string(numSrc + 100);
@@ -81,7 +81,7 @@ rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t numSrc)
     auto const d = toBase58(dst);
     jv[jss::destination_account] = d;
 
-    json::Value& j = (jv[jss::destination_amount] = json::ValueType::ObjectValue);
+    json::Value& j = (jv[jss::destination_amount] = json::ValueType::Object);
     j[jss::currency] = "USD";
     j[jss::value] = "0.01";
     j[jss::issuer] = d;
@@ -168,7 +168,7 @@ public:
             {},
             {}};
 
-        json::Value params = json::ValueType::ObjectValue;
+        json::Value params = json::ValueType::Object;
         params[jss::command] = "ripple_path_find";
         params[jss::source_account] = toBase58(src);
         params[jss::destination_account] = toBase58(dst);
@@ -177,8 +177,8 @@ public:
             params[jss::send_max] = saSendMax->getJson(JsonOptions::KNone);
         if (saSrcCurrency)
         {
-            auto& sc = params[jss::source_currencies] = json::ValueType::ArrayValue;
-            json::Value j = json::ValueType::ObjectValue;
+            auto& sc = params[jss::source_currencies] = json::ValueType::Array;
+            json::Value j = json::ValueType::Object;
             j[jss::currency] = to_string(saSrcCurrency.value());
             sc.append(j);
         }

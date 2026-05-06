@@ -983,13 +983,13 @@ AmendmentTableImpl::injectJson(
 json::Value
 AmendmentTableImpl::getJson(bool isAdmin) const
 {
-    json::Value ret(json::ValueType::ObjectValue);
+    json::Value ret(json::ValueType::Object);
     {
         std::scoped_lock const lock(mutex_);
         for (auto const& e : amendmentMap_)
         {
             injectJson(
-                ret[to_string(e.first)] = json::ValueType::ObjectValue,
+                ret[to_string(e.first)] = json::ValueType::Object,
                 e.first,
                 e.second,
                 isAdmin,
@@ -1002,14 +1002,14 @@ AmendmentTableImpl::getJson(bool isAdmin) const
 json::Value
 AmendmentTableImpl::getJson(uint256 const& amendmentID, bool isAdmin) const
 {
-    json::Value ret = json::ValueType::ObjectValue;
+    json::Value ret = json::ValueType::Object;
 
     {
         std::scoped_lock const lock(mutex_);
         AmendmentState const* a = get(amendmentID, lock);
         if (a != nullptr)
         {
-            json::Value& jAmendment = (ret[to_string(amendmentID)] = json::ValueType::ObjectValue);
+            json::Value& jAmendment = (ret[to_string(amendmentID)] = json::ValueType::Object);
             injectJson(jAmendment, amendmentID, *a, isAdmin, lock);
         }
     }

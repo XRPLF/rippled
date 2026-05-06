@@ -179,7 +179,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         {
             // No params
-            json::Value const params = json::ValueType::ObjectValue;
+            json::Value const params = json::ValueType::Object;
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
@@ -187,8 +187,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Providing both `tx_json` and `tx_blob`
-            json::Value params = json::ValueType::ObjectValue;
-            params[jss::tx_json] = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
+            params[jss::tx_json] = json::ValueType::Object;
             params[jss::tx_blob] = "1200";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -198,7 +198,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // `binary` isn't a boolean
-            json::Value params = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
             params[jss::tx_blob] = "1200";
             params[jss::binary] = "100";
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -206,7 +206,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Invalid `tx_blob`
-            json::Value params = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
             params[jss::tx_blob] = "12";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -214,8 +214,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Empty `tx_json`
-            json::Value params = json::ValueType::ObjectValue;
-            params[jss::tx_json] = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
+            params[jss::tx_json] = json::ValueType::Object;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
@@ -223,8 +223,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // No tx.Account
-            json::Value params = json::ValueType::ObjectValue;
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::Payment;
             params[jss::tx_json] = txJson;
 
@@ -233,7 +233,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Empty `tx_blob`
-            json::Value params = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
             params[jss::tx_blob] = "";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -249,7 +249,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Non-object `tx_json`
-            json::Value params = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
             params[jss::tx_json] = "";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
@@ -258,9 +258,9 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // `seed` field included
-            json::Value params = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
             params[jss::seed] = "random_data";
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
@@ -269,9 +269,9 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // `secret` field included
-            json::Value params = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
             params[jss::secret] = "random_data";
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
@@ -280,9 +280,9 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // `seed_hex` field included
-            json::Value params = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
             params[jss::seed_hex] = "random_data";
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
@@ -291,9 +291,9 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // `passphrase` field included
-            json::Value params = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
             params[jss::passphrase] = "random_data";
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
@@ -302,8 +302,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // Invalid transaction
-            json::Value params = json::ValueType::ObjectValue;
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value params = json::ValueType::Object;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::Payment;
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
@@ -316,7 +316,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // Bad account
             json::Value params;
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = "badAccount";
             params[jss::tx_json] = txJson;
@@ -330,7 +330,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // Account doesn't exist for Sequence autofill
             json::Value params;
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = alice.human();
             params[jss::tx_json] = txJson;
@@ -341,7 +341,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // Invalid Signers field
             json::Value params;
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             txJson[sfSigners] = "1";
@@ -353,10 +353,10 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // Invalid Signers field
             json::Value params;
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
-            txJson[sfSigners] = json::ValueType::ArrayValue;
+            txJson[sfSigners] = json::ValueType::Array;
             txJson[sfSigners].append("1");
             params[jss::tx_json] = txJson;
 
@@ -366,7 +366,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // Invalid transaction
             json::Value params;
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             txJson["foo"] = "bar";
@@ -378,7 +378,7 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // non-`"binary"` second param for CLI
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = alice.human();
             auto const resp = env.rpc("simulate", to_string(txJson), "1");
@@ -387,7 +387,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // Signed transaction
             json::Value params;
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
             txJson[jss::TxnSignature] = "1200ABCD";
@@ -400,10 +400,10 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // Signed multisig transaction
             json::Value params;
-            json::Value txJson = json::ValueType::ObjectValue;
+            json::Value txJson = json::ValueType::Object;
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = env.master.human();
-            txJson[sfSigners] = json::ValueType::ArrayValue;
+            txJson[sfSigners] = json::ValueType::Array;
             {
                 json::Value signer;
                 signer[jss::Account] = alice.human();
@@ -723,7 +723,7 @@ class Simulate_test : public beast::unit_test::Suite
             // test with autofill
             testTx(env, tx, validateOutput, false);
 
-            tx[sfSigners] = json::ValueType::ArrayValue;
+            tx[sfSigners] = json::ValueType::Array;
             {
                 json::Value signer;
                 signer[jss::Account] = becky.human();
@@ -837,7 +837,7 @@ class Simulate_test : public beast::unit_test::Suite
             tx[sfDomain] = kNEW_DOMAIN;
             // master key is disabled, so this is invalid
             tx[jss::SigningPubKey] = strHex(env.master.pk().slice());
-            tx[sfSigners] = json::ValueType::ArrayValue;
+            tx[sfSigners] = json::ValueType::Array;
             {
                 json::Value signer;
                 signer[jss::Account] = becky.human();
@@ -900,7 +900,7 @@ class Simulate_test : public beast::unit_test::Suite
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
             tx[sfDomain] = kNEW_DOMAIN;
-            tx[sfSigners] = json::ValueType::ArrayValue;
+            tx[sfSigners] = json::ValueType::Array;
             {
                 json::Value signer;
                 signer[jss::Account] = becky.human();

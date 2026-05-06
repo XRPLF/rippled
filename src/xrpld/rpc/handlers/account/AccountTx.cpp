@@ -293,7 +293,7 @@ populateJsonResponse(
         response[jss::ledger_index_min] = result.ledgerRange.min;
         response[jss::ledger_index_max] = result.ledgerRange.max;
 
-        json::Value& jvTxns = (response[jss::transactions] = json::ValueType::ArrayValue);
+        json::Value& jvTxns = (response[jss::transactions] = json::ValueType::Array);
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
@@ -303,7 +303,7 @@ populateJsonResponse(
             {
                 if (txn)
                 {
-                    json::Value& jvObj = jvTxns.append(json::ValueType::ObjectValue);
+                    json::Value& jvObj = jvTxns.append(json::ValueType::Object);
                     jvObj[jss::validated] = true;
 
                     auto const jsonTx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
@@ -351,7 +351,7 @@ populateJsonResponse(
 
             for (auto const& binaryData : std::get<TxnsDataBinary>(result.transactions))
             {
-                json::Value& jvObj = jvTxns.append(json::ValueType::ObjectValue);
+                json::Value& jvObj = jvTxns.append(json::ValueType::Object);
 
                 jvObj[jss::tx_blob] = strHex(std::get<0>(binaryData));
                 auto const jsonMeta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
@@ -363,7 +363,7 @@ populateJsonResponse(
 
         if (result.marker)
         {
-            response[jss::marker] = json::ValueType::ObjectValue;
+            response[jss::marker] = json::ValueType::Object;
             response[jss::marker][jss::ledger] = result.marker->ledgerSeq;
             response[jss::marker][jss::seq] = result.marker->txnSeq;
         }
@@ -436,8 +436,8 @@ doAccountTx(RPC::JsonContext& context)
     {
         auto& token = params[jss::marker];
         if (!token.isMember(jss::ledger) || !token.isMember(jss::seq) ||
-            !token[jss::ledger].isConvertibleTo(json::ValueType::UintValue) ||
-            !token[jss::seq].isConvertibleTo(json::ValueType::UintValue))
+            !token[jss::ledger].isConvertibleTo(json::ValueType::Uint) ||
+            !token[jss::seq].isConvertibleTo(json::ValueType::Uint))
         {
             RPC::Status const status{
                 RpcInvalidParams,

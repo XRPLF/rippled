@@ -397,7 +397,7 @@ public:
             Serializer s;
             jt.stx->add(s);
 
-            json::Value args{json::ValueType::ObjectValue};
+            json::Value args{json::ValueType::Object};
 
             args[jss::tx_blob] = strHex(s.slice());
             args[jss::fail_hard] = true;
@@ -715,7 +715,7 @@ public:
         }
 
         {
-            auto params = json::Value(json::ValueType::NullValue);
+            auto params = json::Value(json::ValueType::Null);
             envs(noop(alice), Fee(kNONE), Seq(kNONE))(params);
 
             // Make sure we get the right account back.
@@ -728,7 +728,7 @@ public:
         }
 
         {
-            auto params = json::Value(json::ValueType::ObjectValue);
+            auto params = json::Value(json::ValueType::Object);
             // Force the factor low enough to fail
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;

@@ -445,7 +445,7 @@ PeerImp::getVersion() const
 json::Value
 PeerImp::json()
 {
-    json::Value ret(json::ValueType::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret[jss::public_key] = toBase58(TokenType::NodePublic, publicKey_);
     ret[jss::address] = remoteAddress_.toString();
@@ -547,7 +547,7 @@ PeerImp::json()
         }
     }
 
-    ret[jss::metrics] = json::Value(json::ValueType::ObjectValue);
+    ret[jss::metrics] = json::Value(json::ValueType::Object);
     ret[jss::metrics][jss::total_bytes_recv] = std::to_string(metrics_.recv.totalBytes());
     ret[jss::metrics][jss::total_bytes_sent] = std::to_string(metrics_.sent.totalBytes());
     ret[jss::metrics][jss::avg_bps_recv] = std::to_string(metrics_.recv.averageBytes());
@@ -2055,7 +2055,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
     }
 
     app_.getOPs().pubPeerStatus([m, this]() -> json::Value {
-        json::Value j = json::ValueType::ObjectValue;
+        json::Value j = json::ValueType::Object;
 
         if (m->has_newstatus())
         {

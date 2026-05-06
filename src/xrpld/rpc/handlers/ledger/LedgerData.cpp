@@ -94,9 +94,9 @@ doLedgerData(RPC::JsonContext& context)
         return jvResult;
     }
     json::Value& nodes = jvResult[jss::state];
-    if (nodes.type() == json::ValueType::NullValue)
+    if (nodes.type() == json::ValueType::Null)
     {
-        nodes = json::Value(json::ValueType::ArrayValue);
+        nodes = json::Value(json::ValueType::Array);
     }
 
     auto e = lpLedger->sles.end();
@@ -115,7 +115,7 @@ doLedgerData(RPC::JsonContext& context)
         {
             if (isBinary)
             {
-                json::Value& entry = nodes.append(json::ValueType::ObjectValue);
+                json::Value& entry = nodes.append(json::ValueType::Object);
                 entry[jss::data] = serializeHex(*sle);
                 entry[jss::index] = to_string(sle->key());
             }

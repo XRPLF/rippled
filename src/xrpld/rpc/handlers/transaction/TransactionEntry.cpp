@@ -33,7 +33,7 @@ doTransactionEntry(RPC::JsonContext& context)
     {
         jvResult[jss::error] = "fieldNotFoundTransaction";
     }
-    else if (jvResult.get(jss::ledger_hash, json::ValueType::NullValue).isNull())
+    else if (jvResult.get(jss::ledger_hash, json::ValueType::Null).isNull())
     {
         // We don't work on ledger current.
 

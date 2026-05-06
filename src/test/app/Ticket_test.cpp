@@ -783,7 +783,7 @@ class Ticket_test : public beast::unit_test::Suite
 
             // Create a noop transaction using a TicketSequence but don't fill
             // in the Sequence field.
-            json::Value tx = json::ValueType::ObjectValue;
+            json::Value tx = json::ValueType::Object;
             tx[jss::tx_json] = noop(alice);
             tx[jss::tx_json][sfTicketSequence.jsonName] = ticketSeq;
             tx[jss::secret] = toBase58(generateSeed("alice"));
@@ -816,7 +816,7 @@ class Ticket_test : public beast::unit_test::Suite
 
             // Create a noop transaction using a TicketSequence but don't fill
             // in the Sequence field.
-            json::Value tx = json::ValueType::ObjectValue;
+            json::Value tx = json::ValueType::Object;
             tx[jss::tx_json] = noop(alice);
             tx[jss::tx_json][sfTicketSequence.jsonName] = ticketSeq + 1;
             tx[jss::secret] = toBase58(generateSeed("alice"));

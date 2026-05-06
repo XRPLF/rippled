@@ -552,7 +552,7 @@ private:
 
             {
                 // bad preflight1
-                json::Value jv = json::ValueType::ObjectValue;
+                json::Value jv = json::ValueType::Object;
                 jv[jss::Account] = alice_.human();
                 jv[jss::TransactionType] = jss::AMMDeposit;
                 jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::KNone);
@@ -567,7 +567,7 @@ private:
                 alice_, IOUAmount{-1}, std::nullopt, std::nullopt, Ter(temBAD_AMM_TOKENS));
 
             {
-                json::Value jv = json::ValueType::ObjectValue;
+                json::Value jv = json::ValueType::Object;
                 jv[jss::Account] = alice_.human();
                 jv[jss::TransactionType] = jss::AMMDeposit;
                 jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::KNone);

@@ -892,7 +892,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // See what the account_objects command does with "nft_offer".
         {
-            json::Value ownedNftOffers(json::ValueType::ArrayValue);
+            json::Value ownedNftOffers(json::ValueType::Array);
             std::string marker;
             do
             {
@@ -965,7 +965,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Verify that the ledger reports all of the NFTs owned by buyer.
         // Use the account_nfts rpc call to get the values.
-        json::Value ownedNFTs(json::ValueType::ArrayValue);
+        json::Value ownedNFTs(json::ValueType::Array);
         std::string marker;
         do
         {

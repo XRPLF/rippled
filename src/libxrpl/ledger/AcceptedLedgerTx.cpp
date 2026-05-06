@@ -35,7 +35,7 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     met->add(s);
     rawMeta_ = std::move(s.modData());
 
-    json_ = json::ValueType::ObjectValue;
+    json_ = json::ValueType::Object;
     json_[jss::transaction] = txn_->getJson(JsonOptions::KNone);
 
     json_[jss::meta] = meta_.getJson(JsonOptions::KNone);
@@ -45,7 +45,7 @@ AcceptedLedgerTx::AcceptedLedgerTx(
 
     if (!affected_.empty())
     {
-        json::Value& affected = (json_[jss::affected] = json::ValueType::ArrayValue);
+        json::Value& affected = (json_[jss::affected] = json::ValueType::Array);
         for (auto const& account : affected_)
             affected.append(toBase58(account));
     }

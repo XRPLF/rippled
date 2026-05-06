@@ -56,8 +56,8 @@ class OwnerInfo_test : public beast::unit_test::Suite
             json::Value params;
             params[jss::account] = Account{"bob"}.human();
             auto const result = env.rpc("json", "owner_info", to_string(params))[jss::result];
-            BEAST_EXPECT(result[jss::accepted] == json::ValueType::ObjectValue);
-            BEAST_EXPECT(result[jss::current] == json::ValueType::ObjectValue);
+            BEAST_EXPECT(result[jss::accepted] == json::ValueType::Object);
+            BEAST_EXPECT(result[jss::current] == json::ValueType::Object);
             BEAST_EXPECT(result[jss::status] == "success");
         }
     }

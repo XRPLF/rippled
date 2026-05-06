@@ -129,7 +129,7 @@ cancelOfferImpl(jtx::Account const& account, T const& nftokenOffers)
     jv[sfAccount.jsonName] = account.human();
     if (!empty(nftokenOffers))
     {
-        jv[sfNFTokenOffers.jsonName] = json::ValueType::ArrayValue;
+        jv[sfNFTokenOffers.jsonName] = json::ValueType::Array;
         for (uint256 const& nftokenOffer : nftokenOffers)
             jv[sfNFTokenOffers.jsonName].append(to_string(nftokenOffer));
     }

@@ -158,11 +158,11 @@ doAccountInfo(RPC::JsonContext& context)
             return result;
         }
 
-        json::Value jvAccepted(json::ValueType::ObjectValue);
+        json::Value jvAccepted(json::ValueType::Object);
         injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
 
-        json::Value acctFlags{json::ValueType::ObjectValue};
+        json::Value acctFlags{json::ValueType::Object};
         for (auto const& lsf : kLS_FLAGS)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
@@ -218,7 +218,7 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
-            json::Value jvSignerList = json::ValueType::ArrayValue;
+            json::Value jvSignerList = json::ValueType::Array;
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
@@ -242,7 +242,7 @@ doAccountInfo(RPC::JsonContext& context)
         // Return queue info if that is requested
         if (queue)
         {
-            json::Value jvQueueData = json::ValueType::ObjectValue;
+            json::Value jvQueueData = json::ValueType::Object;
 
             auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
@@ -250,7 +250,7 @@ doAccountInfo(RPC::JsonContext& context)
                 jvQueueData[jss::txn_count] = static_cast<json::UInt>(txs.size());
 
                 auto& jvQueueTx = jvQueueData[jss::transactions];
-                jvQueueTx = json::ValueType::ArrayValue;
+                jvQueueTx = json::ValueType::Array;
 
                 std::uint32_t seqCount = 0;
                 std::uint32_t ticketCount = 0;
@@ -266,7 +266,7 @@ doAccountInfo(RPC::JsonContext& context)
                 SeqProxy prevSeqProxy = SeqProxy::sequence(0);
                 for (auto const& tx : txs)
                 {
-                    json::Value jvTx = json::ValueType::ObjectValue;
+                    json::Value jvTx = json::ValueType::Object;
 
                     if (tx.seqProxy.isSeq())
                     {

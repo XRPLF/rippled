@@ -41,12 +41,12 @@ struct Handler
 Handler const*
 getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
-/** Return a json::ValueType::ObjectValue with a single entry. */
+/** Return a json::ValueType::Object with a single entry. */
 template <class Value>
 json::Value
 makeObjectValue(Value const& value, json::StaticString const& field = jss::message)
 {
-    json::Value result(json::ValueType::ObjectValue);
+    json::Value result(json::ValueType::Object);
     result[field] = value;
     return result;
 }

@@ -62,9 +62,9 @@ class AccountCurrencies_test : public beast::unit_test::Suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::ValueType::NullValue));
-            testInvalidAccountParam(json::Value(json::ValueType::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ValueType::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
         }
 
         {
@@ -80,9 +80,9 @@ class AccountCurrencies_test : public beast::unit_test::Suite
             testInvalidIdentParam(1);
             testInvalidIdentParam(1.1);
             testInvalidIdentParam(true);
-            testInvalidIdentParam(json::Value(json::ValueType::NullValue));
-            testInvalidIdentParam(json::Value(json::ValueType::ObjectValue));
-            testInvalidIdentParam(json::Value(json::ValueType::ArrayValue));
+            testInvalidIdentParam(json::Value(json::ValueType::Null));
+            testInvalidIdentParam(json::Value(json::ValueType::Object));
+            testInvalidIdentParam(json::Value(json::ValueType::Array));
         }
 
         {

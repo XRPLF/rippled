@@ -42,7 +42,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
         }
         if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
-            params[jss::seq].asDouble() > double(json::Value::kMAX_U_INT))
+            params[jss::seq].asDouble() > double(json::Value::kMAX_UINT))
         {
             RPC::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;

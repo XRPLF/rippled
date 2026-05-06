@@ -245,9 +245,9 @@ class DeliveredAmount_test : public beast::unit_test::Suite
             {
                 json::Value stream;
                 // RPC subscribe to ledger stream
-                stream[jss::streams] = json::ValueType::ArrayValue;
+                stream[jss::streams] = json::ValueType::Array;
                 stream[jss::streams].append("ledger");
-                stream[jss::accounts] = json::ValueType::ArrayValue;
+                stream[jss::accounts] = json::ValueType::Array;
                 stream[jss::accounts].append(toBase58(alice.id()));
                 stream[jss::accounts].append(toBase58(bob.id()));
                 stream[jss::accounts].append(toBase58(carol.id()));

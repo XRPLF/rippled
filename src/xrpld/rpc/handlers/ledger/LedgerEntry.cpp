@@ -377,7 +377,7 @@ parseDirectoryNode(
     }
 
     if (params.isMember(jss::sub_index) &&
-        (!params[jss::sub_index].isConvertibleTo(json::ValueType::UintValue) ||
+        (!params[jss::sub_index].isConvertibleTo(json::ValueType::Uint) ||
          params[jss::sub_index].isBool()))
     {
         return LedgerEntryHelpers::invalidFieldError("malformedRequest", jss::sub_index, "number");

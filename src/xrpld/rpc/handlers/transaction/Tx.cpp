@@ -190,7 +190,7 @@ populateJsonResponse(
     {
         if (error.toErrorCode() == RpcTxnNotFound && result.searchedAll != TxSearched::Unknown)
         {
-            response = json::Value(json::ValueType::ObjectValue);
+            response = json::Value(json::ValueType::Object);
             response[jss::searched_all] = (result.searchedAll == TxSearched::All);
             error.inject(response);
         }

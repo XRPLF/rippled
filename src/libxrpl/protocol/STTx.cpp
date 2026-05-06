@@ -333,7 +333,7 @@ STTx::getJson(JsonOptions options, bool binary) const
 
         if (v1)
         {
-            json::Value ret(json::ValueType::ObjectValue);
+            json::Value ret(json::ValueType::Object);
             ret[jss::tx] = dataBin;
             ret[jss::hash] = to_string(getTransactionID());
             return ret;

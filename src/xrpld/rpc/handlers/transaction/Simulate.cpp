@@ -344,7 +344,7 @@ doSimulate(RPC::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        json::Value jvResult = json::ValueType::ObjectValue;
+        json::Value jvResult = json::ValueType::Object;
         jvResult[jss::error] = "invalidTransaction";
         jvResult[jss::error_exception] = e.what();
         return jvResult;
@@ -365,7 +365,7 @@ doSimulate(RPC::JsonContext& context)
     // LCOV_EXCL_START this is just in case, so xrpld doesn't crash
     catch (std::exception const& e)
     {
-        json::Value jvResult = json::ValueType::ObjectValue;
+        json::Value jvResult = json::ValueType::Object;
         jvResult[jss::error] = "internalSimulate";
         jvResult[jss::error_exception] = e.what();
         return jvResult;

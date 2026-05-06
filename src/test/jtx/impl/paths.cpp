@@ -74,7 +74,7 @@ Path::Path(STPath const& p)
 json::Value&
 Path::create()
 {
-    return jv_.append(json::ValueType::ObjectValue);
+    return jv_.append(json::ValueType::Object);
 }
 
 void

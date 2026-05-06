@@ -392,9 +392,9 @@ OverlayImpl::makeRedirectResponse(
     }
     msg.insert("Content-Type", "application/json");
     msg.insert(boost::beast::http::field::connection, "close");
-    msg.body() = json::ValueType::ObjectValue;
+    msg.body() = json::ValueType::Object;
     {
-        json::Value& ips = (msg.body()["peer-ips"] = json::ValueType::ArrayValue);
+        json::Value& ips = (msg.body()["peer-ips"] = json::ValueType::Array);
         for (auto const& _ : peerFinder_->redirect(slot))
             ips.append(_.address.toString());
     }
@@ -745,10 +745,10 @@ OverlayImpl::getOverlayInfo() const
 {
     using namespace std::chrono;
     json::Value jv;
-    auto& av = jv[jss::active] = json::Value(json::ValueType::ArrayValue);
+    auto& av = jv[jss::active] = json::Value(json::ValueType::Array);
 
     forEach([&](std::shared_ptr<PeerImp> const& sp) {
-        auto& pv = av.append(json::Value(json::ValueType::ObjectValue));
+        auto& pv = av.append(json::Value(json::ValueType::Object));
         pv[jss::public_key] = base64Encode(sp->getNodePublic().data(), sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ? jss::in : jss::out;
         pv[jss::uptime] = static_cast<std::uint32_t>(duration_cast<seconds>(sp->uptime()).count());
@@ -916,7 +916,7 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
         msg.result(status);
         msg.insert("Content-Length", "0");
 
-        msg.body() = json::ValueType::NullValue;
+        msg.body() = json::ValueType::Null;
 
         msg.prepare_payload();
         handoff.response = std::make_shared<SimpleWriter>(msg);
@@ -985,7 +985,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     auto health = HealthState::Healthy;
     auto setHealth = [&health](HealthState state) { health = std::max(health, state); };
 
-    msg.body()[jss::info] = json::ValueType::ObjectValue;
+    msg.body()[jss::info] = json::ValueType::Object;
     if (lastValidatedLedgerAge >= 7 || lastValidatedLedgerAge < 0)
     {
         msg.body()[jss::info][jss::validated_ledger] = lastValidatedLedgerAge;

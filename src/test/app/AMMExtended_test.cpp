@@ -506,7 +506,7 @@ private:
         env(offer(dan, XRP(500), euR1(50)));
         env.close();
 
-        json::Value jtp{json::ValueType::ArrayValue};
+        json::Value jtp{json::ValueType::Array};
         jtp[0u][0u][jss::currency] = "XRP";
         env(pay(alice_, bob_, euR1(30)), Json(jss::Paths, jtp), Sendmax(usD1(333)));
         env.close();

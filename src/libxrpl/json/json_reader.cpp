@@ -407,7 +407,7 @@ Reader::readObject(Token& tokenStart, unsigned depth)
 {
     Token tokenName{};
     std::string name;
-    currentValue() = Value(ValueType::ObjectValue);
+    currentValue() = Value(ValueType::Object);
 
     while (readToken(tokenName))
     {
@@ -475,7 +475,7 @@ Reader::readObject(Token& tokenStart, unsigned depth)
 bool
 Reader::readArray(Token& tokenStart, unsigned depth)
 {
-    currentValue() = Value(ValueType::ArrayValue);
+    currentValue() = Value(ValueType::Array);
     skipSpaces();
 
     if (*current_ == ']')  // empty array
@@ -542,10 +542,10 @@ Reader::decodeNumber(Token& token)
     std::int64_t value = 0;
 
     static_assert(
-        sizeof(value) > sizeof(Value::kMAX_U_INT),
+        sizeof(value) > sizeof(Value::kMAX_UINT),
         "The JSON integer overflow logic will need to be reworked.");
 
-    while (current < token.end && (value <= Value::kMAX_U_INT))
+    while (current < token.end && (value <= Value::kMAX_UINT))
     {
         Char const c = *current++;
 
@@ -580,7 +580,7 @@ Reader::decodeNumber(Token& token)
     }
     else
     {
-        if (value > Value::kMAX_U_INT)
+        if (value > Value::kMAX_UINT)
         {
             return addError(
                 "'" + std::string(token.start, token.end) + "' exceeds the allowable range.",
