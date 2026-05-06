@@ -19,11 +19,11 @@ class ValidLoan
 {
     // Pair is <before, after>. After is used for most of the checks, except
     // those that check changed values.
-    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> loans_;
+    std::vector<std::pair<SLE::const_pointer, SLE const*>> loans_;
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);

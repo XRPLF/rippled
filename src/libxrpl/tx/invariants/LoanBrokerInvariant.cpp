@@ -23,30 +23,27 @@ void
 ValidLoanBroker::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
-    if (after)
+    if (after.getType() == ltLOAN_BROKER)
     {
-        if (after->getType() == ltLOAN_BROKER)
-        {
-            auto& broker = brokers_[after->key()];
-            broker.brokerBefore = before;
-            broker.brokerAfter = after;
-        }
-        else if (after->getType() == ltACCOUNT_ROOT && after->isFieldPresent(sfLoanBrokerID))
-        {
-            auto const& loanBrokerID = after->at(sfLoanBrokerID);
-            // create an entry if one doesn't already exist
-            brokers_.emplace(loanBrokerID, BrokerInfo{});
-        }
-        else if (after->getType() == ltRIPPLE_STATE)
-        {
-            lines_.emplace_back(after);
-        }
-        else if (after->getType() == ltMPTOKEN)
-        {
-            mpts_.emplace_back(after);
-        }
+        auto& broker = brokers_[after.key()];
+        broker.brokerBefore = before;
+        broker.brokerAfter = &after;
+    }
+    else if (after.getType() == ltACCOUNT_ROOT && after.isFieldPresent(sfLoanBrokerID))
+    {
+        auto const& loanBrokerID = after.at(sfLoanBrokerID);
+        // create an entry if one doesn't already exist
+        brokers_.emplace(loanBrokerID, BrokerInfo{});
+    }
+    else if (after.getType() == ltRIPPLE_STATE)
+    {
+        lines_.emplace_back(&after);
+    }
+    else if (after.getType() == ltMPTOKEN)
+    {
+        mpts_.emplace_back(&after);
     }
 }
 
@@ -134,24 +131,33 @@ ValidLoanBroker::finalize(
 
     for (auto const& [brokerID, broker] : brokers_)
     {
-        auto const& after =
-            broker.brokerAfter ? broker.brokerAfter : view.read(keylet::loanbroker(brokerID));
+        // If the broker was modified in this transaction, use the stored raw
+        // pointer (which is valid for the life of the invariant check). Otherwise
+        // read it from the view.
+        std::shared_ptr<SLE const> afterFromView;
+        SLE const* afterPtr = broker.brokerAfter;
+        if (!afterPtr)
+        {
+            afterFromView = view.read(keylet::loanbroker(brokerID));
+            afterPtr = afterFromView.get();
+        }
 
-        if (!after)
+        if (!afterPtr)
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Broker missing";
             return false;
         }
 
+        SLE const& after = *afterPtr;
         auto const& before = broker.brokerBefore;
 
         // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3123-invariants
         // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
         // one node (the root), which will only hold entries for `RippleState`
         // or `MPToken` objects.
-        if (after->at(sfOwnerCount) == 0)
+        if (after.at(sfOwnerCount) == 0)
         {
-            auto const dir = view.read(keylet::ownerDir(after->at(sfAccount)));
+            auto const dir = view.read(keylet::ownerDir(after.at(sfAccount)));
             if (dir)
             {
                 if (!goodZeroDirectory(view, dir, j))
@@ -160,23 +166,23 @@ ValidLoanBroker::finalize(
                 }
             }
         }
-        if (before && before->at(sfLoanSequence) > after->at(sfLoanSequence))
+        if (before && before->at(sfLoanSequence) > after.at(sfLoanSequence))
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Broker sequence number "
                                "decreased";
             return false;
         }
-        if (after->at(sfDebtTotal) < 0)
+        if (after.at(sfDebtTotal) < 0)
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Broker debt total is negative";
             return false;
         }
-        if (after->at(sfCoverAvailable) < 0)
+        if (after.at(sfCoverAvailable) < 0)
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Broker cover available is negative";
             return false;
         }
-        auto const vault = view.read(keylet::vault(after->at(sfVaultID)));
+        auto const vault = view.read(keylet::vault(after.at(sfVaultID)));
         if (!vault)
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Broker vault ID is invalid";
@@ -185,12 +191,12 @@ ValidLoanBroker::finalize(
         auto const& vaultAsset = vault->at(sfAsset);
         auto const pseudoBalance = accountHolds(
             view,
-            after->at(sfAccount),
+            after.at(sfAccount),
             vaultAsset,
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
             j);
-        if (after->at(sfCoverAvailable) < pseudoBalance)
+        if (after.at(sfCoverAvailable) < pseudoBalance)
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Broker cover available "
                                "is less than pseudo-account asset balance";
@@ -202,7 +208,7 @@ ValidLoanBroker::finalize(
             // Don't check the balance when LoanBroker is deleted,
             // sfCoverAvailable is not zeroed
             if (tx.getTxnType() != ttLOAN_BROKER_DELETE &&
-                after->at(sfCoverAvailable) > pseudoBalance)
+                after.at(sfCoverAvailable) > pseudoBalance)
             {
                 JLOG(j.fatal()) << "Invariant failed: Loan Broker cover available is greater "
                                    "than pseudo-account asset balance";

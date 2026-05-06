@@ -28,9 +28,9 @@ void
 ValidMPTIssuance::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
-    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    if (after.getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
         {
@@ -42,7 +42,7 @@ ValidMPTIssuance::visitEntry(
         }
     }
 
-    if (after && after->getType() == ltMPTOKEN)
+    if (after.getType() == ltMPTOKEN)
     {
         if (isDelete)
         {
@@ -51,8 +51,8 @@ ValidMPTIssuance::visitEntry(
         else if (!before)
         {
             mptokensCreated_++;
-            MPTIssue const mptIssue{after->at(sfMPTokenIssuanceID)};
-            if (mptIssue.getIssuer() == after->at(sfAccount))
+            MPTIssue const mptIssue{after.at(sfMPTokenIssuanceID)};
+            if (mptIssue.getIssuer() == after.at(sfAccount))
                 mptCreatedByIssuer_ = true;
         }
     }
@@ -283,7 +283,7 @@ void
 ValidMPTPayment::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     if (overflow_)
         return;
@@ -333,15 +333,12 @@ ValidMPTPayment::visitEntry(
     if (before && !update(*before, Order::Before))
         return;
 
-    if (after)
+    if (after.getType() == ltMPTOKEN_ISSUANCE)
     {
-        if (after->getType() == ltMPTOKEN_ISSUANCE)
-        {
-            overflow_ = (*after)[sfOutstandingAmount] > maxMPTAmount(*after);
-        }
-        if (!update(*after, Order::After))
-            return;
+        overflow_ = after[sfOutstandingAmount] > maxMPTAmount(after);
     }
+    if (!update(after, Order::After))
+        return;
 }
 
 bool

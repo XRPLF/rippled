@@ -20,11 +20,11 @@ void
 ValidLoan::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
-    if (after && after->getType() == ltLOAN)
+    if (after.getType() == ltLOAN)
     {
-        loans_.emplace_back(before, after);
+        loans_.emplace_back(before, &after);
     }
 }
 

@@ -28,27 +28,24 @@ void
 ValidAMM::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     if (isDelete)
         return;
 
-    if (after)
+    auto const type = after.getType();
+    // AMM object changed
+    if (type == ltAMM)
     {
-        auto const type = after->getType();
-        // AMM object changed
-        if (type == ltAMM)
-        {
-            ammAccount_ = after->getAccountID(sfAccount);
-            lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
-        }
-        // AMM pool changed
-        else if (
-            (type == ltRIPPLE_STATE && ((after->getFlags() & lsfAMMNode) != 0u)) ||
-            (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)))
-        {
-            ammPoolChanged_ = true;
-        }
+        ammAccount_ = after.getAccountID(sfAccount);
+        lptAMMBalanceAfter_ = after.getFieldAmount(sfLPTokenBalance);
+    }
+    // AMM pool changed
+    else if (
+        (type == ltRIPPLE_STATE && ((after.getFlags() & lsfAMMNode) != 0u)) ||
+        (type == ltACCOUNT_ROOT && after.isFieldPresent(sfAMMID)))
+    {
+        ammPoolChanged_ = true;
     }
 
     if (before)

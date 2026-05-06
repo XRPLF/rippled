@@ -80,6 +80,10 @@ isPseudoAccount(
     std::shared_ptr<SLE const> sleAcct,
     std::set<SField const*> const& pseudoFieldFilter = {});
 
+/** Overload accepting a reference to an SLE (which is always non-null). */
+[[nodiscard]] bool
+isPseudoAccount(SLE const& sleAcct, std::set<SField const*> const& pseudoFieldFilter = {});
+
 /** Convenience overload that reads the account from the view. */
 [[nodiscard]] inline bool
 isPseudoAccount(

@@ -29,19 +29,19 @@ void
 ValidNFTokenPage::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     static constexpr uint256 const& kPAGE_BITS = nft::kPAGE_MASK;
     static constexpr uint256 const kACCOUNT_BITS = ~kPAGE_BITS;
 
     if ((before && before->getType() != ltNFTOKEN_PAGE) ||
-        (after && after->getType() != ltNFTOKEN_PAGE))
+        after.getType() != ltNFTOKEN_PAGE)
         return;
 
-    auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
-        uint256 const account = sle->key() & kACCOUNT_BITS;
-        uint256 const hiLimit = sle->key() & kPAGE_BITS;
-        std::optional<uint256> const prev = (*sle)[~sfPreviousPageMin];
+    auto check = [this, isDelete](SLE const& sle) {
+        uint256 const account = sle.key() & kACCOUNT_BITS;
+        uint256 const hiLimit = sle.key() & kPAGE_BITS;
+        std::optional<uint256> const prev = sle[~sfPreviousPageMin];
 
         // Make sure that any page links...
         //  1. Are properly associated with the owning account and
@@ -55,7 +55,7 @@ ValidNFTokenPage::visitEntry(
                 badLink_ = true;
         }
 
-        if (auto const next = (*sle)[~sfNextPageMin])
+        if (auto const next = sle[~sfNextPageMin])
         {
             if (account != (*next & kACCOUNT_BITS))
                 badLink_ = true;
@@ -65,7 +65,7 @@ ValidNFTokenPage::visitEntry(
         }
 
         {
-            auto const& nftokens = sle->getFieldArray(sfNFTokens);
+            auto const& nftokens = sle.getFieldArray(sfNFTokens);
 
             // An NFTokenPage should never contain too many tokens or be empty.
             if (std::size_t const nftokenCount = nftokens.size();
@@ -99,7 +99,7 @@ ValidNFTokenPage::visitEntry(
 
     if (before)
     {
-        check(before);
+        check(*before);
 
         // While an account's NFToken directory contains any NFTokens, the last
         // NFTokenPage (with 96 bits of 1 in the low part of the index) should
@@ -111,10 +111,9 @@ ValidNFTokenPage::visitEntry(
         }
     }
 
-    if (after)
-        check(after);
+    check(after);
 
-    if (!isDelete && before && after)
+    if (!isDelete && before)
     {
         // If the NFTokenPage
         //  1. Has a NextMinPage field in before, but loses it in after, and
@@ -122,7 +121,7 @@ ValidNFTokenPage::visitEntry(
         // Then we have identified a corruption in the links between the
         // NFToken pages in the NFToken directory.
         if ((before->key() & nft::kPAGE_MASK) != nft::kPAGE_MASK &&
-            before->isFieldPresent(sfNextPageMin) && !after->isFieldPresent(sfNextPageMin))
+            before->isFieldPresent(sfNextPageMin) && !after.isFieldPresent(sfNextPageMin))
         {
             deletedLink_ = true;
         }
@@ -190,7 +189,7 @@ void
 NFTokenCountTracking::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     if (before && before->getType() == ltACCOUNT_ROOT)
     {
@@ -198,10 +197,10 @@ NFTokenCountTracking::visitEntry(
         beforeBurnedTotal_ += (*before)[~sfBurnedNFTokens].value_or(0);
     }
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
+    if (after.getType() == ltACCOUNT_ROOT)
     {
-        afterMintedTotal_ += (*after)[~sfMintedNFTokens].value_or(0);
-        afterBurnedTotal_ += (*after)[~sfBurnedNFTokens].value_or(0);
+        afterMintedTotal_ += after[~sfMintedNFTokens].value_or(0);
+        afterBurnedTotal_ += after[~sfBurnedNFTokens].value_or(0);
     }
 }
 

@@ -22,19 +22,19 @@ void
 ValidPermissionedDEX::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
-    if (after && after->getType() == ltDIR_NODE)
+    if (after.getType() == ltDIR_NODE)
     {
-        if (after->isFieldPresent(sfDomainID))
-            domains_.insert(after->getFieldH256(sfDomainID));
+        if (after.isFieldPresent(sfDomainID))
+            domains_.insert(after.getFieldH256(sfDomainID));
     }
 
-    if (after && after->getType() == ltOFFER)
+    if (after.getType() == ltOFFER)
     {
-        if (after->isFieldPresent(sfDomainID))
+        if (after.isFieldPresent(sfDomainID))
         {
-            domains_.insert(after->getFieldH256(sfDomainID));
+            domains_.insert(after.getFieldH256(sfDomainID));
         }
         else
         {
@@ -43,15 +43,15 @@ ValidPermissionedDEX::visitEntry(
 
         // pre-fixSecurity3_1_3: hybrid offer missing domain, missing
         // sfAdditionalBooks, or sfAdditionalBooks has more than one entry
-        if (after->isFlag(lsfHybrid) &&
-            (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
-             after->getFieldArray(sfAdditionalBooks).size() > 1))
+        if (after.isFlag(lsfHybrid) &&
+            (!after.isFieldPresent(sfDomainID) || !after.isFieldPresent(sfAdditionalBooks) ||
+             after.getFieldArray(sfAdditionalBooks).size() > 1))
             badHybridsOld_ = true;
 
         // post-fixSecurity3_1_3: same as above but also catches size == 0
-        if (after->isFlag(lsfHybrid) &&
-            (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
-             after->getFieldArray(sfAdditionalBooks).size() != 1))
+        if (after.isFlag(lsfHybrid) &&
+            (!after.isFieldPresent(sfDomainID) || !after.isFieldPresent(sfAdditionalBooks) ||
+             after.getFieldArray(sfAdditionalBooks).size() != 1))
             badHybrids_ = true;
     }
 }

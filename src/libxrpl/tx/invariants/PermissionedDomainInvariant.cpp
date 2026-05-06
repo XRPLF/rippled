@@ -24,15 +24,15 @@ void
 ValidPermissionedDomain::visitEntry(
     bool isDel,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     if (before && before->getType() != ltPERMISSIONED_DOMAIN)
         return;
-    if (after && after->getType() != ltPERMISSIONED_DOMAIN)
+    if (after.getType() != ltPERMISSIONED_DOMAIN)
         return;
 
-    auto check = [isDel](std::vector<SleStatus>& sleStatus, std::shared_ptr<SLE const> const& sle) {
-        auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
+    auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE const& sle) {
+        auto const& credentials = sle.getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
         SleStatus ss{
@@ -57,8 +57,7 @@ ValidPermissionedDomain::visitEntry(
         sleStatus.emplace_back(ss);
     };
 
-    if (after)
-        check(sleStatus_, after);
+    check(sleStatus_, after);
 }
 
 bool

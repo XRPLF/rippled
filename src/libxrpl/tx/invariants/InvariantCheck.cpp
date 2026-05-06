@@ -67,7 +67,7 @@ void
 TransactionFeeCheck::visitEntry(
     bool,
     std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+    SLE const&)
 {
     // nothing to do
 }
@@ -113,7 +113,7 @@ void
 XRPNotCreated::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     /* We go through all modified ledger entries, looking only at account roots,
      * escrow payments, and payment channels. We remove from the total any
@@ -141,24 +141,21 @@ XRPNotCreated::visitEntry(
         }
     }
 
-    if (after)
+    switch (after.getType())
     {
-        switch (after->getType())
-        {
-            case ltACCOUNT_ROOT:
-                drops_ += (*after)[sfBalance].xrp().drops();
-                break;
-            case ltPAYCHAN:
-                if (!isDelete)
-                    drops_ += ((*after)[sfAmount] - (*after)[sfBalance]).xrp().drops();
-                break;
-            case ltESCROW:
-                if (!isDelete && isXRP((*after)[sfAmount]))
-                    drops_ += (*after)[sfAmount].xrp().drops();
-                break;
-            default:
-                break;
-        }
+        case ltACCOUNT_ROOT:
+            drops_ += after[sfBalance].xrp().drops();
+            break;
+        case ltPAYCHAN:
+            if (!isDelete)
+                drops_ += (after[sfAmount] - after[sfBalance]).xrp().drops();
+            break;
+        case ltESCROW:
+            if (!isDelete && isXRP(after[sfAmount]))
+                drops_ += after[sfAmount].xrp().drops();
+            break;
+        default:
+            break;
     }
 }
 
@@ -195,7 +192,7 @@ void
 XRPBalanceChecks::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     auto isBad = [](STAmount const& balance) {
         if (!balance.native())
@@ -218,8 +215,8 @@ XRPBalanceChecks::visitEntry(
     if (before && before->getType() == ltACCOUNT_ROOT)
         bad_ |= isBad((*before)[sfBalance]);
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
-        bad_ |= isBad((*after)[sfBalance]);
+    if (after.getType() == ltACCOUNT_ROOT)
+        bad_ |= isBad(after[sfBalance]);
 }
 
 bool
@@ -245,7 +242,7 @@ void
 NoBadOffers::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     auto isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
@@ -262,8 +259,8 @@ NoBadOffers::visitEntry(
     if (before && before->getType() == ltOFFER)
         bad_ |= isBad((*before)[sfTakerPays], (*before)[sfTakerGets]);
 
-    if (after && after->getType() == ltOFFER)
-        bad_ |= isBad((*after)[sfTakerPays], (*after)[sfTakerGets]);
+    if (after.getType() == ltOFFER)
+        bad_ |= isBad(after[sfTakerPays], after[sfTakerGets]);
 }
 
 bool
@@ -289,7 +286,7 @@ void
 NoZeroEscrow::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     auto isBad = [](STAmount const& amount) {
         // XRP case
@@ -333,8 +330,8 @@ NoZeroEscrow::visitEntry(
     if (before && before->getType() == ltESCROW)
         bad_ |= isBad((*before)[sfAmount]);
 
-    if (after && after->getType() == ltESCROW)
-        bad_ |= isBad((*after)[sfAmount]);
+    if (after.getType() == ltESCROW)
+        bad_ |= isBad(after[sfAmount]);
 
     auto checkAmount = [this](std::int64_t amount) {
         if (amount > kMAX_MP_TOKEN_AMOUNT || amount < 0)
@@ -343,11 +340,11 @@ NoZeroEscrow::visitEntry(
 
     bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
 
-    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    if (after.getType() == ltMPTOKEN_ISSUANCE)
     {
-        auto const outstanding = (*after)[sfOutstandingAmount];
+        auto const outstanding = after[sfOutstandingAmount];
         checkAmount(outstanding);
-        if (auto const locked = (*after)[~sfLockedAmount])
+        if (auto const locked = after[~sfLockedAmount])
         {
             checkAmount(*locked);
             bool const isBad = outstanding < *locked;
@@ -362,11 +359,11 @@ NoZeroEscrow::visitEntry(
         }
     }
 
-    if (after && after->getType() == ltMPTOKEN)
+    if (after.getType() == ltMPTOKEN)
     {
-        auto const mptAmount = (*after)[sfMPTAmount];
+        auto const mptAmount = after[sfMPTAmount];
         checkAmount(mptAmount);
-        if (auto const locked = (*after)[~sfLockedAmount])
+        if (auto const locked = after[~sfLockedAmount])
         {
             checkAmount(*locked);
         }
@@ -396,7 +393,7 @@ void
 AccountRootsNotDeleted::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const&)
+    SLE const&)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
         accountsDeleted_++;
@@ -449,10 +446,10 @@ void
 AccountRootsDeletedClean::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
-        accountsDeleted_.emplace_back(before, after);
+        accountsDeleted_.emplace_back(before, &after);
 }
 
 bool
@@ -569,31 +566,28 @@ void
 LedgerEntryTypesMatch::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
-    if (before && after && before->getType() != after->getType())
+    if (before && before->getType() != after.getType())
         typeMismatch_ = true;
 
-    if (after)
-    {
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
 #define LEDGER_ENTRY(tag, ...) case tag:
 
-        switch (after->getType())
-        {
+    switch (after.getType())
+    {
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
+        break;
+        default:
+            invalidTypeAdded_ = true;
             break;
-            default:
-                invalidTypeAdded_ = true;
-                break;
-        }
+    }
 
 #undef LEDGER_ENTRY
 #pragma pop_macro("LEDGER_ENTRY")
-    }
 }
 
 bool
@@ -626,17 +620,17 @@ void
 NoXRPTrustLines::visitEntry(
     bool,
     std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
 
-    if (after && after->getType() == ltRIPPLE_STATE)
+    if (after.getType() == ltRIPPLE_STATE)
     {
         // checking the issue directly here instead of
         // relying on .native() just in case native somehow
         // were systematically incorrect
-        bool const isXrp = after->getFieldAmount(sfLowLimit).asset() == xrpIssue() ||
-            after->getFieldAmount(sfHighLimit).asset() == xrpIssue();
+        bool const isXrp = after.getFieldAmount(sfLowLimit).asset() == xrpIssue() ||
+            after.getFieldAmount(sfHighLimit).asset() == xrpIssue();
         if (overwriteFixEnabled)
         {
             xrpTrustLine_ |= isXrp;
@@ -669,13 +663,13 @@ void
 NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     bool,
     std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
-    if (after && after->getType() == ltRIPPLE_STATE)
+    if (after.getType() == ltRIPPLE_STATE)
     {
         bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
 
-        std::uint32_t const uFlags = after->getFieldU32(sfFlags);
+        std::uint32_t const uFlags = after.getFieldU32(sfFlags);
         bool const lowFreeze = (uFlags & lsfLowFreeze) != 0u;
         bool const lowDeepFreeze = (uFlags & lsfLowDeepFreeze) != 0u;
 
@@ -716,14 +710,14 @@ void
 ValidNewAccountRoot::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
-    if (!before && after->getType() == ltACCOUNT_ROOT)
+    if (!before && after.getType() == ltACCOUNT_ROOT)
     {
         accountsCreated_++;
-        accountSeq_ = (*after)[sfSequence];
+        accountSeq_ = after[sfSequence];
         pseudoAccount_ = isPseudoAccount(after);
-        flags_ = after->getFlags();
+        flags_ = after.getFlags();
     }
 }
 
@@ -793,7 +787,7 @@ void
 ValidClawback::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const&)
+    SLE const&)
 {
     if (before && before->getType() == ltRIPPLE_STATE)
         trustlinesChanged_++;
@@ -881,7 +875,7 @@ void
 ValidPseudoAccounts::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     if (isDelete)
     {
@@ -889,7 +883,7 @@ ValidPseudoAccounts::visitEntry(
         return;
     }
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
+    if (after.getType() == ltACCOUNT_ROOT)
     {
         bool const isPseudo = [&]() {
             // isPseudoAccount checks that any of the pseudo-account fields are
@@ -898,7 +892,7 @@ ValidPseudoAccounts::visitEntry(
                 return true;
             // Not all pseudo-accounts have a zero sequence, but all accounts
             // with a zero sequence had better be pseudo-accounts.
-            if (after->at(sfSequence) == 0)
+            if (after.at(sfSequence) == 0)
                 return true;
 
             return false;
@@ -916,7 +910,7 @@ ValidPseudoAccounts::visitEntry(
 
                 auto const numFields =
                     std::count_if(fields.begin(), fields.end(), [&after](SField const* sf) -> bool {
-                        return after->isFieldPresent(*sf);
+                        return after.isFieldPresent(*sf);
                     });
                 if (numFields != 1)
                 {
@@ -925,15 +919,15 @@ ValidPseudoAccounts::visitEntry(
                     errors_.emplace_back(error.str());
                 }
             }
-            if (before && before->at(sfSequence) != after->at(sfSequence))
+            if (before && before->at(sfSequence) != after.at(sfSequence))
             {
                 errors_.emplace_back("pseudo-account sequence changed");
             }
-            if (!after->isFlag(lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth))
+            if (!after.isFlag(lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth))
             {
                 errors_.emplace_back("pseudo-account flags are not set");
             }
-            if (after->isFieldPresent(sfRegularKey))
+            if (after.isFieldPresent(sfRegularKey))
             {
                 errors_.emplace_back("pseudo-account has a regular key");
             }
@@ -972,7 +966,7 @@ void
 NoModifiedUnmodifiableFields::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     if (isDelete || !before)
     {
@@ -980,7 +974,7 @@ NoModifiedUnmodifiableFields::visitEntry(
         return;
     }
 
-    changedEntries_.emplace(before, after);
+    changedEntries_.emplace(before, &after);
 }
 
 bool

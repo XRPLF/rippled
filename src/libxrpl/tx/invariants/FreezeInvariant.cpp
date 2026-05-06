@@ -25,7 +25,7 @@ void
 TransfersNotFrozen::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     /*
      * A trust line freeze state alone doesn't determine if a transfer is
@@ -109,18 +109,11 @@ TransfersNotFrozen::finalize(
 bool
 TransfersNotFrozen::isValidEntry(
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
-    // `after` can never be null, even if the trust line is deleted.
-    XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
-    if (!after)
+    if (after.getType() == ltACCOUNT_ROOT)
     {
-        return false;
-    }
-
-    if (after->getType() == ltACCOUNT_ROOT)
-    {
-        possibleIssuers_.emplace(after->at(sfAccount), after);
+        possibleIssuers_.emplace(after.at(sfAccount), &after);
         return false;
     }
 
@@ -130,17 +123,17 @@ TransfersNotFrozen::isValidEntry(
      * This type check is still necessary here because it prevents potential
      * issues in subsequent processing.
      */
-    return after->getType() == ltRIPPLE_STATE && (!before || before->getType() == ltRIPPLE_STATE);
+    return after.getType() == ltRIPPLE_STATE && (!before || before->getType() == ltRIPPLE_STATE);
 }
 
 STAmount
 TransfersNotFrozen::calculateBalanceChange(
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after,
+    SLE const& after,
     bool isDelete)
 {
-    auto const getBalance = [](auto const& line, auto const& other, bool zero) {
-        STAmount const amt = line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
+    auto const getBalance = [](auto const& line, SLE const& other, bool zero) {
+        STAmount const amt = line ? line->at(sfBalance) : other.at(sfBalance).zeroed();
         return zero ? amt.zeroed() : amt;
     };
 
@@ -156,9 +149,10 @@ TransfersNotFrozen::calculateBalanceChange(
      * achieved by treating the final balance as zero when isDelete=true to
      * ensure frozen line restrictions are enforced even during deletion.
      */
-    auto const balanceAfter = getBalance(after, before, isDelete);
+    auto const balanceAfter = after.at(sfBalance);
+    auto const effectiveAfter = isDelete ? balanceAfter.zeroed() : balanceAfter;
 
-    return balanceAfter - balanceBefore;
+    return effectiveAfter - balanceBefore;
 }
 
 void
@@ -181,21 +175,21 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 
 void
 TransfersNotFrozen::recordBalanceChanges(
-    std::shared_ptr<SLE const> const& after,
+    SLE const& after,
     STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
-    auto const currency = after->at(sfBalance).get<Issue>().currency;
+    auto const currency = after.at(sfBalance).get<Issue>().currency;
 
     // Change from low account's perspective, which is trust line default
     recordBalance(
-        {currency, after->at(sfHighLimit).getIssuer()},
-        {.line = after, .balanceChangeSign = balanceChangeSign});
+        {currency, after.at(sfHighLimit).getIssuer()},
+        {.line = &after, .balanceChangeSign = balanceChangeSign});
 
     // Change from high account's perspective, which reverses the sign.
     recordBalance(
-        {currency, after->at(sfLowLimit).getIssuer()},
-        {.line = after, .balanceChangeSign = -balanceChangeSign});
+        {currency, after.at(sfLowLimit).getIssuer()},
+        {.line = &after, .balanceChangeSign = -balanceChangeSign});
 }
 
 std::shared_ptr<SLE const>
@@ -203,7 +197,9 @@ TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
     if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
     {
-        return it->second;
+        // Create a non-owning shared_ptr. The SLE is kept alive by the apply
+        // view for the duration of the invariant check.
+        return std::shared_ptr<SLE const>(std::shared_ptr<SLE const>{}, it->second);
     }
 
     return view.read(keylet::account(issuerID));

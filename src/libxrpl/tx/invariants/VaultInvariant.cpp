@@ -66,13 +66,13 @@ void
 ValidVault::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+    SLE const& after)
 {
     // If `before` is empty, this means an object is being created, in which
     // case `isDelete` must be false. Otherwise `before` and `after` are set and
     // `isDelete` indicates whether an object is being deleted or modified.
     XRPL_ASSERT(
-        after != nullptr && (before != nullptr || !isDelete),
+        (before != nullptr || !isDelete),
         "xrpl::ValidVault::visitEntry : some object is available");
 
     // Number balanceDelta will capture the difference (delta) between "before"
@@ -127,39 +127,39 @@ ValidVault::visitEntry(
         }
     }
 
-    if (!isDelete && after)
+    if (!isDelete)
     {
-        switch (after->getType())
+        switch (after.getType())
         {
             case ltVAULT:
-                afterVault_.push_back(Vault::make(*after));
+                afterVault_.push_back(Vault::make(after));
                 break;
             case ltMPTOKEN_ISSUANCE:
                 // At this moment we have no way of telling if this object holds
                 // vault shares or something else. Save it for finalize.
-                afterMPTs_.push_back(Shares::make(*after));
+                afterMPTs_.push_back(Shares::make(after));
                 balanceDelta.delta -=
-                    Number(static_cast<std::int64_t>(after->getFieldU64(sfOutstandingAmount)));
+                    Number(static_cast<std::int64_t>(after.getFieldU64(sfOutstandingAmount)));
                 // MPTs are ints, so the scale is always 0.
                 balanceDelta.scale = 0;
                 sign = 1;
                 break;
             case ltMPTOKEN:
                 balanceDelta.delta -=
-                    Number(static_cast<std::int64_t>(after->getFieldU64(sfMPTAmount)));
+                    Number(static_cast<std::int64_t>(after.getFieldU64(sfMPTAmount)));
                 // MPTs are ints, so the scale is always 0.
                 balanceDelta.scale = 0;
                 sign = -1;
                 break;
             case ltACCOUNT_ROOT:
-                balanceDelta.delta -= Number(after->getFieldAmount(sfBalance));
+                balanceDelta.delta -= Number(after.getFieldAmount(sfBalance));
                 // Account balance is XRP, which is an int, so the scale is
                 // always 0.
                 balanceDelta.scale = 0;
                 sign = -1;
                 break;
             case ltRIPPLE_STATE: {
-                auto const amount = after->getFieldAmount(sfBalance);
+                auto const amount = after.getFieldAmount(sfBalance);
                 balanceDelta.delta -= Number(amount);
                 // Trust Line balances are STAmounts, so we can use the exponent
                 // directly to get the scale.
@@ -172,7 +172,7 @@ ValidVault::visitEntry(
         }
     }
 
-    uint256 const key = (before ? before->key() : after->key());
+    uint256 const key = (before ? before->key() : after.key());
     // Append to deltas if sign is non-zero, i.e. an object of an interesting
     // type has been updated. A transaction may update an object even when
     // its balance has not changed, e.g. transaction fee equals the amount

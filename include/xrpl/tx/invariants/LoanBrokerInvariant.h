@@ -28,7 +28,7 @@ class ValidLoanBroker
         SLE::const_pointer brokerBefore = nullptr;
         // After is used for most of the checks, except
         // those that check changed values.
-        SLE::const_pointer brokerAfter = nullptr;
+        SLE const* brokerAfter = nullptr;
     };
     // Collect all the LoanBrokers found directly or indirectly through
     // pseudo-accounts. Key is the brokerID / index. It will be used to find the
@@ -36,17 +36,17 @@ class ValidLoanBroker
     std::map<uint256, BrokerInfo> brokers_;
     // Collect all the modified trust lines. Their high and low accounts will be
     // loaded to look for LoanBroker pseudo-accounts.
-    std::vector<SLE::const_pointer> lines_;
+    std::vector<SLE const*> lines_;
     // Collect all the modified MPTokens. Their accounts will be loaded to look
     // for LoanBroker pseudo-accounts.
-    std::vector<SLE::const_pointer> mpts_;
+    std::vector<SLE const*> mpts_;
 
     static bool
     goodZeroDirectory(ReadView const& view, SLE::const_ref dir, beast::Journal const& j);
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);

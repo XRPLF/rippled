@@ -109,7 +109,7 @@ ApplyContext::checkInvariantsHelper(
                   bool isDelete,
                   std::shared_ptr<SLE const> const& before,
                   std::shared_ptr<SLE const> const& after) {
-            (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
+            (..., std::get<Is>(checkers).visitEntry(isDelete, before, *after));
         });
 
         // Note: do not replace this logic with a `...&&` fold expression.

@@ -208,6 +208,19 @@ isPseudoAccount(
             }) > 0;
 }
 
+[[nodiscard]] bool
+isPseudoAccount(SLE const& sleAcct, std::set<SField const*> const& pseudoFieldFilter)
+{
+    auto const& fields = getPseudoAccountFields();
+
+    return sleAcct.getType() == ltACCOUNT_ROOT &&
+        std::count_if(
+            fields.begin(), fields.end(), [&sleAcct, &pseudoFieldFilter](SField const* sf) -> bool {
+                return sleAcct.isFieldPresent(*sf) &&
+                    (pseudoFieldFilter.empty() || pseudoFieldFilter.contains(sf));
+            }) > 0;
+}
+
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField)
 {
