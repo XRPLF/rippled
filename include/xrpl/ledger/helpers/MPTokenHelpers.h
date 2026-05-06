@@ -137,7 +137,7 @@ canTransfer(
 
 /** Check if Asset can be traded on DEX. return tecNO_PERMISSION
  * if it doesn't and tesSUCCESS otherwise. For vault shares the check
- * inherits the underlying asset's tradability via sfReferenceAsset;
+ * inherits the underlying asset's tradability via sfReferenceHolding;
  * @p depth bounds that recursion at kMAX_ASSET_CHECK_DEPTH.
  */
 [[nodiscard]] TER

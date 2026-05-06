@@ -163,7 +163,7 @@ VaultCreate::doApply()
     if (!maybePseudo)
         return maybePseudo.error();  // LCOV_EXCL_LINE
     auto const& pseudo = *maybePseudo;
-    auto const pseudoId = pseudo->at(sfAccount);
+    AccountID const pseudoId = pseudo->at(sfAccount);
     auto const asset = tx[sfAsset];
 
     if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
@@ -192,15 +192,15 @@ VaultCreate::doApply()
         if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
             return std::nullopt;
         return asset.holds<MPTIssue>()
-            ? keylet::mptoken(asset.get<MPTIssue>().getMptID(), *pseudoId).key
-            : keylet::line(*pseudoId, asset.get<Issue>()).key;
+            ? keylet::mptoken(asset.get<MPTIssue>().getMptID(), pseudoId).key
+            : keylet::line(pseudoId, asset.get<Issue>()).key;
     }();
     auto const maybeShare = MPTokenIssuanceCreate::create(
         view(),
         j_,
         {
             .priorBalance = std::nullopt,
-            .account = pseudoId->value(),
+            .account = pseudoId,
             .sequence = 1,
             .flags = mptFlags,
             .assetScale = scale,
@@ -218,7 +218,7 @@ VaultCreate::doApply()
     vault->at(sfFlags) = txFlags & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
     vault->at(sfOwner) = account_;
-    vault->at(sfAccount) = *pseudoId;
+    vault->at(sfAccount) = pseudoId;
     vault->at(sfAssetsTotal) = Number(0);
     vault->at(sfAssetsAvailable) = Number(0);
     vault->at(sfLossUnrealized) = Number(0);
