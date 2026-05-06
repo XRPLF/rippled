@@ -19,9 +19,9 @@ class CheckCashBuilder;
  * @brief Transaction: CheckCash
  *
  * Type: ttCHECK_CASH (17)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: mayCreateMPT
+ * Privileges: MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CheckCashBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfCheckID (soeREQUIRED)
+     * @brief Get sfCheckID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
+     * @brief Get sfAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
@@ -86,7 +86,7 @@ public:
     }
 
     /**
-     * @brief Get sfDeliverMin (soeOPTIONAL)
+     * @brief Get sfDeliverMin (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
@@ -117,7 +117,7 @@ public:
  * @brief Builder for CheckCash transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class CheckCashBuilder : public TransactionBuilderBase<CheckCashBuilder>
@@ -156,7 +156,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfCheckID (soeREQUIRED)
+     * @brief Set sfCheckID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&
@@ -167,7 +167,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -179,7 +179,7 @@ public:
     }
 
     /**
-     * @brief Set sfDeliverMin (soeOPTIONAL)
+     * @brief Set sfDeliverMin (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */

@@ -25,7 +25,7 @@ NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
-    if (permissions.size() > permissionMaxSize)
+    if (permissions.size() > kPERMISSION_MAX_SIZE)
         return temARRAY_TOO_LARGE;
 
     // can not authorize self
@@ -179,11 +179,13 @@ DelegateSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 DelegateSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

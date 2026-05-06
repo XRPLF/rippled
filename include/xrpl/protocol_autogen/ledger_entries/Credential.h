@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfSubject (soeREQUIRED)
+     * @brief Get sfSubject (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfIssuer (soeREQUIRED)
+     * @brief Get sfIssuer (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfCredentialType (soeREQUIRED)
+     * @brief Get sfCredentialType (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -103,7 +103,7 @@ public:
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -127,7 +127,7 @@ public:
     }
 
     /**
-     * @brief Get sfIssuerNode (soeREQUIRED)
+     * @brief Get sfIssuerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -138,7 +138,7 @@ public:
     }
 
     /**
-     * @brief Get sfSubjectNode (soeOPTIONAL)
+     * @brief Get sfSubjectNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -162,7 +162,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -173,7 +173,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -188,7 +188,7 @@ public:
  * @brief Builder for Credential ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class CredentialBuilder : public LedgerEntryBuilderBase<CredentialBuilder>
@@ -231,7 +231,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfSubject (soeREQUIRED)
+     * @brief Set sfSubject (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -242,7 +242,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuer (soeREQUIRED)
+     * @brief Set sfIssuer (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -253,7 +253,7 @@ public:
     }
 
     /**
-     * @brief Set sfCredentialType (soeREQUIRED)
+     * @brief Set sfCredentialType (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -264,7 +264,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -275,7 +275,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -286,7 +286,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuerNode (soeREQUIRED)
+     * @brief Set sfIssuerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -297,7 +297,7 @@ public:
     }
 
     /**
-     * @brief Set sfSubjectNode (soeOPTIONAL)
+     * @brief Set sfSubjectNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -308,7 +308,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
@@ -319,7 +319,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&

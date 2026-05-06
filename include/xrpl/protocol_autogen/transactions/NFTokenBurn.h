@@ -19,9 +19,9 @@ class NFTokenBurnBuilder;
  * @brief Transaction: NFTokenBurn
  *
  * Type: ttNFTOKEN_BURN (26)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: changeNFTCounts
+ * Privileges: ChangeNftCounts
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenBurnBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfNFTokenID (soeREQUIRED)
+     * @brief Get sfNFTokenID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -89,7 +89,7 @@ public:
  * @brief Builder for NFTokenBurn transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class NFTokenBurnBuilder : public TransactionBuilderBase<NFTokenBurnBuilder>
@@ -128,7 +128,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfNFTokenID (soeREQUIRED)
+     * @brief Set sfNFTokenID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenBurnBuilder&
@@ -139,7 +139,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenBurnBuilder&

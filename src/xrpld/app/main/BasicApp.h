@@ -19,13 +19,13 @@ public:
     ~BasicApp();
 
     boost::asio::io_context&
-    get_io_context()
+    getIoContext()
     {
         return io_context_;
     }
 
     [[nodiscard]] size_t
-    get_number_of_threads() const
+    getNumberOfThreads() const
     {
         return threads_.size();
     }

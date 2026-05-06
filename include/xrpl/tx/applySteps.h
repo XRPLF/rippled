@@ -27,7 +27,7 @@ struct ApplyResult
 inline bool
 isTecClaimHardFail(TER ter, ApplyFlags flags)
 {
-    return isTecClaim(ter) && ((flags & tapRETRY) == 0u);
+    return isTecClaim(ter) && ((flags & TapRetry) == 0u);
 }
 
 /** Class describing the consequences to the account
@@ -41,10 +41,10 @@ public:
     /// transactions
     enum class Category {
         /// Moves currency around, creates offers, etc.
-        normal = 0,
+        Normal = 0,
         /// Affects the ability of subsequent transactions
         /// to claim a fee. Eg. `SetRegularKey`
-        blocker
+        Blocker
     };
 
 private:
@@ -160,13 +160,13 @@ public:
 
     /// Constructor
     template <class Context>
-    PreflightResult(Context const& ctx_, std::pair<NotTEC, TxConsequences> const& result)
-        : tx(ctx_.tx)
-        , parentBatchId(ctx_.parentBatchId)
-        , rules(ctx_.rules)
+    PreflightResult(Context const& ctx, std::pair<NotTEC, TxConsequences> const& result)
+        : tx(ctx.tx)
+        , parentBatchId(ctx.parentBatchId)
+        , rules(ctx.rules)
         , consequences(result.second)
-        , flags(ctx_.flags)
-        , j(ctx_.j)
+        , flags(ctx.flags)
+        , j(ctx.j)
         , ter(result.first)
     {
     }
@@ -206,13 +206,13 @@ public:
 
     /// Constructor
     template <class Context>
-    PreclaimResult(Context const& ctx_, TER ter_)
-        : view(ctx_.view)
-        , tx(ctx_.tx)
-        , parentBatchId(ctx_.parentBatchId)
-        , flags(ctx_.flags)
-        , j(ctx_.j)
-        , ter(ter_)
+    PreclaimResult(Context const& ctx, TER ter)
+        : view(ctx.view)
+        , tx(ctx.tx)
+        , parentBatchId(ctx.parentBatchId)
+        , flags(ctx.flags)
+        , j(ctx.j)
+        , ter(ter)
         , likelyToClaimFee(isTesSuccess(ter) || isTecClaimHardFail(ter, flags))
     {
     }

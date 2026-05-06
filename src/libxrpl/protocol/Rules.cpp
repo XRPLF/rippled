@@ -21,8 +21,8 @@ namespace {
 LocalValue<std::optional<Rules>>&
 getCurrentTransactionRulesRef()
 {
-    static LocalValue<std::optional<Rules>> r;
-    return r;
+    static LocalValue<std::optional<Rules>> kR;
+    return kR;
 }
 }  // namespace
 
@@ -41,8 +41,8 @@ setCurrentTransactionRules(std::optional<Rules> r)
     bool const enableLargeNumbers =
         !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
     Number::setMantissaScale(
-        enableLargeNumbers ? MantissaRange::mantissa_scale::large
-                           : MantissaRange::mantissa_scale::small);
+        enableLargeNumbers ? MantissaRange::MantissaScale::Large
+                           : MantissaRange::MantissaScale::Small);
 
     *getCurrentTransactionRulesRef() = std::move(r);
 }
@@ -50,17 +50,17 @@ setCurrentTransactionRules(std::optional<Rules> r)
 class Rules::Impl
 {
 private:
-    std::unordered_set<uint256, hardened_hash<>> set_;
+    std::unordered_set<uint256, HardenedHash<>> set_;
     std::optional<uint256> digest_;
-    std::unordered_set<uint256, beast::uhash<>> const& presets_;
+    std::unordered_set<uint256, beast::Uhash<>> const& presets_;
 
 public:
-    explicit Impl(std::unordered_set<uint256, beast::uhash<>> const& presets) : presets_(presets)
+    explicit Impl(std::unordered_set<uint256, beast::Uhash<>> const& presets) : presets_(presets)
     {
     }
 
     Impl(
-        std::unordered_set<uint256, beast::uhash<>> const& presets,
+        std::unordered_set<uint256, beast::Uhash<>> const& presets,
         std::optional<uint256> const& digest,
         STVector256 const& amendments)
         : digest_(digest), presets_(presets)
@@ -69,7 +69,7 @@ public:
         set_.insert(amendments.begin(), amendments.end());
     }
 
-    [[nodiscard]] std::unordered_set<uint256, beast::uhash<>> const&
+    [[nodiscard]] std::unordered_set<uint256, beast::Uhash<>> const&
     presets() const
     {
         return presets_;
@@ -98,20 +98,20 @@ public:
     }
 };
 
-Rules::Rules(std::unordered_set<uint256, beast::uhash<>> const& presets)
+Rules::Rules(std::unordered_set<uint256, beast::Uhash<>> const& presets)
     : impl_(std::make_shared<Impl>(presets))
 {
 }
 
 Rules::Rules(
-    std::unordered_set<uint256, beast::uhash<>> const& presets,
+    std::unordered_set<uint256, beast::Uhash<>> const& presets,
     std::optional<uint256> const& digest,
     STVector256 const& amendments)
     : impl_(std::make_shared<Impl>(presets, digest, amendments))
 {
 }
 
-std::unordered_set<uint256, beast::uhash<>> const&
+std::unordered_set<uint256, beast::Uhash<>> const&
 Rules::presets() const
 {
     return impl_->presets();

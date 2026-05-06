@@ -195,21 +195,21 @@ public:
      * in contexts that don't expect the value to ever approach
      * the 32-bit limits (i.e. fees and reserves).
      */
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     jsonClipped() const
     {
         static_assert(
             std::is_signed_v<value_type> && std::is_integral_v<value_type>,
             "Expected XRPAmount to be a signed integral type");
 
-        constexpr auto min = std::numeric_limits<Json::Int>::min();
-        constexpr auto max = std::numeric_limits<Json::Int>::max();
+        constexpr auto kMIN = std::numeric_limits<json::Int>::min();
+        constexpr auto kMAX = std::numeric_limits<json::Int>::max();
 
-        if (drops_ < min)
-            return min;
-        if (drops_ > max)
-            return max;
-        return static_cast<Json::Int>(drops_);
+        if (drops_ < kMIN)
+            return kMIN;
+        if (drops_ > kMAX)
+            return kMAX;
+        return static_cast<json::Int>(drops_);
     }
 
     /** Returns the underlying value. Code SHOULD NOT call this
@@ -237,12 +237,12 @@ public:
 };
 
 /** Number of drops per 1 XRP */
-constexpr XRPAmount DROPS_PER_XRP{1'000'000};
+constexpr XRPAmount kDROPS_PER_XRP{1'000'000};
 
 constexpr double
 XRPAmount::decimalXRP() const
 {
-    return static_cast<double>(drops_) / DROPS_PER_XRP.drops();
+    return static_cast<double>(drops_) / kDROPS_PER_XRP.drops();
 }
 
 // Output XRPAmount as just the drops value.
