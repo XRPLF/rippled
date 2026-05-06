@@ -2048,11 +2048,13 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace test::jtx;
         testcase << "book directory exchange rate";
 
-        auto const makeBookRoot = [](Account const& account) {
+        auto const getBookRootKey = [](Account const& account, std::uint64_t quality) {
             Book const book{xrpIssue(), account["USD"], std::nullopt};
-            return keylet::quality(keylet::kBOOK(book), STAmount::kU_RATE_ONE);
+            return keylet::quality(keylet::kBOOK(book), quality);
         };
 
+        // Root book-directory pages carry exchange-rate metadata that must
+        // match the quality encoded in the directory key.
         auto const makeRootPage = [](Keylet const& dir, std::uint64_t exchangeRate) {
             auto sleDir = std::make_shared<SLE>(dir);
             sleDir->setFieldH256(sfRootIndex, dir.key);
@@ -2063,6 +2065,8 @@ class Invariants_test : public beast::unit_test::Suite
             return sleDir;
         };
 
+        // Child pages do not carry quality metadata; they only point back to
+        // the root directory.
         auto const makeChildPage = [](Keylet const& rootDir) {
             auto sleDir = std::make_shared<SLE>(keylet::page(rootDir, 1));
             sleDir->setFieldH256(sfRootIndex, rootDir.key);
@@ -2072,14 +2076,51 @@ class Invariants_test : public beast::unit_test::Suite
             return sleDir;
         };
 
+        auto const makeOfferCreateTx = [] {
+            return STTx{ttOFFER_CREATE, [](STObject& tx) {
+                            Account const account{"A1"};
+                            tx.setFieldAmount(sfTakerPays, XRP(1));
+                            tx.setFieldAmount(sfTakerGets, account["USD"](1));
+                        }};
+        };
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+
+        // Creating a root book directory with mismatched exchange-rate
+        // metadata violates the invariant.
         doInvariantCheck(
             {{"book directory exchange rate does not match directory quality"}},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto const dir = makeBookRoot(a1);
-                ac.view().insert(makeRootPage(dir, STAmount::kU_RATE_ONE + 1));
+                auto const directoryQuality = STAmount::kU_RATE_ONE;
+                auto const dir = getBookRootKey(a1, directoryQuality);
+                ac.view().insert(makeRootPage(dir, directoryQuality + 1));
                 return true;
-            });
+            },
+            XRPAmount{},
+            makeOfferCreateTx(),
+            failTers);
 
+        // A new child page must point to an existing root page.
+        doInvariantCheck(
+            {{"book directory root missing"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const directoryQuality = STAmount::kU_RATE_ONE;
+                auto const rootDir = getBookRootKey(a1, directoryQuality);
+                // Insert only the child page.  It points at rootDir, but the
+                // corresponding root page is intentionally missing.
+                ac.view().insert(makeChildPage(rootDir));
+                return true;
+            },
+            XRPAmount{},
+            makeOfferCreateTx(),
+            failTers);
+
+        // Legacy bad-root tolerance:
+        // - The view contains a pre-existing root page with bad sfExchangeRate
+        //   metadata.
+        // - The simulated transaction only creates a child page pointing to
+        //   that root.
+        // - The invariant must pass because this transaction did not create
+        //   the bad root, only adding a child page.
         {
             Env env{*this, defaultAmendments()};
             Account const a1{"A1"};
@@ -2087,36 +2128,17 @@ class Invariants_test : public beast::unit_test::Suite
             env.close();
 
             OpenView view{*env.current()};
-            auto const rootDir = makeBookRoot(a1);
+            auto const directoryQuality = STAmount::kU_RATE_ONE;
+            auto const rootDir = getBookRootKey(a1, directoryQuality);
+            view.rawInsert(makeRootPage(rootDir, directoryQuality + 1));
 
             ValidBookDirectory invariant;
             invariant.visitEntry(false, nullptr, makeChildPage(rootDir));
 
             test::StreamSink sink{beast::severities::KWarning};
             beast::Journal const jlog{sink};
-            BEAST_EXPECT(!invariant.finalize(
-                STTx{ttACCOUNT_SET, [](STObject&) {}}, tesSUCCESS, XRPAmount{}, view, jlog));
             BEAST_EXPECT(
-                sink.messages().str().find("book directory root missing") != std::string::npos);
-        }
-
-        {
-            Env env{*this, defaultAmendments()};
-            Account const a1{"A1"};
-            env.fund(XRP(1000), a1);
-            env.close();
-
-            OpenView view{*env.current()};
-            auto const rootDir = makeBookRoot(a1);
-            view.rawInsert(makeRootPage(rootDir, STAmount::kU_RATE_ONE + 1));
-
-            ValidBookDirectory invariant;
-            invariant.visitEntry(false, nullptr, makeChildPage(rootDir));
-
-            test::StreamSink sink{beast::severities::KWarning};
-            beast::Journal const jlog{sink};
-            BEAST_EXPECT(invariant.finalize(
-                STTx{ttACCOUNT_SET, [](STObject&) {}}, tesSUCCESS, XRPAmount{}, view, jlog));
+                invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
         }
     }
 
