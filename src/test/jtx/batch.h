@@ -21,6 +21,10 @@ namespace xrpl::test::jtx::batch {
 XRPAmount
 calcBatchFee(jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns = 0);
 
+/** Calculate Batch Fee with Confidential MPT inner transactions. */
+XRPAmount
+calcConfidentialBatchFee(jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns = 0);
+
 /** Batch. */
 json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags);

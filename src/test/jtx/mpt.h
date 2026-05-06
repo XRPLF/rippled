@@ -12,6 +12,7 @@
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 
@@ -208,6 +209,7 @@ struct MPTConvert
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -220,6 +222,7 @@ struct MPTMergeInbox
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -247,6 +250,7 @@ struct MPTConfidentialSend
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -268,6 +272,7 @@ struct MPTConvertBack
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -283,6 +288,7 @@ struct MPTConfidentialClawback
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -599,10 +605,16 @@ private:
 
     template <typename A>
     TER
-    submit(A const& arg, json::Value const& jv)
+    submit(A const& arg, json::Value jv)
     {
         auto const expectedFlags = Txflags(arg.flags.value_or(0));
         auto const expectedTer = Ter(arg.err.value_or(tesSUCCESS));
+
+        if constexpr (requires { arg.fee; })
+        {
+            if (arg.fee)
+                jv[jss::Fee] = to_string(*arg.fee);
+        }
 
         std::optional<std::uint32_t> ticketSeq;
         if constexpr (requires { arg.ticketSeq; })

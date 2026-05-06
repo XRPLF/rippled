@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -86,6 +87,15 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
         return err;
 
     return tesSUCCESS;
+}
+
+XRPAmount
+ConfidentialMPTSend::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
+    // We charge kCONFIDENTIAL_FEE_MULTIPLIER extra base fees so the total is
+    // 10 * baseFee + (signerCount * baseFee).
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kCONFIDENTIAL_FEE_MULTIPLIER;
 }
 
 TER
