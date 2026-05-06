@@ -108,6 +108,7 @@ else()
 endif()
 
 option(jemalloc "Enables jemalloc for heap profiling" OFF)
+option(lto "Enable Link Time Optimization" OFF)
 option(werr "treat warnings as errors" OFF)
 option(
     local_protobuf
