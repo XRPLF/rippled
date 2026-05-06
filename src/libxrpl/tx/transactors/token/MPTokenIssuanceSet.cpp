@@ -245,8 +245,9 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
 
         auto const domain = ctx.tx[~sfDomainID];
-        // A zero DomainID clears the field; otherwise use the tx value if
-        // present, or the current ledger state if the tx leaves it unchanged.
+        // Whether the issuance will have a DomainID after this transaction:
+        // non-zero DomainID sets/replaces it, zero clears it, and absence
+        // leaves the current ledger state unchanged.
         auto const willHaveDomainID =
             domain ? *domain != beast::kZERO : sleMptIssuance->isFieldPresent(sfDomainID);
 
