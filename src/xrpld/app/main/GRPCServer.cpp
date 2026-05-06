@@ -526,6 +526,7 @@ GRPCServerImpl::handleRpcs()
 std::vector<std::shared_ptr<Processor>>
 GRPCServerImpl::setupListeners()
 {
+    using RPC::Condition;
     std::vector<std::shared_ptr<Processor>> requests;
 
     auto addToRequests = [&requests](auto callData) { requests.push_back(std::move(callData)); };
@@ -542,7 +543,7 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedger,
                 doLedgerGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
-                RPC::NoCondition,
+                Condition::NoCondition,
                 Resource::kFEE_MEDIUM_BURDEN_RPC,
                 secureGatewayIPs_));
     }
@@ -559,7 +560,7 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerData,
                 doLedgerDataGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
-                RPC::NoCondition,
+                Condition::NoCondition,
                 Resource::kFEE_MEDIUM_BURDEN_RPC,
                 secureGatewayIPs_));
     }
@@ -576,7 +577,7 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerDiff,
                 doLedgerDiffGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
-                RPC::NoCondition,
+                Condition::NoCondition,
                 Resource::kFEE_MEDIUM_BURDEN_RPC,
                 secureGatewayIPs_));
     }
@@ -593,7 +594,7 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerEntry,
                 doLedgerEntryGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
-                RPC::NoCondition,
+                Condition::NoCondition,
                 Resource::kFEE_MEDIUM_BURDEN_RPC,
                 secureGatewayIPs_));
     }
