@@ -64,8 +64,7 @@
 #include <string>
 #include <vector>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 namespace detail {
 
@@ -851,19 +850,19 @@ OTelCollector::New(
     return std::make_shared<detail::OTelCollectorImp>(endpoint, prefix, instanceId, journal);
 }
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight
 
 #else  // !XRPL_ENABLE_TELEMETRY
 
 // When telemetry is disabled at compile time, OTelCollector::New()
 // returns a NullCollector so callers do not need conditional logic.
 
+#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/insight/OTelCollector.h>
+#include <xrpl/beast/utility/Journal.h>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 std::shared_ptr<Collector>
 OTelCollector::New(
@@ -875,7 +874,6 @@ OTelCollector::New(
     return NullCollector::New();
 }
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight
 
 #endif  // XRPL_ENABLE_TELEMETRY

@@ -14,8 +14,7 @@
 #include <deque>
 #include <mutex>
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 /**
  * Tracks whether this validator's validations agree with network consensus,
@@ -204,7 +203,7 @@ private:
     struct LedgerEvent
     {
         uint256 ledgerHash;             ///< Ledger hash being tracked.
-        LedgerIndex seq;                ///< Ledger sequence number.
+        LedgerIndex seq{0};             ///< Ledger sequence number.
         TimePoint recordTime;           ///< Time the event was first recorded.
         bool weValidated = false;       ///< True if we sent a validation.
         bool networkValidated = false;  ///< True if network reached consensus.
@@ -292,5 +291,4 @@ private:
     repairWindowEntry(std::deque<WindowEvent>& window, uint256 const& hash);
 };
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry

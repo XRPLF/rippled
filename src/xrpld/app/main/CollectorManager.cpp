@@ -5,6 +5,7 @@
 #include <xrpl/beast/insight/Group.h>
 #include <xrpl/beast/insight/Groups.h>
 #include <xrpl/beast/insight/NullCollector.h>
+#include <xrpl/beast/insight/OTelCollector.h>
 #include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
