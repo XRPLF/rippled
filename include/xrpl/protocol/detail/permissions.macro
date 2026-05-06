@@ -15,60 +15,60 @@
 
 /** Grants the ability to authorize a trustline. */
 GRANULAR_PERMISSION(TrustlineAuthorize, ttTRUST_SET, 65537, tfUniversal | tfSetfAuth,
-    ({{sfLimitAmount, soeREQUIRED}}))
+    ({{sfLimitAmount, SoeRequired}}))
 
 /** Grants the ability to freeze a trustline. */
 GRANULAR_PERMISSION(TrustlineFreeze, ttTRUST_SET, 65538, tfUniversal | tfSetFreeze,
-    ({{sfLimitAmount, soeREQUIRED}}))
+    ({{sfLimitAmount, SoeRequired}}))
 
 /** Grants the ability to unfreeze a trustline. */
 GRANULAR_PERMISSION(TrustlineUnfreeze, ttTRUST_SET, 65539, tfUniversal | tfClearFreeze,
-    ({{sfLimitAmount, soeREQUIRED}}))
+    ({{sfLimitAmount, SoeRequired}}))
 
 /** Grants the ability to set Domain. */
 GRANULAR_PERMISSION(AccountDomainSet, ttACCOUNT_SET, 65540, tfUniversal,
-    ({{sfDomain, soeOPTIONAL}}))
+    ({{sfDomain, SoeOptional}}))
 
 /** Grants the ability to set EmailHash. */
 GRANULAR_PERMISSION(AccountEmailHashSet, ttACCOUNT_SET, 65541, tfUniversal,
-    ({{sfEmailHash, soeOPTIONAL}}))
+    ({{sfEmailHash, SoeOptional}}))
 
 /** Grants the ability to set MessageKey. */
 GRANULAR_PERMISSION(AccountMessageKeySet, ttACCOUNT_SET, 65542, tfUniversal,
-    ({{sfMessageKey, soeOPTIONAL}}))
+    ({{sfMessageKey, SoeOptional}}))
 
 /** Grants the ability to set TransferRate. */
 GRANULAR_PERMISSION(AccountTransferRateSet, ttACCOUNT_SET, 65543, tfUniversal,
-    ({{sfTransferRate, soeOPTIONAL}}))
+    ({{sfTransferRate, SoeOptional}}))
 
 /** Grants the ability to set TickSize. */
 GRANULAR_PERMISSION(AccountTickSizeSet, ttACCOUNT_SET, 65544, tfUniversal,
-    ({{sfTickSize, soeOPTIONAL}}))
+    ({{sfTickSize, SoeOptional}}))
 
 /** Grants the ability to mint payment (sending account is the issuer). Cross-currency payments are disallowed. */
 GRANULAR_PERMISSION(PaymentMint, ttPAYMENT, 65545, tfUniversal,
-    ({{sfDestination, soeREQUIRED},
-      {sfAmount, soeREQUIRED},
-      {sfSendMax, soeOPTIONAL},
-      {sfInvoiceID, soeOPTIONAL},
-      {sfDestinationTag, soeOPTIONAL},
-      {sfCredentialIDs, soeOPTIONAL}}))
+    ({{sfDestination, SoeRequired},
+      {sfAmount, SoeRequired},
+      {sfSendMax, SoeOptional},
+      {sfInvoiceID, SoeOptional},
+      {sfDestinationTag, SoeOptional},
+      {sfCredentialIDs, SoeOptional}}))
 
 /** Grants the ability to burn payment (destination account is the issuer). Cross-currency payments are disallowed. */
 GRANULAR_PERMISSION(PaymentBurn, ttPAYMENT, 65546, tfUniversal,
-    ({{sfDestination, soeREQUIRED},
-      {sfAmount, soeREQUIRED},
-      {sfSendMax, soeOPTIONAL},
-      {sfInvoiceID, soeOPTIONAL},
-      {sfDestinationTag, soeOPTIONAL},
-      {sfCredentialIDs, soeOPTIONAL}}))
+    ({{sfDestination, SoeRequired},
+      {sfAmount, SoeRequired},
+      {sfSendMax, SoeOptional},
+      {sfInvoiceID, SoeOptional},
+      {sfDestinationTag, SoeOptional},
+      {sfCredentialIDs, SoeOptional}}))
 
 /** Grants the ability to lock an MPToken. */
 GRANULAR_PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547, tfUniversal | tfMPTLock,
-    ({{sfMPTokenIssuanceID, soeREQUIRED},
-      {sfHolder, soeOPTIONAL}}))
+    ({{sfMPTokenIssuanceID, SoeRequired},
+      {sfHolder, SoeOptional}}))
 
 /** Grants the ability to unlock an MPToken. */
 GRANULAR_PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548, tfUniversal | tfMPTUnlock,
-    ({{sfMPTokenIssuanceID, soeREQUIRED},
-      {sfHolder, soeOPTIONAL}}))
+    ({{sfMPTokenIssuanceID, SoeRequired},
+      {sfHolder, SoeOptional}}))

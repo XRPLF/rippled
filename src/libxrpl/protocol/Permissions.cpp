@@ -239,7 +239,7 @@ Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
     auto const txType = permissionToTxType(permissionValue);
     auto const it = delegableTx_.find(txType);
 
-    if (it == delegableTx_.end() || it->second == Delegation::notDelegable)
+    if (it == delegableTx_.end() || it->second == Delegation::NotDelegable)
         return false;
 
     // Delegation is only allowed if the required amendment is enabled.
