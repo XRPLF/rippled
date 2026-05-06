@@ -3,9 +3,7 @@ Upstream-Name: rippled
 Source: https://github.com/XRPLF/rippled
 
 Files: *
-Copyright: 2012-2026 Ripple Labs Inc.
-License: ISC
-
+Copyright: 2011-present, the XRP Ledger developers
 License: ISC
  Permission to use, copy, modify, and distribute this software for any
  purpose with or without fee is hereby granted, provided that the above
