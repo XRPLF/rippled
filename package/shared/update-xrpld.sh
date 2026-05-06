@@ -95,7 +95,7 @@ rpm_can_update() {
     elif [[ $rc -eq 0 ]]; then
         return 1
     else
-        log "$pm check-update failed with exit code $rc"
+        log "$pm check-update failed with exit code ${rc}."
         exit 1
     fi
 }
@@ -106,8 +106,15 @@ rpm_apply_update() {
 }
 
 restart_service() {
-    systemctl restart "${PKG_NAME}.service"
-    log "${PKG_NAME} service restarted successfully"
+    # Preserve the operator's prior service state: if xrpld was intentionally
+    # stopped before the update, don't bring it back up just because the
+    # auto-update timer fired.
+    if systemctl is-active --quiet "${PKG_NAME}.service"; then
+        systemctl restart "${PKG_NAME}.service"
+        log "${PKG_NAME} service restarted successfully."
+    else
+        log "${PKG_NAME} service was not running; skipping restart to preserve prior state."
+    fi
 }
 
 main() {
@@ -115,7 +122,7 @@ main() {
     if command -v apt-get >/dev/null 2>&1; then
         log "Checking for ${PKG_NAME} updates via apt"
         if apt_can_update; then
-            log "Update available; installing"
+            log "Update available; installing."
             apt_apply_update
             restart_service
             log "RESULT: updated ${PKG_NAME}=$(get_installed_version)"

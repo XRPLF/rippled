@@ -15,7 +15,6 @@ Options (each can also be set via the env var shown):
   --build-dir DIR           directory holding xrpld    [BUILD_DIR;         default: $PWD/build]
   --pkg-version STR         version, e.g. 3.2.0-b1     [PKG_VERSION;       default: parsed from xrpld --version]
   --pkg-release N           package release number     [PKG_RELEASE;       default: 1]
-  --pkg-type TYPE           deb or rpm                 [PKG_TYPE;          default: inferred from package manager]
   --source-date-epoch SECS  reproducibility timestamp  [SOURCE_DATE_EPOCH; default: latest git commit ctime]
   -h, --help                show this help and exit
 EOF
@@ -33,7 +32,6 @@ SRC_DIR="${SRC_DIR:-}"
 BUILD_DIR="${BUILD_DIR:-}"
 PKG_VERSION="${PKG_VERSION:-}"
 PKG_RELEASE="${PKG_RELEASE:-}"
-PKG_TYPE="${PKG_TYPE:-}"
 SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-}"
 
 while [[ $# -gt 0 ]]; do
@@ -42,7 +40,6 @@ while [[ $# -gt 0 ]]; do
         --build-dir)          need_arg "$@"; BUILD_DIR="$2";         shift 2 ;;
         --pkg-version)        need_arg "$@"; PKG_VERSION="$2";       shift 2 ;;
         --pkg-release)        need_arg "$@"; PKG_RELEASE="$2";       shift 2 ;;
-        --pkg-type)           need_arg "$@"; PKG_TYPE="$2";          shift 2 ;;
         --source-date-epoch)  need_arg "$@"; SOURCE_DATE_EPOCH="$2"; shift 2 ;;
         -h|--help)            usage; exit 0 ;;
         *)
@@ -68,24 +65,14 @@ fi
 
 VERSION="${PKG_VERSION}"
 
-if [[ -z "${PKG_TYPE}" ]]; then
-    if command -v apt-get >/dev/null 2>&1; then
-        PKG_TYPE=deb
-    elif command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
-        PKG_TYPE=rpm
-    else
-        echo "Cannot infer PKG_TYPE: no apt-get, dnf, or yum on PATH." >&2
-        exit 1
-    fi
+if command -v apt-get >/dev/null 2>&1; then
+    pkg_type=deb
+elif command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
+    pkg_type=rpm
+else
+    echo "Cannot infer pkg_type: no apt-get, dnf, or yum on PATH." >&2
+    exit 1
 fi
-
-case "${PKG_TYPE}" in
-    deb|rpm) ;;
-    *)
-        echo "Invalid PKG_TYPE: ${PKG_TYPE}; expected deb or rpm." >&2
-        exit 2
-        ;;
-esac
 
 if [[ -z "${SOURCE_DATE_EPOCH}" ]]; then
     if git -C "$SRC_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -202,4 +189,4 @@ EOF
     ( cd "${staging}" && dpkg-buildpackage -b --no-sign -d )
 }
 
-"build_${PKG_TYPE}"
+"build_${pkg_type}"

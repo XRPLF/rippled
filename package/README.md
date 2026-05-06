@@ -121,11 +121,11 @@ defaults. Run `./package/build_pkg.sh --help` for the same table:
 | `--build-dir DIR`          | `BUILD_DIR`         | `$PWD/build`                  | directory holding pre-built `xrpld` |
 | `--pkg-version STR`        | `PKG_VERSION`       | parsed from `xrpld --version` | version string, e.g. `3.2.0-b1`     |
 | `--pkg-release N`          | `PKG_RELEASE`       | `1`                           | package release number              |
-| `--pkg-type TYPE`          | `PKG_TYPE`          | inferred from package manager | `deb` or `rpm`                      |
 | `--source-date-epoch SECS` | `SOURCE_DATE_EPOCH` | latest git commit ctime       | reproducibility timestamp           |
 
-For example, on a host that has both package managers installed:
-`./package/build_pkg.sh --pkg-type rpm`.
+The package format (`deb` or `rpm`) is inferred from the host's package
+manager (`apt-get` -> deb, `dnf`/`yum` -> rpm). Hosts without one of those
+fail early.
 
 Flags are for explicit invocation; environment variables are intended for
 CMake/systemd/CI integration. The CI workflow and the CMake `package` target

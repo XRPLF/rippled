@@ -70,6 +70,7 @@ jobs:
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
+            cfg/**
             cmake/**
             conan/**
             external/**
@@ -79,26 +80,9 @@ jobs:
             CMakeLists.txt
             conanfile.py
             conan.lock
-            package/**
-
-      - name: Determine changed packaging files
-        # Narrower filter than the one above: only packaging-relevant paths.
-        # The package job below uses this to skip packaging when nothing in
-        # this list changed (e.g. docs/RPC-only PRs that still trip
-        # should-run.go via src/**). Source changes that compile and pass
-        # unit tests but break packaging go undetected until the next
-        # packaging-touching PR — accepted tradeoff.
-        id: pkg-changes
-        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
-        with:
-          files: |
-            cfg/**
-            cmake/XrplPackaging.cmake
             LICENSE.md
             package/**
             README.md
-            .github/scripts/strategy-matrix/**
-            .github/workflows/reusable-package.yml
 
       - name: Check whether to run
         # This step determines whether the rest of the workflow should
@@ -115,11 +99,9 @@ jobs:
           MERGE: ${{ github.event_name == 'merge_group' }}
         run: |
           echo "go=${{ (env.DRAFT != 'true' && env.READY == 'true') || env.FILES == 'true' || env.MERGE == 'true' }}" >> "${GITHUB_OUTPUT}"
-          echo "package=${{ steps.pkg-changes.outputs.any_changed == 'true' || env.MERGE == 'true' }}" >> "${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
-      package: ${{ steps.go.outputs.package == 'true' }}
 
   check-levelization:
     needs: should-run
@@ -160,7 +142,7 @@ jobs:
 
   package:
     needs: [should-run, build-test]
-    if: ${{ needs.should-run.outputs.go == 'true' && needs.should-run.outputs.package == 'true' }}
+    if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-package.yml
 
   upload-recipe:
@@ -197,6 +179,7 @@ jobs:
       - check-rename
       - clang-tidy
       - build-test
+      - package
       - upload-recipe
       - notify-clio
     runs-on: ubuntu-latest
