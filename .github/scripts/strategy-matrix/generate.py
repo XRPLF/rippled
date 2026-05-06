@@ -239,7 +239,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # GCC sanitizers run independently because combining ASAN+UBSAN inflates
         # GCC data sections past ASAN's 2GB shadow memory limit
         # (see https://github.com/google/sanitizers/issues/856).
-        # Clang doesn't have this issue, so ASAN+UBSAN and TSAN+UBSAN stay combined.
+        # Clang doesn't have this issue, so TSAN+UBSAN stay combined but ASAN and UBSAN are separated.
         compiler_id = f"{os['compiler_name']}-{os['compiler_version']}"
         if os["distro_version"] == "bookworm" and compiler_id == "gcc-15":
             # Add separate ASAN, TSAN, and UBSAN configurations for GCC.
