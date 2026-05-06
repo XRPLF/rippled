@@ -266,10 +266,10 @@ public:
     floatToInt(Slice const& x, int32_t mode) const override;
 
     Expected<FloatPair, HostFunctionError>
-    floatToMantissaAndExponent(Slice const& x) const override;
+    floatToMantExp(Slice const& x) const override;
 
     Expected<Bytes, HostFunctionError>
-    floatFromMantissaAndExponent(int64_t mantissa, int32_t exponent, int32_t mode) const override;
+    floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const override;
 
     Expected<int32_t, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y) const override;

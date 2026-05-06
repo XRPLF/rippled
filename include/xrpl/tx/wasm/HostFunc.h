@@ -66,10 +66,10 @@ Expected<int64_t, HostFunctionError>
 floatToIntImpl(Slice const& x, int32_t mode);
 
 Expected<FloatPair, HostFunctionError>
-floatToMantissaAndExponentImpl(Slice const& x);
+floatToMantExpImpl(Slice const& x);
 
 Expected<Bytes, HostFunctionError>
-floatFromMantissaAndExponentImpl(int64_t mantissa, int32_t exponent, int32_t mode);
+floatFromMantExpImpl(int64_t mantissa, int32_t exponent, int32_t mode);
 
 Expected<int32_t, HostFunctionError>
 floatCompareImpl(Slice const& x, Slice const& y);
@@ -471,13 +471,13 @@ struct HostFunctions
     }
 
     virtual Expected<FloatPair, HostFunctionError>
-    floatToMantissaAndExponent(Slice const& x) const
+    floatToMantExp(Slice const& x) const
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    floatFromMantissaAndExponent(int64_t mantissa, int32_t exponent, int32_t mode) const
+    floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

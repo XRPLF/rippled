@@ -477,15 +477,15 @@ public:
     }
 
     virtual Expected<FloatPair, HostFunctionError>
-    floatToMantissaAndExponent(Slice const& x) const override
+    floatToMantExp(Slice const& x) const override
     {
-        return wasm_float::floatToMantissaAndExponentImpl(x);
+        return wasm_float::floatToMantExpImpl(x);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatFromMantissaAndExponent(int64_t mantissa, int32_t exponent, int32_t mode) const override
+    floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const override
     {
-        return wasm_float::floatFromMantissaAndExponentImpl(mantissa, exponent, mode);
+        return wasm_float::floatFromMantExpImpl(mantissa, exponent, mode);
     }
 
     Expected<int32_t, HostFunctionError>

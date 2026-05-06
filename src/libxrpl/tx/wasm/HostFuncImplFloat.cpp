@@ -259,7 +259,7 @@ floatToIntImpl(Slice const& x, int32_t mode)
 }
 
 Expected<FloatPair, HostFunctionError>
-floatToMantissaAndExponentImpl(Slice const& x)
+floatToMantExpImpl(Slice const& x)
 {
     try
     {
@@ -282,7 +282,7 @@ floatToMantissaAndExponentImpl(Slice const& x)
 }
 
 Expected<Bytes, HostFunctionError>
-floatFromMantissaAndExponentImpl(int64_t mantissa, int32_t exponent, int32_t mode)
+floatFromMantExpImpl(int64_t mantissa, int32_t exponent, int32_t mode)
 {
     try
     {
@@ -526,18 +526,18 @@ WasmHostFunctionsImpl::floatToInt(Slice const& x, int32_t mode) const
 }
 
 Expected<FloatPair, HostFunctionError>
-WasmHostFunctionsImpl::floatToMantissaAndExponent(Slice const& x) const
+WasmHostFunctionsImpl::floatToMantExp(Slice const& x) const
 {
-    return wasm_float::floatToMantissaAndExponentImpl(x);
+    return wasm_float::floatToMantExpImpl(x);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatFromMantissaAndExponent(
+WasmHostFunctionsImpl::floatFromMantExp(
     int64_t mantissa,
     int32_t exponent,
     int32_t mode) const
 {
-    return wasm_float::floatFromMantissaAndExponentImpl(mantissa, exponent, mode);
+    return wasm_float::floatFromMantExpImpl(mantissa, exponent, mode);
 }
 
 Expected<int32_t, HostFunctionError>

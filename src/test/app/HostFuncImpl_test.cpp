@@ -4937,9 +4937,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
-    testfloatFromMantissaAndExponent()
+    testfloatFromMantExp()
     {
-        testcase("floatFromMantissaAndExponent");
+        testcase("floatFromMantExp");
         using namespace test::jtx;
         using namespace wasm_float;
 
@@ -4954,10 +4954,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         hfs.setRT(&vrt);
 
         {
-            // hfs.floatFromMantissaAndExponent(1, 0, -1);
+            // hfs.floatFromMantExp(1, 0, -1);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -4974,10 +4974,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatFromMantissaAndExponent(1, 0, 4);
+            // hfs.floatFromMantExp(1, 0, 4);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -4994,10 +4994,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatFromMantissaAndExponent(1, Number::maxExponent + normalExp + 1, 0);
+            // hfs.floatFromMantExp(1, Number::maxExponent + normalExp + 1, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -5014,10 +5014,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatFromMantissaAndExponent(1, Number::minExponent + normalExp - 1, 0);
+            // hfs.floatFromMantExp(1, Number::minExponent + normalExp - 1, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -5034,10 +5034,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatFromMantissaAndExponent(1, Number::maxExponent + normalExp, 0);
+            // hfs.floatFromMantExp(1, Number::maxExponent + normalExp, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -5054,10 +5054,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatFromMantissaAndExponent(-1, Number::maxExponent + normalExp, 0);
+            // hfs.floatFromMantExp(-1, Number::maxExponent + normalExp, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -5074,10 +5074,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatFromMantissaAndExponent(1, Number::maxExponent + normalExp - 1, 0);
+            // hfs.floatFromMantExp(1, Number::maxExponent + normalExp - 1, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -5094,10 +5094,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatFromMantissaAndExponent(STAmount::cMaxValue, STAmount::cMaxOffset, 0);
+            // hfs.floatFromMantExp(STAmount::cMaxValue, STAmount::cMaxOffset, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -5114,10 +5114,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatFromMantissaAndExponent(1, Number::minExponent + normalExp, 0);
+            // hfs.floatFromMantExp(1, Number::minExponent + normalExp, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -5134,10 +5134,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatFromMantissaAndExponent(10, -1, 0);
+            // hfs.floatFromMantExp(10, -1, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -5154,10 +5154,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatFromMantissaAndExponent(1, Number::maxExponent + normalExp + 1, 0);
+            // hfs.floatFromMantExp(1, Number::maxExponent + normalExp + 1, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatFromMantissaAndExponent_wrap,
+                ww(floatFromMantExp_wrap,
                    &import.at("float_compare"),
                    params,
                    result,
@@ -5897,7 +5897,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {  // hfs.floatDivide(makeSlice(floatMax), makeSlice(*y), 0);
-            auto const y = hfs.floatFromMantissaAndExponent(
+            auto const y = hfs.floatFromMantExp(
                 STAmount::cMaxValue, -normalExp - 1, 0);  // 0.9999999...
             if (BEAST_EXPECT(y))
             {
@@ -6093,7 +6093,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // hfs.floatRoot(makeSlice(*x), 2, 0);
-            auto const x = hfs.floatFromMantissaAndExponent(100, 0, 0);  // 100
+            auto const x = hfs.floatFromMantExp(100, 0, 0);  // 100
             if (BEAST_EXPECT(x))
             {
                 WasmValVec params(6), result(1);
@@ -6119,7 +6119,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // hfs.floatRoot(makeSlice(*x), 3, 0);
-            auto const x = hfs.floatFromMantissaAndExponent(1000, 0, 0);  // 1000
+            auto const x = hfs.floatFromMantExp(1000, 0, 0);  // 1000
             if (BEAST_EXPECT(x))
             {
                 WasmValVec params(6), result(1);
@@ -6145,8 +6145,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // hfs.floatRoot(makeSlice(*x), 2, 0);
-            auto const x = hfs.floatFromMantissaAndExponent(1, -2, 0);  // 0.01
-            auto const y = hfs.floatFromMantissaAndExponent(1, -1, 0);  // 0.1
+            auto const x = hfs.floatFromMantExp(1, -2, 0);  // 0.01
+            auto const y = hfs.floatFromMantExp(1, -1, 0);  // 0.1
             if (BEAST_EXPECT(x && y))
             {
                 WasmValVec params(6), result(1);
@@ -6338,7 +6338,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // hfs.floatPower(makeSlice(float10), 2, 0);
-            auto const x = hfs.floatFromMantissaAndExponent(100, 0, 0);  // 100
+            auto const x = hfs.floatFromMantExp(100, 0, 0);  // 100
             if (BEAST_EXPECT(x))
             {
                 WasmValVec params(6), result(1);
@@ -6363,8 +6363,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {  // hfs.floatPower(makeSlice(*x), 2, 0);
-            auto const x = hfs.floatFromMantissaAndExponent(1, -1, 0);  // 0.1
-            auto const y = hfs.floatFromMantissaAndExponent(1, -2, 0);  // 0.01
+            auto const x = hfs.floatFromMantExp(1, -1, 0);  // 0.1
+            auto const y = hfs.floatFromMantExp(1, -2, 0);  // 0.01
             if (BEAST_EXPECT(x && y))
             {
                 WasmValVec params(6), result(1);
@@ -6498,7 +6498,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // hfs.floatFromSTAmount(amount, 0);
             STAmount const amount = XRP(-1);
-            auto const y = hfs.floatFromMantissaAndExponent(-1 * 1'000'000, 0, 0);
+            auto const y = hfs.floatFromMantExp(-1 * 1'000'000, 0, 0);
             if (BEAST_EXPECT(y))
             {
                 Bytes amountBytes = toBytes(amount);
@@ -6524,7 +6524,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // hfs.floatFromSTAmount(amount, 0);
-            auto const y = hfs.floatFromMantissaAndExponent(9223372036854776, 3, 0);
+            auto const y = hfs.floatFromMantExp(9223372036854776, 3, 0);
             STAmount const amount(noIssue(), std::numeric_limits<int64_t>::max());
             Bytes amountBytes = toBytes(amount);
             vrt.setBytes(0, amountBytes.data(), amountBytes.size());
@@ -7048,9 +7048,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
-    testFloatToMantissaAndExponent()
+    testFloatToMantExp()
     {
-        testcase("floatToMantissaAndExponent");
+        testcase("floatToMantExp");
         using namespace test::jtx;
 
         Env env{*this};
@@ -7064,11 +7064,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         hfs.setRT(&vrt);
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(invalid));
+            // hfs.floatToMantExp(makeSlice(invalid));
             vrt.setBytes(0, invalid.data(), invalid.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
+                ww(floatToMantExp_wrap,
                    &import.at("float_to_mant_exp"),
                    params,
                    result,
@@ -7086,11 +7086,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatIntZero));
+            // hfs.floatToMantExp(makeSlice(floatIntZero));
             vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
+                ww(floatToMantExp_wrap,
                    &import.at("float_to_mant_exp"),
                    params,
                    result,
@@ -7109,16 +7109,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(exponent == std::numeric_limits<int32_t>::min());
 
             // roundtrip
-            auto const result2 = hfs.floatFromMantissaAndExponent(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntZero);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(float1));
+            // hfs.floatToMantExp(makeSlice(float1));
             vrt.setBytes(0, float1.data(), float1.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
+                ww(floatToMantExp_wrap,
                    &import.at("float_to_mant_exp"),
                    params,
                    result,
@@ -7136,16 +7136,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(mantissa == 1000000000000000000) && BEAST_EXPECT(exponent == -normalExp);
 
             // roundtrip
-            auto const result2 = hfs.floatFromMantissaAndExponent(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == float1);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatMinus1));
+            // hfs.floatToMantExp(makeSlice(floatMinus1));
             vrt.setBytes(0, floatMinus1.data(), floatMinus1.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
+                ww(floatToMantExp_wrap,
                    &import.at("float_to_mant_exp"),
                    params,
                    result,
@@ -7163,16 +7163,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(mantissa == -1000000000000000000) && BEAST_EXPECT(exponent == -normalExp);
 
             // roundtrip
-            auto const result2 = hfs.floatFromMantissaAndExponent(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatMinus1);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(float10));
+            // hfs.floatToMantExp(makeSlice(float10));
             vrt.setBytes(0, float10.data(), float10.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
+                ww(floatToMantExp_wrap,
                    &import.at("float_to_mant_exp"),
                    params,
                    result,
@@ -7191,16 +7191,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(exponent == -normalExp + 1);
 
             // roundtrip
-            auto const result2 = hfs.floatFromMantissaAndExponent(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == float10);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatPi));
+            // hfs.floatToMantExp(makeSlice(floatPi));
             vrt.setBytes(0, floatPi.data(), floatPi.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
+                ww(floatToMantExp_wrap,
                    &import.at("float_to_mant_exp"),
                    params,
                    result,
@@ -7218,16 +7218,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(mantissa == 3141592653589793000) && BEAST_EXPECT(exponent == -normalExp);
 
             // roundtrip
-            auto const result2 = hfs.floatFromMantissaAndExponent(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatPi);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatIntMax));
+            // hfs.floatToMantExp(makeSlice(floatIntMax));
             vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
+                ww(floatToMantExp_wrap,
                    &import.at("float_to_mant_exp"),
                    params,
                    result,
@@ -7246,16 +7246,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(exponent == 0);
 
             // roundtrip
-            auto const result2 = hfs.floatFromMantissaAndExponent(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMax);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatIntMin));
+            // hfs.floatToMantExp(makeSlice(floatIntMin));
             vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
+                ww(floatToMantExp_wrap,
                    &import.at("float_to_mant_exp"),
                    params,
                    result,
@@ -7274,16 +7274,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(exponent == 1);
 
             // roundtrip
-            auto const result2 = hfs.floatFromMantissaAndExponent(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMin);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatMax));
+            // hfs.floatToMantExp(makeSlice(floatMax));
             vrt.setBytes(0, floatMax.data(), floatMax.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
+                ww(floatToMantExp_wrap,
                    &import.at("float_to_mant_exp"),
                    params,
                    result,
@@ -7302,7 +7302,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(exponent == Number::maxExponent);
 
             // roundtrip
-            auto const result2 = hfs.floatFromMantissaAndExponent(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatMax);
         }
     }
@@ -7319,8 +7319,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatFromSTAmount();
         testFloatFromSTNumber();
         testFloatToInt();
-        testFloatToMantissaAndExponent();
-        testfloatFromMantissaAndExponent();
+        testFloatToMantExp();
+        testfloatFromMantExp();
         testFloatCompare();
         testFloatAdd();
         testFloatSubtract();

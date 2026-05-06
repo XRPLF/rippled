@@ -276,14 +276,14 @@ using floatToInt_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int
 wasm_trap_t*
 floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using floatToMantissaAndExponent_proto =
+using floatToMantExp_proto =
     int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
-floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+floatToMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using floatFromMantissaAndExponent_proto = int32_t(int64_t, int32_t, uint8_t*, int32_t, int32_t);
+using floatFromMantExp_proto = int32_t(int64_t, int32_t, uint8_t*, int32_t, int32_t);
 wasm_trap_t*
-floatFromMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+floatFromMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
 using floatCompare_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
 wasm_trap_t*

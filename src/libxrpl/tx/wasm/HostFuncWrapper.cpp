@@ -1768,7 +1768,7 @@ floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
 }
 
 wasm_trap_t*
-floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatToMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     if (auto g = checkGas(env); !g)
         return g.error();  // LCOV_EXCL_LINE
@@ -1781,11 +1781,11 @@ floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_va
         return hfResult(results, x.error());
 
     i = 2;
-    return returnResult(runtime, params, results, hf->floatToMantissaAndExponent(*x), i);
+    return returnResult(runtime, params, results, hf->floatToMantExp(*x), i);
 }
 
 wasm_trap_t*
-floatFromMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatFromMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     if (auto g = checkGas(env); !g)
         return g.error();  // LCOV_EXCL_LINE
@@ -1809,7 +1809,7 @@ floatFromMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_
 
     i = 2;
     return returnResult(
-        runtime, params, results, hf->floatFromMantissaAndExponent(*mant, *exp, *rounding), i);
+        runtime, params, results, hf->floatFromMantExp(*mant, *exp, *rounding), i);
 }
 
 wasm_trap_t*
