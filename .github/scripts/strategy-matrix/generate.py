@@ -241,7 +241,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # (see https://github.com/google/sanitizers/issues/856).
         # Clang doesn't have this issue, so ASAN+UBSAN and TSAN+UBSAN stay combined.
         compiler_id = f"{os['compiler_name']}-{os['compiler_version']}"
-        if os["distro_version"] == "bookworm" and compiler_id == "gcc-13":
+        if os["distro_version"] == "bookworm" and compiler_id == "gcc-15":
             # Add separate ASAN, TSAN, and UBSAN configurations for GCC.
             configurations.append(
                 {
