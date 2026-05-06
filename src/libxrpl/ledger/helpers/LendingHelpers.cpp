@@ -976,11 +976,11 @@ computePaymentComponents(
     // periodic payment. Without the amendment the pre-existing round-to-
     // nearest behavior is preserved (which can hit the "Partial principal
     // payment" assertion on degenerate integer-scale loans).
-    bool const fixCleanup3_2_0Enabled = rules.enabled(fixCleanup3_2_0);
+    bool const fixCleanup320Enabled = rules.enabled(fixCleanup3_2_0);
     Number::RoundingMode const principalRounding =
-        fixCleanup3_2_0Enabled ? Number::RoundingMode::Upward : Number::getround();
+        fixCleanup320Enabled ? Number::RoundingMode::Upward : Number::getround();
     Number::RoundingMode const interestRounding =
-        fixCleanup3_2_0Enabled ? Number::RoundingMode::Downward : Number::getround();
+        fixCleanup320Enabled ? Number::RoundingMode::Downward : Number::getround();
     LoanState const roundedTarget = LoanState{
         .valueOutstanding = roundToAsset(asset, trueTarget.valueOutstanding, scale),
         .principalOutstanding =
