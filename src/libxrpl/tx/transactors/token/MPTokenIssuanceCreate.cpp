@@ -141,6 +141,22 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
         if (args.mutableFlags)
             (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
 
+        if (args.referenceHolding)
+        {
+            // Defensive: the holding must already exist and be of an
+            // expected type. Callers (currently only VaultCreate)
+            // populate this after the pseudo-account's MPToken /
+            // RippleState has been installed. A missing holding here
+            // would dangle the pointer and is a programmer error.
+            auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
+            if (!sleHolding)
+                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+            auto const type = sleHolding->getType();
+            if (type != ltMPTOKEN && type != ltRIPPLE_STATE)
+                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+            (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
+        }
+
         view.insert(mptIssuance);
     }
 

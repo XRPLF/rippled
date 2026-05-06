@@ -489,28 +489,106 @@ enforceMPTokenAuthorization(
     // LCOV_EXCL_STOP
 }
 
+// Resolve the underlying asset of a vault share given the share's
+// MPTokenIssuance and the holding SLE pointed to by sfReferenceHolding.
+// Branches on holding type:
+//   - ltMPTOKEN: the holding is the vault pseudo's MPToken; the
+//     underlying MPT is sfMPTokenIssuanceID directly.
+//   - ltRIPPLE_STATE: the holding is the vault pseudo's trust line with
+//     the IOU issuer. The IOU issuer is whichever side of the line is
+//     not the vault pseudo (the share's sfIssuer). Both limit STAmounts
+//     encode the counterparty as their issuer field.
+[[nodiscard]] Asset
+assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding)
+{
+    XRPL_ASSERT_PARTS(
+        sleHolding.getType() == ltRIPPLE_STATE || sleHolding.getType() == ltMPTOKEN,
+        "xrpl::assetOfHolding",
+        "unexpected holding type");
+    XRPL_ASSERT_PARTS(
+        sleShareIssuance.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl:assetOfHolding",
+        "not SLE MPTokenIssuance");
+
+    if (sleHolding.getType() == ltMPTOKEN)
+        return MPTIssue{sleHolding.getFieldH192(sfMPTokenIssuanceID)};
+
+    auto const& vaultPseudo = sleShareIssuance.at(sfIssuer);
+    auto const lowLimit = sleHolding.getFieldAmount(sfLowLimit);
+    auto const highLimit = sleHolding.getFieldAmount(sfHighLimit);
+    auto const& iouIssuer =
+        (lowLimit.getIssuer() != vaultPseudo) ? lowLimit.getIssuer() : highLimit.getIssuer();
+    return Issue{lowLimit.get<Issue>().currency, iouIssuer};
+}
+
 TER
 canTransfer(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& from,
-    AccountID const& to)
+    AccountID const& to,
+    WaiveMPTCanTransfer waive,
+    int depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleIssuance->isFlag(lsfMPTCanTransfer))
+    auto const& issuer = (*sleIssuance)[sfIssuer];
+    auto const isNotIssuerTransfer = from != issuer && to != issuer;
+    if (waive == WaiveMPTCanTransfer::No && !sleIssuance->isFlag(lsfMPTCanTransfer))
     {
-        if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
+        if (isNotIssuerTransfer)
             return TER{tecNO_AUTH};
     }
+
+    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
+    // to the vault pseudo's MPToken or RippleState for the underlying asset.
+    // Third-party transfers (where neither party is the share issuer /
+    // vault pseudo) inherit the underlying's transferability. Redemption
+    // (vault pseudo on either side) is allowed by the issuer carveout
+    // above and never reaches the inheritance dispatch.
+    //
+    // The waive == No guard is intentional: recovery-path callers
+    // (VaultWithdraw, LoanBrokerCoverWithdraw under fixCleanup3_2_0)
+    // pass WaiveMPTCanTransfer::Yes and operate on the vault's direct
+    // underlying, which is never itself a vault share (forbidden at
+    // VaultCreate). Skipping the inheritance branch here both honours
+    // the waive's recovery intent and avoids transitively unlocking a
+    // deeper underlying in any future caller that may hold a share.
+    //
+    // The recursive call always passes WaiveMPTCanTransfer::No so that
+    // a waived outer caller does not transitively unlock the underlying.
+    if (waive == WaiveMPTCanTransfer::No && isNotIssuerTransfer &&
+        sleIssuance->isFieldPresent(sfReferenceHolding))
+    {
+        // Defensive depth bound on the inheritance recursion. Reachable
+        // only post-fixCleanup3_2_0 (sfReferenceHolding is never set
+        // pre-amendment) and unreachable in practice (vault-of-vault-
+        // shares is forbidden at VaultCreate).
+        if (depth >= kMAX_ASSET_CHECK_DEPTH)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const sleHolding =
+            view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+        if (!sleHolding)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        return canTransfer(
+            view,
+            assetOfHolding(*sleIssuance, *sleHolding),
+            from,
+            to,
+            WaiveMPTCanTransfer::No,
+            depth + 1);
+    }
+
     return tesSUCCESS;
 }
 
 TER
-canTrade(ReadView const& view, Asset const& asset)
+canTrade(ReadView const& view, Asset const& asset, int depth)
 {
     return asset.visit(
         [&](Issue const&) -> TER { return tesSUCCESS; },
@@ -520,6 +598,27 @@ canTrade(ReadView const& view, Asset const& asset)
                 return tecOBJECT_NOT_FOUND;
             if (!sleIssuance->isFlag(lsfMPTCanTrade))
                 return tecNO_PERMISSION;
+
+            // Post-fixCleanup3_2_0: vault shares inherit the underlying
+            // asset's tradability. A share whose underlying has been
+            // removed from trading cannot itself be placed on the DEX.
+            if (sleIssuance->isFieldPresent(sfReferenceHolding))
+            {
+                // Defensive depth bound on the inheritance recursion.
+                // Reachable only post-fixCleanup3_2_0 and unreachable
+                // in practice (vault-of-vault-shares forbidden at
+                // VaultCreate).
+                if (depth >= kMAX_ASSET_CHECK_DEPTH)
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+
+                auto const sleHolding =
+                    view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+                if (!sleHolding)
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
+
+                return canTrade(view, assetOfHolding(*sleIssuance, *sleHolding), depth + 1);
+            }
+
             return tesSUCCESS;
         });
 }
@@ -892,7 +991,12 @@ issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amo
 }
 
 static TER
-checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, AccountID const& accountID)
+checkMPTAllowed(
+    ReadView const& view,
+    TxType txType,
+    Asset const& asset,
+    AccountID const& accountID,
+    int depth = 0)
 {
     if (!asset.holds<MPTIssue>())
         return tesSUCCESS;
@@ -914,17 +1018,15 @@ checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, Account
     if (!issuanceSle)
         return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
 
-    auto const flags = issuanceSle->getFlags();
-
-    if ((flags & lsfMPTLocked) != 0u)
+    if (issuanceSle->isFlag(lsfMPTLocked))
         return tecLOCKED;  // LCOV_EXCL_LINE
     // Offer crossing and Payment
-    if ((flags & lsfMPTCanTrade) == 0)
+    if (!issuanceSle->isFlag(lsfMPTCanTrade))
         return tecNO_PERMISSION;
 
     if (accountID != issuer)
     {
-        if ((flags & lsfMPTCanTransfer) == 0)
+        if (!issuanceSle->isFlag(lsfMPTCanTransfer))
             return tecNO_PERMISSION;
 
         auto const mptSle = view.read(keylet::mptoken(issuanceKey.key, accountID));
@@ -935,6 +1037,30 @@ checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, Account
 
         if (mptSle->isFlag(lsfMPTLocked))
             return tecLOCKED;
+
+        // Post-fixCleanup3_2_0: vault shares inherit the underlying
+        // asset's checks here too. Without this, a share could be
+        // placed on the AMM, in an Offer, or in a Check even after
+        // the issuer has restricted the underlying. Mirrors the
+        // canTransfer / canTrade inheritance for path-find-adjacent
+        // operations that don't go through canTransfer directly.
+        if (view.rules().enabled(fixCleanup3_2_0) &&
+            issuanceSle->isFieldPresent(sfReferenceHolding))
+        {
+            // Defensive depth bound on the inheritance recursion.
+            // Reachable only post-fixCleanup3_2_0 and unreachable in
+            // practice (vault-of-vault-shares forbidden at VaultCreate).
+            if (depth >= kMAX_ASSET_CHECK_DEPTH)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            auto const sleHolding =
+                view.read(keylet::unchecked(issuanceSle->getFieldH256(sfReferenceHolding)));
+            if (!sleHolding)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+
+            return checkMPTAllowed(
+                view, txType, assetOfHolding(*issuanceSle, *sleHolding), accountID, depth + 1);
+        }
     }
 
     return tesSUCCESS;

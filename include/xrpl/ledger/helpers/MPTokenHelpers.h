@@ -104,22 +104,44 @@ enforceMPTokenAuthorization(
     XRPAmount const& priorBalance,
     beast::Journal j);
 
+/** Resolve a vault share's underlying asset from the share's MPTokenIssuance
+ *  and the holding SLE pointed to by sfReferenceHolding (an MPToken or a
+ *  RippleState). Caller must ensure both SLEs exist and the holding is one
+ *  of the two expected types.
+ */
+[[nodiscard]] Asset
+assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding);
+
 /** Check if the destination account is allowed
  *  to receive MPT. Return tecNO_AUTH if it doesn't
  *  and tesSUCCESS otherwise.
+ *
+ *  When @p waive is WaiveMPTCanTransfer::Yes the lsfMPTCanTransfer flag check
+ *  is skipped. Use this for recovery paths that must remain available even
+ *  when an issuer has revoked transferability (e.g. unwinding existing SAV
+ *  or Lending Protocol positions).
+ *
+ *  Vault shares carry sfReferenceHolding; when present and the call is not
+ *  waived, the check resolves the holding's underlying asset and recurses.
+ *  @p depth bounds that recursion at kMAX_ASSET_CHECK_DEPTH (defensive -
+ *  vault-of-vault-shares is disallowed at vault creation).
  */
 [[nodiscard]] TER
 canTransfer(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& from,
-    AccountID const& to);
+    AccountID const& to,
+    WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
+    int depth = 0);
 
 /** Check if Asset can be traded on DEX. return tecNO_PERMISSION
- * if it doesn't and tesSUCCESS otherwise.
+ * if it doesn't and tesSUCCESS otherwise. For vault shares the check
+ * inherits the underlying asset's tradability via sfReferenceAsset;
+ * @p depth bounds that recursion at kMAX_ASSET_CHECK_DEPTH.
  */
 [[nodiscard]] TER
-canTrade(ReadView const& view, Asset const& asset);
+canTrade(ReadView const& view, Asset const& asset, int depth = 0);
 
 //------------------------------------------------------------------------------
 //

@@ -22,6 +22,14 @@ struct MPTCreateArgs
     std::optional<uint256> domainId = std::nullopt;  // NOLINT(readability-redundant-member-init)
     std::optional<std::uint32_t> mutableFlags =
         std::nullopt;  // NOLINT(readability-redundant-member-init)
+    // Set only by callers that issue an MPT representing a wrapped asset
+    // (e.g. VaultCreate's share token). The keylet must point to an
+    // existing MPToken or RippleState owned by `account`. Surfaces on
+    // the resulting MPTokenIssuance via the optional sfReferenceHolding
+    // field. Used by readers (canTransfer, canTrade, freezing) to
+    // inherit the underlying asset's transferability.
+    std::optional<uint256> referenceHolding =
+        std::nullopt;  // NOLINT(readability-redundant-member-init)
 };
 
 class MPTokenIssuanceCreate : public Transactor

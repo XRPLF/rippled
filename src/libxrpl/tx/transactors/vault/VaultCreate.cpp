@@ -162,9 +162,9 @@ VaultCreate::doApply()
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
         return maybePseudo.error();  // LCOV_EXCL_LINE
-    auto& pseudo = *maybePseudo;
-    auto pseudoId = pseudo->at(sfAccount);
-    auto asset = tx[sfAsset];
+    auto const& pseudo = *maybePseudo;
+    auto const pseudoId = pseudo->at(sfAccount);
+    auto const asset = tx[sfAsset];
 
     if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
         return ter;
@@ -173,18 +173,29 @@ VaultCreate::doApply()
         ? 0
         : ctx_.tx[~sfScale].value_or(kVAULT_DEFAULT_IOU_SCALE);
 
-    auto txFlags = tx.getFlags();
+    auto const txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
-    if ((txFlags & tfVaultShareNonTransferable) == 0)
+    if (!tx.isFlag(tfVaultShareNonTransferable))
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
-    if ((txFlags & tfVaultPrivate) != 0u)
+    if (tx.isFlag(tfVaultPrivate))
         mptFlags |= lsfMPTRequireAuth;
 
     // Note, here we are **not** creating an MPToken for the assets held in
     // the vault. That MPToken or TrustLine/RippleState is created above, in
     // addEmptyHolding. Here we are creating MPTokenIssuance for the shares
-    // in the vault
-    auto maybeShare = MPTokenIssuanceCreate::create(
+    // in the vault.
+    //
+    // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
+    // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
+    // XRP underlyings leave it unset.
+    auto const referenceHolding = [&]() -> std::optional<uint256> {
+        if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
+            return std::nullopt;
+        return asset.holds<MPTIssue>()
+            ? keylet::mptoken(asset.get<MPTIssue>().getMptID(), *pseudoId).key
+            : keylet::line(*pseudoId, asset.get<Issue>()).key;
+    }();
+    auto const maybeShare = MPTokenIssuanceCreate::create(
         view(),
         j_,
         {
@@ -197,6 +208,7 @@ VaultCreate::doApply()
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
             .mutableFlags = std::nullopt,
+            .referenceHolding = referenceHolding,
         });
     if (!maybeShare)
         return maybeShare.error();  // LCOV_EXCL_LINE
@@ -206,7 +218,7 @@ VaultCreate::doApply()
     vault->at(sfFlags) = txFlags & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
     vault->at(sfOwner) = account_;
-    vault->at(sfAccount) = pseudoId;
+    vault->at(sfAccount) = *pseudoId;
     vault->at(sfAssetsTotal) = Number(0);
     vault->at(sfAssetsAvailable) = Number(0);
     vault->at(sfLossUnrealized) = Number(0);

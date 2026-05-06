@@ -34,6 +34,15 @@ enum class WaiveTransferFee : bool { No = false, Yes };
 /** Controls whether accountSend is allowed to overflow OutstandingAmount **/
 enum class AllowMPTOverflow : bool { No = false, Yes };
 
+/** Controls whether canTransfer enforces lsfMPTCanTransfer on MPTs.
+ *
+ *  Default is No (enforce). Use Yes at call sites that must remain available
+ *  even when an MPT issuer has cleared lsfMPTCanTransfer - for example,
+ *  unwinding existing positions in SAV or the Lending Protocol. Has no
+ *  effect on the IOU branch of canTransfer.
+ */
+enum class WaiveMPTCanTransfer : bool { No = false, Yes };
+
 /* Check if MPToken (for MPT) or trust line (for IOU) exists:
  * - StrongAuth - before checking if authorization is required
  * - WeakAuth
@@ -234,7 +243,13 @@ requireAuth(
     AuthType authType = AuthType::Legacy);
 
 [[nodiscard]] TER
-canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, AccountID const& to);
+canTransfer(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to,
+    WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
+    int depth = 0);
 
 //------------------------------------------------------------------------------
 //

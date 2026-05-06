@@ -65,7 +65,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const& vaultAccount = vault->at(sfAccount);
     auto const& account = ctx.tx[sfAccount];
     auto const& dstAcct = ctx.tx[~sfDestination].value_or(account);
-    if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct); !isTesSuccess(ter))
+    // Post-fixCleanup3_2_0: withdraw is a recovery path that bypasses the
+    // lsfMPTCanTransfer flag check, so an issuer cannot trap depositor funds.
+    // Other transferability checks (IOU NoRipple, freeze, requireAuth) still
+    // apply.
+    auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
+                                                                 : WaiveMPTCanTransfer::No;
+    if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct, waive);
+        !isTesSuccess(ter))
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: vault assets are non-transferable.";
         return ter;

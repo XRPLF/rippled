@@ -10,6 +10,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -30,6 +31,13 @@ ValidMPTIssuance::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    // The sfReferenceHolding tracking and the deleted-holding capture are
+    // only meaningful post-fixCleanup3_2_0 (the field is never set
+    // pre-amendment, and the holding-deletion rule does not apply).
+    // Skip both blocks when the amendment is off so we avoid wasted work
+    // on the hot path.
+    bool const cleanupEnabled = isFeatureEnabled(fixCleanup3_2_0);
+
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
@@ -39,6 +47,21 @@ ValidMPTIssuance::visitEntry(
         else if (!before)
         {
             mptIssuancesCreated_++;
+            if (cleanupEnabled && after->isFieldPresent(sfReferenceHolding))
+                referenceHoldingSetOnCreate_ = true;
+        }
+        else if (cleanupEnabled)
+        {
+            // Modified issuance: detect any change to sfReferenceHolding.
+            bool const beforePresent = before->isFieldPresent(sfReferenceHolding);
+            bool const afterPresent = after->isFieldPresent(sfReferenceHolding);
+            if (beforePresent != afterPresent ||
+                (afterPresent &&
+                 before->getFieldH256(sfReferenceHolding) !=
+                     after->getFieldH256(sfReferenceHolding)))
+            {
+                referenceHoldingMutated_ = true;
+            }
         }
     }
 
@@ -47,6 +70,8 @@ ValidMPTIssuance::visitEntry(
         if (isDelete)
         {
             mptokensDeleted_++;
+            if (cleanupEnabled)
+                deletedHoldings_.push_back(after);
         }
         else if (!before)
         {
@@ -56,6 +81,11 @@ ValidMPTIssuance::visitEntry(
                 mptCreatedByIssuer_ = true;
         }
     }
+
+    // Capture deleted RippleState SLEs so finalize() can verify none of
+    // them were owned by a vault pseudo-account outside VaultDelete.
+    if (cleanupEnabled && isDelete && after && after->getType() == ltRIPPLE_STATE)
+        deletedHoldings_.push_back(after);
 }
 
 bool
@@ -68,6 +98,60 @@ ValidMPTIssuance::finalize(
 {
     auto const& rules = view.rules();
     bool const mptV2Enabled = rules.enabled(featureMPTokensV2);
+
+    // Post-fixCleanup3_2_0:
+    //   - sfReferenceHolding is set only by VaultCreate at share-issuance
+    //     creation, and is immutable thereafter.
+    //   - A vault pseudo-account's MPToken or RippleState may only be
+    //     deleted by VaultDelete; the share's sfReferenceHolding pointer
+    //     must not dangle outside that controlled lifecycle.
+    if (rules.enabled(fixCleanup3_2_0))
+    {
+        if (referenceHoldingMutated_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: sfReferenceHolding was modified "
+                               "on an existing MPTokenIssuance";
+            return false;
+        }
+        if (referenceHoldingSetOnCreate_ && tx.getTxnType() != ttVAULT_CREATE)
+        {
+            JLOG(j.fatal()) << "Invariant failed: sfReferenceHolding set on a new "
+                               "MPTokenIssuance by a non-VaultCreate transaction";
+            return false;
+        }
+        if (!deletedHoldings_.empty() && tx.getTxnType() != ttVAULT_DELETE)
+        {
+            auto const isVaultPseudo = [&](AccountID const& acct) {
+                auto const sle = view.read(keylet::account(acct));
+                return sle && sle->isFieldPresent(sfVaultID);
+            };
+            for (auto const& sleHolding : deletedHoldings_)
+            {
+                bool offending = false;
+                if (sleHolding->getType() == ltMPTOKEN)
+                {
+                    offending = isVaultPseudo(sleHolding->at(sfAccount));
+                }
+                else  // ltRIPPLE_STATE
+                {
+                    auto const lowLimit = sleHolding->getFieldAmount(sfLowLimit);
+                    auto const highLimit = sleHolding->getFieldAmount(sfHighLimit);
+                    // Each limit's STAmount.issuer is the COUNTERPARTY of
+                    // that side's owner: lowLimit's issuer is the high
+                    // account, highLimit's issuer is the low account.
+                    offending =
+                        isVaultPseudo(lowLimit.getIssuer()) || isVaultPseudo(highLimit.getIssuer());
+                }
+                if (offending)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: vault pseudo-account holding "
+                                       "deleted by a non-VaultDelete transaction";
+                    return false;
+                }
+            }
+        }
+    }
+
     if (isTesSuccess(result) || (mptV2Enabled && result == tecINCOMPLETE))
     {
         [[maybe_unused]]
