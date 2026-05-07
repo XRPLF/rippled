@@ -39,6 +39,7 @@
 
 #include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
+#include <boost/system/detail/error_code.hpp>
 
 #include <soci/blob.h>
 #include <soci/into.h>
