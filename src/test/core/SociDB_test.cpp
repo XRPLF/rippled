@@ -6,7 +6,7 @@
 #include <xrpl/rdb/SociDB.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/optional/optional.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
 #include <soci/into.h>
 #include <soci/session.h>
