@@ -16,7 +16,7 @@ namespace beast::unit_test {
 class Thread
 {
 private:
-    suite* s_ = nullptr;
+    Suite* s_ = nullptr;
     std::thread t_;
 
 public:
@@ -41,7 +41,7 @@ public:
     }
 
     template <class F, class... Args>
-    explicit Thread(suite& s, F&& f, Args&&... args) : s_(&s)
+    explicit Thread(Suite& s, F&& f, Args&&... args) : s_(&s)
     {
         std::function<void(void)> b = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
         t_ = std::thread(&Thread::run, this, std::move(b));
@@ -54,13 +54,13 @@ public:
     }
 
     [[nodiscard]] std::thread::id
-    get_id() const
+    getId() const
     {
         return t_.get_id();
     }
 
     static unsigned
-    hardware_concurrency() noexcept
+    hardwareConcurrency() noexcept
     {
         return std::thread::hardware_concurrency();
     }
@@ -69,7 +69,7 @@ public:
     join()
     {
         t_.join();
-        s_->propagate_abort();
+        s_->propagateAbort();
     }
 
     void
@@ -93,7 +93,7 @@ private:
         {
             f();
         }
-        catch (suite::abort_exception const&)  // NOLINT(bugprone-empty-catch)
+        catch (Suite::AbortException const&)  // NOLINT(bugprone-empty-catch)
         {
         }
         catch (std::exception const& e)

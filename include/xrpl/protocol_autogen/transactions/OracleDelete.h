@@ -19,9 +19,9 @@ class OracleDeleteBuilder;
  * @brief Transaction: OracleDelete
  *
  * Type: ttORACLE_DELETE (52)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featurePriceOracle
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use OracleDeleteBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfOracleDocumentID (soeREQUIRED)
+     * @brief Get sfOracleDocumentID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -63,7 +63,7 @@ public:
  * @brief Builder for OracleDelete transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class OracleDeleteBuilder : public TransactionBuilderBase<OracleDeleteBuilder>
@@ -102,7 +102,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfOracleDocumentID (soeREQUIRED)
+     * @brief Set sfOracleDocumentID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     OracleDeleteBuilder&

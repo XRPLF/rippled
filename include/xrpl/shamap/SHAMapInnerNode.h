@@ -15,7 +15,7 @@ class SHAMapInnerNode final : public SHAMapTreeNode, public CountedObject<SHAMap
 {
 public:
     /** Each inner node has 16 children (the 'radix tree' part of the map) */
-    static constexpr unsigned int branchFactor = 16;
+    static constexpr unsigned int kBRANCH_FACTOR = 16;
 
 private:
     /** Opaque type that contains the `hashes` array (array of type
@@ -93,7 +93,7 @@ public:
     SHAMapNodeType
     getType() const override
     {
-        return SHAMapNodeType::tnINNER;
+        return SHAMapNodeType::TnInner;
     }
 
     bool
@@ -159,7 +159,7 @@ public:
     getString(SHAMapNodeID const&) const override;
 
     void
-    invariants(bool is_root = false) const override;
+    invariants(bool isRoot = false) const override;
 
     static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeFullInner(Slice data, SHAMapHash const& hash, bool hashValid);

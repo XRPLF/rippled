@@ -40,7 +40,7 @@ public:
         Section config;
         config.set("type", "memory");
         config.set("path", "TestFamily");
-        db_ = NodeStore::Manager::instance().make_Database(megabytes(4), scheduler_, 1, config, j);
+        db_ = NodeStore::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
     }
 
     NodeStore::Database&

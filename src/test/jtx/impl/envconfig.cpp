@@ -12,7 +12,7 @@
 
 namespace xrpl::test {
 
-std::atomic<bool> envUseIPv4{false};
+std::atomic<bool> gEnvUseIPv4{false};
 
 void
 setupConfigForUnitTests(Config& cfg)
@@ -60,7 +60,7 @@ setupConfigForUnitTests(Config& cfg)
 namespace jtx {
 
 std::unique_ptr<Config>
-no_admin(std::unique_ptr<Config> cfg)
+noAdmin(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
@@ -68,7 +68,7 @@ no_admin(std::unique_ptr<Config> cfg)
 }
 
 std::unique_ptr<Config>
-secure_gateway(std::unique_ptr<Config> cfg)
+secureGateway(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
@@ -77,7 +77,7 @@ secure_gateway(std::unique_ptr<Config> cfg)
 }
 
 std::unique_ptr<Config>
-admin_localnet(std::unique_ptr<Config> cfg)
+adminLocalnet(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "127.0.0.0/8");
     (*cfg)[PORT_WS].set("admin", "127.0.0.0/8");
@@ -85,7 +85,7 @@ admin_localnet(std::unique_ptr<Config> cfg)
 }
 
 std::unique_ptr<Config>
-secure_gateway_localnet(std::unique_ptr<Config> cfg)
+secureGatewayLocalnet(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
@@ -94,20 +94,20 @@ secure_gateway_localnet(std::unique_ptr<Config> cfg)
     return cfg;
 }
 std::unique_ptr<Config>
-single_thread_io(std::unique_ptr<Config> cfg)
+singleThreadIo(std::unique_ptr<Config> cfg)
 {
     cfg->IO_WORKERS = 1;
     return cfg;
 }
 
-auto constexpr defaultseed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
+auto constexpr kDEFAULTSEED = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
 std::unique_ptr<Config>
 validator(std::unique_ptr<Config> cfg, std::string const& seed)
 {
     // If the config has valid validation keys then we run as a validator.
     cfg->section(SECTION_VALIDATION_SEED)
-        .append(std::vector<std::string>{seed.empty() ? defaultseed : seed});
+        .append(std::vector<std::string>{seed.empty() ? kDEFAULTSEED : seed});
     return cfg;
 }
 

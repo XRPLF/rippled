@@ -26,10 +26,10 @@
 
 namespace xrpl::tests {
 
-class SHAMapSync_test : public beast::unit_test::suite
+class SHAMapSync_test : public beast::unit_test::Suite
 {
 public:
-    beast::xor_shift_engine eng_;
+    beast::xor_shift_engine eng;
 
     boost::intrusive_ptr<SHAMapItem>
     makeRandomAS()
@@ -37,8 +37,8 @@ public:
         Serializer s;
 
         for (int d = 0; d < 3; ++d)
-            s.add32(rand_int<std::uint32_t>(eng_));
-        return make_shamapitem(s.getSHA512Half(), s.slice());
+            s.add32(randInt<std::uint32_t>(eng));
+        return makeShamapitem(s.getSHA512Half(), s.slice());
     }
 
     bool
@@ -55,7 +55,7 @@ public:
             auto item = makeRandomAS();
             items.push_back(item->key());
 
-            if (!map.addItem(SHAMapNodeType::tnACCOUNT_STATE, item))
+            if (!map.addItem(SHAMapNodeType::TnAccountState, item))
             {
                 log << "Unable to add item to map\n";
                 return false;
@@ -93,7 +93,7 @@ public:
         int const items = 10000;
         for (int i = 0; i < items; ++i)
         {
-            source.addItem(SHAMapNodeType::tnACCOUNT_STATE, makeRandomAS());
+            source.addItem(SHAMapNodeType::TnAccountState, makeRandomAS());
             if (i % 100 == 0)
                 source.invariants();
         }
@@ -117,7 +117,7 @@ public:
         {
             std::vector<std::pair<SHAMapNodeID, Blob>> a;
 
-            BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, rand_bool(eng_), rand_int(eng_, 2)));
+            BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, randBool(eng), randInt(eng, 2)));
 
             unexpected(a.empty(), "NodeSize");
 
@@ -143,7 +143,7 @@ public:
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                if (!source.getNodeFat(it.first, b, rand_bool(eng_), rand_int(eng_, 2)))
+                if (!source.getNodeFat(it.first, b, randBool(eng), randInt(eng, 2)))
                     fail("", __FILE__, __LINE__);
             }
 

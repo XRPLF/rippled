@@ -71,6 +71,7 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - cmaketoolchain
   - coeffs
   - coldwallet
   - compr
@@ -114,6 +115,7 @@ words:
   - gcovr
   - ghead
   - Gnutella
+  - godexsoft
   - gpgcheck
   - gpgkey
   - hotwallet
@@ -151,6 +153,7 @@ words:
   - lseq
   - lsmf
   - ltype
+  - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
   - MPTAMM

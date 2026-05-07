@@ -27,56 +27,56 @@ public:
         @return An optional endpoint; will be `std::nullopt` on failure
     */
     static std::optional<Endpoint>
-    from_string_checked(std::string const& s);
+    fromStringChecked(std::string const& s);
     static Endpoint
-    from_string(std::string const& s);
+    fromString(std::string const& s);
 
     /** Returns a string representing the endpoint. */
     [[nodiscard]] std::string
-    to_string() const;
+    toString() const;
 
     /** Returns the port number on the endpoint. */
     [[nodiscard]] Port
     port() const
     {
-        return m_port;
+        return port_;
     }
 
     /** Returns a new Endpoint with a different port. */
     [[nodiscard]] Endpoint
-    at_port(Port port) const
+    atPort(Port port) const
     {
-        return Endpoint(m_addr, port);
+        return Endpoint(addr_, port);
     }
 
     /** Returns the address portion of this endpoint. */
     [[nodiscard]] Address const&
     address() const
     {
-        return m_addr;
+        return addr_;
     }
 
     /** Convenience accessors for the address part. */
     /** @{ */
     [[nodiscard]] bool
-    is_v4() const
+    isV4() const
     {
-        return m_addr.is_v4();
+        return addr_.is_v4();
     }
     [[nodiscard]] bool
-    is_v6() const
+    isV6() const
     {
-        return m_addr.is_v6();
+        return addr_.is_v6();
     }
     [[nodiscard]] AddressV4
-    to_v4() const
+    toV4() const
     {
-        return m_addr.to_v4();
+        return addr_.to_v4();
     }
     [[nodiscard]] AddressV6
-    to_v6() const
+    toV6() const
     {
-        return m_addr.to_v6();
+        return addr_.to_v6();
     }
     /** @} */
 
@@ -114,12 +114,12 @@ public:
     hash_append(Hasher& h, Endpoint const& endpoint)
     {
         using ::beast::hash_append;
-        hash_append(h, endpoint.m_addr, endpoint.m_port);
+        hash_append(h, endpoint.addr_, endpoint.port_);
     }
 
 private:
-    Address m_addr;
-    Port m_port;
+    Address addr_;
+    Port port_;
 };
 
 //------------------------------------------------------------------------------
@@ -128,37 +128,37 @@ private:
 
 /** Returns `true` if the endpoint is a loopback address. */
 inline bool
-is_loopback(Endpoint const& endpoint)
+isLoopback(Endpoint const& endpoint)
 {
-    return is_loopback(endpoint.address());
+    return isLoopback(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is unspecified. */
 inline bool
-is_unspecified(Endpoint const& endpoint)
+isUnspecified(Endpoint const& endpoint)
 {
-    return is_unspecified(endpoint.address());
+    return isUnspecified(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is a multicast address. */
 inline bool
-is_multicast(Endpoint const& endpoint)
+isMulticast(Endpoint const& endpoint)
 {
-    return is_multicast(endpoint.address());
+    return isMulticast(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is a private unroutable address. */
 inline bool
-is_private(Endpoint const& endpoint)
+isPrivate(Endpoint const& endpoint)
 {
-    return is_private(endpoint.address());
+    return isPrivate(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is a public routable address. */
 inline bool
-is_public(Endpoint const& endpoint)
+isPublic(Endpoint const& endpoint)
 {
-    return is_public(endpoint.address());
+    return isPublic(endpoint.address());
 }
 
 //------------------------------------------------------------------------------
@@ -167,7 +167,7 @@ is_public(Endpoint const& endpoint)
 inline std::string
 to_string(Endpoint const& endpoint)
 {
-    return endpoint.to_string();
+    return endpoint.toString();
 }
 
 /** Output stream conversion. */
@@ -197,7 +197,7 @@ struct hash<::beast::IP::Endpoint>
     std::size_t
     operator()(::beast::IP::Endpoint const& endpoint) const
     {
-        return ::beast::uhash<>{}(endpoint);
+        return ::beast::Uhash<>{}(endpoint);
     }
 };
 }  // namespace std
@@ -212,7 +212,7 @@ struct hash<::beast::IP::Endpoint>
     std::size_t
     operator()(::beast::IP::Endpoint const& endpoint) const
     {
-        return ::beast::uhash<>{}(endpoint);
+        return ::beast::Uhash<>{}(endpoint);
     }
 };
 }  // namespace boost

@@ -15,7 +15,7 @@
 
 namespace xrpl {
 
-class Hooks_test : public beast::unit_test::suite
+class Hooks_test : public beast::unit_test::Suite
 {
     /**
      * This unit test was requested here:
@@ -31,7 +31,7 @@ class Hooks_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        std::vector<std::reference_wrapper<SField const>> const fields_to_test = {
+        std::vector<std::reference_wrapper<SField const>> const fieldsToTest = {
             sfHookResult,
             sfHookStateChangeCount,
             sfHookEmitCount,
@@ -69,11 +69,11 @@ class Hooks_test : public beast::unit_test::suite
             sfHooks,
             sfHookGrants};
 
-        for (auto const& rf : fields_to_test)
+        for (auto const& rf : fieldsToTest)
         {
             SField const& f = rf.get();
 
-            STObject dummy{sfGeneric};
+            STObject dummy{kSF_GENERIC};
 
             BEAST_EXPECT(!dummy.isFieldPresent(f));
 
@@ -153,7 +153,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_OBJECT: {
-                    dummy.emplace_back(STObject{f});
+                    dummy.emplaceBack(STObject{f});
                     BEAST_EXPECT(dummy.getField(f).getFName() == f);
                     BEAST_EXPECT(dummy.isFieldPresent(f));
                     break;
@@ -161,8 +161,8 @@ class Hooks_test : public beast::unit_test::suite
 
                 case STI_ARRAY: {
                     STArray dummy2{f, 2};
-                    dummy2.push_back(STObject{sfGeneric});
-                    dummy2.push_back(STObject{sfGeneric});
+                    dummy2.pushBack(STObject{kSF_GENERIC});
+                    dummy2.pushBack(STObject{kSF_GENERIC});
                     dummy.setFieldArray(f, dummy2);
                     BEAST_EXPECT(dummy.getFieldArray(f) == dummy2);
                     BEAST_EXPECT(dummy.isFieldPresent(f));

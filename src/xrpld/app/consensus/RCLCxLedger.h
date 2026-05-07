@@ -32,7 +32,7 @@ public:
 
         @param l The ledger to wrap.
     */
-    RCLCxLedger(std::shared_ptr<Ledger const> const& l) : ledger_{l}
+    RCLCxLedger(std::shared_ptr<Ledger const> const& l) : ledger{l}
     {
     }
 
@@ -40,56 +40,56 @@ public:
     [[nodiscard]] Seq const&
     seq() const
     {
-        return ledger_->header().seq;
+        return ledger->header().seq;
     }
 
     //! Unique identifier (hash) of this ledger.
     [[nodiscard]] ID const&
     id() const
     {
-        return ledger_->header().hash;
+        return ledger->header().hash;
     }
 
     //! Unique identifier (hash) of this ledger's parent.
     [[nodiscard]] ID const&
     parentID() const
     {
-        return ledger_->header().parentHash;
+        return ledger->header().parentHash;
     }
 
     //! Resolution used when calculating this ledger's close time.
     [[nodiscard]] NetClock::duration
     closeTimeResolution() const
     {
-        return ledger_->header().closeTimeResolution;
+        return ledger->header().closeTimeResolution;
     }
 
     //! Whether consensus process agreed on close time of the ledger.
     [[nodiscard]] bool
     closeAgree() const
     {
-        return xrpl::getCloseAgree(ledger_->header());
+        return xrpl::getCloseAgree(ledger->header());
     }
 
     //! The close time of this ledger
     [[nodiscard]] NetClock::time_point
     closeTime() const
     {
-        return ledger_->header().closeTime;
+        return ledger->header().closeTime;
     }
 
     //! The close time of this ledger's parent.
     [[nodiscard]] NetClock::time_point
     parentCloseTime() const
     {
-        return ledger_->header().parentCloseTime;
+        return ledger->header().parentCloseTime;
     }
 
     //! JSON representation of this ledger.
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson() const
     {
-        return xrpl::getJson({*ledger_, {}});
+        return xrpl::getJson({*ledger, {}});
     }
 
     /** The ledger instance.
@@ -97,6 +97,6 @@ public:
         TODO: Make this shared_ptr<ReadView const> .. requires ability to create
         a new ledger from a readView?
     */
-    std::shared_ptr<Ledger const> ledger_;
+    std::shared_ptr<Ledger const> ledger;
 };
 }  // namespace xrpl

@@ -20,20 +20,20 @@ namespace xrpl {
     rules of open ledgers applied during transaction
     processing.
  */
-inline constexpr struct open_ledger_t
+inline constexpr struct OpenLedgerT
 {
-    explicit constexpr open_ledger_t() = default;
-} open_ledger{};
+    explicit constexpr OpenLedgerT() = default;
+} kOPEN_LEDGER{};
 
 /** Batch view construction tag.
 
     Views constructed with this tag are part of a stack of views
     used during batch transaction applied.
  */
-inline constexpr struct batch_view_t
+inline constexpr struct BatchViewT
 {
-    explicit constexpr batch_view_t() = default;
-} batch_view{};
+    explicit constexpr BatchViewT() = default;
+} kBATCH_VIEW{};
 
 //------------------------------------------------------------------------------
 
@@ -47,20 +47,20 @@ private:
     // Initial size for the monotonic_buffer_resource used for allocations
     // The size was chosen from the old `qalloc` code (which this replaces).
     // It is unclear how the size initially chosen in qalloc.
-    static constexpr size_t initialBufferSize = kilobytes(256);
+    static constexpr size_t kINITIAL_BUFFER_SIZE = kilobytes(256);
 
-    class txs_iter_impl;
+    class TxsIterImpl;
 
-    struct txData
+    struct TxData
     {
         std::shared_ptr<Serializer const> txn;
         std::shared_ptr<Serializer const> meta;
 
         // Constructor needed for emplacement in std::map
-        txData(
-            std::shared_ptr<Serializer const> const& txn_,
-            std::shared_ptr<Serializer const> const& meta_)
-            : txn(txn_), meta(meta_)
+        TxData(
+            std::shared_ptr<Serializer const> const& txn,
+            std::shared_ptr<Serializer const> const& meta)
+            : txn(txn), meta(meta)
         {
         }
     };
@@ -70,9 +70,9 @@ private:
     // functions b/c clang does not support pmr yet (as-of 9/2020)
     using txs_map = std::map<
         key_type,
-        txData,
+        TxData,
         std::less<key_type>,
-        boost::container::pmr::polymorphic_allocator<std::pair<key_type const, txData>>>;
+        boost::container::pmr::polymorphic_allocator<std::pair<key_type const, TxData>>>;
 
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
@@ -133,17 +133,17 @@ public:
         all newly inserted tx.
     */
     OpenView(
-        open_ledger_t,
+        OpenLedgerT,
         ReadView const* base,
         Rules rules,
         std::shared_ptr<void const> hold = nullptr);
 
-    OpenView(open_ledger_t, Rules const& rules, std::shared_ptr<ReadView const> const& base)
-        : OpenView(open_ledger, &*base, rules, base)
+    OpenView(OpenLedgerT, Rules const& rules, std::shared_ptr<ReadView const> const& base)
+        : OpenView(kOPEN_LEDGER, &*base, rules, base)
     {
     }
 
-    OpenView(batch_view_t, OpenView& base) : OpenView(std::addressof(base))
+    OpenView(BatchViewT, OpenView& base) : OpenView(std::addressof(base))
     {
         baseTxCount_ = base.txCount();
     }
@@ -200,19 +200,19 @@ public:
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesBegin() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesEnd() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesUpperBound(uint256 const& key) const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    std::unique_ptr<TxsType::iter_base>
     txsBegin() const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    std::unique_ptr<TxsType::iter_base>
     txsEnd() const override;
 
     bool
