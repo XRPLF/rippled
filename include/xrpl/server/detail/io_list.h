@@ -12,7 +12,7 @@
 namespace xrpl {
 
 /** Manages a set of objects performing asynchronous I/O. */
-class IoList final
+class IOList final
 {
 public:
     class Work
@@ -21,8 +21,8 @@ public:
         void
         destroy();
 
-        friend class IoList;
-        IoList* ios_ = nullptr;
+        friend class IOList;
+        IOList* ios_ = nullptr;
 
     public:
         virtual ~Work()
@@ -30,13 +30,13 @@ public:
             destroy();
         }
 
-        /** Return the IoList associated with the work.
+        /** Return the IOList associated with the work.
 
             Requirements:
-                The call to IoList::emplace to
+                The call to IOList::emplace to
                 create the work has already returned.
         */
-        IoList&
+        IOList&
         ios()
         {
             return *ios_;
@@ -59,17 +59,17 @@ private:
     std::function<void(void)> f_;
 
 public:
-    IoList() = default;
+    IOList() = default;
 
     /** Destroy the list.
 
         Effects:
-            Closes the IoList if it was not previously
+            Closes the IOList if it was not previously
                 closed. No finisher is invoked in this case.
 
             Blocks until all work is destroyed.
     */
-    ~IoList()
+    ~IOList()
     {
         destroy();
     }
@@ -159,7 +159,7 @@ public:
 
 template <class>
 void
-IoList::Work::destroy()
+IOList::Work::destroy()
 {
     if (!ios_)
         return;
@@ -179,7 +179,7 @@ IoList::Work::destroy()
 
 template <class>
 void
-IoList::destroy()
+IOList::destroy()
 {
     close();
     join();
@@ -187,9 +187,9 @@ IoList::destroy()
 
 template <class T, class... Args>
 std::shared_ptr<T>
-IoList::emplace(Args&&... args)
+IOList::emplace(Args&&... args)
 {
-    static_assert(std::is_base_of_v<Work, T>, "T must derive from IoList::Work");
+    static_assert(std::is_base_of_v<Work, T>, "T must derive from IOList::Work");
     if (closed_)
         return nullptr;
     auto sp = std::make_shared<T>(std::forward<Args>(args)...);
@@ -211,7 +211,7 @@ IoList::emplace(Args&&... args)
 
 template <class Finisher>
 void
-IoList::close(Finisher&& f)
+IOList::close(Finisher&& f)
 {
     std::unique_lock<std::mutex> lock(m_);
     if (closed_)
@@ -237,7 +237,7 @@ IoList::close(Finisher&& f)
 
 template <class>
 void
-IoList::join()
+IOList::join()
 {
     std::unique_lock<std::mutex> lock(m_);
     cv_.wait(lock, [&] { return closed_ && n_ == 0; });

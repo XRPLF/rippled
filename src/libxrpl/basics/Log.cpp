@@ -273,7 +273,7 @@ Logs::toString(LogSeverity s)
             return "Fatal";
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("xrpl::Logs::to_string : invalid severity");
+            UNREACHABLE("xrpl::Logs::toString : invalid severity");
             return "Unknown";
             // LCOV_EXCL_STOP
     }
