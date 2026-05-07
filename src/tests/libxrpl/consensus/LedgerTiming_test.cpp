@@ -1,6 +1,7 @@
 #include <xrpl/basics/chrono.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/LedgerTiming.h>
+
+#include <gtest/gtest.h>
 
 #include <chrono>
 #include <cstdint>
@@ -8,8 +9,9 @@
 
 namespace xrpl::test {
 
-class LedgerTiming_test : public beast::unit_test::Suite
+class LedgerTiming_test : public ::testing::Test
 {
+protected:
     void
     testGetNextLedgerTimeResolution()
     {
@@ -52,16 +54,16 @@ class LedgerTiming_test : public beast::unit_test::Suite
         // If we never agree on close time, only can increase resolution
         // until hit the max
         auto decreases = TestRes::run(false, 10);
-        BEAST_EXPECT(decreases.increase == 3);
-        BEAST_EXPECT(decreases.decrease == 0);
-        BEAST_EXPECT(decreases.equal == 7);
+        EXPECT_TRUE(decreases.increase == 3);
+        EXPECT_TRUE(decreases.decrease == 0);
+        EXPECT_TRUE(decreases.equal == 7);
 
         // If we always agree on close time, only can decrease resolution
         // until hit the min
         auto increases = TestRes::run(false, 100);
-        BEAST_EXPECT(increases.increase == 3);
-        BEAST_EXPECT(increases.decrease == 0);
-        BEAST_EXPECT(increases.equal == 97);
+        EXPECT_TRUE(increases.increase == 3);
+        EXPECT_TRUE(increases.decrease == 0);
+        EXPECT_TRUE(increases.equal == 97);
     }
 
     void
@@ -71,17 +73,17 @@ class LedgerTiming_test : public beast::unit_test::Suite
         // A closeTime equal to the epoch is not modified
         using tp = NetClock::time_point;
         tp const def;
-        BEAST_EXPECT(def == roundCloseTime(def, 30s));
+        EXPECT_TRUE(def == roundCloseTime(def, 30s));
 
         // Otherwise, the closeTime is rounded to the nearest
         // rounding up on ties
-        BEAST_EXPECT(tp{0s} == roundCloseTime(tp{29s}, 60s));
-        BEAST_EXPECT(tp{30s} == roundCloseTime(tp{30s}, 1s));
-        BEAST_EXPECT(tp{60s} == roundCloseTime(tp{31s}, 60s));
-        BEAST_EXPECT(tp{60s} == roundCloseTime(tp{30s}, 60s));
-        BEAST_EXPECT(tp{60s} == roundCloseTime(tp{59s}, 60s));
-        BEAST_EXPECT(tp{60s} == roundCloseTime(tp{60s}, 60s));
-        BEAST_EXPECT(tp{60s} == roundCloseTime(tp{61s}, 60s));
+        EXPECT_TRUE(tp{0s} == roundCloseTime(tp{29s}, 60s));
+        EXPECT_TRUE(tp{30s} == roundCloseTime(tp{30s}, 1s));
+        EXPECT_TRUE(tp{60s} == roundCloseTime(tp{31s}, 60s));
+        EXPECT_TRUE(tp{60s} == roundCloseTime(tp{30s}, 60s));
+        EXPECT_TRUE(tp{60s} == roundCloseTime(tp{59s}, 60s));
+        EXPECT_TRUE(tp{60s} == roundCloseTime(tp{60s}, 60s));
+        EXPECT_TRUE(tp{60s} == roundCloseTime(tp{61s}, 60s));
     }
 
     void
@@ -90,23 +92,23 @@ class LedgerTiming_test : public beast::unit_test::Suite
         using namespace std::chrono_literals;
         using tp = NetClock::time_point;
         tp close = effCloseTime(tp{10s}, 30s, tp{0s});
-        BEAST_EXPECT(close == tp{1s});
+        EXPECT_TRUE(close == tp{1s});
 
         close = effCloseTime(tp{16s}, 30s, tp{0s});
-        BEAST_EXPECT(close == tp{30s});
+        EXPECT_TRUE(close == tp{30s});
 
         close = effCloseTime(tp{16s}, 30s, tp{30s});
-        BEAST_EXPECT(close == tp{31s});
+        EXPECT_TRUE(close == tp{31s});
 
         close = effCloseTime(tp{16s}, 30s, tp{60s});
-        BEAST_EXPECT(close == tp{61s});
+        EXPECT_TRUE(close == tp{61s});
 
         close = effCloseTime(tp{31s}, 30s, tp{0s});
-        BEAST_EXPECT(close == tp{30s});
+        EXPECT_TRUE(close == tp{30s});
     }
 
     void
-    run() override
+    run()
     {
         testGetNextLedgerTimeResolution();
         testRoundCloseTime();
@@ -114,5 +116,8 @@ class LedgerTiming_test : public beast::unit_test::Suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, xrpl);
+TEST_F(LedgerTiming_test, ledger_timing)
+{
+    run();
+}
 }  // namespace xrpl::test

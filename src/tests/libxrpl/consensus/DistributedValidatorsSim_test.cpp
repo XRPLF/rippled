@@ -1,12 +1,11 @@
-#include <test/csf.h>
-#include <test/csf/PeerGroup.h>
-#include <test/csf/Sim.h>
-#include <test/csf/collectors.h>
-#include <test/csf/random.h>
-#include <test/csf/submitters.h>
-#include <test/csf/timers.h>
-
-#include <xrpl/beast/unit_test/suite.h>
+#include <csf/PeerGroup.h>
+#include <csf/Sim.h>
+#include <csf/collectors.h>
+#include <csf/csf.h>
+#include <csf/random.h>
+#include <csf/submitters.h>
+#include <csf/timers.h>
+#include <gtest/gtest.h>
 
 #include <algorithm>
 #include <chrono>
@@ -14,6 +13,7 @@
 #include <fstream>
 #include <iomanip>
 #include <ios>
+#include <iostream>
 #include <ostream>
 #include <random>
 #include <sstream>
@@ -24,8 +24,18 @@ namespace xrpl::test {
 
 /** In progress simulations for diversifying and distributing validators
  */
-class DistributedValidators_test : public beast::unit_test::Suite
+class DistributedValidators_test : public ::testing::Test
 {
+protected:
+    std::ostream& log = std::cout;
+
+    std::string const&
+    arg() const
+    {
+        static std::string const empty;
+        return empty;
+    }
+
     void
     completeTrustCompleteConnectFixedDelay(
         std::size_t numPeers,
@@ -46,7 +56,7 @@ class DistributedValidators_test : public beast::unit_test::Suite
         log << prefix << "(" << numPeers << "," << delay.count() << ")" << std::endl;
 
         // number of peers, UNLs, connections
-        BEAST_EXPECT(numPeers >= 1);
+        EXPECT_TRUE(numPeers >= 1);
 
         Sim sim;
         PeerGroup peers = sim.createGroup(numPeers);
@@ -89,8 +99,8 @@ class DistributedValidators_test : public beast::unit_test::Suite
         heart.start();
         sim.run(simDuration);
 
-        // BEAST_EXPECT(sim.branches() == 1);
-        // BEAST_EXPECT(sim.synchronized());
+        // EXPECT_TRUE(sim.branches() == 1);
+        // EXPECT_TRUE(sim.synchronized());
 
         log << std::right;
         log << "| Peers: " << std::setw(2) << peers.size();
@@ -133,9 +143,9 @@ class DistributedValidators_test : public beast::unit_test::Suite
         int const numCNLs = std::max(int(1.00 * numPeers), 1);
         int const minCNLSize = std::max(int(0.25 * numCNLs), 1);
         int const maxCNLSize = std::max(int(0.50 * numCNLs), 1);
-        BEAST_EXPECT(numPeers >= 1);
-        BEAST_EXPECT(numCNLs >= 1);
-        BEAST_EXPECT(1 <= minCNLSize && minCNLSize <= maxCNLSize && maxCNLSize <= numPeers);
+        EXPECT_TRUE(numPeers >= 1);
+        EXPECT_TRUE(numCNLs >= 1);
+        EXPECT_TRUE(1 <= minCNLSize && minCNLSize <= maxCNLSize && maxCNLSize <= numPeers);
 
         Sim sim;
         PeerGroup peers = sim.createGroup(numPeers);
@@ -185,8 +195,8 @@ class DistributedValidators_test : public beast::unit_test::Suite
         heart.start();
         sim.run(simDuration);
 
-        // BEAST_EXPECT(sim.branches() == 1);
-        // BEAST_EXPECT(sim.synchronized());
+        // EXPECT_TRUE(sim.branches() == 1);
+        // EXPECT_TRUE(sim.synchronized());
 
         log << std::right;
         log << "| Peers: " << std::setw(2) << peers.size();
@@ -207,7 +217,7 @@ class DistributedValidators_test : public beast::unit_test::Suite
     }
 
     void
-    run() override
+    run()
     {
         std::string const defaultArgs = "5 200";
         std::string const args = arg().empty() ? defaultArgs : arg();
@@ -248,6 +258,9 @@ class DistributedValidators_test : public beast::unit_test::Suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DistributedValidators, consensus, xrpl, 2);
+TEST_F(DistributedValidators_test, DISABLED_distributed_validators)
+{
+    run();
+}
 
 }  // namespace xrpl::test

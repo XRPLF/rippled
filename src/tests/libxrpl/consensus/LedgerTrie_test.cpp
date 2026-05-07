@@ -1,8 +1,7 @@
-#include <test/csf/ledgers.h>
-
 #include <xrpld/consensus/LedgerTrie.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <csf/ledgers.h>
+#include <gtest/gtest.h>
 
 #include <cstdint>
 #include <optional>
@@ -10,8 +9,9 @@
 
 namespace xrpl::test {
 
-class LedgerTrie_test : public beast::unit_test::Suite
+class LedgerTrie_test : public ::testing::Test
 {
+protected:
     void
     testInsert()
     {
@@ -21,80 +21,80 @@ class LedgerTrie_test : public beast::unit_test::Suite
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 1);
 
             t.insert(h["abc"]);
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 2);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
         }
         // Suffix of existing (extending tree)
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
             // extend with no siblings
             t.insert(h["abcd"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
 
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 2);
-            BEAST_EXPECT(t.tipSupport(h["abcd"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.tipSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcd"]) == 1);
 
             // extend with existing sibling
             t.insert(h["abce"]);
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 3);
-            BEAST_EXPECT(t.tipSupport(h["abcd"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcd"]) == 1);
-            BEAST_EXPECT(t.tipSupport(h["abce"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abce"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 3);
+            EXPECT_TRUE(t.tipSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abce"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abce"]) == 1);
         }
         // uncommitted of existing node
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abcd"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
             // uncommitted with no siblings
             t.insert(h["abcdf"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
 
-            BEAST_EXPECT(t.tipSupport(h["abcd"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcd"]) == 2);
-            BEAST_EXPECT(t.tipSupport(h["abcdf"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcdf"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcd"]) == 2);
+            EXPECT_TRUE(t.tipSupport(h["abcdf"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcdf"]) == 1);
 
             // uncommitted with existing child
             t.insert(h["abc"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
 
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 3);
-            BEAST_EXPECT(t.tipSupport(h["abcd"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcd"]) == 2);
-            BEAST_EXPECT(t.tipSupport(h["abcdf"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcdf"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 3);
+            EXPECT_TRUE(t.tipSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcd"]) == 2);
+            EXPECT_TRUE(t.tipSupport(h["abcdf"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcdf"]) == 1);
         }
         // Suffix + uncommitted of existing node
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abcd"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
             t.insert(h["abce"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
 
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 2);
-            BEAST_EXPECT(t.tipSupport(h["abcd"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcd"]) == 1);
-            BEAST_EXPECT(t.tipSupport(h["abce"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abce"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.tipSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abce"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abce"]) == 1);
         }
         // Suffix + uncommitted with existing child
         {
@@ -103,20 +103,20 @@ class LedgerTrie_test : public beast::unit_test::Suite
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abcd"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
             t.insert(h["abcde"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
             t.insert(h["abcf"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
 
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 3);
-            BEAST_EXPECT(t.tipSupport(h["abcd"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcd"]) == 2);
-            BEAST_EXPECT(t.tipSupport(h["abcf"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcf"]) == 1);
-            BEAST_EXPECT(t.tipSupport(h["abcde"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcde"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 3);
+            EXPECT_TRUE(t.tipSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcd"]) == 2);
+            EXPECT_TRUE(t.tipSupport(h["abcf"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcf"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abcde"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcde"]) == 1);
         }
 
         // Multiple counts
@@ -124,18 +124,18 @@ class LedgerTrie_test : public beast::unit_test::Suite
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["ab"], 4);
-            BEAST_EXPECT(t.tipSupport(h["ab"]) == 4);
-            BEAST_EXPECT(t.branchSupport(h["ab"]) == 4);
-            BEAST_EXPECT(t.tipSupport(h["a"]) == 0);
-            BEAST_EXPECT(t.branchSupport(h["a"]) == 4);
+            EXPECT_TRUE(t.tipSupport(h["ab"]) == 4);
+            EXPECT_TRUE(t.branchSupport(h["ab"]) == 4);
+            EXPECT_TRUE(t.tipSupport(h["a"]) == 0);
+            EXPECT_TRUE(t.branchSupport(h["a"]) == 4);
 
             t.insert(h["abc"], 2);
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 2);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 2);
-            BEAST_EXPECT(t.tipSupport(h["ab"]) == 4);
-            BEAST_EXPECT(t.branchSupport(h["ab"]) == 6);
-            BEAST_EXPECT(t.tipSupport(h["a"]) == 0);
-            BEAST_EXPECT(t.branchSupport(h["a"]) == 6);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.tipSupport(h["ab"]) == 4);
+            EXPECT_TRUE(t.branchSupport(h["ab"]) == 6);
+            EXPECT_TRUE(t.tipSupport(h["a"]) == 0);
+            EXPECT_TRUE(t.branchSupport(h["a"]) == 6);
         }
     }
 
@@ -149,10 +149,10 @@ class LedgerTrie_test : public beast::unit_test::Suite
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
 
-            BEAST_EXPECT(!t.remove(h["ab"]));
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(!t.remove(h["a"]));
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(!t.remove(h["ab"]));
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(!t.remove(h["a"]));
+            EXPECT_TRUE(t.checkInvariants());
         }
         // In trie but with 0 tip support
         {
@@ -161,12 +161,12 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abcd"]);
             t.insert(h["abce"]);
 
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 2);
-            BEAST_EXPECT(!t.remove(h["abc"]));
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
+            EXPECT_TRUE(!t.remove(h["abc"]));
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
         }
         // In trie with > 1 tip support
         {
@@ -174,22 +174,22 @@ class LedgerTrie_test : public beast::unit_test::Suite
             LedgerHistoryHelper h;
             t.insert(h["abc"], 2);
 
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 2);
-            BEAST_EXPECT(t.remove(h["abc"]));
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.remove(h["abc"]));
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
 
             t.insert(h["abc"], 1);
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 2);
-            BEAST_EXPECT(t.remove(h["abc"], 2));
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.remove(h["abc"], 2));
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
 
             t.insert(h["abc"], 3);
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 3);
-            BEAST_EXPECT(t.remove(h["abc"], 300));
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 3);
+            EXPECT_TRUE(t.remove(h["abc"], 300));
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
         }
         // In trie with = 1 tip support, no children
         {
@@ -198,17 +198,17 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["ab"]);
             t.insert(h["abc"]);
 
-            BEAST_EXPECT(t.tipSupport(h["ab"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["ab"]) == 2);
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["ab"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["ab"]) == 2);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 1);
 
-            BEAST_EXPECT(t.remove(h["abc"]));
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(t.tipSupport(h["ab"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["ab"]) == 1);
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 0);
+            EXPECT_TRUE(t.remove(h["abc"]));
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(t.tipSupport(h["ab"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["ab"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 0);
         }
         // In trie with = 1 tip support, 1 child
         {
@@ -218,17 +218,17 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abc"]);
             t.insert(h["abcd"]);
 
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 2);
-            BEAST_EXPECT(t.tipSupport(h["abcd"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.tipSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcd"]) == 1);
 
-            BEAST_EXPECT(t.remove(h["abc"]));
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 1);
-            BEAST_EXPECT(t.tipSupport(h["abcd"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.remove(h["abc"]));
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abcd"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abcd"]) == 1);
         }
         // In trie with = 1 tip support, > 1 children
         {
@@ -239,13 +239,13 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abcd"]);
             t.insert(h["abce"]);
 
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 3);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 3);
 
-            BEAST_EXPECT(t.remove(h["abc"]));
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
-            BEAST_EXPECT(t.branchSupport(h["abc"]) == 2);
+            EXPECT_TRUE(t.remove(h["abc"]));
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
+            EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
         }
 
         // In trie with = 1 tip support, parent compaction
@@ -255,19 +255,19 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["ab"]);
             t.insert(h["abc"]);
             t.insert(h["abd"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
             t.remove(h["ab"]);
-            BEAST_EXPECT(t.checkInvariants());
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-            BEAST_EXPECT(t.tipSupport(h["abd"]) == 1);
-            BEAST_EXPECT(t.tipSupport(h["ab"]) == 0);
-            BEAST_EXPECT(t.branchSupport(h["ab"]) == 2);
+            EXPECT_TRUE(t.checkInvariants());
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abd"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["ab"]) == 0);
+            EXPECT_TRUE(t.branchSupport(h["ab"]) == 2);
 
             t.remove(h["abd"]);
-            BEAST_EXPECT(t.checkInvariants());
+            EXPECT_TRUE(t.checkInvariants());
 
-            BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-            BEAST_EXPECT(t.branchSupport(h["ab"]) == 1);
+            EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+            EXPECT_TRUE(t.branchSupport(h["ab"]) == 1);
         }
     }
 
@@ -277,18 +277,18 @@ class LedgerTrie_test : public beast::unit_test::Suite
         using namespace csf;
         LedgerTrie<Ledger> t;
         LedgerHistoryHelper h;
-        BEAST_EXPECT(t.empty());
+        EXPECT_TRUE(t.empty());
 
         Ledger const genesis = h[""];
         t.insert(genesis);
-        BEAST_EXPECT(!t.empty());
+        EXPECT_TRUE(!t.empty());
         t.remove(genesis);
-        BEAST_EXPECT(t.empty());
+        EXPECT_TRUE(t.empty());
 
         t.insert(h["abc"]);
-        BEAST_EXPECT(!t.empty());
+        EXPECT_TRUE(!t.empty());
         t.remove(h["abc"]);
-        BEAST_EXPECT(t.empty());
+        EXPECT_TRUE(t.empty());
     }
 
     void
@@ -298,44 +298,44 @@ class LedgerTrie_test : public beast::unit_test::Suite
 
         LedgerTrie<Ledger> t;
         LedgerHistoryHelper h;
-        BEAST_EXPECT(t.tipSupport(h["a"]) == 0);
-        BEAST_EXPECT(t.tipSupport(h["axy"]) == 0);
+        EXPECT_TRUE(t.tipSupport(h["a"]) == 0);
+        EXPECT_TRUE(t.tipSupport(h["axy"]) == 0);
 
-        BEAST_EXPECT(t.branchSupport(h["a"]) == 0);
-        BEAST_EXPECT(t.branchSupport(h["axy"]) == 0);
+        EXPECT_TRUE(t.branchSupport(h["a"]) == 0);
+        EXPECT_TRUE(t.branchSupport(h["axy"]) == 0);
 
         t.insert(h["abc"]);
-        BEAST_EXPECT(t.tipSupport(h["a"]) == 0);
-        BEAST_EXPECT(t.tipSupport(h["ab"]) == 0);
-        BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-        BEAST_EXPECT(t.tipSupport(h["abcd"]) == 0);
+        EXPECT_TRUE(t.tipSupport(h["a"]) == 0);
+        EXPECT_TRUE(t.tipSupport(h["ab"]) == 0);
+        EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+        EXPECT_TRUE(t.tipSupport(h["abcd"]) == 0);
 
-        BEAST_EXPECT(t.branchSupport(h["a"]) == 1);
-        BEAST_EXPECT(t.branchSupport(h["ab"]) == 1);
-        BEAST_EXPECT(t.branchSupport(h["abc"]) == 1);
-        BEAST_EXPECT(t.branchSupport(h["abcd"]) == 0);
+        EXPECT_TRUE(t.branchSupport(h["a"]) == 1);
+        EXPECT_TRUE(t.branchSupport(h["ab"]) == 1);
+        EXPECT_TRUE(t.branchSupport(h["abc"]) == 1);
+        EXPECT_TRUE(t.branchSupport(h["abcd"]) == 0);
 
         t.insert(h["abe"]);
-        BEAST_EXPECT(t.tipSupport(h["a"]) == 0);
-        BEAST_EXPECT(t.tipSupport(h["ab"]) == 0);
-        BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
-        BEAST_EXPECT(t.tipSupport(h["abe"]) == 1);
+        EXPECT_TRUE(t.tipSupport(h["a"]) == 0);
+        EXPECT_TRUE(t.tipSupport(h["ab"]) == 0);
+        EXPECT_TRUE(t.tipSupport(h["abc"]) == 1);
+        EXPECT_TRUE(t.tipSupport(h["abe"]) == 1);
 
-        BEAST_EXPECT(t.branchSupport(h["a"]) == 2);
-        BEAST_EXPECT(t.branchSupport(h["ab"]) == 2);
-        BEAST_EXPECT(t.branchSupport(h["abc"]) == 1);
-        BEAST_EXPECT(t.branchSupport(h["abe"]) == 1);
+        EXPECT_TRUE(t.branchSupport(h["a"]) == 2);
+        EXPECT_TRUE(t.branchSupport(h["ab"]) == 2);
+        EXPECT_TRUE(t.branchSupport(h["abc"]) == 1);
+        EXPECT_TRUE(t.branchSupport(h["abe"]) == 1);
 
         t.remove(h["abc"]);
-        BEAST_EXPECT(t.tipSupport(h["a"]) == 0);
-        BEAST_EXPECT(t.tipSupport(h["ab"]) == 0);
-        BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
-        BEAST_EXPECT(t.tipSupport(h["abe"]) == 1);
+        EXPECT_TRUE(t.tipSupport(h["a"]) == 0);
+        EXPECT_TRUE(t.tipSupport(h["ab"]) == 0);
+        EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
+        EXPECT_TRUE(t.tipSupport(h["abe"]) == 1);
 
-        BEAST_EXPECT(t.branchSupport(h["a"]) == 1);
-        BEAST_EXPECT(t.branchSupport(h["ab"]) == 1);
-        BEAST_EXPECT(t.branchSupport(h["abc"]) == 0);
-        BEAST_EXPECT(t.branchSupport(h["abe"]) == 1);
+        EXPECT_TRUE(t.branchSupport(h["a"]) == 1);
+        EXPECT_TRUE(t.branchSupport(h["ab"]) == 1);
+        EXPECT_TRUE(t.branchSupport(h["abc"]) == 0);
+        EXPECT_TRUE(t.branchSupport(h["abe"]) == 1);
     }
 
     void
@@ -346,8 +346,8 @@ class LedgerTrie_test : public beast::unit_test::Suite
         // Empty
         {
             LedgerTrie<Ledger> const t;
-            BEAST_EXPECT(t.getPreferred(Seq{0}) == std::nullopt);
-            BEAST_EXPECT(t.getPreferred(Seq{2}) == std::nullopt);
+            EXPECT_TRUE(t.getPreferred(Seq{0}) == std::nullopt);
+            EXPECT_TRUE(t.getPreferred(Seq{2}) == std::nullopt);
         }
         // Genesis support is NOT empty
         {
@@ -357,10 +357,10 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(genesis);
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{0})->id == genesis.id());
-            BEAST_EXPECT(t.remove(genesis));
-            BEAST_EXPECT(t.getPreferred(Seq{0}) == std::nullopt);
-            BEAST_EXPECT(!t.remove(genesis));
+            EXPECT_TRUE(t.getPreferred(Seq{0})->id == genesis.id());
+            EXPECT_TRUE(t.remove(genesis));
+            EXPECT_TRUE(t.getPreferred(Seq{0}) == std::nullopt);
+            EXPECT_TRUE(!t.remove(genesis));
         }
         // Single node no children
         {
@@ -369,7 +369,7 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abc"]);
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abc"].id());
         }
         // Single node smaller child support
         {
@@ -379,10 +379,10 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abcd"]);
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abc"].id());
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abc"].id());
         }
         // Single node larger child
         {
@@ -392,10 +392,10 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abcd"], 2);
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abcd"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abcd"].id());
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abcd"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abcd"].id());
         }
         // Single node smaller children support
         {
@@ -406,13 +406,13 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abce"]);
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abc"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abc"].id());
 
             t.insert(h["abc"]);
 
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abc"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abc"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
         }
         // Single node larger children
@@ -424,13 +424,13 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abce"]);
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abc"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abc"].id());
 
             t.insert(h["abcd"]);
 
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abcd"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abcd"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abcd"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abcd"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
         }
         // Tie-breaker by id
@@ -440,16 +440,16 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abcd"], 2);
             t.insert(h["abce"], 2);
 
-            BEAST_EXPECT(h["abce"].id() > h["abcd"].id());
+            EXPECT_TRUE(h["abce"].id() > h["abcd"].id());
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abce"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abce"].id());
 
             t.insert(h["abcd"]);
-            BEAST_EXPECT(h["abce"].id() > h["abcd"].id());
+            EXPECT_TRUE(h["abce"].id() > h["abcd"].id());
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abcd"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abcd"].id());
         }
 
         // Tie-breaker not needed
@@ -460,18 +460,18 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abcd"]);
             t.insert(h["abce"], 2);
             // abce only has a margin of 1, but it owns the tie-breaker
-            BEAST_EXPECT(h["abce"].id() > h["abcd"].id());
+            EXPECT_TRUE(h["abce"].id() > h["abcd"].id());
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abce"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abce"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abce"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abce"].id());
 
             // Switch support from abce to abcd, tie-breaker now needed
             t.remove(h["abce"]);
             t.insert(h["abcd"]);
 
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abc"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abc"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
         }
 
@@ -484,9 +484,9 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abcde"], 4);
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abcde"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abcde"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{5})->id == h["abcde"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abcde"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abcde"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{5})->id == h["abcde"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
         }
 
@@ -499,21 +499,21 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abcfg"], 2);
             // 'de' and 'fg' are tied without 'abc' vote
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abc"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abc"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{5})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{5})->id == h["abc"].id());
 
             t.remove(h["abc"]);
             t.insert(h["abcd"]);
 
             // 'de' branch has 3 votes to 2, so earlier sequences see it as preferred
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abcde"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["abcde"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abcde"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abcde"].id());
 
             // However, if you validated a ledger with Seq 5, potentially on
             // a different branch, you do not yet know if they chose abcd
             // or abcf because of you, so abc remains preferred
-            BEAST_EXPECT(t.getPreferred(Seq{5})->id == h["abc"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{5})->id == h["abc"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
         }
 
@@ -539,13 +539,13 @@ class LedgerTrie_test : public beast::unit_test::Suite
 
             // B has more branch support
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{1})->id == h["ab"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{2})->id == h["ab"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{1})->id == h["ab"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{2})->id == h["ab"].id());
 
             // But if you last validated D,F or E, you do not yet know
             // if someone used that validation to commit to B or C
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["a"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["a"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["a"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["a"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             /** One of E advancing to G doesn't change anything
@@ -563,11 +563,11 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abdeg"]);
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{1})->id == h["ab"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{2})->id == h["ab"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["a"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["a"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{5})->id == h["a"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{1})->id == h["ab"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{2})->id == h["ab"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["a"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["a"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{5})->id == h["a"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             /** C advancing to H does advance the seq 3 preferred ledger
@@ -585,11 +585,11 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abh"]);
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{1})->id == h["ab"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{2})->id == h["ab"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["ab"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["a"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{5})->id == h["a"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{1})->id == h["ab"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{2})->id == h["ab"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["ab"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["a"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{5})->id == h["a"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             /** F advancing to E also moves the preferred ledger forward
@@ -607,11 +607,11 @@ class LedgerTrie_test : public beast::unit_test::Suite
             t.insert(h["abde"]);
 
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(t.getPreferred(Seq{1})->id == h["abde"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{2})->id == h["abde"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{3})->id == h["abde"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["ab"].id());
-            BEAST_EXPECT(t.getPreferred(Seq{5})->id == h["ab"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{1})->id == h["abde"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{2})->id == h["abde"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abde"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["ab"].id());
+            EXPECT_TRUE(t.getPreferred(Seq{5})->id == h["ab"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
         }
     }
@@ -625,24 +625,24 @@ class LedgerTrie_test : public beast::unit_test::Suite
 
         LedgerTrie<Ledger> t;
         LedgerHistoryHelper h;
-        BEAST_EXPECT(!t.remove(h[""]));
-        BEAST_EXPECT(t.branchSupport(h[""]) == 0);
-        BEAST_EXPECT(t.tipSupport(h[""]) == 0);
+        EXPECT_TRUE(!t.remove(h[""]));
+        EXPECT_TRUE(t.branchSupport(h[""]) == 0);
+        EXPECT_TRUE(t.tipSupport(h[""]) == 0);
 
         t.insert(h["a"]);
-        BEAST_EXPECT(t.checkInvariants());
-        BEAST_EXPECT(t.branchSupport(h[""]) == 1);
-        BEAST_EXPECT(t.tipSupport(h[""]) == 0);
+        EXPECT_TRUE(t.checkInvariants());
+        EXPECT_TRUE(t.branchSupport(h[""]) == 1);
+        EXPECT_TRUE(t.tipSupport(h[""]) == 0);
 
         t.insert(h["e"]);
-        BEAST_EXPECT(t.checkInvariants());
-        BEAST_EXPECT(t.branchSupport(h[""]) == 2);
-        BEAST_EXPECT(t.tipSupport(h[""]) == 0);
+        EXPECT_TRUE(t.checkInvariants());
+        EXPECT_TRUE(t.branchSupport(h[""]) == 2);
+        EXPECT_TRUE(t.tipSupport(h[""]) == 0);
 
-        BEAST_EXPECT(t.remove(h["e"]));
-        BEAST_EXPECT(t.checkInvariants());
-        BEAST_EXPECT(t.branchSupport(h[""]) == 1);
-        BEAST_EXPECT(t.tipSupport(h[""]) == 0);
+        EXPECT_TRUE(t.remove(h["e"]));
+        EXPECT_TRUE(t.checkInvariants());
+        EXPECT_TRUE(t.branchSupport(h[""]) == 1);
+        EXPECT_TRUE(t.tipSupport(h[""]) == 0);
     }
 
     void
@@ -689,13 +689,14 @@ class LedgerTrie_test : public beast::unit_test::Suite
             {
                 t.remove(h[curr]);
             }
-            if (!BEAST_EXPECT(t.checkInvariants()))
+            EXPECT_TRUE(t.checkInvariants());
+            if (!(t.checkInvariants()))
                 return;
         }
     }
 
     void
-    run() override
+    run()
     {
         testInsert();
         testRemove();
@@ -707,5 +708,8 @@ class LedgerTrie_test : public beast::unit_test::Suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerTrie, consensus, xrpl);
+TEST_F(LedgerTrie_test, ledger_trie)
+{
+    run();
+}
 }  // namespace xrpl::test

@@ -1,6 +1,6 @@
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <gtest/gtest.h>
 
 #include <algorithm>
 #include <utility>
@@ -8,8 +8,9 @@
 
 namespace xrpl::test {
 
-class RCLCensorshipDetector_test : public beast::unit_test::Suite
+class RCLCensorshipDetector_test : public ::testing::Test
 {
+protected:
     void
     test(
         RCLCensorshipDetector<int, int>& cdet,
@@ -45,14 +46,14 @@ class RCLCensorshipDetector_test : public beast::unit_test::Suite
         // On entry, this set contained all the elements that should be tracked
         // by the detector after we process this round. We removed all the items
         // that actually were in the tracker, so this should now be empty:
-        BEAST_EXPECT(remain.empty());
+        EXPECT_TRUE(remain.empty());
     }
 
 public:
     void
-    run() override
+    run()
     {
-        testcase("Censorship Detector");
+        SCOPED_TRACE("Censorship Detector");
 
         RCLCensorshipDetector<int, int> cdet;
         int round = 0;
@@ -79,5 +80,8 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, xrpl);
+TEST_F(RCLCensorshipDetector_test, rcl_censorship_detector)
+{
+    run();
+}
 }  // namespace xrpl::test

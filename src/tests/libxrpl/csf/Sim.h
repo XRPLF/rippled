@@ -1,0 +1,152 @@
+#pragma once
+
+#include <csf/BasicNetwork.h>
+#include <csf/CollectorRef.h>
+#include <csf/Digraph.h>
+#include <csf/Peer.h>
+#include <csf/PeerGroup.h>
+#include <csf/Scheduler.h>
+#include <csf/SimTime.h>
+#include <csf/TrustGraph.h>
+
+#include <deque>
+#include <iostream>
+#include <random>
+
+namespace xrpl::test::csf {
+
+/** Sink that prepends simulation time to messages */
+class BasicSink : public beast::Journal::Sink
+{
+    Scheduler::clock_type const& clock_;
+
+public:
+    BasicSink(Scheduler::clock_type const& clock)
+        : Sink(beast::severities::KDisabled, false), clock_{clock}
+    {
+    }
+
+    void
+    write(beast::severities::Severity level, std::string const& text) override
+    {
+        if (level < threshold())
+            return;
+
+        std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
+    }
+
+    void
+    writeAlways(beast::severities::Severity level, std::string const& text) override
+    {
+        std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
+    }
+};
+
+class Sim
+{
+    // Use a deque to have stable pointers even when dynamically adding peers
+    //  - Alternatively consider using unique_ptrs allocated from arena
+    std::deque<Peer> peers_;
+    PeerGroup allPeers_;
+
+public:
+    std::mt19937_64 rng;
+    Scheduler scheduler;
+    BasicSink sink;
+    beast::Journal j;
+    LedgerOracle oracle;
+    BasicNetwork<Peer*> net;
+    TrustGraph<Peer*> trustGraph;
+    CollectorRefs collectors;
+
+    /** Create a simulation
+
+        Creates a new simulation. The simulation has no peers, no trust links
+        and no network connections.
+
+    */
+    Sim() : sink{scheduler.clock()}, j{sink}, net{scheduler}
+    {
+    }
+
+    /** Create a new group of peers.
+
+        Creates a new group of peers. The peers do not have any trust relations
+        or network connections by default. Those must be configured by the
+       client.
+
+        @param numPeers The number of peers in the group
+        @return PeerGroup representing these new peers
+
+        @note This increases the number of peers in the simulation by numPeers.
+    */
+    PeerGroup
+    createGroup(std::size_t numPeers)
+    {
+        std::vector<Peer*> newPeers;
+        newPeers.reserve(numPeers);
+        for (std::size_t i = 0; i < numPeers; ++i)
+        {
+            peers_.emplace_back(
+                PeerID{static_cast<std::uint32_t>(peers_.size())},
+                scheduler,
+                oracle,
+                net,
+                trustGraph,
+                collectors,
+                j);
+            newPeers.emplace_back(&peers_.back());
+        }
+        PeerGroup res{newPeers};
+        allPeers_ = allPeers_ + res;
+        return res;
+    }
+
+    //! The number of peers in the simulation
+    std::size_t
+    size() const
+    {
+        return peers_.size();
+    }
+
+    /** Run consensus protocol to generate the provided number of ledgers.
+
+        Has each peer run consensus until it closes `ledgers` more ledgers.
+
+        @param ledgers The number of additional ledgers to close
+    */
+    void
+    run(int ledgers);
+
+    /** Run consensus for the given duration */
+    void
+    run(SimDuration const& dur);
+
+    /** Check whether all peers in the group are synchronized.
+
+        Nodes in the group are synchronized if they share the same last
+        fully validated and last generated ledger.
+    */
+    static bool
+    synchronized(PeerGroup const& g);
+
+    /** Check whether all peers in the network are synchronized
+     */
+    bool
+    synchronized() const;
+
+    /** Calculate the number of branches in the group.
+
+        A branch occurs if two nodes in the group have fullyValidatedLedgers
+        that are not on the same chain of ledgers.
+    */
+    std::size_t
+    branches(PeerGroup const& g) const;
+
+    /** Calculate the number  of branches in the network
+     */
+    std::size_t
+    branches() const;
+};
+
+}  // namespace xrpl::test::csf

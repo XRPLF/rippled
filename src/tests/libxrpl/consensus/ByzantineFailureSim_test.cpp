@@ -1,14 +1,13 @@
-#include <test/csf.h>
-#include <test/csf/Peer.h>
-#include <test/csf/PeerGroup.h>
-#include <test/csf/Sim.h>
-#include <test/csf/SimTime.h>
-#include <test/csf/TrustGraph.h>
-#include <test/csf/collectors.h>
-
 #include <xrpld/consensus/ConsensusParms.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <csf/Peer.h>
+#include <csf/PeerGroup.h>
+#include <csf/Sim.h>
+#include <csf/SimTime.h>
+#include <csf/TrustGraph.h>
+#include <csf/collectors.h>
+#include <csf/csf.h>
+#include <gtest/gtest.h>
 
 #include <chrono>
 #include <ios>
@@ -16,10 +15,11 @@
 
 namespace xrpl::test {
 
-class ByzantineFailureSim_test : public beast::unit_test::Suite
+class ByzantineFailureSim_test : public ::testing::Test
 {
+protected:
     void
-    run() override
+    run()
     {
         using namespace csf;
         using namespace std::chrono;
@@ -80,10 +80,13 @@ class ByzantineFailureSim_test : public beast::unit_test::Suite
         std::cout << "Branches: " << sim.branches() << "\n";
         std::cout << "Fully synchronized: " << std::boolalpha << sim.synchronized() << "\n";
         // Not tessting anything currently.
-        pass();
+        SUCCEED();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(ByzantineFailureSim, consensus, xrpl);
+TEST_F(ByzantineFailureSim_test, DISABLED_byzantine_failure_sim)
+{
+    run();
+}
 
 }  // namespace xrpl::test

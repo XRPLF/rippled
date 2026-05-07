@@ -1,26 +1,29 @@
-#include <test/csf.h>
-#include <test/csf/PeerGroup.h>
-#include <test/csf/Sim.h>
-#include <test/csf/collectors.h>
-#include <test/csf/random.h>
-#include <test/csf/submitters.h>
-#include <test/csf/timers.h>
-
 #include <xrpld/consensus/ConsensusParms.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <csf/PeerGroup.h>
+#include <csf/Sim.h>
+#include <csf/collectors.h>
+#include <csf/csf.h>
+#include <csf/random.h>
+#include <csf/submitters.h>
+#include <csf/timers.h>
+#include <gtest/gtest.h>
 
 #include <chrono>
+#include <iostream>
 #include <ostream>
 #include <random>
 #include <vector>
 
 namespace xrpl::test {
 
-class ScaleFreeSim_test : public beast::unit_test::Suite
+class ScaleFreeSim_test : public ::testing::Test
 {
+protected:
+    std::ostream& log = std::cout;
+
     void
-    run() override
+    run()
     {
         using namespace std::chrono;
         using namespace csf;
@@ -28,14 +31,14 @@ class ScaleFreeSim_test : public beast::unit_test::Suite
         // Generate a quasi-random scale free network and simulate consensus
         // as we vary transaction submission rates
 
-        int const n = 100;  // Peers
+        int const N = 100;  // Peers
 
         int const numUNLs = 15;  //  UNL lists
-        int const minUNLSize = n / 4, maxUNLSize = n / 2;
+        int const minUNLSize = N / 4, maxUNLSize = N / 2;
 
         ConsensusParms const parms{};
         Sim sim;
-        PeerGroup network = sim.createGroup(n);
+        PeerGroup network = sim.createGroup(N);
 
         // generate trust ranks
         std::vector<double> const ranks =
@@ -83,8 +86,8 @@ class ScaleFreeSim_test : public beast::unit_test::Suite
         heart.start();
         sim.run(simDuration);
 
-        BEAST_EXPECT(sim.branches() == 1);
-        BEAST_EXPECT(sim.synchronized());
+        EXPECT_TRUE(sim.branches() == 1);
+        EXPECT_TRUE(sim.synchronized());
 
         // TODO: Clean up this formatting mess!!
 
@@ -105,6 +108,9 @@ class ScaleFreeSim_test : public beast::unit_test::Suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(ScaleFreeSim, consensus, xrpl, 80);
+TEST_F(ScaleFreeSim_test, DISABLED_scale_free_sim)
+{
+    run();
+}
 
 }  // namespace xrpl::test

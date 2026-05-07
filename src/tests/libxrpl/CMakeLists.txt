@@ -35,6 +35,16 @@ xrpl_add_test(json)
 target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.json)
 
+xrpl_add_test(
+    consensus
+    csf/impl/Sim.cpp
+    csf/impl/ledgers.cpp
+    ${CMAKE_SOURCE_DIR}/src/xrpld/consensus/Consensus.cpp
+)
+target_include_directories(xrpl.test.consensus PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(xrpl.test.consensus PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.consensus)
+
 xrpl_add_test(tx)
 target_link_libraries(xrpl.test.tx PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.tx)
