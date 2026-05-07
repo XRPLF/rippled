@@ -5,6 +5,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -6140,6 +6141,72 @@ class Vault_test : public beast::unit_test::Suite
         runTest(amendments);
     }
 
+    void
+    testWithdrawCredentialDepositPreauth()
+    {
+        testcase("withdraw with credential-based deposit preauth");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const dest{"dest"};
+        Account const credIssuer{"credIssuer"};
+        char const credType[] = "abcde";
+
+        env.fund(XRP(1000), owner, depositor, dest, credIssuer);
+        env(fset(dest, asfDepositAuth));
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1'000'000};
+        Vault vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+        env.close();
+
+        auto withdrawToDest = [&]() {
+            auto wtx =
+                vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
+            wtx[sfDestination] = dest.human();
+            return wtx;
+        };
+
+        // Without any preauth, withdraw to dest fails
+        env(withdrawToDest(), Ter{tecNO_PERMISSION});
+        env.close();
+
+        // Issue and accept a credential for the depositor
+        env(credentials::create(depositor, credIssuer, credType));
+        env(credentials::accept(depositor, credIssuer, credType));
+        env.close();
+
+        auto const credIdx =
+            credentials::ledgerEntry(env, depositor, credIssuer, credType)[jss::result][jss::index]
+                .asString();
+
+        // dest authorizes deposits from holders of credentials issued by credIssuer
+        env(deposit::authCredentials(dest, {{credIssuer, credType}}));
+        env.close();
+
+        // Withdraw without supplying credentials still fails
+        env(withdrawToDest(), Ter{tecNO_PERMISSION});
+        env.close();
+
+        // Withdraw with credentials succeeds
+        env(withdrawToDest(), credentials::Ids({credIdx}));
+        env.close();
+
+        // Bad credential id is rejected
+        std::string const invalidIdx =
+            "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E01E034";
+        env(withdrawToDest(), credentials::Ids({invalidIdx}), Ter{tecBAD_CREDENTIALS});
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -6163,6 +6230,7 @@ public:
         testAssetsMaximum();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
+        testWithdrawCredentialDepositPreauth();
     }
 };
 

@@ -914,6 +914,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfDestination, SoeOptional},
     {sfDestinationTag, SoeOptional},
+    {sfCredentialIDs, SoeOptional},
 }))
 
 /** This transaction claws back tokens from a vault. */
@@ -997,6 +998,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfDestination, SoeOptional},
     {sfDestinationTag, SoeOptional},
+    {sfCredentialIDs, SoeOptional},
 }))
 
 /** This transaction claws back First Loss Capital from a Loan Broker to

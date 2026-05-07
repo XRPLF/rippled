@@ -5,6 +5,8 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
@@ -1829,6 +1831,79 @@ class LoanBroker_test : public beast::unit_test::Suite
         testRIPD4274MPT();
     }
 
+    void
+    testCoverWithdrawCredentialDepositPreauth()
+    {
+        testcase("CoverWithdraw with credential-based deposit preauth");
+        using namespace jtx;
+
+        Env env(*this);
+
+        Account const broker{"broker"};
+        Account const dest{"dest"};
+        Account const credIssuer{"credIssuer"};
+        char const credType[] = "abcde";
+
+        env.fund(XRP(10'000), broker, dest, credIssuer);
+        env(fset(dest, asfDepositAuth));
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1'000'000};
+
+        Vault const vault(env);
+        auto const [vaultTx, vaultKeylet] = vault.create({.owner = broker, .asset = asset});
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit({.depositor = broker, .id = vaultKeylet.key, .amount = asset(1'000)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
+        env(loanBroker::set(broker, vaultKeylet.key));
+        env.close();
+
+        env(loanBroker::coverDeposit(broker, brokerKeylet.key, asset(500)));
+        env.close();
+
+        auto coverWithdrawToDest = [&]() {
+            return loanBroker::coverWithdraw(broker, brokerKeylet.key, asset(10));
+        };
+
+        // Without any preauth, coverWithdraw to dest fails
+        env(coverWithdrawToDest(), loanBroker::kDESTINATION(dest), Ter{tecNO_PERMISSION});
+        env.close();
+
+        // Issue and accept a credential for the broker (sender)
+        env(credentials::create(broker, credIssuer, credType));
+        env(credentials::accept(broker, credIssuer, credType));
+        env.close();
+
+        auto const credIdx =
+            credentials::ledgerEntry(env, broker, credIssuer, credType)[jss::result][jss::index]
+                .asString();
+
+        // dest authorizes deposits from holders of credentials issued by credIssuer
+        env(deposit::authCredentials(dest, {{credIssuer, credType}}));
+        env.close();
+
+        // Without supplying credentials, still fails
+        env(coverWithdrawToDest(), loanBroker::kDESTINATION(dest), Ter{tecNO_PERMISSION});
+        env.close();
+
+        // With credentials, succeeds
+        env(coverWithdrawToDest(), loanBroker::kDESTINATION(dest), credentials::Ids({credIdx}));
+        env.close();
+
+        // Bad credential id is rejected
+        std::string const invalidIdx =
+            "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E01E034";
+        env(coverWithdrawToDest(),
+            loanBroker::kDESTINATION(dest),
+            credentials::Ids({invalidIdx}),
+            Ter{tecBAD_CREDENTIALS});
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -1849,6 +1924,8 @@ public:
         testAmB06VaultFreezeCheckMissing();
 
         testRIPD4274();
+
+        testCoverWithdrawCredentialDepositPreauth();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.

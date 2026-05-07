@@ -368,7 +368,8 @@ canWithdraw(
     AccountID const& to,
     SLE::const_ref toSle,
     STAmount const& amount,
-    bool hasDestinationTag)
+    bool hasDestinationTag,
+    std::optional<std::vector<uint256>> const& credentialIDs)
 {
     if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
         return ret;
@@ -379,7 +380,21 @@ canWithdraw(
     if (toSle->isFlag(lsfDepositAuth))
     {
         if (!view.exists(keylet::depositPreauth(to, from)))
-            return tecNO_PERMISSION;
+        {
+            // Post-fixCleanup3_2_0: if credentials are present, also check
+            // for credential-based preauth.
+            if (view.rules().enabled(fixCleanup3_2_0) && credentialIDs.has_value())
+            {
+                if (auto const ret = credentials::authorizedDepositPreauth(
+                        view, STVector256{*credentialIDs}, to);
+                    !isTesSuccess(ret))
+                    return ret;
+            }
+            else
+            {
+                return tecNO_PERMISSION;
+            }
+        }
     }
 
     return withdrawToDestExceedsLimit(view, from, to, amount);
@@ -391,11 +406,12 @@ canWithdraw(
     AccountID const& from,
     AccountID const& to,
     STAmount const& amount,
-    bool hasDestinationTag)
+    bool hasDestinationTag,
+    std::optional<std::vector<uint256>> const& credentialIDs)
 {
     auto const toSle = view.read(keylet::account(to));
 
-    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag);
+    return canWithdraw(view, from, to, toSle, amount, hasDestinationTag, credentialIDs);
 }
 
 [[nodiscard]] TER
@@ -404,7 +420,8 @@ canWithdraw(ReadView const& view, STTx const& tx)
     auto const from = tx[sfAccount];
     auto const to = tx[~sfDestination].value_or(from);
 
-    return canWithdraw(view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag));
+    return canWithdraw(
+        view, from, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag), tx[~sfCredentialIDs]);
 }
 
 TER

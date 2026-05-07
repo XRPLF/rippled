@@ -121,6 +121,32 @@ public:
     {
         return this->tx_->isFieldPresent(sfDestinationTag);
     }
+
+    /**
+     * @brief Get sfCredentialIDs (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VECTOR256::type::value_type>
+    getCredentialIDs() const
+    {
+        if (hasCredentialIDs())
+        {
+            return this->tx_->at(sfCredentialIDs);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCredentialIDs is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCredentialIDs() const
+    {
+        return this->tx_->isFieldPresent(sfCredentialIDs);
+    }
 };
 
 /**
@@ -209,6 +235,17 @@ public:
     setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfDestinationTag] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCredentialIDs (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanBrokerCoverWithdrawBuilder&
+    setCredentialIDs(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
+    {
+        object_[sfCredentialIDs] = value;
         return *this;
     }
 

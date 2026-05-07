@@ -5,8 +5,10 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -26,7 +28,14 @@ namespace xrpl {
 bool
 LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
+    if (!checkLendingProtocolDependencies(ctx.rules, ctx.tx))
+        return false;
+
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        (!ctx.rules.enabled(featureCredentials) || !ctx.rules.enabled(fixCleanup3_2_0)))
+        return false;
+
+    return true;
 }
 
 NotTEC
@@ -48,6 +57,12 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
         {
             return temMALFORMED;
         }
+    }
+
+    if (ctx.rules.enabled(fixCleanup3_2_0))
+    {
+        if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+            return err;
     }
 
     return tesSUCCESS;
@@ -98,6 +113,16 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Cannot transfer a non-transferable Asset
     if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
         return ret;
+
+    // Validate credentials (if any) before canWithdraw, since canWithdraw may
+    // call credentials::authorizedDepositPreauth which assumes credentials
+    // already exist.
+    if (ctx.view.rules().enabled(fixCleanup3_2_0))
+    {
+        if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j);
+            !isTesSuccess(err))
+            return err;
+    }
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
     // Enforce all the usual asset transfer checks.

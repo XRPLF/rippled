@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -26,6 +27,16 @@
 
 namespace xrpl {
 
+bool
+VaultWithdraw::checkExtraFeatures(PreflightContext const& ctx)
+{
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        (!ctx.rules.enabled(featureCredentials) || !ctx.rules.enabled(fixCleanup3_2_0)))
+        return false;
+
+    return true;
+}
+
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {
@@ -44,6 +55,12 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
         {
             return temMALFORMED;
         }
+    }
+
+    if (ctx.rules.enabled(fixCleanup3_2_0))
+    {
+        if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+            return err;
     }
 
     return tesSUCCESS;
@@ -80,6 +97,16 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
+    // Validate credentials (if any) before canWithdraw, since canWithdraw may
+    // call credentials::authorizedDepositPreauth which assumes credentials
+    // already exist.
+    if (ctx.view.rules().enabled(fixCleanup3_2_0))
+    {
+        if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j);
+            !isTesSuccess(err))
+            return err;
+    }
+
     if (ctx.view.rules().enabled(fixSecurity3_1_3) && amount.asset() == vaultShare)
     {
         // Post-fixSecurity3_1_3: if the user specified shares, convert
@@ -106,7 +133,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
                     account,
                     dstAcct,
                     *maybeAssets,
-                    ctx.tx.isFieldPresent(sfDestinationTag)))
+                    ctx.tx.isFieldPresent(sfDestinationTag),
+                    ctx.tx[~sfCredentialIDs]))
                 return ret;
         }
         catch (std::overflow_error const&)
