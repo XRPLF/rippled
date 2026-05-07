@@ -105,8 +105,10 @@ CredentialAccept::doApply()
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
+    if (!sleCred)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (checkExpired(sleCred, view().header().parentCloseTime))
+    if (checkExpired(*sleCred, view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
@@ -129,6 +131,7 @@ CredentialAccept::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -139,6 +142,7 @@ CredentialAccept::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl
