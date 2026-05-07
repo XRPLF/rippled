@@ -1470,28 +1470,10 @@ accountSendExact(
     return tesSUCCESS;
 }
 
-TER
-rejectIfSubUlpAtCoarsestScale(
-    Asset const& asset,
-    STAmount const& amount,
-    std::initializer_list<Number> references,
-    std::string_view context,
-    beast::Journal j)
+bool
+roundsToZeroAtScale(Asset const& asset, STAmount const& amount, int scale)
 {
-    XRPL_ASSERT(
-        references.size() > 0,
-        "xrpl::rejectIfSubUlpAtCoarsestScale : at least one reference field");
-    int coarsestScale = std::numeric_limits<int>::min();
-    for (auto const& ref : references)
-        coarsestScale = std::max(coarsestScale, scale(ref, asset));
-
-    if (roundToAsset(asset, amount, coarsestScale).signum() == 0)
-    {
-        JLOG(j.warn()) << context << ": amount " << amount.getFullText()
-                       << " is sub-ULP at coarsest scale " << coarsestScale;
-        return tecPRECISION_LOSS;
-    }
-    return tesSUCCESS;
+    return roundToAsset(asset, amount, scale).signum() == 0;
 }
 
 TER

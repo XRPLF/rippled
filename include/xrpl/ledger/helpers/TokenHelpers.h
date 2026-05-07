@@ -295,23 +295,16 @@ accountSendExact(
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
     AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 
-/** Reject `amount` if it is sub-ULP at the coarsest scale among the supplied
- *  reference accounting fields. Used by transactor preclaims to surface
- *  "the requested amount is too small to be representable on this rail" as
- *  a friendly tecPRECISION_LOSS instead of letting the operation reach
- *  finalize and fire tecINVARIANT_FAILED.
- *
- *  The coarsest scale is `max(scale(ref, asset))` over `references`. If
- *  `roundToAsset(asset, amount, coarsestScale).signum() == 0`, returns
- *  tecPRECISION_LOSS with `context` in the warn log; otherwise tesSUCCESS.
+/** Returns true iff `amount` rounds to zero at `scale` for `asset`. Used
+ *  by transactor preclaims to surface "the requested amount is too small
+ *  to be representable on this rail" as a friendly tecPRECISION_LOSS
+ *  instead of letting the operation reach finalize and fire
+ *  tecINVARIANT_FAILED. Caller picks the scale (typically the scale of
+ *  the coarsest accounting field on the rail) and produces the log
+ *  message and TER.
  */
-[[nodiscard]] TER
-rejectIfSubUlpAtCoarsestScale(
-    Asset const& asset,
-    STAmount const& amount,
-    std::initializer_list<Number> references,
-    std::string_view context,
-    beast::Journal j);
+[[nodiscard]] bool
+roundsToZeroAtScale(Asset const& asset, STAmount const& amount, int scale);
 
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
 /** Like accountSend, except one account is sending multiple payments (with the

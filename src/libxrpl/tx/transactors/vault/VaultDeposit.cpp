@@ -141,14 +141,15 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     // as tecINVARIANT_FAILED. Surface it here as a friendly tecPRECISION_LOSS.
     if (ctx.view.rules().enabled(fixCleanup3_2_0))
     {
-        if (auto const ter = rejectIfSubUlpAtCoarsestScale(
-                vaultAsset,
-                assets,
-                {vault->at(sfAssetsTotal), vault->at(sfAssetsAvailable)},
-                "VaultDeposit",
-                ctx.j);
-            !isTesSuccess(ter))
-            return ter;
+        // sfAssetsAvailable <= sfAssetsTotal, so scale(sfAssetsTotal) is
+        // already the coarsest of the two accounting fields.
+        int const vaultScale = scale(vault->at(sfAssetsTotal), vaultAsset);
+        if (roundsToZeroAtScale(vaultAsset, assets, vaultScale))
+        {
+            JLOG(ctx.j.warn()) << "VaultDeposit: amount " << assets.getFullText()
+                               << " is sub-ULP at vault scale " << vaultScale;
+            return tecPRECISION_LOSS;
+        }
     }
 
     return tesSUCCESS;

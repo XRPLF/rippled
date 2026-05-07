@@ -159,14 +159,13 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // tecPRECISION_LOSS instead of letting it silently destroy value.
     if (ctx.view.rules().enabled(fixCleanup3_2_0))
     {
-        if (auto const ter = rejectIfSubUlpAtCoarsestScale(
-                vaultAsset,
-                amount,
-                {sleBroker->at(sfCoverAvailable)},
-                "LoanBrokerCoverWithdraw",
-                ctx.j);
-            !isTesSuccess(ter))
-            return ter;
+        int const coverScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
+        if (roundsToZeroAtScale(vaultAsset, amount, coverScale))
+        {
+            JLOG(ctx.j.warn()) << "LoanBrokerCoverWithdraw: amount " << amount.getFullText()
+                               << " is sub-ULP at cover scale " << coverScale;
+            return tecPRECISION_LOSS;
+        }
     }
 
     return tesSUCCESS;

@@ -149,14 +149,15 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     // resulting asset amount is at the rail's scale by construction.
     if (ctx.view.rules().enabled(fixCleanup3_2_0) && amount.asset() == vaultAsset)
     {
-        if (auto const ter = rejectIfSubUlpAtCoarsestScale(
-                vaultAsset,
-                amount,
-                {vault->at(sfAssetsTotal), vault->at(sfAssetsAvailable)},
-                "VaultWithdraw",
-                ctx.j);
-            !isTesSuccess(ter))
-            return ter;
+        // sfAssetsAvailable <= sfAssetsTotal, so scale(sfAssetsTotal) is
+        // already the coarsest of the two accounting fields.
+        int const vaultScale = scale(vault->at(sfAssetsTotal), vaultAsset);
+        if (roundsToZeroAtScale(vaultAsset, amount, vaultScale))
+        {
+            JLOG(ctx.j.warn()) << "VaultWithdraw: amount " << amount.getFullText()
+                               << " is sub-ULP at vault scale " << vaultScale;
+            return tecPRECISION_LOSS;
+        }
     }
 
     return tesSUCCESS;
