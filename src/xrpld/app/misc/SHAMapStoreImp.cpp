@@ -13,6 +13,7 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Scheduler.h>
@@ -26,21 +27,16 @@
 #include <boost/algorithm/string/predicate.hpp>
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-#include <iomanip>
 #include <ios>
 #include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <random>
-#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <system_error>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -475,31 +471,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     else
     {
-        std::filesystem::path const p = get(section, "path");
-        std::random_device rd;
-        constexpr std::size_t kMAX_ATTEMPTS = 100;
-        for (std::size_t attempt = 0; attempt < kMAX_ATTEMPTS; ++attempt)
-        {
-            std::ostringstream oss;
-            oss << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8) << rd();
-            auto const candidate =
-                std::filesystem::path((p / dbPrefix_).string() + "." + oss.str());
-            std::error_code existsEc;
-            bool const candidateExists = std::filesystem::exists(candidate, existsEc);
-            if (existsEc)
-            {
-                Throw<std::runtime_error>(
-                    "Unable to check rotating backend path '" + candidate.string() +
-                    "': " + existsEc.message());
-            }
-            if (!candidateExists)
-            {
-                newPath = candidate;
-                break;
-            }
-        }
-        if (newPath.empty())
-            Throw<std::runtime_error>("Unable to generate a unique rotating backend path");
+        newPath = beast::uniqueRandomPath(get(section, "path"), 100, dbPrefix_ + ".");
     }
     section.set("path", newPath.string());
 
