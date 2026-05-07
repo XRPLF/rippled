@@ -143,7 +143,7 @@ Bootcache::onSuccess(beast::IP::Endpoint const& endpoint)
         ++entry.valence();
         map_.erase(result.first);
         result = map_.insert(value_type(endpoint, entry));
-        XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::on_success : endpoint inserted");
+        XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::onSuccess : endpoint inserted");
     }
     Entry const& entry(result.first->right);
     JLOG(journal_.info()) << beast::Leftw(18) << "Bootcache connect " << endpoint << " with "
@@ -166,7 +166,7 @@ Bootcache::onFailure(beast::IP::Endpoint const& endpoint)
         --entry.valence();
         map_.erase(result.first);
         result = map_.insert(value_type(endpoint, entry));
-        XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::on_failure : endpoint inserted");
+        XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::onFailure : endpoint inserted");
     }
     Entry const& entry(result.first->right);
     auto const n(std::abs(entry.valence()));
