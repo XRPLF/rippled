@@ -60,12 +60,12 @@ private:
     void
     recordBalanceChanges(SLE const& after, STAmount const& balanceChange);
 
-    std::shared_ptr<SLE const>
-    findIssuer(AccountID const& issuerID, ReadView const& view);
+    SLE const*
+    findIssuerAmongModified(AccountID const& issuerID) const;
 
     static bool
     validateIssuerChanges(
-        std::shared_ptr<SLE const> const& issuer,
+        SLE const& issuer,
         IssuerChanges const& changes,
         STTx const& tx,
         beast::Journal const& j,

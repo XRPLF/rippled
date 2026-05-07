@@ -79,10 +79,20 @@ TransfersNotFrozen::finalize(
 
     for (auto const& [issue, changes] : balanceChanges_)
     {
-        auto const issuerSle = findIssuer(issue.account, view);
+        // First check among modified entries (no view read needed), then fall
+        // back to the base view. Keep the shared_ptr alive for the duration of
+        // the loop body so the raw pointer remains valid.
+        SLE const* issuerPtr = findIssuerAmongModified(issue.account);
+        std::shared_ptr<SLE const> issuerFromView;
+        if (!issuerPtr)
+        {
+            issuerFromView = view.read(keylet::account(issue.account));
+            issuerPtr = issuerFromView.get();
+        }
+
         // It should be impossible for the issuer to not be found, but check
         // just in case so xrpld doesn't crash in release.
-        if (!issuerSle)
+        if (!issuerPtr)
         {
             // The comment above starting with "assert(enforce)" explains this
             // assert.
@@ -97,7 +107,7 @@ TransfersNotFrozen::finalize(
             continue;
         }
 
-        if (!validateIssuerChanges(issuerSle, changes, tx, j, enforce))
+        if (!validateIssuerChanges(*issuerPtr, changes, tx, j, enforce))
         {
             return false;
         }
@@ -192,36 +202,23 @@ TransfersNotFrozen::recordBalanceChanges(
         {.line = &after, .balanceChangeSign = -balanceChangeSign});
 }
 
-std::shared_ptr<SLE const>
-TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
+SLE const*
+TransfersNotFrozen::findIssuerAmongModified(AccountID const& issuerID) const
 {
     if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
-    {
-        // The raw pointer is valid for the lifetime of the invariant check:
-        // the apply view keeps the SLE alive until finalize completes. We
-        // use the aliasing constructor to produce a non-owning shared_ptr so
-        // that callers can use the existing shared_ptr-based API without
-        // taking a copy or changing the calling convention.
-        return std::shared_ptr<SLE const>(std::shared_ptr<SLE const>{}, it->second);
-    }
-
-    return view.read(keylet::account(issuerID));
+        return it->second;
+    return nullptr;
 }
 
 bool
 TransfersNotFrozen::validateIssuerChanges(
-    std::shared_ptr<SLE const> const& issuer,
+    SLE const& issuer,
     IssuerChanges const& changes,
     STTx const& tx,
     beast::Journal const& j,
     bool enforce)
 {
-    if (!issuer)
-    {
-        return false;
-    }
-
-    bool const globalFreeze = issuer->isFlag(lsfGlobalFreeze);
+    bool const globalFreeze = issuer.isFlag(lsfGlobalFreeze);
     if (changes.receivers.empty() || changes.senders.empty())
     {
         /* If there are no receivers, then the holder(s) are returning
@@ -238,7 +235,7 @@ TransfersNotFrozen::validateIssuerChanges(
     {
         for (auto const& change : actors)
         {
-            bool const high = change.line->at(sfLowLimit).getIssuer() == issuer->at(sfAccount);
+            bool const high = change.line->at(sfLowLimit).getIssuer() == issuer.at(sfAccount);
 
             if (!validateFrozenState(change, high, tx, j, enforce, globalFreeze))
             {

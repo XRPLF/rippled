@@ -88,6 +88,9 @@ ApplyStateTable::visit(
 {
     for (auto& item : items_)
     {
+        if (!item.second.second)
+            Throw<std::logic_error>("ApplyStateTable::visit: null SLE");
+
         switch (item.second.first)
         {
             case Action::Erase:
