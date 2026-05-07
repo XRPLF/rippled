@@ -692,6 +692,7 @@ LoanPay::doApply()
         // rounding discrepancies without making the result meaningless. Cap the scale at
         // STAmount::kMAX_OFFSET, just in case the numbers are all very large.
         std::vector<int> exponents;
+        exponents.reserve(6);
 
         for (auto const& a : {
                  accountBalanceBefore,
