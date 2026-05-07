@@ -475,14 +475,14 @@ OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
 
     {
         auto const result = peers_.emplace(peer->slot(), peer);
-        XRPL_ASSERT(result.second, "xrpl::OverlayImpl::add_active : peer is inserted");
+        XRPL_ASSERT(result.second, "xrpl::OverlayImpl::addActive : peer is inserted");
         (void)result.second;
     }
 
     {
         auto const result = ids_.emplace(
             std::piecewise_construct, std::make_tuple(peer->id()), std::make_tuple(peer));
-        XRPL_ASSERT(result.second, "xrpl::OverlayImpl::add_active : peer ID is inserted");
+        XRPL_ASSERT(result.second, "xrpl::OverlayImpl::addActive : peer ID is inserted");
         (void)result.second;
     }
 

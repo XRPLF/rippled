@@ -287,7 +287,7 @@ quality(Keylet const& k, std::uint64_t q) noexcept
 Keylet
 NextT::operator()(Keylet const& k) const
 {
-    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::next_t::operator() : valid input type");
+    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::NextT::operator() : valid input type");
     return {ltDIR_NODE, getQualityNext(k.key)};
 }
 

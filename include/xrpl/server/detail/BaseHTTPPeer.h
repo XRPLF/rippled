@@ -30,7 +30,7 @@ namespace xrpl {
 
 /** Represents an active connection. */
 template <class Handler, class Impl>
-class BaseHTTPPeer : public IoList::Work, public Session
+class BaseHTTPPeer : public IOList::Work, public Session
 {
 protected:
     using clock_type = std::chrono::system_clock;
