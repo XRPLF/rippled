@@ -9,6 +9,7 @@
 #include <ostream>
 #include <set>
 #include <string>
+#include <unordered_map>
 
 namespace xrpl {
 
@@ -475,7 +476,7 @@ public:
         auto minMantissa,
         auto maxMantissa,
         Integral64 T = std::decay_t<decltype(minMantissa)>,
-        Integral64 TMax = std::decay_t<decltype(minMantissa)>>
+        Integral64 TMax = std::decay_t<decltype(maxMantissa)>>
     [[nodiscard]]
     std::pair<T, int>
     normalizeToRange() const;
