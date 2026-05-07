@@ -121,8 +121,7 @@ private:
             case MantissaScale::Large:
                 return 1'000'000'000'000'000'000ULL;
             default:
-                // Since this can never be called outside a non-constexpr
-                // context, this throw assures that the build fails if an
+                // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
                 throw std::runtime_error("Unknown mantissa scale");
         }
@@ -139,8 +138,7 @@ private:
             case MantissaScale::Large:
                 return CuspRoundingFix::Enabled;
             default:
-                // Since this can never be called outside a non-constexpr
-                // context, this throw assures that the build fails if an
+                // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
                 throw std::runtime_error("Unknown mantissa scale");
         }

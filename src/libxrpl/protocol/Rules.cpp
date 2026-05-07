@@ -42,7 +42,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // The improved accuracy that will come from enabling large
     // mantissas is a goal separate from SAV and LP. It was originally
     // only tied to those two amendments to avoid needing a new
-    // amendment of it's own, and because they require that behavior.
+    // amendment of its own, and because they require that behavior.
     // Because fixCleanup3_2_0 fixes a separate bug related to the large
     // mantissas, that can take precedence and activate the large
     // mantissas even in the absence of the other two amendments.
