@@ -1909,7 +1909,7 @@ class Delegate_test : public beast::unit_test::Suite
         auto const amt = 100;
 
         // alice can sign as a multisigner for bob
-        env(pay(alice, carol, XRP(100)), fee(XRP(10)), delegate::as(bob), msig(alice, daria));
+        env(pay(alice, carol, XRP(100)), Fee(XRP(10)), delegate::As(bob), Msig(alice, daria));
         env.close();
 
         BEAST_EXPECT(env.balance(alice) == aliceBalance - XRP(amt));
@@ -1917,7 +1917,7 @@ class Delegate_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.balance(carol) == carolBalance + XRP(amt));
 
         // alice can not sign as a multisigner if she sent the transaction by herself.
-        env(pay(alice, carol, XRP(100)), fee(XRP(10)), msig(alice, daria), ter(telENV_RPC_FAILED));
+        env(pay(alice, carol, XRP(100)), Fee(XRP(10)), Msig(alice, daria), Ter(telENV_RPC_FAILED));
         env.close();
 
         // Get new balances
@@ -1929,10 +1929,10 @@ class Delegate_test : public beast::unit_test::Suite
         // of alice. STTx::checkMultiSign catches this at the local-check stage, so the jtx
         // framework returns telENV_RPC_FAILED.
         env(pay(alice, carol, XRP(50)),
-            fee(XRP(10)),
-            delegate::as(bob),
-            msig(alice, bob),
-            ter(telENV_RPC_FAILED));
+            Fee(XRP(10)),
+            delegate::As(bob),
+            Msig(alice, bob),
+            Ter(telENV_RPC_FAILED));
         env.close();
         BEAST_EXPECT(env.balance(alice) == aliceBalance);
         BEAST_EXPECT(env.balance(bob) == bobBalance);
@@ -1964,8 +1964,8 @@ class Delegate_test : public beast::unit_test::Suite
 
         auto const baseFee = env.current()->fees().base;
 
-        auto makeDelegateTx = [&]() -> Json::Value {
-            Json::Value jv;
+        auto makeDelegateTx = [&]() -> json::Value {
+            json::Value jv;
             jv[jss::tx_json][jss::Account] = alice.human();
             jv[jss::tx_json][sfDelegate.jsonName] = bob.human();
             jv[jss::tx_json][jss::TransactionType] = jss::Payment;
@@ -1979,29 +1979,29 @@ class Delegate_test : public beast::unit_test::Suite
 
         // The delegator alice and daria both sign via sign_for, which is valid
         {
-            Json::Value jv = makeDelegateTx();
+            json::Value jv = makeDelegateTx();
             jv[jss::account] = alice.human();
             jv[jss::secret] = alice.name();
             auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
-            Json::Value jv2;
+            json::Value jv2;
             jv2[jss::tx_json] = jrr[jss::tx_json];
             jv2[jss::account] = daria.human();
             jv2[jss::secret] = daria.name();
             jrr = env.rpc("json", "sign_for", to_string(jv2))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
-            Json::Value jv_submit;
-            jv_submit[jss::tx_json] = jrr[jss::tx_json];
-            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
+            json::Value jvSubmit;
+            jvSubmit[jss::tx_json] = jrr[jss::tx_json];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jvSubmit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
             env.close();
         }
 
         // The delegated account bob attempts sign_for, will be rejected.
         {
-            Json::Value jv = makeDelegateTx();
+            json::Value jv = makeDelegateTx();
             jv[jss::account] = bob.human();
             jv[jss::secret] = bob.name();
             auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
