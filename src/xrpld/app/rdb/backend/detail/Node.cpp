@@ -39,7 +39,7 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/format/free_funcs.hpp>
-#include <boost/optional/optional.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
 #include <boost/system/detail/error_code.hpp>
 
 #include <soci/blob.h>
@@ -87,7 +87,7 @@ toString(TableType type)
             return "AccountTransactions";
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("xrpl::detail::to_string : invalid TableType");
+            UNREACHABLE("xrpl::detail::toString : invalid TableType");
             return "Unknown";
             // LCOV_EXCL_STOP
     }
