@@ -361,7 +361,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
             Throw<std::runtime_error>("Error setting grpc server address");
         }
 
-        auto const optSecureGateway = section.get("secureGateway");
+        auto const optSecureGateway = section.get("secure_gateway");
         if (optSecureGateway)
         {
             try
