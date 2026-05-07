@@ -287,7 +287,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
 
     populate(section, "admin", log, port.admin_nets_v4, port.admin_nets_v6);
     populate(
-        section, "secureGateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
+        section, "secure_gateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
 
     set(port.user, "user", section);
     set(port.password, "password", section);
