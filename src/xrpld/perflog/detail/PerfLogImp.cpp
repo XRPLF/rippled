@@ -483,7 +483,7 @@ setupPerfLog(Section const& section, std::filesystem::path const& configDir)
         setup.perfLog = std::filesystem::path(perfLog);
         if (setup.perfLog.is_relative())
         {
-            setup.perfLog = configDir / setup.perfLog;
+            setup.perfLog = std::filesystem::absolute(configDir / setup.perfLog);
         }
     }
 

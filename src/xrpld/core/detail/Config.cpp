@@ -1143,7 +1143,7 @@ Config::getDebugLogFile() const
     {
         // Unless an absolute path for the log file is specified, the
         // path is relative to the config file directory.
-        logFile = CONFIG_DIR / logFile;
+        logFile = std::filesystem::absolute(CONFIG_DIR / logFile);
     }
 
     if (!logFile.empty())
