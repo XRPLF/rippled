@@ -247,6 +247,12 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(err))
         return err;
 
+    // Check deposit preauth before the expensive ZK proof verification.
+    // Uses read-only view.
+    if (auto const err = checkDepositPreauth(ctx.tx, ctx.view, account, destination, sleDst, ctx.j);
+        !isTesSuccess(err))
+        return err;
+
     return verifySendProofs(ctx, sleSenderMPToken, sleDestinationMPToken, sleIssuance);
 }
 
@@ -264,8 +270,9 @@ ConfidentialMPTSend::doApply()
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleDestAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto err = verifyDepositPreauth(
-            ctx_.tx, ctx_.view(), account_, destination, sleDestAcct, ctx_.journal);
+    // Deposit preauth authorization was already verified in preclaim.
+    // Remove any expired credentials.
+    if (auto err = cleanupExpiredCredentials(ctx_.tx, ctx_.view(), ctx_.journal);
         !isTesSuccess(err))
         return err;
 
