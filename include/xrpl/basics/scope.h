@@ -205,7 +205,7 @@ class ScopeUnlock
 public:
     explicit ScopeUnlock(std::unique_lock<Mutex>& lock) noexcept(true) : plock_(&lock)
     {
-        XRPL_ASSERT(plock_->owns_lock(), "xrpl::scope_unlock::scope_unlock : mutex must be locked");
+        XRPL_ASSERT(plock_->owns_lock(), "xrpl::ScopeUnlock::ScopeUnlock : mutex must be locked");
         plock_->unlock();
     }
 
