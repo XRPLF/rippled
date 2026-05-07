@@ -52,7 +52,7 @@ enum WasmTypes { WT_I32, WT_I64 };
 
 struct WasmImportFunc
 {
-    std::string name;
+    std::string_view name;
     std::optional<WasmTypes> result;
     std::vector<WasmTypes> params;
     // void* udata = nullptr;
@@ -62,11 +62,12 @@ struct WasmImportFunc
 };
 
 typedef std::pair<void*, WasmImportFunc> WasmUserData;
-typedef std::vector<WasmUserData> ImportVec;
+typedef std::unordered_map<std::string_view, WasmUserData> ImportVec;
 
 #define WASM_IMPORT_FUNC(v, f, ...) \
     WasmImpFunc<f##_proto>(v, #f, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
 
+// n - string literal name, must have static lifetime
 #define WASM_IMPORT_FUNC2(v, f, n, ...) \
     WasmImpFunc<f##_proto>(v, n, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
 
@@ -123,6 +124,7 @@ WasmImpFuncHelper(WasmImportFunc& e)
     // WasmImpWrap(e, std::forward<F>(f));
 }
 
+// imp_name - string literal, must have static lifetime
 template <typename F>
 void
 WasmImpFunc(
@@ -137,7 +139,7 @@ WasmImpFunc(
     e.wrap = f_wrap;
     e.gas = gas;
     WasmImpFuncHelper<F>(e);
-    v.push_back(std::make_pair(data, std::move(e)));
+    v.emplace(imp_name, std::make_pair(data, std::move(e)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

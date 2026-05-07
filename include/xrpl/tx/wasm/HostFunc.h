@@ -66,16 +66,10 @@ Expected<int64_t, HostFunctionError>
 floatToIntImpl(Slice const& x, int32_t mode);
 
 Expected<FloatPair, HostFunctionError>
-floatToMantissaAndExponentImpl(Slice const& x);
+floatToMantExpImpl(Slice const& x);
 
 Expected<Bytes, HostFunctionError>
-floatNegateImpl(Slice const& x);
-
-Expected<Bytes, HostFunctionError>
-floatAbsImpl(Slice const& x);
-
-Expected<Bytes, HostFunctionError>
-floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode);
+floatFromMantExpImpl(int64_t mantissa, int32_t exponent, int32_t mode);
 
 Expected<int32_t, HostFunctionError>
 floatCompareImpl(Slice const& x, Slice const& y);
@@ -97,9 +91,6 @@ floatRootImpl(Slice const& x, int32_t n, int32_t mode);
 
 Expected<Bytes, HostFunctionError>
 floatPowerImpl(Slice const& x, int32_t n, int32_t mode);
-
-Expected<Bytes, HostFunctionError>
-floatLogImpl(Slice const& x, int32_t mode);
 
 }  // namespace wasm_float
 
@@ -480,25 +471,13 @@ struct HostFunctions
     }
 
     virtual Expected<FloatPair, HostFunctionError>
-    floatToMantissaAndExponent(Slice const& x) const
+    floatToMantExp(Slice const& x) const
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    floatNegate(Slice const& x) const
-    {
-        return Unexpected(HostFunctionError::INTERNAL);
-    }
-
-    virtual Expected<Bytes, HostFunctionError>
-    floatAbs(Slice const& x) const
-    {
-        return Unexpected(HostFunctionError::INTERNAL);
-    }
-
-    virtual Expected<Bytes, HostFunctionError>
-    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const
+    floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -541,12 +520,6 @@ struct HostFunctions
 
     virtual Expected<Bytes, HostFunctionError>
     floatPower(Slice const& x, int32_t n, int32_t mode) const
-    {
-        return Unexpected(HostFunctionError::INTERNAL);
-    }
-
-    virtual Expected<Bytes, HostFunctionError>
-    floatLog(Slice const& x, int32_t mode) const
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

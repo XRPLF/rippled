@@ -289,7 +289,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getLedgerSqn();
             WasmValVec params(2), result(1);
             auto* trap =
-                ww(getLedgerSqn_wrap, &import[0], params, result, 0, sizeof(std::uint32_t));
+                ww(getLedgerSqn_wrap,
+                   &import.at("get_ledger_sqn"),
+                   params,
+                   result,
+                   0,
+                   sizeof(std::uint32_t));
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
@@ -317,7 +322,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getParentLedgerTime();
             WasmValVec params(2), result(1);
             auto* trap =
-                ww(getParentLedgerTime_wrap, &import[1], params, result, 0, sizeof(std::uint32_t));
+                ww(getParentLedgerTime_wrap,
+                   &import.at("get_parent_ledger_time"),
+                   params,
+                   result,
+                   0,
+                   sizeof(std::uint32_t));
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
@@ -347,7 +357,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getParentLedgerHash();
             WasmValVec params(2), result(1);
             auto* trap =
-                ww(getParentLedgerHash_wrap, &import[2], params, result, 0, uint256::bytes);
+                ww(getParentLedgerHash_wrap,
+                   &import.at("get_parent_ledger_hash"),
+                   params,
+                   result,
+                   0,
+                   uint256::bytes);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == uint256::bytes);
@@ -378,7 +393,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getBaseFee();
         {
             WasmValVec params(2), result(1);
-            auto* trap = ww(getBaseFee_wrap, &import[3], params, result, 0, sizeof(std::uint32_t));
+            auto* trap =
+                ww(getBaseFee_wrap,
+                   &import.at("get_base_fee"),
+                   params,
+                   result,
+                   0,
+                   sizeof(std::uint32_t));
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
@@ -409,7 +430,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             WasmValVec params(2), result(1);
             vrt.setBytes(0, amendmentId.data(), uint256::bytes);
-            auto* trap = ww(isAmendmentEnabled_wrap, &import[4], params, result, 0, uint256::bytes);
+            auto* trap =
+                ww(isAmendmentEnabled_wrap,
+                   &import.at("amendment_enabled"),
+                   params,
+                   result,
+                   0,
+                   uint256::bytes);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 1);
@@ -421,7 +448,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             vrt.setBytes(0, amendmentName.data(), amendmentName.size());
             auto* trap =
-                ww(isAmendmentEnabled_wrap, &import[4], params, result, 0, amendmentName.size());
+                ww(isAmendmentEnabled_wrap,
+                   &import.at("amendment_enabled"),
+                   params,
+                   result,
+                   0,
+                   amendmentName.size());
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 1);
@@ -432,7 +464,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             WasmValVec params(2), result(1);
             vrt.setBytes(0, fakeId.data(), uint256::bytes);
-            auto* trap = ww(isAmendmentEnabled_wrap, &import[4], params, result, 0, uint256::bytes);
+            auto* trap =
+                ww(isAmendmentEnabled_wrap,
+                   &import.at("amendment_enabled"),
+                   params,
+                   result,
+                   0,
+                   uint256::bytes);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 0);
@@ -444,7 +482,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             vrt.setBytes(0, fakeName.data(), fakeName.size());
             auto* trap =
-                ww(isAmendmentEnabled_wrap, &import[4], params, result, 0, fakeName.size());
+                ww(isAmendmentEnabled_wrap,
+                   &import.at("amendment_enabled"),
+                   params,
+                   result,
+                   0,
+                   fakeName.size());
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 0);
@@ -474,7 +517,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
                 auto* trap =
-                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, -1);
+                    ww(cacheLedgerObj_wrap,
+                       &import.at("cache_ledger_obj"),
+                       params,
+                       result,
+                       0,
+                       uint256::bytes,
+                       -1);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -487,7 +536,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
                 auto* trap =
-                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 257);
+                    ww(cacheLedgerObj_wrap,
+                       &import.at("cache_ledger_obj"),
+                       params,
+                       result,
+                       0,
+                       uint256::bytes,
+                       257);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -500,7 +555,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 vrt.setBytes(0, dummyEscrow.key.data(), uint256::bytes);
                 auto* trap =
-                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 0);
+                    ww(cacheLedgerObj_wrap,
+                       &import.at("cache_ledger_obj"),
+                       params,
+                       result,
+                       0,
+                       uint256::bytes,
+                       0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -513,7 +574,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
                 auto* trap =
-                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 0);
+                    ww(cacheLedgerObj_wrap,
+                       &import.at("cache_ledger_obj"),
+                       params,
+                       result,
+                       0,
+                       uint256::bytes,
+                       0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(result[0].of.i32 == 1);
@@ -526,7 +593,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
                 auto* trap =
-                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, i);
+                    ww(cacheLedgerObj_wrap,
+                       &import.at("cache_ledger_obj"),
+                       params,
+                       result,
+                       0,
+                       uint256::bytes,
+                       i);
 
                 if (!(BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                       BEAST_EXPECTS(
@@ -541,7 +614,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
                 auto* trap =
-                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 0);
+                    ww(cacheLedgerObj_wrap,
+                       &import.at("cache_ledger_obj"),
+                       params,
+                       result,
+                       0,
+                       uint256::bytes,
+                       0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -563,7 +642,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
                 auto* trap =
-                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 0);
+                    ww(cacheLedgerObj_wrap,
+                       &import.at("cache_ledger_obj"),
+                       params,
+                       result,
+                       0,
+                       uint256::bytes,
+                       0);
 
                 if (!(BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                       BEAST_EXPECTS(
@@ -578,7 +663,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
                 auto* trap =
-                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 0);
+                    ww(cacheLedgerObj_wrap,
+                       &import.at("cache_ledger_obj"),
+                       params,
+                       result,
+                       0,
+                       uint256::bytes,
+                       0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -624,7 +715,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 auto* trap =
                     ww(getTxField_wrap,
-                       &import[6],
+                       &import.at("get_tx_field"),
                        params,
                        result,
                        sfAccount.getCode(),
@@ -642,7 +733,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 auto* trap =
                     ww(getTxField_wrap,
-                       &import[6],
+                       &import.at("get_tx_field"),
                        params,
                        result,
                        sfOwner.getCode(),
@@ -660,7 +751,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 auto* trap =
                     ww(getTxField_wrap,
-                       &import[6],
+                       &import.at("get_tx_field"),
                        params,
                        result,
                        sfTransactionType.getCode(),
@@ -677,8 +768,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getTxField(sfOfferSequence);
             {
                 WasmValVec params(3), result(1);
-                auto* trap = ww(
-                    getTxField_wrap, &import[6], params, result, sfOfferSequence.getCode(), 0, 256);
+                auto* trap =
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfOfferSequence.getCode(),
+                       0,
+                       256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(result[0].of.i32 > 0);
@@ -690,8 +787,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getTxField(sfDestination);
             {
                 WasmValVec params(3), result(1);
-                auto* trap = ww(
-                    getTxField_wrap, &import[6], params, result, sfDestination.getCode(), 0, 256);
+                auto* trap =
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfDestination.getCode(),
+                       0,
+                       256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -703,7 +806,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(getTxField_wrap, &import[6], params, result, sfMemos.getCode(), 0, 256);
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfMemos.getCode(),
+                       0,
+                       256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -714,8 +823,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getTxField(sfCredentialIDs);
             {
                 WasmValVec params(3), result(1);
-                auto* trap = ww(
-                    getTxField_wrap, &import[6], params, result, sfCredentialIDs.getCode(), 0, 256);
+                auto* trap =
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfCredentialIDs.getCode(),
+                       0,
+                       256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
                 BEAST_EXPECTS(
@@ -727,7 +842,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(getTxField_wrap, &import[6], params, result, sfInvalid.getCode(), 0, 256);
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfInvalid.getCode(),
+                       0,
+                       256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -739,7 +860,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(getTxField_wrap, &import[6], params, result, sfGeneric.getCode(), 0, 256);
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfGeneric.getCode(),
+                       0,
+                       256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -766,7 +893,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(getTxField_wrap, &import[6], params, result, sfAsset.getCode(), 0, 256);
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfAsset.getCode(),
+                       0,
+                       256);
 
                 std::vector<std::uint8_t> const expectedAsset(20, 0);
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
@@ -780,7 +913,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(getTxField_wrap, &import[6], params, result, sfAsset2.getCode(), 0, 256);
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfAsset2.getCode(),
+                       0,
+                       256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(result[0].of.i32 > 0);
@@ -809,7 +948,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(getTxField_wrap, &import[6], params, result, sfAsset.getCode(), 0, 256);
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfAsset.getCode(),
+                       0,
+                       256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
                 if (BEAST_EXPECT(result[0].of.i32 > 0))
@@ -824,7 +969,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(getTxField_wrap, &import[6], params, result, sfAsset2.getCode(), 0, 256);
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfAsset2.getCode(),
+                       0,
+                       256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
                 if (BEAST_EXPECT(result[0].of.i32 > 0))
@@ -853,7 +1004,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(getTxField_wrap, &import[6], params, result, sfAssetScale.getCode(), 0, 256);
+                    ww(getTxField_wrap,
+                       &import.at("get_tx_field"),
+                       params,
+                       result,
+                       sfAssetScale.getCode(),
+                       0,
+                       256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
                 if (BEAST_EXPECT(result[0].of.i32 > 0))
@@ -897,7 +1054,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(3), result(1);
             auto* trap =
                 ww(getCurrentLedgerObjField_wrap,
-                   &import[7],
+                   &import.at("get_current_ledger_obj_field"),
                    params,
                    result,
                    sfAccount.getCode(),
@@ -918,7 +1075,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(3), result(1);
             auto* trap =
                 ww(getCurrentLedgerObjField_wrap,
-                   &import[7],
+                   &import.at("get_current_ledger_obj_field"),
                    params,
                    result,
                    sfAmount.getCode(),
@@ -939,7 +1096,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(3), result(1);
             auto* trap =
                 ww(getCurrentLedgerObjField_wrap,
-                   &import[7],
+                   &import.at("get_current_ledger_obj_field"),
                    params,
                    result,
                    sfPreviousTxnID.getCode(),
@@ -960,7 +1117,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(3), result(1);
             auto* trap =
                 ww(getCurrentLedgerObjField_wrap,
-                   &import[7],
+                   &import.at("get_current_ledger_obj_field"),
                    params,
                    result,
                    sfOwner.getCode(),
@@ -985,7 +1142,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(3), result(1);
                 auto* trap =
                     ww(getCurrentLedgerObjField_wrap,
-                       &import2[7],
+                       &import2.at("get_current_ledger_obj_field"),
                        params,
                        result,
                        sfAccount.getCode(),
@@ -1027,7 +1184,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             WasmValVec params(3), result(1);
             vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
-            auto* trap = ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 1);
+            auto* trap =
+                ww(cacheLedgerObj_wrap,
+                   &import.at("cache_ledger_obj"),
+                   params,
+                   result,
+                   0,
+                   uint256::bytes,
+                   1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 1);
@@ -1036,8 +1200,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getLedgerObjField(1, sfAccount);
         {
             WasmValVec params(4), result(1);
-            auto* trap = ww(
-                getLedgerObjField_wrap, &import[8], params, result, 1, sfAccount.getCode(), 0, 256);
+            auto* trap =
+                ww(getLedgerObjField_wrap,
+                   &import.at("get_ledger_obj_field"),
+                   params,
+                   result,
+                   1,
+                   sfAccount.getCode(),
+                   0,
+                   256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
@@ -1051,8 +1222,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getLedgerObjField(1, sfBalance);
         {
             WasmValVec params(4), result(1);
-            auto* trap = ww(
-                getLedgerObjField_wrap, &import[8], params, result, 1, sfBalance.getCode(), 0, 256);
+            auto* trap =
+                ww(getLedgerObjField_wrap,
+                   &import.at("get_ledger_obj_field"),
+                   params,
+                   result,
+                   1,
+                   sfBalance.getCode(),
+                   0,
+                   256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             if (BEAST_EXPECT(result[0].of.i32 > 0))
@@ -1066,8 +1244,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getLedgerObjField(0, sfAccount);
         {
             WasmValVec params(4), result(1);
-            auto* trap = ww(
-                getLedgerObjField_wrap, &import[8], params, result, 0, sfAccount.getCode(), 0, 256);
+            auto* trap =
+                ww(getLedgerObjField_wrap,
+                   &import.at("get_ledger_obj_field"),
+                   params,
+                   result,
+                   0,
+                   sfAccount.getCode(),
+                   0,
+                   256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -1079,7 +1264,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(getLedgerObjField_wrap,
-                   &import[8],
+                   &import.at("get_ledger_obj_field"),
                    params,
                    result,
                    257,
@@ -1095,8 +1280,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getLedgerObjField(2, sfAccount);
         {
             WasmValVec params(4), result(1);
-            auto* trap = ww(
-                getLedgerObjField_wrap, &import[8], params, result, 2, sfAccount.getCode(), 0, 256);
+            auto* trap =
+                ww(getLedgerObjField_wrap,
+                   &import.at("get_ledger_obj_field"),
+                   params,
+                   result,
+                   2,
+                   sfAccount.getCode(),
+                   0,
+                   256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -1106,8 +1298,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getLedgerObjField(1, sfOwner);
         {
             WasmValVec params(4), result(1);
-            auto* trap = ww(
-                getLedgerObjField_wrap, &import[8], params, result, 1, sfOwner.getCode(), 0, 256);
+            auto* trap =
+                ww(getLedgerObjField_wrap,
+                   &import.at("get_ledger_obj_field"),
+                   params,
+                   result,
+                   1,
+                   sfOwner.getCode(),
+                   0,
+                   256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -1161,7 +1360,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(getTxNestedField_wrap,
-                   &import[9],
+                   &import.at("get_tx_nested_field"),
                    params,
                    result,
                    0,
@@ -1191,7 +1390,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(getTxNestedField_wrap,
-                   &import[9],
+                   &import.at("get_tx_nested_field"),
                    params,
                    result,
                    0,
@@ -1218,7 +1417,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(getTxNestedField_wrap,
-                   &import[9],
+                   &import.at("get_tx_nested_field"),
                    params,
                    result,
                    0,
@@ -1244,7 +1443,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             WasmValVec params(4), result(1);
             auto* trap =
-                ww(getTxNestedField_wrap, &import[9], params, result, 0, sizeof(int32_t), 256, 256);
+                ww(getTxNestedField_wrap,
+                   &import.at("get_tx_nested_field"),
+                   params,
+                   result,
+                   0,
+                   sizeof(int32_t),
+                   256,
+                   256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
@@ -1263,7 +1469,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getTxNestedField(locator);
             auto* trap =
                 ww(getTxNestedField_wrap,
-                   &import[9],
+                   &import.at("get_tx_nested_field"),
                    params,
                    result,
                    0,
@@ -1391,7 +1597,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, locatorVec.data(), 3);
 
             WasmValVec params(4), result(1);
-            auto* trap = ww(getTxNestedField_wrap, &import[9], params, result, 0, 3, 256, 256);
+            auto* trap =
+                ww(getTxNestedField_wrap,
+                   &import.at("get_tx_nested_field"),
+                   params,
+                   result,
+                   0,
+                   3,
+                   256,
+                   256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -1433,7 +1647,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(getCurrentLedgerObjNestedField_wrap,
-                   &import[10],
+                   &import.at("get_current_ledger_obj_nested_field"),
                    params,
                    result,
                    0,
@@ -1458,7 +1672,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getCurrentLedgerObjNestedField(locator);
             auto* trap =
                 ww(getCurrentLedgerObjNestedField_wrap,
-                   &import[10],
+                   &import.at("get_current_ledger_obj_nested_field"),
                    params,
                    result,
                    0,
@@ -1491,8 +1705,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Locator for empty locator
         {
             WasmValVec params(4), result(1);
-            auto* trap = ww(
-                getCurrentLedgerObjNestedField_wrap, &import[10], params, result, 0, 0, 256, 256);
+            auto* trap =
+                ww(getCurrentLedgerObjNestedField_wrap,
+                   &import.at("get_current_ledger_obj_nested_field"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   256,
+                   256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -1506,8 +1727,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, malformedLocatorVec.data(), 3);
 
             WasmValVec params(4), result(1);
-            auto* trap = ww(
-                getCurrentLedgerObjNestedField_wrap, &import[10], params, result, 0, 3, 256, 256);
+            auto* trap =
+                ww(getCurrentLedgerObjNestedField_wrap,
+                   &import.at("get_current_ledger_obj_nested_field"),
+                   params,
+                   result,
+                   0,
+                   3,
+                   256,
+                   256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -1529,7 +1757,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(getCurrentLedgerObjNestedField_wrap,
-                   &import2[10],
+                   &import2.at("get_current_ledger_obj_nested_field"),
                    params,
                    result,
                    0,
@@ -1573,7 +1801,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             WasmValVec params(3), result(1);
             vrt.setBytes(0, signerListKeylet.key.data(), uint256::bytes);
-            auto* trap = ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 1);
+            auto* trap =
+                ww(cacheLedgerObj_wrap,
+                   &import.at("cache_ledger_obj"),
+                   params,
+                   result,
+                   0,
+                   uint256::bytes,
+                   1);
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 1);
         }
@@ -1587,7 +1822,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(getLedgerObjNestedField_wrap,
-                   &import[11],
+                   &import.at("get_ledger_obj_nested_field"),
                    params,
                    result,
                    1,
@@ -1614,7 +1849,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(getLedgerObjNestedField_wrap,
-                   &import[11],
+                   &import.at("get_ledger_obj_nested_field"),
                    params,
                    result,
                    1,
@@ -1641,7 +1876,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(getLedgerObjNestedField_wrap,
-                   &import[11],
+                   &import.at("get_ledger_obj_nested_field"),
                    params,
                    result,
                    1,
@@ -1669,7 +1904,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(getLedgerObjNestedField_wrap,
-                   &import[11],
+                   &import.at("get_ledger_obj_nested_field"),
                    params,
                    result,
                    1,
@@ -1697,7 +1932,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(getLedgerObjNestedField_wrap,
-                   &import[11],
+                   &import.at("get_ledger_obj_nested_field"),
                    params,
                    result,
                    slot,
@@ -1768,7 +2003,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, locatorVec.data(), 3);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(getLedgerObjNestedField_wrap, &import[11], params, result, 1, 0, 3, 256, 256);
+                ww(getLedgerObjNestedField_wrap,
+                   &import.at("get_ledger_obj_nested_field"),
+                   params,
+                   result,
+                   1,
+                   0,
+                   3,
+                   256,
+                   256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -1822,7 +2065,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getTxArrayLen(sfMemos);
         {
             WasmValVec params(1), result(1);
-            auto* trap = ww(getTxArrayLen_wrap, &import[12], params, result, sfMemos.fieldCode);
+            auto* trap =
+                ww(getTxArrayLen_wrap,
+                   &import.at("get_tx_array_len"),
+                   params,
+                   result,
+                   sfMemos.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             if (BEAST_EXPECT(result[0].of.i32 > 0))
@@ -1833,7 +2081,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getTxArrayLen(sfAccount);
         {
             WasmValVec params(1), result(1);
-            auto* trap = ww(getTxArrayLen_wrap, &import[12], params, result, sfAccount.fieldCode);
+            auto* trap =
+                ww(getTxArrayLen_wrap,
+                   &import.at("get_tx_array_len"),
+                   params,
+                   result,
+                   sfAccount.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NO_ARRAY));
@@ -1843,7 +2096,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getTxArrayLen(sfSigners);
         {
             WasmValVec params(1), result(1);
-            auto* trap = ww(getTxArrayLen_wrap, &import[12], params, result, sfSigners.fieldCode);
+            auto* trap =
+                ww(getTxArrayLen_wrap,
+                   &import.at("get_tx_array_len"),
+                   params,
+                   result,
+                   sfSigners.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(
@@ -1855,7 +2113,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             WasmValVec params(1), result(1);
             auto* trap =
-                ww(getTxArrayLen_wrap, &import[12], params, result, sfCredentialIDs.fieldCode);
+                ww(getTxArrayLen_wrap,
+                   &import.at("get_tx_array_len"),
+                   params,
+                   result,
+                   sfCredentialIDs.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             if (BEAST_EXPECT(result[0].of.i32 > 0))
@@ -1891,7 +2153,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(1), result(1);
             auto* trap =
                 ww(getCurrentLedgerObjArrayLen_wrap,
-                   &import[13],
+                   &import.at("get_current_ledger_obj_array_len"),
                    params,
                    result,
                    sfSignerEntries.fieldCode);
@@ -1904,8 +2166,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getCurrentLedgerObjArrayLen(sfMemos);
         {
             WasmValVec params(1), result(1);
-            auto* trap = ww(
-                getCurrentLedgerObjArrayLen_wrap, &import[13], params, result, sfMemos.fieldCode);
+            auto* trap =
+                ww(getCurrentLedgerObjArrayLen_wrap,
+                   &import.at("get_current_ledger_obj_array_len"),
+                   params,
+                   result,
+                   sfMemos.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(
@@ -1916,8 +2182,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.getCurrentLedgerObjArrayLen(sfAccount);
         {
             WasmValVec params(1), result(1);
-            auto* trap = ww(
-                getCurrentLedgerObjArrayLen_wrap, &import[13], params, result, sfAccount.fieldCode);
+            auto* trap =
+                ww(getCurrentLedgerObjArrayLen_wrap,
+                   &import.at("get_current_ledger_obj_array_len"),
+                   params,
+                   result,
+                   sfAccount.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NO_ARRAY));
@@ -1933,8 +2203,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             // auto const len = dummyHfs.getCurrentLedgerObjArrayLen(sfMemos);
             WasmValVec params(1), result(1);
-            auto* trap = ww(
-                getCurrentLedgerObjArrayLen_wrap, &import2[13], params, result, sfMemos.fieldCode);
+            auto* trap =
+                ww(getCurrentLedgerObjArrayLen_wrap,
+                   &import2.at("get_current_ledger_obj_array_len"),
+                   params,
+                   result,
+                   sfMemos.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(
@@ -1970,7 +2244,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             WasmValVec params(3), result(1);
             vrt.setBytes(0, signerListKeylet.key.data(), uint256::bytes);
-            auto* trap = ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 1);
+            auto* trap =
+                ww(cacheLedgerObj_wrap,
+                   &import.at("cache_ledger_obj"),
+                   params,
+                   result,
+                   0,
+                   uint256::bytes,
+                   1);
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 1);
         }
@@ -1980,7 +2261,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             auto* trap =
                 ww(getLedgerObjArrayLen_wrap,
-                   &import[14],
+                   &import.at("get_ledger_obj_array_len"),
                    params,
                    result,
                    1,
@@ -1998,7 +2279,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             auto* trap =
                 ww(getLedgerObjArrayLen_wrap,
-                   &import[14],
+                   &import.at("get_ledger_obj_array_len"),
                    params,
                    result,
                    0,
@@ -2014,7 +2295,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getLedgerObjArrayLen(1, sfAccount);
             WasmValVec params(2), result(1);
             auto* trap =
-                ww(getLedgerObjArrayLen_wrap, &import[14], params, result, 1, sfAccount.fieldCode);
+                ww(getLedgerObjArrayLen_wrap,
+                   &import.at("get_ledger_obj_array_len"),
+                   params,
+                   result,
+                   1,
+                   sfAccount.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NO_ARRAY));
@@ -2026,7 +2312,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             auto* trap =
                 ww(getLedgerObjArrayLen_wrap,
-                   &import[14],
+                   &import.at("get_ledger_obj_array_len"),
                    params,
                    result,
                    2,
@@ -2041,7 +2327,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getLedgerObjArrayLen(1, sfMemos);
             WasmValVec params(2), result(1);
             auto* trap =
-                ww(getLedgerObjArrayLen_wrap, &import[14], params, result, 1, sfMemos.fieldCode);
+                ww(getLedgerObjArrayLen_wrap,
+                   &import.at("get_ledger_obj_array_len"),
+                   params,
+                   result,
+                   1,
+                   sfMemos.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(
@@ -2082,7 +2373,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             auto* trap =
                 ww(getTxNestedArrayLen_wrap,
-                   &import[15],
+                   &import.at("get_tx_nested_array_len"),
                    params,
                    result,
                    0,
@@ -2102,7 +2393,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             auto* trap =
                 ww(getTxNestedArrayLen_wrap,
-                   &import[15],
+                   &import.at("get_tx_nested_array_len"),
                    params,
                    result,
                    0,
@@ -2150,7 +2441,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             auto* trap =
                 ww(getCurrentLedgerObjNestedArrayLen_wrap,
-                   &import[16],
+                   &import.at("get_current_ledger_obj_nested_array_len"),
                    params,
                    result,
                    0,
@@ -2170,7 +2461,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             auto* trap =
                 ww(getCurrentLedgerObjNestedArrayLen_wrap,
-                   &import[16],
+                   &import.at("get_current_ledger_obj_nested_array_len"),
                    params,
                    result,
                    0,
@@ -2200,7 +2491,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             auto* trap =
                 ww(getCurrentLedgerObjNestedArrayLen_wrap,
-                   &import2[16],
+                   &import2.at("get_current_ledger_obj_nested_array_len"),
                    params,
                    result,
                    0,
@@ -2240,7 +2531,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             WasmValVec params(3), result(1);
             vrt.setBytes(0, signerListKeylet.key.data(), uint256::bytes);
-            auto* trap = ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 1);
+            auto* trap =
+                ww(cacheLedgerObj_wrap,
+                   &import.at("cache_ledger_obj"),
+                   params,
+                   result,
+                   0,
+                   uint256::bytes,
+                   1);
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 1);
         }
@@ -2253,7 +2551,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(3), result(1);
             auto* trap =
                 ww(getLedgerObjNestedArrayLen_wrap,
-                   &import[17],
+                   &import.at("get_ledger_obj_nested_array_len"),
                    params,
                    result,
                    1,
@@ -2274,7 +2572,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(3), result(1);
             auto* trap =
                 ww(getLedgerObjNestedArrayLen_wrap,
-                   &import[17],
+                   &import.at("get_ledger_obj_nested_array_len"),
                    params,
                    result,
                    slot,
@@ -2308,7 +2606,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getLedgerObjNestedArrayLen(1, malformedLocator);
             vrt.setBytes(0, locatorVec.data(), 3);
             WasmValVec params(3), result(1);
-            auto* trap = ww(getLedgerObjNestedArrayLen_wrap, &import[17], params, result, 1, 0, 3);
+            auto* trap =
+                ww(getLedgerObjNestedArrayLen_wrap,
+                   &import.at("get_ledger_obj_nested_array_len"),
+                   params,
+                   result,
+                   1,
+                   0,
+                   3);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -2348,7 +2653,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             vrt.setBytes(0, data.data(), data.size());
             WasmValVec params(2), result(1);
-            auto* trap = ww(updateData_wrap, &import[67], params, result, 0, data.size());
+            auto* trap =
+                ww(updateData_wrap, &import.at("update_data"), params, result, 0, data.size());
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == data.size());
@@ -2361,7 +2667,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             vrt.setBytes(0, bigData.data(), bigData.size());
             WasmValVec params(2), result(1);
-            auto* trap = ww(updateData_wrap, &import[67], params, result, 0, bigData.size());
+            auto* trap =
+                ww(updateData_wrap, &import.at("update_data"), params, result, 0, bigData.size());
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -2405,7 +2712,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(checkSignature_wrap,
-                   &import[18],
+                   &import.at("check_sig"),
                    params,
                    result,
                    0,
@@ -2432,7 +2739,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(checkSignature_wrap,
-                   &import[18],
+                   &import.at("check_sig"),
                    params,
                    result,
                    0,
@@ -2459,7 +2766,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(checkSignature_wrap,
-                   &import[18],
+                   &import.at("check_sig"),
                    params,
                    result,
                    0,
@@ -2484,7 +2791,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(checkSignature_wrap,
-                   &import[18],
+                   &import.at("check_sig"),
                    params,
                    result,
                    0,
@@ -2509,7 +2816,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(checkSignature_wrap,
-                   &import[18],
+                   &import.at("check_sig"),
                    params,
                    result,
                    0,
@@ -2532,7 +2839,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(checkSignature_wrap,
-                   &import[18],
+                   &import.at("check_sig"),
                    params,
                    result,
                    0,
@@ -2571,7 +2878,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(computeSha512HalfHash_wrap,
-                   &import[19],
+                   &import.at("compute_sha512_half"),
                    params,
                    result,
                    0,
@@ -2618,14 +2925,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const expected = keylet::account(masterID);
             WasmValVec params(4), result(1);
-            auto* trap = ww(accountKeylet_wrap, &imp[20], params, result, masterID, 1024, 32);
+            auto* trap = ww(
+                accountKeylet_wrap, &imp.at("account_keylet"), params, result, masterID, 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 2);
                 BEAST_EXPECT(compareKeylet(actual, expected));
             }
 
-            auto* trap2 = ww(accountKeylet_wrap, &imp[20], params, result, xrpAccount(), 1024, 32);
+            auto* trap2 =
+                ww(accountKeylet_wrap,
+                   &imp.at("account_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -2636,7 +2951,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
 
             auto* trap =
-                ww(ammKeylet_wrap, &imp[21], params, result, xrpIssue(), usdIssue, 1024, 32);
+                ww(ammKeylet_wrap,
+                   &imp.at("amm_keylet"),
+                   params,
+                   result,
+                   xrpIssue(),
+                   usdIssue,
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 4);
@@ -2644,13 +2966,27 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             }
 
             auto* trap2 =
-                ww(ammKeylet_wrap, &imp[21], params, result, xrpIssue(), xrpIssue(), 1024, 32);
+                ww(ammKeylet_wrap,
+                   &imp.at("amm_keylet"),
+                   params,
+                   result,
+                   xrpIssue(),
+                   xrpIssue(),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
 
             auto* trap3 =
-                ww(ammKeylet_wrap, &imp[21], params, result, baseMpt, xrpIssue(), 1024, 32);
+                ww(ammKeylet_wrap,
+                   &imp.at("amm_keylet"),
+                   params,
+                   result,
+                   baseMpt,
+                   xrpIssue(),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap3 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
@@ -2660,7 +2996,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const expected = keylet::check(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(checkKeylet_wrap, &imp[22], params, result, masterID, toBytes(1u), 1024, 32);
+                ww(checkKeylet_wrap,
+                   &imp.at("check_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 4);
@@ -2668,7 +3011,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             }
 
             auto* trap2 =
-                ww(checkKeylet_wrap, &imp[22], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+                ww(checkKeylet_wrap,
+                   &imp.at("check_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   toBytes(1u),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -2682,7 +3032,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(8), result(1);
             auto* trap =
                 ww(credentialKeylet_wrap,
-                   &imp[23],
+                   &imp.at("credential_keylet"),
                    params,
                    result,
                    masterID,
@@ -2703,7 +3053,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             static_assert(longCredTypeStr.size() > maxCredentialTypeLength);
             auto* trap2 =
                 ww(credentialKeylet_wrap,
-                   &imp[23],
+                   &imp.at("credential_keylet"),
                    params,
                    result,
                    masterID,
@@ -2717,7 +3067,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto* trap3 =
                 ww(credentialKeylet_wrap,
-                   &imp[23],
+                   &imp.at("credential_keylet"),
                    params,
                    result,
                    xrpAccount(),
@@ -2731,7 +3081,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto* trap4 =
                 ww(credentialKeylet_wrap,
-                   &imp[23],
+                   &imp.at("credential_keylet"),
                    params,
                    result,
                    masterID,
@@ -2747,14 +3097,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const expected = keylet::did(masterID);
             WasmValVec params(4), result(1);
-            auto* trap = ww(didKeylet_wrap, &imp[26], params, result, masterID, 1024, 32);
+            auto* trap =
+                ww(didKeylet_wrap, &imp.at("did_keylet"), params, result, masterID, 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 2);
                 BEAST_EXPECT(compareKeylet(actual, expected));
             }
 
-            auto* trap2 = ww(didKeylet_wrap, &imp[26], params, result, xrpAccount(), 1024, 32);
+            auto* trap2 =
+                ww(didKeylet_wrap, &imp.at("did_keylet"), params, result, xrpAccount(), 1024, 32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -2764,38 +3116,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const expected = keylet::delegate(masterID, alice.id());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(delegateKeylet_wrap, &imp[24], params, result, masterID, alice.id(), 1024, 32);
-            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
-            {
-                auto const actual = vrt.getBytes(params, 4);
-                BEAST_EXPECT(compareKeylet(actual, expected));
-            }
-
-            auto* trap2 =
-                ww(delegateKeylet_wrap, &imp[24], params, result, masterID, masterID, 1024, 32);
-            BEAST_EXPECT(
-                !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
-
-            auto* trap3 =
-                ww(delegateKeylet_wrap, &imp[24], params, result, masterID, xrpAccount(), 1024, 32);
-            BEAST_EXPECT(
-                !trap3 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
-
-            auto* trap4 =
-                ww(delegateKeylet_wrap, &imp[24], params, result, xrpAccount(), masterID, 1024, 32);
-            BEAST_EXPECT(
-                !trap4 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
-        }
-
-        {
-            auto const expected = keylet::depositPreauth(masterID, alice.id());
-            WasmValVec params(6), result(1);
-            auto* trap =
-                ww(depositPreauthKeylet_wrap,
-                   &imp[25],
+                ww(delegateKeylet_wrap,
+                   &imp.at("delegate_keylet"),
                    params,
                    result,
                    masterID,
@@ -2808,15 +3130,80 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(compareKeylet(actual, expected));
             }
 
-            auto* trap2 = ww(
-                depositPreauthKeylet_wrap, &imp[25], params, result, masterID, masterID, 1024, 32);
+            auto* trap2 =
+                ww(delegateKeylet_wrap,
+                   &imp.at("delegate_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   masterID,
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+
+            auto* trap3 =
+                ww(delegateKeylet_wrap,
+                   &imp.at("delegate_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   xrpAccount(),
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap3 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+
+            auto* trap4 =
+                ww(delegateKeylet_wrap,
+                   &imp.at("delegate_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   masterID,
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap4 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
+
+        {
+            auto const expected = keylet::depositPreauth(masterID, alice.id());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(depositPreauthKeylet_wrap,
+                   &imp.at("deposit_preauth_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   alice.id(),
+                   1024,
+                   32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 =
+                ww(depositPreauthKeylet_wrap,
+                   &imp.at("deposit_preauth_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   masterID,
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
 
             auto* trap3 =
                 ww(depositPreauthKeylet_wrap,
-                   &imp[25],
+                   &imp.at("deposit_preauth_keylet"),
                    params,
                    result,
                    masterID,
@@ -2829,7 +3216,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto* trap4 =
                 ww(depositPreauthKeylet_wrap,
-                   &imp[25],
+                   &imp.at("deposit_preauth_keylet"),
                    params,
                    result,
                    xrpAccount(),
@@ -2845,15 +3232,29 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const expected = keylet::escrow(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(escrowKeylet_wrap, &imp[27], params, result, masterID, toBytes(1u), 1024, 32);
+                ww(escrowKeylet_wrap,
+                   &imp.at("escrow_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 4);
                 BEAST_EXPECT(compareKeylet(actual, expected));
             }
 
-            auto* trap2 = ww(
-                escrowKeylet_wrap, &imp[27], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            auto* trap2 =
+                ww(escrowKeylet_wrap,
+                   &imp.at("escrow_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   toBytes(1u),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -2864,7 +3265,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const expected = keylet::line(masterID, alice.id(), usd);
             WasmValVec params(8), result(1);
             auto* trap =
-                ww(lineKeylet_wrap, &imp[28], params, result, masterID, alice.id(), usd, 1024, 32);
+                ww(lineKeylet_wrap,
+                   &imp.at("line_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   alice.id(),
+                   usd,
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 6);
@@ -2872,26 +3281,50 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             }
 
             auto* trap2 =
-                ww(lineKeylet_wrap, &imp[28], params, result, masterID, masterID, usd, 1024, 32);
+                ww(lineKeylet_wrap,
+                   &imp.at("line_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   masterID,
+                   usd,
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
 
-            auto* trap3 = ww(
-                lineKeylet_wrap, &imp[28], params, result, masterID, xrpAccount(), usd, 1024, 32);
+            auto* trap3 =
+                ww(lineKeylet_wrap,
+                   &imp.at("line_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   xrpAccount(),
+                   usd,
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap3 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
 
-            auto* trap4 = ww(
-                lineKeylet_wrap, &imp[28], params, result, xrpAccount(), masterID, usd, 1024, 32);
+            auto* trap4 =
+                ww(lineKeylet_wrap,
+                   &imp.at("line_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   masterID,
+                   usd,
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap4 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
 
             auto* trap5 =
                 ww(lineKeylet_wrap,
-                   &imp[28],
+                   &imp.at("line_keylet"),
                    params,
                    result,
                    masterID,
@@ -2907,8 +3340,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const expected = keylet::mptIssuance(1u, masterID);
             WasmValVec params(6), result(1);
-            auto* trap = ww(
-                mptIssuanceKeylet_wrap, &imp[29], params, result, masterID, toBytes(1u), 1024, 32);
+            auto* trap =
+                ww(mptIssuanceKeylet_wrap,
+                   &imp.at("mpt_issuance_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 4);
@@ -2917,7 +3357,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto* trap2 =
                 ww(mptIssuanceKeylet_wrap,
-                   &imp[29],
+                   &imp.at("mpt_issuance_keylet"),
                    params,
                    result,
                    xrpAccount(),
@@ -2933,7 +3373,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const expected = keylet::mptoken(baseMpt, alice.id());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(mptokenKeylet_wrap, &imp[30], params, result, baseMpt, alice.id(), 1024, 32);
+                ww(mptokenKeylet_wrap,
+                   &imp.at("mptoken_keylet"),
+                   params,
+                   result,
+                   baseMpt,
+                   alice.id(),
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 4);
@@ -2941,13 +3388,27 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             }
 
             auto* trap2 =
-                ww(mptokenKeylet_wrap, &imp[30], params, result, MPTID{}, alice.id(), 1024, 32);
+                ww(mptokenKeylet_wrap,
+                   &imp.at("mptoken_keylet"),
+                   params,
+                   result,
+                   MPTID{},
+                   alice.id(),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
 
             auto* trap3 =
-                ww(mptokenKeylet_wrap, &imp[30], params, result, baseMpt, xrpAccount(), 1024, 32);
+                ww(mptokenKeylet_wrap,
+                   &imp.at("mptoken_keylet"),
+                   params,
+                   result,
+                   baseMpt,
+                   xrpAccount(),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap3 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -2957,15 +3418,29 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const expected = keylet::nftoffer(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(nftOfferKeylet_wrap, &imp[31], params, result, masterID, toBytes(1u), 1024, 32);
+                ww(nftOfferKeylet_wrap,
+                   &imp.at("nft_offer_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 4);
                 BEAST_EXPECT(compareKeylet(actual, expected));
             }
 
-            auto* trap2 = ww(
-                nftOfferKeylet_wrap, &imp[31], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            auto* trap2 =
+                ww(nftOfferKeylet_wrap,
+                   &imp.at("nft_offer_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   toBytes(1u),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -2975,7 +3450,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const expected = keylet::offer(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(offerKeylet_wrap, &imp[32], params, result, masterID, toBytes(1u), 1024, 32);
+                ww(offerKeylet_wrap,
+                   &imp.at("offer_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 4);
@@ -2983,7 +3465,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             }
 
             auto* trap2 =
-                ww(offerKeylet_wrap, &imp[32], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+                ww(offerKeylet_wrap,
+                   &imp.at("offer_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   toBytes(1u),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -2993,15 +3482,29 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const expected = keylet::oracle(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(oracleKeylet_wrap, &imp[33], params, result, masterID, toBytes(1u), 1024, 32);
+                ww(oracleKeylet_wrap,
+                   &imp.at("oracle_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 4);
                 BEAST_EXPECT(compareKeylet(actual, expected));
             }
 
-            auto* trap2 = ww(
-                oracleKeylet_wrap, &imp[33], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            auto* trap2 =
+                ww(oracleKeylet_wrap,
+                   &imp.at("oracle_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   toBytes(1u),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -3012,7 +3515,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(8), result(1);
             auto* trap =
                 ww(paychanKeylet_wrap,
-                   &imp[34],
+                   &imp.at("paychan_keylet"),
                    params,
                    result,
                    masterID,
@@ -3028,7 +3531,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto* trap2 =
                 ww(paychanKeylet_wrap,
-                   &imp[34],
+                   &imp.at("paychan_keylet"),
                    params,
                    result,
                    masterID,
@@ -3042,7 +3545,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto* trap3 =
                 ww(paychanKeylet_wrap,
-                   &imp[34],
+                   &imp.at("paychan_keylet"),
                    params,
                    result,
                    masterID,
@@ -3056,7 +3559,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto* trap4 =
                 ww(paychanKeylet_wrap,
-                   &imp[34],
+                   &imp.at("paychan_keylet"),
                    params,
                    result,
                    xrpAccount(),
@@ -3074,7 +3577,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(permissionedDomainKeylet_wrap,
-                   &imp[35],
+                   &imp.at("permissioned_domain_keylet"),
                    params,
                    result,
                    masterID,
@@ -3089,7 +3592,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto* trap2 =
                 ww(permissionedDomainKeylet_wrap,
-                   &imp[35],
+                   &imp.at("permissioned_domain_keylet"),
                    params,
                    result,
                    xrpAccount(),
@@ -3104,14 +3607,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const expected = keylet::signers(masterID);
             WasmValVec params(4), result(1);
-            auto* trap = ww(signersKeylet_wrap, &imp[36], params, result, masterID, 1024, 32);
+            auto* trap = ww(
+                signersKeylet_wrap, &imp.at("signers_keylet"), params, result, masterID, 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 2);
                 BEAST_EXPECT(compareKeylet(actual, expected));
             }
 
-            auto* trap2 = ww(signersKeylet_wrap, &imp[36], params, result, xrpAccount(), 1024, 32);
+            auto* trap2 =
+                ww(signersKeylet_wrap,
+                   &imp.at("signers_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -3121,15 +3632,29 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const expected = keylet::ticket(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(ticketKeylet_wrap, &imp[37], params, result, masterID, toBytes(1u), 1024, 32);
+                ww(ticketKeylet_wrap,
+                   &imp.at("ticket_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 4);
                 BEAST_EXPECT(compareKeylet(actual, expected));
             }
 
-            auto* trap2 = ww(
-                ticketKeylet_wrap, &imp[37], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            auto* trap2 =
+                ww(ticketKeylet_wrap,
+                   &imp.at("ticket_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   toBytes(1u),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -3139,7 +3664,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const expected = keylet::vault(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(vaultKeylet_wrap, &imp[38], params, result, masterID, toBytes(1u), 1024, 32);
+                ww(vaultKeylet_wrap,
+                   &imp.at("vault_keylet"),
+                   params,
+                   result,
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
                 auto const actual = vrt.getBytes(params, 4);
@@ -3147,7 +3679,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             }
 
             auto* trap2 =
-                ww(vaultKeylet_wrap, &imp[38], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+                ww(vaultKeylet_wrap,
+                   &imp.at("vault_keylet"),
+                   params,
+                   result,
+                   xrpAccount(),
+                   toBytes(1u),
+                   1024,
+                   32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
                 result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
@@ -3192,7 +3731,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(getNFT_wrap,
-                   &import[39],
+                   &import.at("get_nft"),
                    params,
                    result,
                    0,
@@ -3219,7 +3758,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(getNFT_wrap,
-                   &import[39],
+                   &import.at("get_nft"),
                    params,
                    result,
                    0,
@@ -3242,7 +3781,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(getNFT_wrap,
-                   &import[39],
+                   &import.at("get_nft"),
                    params,
                    result,
                    0,
@@ -3265,7 +3804,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(getNFT_wrap,
-                   &import[39],
+                   &import.at("get_nft"),
                    params,
                    result,
                    0,
@@ -3287,7 +3826,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(getNFT_wrap,
-                   &import[39],
+                   &import.at("get_nft"),
                    params,
                    result,
                    0,
@@ -3332,7 +3871,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(getNFTIssuer_wrap,
-                   &import[40],
+                   &import.at("get_nft_issuer"),
                    params,
                    result,
                    0,
@@ -3356,7 +3895,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(getNFTIssuer_wrap,
-                   &import[40],
+                   &import.at("get_nft_issuer"),
                    params,
                    result,
                    0,
@@ -3397,7 +3936,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         WasmValVec params(4), result(1);
         auto* trap =
             ww(getNFTTaxon_wrap,
-               &import[41],
+               &import.at("get_nft_taxon"),
                params,
                result,
                0,
@@ -3439,7 +3978,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getNFTFlags(nftId);
             vrt.setBytes(0, nftId.data(), uint256::bytes);
             WasmValVec params(2), result(1);
-            auto* trap = ww(getNFTFlags_wrap, &import[42], params, result, 0, uint256::bytes);
+            auto* trap = ww(
+                getNFTFlags_wrap, &import.at("get_nft_flags"), params, result, 0, uint256::bytes);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
                 BEAST_EXPECT(result[0].of.i32 == tfTransferable);
@@ -3451,7 +3991,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             uint256 zeroId;
             vrt.setBytes(0, zeroId.data(), uint256::bytes);
             WasmValVec params(2), result(1);
-            auto* trap = ww(getNFTFlags_wrap, &import[42], params, result, 0, uint256::bytes);
+            auto* trap = ww(
+                getNFTFlags_wrap, &import.at("get_nft_flags"), params, result, 0, uint256::bytes);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
                 BEAST_EXPECT(result[0].of.i32 == 0);
@@ -3485,7 +4026,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.getNFTTransferFee(nftId);
             vrt.setBytes(0, nftId.data(), uint256::bytes);
             WasmValVec params(2), result(1);
-            auto* trap = ww(getNFTTransferFee_wrap, &import[43], params, result, 0, uint256::bytes);
+            auto* trap =
+                ww(getNFTTransferFee_wrap,
+                   &import.at("get_nft_transfer_fee"),
+                   params,
+                   result,
+                   0,
+                   uint256::bytes);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
                 BEAST_EXPECT(result[0].of.i32 == transferFee);
@@ -3497,7 +4044,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             uint256 zeroId;
             vrt.setBytes(0, zeroId.data(), uint256::bytes);
             WasmValVec params(2), result(1);
-            auto* trap = ww(getNFTTransferFee_wrap, &import[43], params, result, 0, uint256::bytes);
+            auto* trap =
+                ww(getNFTTransferFee_wrap,
+                   &import.at("get_nft_transfer_fee"),
+                   params,
+                   result,
+                   0,
+                   uint256::bytes);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
                 BEAST_EXPECT(result[0].of.i32 == 0);
@@ -3534,7 +4087,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(getNFTSerial_wrap,
-                   &import[44],
+                   &import.at("get_nft_serial"),
                    params,
                    result,
                    0,
@@ -3557,7 +4110,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(getNFTSerial_wrap,
-                   &import[44],
+                   &import.at("get_nft_serial"),
                    params,
                    result,
                    0,
@@ -3602,8 +4155,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
                 vrt.setBytes(256, slice.data(), slice.size());
                 WasmValVec params(5), result(1);
-                auto* trap = ww(
-                    trace_wrap, &import[45], params, result, 0, msg.size(), 256, slice.size(), 0);
+                auto* trap =
+                    ww(trace_wrap,
+                       &import.at("trace"),
+                       params,
+                       result,
+                       0,
+                       msg.size(),
+                       256,
+                       slice.size(),
+                       0);
 
                 if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(result[0].of.i32 == 0))
@@ -3618,8 +4179,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
                 vrt.setBytes(256, slice.data(), slice.size());
                 WasmValVec params(5), result(1);
-                auto* trap = ww(
-                    trace_wrap, &import[45], params, result, 0, msg.size(), 256, slice.size(), 1);
+                auto* trap =
+                    ww(trace_wrap,
+                       &import.at("trace"),
+                       params,
+                       result,
+                       0,
+                       msg.size(),
+                       256,
+                       slice.size(),
+                       1);
 
                 if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(result[0].of.i32 == 0))
@@ -3658,7 +4227,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(256, slice.data(), slice.size());
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(trace_wrap, &import[45], params, result, 0, msg.size(), 256, slice.size(), 0);
+                ww(trace_wrap,
+                   &import.at("trace"),
+                   params,
+                   result,
+                   0,
+                   msg.size(),
+                   256,
+                   slice.size(),
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 0);
@@ -3693,7 +4270,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.traceNum(msg, num);
             vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
             WasmValVec params(3), result(1);
-            auto* trap = ww(traceNum_wrap, &import[46], params, result, 0, msg.size(), num);
+            auto* trap =
+                ww(traceNum_wrap, &import.at("trace_num"), params, result, 0, msg.size(), num);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 0))
@@ -3725,7 +4303,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.traceNum(msg, num);
             vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
             WasmValVec params(3), result(1);
-            auto* trap = ww(traceNum_wrap, &import[46], params, result, 0, msg.size(), num);
+            auto* trap =
+                ww(traceNum_wrap, &import.at("trace_num"), params, result, 0, msg.size(), num);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 0);
@@ -3763,7 +4342,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(traceAccount_wrap,
-                   &import[47],
+                   &import.at("trace_account"),
                    params,
                    result,
                    0,
@@ -3804,7 +4383,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(traceAccount_wrap,
-                   &import[47],
+                   &import.at("trace_account"),
                    params,
                    result,
                    0,
@@ -3849,7 +4428,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(4), result(1);
                 auto* trap =
                     ww(traceAmount_wrap,
-                       &import[49],
+                       &import.at("trace_amount"),
                        params,
                        result,
                        0,
@@ -3879,7 +4458,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(4), result(1);
                 auto* trap =
                     ww(traceAmount_wrap,
-                       &import[49],
+                       &import.at("trace_amount"),
                        params,
                        result,
                        0,
@@ -3904,7 +4483,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(4), result(1);
                 auto* trap =
                     ww(traceAmount_wrap,
-                       &import[49],
+                       &import.at("trace_amount"),
                        params,
                        result,
                        0,
@@ -3942,7 +4521,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             auto* trap =
                 ww(traceAmount_wrap,
-                   &import[49],
+                   &import.at("trace_amount"),
                    params,
                    result,
                    0,
@@ -4070,7 +4649,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(4), result(1);
                 auto* trap =
                     ww(traceFloat_wrap,
-                       &import[48],
+                       &import.at("trace_opaque_float"),
                        params,
                        result,
                        0,
@@ -4089,7 +4668,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(4), result(1);
                 auto* trap =
                     ww(traceFloat_wrap,
-                       &import[48],
+                       &import.at("trace_opaque_float"),
                        params,
                        result,
                        0,
@@ -4123,8 +4702,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
             vrt.setBytes(256, reinterpret_cast<uint8_t const*>(invalid.data()), invalid.size());
             WasmValVec params(4), result(1);
-            auto* trap = ww(
-                traceFloat_wrap, &import[48], params, result, 0, msg.size(), 256, invalid.size());
+            auto* trap =
+                ww(traceFloat_wrap,
+                   &import.at("trace_opaque_float"),
+                   params,
+                   result,
+                   0,
+                   msg.size(),
+                   256,
+                   invalid.size());
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 0);
@@ -4153,7 +4739,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatFromInt(min64, -1);
             WasmValVec params(4), result(1);
             auto* trap =
-                ww(floatFromInt_wrap, &import[50], params, result, min64, 0, FLOAT_SIZE, -1);
+                ww(floatFromInt_wrap,
+                   &import.at("float_from_int"),
+                   params,
+                   result,
+                   min64,
+                   0,
+                   FLOAT_SIZE,
+                   -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4165,7 +4758,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatFromInt(min64, 4);
             WasmValVec params(4), result(1);
             auto* trap =
-                ww(floatFromInt_wrap, &import[50], params, result, min64, 0, FLOAT_SIZE, 4);
+                ww(floatFromInt_wrap,
+                   &import.at("float_from_int"),
+                   params,
+                   result,
+                   min64,
+                   0,
+                   FLOAT_SIZE,
+                   4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4177,7 +4777,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatFromInt(min64, 0);
             WasmValVec params(4), result(1);
             auto* trap =
-                ww(floatFromInt_wrap, &import[50], params, result, min64, 0, FLOAT_SIZE, 0);
+                ww(floatFromInt_wrap,
+                   &import.at("float_from_int"),
+                   params,
+                   result,
+                   min64,
+                   0,
+                   FLOAT_SIZE,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
@@ -4188,7 +4795,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // hfs.floatFromInt(0, 0);
             WasmValVec params(4), result(1);
-            auto* trap = ww(floatFromInt_wrap, &import[50], params, result, 0ll, 0, FLOAT_SIZE, 0);
+            auto* trap =
+                ww(floatFromInt_wrap,
+                   &import.at("float_from_int"),
+                   params,
+                   result,
+                   0ll,
+                   0,
+                   FLOAT_SIZE,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
@@ -4200,7 +4815,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatFromInt(max64, 0);
             WasmValVec params(4), result(1);
             auto* trap =
-                ww(floatFromInt_wrap, &import[50], params, result, max64, 0, FLOAT_SIZE, 0);
+                ww(floatFromInt_wrap,
+                   &import.at("float_from_int"),
+                   params,
+                   result,
+                   max64,
+                   0,
+                   FLOAT_SIZE,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
@@ -4231,7 +4853,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             uint64_t val = std::numeric_limits<uint64_t>::min();
             vrt.setBytes(0, &val, sizeof(val));
             auto* trap =
-                ww(floatFromUint_wrap, &import[51], params, result, 0, 8, 16, FLOAT_SIZE, -1);
+                ww(floatFromUint_wrap,
+                   &import.at("float_from_uint"),
+                   params,
+                   result,
+                   0,
+                   8,
+                   16,
+                   FLOAT_SIZE,
+                   -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4245,7 +4875,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             uint64_t val = std::numeric_limits<uint64_t>::min();
             vrt.setBytes(0, &val, sizeof(val));
             auto* trap =
-                ww(floatFromUint_wrap, &import[51], params, result, 0, 8, 16, FLOAT_SIZE, 4);
+                ww(floatFromUint_wrap,
+                   &import.at("float_from_uint"),
+                   params,
+                   result,
+                   0,
+                   8,
+                   16,
+                   FLOAT_SIZE,
+                   4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4259,7 +4897,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             uint64_t val = 0;
             vrt.setBytes(0, &val, sizeof(val));
             auto* trap =
-                ww(floatFromUint_wrap, &import[51], params, result, 0, 8, 16, FLOAT_SIZE, 0);
+                ww(floatFromUint_wrap,
+                   &import.at("float_from_uint"),
+                   params,
+                   result,
+                   0,
+                   8,
+                   16,
+                   FLOAT_SIZE,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
@@ -4273,7 +4919,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             uint64_t val = std::numeric_limits<uint64_t>::max();
             vrt.setBytes(0, &val, sizeof(val));
             auto* trap =
-                ww(floatFromUint_wrap, &import[51], params, result, 0, 8, 16, FLOAT_SIZE, 0);
+                ww(floatFromUint_wrap,
+                   &import.at("float_from_uint"),
+                   params,
+                   result,
+                   0,
+                   8,
+                   16,
+                   FLOAT_SIZE,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
@@ -4283,9 +4937,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
-    testFloatSet()
+    testfloatFromMantExp()
     {
-        testcase("floatSet");
+        testcase("floatFromMantExp");
         using namespace test::jtx;
         using namespace wasm_float;
 
@@ -4300,37 +4954,55 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         hfs.setRT(&vrt);
 
         {
-            // hfs.floatSet(1, 0, -1);
-            WasmValVec params(5), result(1);
-            auto* trap = ww(floatSet_wrap, &import[58], params, result, 0, 1ll, 0, FLOAT_SIZE, -1);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(
-                    result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
-        }
-
-        {
-            // hfs.floatSet(1, 0, 4);
-            WasmValVec params(5), result(1);
-            auto* trap = ww(floatSet_wrap, &import[58], params, result, 0, 1ll, 0, FLOAT_SIZE, 4);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(
-                    result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
-        }
-
-        {
-            // hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
+            // hfs.floatFromMantExp(1, 0, -1);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatSet_wrap,
-                   &import[58],
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
                    params,
                    result,
-                   Number::maxExponent + normalExp + 1,
                    1ll,
+                   0,
+                   0,
+                   FLOAT_SIZE,
+                   -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+        }
+
+        {
+            // hfs.floatFromMantExp(1, 0, 4);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
+                   params,
+                   result,
+                   1ll,
+                   0,
+                   0,
+                   FLOAT_SIZE,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+        }
+
+        {
+            // hfs.floatFromMantExp(1, Number::maxExponent + normalExp + 1, 0);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
+                   params,
+                   result,
+                   1ll,
+                   Number::maxExponent + normalExp + 1,
                    0,
                    FLOAT_SIZE,
                    0);
@@ -4342,15 +5014,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatSet(1, Number::minExponent + normalExp - 1, 0);
+            // hfs.floatFromMantExp(1, Number::minExponent + normalExp - 1, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatSet_wrap,
-                   &import[58],
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
                    params,
                    result,
-                   Number::minExponent + normalExp - 1,
                    1ll,
+                   Number::minExponent + normalExp - 1,
                    0,
                    FLOAT_SIZE,
                    0);
@@ -4362,15 +5034,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatSet(1, Number::maxExponent + normalExp, 0);
+            // hfs.floatFromMantExp(1, Number::maxExponent + normalExp, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatSet_wrap,
-                   &import[58],
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
                    params,
                    result,
-                   Number::maxExponent + normalExp,
                    1ll,
+                   Number::maxExponent + normalExp,
                    0,
                    FLOAT_SIZE,
                    0);
@@ -4382,15 +5054,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatSet(-1, Number::maxExponent + normalExp, 0);
+            // hfs.floatFromMantExp(-1, Number::maxExponent + normalExp, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatSet_wrap,
-                   &import[58],
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
                    params,
                    result,
-                   Number::maxExponent + normalExp,
                    -1ll,
+                   Number::maxExponent + normalExp,
                    0,
                    FLOAT_SIZE,
                    0);
@@ -4402,15 +5074,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatSet(1, Number::maxExponent + normalExp - 1, 0);
+            // hfs.floatFromMantExp(1, Number::maxExponent + normalExp - 1, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatSet_wrap,
-                   &import[58],
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
                    params,
                    result,
-                   Number::maxExponent + normalExp - 1,
                    1ll,
+                   Number::maxExponent + normalExp - 1,
                    0,
                    FLOAT_SIZE,
                    0);
@@ -4422,15 +5094,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatSet(STAmount::cMaxValue, STAmount::cMaxOffset, 0);
+            // hfs.floatFromMantExp(STAmount::cMaxValue, STAmount::cMaxOffset, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatSet_wrap,
-                   &import[58],
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
                    params,
                    result,
-                   STAmount::cMaxOffset,
                    static_cast<int64_t>(STAmount::cMaxValue),
+                   STAmount::cMaxOffset,
                    0,
                    FLOAT_SIZE,
                    0);
@@ -4442,15 +5114,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatSet(1, Number::minExponent + normalExp, 0);
+            // hfs.floatFromMantExp(1, Number::minExponent + normalExp, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatSet_wrap,
-                   &import[58],
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
                    params,
                    result,
-                   Number::minExponent - normalExp,
                    1ll,
+                   Number::minExponent - normalExp,
                    0,
                    FLOAT_SIZE,
                    0);
@@ -4462,9 +5134,18 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatSet(10, -1, 0);
+            // hfs.floatFromMantExp(10, -1, 0);
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatSet_wrap, &import[58], params, result, -1, 10ll, 0, FLOAT_SIZE, 0);
+            auto* trap =
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
+                   params,
+                   result,
+                   10ll,
+                   -1,
+                   0,
+                   FLOAT_SIZE,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
@@ -4473,15 +5154,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
+            // hfs.floatFromMantExp(1, Number::maxExponent + normalExp + 1, 0);
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatSet_wrap,
-                   &import[58],
+                ww(floatFromMantExp_wrap,
+                   &import.at("float_compare"),
                    params,
                    result,
-                   Number::maxExponent + normalExp + 1,
                    1ll,
+                   Number::maxExponent + normalExp + 1,
                    0,
                    FLOAT_SIZE,
                    0);
@@ -4512,7 +5193,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // hfs.floatCompare(Slice(), Slice());
             WasmValVec params(4), result(1);
-            auto* trap = ww(floatCompare_wrap, &import[59], params, result, 0, 0, 0, 0);
+            auto* trap = ww(floatCompare_wrap, &import.at("float_add"), params, result, 0, 0, 0, 0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4524,7 +5205,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatCompare(makeSlice(floatInvalidZero), Slice());
             WasmValVec params(4), result(1);
             vrt.setBytes(0, floatInvalidZero.data(), floatInvalidZero.size());
-            auto* trap = ww(floatCompare_wrap, &import[59], params, result, 0, FLOAT_SIZE, 0, 0);
+            auto* trap =
+                ww(floatCompare_wrap, &import.at("float_add"), params, result, 0, FLOAT_SIZE, 0, 0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4539,7 +5221,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatCompare_wrap,
-                   &import[59],
+                   &import.at("float_add"),
                    params,
                    result,
                    0,
@@ -4560,7 +5242,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatCompare_wrap,
-                   &import[59],
+                   &import.at("float_add"),
                    params,
                    result,
                    0,
@@ -4579,7 +5261,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatCompare_wrap,
-                   &import[59],
+                   &import.at("float_add"),
                    params,
                    result,
                    0,
@@ -4598,7 +5280,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
             auto* trap =
                 ww(floatCompare_wrap,
-                   &import[59],
+                   &import.at("float_add"),
                    params,
                    result,
                    0,
@@ -4631,7 +5313,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatAdd(Slice(), Slice(), -1);
             WasmValVec params(7), result(1);
             auto* trap =
-                ww(floatAdd_wrap, &import[60], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, -1);
+                ww(floatAdd_wrap,
+                   &import.at("float_subtract"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   FLOAT_SIZE,
+                   -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4643,7 +5335,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatAdd(Slice(), Slice(), 0);
             WasmValVec params(7), result(1);
             auto* trap =
-                ww(floatAdd_wrap, &import[60], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, 0);
+                ww(floatAdd_wrap,
+                   &import.at("float_subtract"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   FLOAT_SIZE,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4658,7 +5360,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatAdd_wrap,
-                   &import[60],
+                   &import.at("float_subtract"),
                    params,
                    result,
                    0,
@@ -4683,7 +5385,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatMaxExp.data(), floatMaxExp.size());
             auto* trap =
                 ww(floatAdd_wrap,
-                   &import[60],
+                   &import.at("float_subtract"),
                    params,
                    result,
                    0,
@@ -4707,7 +5409,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatAdd_wrap,
-                   &import[60],
+                   &import.at("float_subtract"),
                    params,
                    result,
                    0,
@@ -4732,7 +5434,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatIntMin.data(), floatIntMin.size());
             auto* trap =
                 ww(floatAdd_wrap,
-                   &import[60],
+                   &import.at("float_subtract"),
                    params,
                    result,
                    0,
@@ -4770,7 +5472,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatSubtract(Slice(), Slice(), -1);
             WasmValVec params(7), result(1);
             auto* trap =
-                ww(floatSubtract_wrap, &import[61], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, -1);
+                ww(floatSubtract_wrap,
+                   &import.at("float_from_mant_exp"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   FLOAT_SIZE,
+                   -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4782,7 +5494,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatSubtract(Slice(), Slice(), 0);
             WasmValVec params(7), result(1);
             auto* trap =
-                ww(floatSubtract_wrap, &import[61], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, 0);
+                ww(floatSubtract_wrap,
+                   &import.at("float_from_mant_exp"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   FLOAT_SIZE,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4797,7 +5519,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatSubtract_wrap,
-                   &import[61],
+                   &import.at("float_from_mant_exp"),
                    params,
                    result,
                    0,
@@ -4821,7 +5543,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatMaxIOU.data(), floatMaxIOU.size());
             auto* trap =
                 ww(floatSubtract_wrap,
-                   &import[61],
+                   &import.at("float_from_mant_exp"),
                    params,
                    result,
                    0,
@@ -4845,7 +5567,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatSubtract_wrap,
-                   &import[61],
+                   &import.at("float_from_mant_exp"),
                    params,
                    result,
                    0,
@@ -4869,7 +5591,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
             auto* trap =
                 ww(floatSubtract_wrap,
-                   &import[61],
+                   &import.at("float_from_mant_exp"),
                    params,
                    result,
                    0,
@@ -4907,7 +5629,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatMultiply(Slice(), Slice(), -1);
             WasmValVec params(7), result(1);
             auto* trap =
-                ww(floatMultiply_wrap, &import[62], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, -1);
+                ww(floatMultiply_wrap,
+                   &import.at("float_multiply"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   FLOAT_SIZE,
+                   -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4919,7 +5651,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatMultiply(Slice(), Slice(), 0);
             WasmValVec params(7), result(1);
             auto* trap =
-                ww(floatMultiply_wrap, &import[62], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, 0);
+                ww(floatMultiply_wrap,
+                   &import.at("float_multiply"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   FLOAT_SIZE,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -4934,7 +5676,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatMultiply_wrap,
-                   &import[62],
+                   &import.at("float_multiply"),
                    params,
                    result,
                    0,
@@ -4958,7 +5700,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, float1More.data(), float1More.size());
             auto* trap =
                 ww(floatMultiply_wrap,
-                   &import[62],
+                   &import.at("float_multiply"),
                    params,
                    result,
                    0,
@@ -4982,7 +5724,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
             auto* trap =
                 ww(floatMultiply_wrap,
-                   &import[62],
+                   &import.at("float_multiply"),
                    params,
                    result,
                    0,
@@ -5006,7 +5748,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatMaxIOU.data(), floatMaxIOU.size());
             auto* trap =
                 ww(floatMultiply_wrap,
-                   &import[62],
+                   &import.at("float_multiply"),
                    params,
                    result,
                    0,
@@ -5030,7 +5772,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatPreMaxExp.data(), floatPreMaxExp.size());
             auto* trap =
                 ww(floatMultiply_wrap,
-                   &import[62],
+                   &import.at("float_multiply"),
                    params,
                    result,
                    0,
@@ -5068,7 +5810,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatDivide(Slice(), Slice(), -1);
             WasmValVec params(7), result(1);
             auto* trap =
-                ww(floatDivide_wrap, &import[63], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, -1);
+                ww(floatDivide_wrap,
+                   &import.at("float_divide"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   FLOAT_SIZE,
+                   -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -5080,7 +5832,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatDivide(Slice(), Slice(), 0);
             WasmValVec params(7), result(1);
             auto* trap =
-                ww(floatDivide_wrap, &import[63], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, 0);
+                ww(floatDivide_wrap,
+                   &import.at("float_divide"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   FLOAT_SIZE,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -5094,7 +5856,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatDivide_wrap,
-                   &import[63],
+                   &import.at("float_divide"),
                    params,
                    result,
                    0,
@@ -5117,7 +5879,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatDivide_wrap,
-                   &import[63],
+                   &import.at("float_divide"),
                    params,
                    result,
                    0,
@@ -5135,7 +5897,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {  // hfs.floatDivide(makeSlice(floatMax), makeSlice(*y), 0);
-            auto const y = hfs.floatSet(STAmount::cMaxValue, -normalExp - 1, 0);  // 0.9999999...
+            auto const y =
+                hfs.floatFromMantExp(STAmount::cMaxValue, -normalExp - 1, 0);  // 0.9999999...
             if (BEAST_EXPECT(y))
             {
                 WasmValVec params(7), result(1);
@@ -5143,7 +5906,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 vrt.setBytes(FLOAT_SIZE, y->data(), y->size());
                 auto* trap =
                     ww(floatDivide_wrap,
-                       &import[63],
+                       &import.at("float_divide"),
                        params,
                        result,
                        0,
@@ -5167,7 +5930,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
             auto* trap =
                 ww(floatDivide_wrap,
-                   &import[63],
+                   &import.at("float_divide"),
                    params,
                    result,
                    0,
@@ -5190,7 +5953,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(FLOAT_SIZE, float10.data(), float10.size());
             auto* trap =
                 ww(floatDivide_wrap,
-                   &import[63],
+                   &import.at("float_divide"),
                    params,
                    result,
                    0,
@@ -5227,7 +5990,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {  // hfs.floatRoot(Slice(), 2, -1);
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatRoot_wrap, &import[64], params, result, 0, 0, 2, 0, FLOAT_SIZE, -1);
+                ww(floatRoot_wrap,
+                   &import.at("float_root"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   2,
+                   0,
+                   FLOAT_SIZE,
+                   -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -5240,7 +6012,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatRoot_wrap,
-                   &import[64],
+                   &import.at("float_root"),
                    params,
                    result,
                    0,
@@ -5261,7 +6033,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, float1.data(), float1.size());
             auto* trap =
                 ww(floatRoot_wrap,
-                   &import[64],
+                   &import.at("float_root"),
                    params,
                    result,
                    0,
@@ -5282,7 +6054,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatRoot_wrap,
-                   &import[64],
+                   &import.at("float_root"),
                    params,
                    result,
                    0,
@@ -5303,7 +6075,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, floatMaxIOU.data(), floatMaxIOU.size());
             auto* trap =
                 ww(floatRoot_wrap,
-                   &import[64],
+                   &import.at("float_root"),
                    params,
                    result,
                    0,
@@ -5321,14 +6093,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // hfs.floatRoot(makeSlice(*x), 2, 0);
-            auto const x = hfs.floatSet(100, 0, 0);  // 100
+            auto const x = hfs.floatFromMantExp(100, 0, 0);  // 100
             if (BEAST_EXPECT(x))
             {
                 WasmValVec params(6), result(1);
                 vrt.setBytes(0, x->data(), x->size());
                 auto* trap =
                     ww(floatRoot_wrap,
-                       &import[64],
+                       &import.at("float_root"),
                        params,
                        result,
                        0,
@@ -5347,14 +6119,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // hfs.floatRoot(makeSlice(*x), 3, 0);
-            auto const x = hfs.floatSet(1000, 0, 0);  // 1000
+            auto const x = hfs.floatFromMantExp(1000, 0, 0);  // 1000
             if (BEAST_EXPECT(x))
             {
                 WasmValVec params(6), result(1);
                 vrt.setBytes(0, x->data(), x->size());
                 auto* trap =
                     ww(floatRoot_wrap,
-                       &import[64],
+                       &import.at("float_root"),
                        params,
                        result,
                        0,
@@ -5373,15 +6145,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // hfs.floatRoot(makeSlice(*x), 2, 0);
-            auto const x = hfs.floatSet(1, -2, 0);  // 0.01
-            auto const y = hfs.floatSet(1, -1, 0);  // 0.1
+            auto const x = hfs.floatFromMantExp(1, -2, 0);  // 0.01
+            auto const y = hfs.floatFromMantExp(1, -1, 0);  // 0.1
             if (BEAST_EXPECT(x && y))
             {
                 WasmValVec params(6), result(1);
                 vrt.setBytes(0, x->data(), x->size());
                 auto* trap =
                     ww(floatRoot_wrap,
-                       &import[64],
+                       &import.at("float_root"),
                        params,
                        result,
                        0,
@@ -5418,7 +6190,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {  // hfs.floatPower(Slice(), 2, -1);
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatPower_wrap, &import[65], params, result, 0, 0, 2, 0, FLOAT_SIZE, -1);
+                ww(floatPower_wrap,
+                   &import.at("float_pow"),
+                   params,
+                   result,
+                   0,
+                   0,
+                   2,
+                   0,
+                   FLOAT_SIZE,
+                   -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -5431,7 +6212,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatPower_wrap,
-                   &import[65],
+                   &import.at("float_pow"),
                    params,
                    result,
                    0,
@@ -5452,7 +6233,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, float1.data(), float1.size());
             auto* trap =
                 ww(floatPower_wrap,
-                   &import[65],
+                   &import.at("float_pow"),
                    params,
                    result,
                    0,
@@ -5474,7 +6255,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, floatMax.data(), floatMax.size());
             auto* trap =
                 ww(floatPower_wrap,
-                   &import[65],
+                   &import.at("float_pow"),
                    params,
                    result,
                    0,
@@ -5496,7 +6277,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, floatMax.data(), floatMax.size());
             auto* trap =
                 ww(floatPower_wrap,
-                   &import[65],
+                   &import.at("float_pow"),
                    params,
                    result,
                    0,
@@ -5518,7 +6299,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, floatMaxIOU.data(), floatMaxIOU.size());
             auto* trap =
                 ww(floatPower_wrap,
-                   &import[65],
+                   &import.at("float_pow"),
                    params,
                    result,
                    0,
@@ -5539,7 +6320,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, floatMaxIOU.data(), floatMaxIOU.size());
             auto* trap =
                 ww(floatPower_wrap,
-                   &import[65],
+                   &import.at("float_pow"),
                    params,
                    result,
                    0,
@@ -5557,14 +6338,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // hfs.floatPower(makeSlice(float10), 2, 0);
-            auto const x = hfs.floatSet(100, 0, 0);  // 100
+            auto const x = hfs.floatFromMantExp(100, 0, 0);  // 100
             if (BEAST_EXPECT(x))
             {
                 WasmValVec params(6), result(1);
                 vrt.setBytes(0, float10.data(), float10.size());
                 auto* trap =
                     ww(floatPower_wrap,
-                       &import[65],
+                       &import.at("float_pow"),
                        params,
                        result,
                        0,
@@ -5581,16 +6362,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             }
         }
 
-        {                                           // hfs.floatPower(makeSlice(*x), 2, 0);
-            auto const x = hfs.floatSet(1, -1, 0);  // 0.1
-            auto const y = hfs.floatSet(1, -2, 0);  // 0.01
+        {
+            // hfs.floatPower(makeSlice(*x), 2, 0);
+            auto const x = hfs.floatFromMantExp(1, -1, 0);  // 0.1
+            auto const y = hfs.floatFromMantExp(1, -2, 0);  // 0.01
             if (BEAST_EXPECT(x && y))
             {
                 WasmValVec params(6), result(1);
                 vrt.setBytes(0, x->data(), x->size());
                 auto* trap =
                     ww(floatPower_wrap,
-                       &import[65],
+                       &import.at("float_pow"),
                        params,
                        result,
                        0,
@@ -5603,134 +6385,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
                 auto const resultBytes = vrt.getBytes(params, 3);
-                BEAST_EXPECT(resultBytes == *y);
-            }
-        }
-    }
-
-    void
-    testFloatLog()
-    {
-        testcase("floatLog");
-        using namespace test::jtx;
-
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        VirtualRuntime vrt;
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
-
-        {  // hfs.floatLog(Slice(), -1);
-            WasmValVec params(5), result(1);
-            auto* trap = ww(floatLog_wrap, &import[66], params, result, 0, 0, 0, FLOAT_SIZE, -1);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(
-                    result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
-        }
-
-        {
-            auto const x = hfs.floatSet(32'786, 0, 0);
-            if (BEAST_EXPECT(x))
-            {
-                WasmValVec params(5), result(1);
-                vrt.setBytes(0, floatMaxExp.data(), floatMaxExp.size());
-                auto* trap =
-                    ww(floatLog_wrap,
-                       &import[66],
-                       params,
-                       result,
-                       0,
-                       FLOAT_SIZE,
-                       2 * FLOAT_SIZE,
-                       FLOAT_SIZE,
-                       0);
-
-                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-                auto const resultBytes = vrt.getBytes(params, 2);
-                BEAST_EXPECT(resultBytes == *x);
-            }
-        }
-
-        {
-            // hfs.floatLog(makeSlice(*x), 0);
-            auto const x = hfs.floatSet(100, 0, 0);  // 100
-            if (BEAST_EXPECT(x))
-            {
-                WasmValVec params(5), result(1);
-                vrt.setBytes(0, x->data(), x->size());
-                auto* trap =
-                    ww(floatLog_wrap,
-                       &import[66],
-                       params,
-                       result,
-                       0,
-                       FLOAT_SIZE,
-                       2 * FLOAT_SIZE,
-                       FLOAT_SIZE,
-                       0);
-
-                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-                auto const resultBytes = vrt.getBytes(params, 2);
-                BEAST_EXPECT(resultBytes == float2);
-            }
-        }
-
-        {
-            // hfs.floatLog(makeSlice(*x), 0);
-            auto const x = hfs.floatSet(1000, 0, 0);  // 1000
-            auto const y = hfs.floatSet(3, 0, 0);     // 3
-            if (BEAST_EXPECT(x && y))
-            {
-                WasmValVec params(5), result(1);
-                vrt.setBytes(0, x->data(), x->size());
-                auto* trap =
-                    ww(floatLog_wrap,
-                       &import[66],
-                       params,
-                       result,
-                       0,
-                       FLOAT_SIZE,
-                       2 * FLOAT_SIZE,
-                       FLOAT_SIZE,
-                       0);
-
-                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-                auto const resultBytes = vrt.getBytes(params, 2);
-                BEAST_EXPECT(resultBytes == *y);
-            }
-        }
-
-        {
-            // hfs.floatLog(makeSlice(*x), 0);
-            auto const x = hfs.floatSet(1, -2, 0);                                   // 0.01
-            auto const y = hfs.floatSet(-1'999'999'999'999'999'999, -normalExp, 0);  // -2
-            if (BEAST_EXPECT(x && y))
-            {
-                WasmValVec params(5), result(1);
-                vrt.setBytes(0, x->data(), x->size());
-                auto* trap =
-                    ww(floatLog_wrap,
-                       &import[66],
-                       params,
-                       result,
-                       0,
-                       FLOAT_SIZE,
-                       2 * FLOAT_SIZE,
-                       FLOAT_SIZE,
-                       0);
-
-                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-                auto const resultBytes = vrt.getBytes(params, 2);
                 BEAST_EXPECT(resultBytes == *y);
             }
         }
@@ -5781,7 +6435,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(floatFromSTAmount_wrap,
-                   &import[52],
+                   &import.at("float_from_stamount"),
                    params,
                    result,
                    0,
@@ -5804,7 +6458,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(floatFromSTAmount_wrap,
-                   &import[52],
+                   &import.at("float_from_stamount"),
                    params,
                    result,
                    0,
@@ -5827,7 +6481,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(floatFromSTAmount_wrap,
-                   &import[52],
+                   &import.at("float_from_stamount"),
                    params,
                    result,
                    0,
@@ -5845,7 +6499,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // hfs.floatFromSTAmount(amount, 0);
             STAmount const amount = XRP(-1);
-            auto const y = hfs.floatSet(-1 * 1'000'000, 0, 0);
+            auto const y = hfs.floatFromMantExp(-1 * 1'000'000, 0, 0);
             if (BEAST_EXPECT(y))
             {
                 Bytes amountBytes = toBytes(amount);
@@ -5853,7 +6507,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 WasmValVec params(5), result(1);
                 auto* trap =
                     ww(floatFromSTAmount_wrap,
-                       &import[52],
+                       &import.at("float_from_stamount"),
                        params,
                        result,
                        0,
@@ -5871,14 +6525,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // hfs.floatFromSTAmount(amount, 0);
-            auto const y = hfs.floatSet(9223372036854776, 3, 0);
+            auto const y = hfs.floatFromMantExp(9223372036854776, 3, 0);
             STAmount const amount(noIssue(), std::numeric_limits<int64_t>::max());
             Bytes amountBytes = toBytes(amount);
             vrt.setBytes(0, amountBytes.data(), amountBytes.size());
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(floatFromSTAmount_wrap,
-                   &import[52],
+                   &import.at("float_from_stamount"),
                    params,
                    result,
                    0,
@@ -5918,7 +6572,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(floatFromSTAmount_wrap,
-                   &import[52],
+                   &import.at("float_from_stamount"),
                    params,
                    result,
                    0,
@@ -5942,7 +6596,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(floatFromSTAmount_wrap,
-                   &import[52],
+                   &import.at("float_from_stamount"),
                    params,
                    result,
                    0,
@@ -5983,7 +6637,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(floatFromSTNumber_wrap,
-                   &import[53],
+                   &import.at("float_from_stnumber"),
                    params,
                    result,
                    0,
@@ -6006,7 +6660,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(floatFromSTNumber_wrap,
-                   &import[53],
+                   &import.at("float_from_stnumber"),
                    params,
                    result,
                    0,
@@ -6030,7 +6684,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(floatFromSTNumber_wrap,
-                   &import[53],
+                   &import.at("float_from_stnumber"),
                    params,
                    result,
                    0,
@@ -6053,7 +6707,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(5), result(1);
             auto* trap =
                 ww(floatFromSTNumber_wrap,
-                   &import[53],
+                   &import.at("float_from_stnumber"),
                    params,
                    result,
                    0,
@@ -6090,7 +6744,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             vrt.setBytes(0, float1.data(), float1.size());
             WasmValVec params(5), result(1);
             auto* trap =
-                ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, -1);
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -6102,7 +6764,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(float1), 4);
             vrt.setBytes(0, float1.data(), float1.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 4);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -6113,7 +6784,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // hfs.floatToInt(Slice(), 0);
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, 0, 256, 8, 0);
+            auto* trap =
+                ww(floatToInt_wrap, &import.at("float_to_int"), params, result, 0, 0, 256, 8, 0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -6125,7 +6797,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(invalid), 0);
             vrt.setBytes(0, invalid.data(), invalid.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -6137,7 +6818,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(floatIntZero), 0);
             vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 8);
@@ -6153,7 +6843,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(float1), 0);
             vrt.setBytes(0, float1.data(), float1.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 8);
@@ -6169,7 +6868,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(floatMinus1), 0);
             vrt.setBytes(0, floatMinus1.data(), floatMinus1.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 8);
@@ -6185,7 +6893,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(floatIntMax), 0);
             vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 8);
@@ -6203,7 +6920,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(floatIntMin), 0);
             vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -6215,7 +6941,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(floatUIntMax), 0);
             vrt.setBytes(0, floatUIntMax.data(), floatUIntMax.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -6229,7 +6964,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(floatPi), 0);
             vrt.setBytes(0, floatPi.data(), floatPi.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 8);
@@ -6242,7 +6986,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(floatPi), 1);
             vrt.setBytes(0, floatPi.data(), floatPi.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 1);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 8);
@@ -6255,7 +7008,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(floatPi), 2);
             vrt.setBytes(0, floatPi.data(), floatPi.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 2);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   2);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 8);
@@ -6268,7 +7030,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatToInt(makeSlice(floatPi), 3);
             vrt.setBytes(0, floatPi.data(), floatPi.size());
             WasmValVec params(5), result(1);
-            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 3);
+            auto* trap =
+                ww(floatToInt_wrap,
+                   &import.at("float_to_int"),
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   3);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 8);
@@ -6278,9 +7049,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
-    testFloatToMantissaAndExponent()
+    testFloatToMantExp()
     {
-        testcase("floatToMantissaAndExponent");
+        testcase("floatToMantExp");
         using namespace test::jtx;
 
         Env env{*this};
@@ -6294,12 +7065,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         hfs.setRT(&vrt);
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(invalid));
+            // hfs.floatToMantExp(makeSlice(invalid));
             vrt.setBytes(0, invalid.data(), invalid.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
-                   &import[55],
+                ww(floatToMantExp_wrap,
+                   &import.at("float_to_mant_exp"),
                    params,
                    result,
                    0,
@@ -6316,12 +7087,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatIntZero));
+            // hfs.floatToMantExp(makeSlice(floatIntZero));
             vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
-                   &import[55],
+                ww(floatToMantExp_wrap,
+                   &import.at("float_to_mant_exp"),
                    params,
                    result,
                    0,
@@ -6339,17 +7110,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(exponent == std::numeric_limits<int32_t>::min());
 
             // roundtrip
-            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntZero);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(float1));
+            // hfs.floatToMantExp(makeSlice(float1));
             vrt.setBytes(0, float1.data(), float1.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
-                   &import[55],
+                ww(floatToMantExp_wrap,
+                   &import.at("float_to_mant_exp"),
                    params,
                    result,
                    0,
@@ -6366,17 +7137,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(mantissa == 1000000000000000000) && BEAST_EXPECT(exponent == -normalExp);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == float1);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatMinus1));
+            // hfs.floatToMantExp(makeSlice(floatMinus1));
             vrt.setBytes(0, floatMinus1.data(), floatMinus1.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
-                   &import[55],
+                ww(floatToMantExp_wrap,
+                   &import.at("float_to_mant_exp"),
                    params,
                    result,
                    0,
@@ -6393,17 +7164,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(mantissa == -1000000000000000000) && BEAST_EXPECT(exponent == -normalExp);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatMinus1);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(float10));
+            // hfs.floatToMantExp(makeSlice(float10));
             vrt.setBytes(0, float10.data(), float10.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
-                   &import[55],
+                ww(floatToMantExp_wrap,
+                   &import.at("float_to_mant_exp"),
                    params,
                    result,
                    0,
@@ -6421,17 +7192,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(exponent == -normalExp + 1);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == float10);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatPi));
+            // hfs.floatToMantExp(makeSlice(floatPi));
             vrt.setBytes(0, floatPi.data(), floatPi.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
-                   &import[55],
+                ww(floatToMantExp_wrap,
+                   &import.at("float_to_mant_exp"),
                    params,
                    result,
                    0,
@@ -6448,17 +7219,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(mantissa == 3141592653589793000) && BEAST_EXPECT(exponent == -normalExp);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatPi);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatIntMax));
+            // hfs.floatToMantExp(makeSlice(floatIntMax));
             vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
-                   &import[55],
+                ww(floatToMantExp_wrap,
+                   &import.at("float_to_mant_exp"),
                    params,
                    result,
                    0,
@@ -6476,17 +7247,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(exponent == 0);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMax);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatIntMin));
+            // hfs.floatToMantExp(makeSlice(floatIntMin));
             vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
-                   &import[55],
+                ww(floatToMantExp_wrap,
+                   &import.at("float_to_mant_exp"),
                    params,
                    result,
                    0,
@@ -6504,17 +7275,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(exponent == 1);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMin);
         }
 
         {
-            // hfs.floatToMantissaAndExponent(makeSlice(floatMax));
+            // hfs.floatToMantExp(makeSlice(floatMax));
             vrt.setBytes(0, floatMax.data(), floatMax.size());
             WasmValVec params(6), result(1);
             auto* trap =
-                ww(floatToMantissaAndExponent_wrap,
-                   &import[55],
+                ww(floatToMantExp_wrap,
+                   &import.at("float_to_mant_exp"),
                    params,
                    result,
                    0,
@@ -6532,250 +7303,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(exponent == Number::maxExponent);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
+            auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatMax);
-        }
-    }
-
-    void
-    testFloatNegate()
-    {
-        testcase("floatNegate");
-        using namespace test::jtx;
-
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        VirtualRuntime vrt;
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
-
-        {
-            // hfs.floatNegate(makeSlice(invalid));
-            vrt.setBytes(0, invalid.data(), invalid.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(
-                    result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
-        }
-
-        {
-            // hfs.floatNegate(makeSlice(floatIntZero));
-            vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(resultBytes == floatIntZero);
-        }
-
-        {
-            // hfs.floatNegate(makeSlice(float1));
-            vrt.setBytes(0, float1.data(), float1.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(resultBytes == floatMinus1);
-        }
-
-        {
-            // hfs.floatNegate(makeSlice(floatMinus1));
-            vrt.setBytes(0, floatMinus1.data(), floatMinus1.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(resultBytes == float1);
-        }
-
-        {
-            // hfs.floatNegate(makeSlice(floatIntMax));
-            auto const expected = hfs.floatFromInt(std::numeric_limits<int64_t>::min() + 1, 0);
-            vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(expected) && BEAST_EXPECT(resultBytes == *expected);
-        }
-
-        {
-            // hfs.floatNegate(makeSlice(floatMaxExp));
-            vrt.setBytes(0, floatMaxExp.data(), floatMaxExp.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(resultBytes == floatMinusMaxExp);
-        }
-
-        {
-            // hfs.floatNegate(makeSlice(floatPi));
-            vrt.setBytes(0, floatPi.data(), floatPi.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-
-            // hfs.floatNegate(makeSlice(*result));
-            vrt.setBytes(512, resultBytes.data(), resultBytes.size());
-            WasmValVec params2(4), result2(1);
-            auto* trap2 = ww(
-                floatNegate_wrap, &import[56], params2, result2, 512, FLOAT_SIZE, 768, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap2) && BEAST_EXPECT(result2[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result2[0].of.i32 == FLOAT_SIZE);
-            auto const negPiBytes = vrt.getBytes(params2, 2);
-            BEAST_EXPECT(negPiBytes == floatPi);
-        }
-    }
-
-    void
-    testFloatAbs()
-    {
-        testcase("floatAbs");
-        using namespace test::jtx;
-
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        VirtualRuntime vrt;
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
-
-        {
-            // hfs.floatAbs(makeSlice(invalid));
-            vrt.setBytes(0, invalid.data(), invalid.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(
-                    result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
-        }
-
-        {
-            // hfs.floatAbs(makeSlice(floatIntZero));
-            vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(resultBytes == floatIntZero);
-        }
-
-        {
-            // hfs.floatAbs(makeSlice(float1));
-            vrt.setBytes(0, float1.data(), float1.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(resultBytes == float1);
-        }
-
-        {
-            // hfs.floatAbs(makeSlice(floatMinus1));
-            vrt.setBytes(0, floatMinus1.data(), floatMinus1.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(resultBytes == float1);
-        }
-
-        {
-            // hfs.floatAbs(makeSlice(floatIntMax));
-            vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(resultBytes == floatIntMax);
-        }
-
-        {
-            // hfs.floatAbs(makeSlice(floatIntMin));
-            auto const negated = hfs.floatNegate(makeSlice(floatIntMin));
-            vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(negated) && BEAST_EXPECT(resultBytes == *negated);
-        }
-
-        {
-            // hfs.floatAbs(makeSlice(floatMinusMaxExp));
-            vrt.setBytes(0, floatMinusMaxExp.data(), floatMinusMaxExp.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(resultBytes == floatMaxExp);
-        }
-
-        {
-            // hfs.floatAbs(makeSlice(floatMinus3));
-            auto const expected = hfs.floatFromInt(3, 0);
-            vrt.setBytes(0, floatMinus3.data(), floatMinus3.size());
-            WasmValVec params(4), result(1);
-            auto* trap =
-                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
-
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
-            auto const resultBytes = vrt.getBytes(params, 2);
-            BEAST_EXPECT(expected) && BEAST_EXPECT(resultBytes == *expected);
         }
     }
 
@@ -6791,10 +7320,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatFromSTAmount();
         testFloatFromSTNumber();
         testFloatToInt();
-        testFloatToMantissaAndExponent();
-        testFloatNegate();
-        testFloatAbs();
-        testFloatSet();
+        testFloatToMantExp();
+        testfloatFromMantExp();
         testFloatCompare();
         testFloatAdd();
         testFloatSubtract();
@@ -6802,7 +7329,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatDivide();
         testFloatRoot();
         testFloatPower();
-        testFloatLog();
         testFloatSpecialCases();
     }
 
@@ -6829,7 +7355,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(2), result(1);
             // 3 parameters instead of 2
             auto* trap =
-                ww(getLedgerSqn_wrap, &import[0], params, result, 0, sizeof(std::uint32_t), 1);
+                ww(getLedgerSqn_wrap,
+                   &import.at("get_ledger_sqn"),
+                   params,
+                   result,
+                   0,
+                   sizeof(std::uint32_t),
+                   1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&

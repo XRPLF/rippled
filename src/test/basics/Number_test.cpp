@@ -1543,78 +1543,6 @@ public:
     }
 
     void
-    test_log10()
-    {
-        auto const scale = Number::getMantissaScale();
-        testcase << "test_lg " << to_string(scale);
-
-        using Case = std::tuple<Number, Number>;
-        auto test = [this](auto const& c) {
-            for (auto const& [x, z] : c)
-            {
-                auto const result = log10(x);
-                std::stringstream ss;
-                ss << "lg(" << x << ") = " << result << ". Expected: " << z;
-                // std::cout << ss.str() << std::endl;
-                BEAST_EXPECTS(result == z, ss.str());
-            }
-        };
-
-        auto const cSmall = std::to_array<Case>(
-            {{Number{2}, Number{3'010'299'956'639'811ll, -16}},
-             {Number{2'000'000}, Number{6'301'029'995'663'985ll, -15}},
-             {Number{2, -30}, Number{-2'969'897'000'433'602ll, -14}},
-             {Number{1}, Number{0}},
-             {Number{1'000'000'000'000'000ll}, Number{15}},
-             {Number{5625, -4}, Number{-2'498'774'732'165'998, -16}}});
-
-        auto const cLarge = std::to_array<Case>({
-            {Number{Number::maxMantissa() - 9, -1, Number::normalized{}},
-             Number{1'799'999'999'999'999'999ll, -17}},
-            {Number{Number::maxMantissa() - 9, 0, Number::normalized{}},
-             Number{1'899'999'999'999'999'999ll, -17}},
-            {Number{Number::maxRep, 0, Number::normalized{}},
-             Number{1'896'488'972'683'081'529ll, -17}},
-            {Number{999'999'999'999'999'999ll}, Number{1'799'999'999'999'999'999, -17}},
-        });
-
-        if (Number::getMantissaScale() == MantissaRange::small)
-        {
-            test(cSmall);
-        }
-        else
-        {
-            NumberRoundModeGuard const mg(Number::towards_zero);
-            test(cLarge);
-        }
-
-        {
-            bool caught = false;
-            try
-            {
-                log10(Number{-2});
-            }
-            catch (std::runtime_error const&)
-            {
-                caught = true;
-            }
-            BEAST_EXPECT(caught);
-            caught = false;
-
-            try
-            {
-                log10(Number());
-            }
-            catch (std::runtime_error const&)
-            {
-                caught = true;
-            }
-            BEAST_EXPECT(caught);
-            caught = false;
-        }
-    }
-
-    void
     run() override
     {
         for (auto const scale : {MantissaRange::small, MantissaRange::large})
@@ -1641,7 +1569,6 @@ public:
             test_truncate();
             testRounding();
             testInt64();
-            test_log10();
         }
     }
 };

@@ -477,27 +477,15 @@ public:
     }
 
     virtual Expected<FloatPair, HostFunctionError>
-    floatToMantissaAndExponent(Slice const& x) const override
+    floatToMantExp(Slice const& x) const override
     {
-        return wasm_float::floatToMantissaAndExponentImpl(x);
+        return wasm_float::floatToMantExpImpl(x);
     }
 
     Expected<Bytes, HostFunctionError>
-    floatNegate(Slice const& x) const override
+    floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const override
     {
-        return wasm_float::floatNegateImpl(x);
-    }
-
-    Expected<Bytes, HostFunctionError>
-    floatAbs(Slice const& x) const override
-    {
-        return wasm_float::floatAbsImpl(x);
-    }
-
-    Expected<Bytes, HostFunctionError>
-    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const override
-    {
-        return wasm_float::floatSetImpl(mantissa, exponent, mode);
+        return wasm_float::floatFromMantExpImpl(mantissa, exponent, mode);
     }
 
     Expected<int32_t, HostFunctionError>
@@ -540,12 +528,6 @@ public:
     floatPower(Slice const& x, int32_t n, int32_t mode) const override
     {
         return wasm_float::floatPowerImpl(x, n, mode);
-    }
-
-    Expected<Bytes, HostFunctionError>
-    floatLog(Slice const& x, int32_t mode) const override
-    {
-        return wasm_float::floatLogImpl(x, mode);
     }
 };
 
