@@ -10,9 +10,11 @@
 #include <iterator>
 #include <limits>
 #include <numeric>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 
 #ifdef _MSC_VER
@@ -34,18 +36,18 @@ thread_local std::reference_wrapper<MantissaRange const> Number::kRANGE =
 std::set<MantissaRange::MantissaScale> const&
 MantissaRange::getAllScales()
 {
-    static std::set<MantissaRange::MantissaScale> const scales = {
+    static std::set<MantissaRange::MantissaScale> const kSCALES = {
         MantissaRange::MantissaScale::Small,
         MantissaRange::MantissaScale::LargeLegacy,
         MantissaRange::MantissaScale::Large,
     };
-    return scales;
+    return kSCALES;
 }
 
 std::unordered_map<MantissaRange::MantissaScale, MantissaRange> const&
 MantissaRange::getRanges()
 {
-    static auto const map = []() {
+    static auto const kMAP = []() {
         std::unordered_map<MantissaScale, MantissaRange> map;
         for (auto const scale : getAllScales())
         {
@@ -56,41 +58,41 @@ MantissaRange::getRanges()
         // created correctly, but nothing else.
         {
             [[maybe_unused]]
-            constexpr static MantissaRange range{MantissaRange::MantissaScale::Small};
-            static_assert(isPowerOfTen(range.min));
-            static_assert(range.min == 1'000'000'000'000'000LL);
-            static_assert(range.max == 9'999'999'999'999'999LL);
-            static_assert(range.log == 15);
-            static_assert(range.min < Number::kMAX_REP);
-            static_assert(range.max < Number::kMAX_REP);
-            static_assert(range.cuspRoundingFixEnabled == CuspRoundingFix::Disabled);
+            constexpr static MantissaRange kRANGE{MantissaRange::MantissaScale::Small};
+            static_assert(isPowerOfTen(kRANGE.min));
+            static_assert(kRANGE.min == 1'000'000'000'000'000LL);
+            static_assert(kRANGE.max == 9'999'999'999'999'999LL);
+            static_assert(kRANGE.log == 15);
+            static_assert(kRANGE.min < Number::kMAX_REP);
+            static_assert(kRANGE.max < Number::kMAX_REP);
+            static_assert(kRANGE.cuspRoundingFixEnabled == CuspRoundingFix::Disabled);
         }
         {
             [[maybe_unused]]
-            constexpr static MantissaRange range{MantissaRange::MantissaScale::LargeLegacy};
-            static_assert(isPowerOfTen(range.min));
-            static_assert(range.min == 1'000'000'000'000'000'000ULL);
-            static_assert(range.max == rep(9'999'999'999'999'999'999ULL));
-            static_assert(range.log == 18);
-            static_assert(range.min < Number::kMAX_REP);
-            static_assert(range.max > Number::kMAX_REP);
-            static_assert(range.cuspRoundingFixEnabled == CuspRoundingFix::Disabled);
+            constexpr static MantissaRange kRANGE{MantissaRange::MantissaScale::LargeLegacy};
+            static_assert(isPowerOfTen(kRANGE.min));
+            static_assert(kRANGE.min == 1'000'000'000'000'000'000ULL);
+            static_assert(kRANGE.max == rep(9'999'999'999'999'999'999ULL));
+            static_assert(kRANGE.log == 18);
+            static_assert(kRANGE.min < Number::kMAX_REP);
+            static_assert(kRANGE.max > Number::kMAX_REP);
+            static_assert(kRANGE.cuspRoundingFixEnabled == CuspRoundingFix::Disabled);
         }
         {
             [[maybe_unused]]
-            constexpr static MantissaRange range{MantissaRange::MantissaScale::Large};
-            static_assert(isPowerOfTen(range.min));
-            static_assert(range.min == 1'000'000'000'000'000'000ULL);
-            static_assert(range.max == rep(9'999'999'999'999'999'999ULL));
-            static_assert(range.log == 18);
-            static_assert(range.min < Number::kMAX_REP);
-            static_assert(range.max > Number::kMAX_REP);
-            static_assert(range.cuspRoundingFixEnabled == CuspRoundingFix::Enabled);
+            constexpr static MantissaRange kRANGE{MantissaRange::MantissaScale::Large};
+            static_assert(isPowerOfTen(kRANGE.min));
+            static_assert(kRANGE.min == 1'000'000'000'000'000'000ULL);
+            static_assert(kRANGE.max == rep(9'999'999'999'999'999'999ULL));
+            static_assert(kRANGE.log == 18);
+            static_assert(kRANGE.min < Number::kMAX_REP);
+            static_assert(kRANGE.max > Number::kMAX_REP);
+            static_assert(kRANGE.cuspRoundingFixEnabled == CuspRoundingFix::Enabled);
         }
         return map;
     }();
 
-    return map;
+    return kMAP;
 }
 
 MantissaRange const&

@@ -31,7 +31,7 @@ class Number_test : public beast::unit_test::Suite
         int count = 0;
         for (auto it = s.rbegin(); it != s.rend(); ++it)
         {
-            if (count && count % 3 == 0)
+            if (count != 0 && count % 3 == 0)
                 out.insert(out.begin(), '_');
             out.insert(out.begin(), *it);
             ++count;
@@ -222,7 +222,7 @@ public:
             {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP / 10, 1}},
         });
         auto const cLargeCorrected = std::to_array<Case>({
-            {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP / 10 + 1, 1}},
+            {Number{Number::kMAX_REP}, Number{6, -1}, Number{(Number::kMAX_REP / 10) + 1, 1}},
         });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
@@ -241,9 +241,13 @@ public:
         {
             test(cLarge);
             if (scale == MantissaRange::MantissaScale::LargeLegacy)
+            {
                 test(cLargeLegacy);
+            }
             else
+            {
                 test(cLargeCorrected);
+            }
         }
         {
             bool caught = false;
@@ -1589,16 +1593,16 @@ public:
         NumberMantissaScaleGuard const mg{MantissaRange::MantissaScale::Large};
         NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
 
-        constexpr std::int64_t aValue = 1'000'000'000'000'049'863LL;
-        constexpr std::int64_t bValue = 9'223'372'036'854'315'903LL;
+        constexpr std::int64_t kA_VALUE = 1'000'000'000'000'049'863LL;
+        constexpr std::int64_t kB_VALUE = 9'223'372'036'854'315'903LL;
 
         // Public conversion operator: STAmount::operator Number() const.
-        Number const a = aValue;
-        Number const b = bValue;
+        Number const a = kA_VALUE;
+        Number const b = kB_VALUE;
         Number const product = a * b;
 
         // Exact reference in BigInt.
-        BigInt const exactProduct = BigInt(aValue) * BigInt(bValue);
+        BigInt const exactProduct = BigInt(kA_VALUE) * BigInt(kB_VALUE);
 
         // What Number actually stored.
         BigInt storedValue = BigInt(product.mantissa());
@@ -1608,8 +1612,8 @@ public:
         BigInt const signedDifference = storedValue - exactProduct;
 
         log << "\n"
-            << "  a              = " << fmt(BigInt(aValue)) << "\n"
-            << "  b              = " << fmt(BigInt(bValue)) << "\n"
+            << "  a              = " << fmt(BigInt(kA_VALUE)) << "\n"
+            << "  b              = " << fmt(BigInt(kB_VALUE)) << "\n"
             << "  exact a*b      = " << fmt(exactProduct) << "\n"
             << "  stored         = " << fmt(storedValue) << "\n"
             << "  stored - exact = " << fmt(signedDifference) << "\n"

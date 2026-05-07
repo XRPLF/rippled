@@ -50,7 +50,7 @@ isPowerOfTen(T value)
  * options. This intentionally restricts the number of unique MantissaRanges that can
  * be instantiated: one for each scale.
  *
- * The "small" scale is based on the behavior of STAmount for IOUs. It has a min
+ * The "Small" scale is based on the behavior of STAmount for IOUs. It has a min
  * value of 10^15, and a max value of 10^16-1. This was sufficient for
  * uses before Lending Protocol was implemented, mostly related to AMM.
  *
@@ -61,12 +61,16 @@ isPowerOfTen(T value)
  * STNumber field type, and for internal calculations. That necessitated the
  * "large" scale.
  *
- * The "large" scale is intended to represent all values that can be represented
+ * The "Large" scales are intended to represent all values that can be represented
  * by an STAmount - IOUs, XRP, and MPTs. It has a min value of 10^18, and a max
- * value of 10^19-1.
+ * value of 10^19-1. "LargeLegacy" is like "Large", but preserves
+ * a rounding error when a computation results in a mantissa of
+ * Number::kMAX_REP that needs to be rounded up, but rounds down
+ * instead. It will maintain consistent behavior until the fixCleanup3_2_0
+ * amendment is enabled.
  *
  * Note that if the mentioned amendments are eventually retired, this class
- * should be left in place, but the "small" scale option should be removed. This
+ * should be left in place, but the "Small" scale option should be removed. This
  * will allow for future expansion beyond 64-bits if it is ever needed.
  */
 struct MantissaRange
@@ -125,9 +129,9 @@ private:
     }
 
     static constexpr CuspRoundingFix
-    isCuspFixEnabled(MantissaScale scale_)
+    isCuspFixEnabled(MantissaScale scale)
     {
-        switch (scale_)
+        switch (scale)
         {
             case MantissaScale::Small:
             case MantissaScale::LargeLegacy:
@@ -473,10 +477,10 @@ public:
     one();
 
     template <
-        auto minMantissa,
-        auto maxMantissa,
-        Integral64 T = std::decay_t<decltype(minMantissa)>,
-        Integral64 TMax = std::decay_t<decltype(maxMantissa)>>
+        auto MinMantissa,
+        auto MaxMantissa,
+        Integral64 T = std::decay_t<decltype(MinMantissa)>,
+        Integral64 TMax = std::decay_t<decltype(MaxMantissa)>>
     [[nodiscard]]
     std::pair<T, int>
     normalizeToRange() const;
@@ -723,18 +727,18 @@ Number::isnormal() const noexcept
          kMIN_EXPONENT <= exponent_ && exponent_ <= kMAX_EXPONENT);
 }
 
-template <auto minMantissa, auto maxMantissa, Integral64 T, Integral64 TMax>
+template <auto MinMantissa, auto MaxMantissa, Integral64 T, Integral64 TMax>
 std::pair<T, int>
 Number::normalizeToRange() const
 {
     static_assert(std::is_same_v<T, std::uint64_t> || std::is_same_v<T, std::int64_t>);
     static_assert(std::is_same_v<T, TMax>);
-    auto constexpr min = static_cast<T>(minMantissa);
-    auto constexpr max = static_cast<T>(maxMantissa);
-    static_assert(min > 0);
-    static_assert(min % 10 == 0);
-    static_assert(max % 10 == 9);
-    static_assert((max + 1) / 10 == min);
+    auto constexpr kMIN = static_cast<T>(MinMantissa);
+    auto constexpr kMAX = static_cast<T>(MaxMantissa);
+    static_assert(kMIN > 0);
+    static_assert(kMIN % 10 == 0);
+    static_assert(kMAX % 10 == 9);
+    static_assert((kMAX + 1) / 10 == kMIN);
 
     bool negative = negative_;
     internalrep mantissa = mantissa_;
@@ -750,7 +754,7 @@ Number::normalizeToRange() const
     // Don't need to worry about the cuspRounding fix because rounding up will never take the
     // mantissa over maxMantissa with a ones digit value other than 0. 0 can safely be truncated.
     Number::normalize(
-        negative, mantissa, exponent, min, max, MantissaRange::CuspRoundingFix::Disabled);
+        negative, mantissa, exponent, kMIN, kMAX, MantissaRange::CuspRoundingFix::Disabled);
 
     auto const sign = negative ? -1 : 1;
     return std::make_pair(static_cast<T>(sign * mantissa), exponent);
@@ -801,11 +805,11 @@ to_string(MantissaRange::MantissaScale const& scale)
     switch (scale)
     {
         case MantissaRange::MantissaScale::Small:
-            return "Small";
+            return "small";
         case MantissaRange::MantissaScale::LargeLegacy:
-            return "LargeLegacy";
+            return "largeLegacy";
         case MantissaRange::MantissaScale::Large:
-            return "Large";
+            return "large";
         default:
             throw std::runtime_error("Bad scale");
     }
