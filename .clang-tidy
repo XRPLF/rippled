@@ -156,7 +156,13 @@ Checks: "-*,
 # readability-inconsistent-declaration-parameter-name, # in this codebase this check will break a lot of arg names
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. it makes the code less readable
 # ---
+
 CheckOptions:
+  bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
+  bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
+
+  misc-include-cleaner.IgnoreHeaders: ".*/(detail|impl)/.*;.*fwd\\.h(pp)?;time.h;stdlib.h;sqlite3.h;netinet/in\\.h;sys/resource\\.h;sys/sysinfo\\.h;linux/sysinfo\\.h;__chrono/.*;bits/.*;_abort\\.h;boost/uuid/uuid_hash.hpp;boost/beast/core/flat_buffer\\.hpp;boost/beast/http/field\\.hpp;boost/beast/http/dynamic_body\\.hpp;boost/beast/http/message\\.hpp;boost/beast/http/read\\.hpp;boost/beast/http/write\\.hpp;openssl/obj_mac\\.h"
+
   readability-braces-around-statements.ShortStatementLines: 2
   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
   readability-identifier-naming.ClassCase: CamelCase
@@ -191,9 +197,7 @@ CheckOptions:
   readability-identifier-naming.ProtectedMemberSuffix: _
   readability-identifier-naming.PublicMemberSuffix: ""
   readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
-  bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
-  bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
-  misc-include-cleaner.IgnoreHeaders: ".*/(detail|impl)/.*;.*fwd\\.h(pp)?;time.h;stdlib.h;sqlite3.h;netinet/in\\.h;sys/resource\\.h;sys/sysinfo\\.h;linux/sysinfo\\.h;__chrono/.*;bits/.*;_abort\\.h;boost/uuid/uuid_hash.hpp;boost/beast/core/flat_buffer\\.hpp;boost/beast/http/field\\.hpp;boost/beast/http/dynamic_body\\.hpp;boost/beast/http/message\\.hpp;boost/beast/http/read\\.hpp;boost/beast/http/write\\.hpp;openssl/obj_mac\\.h"
+
 HeaderFilterRegex: '^.*/(test|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
 ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'
 WarningsAsErrors: "*"
