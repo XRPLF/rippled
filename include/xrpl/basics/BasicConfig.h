@@ -516,7 +516,7 @@ struct Keys
     static constexpr auto kRETRY_SEQUENCE_PERCENT = "retry_sequence_percent";
     static constexpr auto kRQ_BUNDLE = "rq_bundle";
     static constexpr auto kSAFETY_LEVEL = "safety_level";
-    static constexpr auto kSECURE_GATEWAY = "secureGateway";
+    static constexpr auto kSECURE_GATEWAY = "secure_gateway";
     static constexpr auto kSEND_QUEUE_LIMIT = "send_queue_limit";
     static constexpr auto kSERVER = "server";
     static constexpr auto kSERVER_MAX_WINDOW_BITS = "server_max_window_bits";
