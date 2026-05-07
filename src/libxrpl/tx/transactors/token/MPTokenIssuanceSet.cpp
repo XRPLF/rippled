@@ -106,6 +106,10 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
     if (ctx.rules.enabled(featureDynamicMPT))
     {
+        // DomainID updates and mutable flag updates must be separate transactions.
+        if (mutableFlags && ctx.tx.isFieldPresent(sfDomainID))
+            return temMALFORMED;
+
         // Holder field is not allowed when mutating MPTokenIssuance
         if (isMutate && holderID)
             return temMALFORMED;
@@ -234,8 +238,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         return currentMutableFlags & mutableFlag;
     };
 
-    auto const mutableFlags = ctx.tx[~sfMutableFlags];
-    if (mutableFlags)
+    if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
     {
         if (std::ranges::any_of(
                 kMPT_MUTABILITY_FLAGS, [mutableFlags, &isMutableFlag](auto const& f) {
@@ -244,14 +247,9 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
                 }))
             return tecNO_PERMISSION;
 
-        auto const domain = ctx.tx[~sfDomainID];
-        // Whether the issuance will have a DomainID after this transaction:
-        // non-zero DomainID sets/replaces it, zero clears it, and absence
-        // leaves the current ledger state unchanged.
-        auto const willHaveDomainID =
-            domain ? *domain != beast::kZERO : sleMptIssuance->isFieldPresent(sfDomainID);
-
-        if (willHaveDomainID && ((*mutableFlags & tmfMPTClearRequireAuth) != 0u))
+        // a DomainID set, because a DomainID requires RequireAuth to be active.
+        if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u &&
+            sleMptIssuance->isFieldPresent(sfDomainID))
             return tecNO_PERMISSION;
     }
 

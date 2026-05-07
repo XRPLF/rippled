@@ -3118,7 +3118,7 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetRequireAuth});
         }
 
-        // Cannot set a DomainID and clear RequireAuth in the same transaction.
+        // Cannot set a DomainID and mutable flags in the same transaction.
         {
             Account const alice{"alice"};
             Account const bob{"bob"};
@@ -3138,18 +3138,21 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTRequireAuth,
-                .mutableFlags = tmfMPTCanMutateRequireAuth,
+                .mutableFlags = tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanLock,
             });
 
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearRequireAuth,
-                .domainID = domainId,
-                .err = tecNO_PERMISSION,
-            });
+            for (auto const mutableFlags : {tmfMPTClearRequireAuth, tmfMPTSetCanLock})
+            {
+                mptAlice.set({
+                    .account = alice,
+                    .mutableFlags = mutableFlags,
+                    .domainID = domainId,
+                    .err = temMALFORMED,
+                });
+            }
         }
 
-        // Can clear DomainID and RequireAuth in the same transaction.
+        // Cannot clear DomainID and set mutable flags in the same transaction.
         {
             Account const alice{"alice"};
             Account const bob{"bob"};
@@ -3169,16 +3172,19 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTRequireAuth,
-                .mutableFlags = tmfMPTCanMutateRequireAuth,
+                .mutableFlags = tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanLock,
                 .domainID = domainId,
             });
 
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearRequireAuth,
-                .domainID = uint256{},
-            });
-            BEAST_EXPECT(mptAlice.checkDomainID(std::nullopt));
+            for (auto const mutableFlags : {tmfMPTClearRequireAuth, tmfMPTSetCanLock})
+            {
+                mptAlice.set({
+                    .account = alice,
+                    .mutableFlags = mutableFlags,
+                    .domainID = uint256{},
+                    .err = temMALFORMED,
+                });
+            }
         }
     }
 
