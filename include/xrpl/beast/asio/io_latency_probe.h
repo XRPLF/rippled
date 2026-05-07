@@ -15,7 +15,7 @@ namespace beast {
 
 /** Measures handler latency on an io_context queue. */
 template <class Clock>
-class IoLatencyProbe
+class IOLatencyProbe
 {
 private:
     using duration = typename Clock::duration;
@@ -30,12 +30,12 @@ private:
     bool cancel_{false};
 
 public:
-    IoLatencyProbe(duration const& period, boost::asio::io_context& ios)
+    IOLatencyProbe(duration const& period, boost::asio::io_context& ios)
         : period_(period), ios_(ios), timer_(ios_)
     {
     }
 
-    ~IoLatencyProbe()
+    ~IOLatencyProbe()
     {
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cancel(lock, true);
@@ -85,7 +85,7 @@ public:
     {
         std::scoped_lock const lock(mutex_);
         if (cancel_)
-            throw std::logic_error("io_latency_probe is canceled");
+            throw std::logic_error("IOLatencyProbe is canceled");
         boost::asio::post(
             ios_, SampleOp<Handler>(std::forward<Handler>(handler), Clock::now(), false, this));
     }
@@ -100,7 +100,7 @@ public:
     {
         std::scoped_lock const lock(mutex_);
         if (cancel_)
-            throw std::logic_error("io_latency_probe is canceled");
+            throw std::logic_error("IOLatencyProbe is canceled");
         boost::asio::post(
             ios_, SampleOp<Handler>(std::forward<Handler>(handler), Clock::now(), true, this));
     }
@@ -140,18 +140,18 @@ private:
         Handler handler;
         time_point start;
         bool repeat;
-        IoLatencyProbe* probe;
+        IOLatencyProbe* probe;
 
         SampleOp(
             Handler const& handler,
             time_point const& start,
             bool repeat,
-            IoLatencyProbe* probe)
+            IOLatencyProbe* probe)
             : handler(handler), start(start), repeat(repeat), probe(probe)
         {
             XRPL_ASSERT(
                 probe,
-                "beast::io_latency_probe::sample_op::sample_op : non-null "
+                "beast::IOLatencyProbe::SampleOp::SampleOp : non-null "
                 "probe input");
             probe->addref();
         }
@@ -164,7 +164,7 @@ private:
         {
             XRPL_ASSERT(
                 probe,
-                "beast::io_latency_probe::sample_op::sample_op(sample_op&&) : "
+                "beast::IOLatencyProbe::SampleOp::SampleOp(SampleOp&&) : "
                 "non-null probe input");
             from.probe = nullptr;
         }
