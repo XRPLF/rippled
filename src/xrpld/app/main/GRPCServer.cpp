@@ -1,7 +1,6 @@
 #include <xrpld/app/main/GRPCServer.h>
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
@@ -335,15 +334,15 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
     : app_(app), journal_(app_.getJournal("gRPC Server"))
 {
     // if present, get endpoint from config
-    if (app_.config().exists(SECTION_PORT_GRPC))
+    if (app_.config().exists(kSECTION_PORT_GRPC))
     {
-        Section const& section = app_.config().section(SECTION_PORT_GRPC);
+        Section const& section = app_.config().section(kSECTION_PORT_GRPC);
 
-        auto const optIp = section.get("ip");
+        auto const optIp = section.get(kKEY_IP);
         if (!optIp)
             return;
 
-        auto const optPort = section.get("port");
+        auto const optPort = section.get(kKEY_PORT);
         if (!optPort)
             return;
         try
@@ -361,7 +360,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
             Throw<std::runtime_error>("Error setting grpc server address");
         }
 
-        auto const optSecureGateway = section.get("secure_gateway");
+        auto const optSecureGateway = section.get(kKEY_SECURE_GATEWAY);
         if (optSecureGateway)
         {
             try
@@ -391,10 +390,10 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
         }
 
         // Read TLS certificate configuration (optional)
-        sslCertPath_ = section.get("ssl_cert");
-        sslKeyPath_ = section.get("ssl_key");
-        sslCertChainPath_ = section.get("ssl_cert_chain");
-        sslClientCAPath_ = section.get("ssl_client_ca");
+        sslCertPath_ = section.get(kKEY_SSL_CERT);
+        sslKeyPath_ = section.get(kKEY_SSL_KEY);
+        sslCertChainPath_ = section.get(kKEY_SSL_CERT_CHAIN);
+        sslClientCAPath_ = section.get(kKEY_SSL_CLIENT_CA);
 
         // If cert or key is specified, both must be specified
         if (sslCertPath_.has_value() || sslKeyPath_.has_value())

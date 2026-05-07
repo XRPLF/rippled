@@ -38,8 +38,8 @@ Database::Database(
     beast::Journal journal)
     : j_(journal)
     , scheduler_(scheduler)
-    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", kXRP_LEDGER_EARLIEST_SEQ))
-    , requestBundle_(get<int>(config, "rq_bundle", 4))
+    , earliestLedgerSeq_(get<std::uint32_t>(config, kKEY_EARLIEST_SEQ, kXRP_LEDGER_EARLIEST_SEQ))
+    , requestBundle_(get<int>(config, kKEY_RQ_BUNDLE, 4))
     , readThreads_(std::max(1, readThreads))
 {
     XRPL_ASSERT(readThreads, "xrpl::NodeStore::Database::Database : nonzero threads input");

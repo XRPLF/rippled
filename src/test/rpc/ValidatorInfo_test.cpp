@@ -4,8 +4,8 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 
@@ -68,7 +68,7 @@ public:
             "5AqDedFv5TJa2w0i21eq3MYywLVJZnFOr7C0kw2AiTzSCjIzditQ8=";
 
         Env env{*this, envconfig([&tokenBlob](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
+                    cfg->section(kSECTION_VALIDATOR_TOKEN).append(tokenBlob);
                     return cfg;
                 })};
         {

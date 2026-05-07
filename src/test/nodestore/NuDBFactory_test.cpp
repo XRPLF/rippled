@@ -29,10 +29,10 @@ private:
     createSection(std::string const& path, std::string const& blockSize = "")
     {
         Section params;
-        params.set("type", "nudb");
-        params.set("path", path);
+        params.set(kKEY_TYPE, "nudb");
+        params.set(kKEY_PATH, path);
         if (!blockSize.empty())
-            params.set("nudb_block_size", blockSize);
+            params.set(kKEY_NUDB_BLOCK_SIZE, blockSize);
         return params;
     }
 

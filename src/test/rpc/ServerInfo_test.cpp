@@ -3,8 +3,8 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
@@ -109,9 +109,9 @@ admin = 127.0.0.1
             Env env(*this, makeValidatorConfig());
             auto const& config = env.app().config();
 
-            auto const rpcPort = config["port_rpc"].get<unsigned int>("port");
-            auto const grpcPort = config[SECTION_PORT_GRPC].get<unsigned int>("port");
-            auto const wsPort = config["port_ws"].get<unsigned int>("port");
+            auto const rpcPort = config[kSECTION_PORT_RPC].get<unsigned int>(kKEY_PORT);
+            auto const grpcPort = config[kSECTION_PORT_GRPC].get<unsigned int>(kKEY_PORT);
+            auto const wsPort = config[kSECTION_PORT_WS].get<unsigned int>(kKEY_PORT);
             BEAST_EXPECT(grpcPort);
             BEAST_EXPECT(rpcPort);
             BEAST_EXPECT(wsPort);

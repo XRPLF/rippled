@@ -1871,7 +1871,7 @@ TxQ::Setup
 setupTxQ(Config const& config)
 {
     TxQ::Setup setup;
-    auto const& section = config.section("transaction_queue");
+    auto const& section = config.section(kSECTION_TRANSACTION_QUEUE);
     set(setup.ledgersInQueue, "ledgers_in_queue", section);
     set(setup.queueSizeMin, "minimum_queue_size", section);
     set(setup.retrySequencePercent, "retry_sequence_percent", section);

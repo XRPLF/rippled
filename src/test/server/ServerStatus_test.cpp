@@ -5,6 +5,7 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -55,22 +56,23 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     static auto
     makeConfig(std::string const& proto, bool admin = true, bool credentials = false)
     {
-        auto const sectionName = boost::starts_with(proto, "h") ? "port_rpc" : "port_ws";
+        auto const sectionName =
+            boost::starts_with(proto, "h") ? kSECTION_PORT_RPC : kSECTION_PORT_WS;
         auto p = jtx::envconfig();
 
-        p->overwrite(sectionName, "protocol", proto);
+        p->overwrite(sectionName, kKEY_PROTOCOL, proto);
         if (!admin)
-            p->overwrite(sectionName, "admin", "");
+            p->overwrite(sectionName, kKEY_ADMIN, "");
 
         if (credentials)
         {
-            (*p)[sectionName].set("admin_password", "p");
-            (*p)[sectionName].set("admin_user", "u");
+            (*p)[sectionName].set(kKEY_ADMIN_PASSWORD, "p");
+            (*p)[sectionName].set(kKEY_ADMIN_USER, "u");
         }
 
         p->overwrite(
-            boost::starts_with(proto, "h") ? "port_ws" : "port_rpc",
-            "protocol",
+            boost::starts_with(proto, "h") ? kSECTION_PORT_WS : kSECTION_PORT_RPC,
+            kKEY_PROTOCOL,
             boost::starts_with(proto, "h") ? "ws" : "http");
 
         if (proto == "https")
@@ -78,11 +80,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             // this port is here to allow the env to create its internal client,
             // which requires an http endpoint to talk to. In the connection
             // failure test, this endpoint should never be used
-            (*p)["server"].append("port_alt");
-            (*p)["port_alt"].set("ip", getEnvLocalhostAddr());
-            (*p)["port_alt"].set("port", "7099");
-            (*p)["port_alt"].set("protocol", "http");
-            (*p)["port_alt"].set("admin", getEnvLocalhostAddr());
+            (*p)[kSECTION_SERVER].append("port_alt");
+            (*p)["port_alt"].set(kKEY_IP, getEnvLocalhostAddr());
+            (*p)["port_alt"].set(kKEY_PORT, "7099");
+            (*p)["port_alt"].set(kKEY_PROTOCOL, "http");
+            (*p)["port_alt"].set(kKEY_ADMIN, getEnvLocalhostAddr());
         }
 
         return p;
@@ -212,8 +214,8 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         boost::beast::http::response<boost::beast::http::string_body>& resp,
         boost::system::error_code& ec)
     {
-        auto const port = env.app().config()["port_ws"].get<std::uint16_t>("port");
-        auto ip = env.app().config()["port_ws"].get<std::string>("ip");
+        auto const port = env.app().config()[kSECTION_PORT_WS].get<std::uint16_t>(kKEY_PORT);
+        auto ip = env.app().config()[kSECTION_PORT_WS].get<std::string>(kKEY_IP);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doRequest(yield, makeWSUpgrade(*ip, *port), *ip, *port, secure, resp, ec);
         return;
@@ -229,8 +231,8 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         std::string const& body = "",
         MyFields const& fields = {})
     {
-        auto const port = env.app().config()["port_rpc"].get<std::uint16_t>("port");
-        auto const ip = env.app().config()["port_rpc"].get<std::string>("ip");
+        auto const port = env.app().config()[kSECTION_PORT_RPC].get<std::uint16_t>(kKEY_PORT);
+        auto const ip = env.app().config()[kSECTION_PORT_RPC].get<std::string>(kKEY_IP);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doRequest(yield, makeHTTPRequest(*ip, *port, body, fields), *ip, *port, secure, resp, ec);
         return;
@@ -299,10 +301,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         if (admin && credentials)
         {
             auto const user =
-                env.app().config()[protoWs ? "port_ws" : "port_rpc"].get<std::string>("admin_user");
+                env.app().config()[protoWs ? kSECTION_PORT_WS : kSECTION_PORT_RPC].get<std::string>(
+                    "admin_user");
 
             auto const password =
-                env.app().config()[protoWs ? "port_ws" : "port_rpc"].get<std::string>(
+                env.app().config()[protoWs ? kSECTION_PORT_WS : kSECTION_PORT_RPC].get<std::string>(
                     "admin_password");
 
             // 1 - FAILS with wrong pass
@@ -368,7 +371,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         testcase("WS client to http server fails");
         using namespace jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->section("port_ws").set("protocol", "http,https");
+                    cfg->section(kSECTION_PORT_WS).set(kKEY_PROTOCOL, "http,https");
                     return cfg;
                 })};
 
@@ -399,8 +402,8 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         testcase("Status request");
         using namespace jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->section("port_rpc").set("protocol", "ws2,wss2");
-                    cfg->section("port_ws").set("protocol", "http");
+                    cfg->section(kSECTION_PORT_RPC).set(kKEY_PROTOCOL, "ws2,wss2");
+                    cfg->section(kSECTION_PORT_WS).set(kKEY_PROTOCOL, "http");
                     return cfg;
                 })};
 
@@ -433,12 +436,12 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         using namespace boost::asio;
         using namespace boost::beast::http;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->section("port_ws").set("protocol", "ws2");
+                    cfg->section(kSECTION_PORT_WS).set(kKEY_PROTOCOL, "ws2");
                     return cfg;
                 })};
 
-        auto const port = env.app().config()["port_ws"].get<std::uint16_t>("port");
-        auto const ip = env.app().config()["port_ws"].get<std::string>("ip");
+        auto const port = env.app().config()[kSECTION_PORT_WS].get<std::uint16_t>(kKEY_PORT);
+        auto const ip = env.app().config()[kSECTION_PORT_WS].get<std::string>(kKEY_IP);
 
         boost::system::error_code ec;
         response<string_body> resp;
@@ -505,11 +508,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         using namespace test::jtx;
         Env env{*this, envconfig([secure](std::unique_ptr<Config> cfg) {
-                    (*cfg)["port_rpc"].set("user", "me");
-                    (*cfg)["port_rpc"].set("password", "secret");
-                    (*cfg)["port_rpc"].set("protocol", secure ? "https" : "http");
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_USER, "me");
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_PASSWORD, "secret");
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_PROTOCOL, secure ? "https" : "http");
                     if (secure)
-                        (*cfg)["port_ws"].set("protocol", "http,ws");
+                        (*cfg)[kSECTION_PORT_WS].set(kKEY_PROTOCOL, "http,ws");
                     return cfg;
                 })};
 
@@ -534,10 +537,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const user = env.app().config().section("port_rpc").get<std::string>("user").value();
+        auto const user =
+            env.app().config().section(kSECTION_PORT_RPC).get<std::string>(kKEY_USER).value();
         auto const pass =
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            env.app().config().section("port_rpc").get<std::string>("password").value();
+            env.app().config().section(kSECTION_PORT_RPC).get<std::string>(kKEY_PASSWORD).value();
 
         // try with the correct user/pass, but not encoded
         auth.set("Authorization", "Basic " + user + ":" + pass);
@@ -560,15 +564,16 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         using namespace boost::asio;
         using namespace boost::beast::http;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
-                    (*cfg)["port_rpc"].set("limit", std::to_string(limit));
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_LIMIT, std::to_string(limit));
                     return cfg;
                 })};
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const port = env.app().config()["port_rpc"].get<std::uint16_t>("port").value();
+        auto const port =
+            env.app().config()[kSECTION_PORT_RPC].get<std::uint16_t>(kKEY_PORT).value();
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const ip = env.app().config()["port_rpc"].get<std::string>("ip").value();
+        auto const ip = env.app().config()[kSECTION_PORT_RPC].get<std::string>(kKEY_IP).value();
 
         boost::system::error_code ec;
         io_context& ios = getIoContext();
@@ -620,14 +625,15 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg)["port_ws"].set("protocol", "wss");
+                    (*cfg)[kSECTION_PORT_WS].set(kKEY_PROTOCOL, "wss");
                     return cfg;
                 })};
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const port = env.app().config()["port_ws"].get<std::uint16_t>("port").value();
+        auto const port =
+            env.app().config()[kSECTION_PORT_WS].get<std::uint16_t>(kKEY_PORT).value();
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const ip = env.app().config()["port_ws"].get<std::string>("ip").value();
+        auto const ip = env.app().config()[kSECTION_PORT_WS].get<std::string>(kKEY_IP).value();
         boost::beast::http::response<boost::beast::http::string_body> resp;
         boost::system::error_code ec;
         doRequest(yield, makeWSUpgrade(ip, port), ip, port, true, resp, ec);
@@ -645,9 +651,10 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         Env env{*this};
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const port = env.app().config()["port_ws"].get<std::uint16_t>("port").value();
+        auto const port =
+            env.app().config()[kSECTION_PORT_WS].get<std::uint16_t>(kKEY_PORT).value();
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const ip = env.app().config()["port_ws"].get<std::string>("ip").value();
+        auto const ip = env.app().config()[kSECTION_PORT_WS].get<std::string>(kKEY_IP).value();
         boost::beast::http::response<boost::beast::http::string_body> resp;
         boost::system::error_code ec;
         // body content is required here to avoid being
@@ -668,9 +675,10 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         Env env{*this};
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const port = env.app().config()["port_ws"].get<std::uint16_t>("port").value();
+        auto const port =
+            env.app().config()[kSECTION_PORT_WS].get<std::uint16_t>(kKEY_PORT).value();
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const ip = env.app().config()["port_ws"].get<std::string>("ip").value();
+        auto const ip = env.app().config()[kSECTION_PORT_WS].get<std::string>(kKEY_IP).value();
         boost::system::error_code ec;
 
         io_context& ios = getIoContext();
@@ -746,7 +754,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             *this,
             validator(
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->section("port_rpc").set("protocol", "http");
+                    cfg->section(kSECTION_PORT_RPC).set(kKEY_PROTOCOL, "http");
                     return cfg;
                 }),
                 "")};
@@ -774,8 +782,8 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECT(env.app().getOPs().getConsensusInfo()["validating"] == true);
         BEAST_EXPECT(!si[jss::state].isMember(jss::warnings));
 
-        auto const portWs = env.app().config()["port_ws"].get<std::uint16_t>("port");
-        auto const ipWs = env.app().config()["port_ws"].get<std::string>("ip");
+        auto const portWs = env.app().config()[kSECTION_PORT_WS].get<std::uint16_t>(kKEY_PORT);
+        auto const ipWs = env.app().config()[kSECTION_PORT_WS].get<std::string>(kKEY_IP);
 
         boost::system::error_code ec;
         response<string_body> resp;
@@ -874,7 +882,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             *this,
             validator(
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->section("port_rpc").set("protocol", "http");
+                    cfg->section(kSECTION_PORT_RPC).set(kKEY_PROTOCOL, "http");
                     return cfg;
                 }),
                 "")};
@@ -902,8 +910,8 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECT(env.app().getOPs().getConsensusInfo()["validating"] == true);
         BEAST_EXPECT(!si[jss::state].isMember(jss::warnings));
 
-        auto const portWs = env.app().config()["port_ws"].get<std::uint16_t>("port");
-        auto const ipWs = env.app().config()["port_ws"].get<std::string>("ip");
+        auto const portWs = env.app().config()[kSECTION_PORT_WS].get<std::uint16_t>(kKEY_PORT);
+        auto const ipWs = env.app().config()[kSECTION_PORT_WS].get<std::string>(kKEY_IP);
 
         boost::system::error_code ec;
         response<string_body> resp;

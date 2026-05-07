@@ -665,9 +665,9 @@ public:
             {
                 beast::TempDir const tempDir;
                 Section config = parse(configString);
-                config.set("path", tempDir.path());
+                config.set(kKEY_PATH, tempDir.path());
                 std::stringstream ss;
-                ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
+                ss << std::left << setw(10) << get(config, kKEY_TYPE, std::string()) << std::right;
                 for (auto const& test : tests)
                 {
                     ss << " " << setw(w) << toString(doTest(test.second, config, params, journal));

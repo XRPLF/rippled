@@ -13,6 +13,7 @@
 
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
@@ -430,9 +431,9 @@ class LedgerRPC_test : public beast::unit_test::Suite
         testcase("Ledger with Queued Transactions");
         using namespace test::jtx;
         auto cfg = envconfig([](std::unique_ptr<Config> cfg) {
-            auto& section = cfg->section("transaction_queue");
-            section.set("minimum_txn_in_ledger_standalone", "3");
-            section.set("normal_consensus_increase_percent", "0");
+            auto& section = cfg->section(kSECTION_TRANSACTION_QUEUE);
+            section.set(kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
+            section.set(kKEY_NORMAL_CONSENSUS_INCREASE_PERCENT, "0");
             return cfg;
         });
 

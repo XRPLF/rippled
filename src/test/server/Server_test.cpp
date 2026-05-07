@@ -4,8 +4,8 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -394,7 +394,7 @@ public:
             Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection("port_rpc");
+                    (*cfg).deprecatedClearSection(kSECTION_PORT_RPC);
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
@@ -405,8 +405,8 @@ public:
             Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection("port_rpc");
-                    (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
+                    (*cfg).deprecatedClearSection(kSECTION_PORT_RPC);
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_IP, getEnvLocalhostAddr());
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
@@ -417,9 +417,9 @@ public:
             Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection("port_rpc");
-                    (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
-                    (*cfg)["port_rpc"].set("port", "0");
+                    (*cfg).deprecatedClearSection(kSECTION_PORT_RPC);
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_IP, getEnvLocalhostAddr());
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_PORT, "0");
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
@@ -431,7 +431,7 @@ public:
             Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg)["server"].set("port", "0");
+                    (*cfg)[kSECTION_SERVER].set(kKEY_PORT, "0");
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
@@ -443,10 +443,10 @@ public:
             Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection("port_rpc");
-                    (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
-                    (*cfg)["port_rpc"].set("port", "8081");
-                    (*cfg)["port_rpc"].set("protocol", "");
+                    (*cfg).deprecatedClearSection(kSECTION_PORT_RPC);
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_IP, getEnvLocalhostAddr());
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_PORT, "8081");
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_PROTOCOL, "");
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
@@ -460,22 +460,22 @@ public:
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
-                           cfg->overwrite(ConfigSection::nodeDatabase(), "type", "memory");
-                           cfg->overwrite(ConfigSection::nodeDatabase(), "path", "main");
-                           cfg->deprecatedClearSection(ConfigSection::importNodeDatabase());
-                           cfg->legacy("database_path", "");
+                           cfg->overwrite(kSECTION_NODE_DATABASE, kKEY_TYPE, "memory");
+                           cfg->overwrite(kSECTION_NODE_DATABASE, kKEY_PATH, "main");
+                           cfg->deprecatedClearSection(kSECTION_IMPORT_NODE_DATABASE);
+                           cfg->legacy(kSECTION_DATABASE_PATH, "");
                            cfg->setupControl(true, true, true);
-                           (*cfg)["port_peer"].set("ip", getEnvLocalhostAddr());
-                           (*cfg)["port_peer"].set("port", "8080");
-                           (*cfg)["port_peer"].set("protocol", "peer");
-                           (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
-                           (*cfg)["port_rpc"].set("port", "8081");
-                           (*cfg)["port_rpc"].set("protocol", "http,ws2");
-                           (*cfg)["port_rpc"].set("admin", getEnvLocalhostAddr());
-                           (*cfg)["port_ws"].set("ip", getEnvLocalhostAddr());
-                           (*cfg)["port_ws"].set("port", "8082");
-                           (*cfg)["port_ws"].set("protocol", "ws");
-                           (*cfg)["port_ws"].set("admin", getEnvLocalhostAddr());
+                           (*cfg)[kSECTION_PORT_PEER].set(kKEY_IP, getEnvLocalhostAddr());
+                           (*cfg)[kSECTION_PORT_PEER].set(kKEY_PORT, "8080");
+                           (*cfg)[kSECTION_PORT_PEER].set(kKEY_PROTOCOL, "peer");
+                           (*cfg)[kSECTION_PORT_RPC].set(kKEY_IP, getEnvLocalhostAddr());
+                           (*cfg)[kSECTION_PORT_RPC].set(kKEY_PORT, "8081");
+                           (*cfg)[kSECTION_PORT_RPC].set(kKEY_PROTOCOL, "http,ws2");
+                           (*cfg)[kSECTION_PORT_RPC].set(kKEY_ADMIN, getEnvLocalhostAddr());
+                           (*cfg)[kSECTION_PORT_WS].set(kKEY_IP, getEnvLocalhostAddr());
+                           (*cfg)[kSECTION_PORT_WS].set(kKEY_PORT, "8082");
+                           (*cfg)[kSECTION_PORT_WS].set(kKEY_PROTOCOL, "ws");
+                           (*cfg)[kSECTION_PORT_WS].set(kKEY_ADMIN, getEnvLocalhostAddr());
                            return cfg;
                        }),
                        std::make_unique<CaptureLogs>(&messages)};
@@ -489,14 +489,14 @@ public:
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
-                           cfg->overwrite(ConfigSection::nodeDatabase(), "type", "memory");
-                           cfg->overwrite(ConfigSection::nodeDatabase(), "path", "main");
-                           cfg->deprecatedClearSection(ConfigSection::importNodeDatabase());
-                           cfg->legacy("database_path", "");
+                           cfg->overwrite(kSECTION_NODE_DATABASE, kKEY_TYPE, "memory");
+                           cfg->overwrite(kSECTION_NODE_DATABASE, kKEY_PATH, "main");
+                           cfg->deprecatedClearSection(kSECTION_IMPORT_NODE_DATABASE);
+                           cfg->legacy(kSECTION_DATABASE_PATH, "");
                            cfg->setupControl(true, true, true);
-                           (*cfg)["server"].append("port_peer");
-                           (*cfg)["server"].append("port_rpc");
-                           (*cfg)["server"].append("port_ws");
+                           (*cfg)[kSECTION_SERVER].append(kSECTION_PORT_PEER);
+                           (*cfg)[kSECTION_SERVER].append(kSECTION_PORT_RPC);
+                           (*cfg)[kSECTION_SERVER].append(kSECTION_PORT_WS);
                            return cfg;
                        }),
                        std::make_unique<CaptureLogs>(&messages)};

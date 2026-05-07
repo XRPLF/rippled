@@ -7,6 +7,7 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
@@ -1292,7 +1293,7 @@ bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 {
     boost::filesystem::space_info const space =
-        boost::filesystem::space(config.legacy("database_path"));
+        boost::filesystem::space(config.legacy(kSECTION_DATABASE_PATH));
 
     if (space.available < megabytes(512))
     {

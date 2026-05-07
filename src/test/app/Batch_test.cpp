@@ -29,6 +29,7 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -168,13 +169,13 @@ class Batch_test : public beast::unit_test::Suite
         std::map<std::string, std::string> extraVoting = {})
     {
         auto p = test::jtx::envconfig();
-        auto& section = p->section("transaction_queue");
-        section.set("ledgers_in_queue", "2");
-        section.set("minimum_queue_size", "2");
-        section.set("min_ledgers_to_compute_size_limit", "3");
-        section.set("max_ledger_counts_to_store", "100");
-        section.set("retry_sequence_percent", "25");
-        section.set("normal_consensus_increase_percent", "0");
+        auto& section = p->section(kSECTION_TRANSACTION_QUEUE);
+        section.set(kKEY_LEDGERS_IN_QUEUE, "2");
+        section.set(kKEY_MINIMUM_QUEUE_SIZE, "2");
+        section.set(kKEY_MIN_LEDGERS_TO_COMPUTE_SIZE_LIMIT, "3");
+        section.set(kKEY_MAX_LEDGER_COUNTS_TO_STORE, "100");
+        section.set(kKEY_RETRY_SEQUENCE_PERCENT, "25");
+        section.set(kKEY_NORMAL_CONSENSUS_INCREASE_PERCENT, "0");
 
         for (auto const& [k, v] : extraTxQ)
             section.set(k, v);
@@ -3781,7 +3782,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             test::jtx::Env env{
                 *this,
-                makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
+                makeSmallQueueConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}),
                 features,
                 nullptr,
                 beast::severities::KError};
@@ -3837,7 +3838,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             test::jtx::Env env{
                 *this,
-                makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
+                makeSmallQueueConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}),
                 features,
                 nullptr,
                 beast::severities::KError};

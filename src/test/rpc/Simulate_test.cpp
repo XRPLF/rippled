@@ -15,6 +15,7 @@
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -429,7 +430,8 @@ class Simulate_test : public beast::unit_test::Suite
         using namespace jtx;
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
+            cfg->section(kSECTION_TRANSACTION_QUEUE)
+                .set(kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
             return cfg;
         }));
 

@@ -73,7 +73,7 @@ public:
         : j(journal)
         , keyBytes(keyBytes)
         , burstSize(burstSize)
-        , name(get(keyValues, "path"))
+        , name(get(keyValues, kKEY_PATH))
         , blockSize(parseBlockSize(name, keyValues, journal))
         , deletePath(false)
         , scheduler(scheduler)
@@ -92,7 +92,7 @@ public:
         : j(journal)
         , keyBytes(keyBytes)
         , burstSize(burstSize)
-        , name(get(keyValues, "path"))
+        , name(get(keyValues, kKEY_PATH))
         , blockSize(parseBlockSize(name, keyValues, journal))
         , db(context)
         , deletePath(false)
@@ -382,7 +382,7 @@ private:
         std::size_t const blockSize = defaultSize;
         std::string blockSizeStr;
 
-        if (!getIfExists(keyValues, "nudb_block_size", blockSizeStr))
+        if (!getIfExists(keyValues, kKEY_NUDB_BLOCK_SIZE, blockSizeStr))
         {
             return blockSize;  // Early return with default
         }

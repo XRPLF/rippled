@@ -62,9 +62,9 @@ class WSClientImpl : public WSClient
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parsePort(common, cfg["server"], log);
+        parsePort(common, cfg[kSECTION_SERVER], log);
         auto const ps = v2 ? "ws2" : "ws";
-        for (auto const& name : cfg.section("server").values())
+        for (auto const& name : cfg.section(kSECTION_SERVER).values())
         {
             if (!cfg.exists(name))
                 continue;

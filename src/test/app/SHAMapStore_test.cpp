@@ -7,8 +7,8 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -42,8 +42,8 @@ class SHAMapStore_test : public beast::unit_test::Suite
     onlineDelete(std::unique_ptr<Config> cfg)
     {
         cfg->LEDGER_HISTORY = kDELETE_INTERVAL;
-        auto& section = cfg->section(ConfigSection::nodeDatabase());
-        section.set("online_delete", std::to_string(kDELETE_INTERVAL));
+        auto& section = cfg->section(kSECTION_NODE_DATABASE);
+        section.set(kKEY_ONLINE_DELETE, std::to_string(kDELETE_INTERVAL));
         return cfg;
     }
 
@@ -51,7 +51,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
     advisoryDelete(std::unique_ptr<Config> cfg)
     {
         cfg = onlineDelete(std::move(cfg));
-        cfg->section(ConfigSection::nodeDatabase()).set("advisory_delete", "1");
+        cfg->section(kSECTION_NODE_DATABASE).set(kKEY_ADVISORY_DELETE, "1");
         return cfg;
     }
 
@@ -490,13 +490,13 @@ public:
     std::unique_ptr<NodeStore::Backend>
     makeBackendRotating(jtx::Env& env, NodeStoreScheduler& scheduler, std::string path)
     {
-        Section section{env.app().config().section(ConfigSection::nodeDatabase())};
+        Section section{env.app().config().section(kSECTION_NODE_DATABASE)};
         boost::filesystem::path newPath;
 
         if (!BEAST_EXPECT(path.size()))
             return {};
         newPath = path;
-        section.set("path", newPath.string());
+        section.set(kKEY_PATH, newPath.string());
 
         auto backend{NodeStore::Manager::instance().makeBackend(
             section,
@@ -528,7 +528,7 @@ public:
         auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
 
         constexpr int kREAD_THREADS = 4;
-        auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
+        auto nscfg = env.app().config().section(kSECTION_NODE_DATABASE);
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
             scheduler,
             kREAD_THREADS,

@@ -6,6 +6,7 @@
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base64.h>
@@ -198,7 +199,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
             BEAST_EXPECT(trustedKeys->quorum() == 1);
         }
@@ -208,7 +209,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal,
                 minQuorum);
             BEAST_EXPECT(trustedKeys->quorum() == minQuorum);
@@ -266,7 +267,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             // Correct (empty) configuration
@@ -292,7 +293,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             BEAST_EXPECT(trustedKeys->load({}, cfgKeys, emptyCfgPublishers));
@@ -327,7 +328,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             auto const localSigningPublic =
@@ -347,7 +348,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             auto const localSigningPublic = randomNode();
@@ -365,7 +366,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -385,7 +386,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             // load should reject invalid validator list signing keys
@@ -421,7 +422,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             std::vector<PublicKey> const keys(
@@ -446,7 +447,7 @@ private:
                 valManifests,
                 pubManifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             auto const pubRevokedSecret = randomSecretKey();
@@ -485,7 +486,7 @@ private:
                 valManifests,
                 pubManifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             auto const pubRevokedSecret = randomSecretKey();
@@ -571,7 +572,7 @@ private:
             manifests,
             manifests,
             env.app().getTimeKeeper(),
-            app.config().legacy("database_path"),
+            app.config().legacy(kSECTION_DATABASE_PATH),
             env.journal);
 
         auto expectTrusted = [this, &trustedKeys](std::vector<Validator> const& list) {
@@ -933,7 +934,7 @@ private:
             manifests,
             manifests,
             env.app().getTimeKeeper(),
-            app.config().legacy("database_path"),
+            app.config().legacy(kSECTION_DATABASE_PATH),
             env.journal);
 
         auto const publisherSecret = randomSecretKey();
@@ -1064,7 +1065,7 @@ private:
             manifestsOuter,
             manifestsOuter,
             env.timeKeeper(),
-            app.config().legacy("database_path"),
+            app.config().legacy(kSECTION_DATABASE_PATH),
             env.journal);
 
         std::vector<std::string> const cfgPublishersOuter;
@@ -1230,7 +1231,7 @@ private:
                 manifestsOuter,
                 manifestsOuter,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
             auto const publisherSecret = randomSecretKey();
             auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
@@ -1257,7 +1258,7 @@ private:
                 manifestsOuter,
                 manifestsOuter,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
             auto const masterPrivate = randomSecretKey();
             auto const masterPublic = derivePublicKey(KeyType::Ed25519, masterPrivate);
@@ -1291,7 +1292,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal,
                 minQuorum);
 
@@ -1347,7 +1348,7 @@ private:
                 manifestsOuter,
                 manifestsOuter,
                 env.app().getTimeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             std::vector<std::string> const emptyCfgKeys;
@@ -1446,7 +1447,7 @@ private:
                 manifestsOuter,
                 manifestsOuter,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             std::vector<std::string> const cfgPublishers;
@@ -1482,7 +1483,7 @@ private:
                 manifestsOuter,
                 manifestsOuter,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             auto const localKey = randomNode();
@@ -1529,7 +1530,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             hash_set<NodeID> activeValidators;
@@ -1617,7 +1618,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             hash_set<NodeID> activeValidators;
@@ -1824,7 +1825,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             // Empty list has no expiration
@@ -1846,7 +1847,7 @@ private:
                 manifests,
                 manifests,
                 env.app().getTimeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             std::vector<Validator> validators = {randomValidator()};
@@ -1985,7 +1986,7 @@ private:
                 manifests,
                 manifests,
                 env.timeKeeper(),
-                env.app().config().legacy("database_path"),
+                env.app().config().legacy(kSECTION_DATABASE_PATH),
                 env.journal,
                 minimumQuorum);
 
@@ -2581,7 +2582,7 @@ private:
                 valManifests,
                 pubManifests,
                 env.timeKeeper(),
-                app.config().legacy("database_path"),
+                app.config().legacy(kSECTION_DATABASE_PATH),
                 env.journal);
 
             std::vector<std::string> cfgPublishers;

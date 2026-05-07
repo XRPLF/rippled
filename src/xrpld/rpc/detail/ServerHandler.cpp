@@ -1,13 +1,13 @@
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
@@ -1129,16 +1129,16 @@ parsePorts(Config const& config, std::ostream& log)
 {
     std::vector<Port> result;
 
-    if (!config.exists("server"))
+    if (!config.exists(kSECTION_SERVER))
     {
         log << "Required section [server] is missing";
         Throw<std::exception>();
     }
 
     ParsedPort common;
-    parsePort(common, config["server"], log);
+    parsePort(common, config[kSECTION_SERVER], log);
 
-    auto const& names = config.section("server").values();
+    auto const& names = config.section(kSECTION_SERVER).values();
     result.reserve(names.size());
     for (auto const& name : names)
     {
@@ -1150,7 +1150,7 @@ parsePorts(Config const& config, std::ostream& log)
 
         // grpc ports are parsed by GRPCServer class. Do not validate
         // grpc port information in this file.
-        if (name == SECTION_PORT_GRPC)
+        if (name == kSECTION_PORT_GRPC)
             continue;
 
         ParsedPort parsed = common;

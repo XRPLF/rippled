@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
@@ -38,8 +39,8 @@ public:
         , j_(j)
     {
         Section config;
-        config.set("type", "memory");
-        config.set("path", "TestFamily");
+        config.set(kKEY_TYPE, "memory");
+        config.set(kKEY_PATH, "TestFamily");
         db_ = NodeStore::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
     }
 

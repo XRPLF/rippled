@@ -32,8 +32,8 @@ public:
 
         Section params;
         beast::TempDir const tempDir;
-        params.set("type", type);
-        params.set("path", tempDir.path());
+        params.set(kKEY_TYPE, type);
+        params.set(kKEY_PATH, tempDir.path());
 
         beast::xor_shift_engine rng(seedValue);
 

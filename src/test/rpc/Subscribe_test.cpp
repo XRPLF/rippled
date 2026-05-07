@@ -18,8 +18,8 @@
 
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
@@ -431,9 +431,10 @@ public:
 
         Env env{*this, singleThreadIo(envconfig(validator, "")), features};
         auto& cfg = env.app().config();
-        if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
+        if (!BEAST_EXPECT(cfg.section(kSECTION_VALIDATION_SEED).empty()))
             return;
-        auto const parsedseed = parseBase58<Seed>(cfg.section(SECTION_VALIDATION_SEED).values()[0]);
+        auto const parsedseed =
+            parseBase58<Seed>(cfg.section(kSECTION_VALIDATION_SEED).values()[0]);
         if (BEAST_EXPECT(parsedseed); not parsedseed.has_value())
             return;
 

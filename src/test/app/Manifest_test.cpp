@@ -3,6 +3,7 @@
 
 #include <xrpld/app/misc/ValidatorList.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
@@ -246,7 +247,7 @@ public:
 
             auto& app = env.app();
             auto unl = std::make_unique<ValidatorList>(
-                m, m, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                m, m, env.timeKeeper(), app.config().legacy(kSECTION_DATABASE_PATH), env.journal);
 
             {
                 // save should not store untrusted master keys to db

@@ -30,6 +30,7 @@
 
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -863,7 +864,7 @@ public:
             jtx::Env const env{
                 *this,
                 jtx::envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection("port_rpc");
+                    (*cfg).deprecatedClearSection(kSECTION_PORT_RPC);
                     return cfg;
                 }),
                 nullptr,

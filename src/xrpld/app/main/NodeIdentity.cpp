@@ -2,8 +2,8 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -31,12 +31,13 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
         if (!seed)
             Throw<std::runtime_error>("Invalid 'nodeid' in command line");
     }
-    else if (app.config().exists(SECTION_NODE_SEED))
+    else if (app.config().exists(kSECTION_NODE_SEED))
     {
-        seed = parseBase58<Seed>(app.config().section(SECTION_NODE_SEED).lines().front());
+        seed = parseBase58<Seed>(app.config().section(kSECTION_NODE_SEED).lines().front());
 
         if (!seed)
-            Throw<std::runtime_error>("Invalid [" SECTION_NODE_SEED "] in configuration file");
+            Throw<std::runtime_error>(
+                std::string("Invalid [") + kSECTION_NODE_SEED + "] in configuration file");
     }
 
     if (seed)

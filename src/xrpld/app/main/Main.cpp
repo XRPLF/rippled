@@ -1,10 +1,10 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SlabAllocator.h>
 #include <xrpl/basics/base_uint.h>
@@ -362,10 +362,10 @@ run(int argc, char** argv)
     std::string importText;
     {
         importText += "Import an existing node database (specified in the [";
-        importText += ConfigSection::importNodeDatabase();
+        importText += kSECTION_IMPORT_NODE_DATABASE;
         importText += "] configuration file section) into the current ";
         importText += "node database (specified in the [";
-        importText += ConfigSection::nodeDatabase();
+        importText += kSECTION_NODE_DATABASE;
         importText += "] configuration file section).";
     }
 

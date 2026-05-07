@@ -276,8 +276,8 @@ class Feature_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg)["port_rpc"].set("admin", "");
-                    (*cfg)["port_ws"].set("admin", "");
+                    (*cfg)[kSECTION_PORT_RPC].set(kKEY_ADMIN, "");
+                    (*cfg)[kSECTION_PORT_WS].set(kKEY_ADMIN, "");
                     return cfg;
                 })};
 

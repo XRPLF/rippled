@@ -32,10 +32,10 @@ private:
     static void
     setupSQLiteConfig(BasicConfig& config, boost::filesystem::path const& dbPath)
     {
-        config.overwrite("sqdb", "backend", "sqlite");
+        config.overwrite(kSECTION_SQDB, kKEY_BACKEND, "sqlite");
         auto value = dbPath.string();
         if (!value.empty())
-            config.legacy("database_path", value);
+            config.legacy(kSECTION_DATABASE_PATH, value);
     }
 
     static void

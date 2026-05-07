@@ -24,8 +24,8 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -496,7 +496,7 @@ public:
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                cfg->loadFromString(std::string("[") + kSECTION_SIGNING_SUPPORT + "]\ntrue");
                 return cfg;
             }),
             features);
@@ -1308,7 +1308,7 @@ public:
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                cfg->loadFromString(std::string("[") + kSECTION_SIGNING_SUPPORT + "]\ntrue");
                 return cfg;
             }),
             features);

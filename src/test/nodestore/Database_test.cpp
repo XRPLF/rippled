@@ -6,6 +6,7 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -71,8 +72,8 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section("sqlite");
-                    section.set("safety_level", "high");
+                    auto& section = p->section(kSECTION_SQLITE);
+                    section.set(kKEY_SAFETY_LEVEL, "high");
                 }
                 p->LEDGER_HISTORY = 100'000'000;
 
@@ -100,8 +101,8 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section("sqlite");
-                    section.set("safety_level", "low");
+                    auto& section = p->section(kSECTION_SQLITE);
+                    section.set(kKEY_SAFETY_LEVEL, "low");
                 }
                 p->LEDGER_HISTORY = 100'000'000;
 
@@ -129,10 +130,10 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section("sqlite");
-                    section.set("journal_mode", "off");
-                    section.set("synchronous", "extra");
-                    section.set("temp_store", "default");
+                    auto& section = p->section(kSECTION_SQLITE);
+                    section.set(kKEY_JOURNAL_MODE, "off");
+                    section.set(kKEY_SYNCHRONOUS, "extra");
+                    section.set(kKEY_TEMP_STORE, "default");
                 }
 
                 return Env(
@@ -161,10 +162,10 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section("sqlite");
-                    section.set("journal_mode", "off");
-                    section.set("synchronous", "extra");
-                    section.set("temp_store", "default");
+                    auto& section = p->section(kSECTION_SQLITE);
+                    section.set(kKEY_JOURNAL_MODE, "off");
+                    section.set(kKEY_SYNCHRONOUS, "extra");
+                    section.set(kKEY_TEMP_STORE, "default");
                 }
                 p->LEDGER_HISTORY = 50'000'000;
 
@@ -197,11 +198,11 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("safety_level", "low");
-                section.set("journal_mode", "off");
-                section.set("synchronous", "extra");
-                section.set("temp_store", "default");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_SAFETY_LEVEL, "low");
+                section.set(kKEY_JOURNAL_MODE, "off");
+                section.set(kKEY_SYNCHRONOUS, "extra");
+                section.set(kKEY_TEMP_STORE, "default");
             }
 
             try
@@ -228,9 +229,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("safety_level", "high");
-                section.set("journal_mode", "off");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_SAFETY_LEVEL, "high");
+                section.set(kKEY_JOURNAL_MODE, "off");
             }
 
             try
@@ -257,9 +258,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("safety_level", "low");
-                section.set("synchronous", "extra");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_SAFETY_LEVEL, "low");
+                section.set(kKEY_SYNCHRONOUS, "extra");
             }
 
             try
@@ -286,9 +287,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("safety_level", "high");
-                section.set("temp_store", "default");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_SAFETY_LEVEL, "high");
+                section.set(kKEY_TEMP_STORE, "default");
             }
 
             try
@@ -315,8 +316,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("safety_level", "slow");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_SAFETY_LEVEL, "slow");
             }
 
             try
@@ -343,8 +344,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("journal_mode", "fast");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_JOURNAL_MODE, "fast");
             }
 
             try
@@ -371,8 +372,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("synchronous", "instant");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_SYNCHRONOUS, "instant");
             }
 
             try
@@ -399,8 +400,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("temp_store", "network");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_TEMP_STORE, "network");
             }
 
             try
@@ -434,9 +435,9 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section("sqlite");
-                    section.set("page_size", "512");
-                    section.set("journal_size_limit", "2582080");
+                    auto& section = p->section(kSECTION_SQLITE);
+                    section.set(kKEY_PAGE_SIZE, "512");
+                    section.set(kKEY_JOURNAL_SIZE_LIMIT, "2582080");
                 }
                 return Env(*this, std::move(p));
             }();
@@ -455,8 +456,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("page_size", "256");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_PAGE_SIZE, "256");
             }
             try
             {
@@ -478,8 +479,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("page_size", "131072");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_PAGE_SIZE, "131072");
             }
             try
             {
@@ -501,8 +502,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section("sqlite");
-                section.set("page_size", "513");
+                auto& section = p->section(kSECTION_SQLITE);
+                section.set(kKEY_PAGE_SIZE, "513");
             }
             try
             {
@@ -532,8 +533,8 @@ public:
 
         beast::TempDir const nodeDb;
         Section srcParams;
-        srcParams.set("type", srcBackendType);
-        srcParams.set("path", nodeDb.path());
+        srcParams.set(kKEY_TYPE, srcBackendType);
+        srcParams.set(kKEY_PATH, nodeDb.path());
 
         // Create a batch
         auto batch = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue);
@@ -555,8 +556,8 @@ public:
             // Set up the destination database
             beast::TempDir const destDb;
             Section destParams;
-            destParams.set("type", destBackendType);
-            destParams.set("path", destDb.path());
+            destParams.set(kKEY_TYPE, destBackendType);
+            destParams.set(kKEY_PATH, destDb.path());
 
             std::unique_ptr<Database> dest =
                 Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal_);
@@ -593,8 +594,8 @@ public:
 
         beast::TempDir const nodeDb;
         Section nodeParams;
-        nodeParams.set("type", type);
-        nodeParams.set("path", nodeDb.path());
+        nodeParams.set(kKEY_TYPE, type);
+        nodeParams.set(kKEY_PATH, nodeDb.path());
 
         beast::xor_shift_engine rng(seedValue);
 
@@ -653,7 +654,7 @@ public:
             // Set an invalid earliest ledger sequence
             try
             {
-                nodeParams.set("earliest_seq", "0");
+                nodeParams.set(kKEY_EARLIEST_SEQ, "0");
                 std::unique_ptr<Database> const db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
@@ -664,7 +665,7 @@ public:
 
             {
                 // Set a valid earliest ledger sequence
-                nodeParams.set("earliest_seq", "1");
+                nodeParams.set(kKEY_EARLIEST_SEQ, "1");
                 std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
 
@@ -676,7 +677,7 @@ public:
             try
             {
                 // Set to default earliest ledger sequence
-                nodeParams.set("earliest_seq", std::to_string(kXRP_LEDGER_EARLIEST_SEQ));
+                nodeParams.set(kKEY_EARLIEST_SEQ, std::to_string(kXRP_LEDGER_EARLIEST_SEQ));
                 std::unique_ptr<Database> const db2 = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }

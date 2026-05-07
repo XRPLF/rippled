@@ -195,7 +195,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
 {
     port.name = section.name();
     {
-        auto const optResult = section.get("ip");
+        auto const optResult = section.get(kKEY_IP);
         if (optResult)
         {
             try
@@ -212,7 +212,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const optResult = section.get("port");
+        auto const optResult = section.get(kKEY_PORT);
         if (optResult)
         {
             try
@@ -233,7 +233,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const optResult = section.get("protocol");
+        auto const optResult = section.get(kKEY_PROTOCOL);
         if (optResult)
         {
             for (auto const& s : beast::rfc2616::splitCommas(optResult->begin(), optResult->end()))
@@ -242,7 +242,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const lim = get(section, "limit", "unlimited");
+        auto const lim = get(section, kKEY_LIMIT, "unlimited");
 
         if (!boost::iequals(lim, "unlimited"))
         {
@@ -260,7 +260,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const optResult = section.get("send_queue_limit");
+        auto const optResult = section.get(kKEY_SEND_QUEUE_LIMIT);
         if (optResult)
         {
             try
@@ -285,28 +285,32 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
         }
     }
 
-    populate(section, "admin", log, port.admin_nets_v4, port.admin_nets_v6);
+    populate(section, kKEY_ADMIN, log, port.admin_nets_v4, port.admin_nets_v6);
     populate(
-        section, "secure_gateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
+        section,
+        kKEY_SECURE_GATEWAY,
+        log,
+        port.secure_gateway_nets_v4,
+        port.secure_gateway_nets_v6);
 
-    set(port.user, "user", section);
-    set(port.password, "password", section);
-    set(port.admin_user, "admin_user", section);
-    set(port.admin_password, "admin_password", section);
-    set(port.ssl_key, "ssl_key", section);
-    set(port.ssl_cert, "ssl_cert", section);
-    set(port.ssl_chain, "ssl_chain", section);
-    set(port.ssl_ciphers, "ssl_ciphers", section);
+    set(port.user, kKEY_USER, section);
+    set(port.password, kKEY_PASSWORD, section);
+    set(port.admin_user, kKEY_ADMIN_USER, section);
+    set(port.admin_password, kKEY_ADMIN_PASSWORD, section);
+    set(port.ssl_key, kKEY_SSL_KEY, section);
+    set(port.ssl_cert, kKEY_SSL_CERT, section);
+    set(port.ssl_chain, kKEY_SSL_CHAIN, section);
+    set(port.ssl_ciphers, kKEY_SSL_CIPHERS, section);
 
-    port.pmd_options.server_enable = section.valueOr("permessage_deflate", true);
-    port.pmd_options.client_max_window_bits = section.valueOr("client_max_window_bits", 15);
-    port.pmd_options.server_max_window_bits = section.valueOr("server_max_window_bits", 15);
+    port.pmd_options.server_enable = section.valueOr(kKEY_PERMESSAGE_DEFLATE, true);
+    port.pmd_options.client_max_window_bits = section.valueOr(kKEY_CLIENT_MAX_WINDOW_BITS, 15);
+    port.pmd_options.server_max_window_bits = section.valueOr(kKEY_SERVER_MAX_WINDOW_BITS, 15);
     port.pmd_options.client_no_context_takeover =
-        section.valueOr("client_no_context_takeover", false);
+        section.valueOr(kKEY_CLIENT_NO_CONTEXT_TAKEOVER, false);
     port.pmd_options.server_no_context_takeover =
-        section.valueOr("server_no_context_takeover", false);
-    port.pmd_options.compLevel = section.valueOr("compress_level", 8);
-    port.pmd_options.memLevel = section.valueOr("memory_level", 4);
+        section.valueOr(kKEY_SERVER_NO_CONTEXT_TAKEOVER, false);
+    port.pmd_options.compLevel = section.valueOr(kKEY_COMPRESS_LEVEL, 8);
+    port.pmd_options.memLevel = section.valueOr(kKEY_MEMORY_LEVEL, 4);
 }
 
 }  // namespace xrpl

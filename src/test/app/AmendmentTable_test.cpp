@@ -4,7 +4,6 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -83,8 +82,8 @@ private:
     makeConfig()
     {
         auto cfg = test::jtx::envconfig();
-        cfg->section(SECTION_AMENDMENTS) = makeSection(SECTION_AMENDMENTS, enabled_);
-        cfg->section(SECTION_VETO_AMENDMENTS) = makeSection(SECTION_VETO_AMENDMENTS, vetoed_);
+        cfg->section(kSECTION_AMENDMENTS) = makeSection(kSECTION_AMENDMENTS, enabled_);
+        cfg->section(kSECTION_VETO_AMENDMENTS) = makeSection(kSECTION_VETO_AMENDMENTS, vetoed_);
         return cfg;
     }
 

@@ -91,7 +91,7 @@ private:
 
 public:
     MemoryBackend(size_t keyBytes, Section const& keyValues, beast::Journal journal)
-        : name_(get(keyValues, "path")), journal_(journal)
+        : name_(get(keyValues, kKEY_PATH)), journal_(journal)
     {
         boost::ignore_unused(journal_);  // Keep unused journal_ just in case.
         if (name_.empty())
