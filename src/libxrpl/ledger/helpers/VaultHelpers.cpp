@@ -221,6 +221,12 @@ depositToVault(
     Number const totalDelta = afterAssetsTotal - beforeAssetsTotal;
     Number const availableDelta = afterAssetsAvailable - beforeAssetsAvailable;
 
+    // Catches asymmetric associateAsset rounding when sfAssetsTotal sits
+    // close to the IOU edge while sfAssetsAvailable is at a lower magnitude
+    // (outstanding loans). A deposit that crosses the edge for sfAssetsTotal
+    // but stays clean for sfAssetsAvailable produces unequal deltas; the
+    // preclaim sub-ULP guard does not catch this because the deposit is
+    // representable at the pre-state scale of both fields.
     if (!equalAtAssetScale(
             totalDelta,
             availableDelta,
@@ -346,6 +352,7 @@ withdrawFromVault(
     Number const totalDelta = beforeAssetsTotal - afterAssetsTotal;
     Number const availableDelta = beforeAssetsAvailable - afterAssetsAvailable;
 
+    // Catches asymmetric associateAsset rounding (same shape as deposit side).
     if (!equalAtAssetScale(
             totalDelta,
             availableDelta,
