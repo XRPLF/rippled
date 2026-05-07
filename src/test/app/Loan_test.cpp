@@ -88,7 +88,20 @@ protected:
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
 
-    FeatureBitset const all_{jtx::testableAmendments() | fixCleanup3_2_0};
+    FeatureBitset const all_{jtx::testableAmendments()};
+
+    // The four feature combinations every amendment-sensitive test is
+    // exercised under, to make sure neither code path regresses.
+    auto
+    amendmentCombinations() const
+    {
+        return std::array{
+            all_,
+            all_ - fixCleanup3_2_0,
+            all_ - featureMPTokensV2,
+            all_ - fixCleanup3_2_0 - featureMPTokensV2,
+        };
+    }
 
     std::string const iouCurrency_{"IOU"};
 
@@ -1209,7 +1222,7 @@ protected:
         Account const lender("lender");
         Account const borrower("borrower");
 
-        Env env(*this, all_);
+        Env env(*this, features);
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -2912,7 +2925,7 @@ protected:
                                   std::function<void(Env&, BrokerInfo const&, MPTTester&)> mptTest,
                                   std::function<void(Env&, BrokerInfo const&)> iouTest,
                                   CaseArgs args = {}) {
-            Env env(*this, all_);
+            Env env(*this, features);
             env.fund(XRP(args.initialXRP), issuer, lender, borrower);
             env.close();
             if (args.requireAuth)
@@ -3457,7 +3470,7 @@ protected:
 
         // Create 3 loan brokers: one for XRP, one for an IOU, and one for
         // an MPT. That'll require three corresponding SAVs.
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
@@ -3552,7 +3565,7 @@ protected:
         using namespace std::chrono_literals;
         // Create 3 loan brokers: one for XRP, one for an IOU, and one for
         // an MPT. That'll require three corresponding SAVs.
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
@@ -3690,7 +3703,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -3753,7 +3766,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -3800,7 +3813,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -3868,7 +3881,7 @@ protected:
 
         using namespace jtx;
 
-        Env env(*this, all_);
+        Env env(*this, features);
 
         auto lowerFee = [&]() {
             // Run the local fee back down.
@@ -4547,7 +4560,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4608,7 +4621,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4699,7 +4712,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4765,7 +4778,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4844,7 +4857,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4945,7 +4958,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -5031,7 +5044,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env{*this, all_};
+        Env env{*this, features};
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -5692,7 +5705,7 @@ protected:
         using namespace loan;
         using namespace std::chrono_literals;
 
-        Env env{*this, all_};
+        Env env{*this, features};
 
         Account const lender{"poc_lender4"};
         Account const borrower{"poc_borrower4"};
@@ -5895,7 +5908,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env{*this, all_};
+        Env env{*this, features};
 
         // Setup: Create accounts
         Account const issuer{"issuer"};
@@ -6056,7 +6069,7 @@ protected:
 
         auto const assetType = AssetType::XRP;
 
-        Env env{*this, all_};
+        Env env{*this, features};
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -6127,7 +6140,7 @@ protected:
 
         auto const assetType = AssetType::MPT;
 
-        Env env{*this, all_};
+        Env env{*this, features};
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -6234,7 +6247,7 @@ protected:
         using namespace jtx;
         using namespace loanBroker;
 
-        Env env{*this, all_};
+        Env env{*this, features};
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -6333,7 +6346,7 @@ protected:
 
         auto const assetType = AssetType::IOU;
 
-        Env env{*this, all_};
+        Env env{*this, features};
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -6497,7 +6510,7 @@ protected:
 
         auto const assetType = AssetType::IOU;
 
-        Env env{*this, all_};
+        Env env{*this, features};
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, issuer);
@@ -6601,7 +6614,7 @@ protected:
         using namespace jtx;
         using namespace loan;
 
-        Env env{*this, all_};
+        Env env{*this, features};
 
         Account const lender{"lender"}, borrower{"borrower"};
 
@@ -6725,7 +6738,7 @@ protected:
         Account const borrower("borrower");
         Account const broker("broker");
 
-        Env env{*this, all_};
+        Env env{*this, features};
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
@@ -6806,7 +6819,7 @@ protected:
         Account const borrower("borrower");
         Account const broker("broker");
 
-        Env env{*this, all_};
+        Env env{*this, features};
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
@@ -6909,7 +6922,7 @@ protected:
         Account const borrower("borrower");
         Account const broker("broker");
 
-        Env env{*this, all_};
+        Env env{*this, features};
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
@@ -6979,7 +6992,7 @@ protected:
         using namespace loan;
         using namespace loanBroker;
 
-        Env env{*this, all_};
+        Env env{*this, features};
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -7112,7 +7125,7 @@ protected:
         static constexpr std::uint32_t kLOCAL_PAYMENT_INTERVAL = 600;
         static constexpr std::uint32_t kLOCAL_PAYMENT_TOTAL = 2;
 
-        Env env{*this, all_};
+        Env env{*this, features};
 
         // Setup accounts
         Account const issuer{"issuer"};
@@ -7232,20 +7245,13 @@ protected:
     // The test pays one period at a time across three LoanPay
     // transactions and verifies the loan completes (paymentRemaining=0)
     // with totals matching the loan's economics (1 principal + 2 interest).
-    //
-    // Caller MUST pass features with fixCleanup3_2_0 enabled — this
-    // setup reproduces the bug the amendment fixes; the disabled path
-    // would crash on the strict-inequality assertion. For that reason a
-    // direct side-by-side comparison of principal/interest values
-    // between the two feature states is not possible: the amendment-off
-    // run aborts before producing any post-payment state to compare.
     void
-    testIntegerScalePrincipalSticks(FeatureBitset features)
+    testIntegerScalePrincipalSticks()
     {
         testcase("edge: integer MPT principal stuck mid-loan completes via final");
 
         using namespace jtx;
-        Env env(*this, features);
+        Env env(*this, all_);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -7325,76 +7331,92 @@ protected:
         BEAST_EXPECT(borrowerStart - borrowerEnd == asset(3).value());
     }
 
-public:
+    // Reproduces a bug fixed by fixCleanup3_2_0; aborts the server on the
+    // pre-amendment rounding path, so it must run only with the amendment on.
     void
-    run() override
+    runAmendmentRequired()
     {
-        // testIntegerScalePrincipalSticks reproduces the bug the dual-rounding
-        // amendment fixes; with fixCleanup3_2_0 disabled it would trigger the
-        // original assertion crash, so it runs only with the amendment on.
-        testIntegerScalePrincipalSticks(all_);
+        testIntegerScalePrincipalSticks();
+    }
 
-        // Run each amendment-sensitive test under three feature sets:
-        //   - all_                       : everything (incl. fixCleanup3_2_0)
-        //   - all_ - fixCleanup3_2_0     : pre-amendment rounding path
-        //   - all_ - featureMPTokensV2   : MPTokensV2 disabled
-        for (auto const& features : {all_, all_ - fixCleanup3_2_0, all_ - featureMPTokensV2})
-        {
-#if LOAN_TODO
-            testLoanPayLateFullPaymentBypassesPenalties(features);
-            testLoanCoverMinimumRoundingExploit(features);
-#endif
-            testWithdrawReflectsUnrealizedLoss(features);
-
-            testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(features);
-
-            testSelfLoan(features);
-            testLoanSet(features);
-            testLifecycle(features);
-
-            testRPC(features);
-
-            testBatchBypassCounterparty(features);
-            testLoanPayComputePeriodicPaymentValidRateInvariant(features);
-            testAccountSendMptMinAmountInvariant(features);
-            testLoanPayDebtDecreaseInvariant(features);
-            testWrongMaxDebtBehavior(features);
-            testLoanPayComputePeriodicPaymentValidTotalInterestInvariant(features);
-            testDosLoanPay(features);
-            testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant(features);
-            testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant(features);
-            testLoanNextPaymentDueDateOverflow(features);
-
-            testDustManipulation(features);
-
-            testRIPD3831(features);
-            testRIPD3459(features);
-            testRIPD3902(features);
-            testRoundingAllowsUndercoverage(features);
-            testIssuerIsBorrower(features);
-            testOverpaymentManagementFee(features);
-            testLoanPayBrokerOwnerMissingTrustline(features);
-            testLoanPayBrokerOwnerUnauthorizedMPT(features);
-            testLoanPayBrokerOwnerNoPermissionedDomainMPT(features);
-            testLoanSetBrokerOwnerNoPermissionedDomainMPT(features);
-            testSequentialFLCDepletion(features);
-            testCoverDepositWithdrawNonTransferableMPT(features);
-        }
-
-        // Tests below take no FeatureBitset and run once.
-        testInvalidLoanSet();
+    // Tests that don't depend on lending amendments. Run once.
+    void
+    runAmendmentIndependent()
+    {
         testDisabled();
-        testIssuerLoan();
-        testServiceFeeOnBrokerDeepFreeze();
-
+        testInvalidLoanSet();
         testInvalidLoanDelete();
         testInvalidLoanManage();
         testInvalidLoanPay();
-
+        testIssuerLoan();
+        testServiceFeeOnBrokerDeepFreeze();
         testRequireAuth();
         testRIPD3901();
         testBorrowerIsBroker();
         testLimitExceeded();
+    }
+
+    // Tests run under each entry in amendmentCombinations().
+    void
+    runAmendmentSensitive(FeatureBitset features)
+    {
+#if LOAN_TODO
+        testLoanPayLateFullPaymentBypassesPenalties(features);
+        testLoanCoverMinimumRoundingExploit(features);
+#endif
+
+        // Lifecycle
+        testSelfLoan(features);
+        testLoanSet(features);
+        testLifecycle(features);
+
+        // Payment paths
+        testWithdrawReflectsUnrealizedLoss(features);
+        testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(features);
+        testBatchBypassCounterparty(features);
+        testDosLoanPay(features);
+        testLoanNextPaymentDueDateOverflow(features);
+        testCoverDepositWithdrawNonTransferableMPT(features);
+        testSequentialFLCDepletion(features);
+
+        // Invariants
+        testLoanPayComputePeriodicPaymentValidRateInvariant(features);
+        testAccountSendMptMinAmountInvariant(features);
+        testLoanPayDebtDecreaseInvariant(features);
+        testWrongMaxDebtBehavior(features);
+        testLoanPayComputePeriodicPaymentValidTotalInterestInvariant(features);
+        testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant(features);
+        testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant(features);
+
+        // RPC
+        testRPC(features);
+
+        // Edge / rounding
+        testDustManipulation(features);
+        testRoundingAllowsUndercoverage(features);
+        testOverpaymentManagementFee(features);
+        testIssuerIsBorrower(features);
+
+        // RIPD regressions
+        testRIPD3831(features);
+        testRIPD3459(features);
+        testRIPD3902(features);
+
+        // Broker-owner permissions
+        testLoanPayBrokerOwnerMissingTrustline(features);
+        testLoanPayBrokerOwnerUnauthorizedMPT(features);
+        testLoanPayBrokerOwnerNoPermissionedDomainMPT(features);
+        testLoanSetBrokerOwnerNoPermissionedDomainMPT(features);
+    }
+
+public:
+    void
+    run() override
+    {
+        runAmendmentRequired();
+        runAmendmentIndependent();
+        for (auto const& features : amendmentCombinations())
+            runAmendmentSensitive(features);
     }
 };
 
