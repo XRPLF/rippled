@@ -231,7 +231,7 @@ public:
     void
     doStop(CompletionCounter)
     {
-        XRPL_ASSERT(stop_called == true, "xrpl::ResolverAsioImpl::do_stop : stopping");
+        XRPL_ASSERT(stop_called == true, "xrpl::ResolverAsioImpl::doStop : stopping");
 
         if (!stopped.exchange(true))
         {
@@ -369,7 +369,7 @@ public:
     void
     doResolve(std::vector<std::string> const& names, HandlerType const& handler, CompletionCounter)
     {
-        XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::do_resolve : names non-empty");
+        XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::doResolve : names non-empty");
 
         if (!stop_called)
         {
