@@ -184,6 +184,7 @@ checkLoanGuards(
 
 LoanState
 computeTheoreticalLoanState(
+    Rules const& rules,
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t const paymentRemaining,
@@ -353,6 +354,7 @@ struct LoanStateDeltas
 
 Expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
 tryOverpayment(
+    Rules const& rules,
     Asset const& asset,
     std::int32_t loanScale,
     ExtendedPaymentComponents const& overpaymentComponents,
@@ -363,11 +365,17 @@ tryOverpayment(
     TenthBips16 const managementFeeRate,
     beast::Journal j);
 
-Number
-computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining);
+[[nodiscard]] Number
+computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining);
 
-Number
-computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining);
+[[nodiscard]] Number
+computePowerMinusOneHybrid(Number const& periodicRate, std::uint32_t paymentsRemaining);
+
+[[nodiscard]] Number
+computePaymentFactor(
+    Rules const& rules,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining);
 
 std::pair<Number, Number>
 computeInterestAndFeeParts(
@@ -378,12 +386,14 @@ computeInterestAndFeeParts(
 
 Number
 loanPeriodicPayment(
+    Rules const& rules,
     Number const& principalOutstanding,
     Number const& periodicRate,
     std::uint32_t paymentsRemaining);
 
 Number
 loanPrincipalFromPeriodicPayment(
+    Rules const& rules,
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t paymentsRemaining);
@@ -415,6 +425,7 @@ computeOverpaymentComponents(
 
 PaymentComponents
 computePaymentComponents(
+    Rules const& rules,
     Asset const& asset,
     std::int32_t scale,
     Number const& totalValueOutstanding,
@@ -438,6 +449,7 @@ operator+(LoanState const& lhs, detail::LoanStateDeltas const& rhs);
 
 LoanProperties
 computeLoanProperties(
+    Rules const& rules,
     Asset const& asset,
     Number const& principalOutstanding,
     TenthBips32 interestRate,
@@ -448,6 +460,7 @@ computeLoanProperties(
 
 LoanProperties
 computeLoanProperties(
+    Rules const& rules,
     Asset const& asset,
     Number const& principalOutstanding,
     Number const& periodicRate,
