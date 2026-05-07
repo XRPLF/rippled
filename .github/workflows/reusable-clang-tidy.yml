@@ -29,7 +29,7 @@ jobs:
     if: ${{ inputs.check_only_changed }}
     permissions:
       contents: read
-    uses: XRPLF/actions/.github/workflows/determine-tidy-files.yml@12f5dbc98a2260259a66970e57fa4d26fb7f285c
+    uses: XRPLF/actions/.github/workflows/determine-tidy-files.yml@224f3c48d3014d082a1129237b8291ff0b0a331f
 
   run-clang-tidy:
     name: Run clang tidy
