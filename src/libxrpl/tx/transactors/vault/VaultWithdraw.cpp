@@ -142,20 +142,23 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
         return ret;
 
-    // Post-fixCleanup3_2_0: reject withdrawals whose amount is sub-ULP at the
-    // vault's coarsest accounting rail. Same rationale as VaultDeposit::preclaim.
+    // Post-fixCleanup3_2_0: reject withdrawals whose amount is sub-ULP at
+    // sfAssetsAvailable's scale. Available reflects what the vault actually
+    // holds (mirrors the vault pseudo trust-line balance) — rounding at
+    // sfAssetsTotal's scale would over-reject when sfAssetsAvailable has
+    // dropped to a finer scale (loan-trapped or dust residual), preventing
+    // recovery of legitimate available funds. accountSendExact in doApply
+    // remains the backstop if pseudo and sfAssetsAvailable scales diverge.
     // Only applied when the amount is asset-denominated; share-denominated
     // withdrawals route through sharesToAssetsWithdraw in doApply and the
     // resulting asset amount is at the rail's scale by construction.
     if (ctx.view.rules().enabled(fixCleanup3_2_0) && amount.asset() == vaultAsset)
     {
-        // sfAssetsAvailable <= sfAssetsTotal, so scale(sfAssetsTotal) is
-        // already the coarsest of the two accounting fields.
-        int const vaultScale = scale(vault->at(sfAssetsTotal), vaultAsset);
-        if (roundsToZeroAtScale(vaultAsset, amount, vaultScale))
+        int const availableScale = scale(vault->at(sfAssetsAvailable), vaultAsset);
+        if (roundsToZeroAtScale(vaultAsset, amount, availableScale))
         {
             JLOG(ctx.j.warn()) << "VaultWithdraw: amount " << amount.getFullText()
-                               << " is sub-ULP at vault scale " << vaultScale;
+                               << " is sub-ULP at available scale " << availableScale;
             return tecPRECISION_LOSS;
         }
     }
