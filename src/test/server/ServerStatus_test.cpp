@@ -536,16 +536,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr), auth);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);
 
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const user =
-            env.app().config().section(Sections::kPORT_RPC).get<std::string>(Keys::kUSER).value();
-        auto const pass =
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            env.app()
-                .config()
-                .section(Sections::kPORT_RPC)
-                .get<std::string>(Keys::kPASSWORD)
-                .value();
+        auto const section = env.app().config().section(Sections::kPORT_RPC);
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        auto const user = section.get<std::string>(Keys::kUSER).value();
+        auto const pass = section.get<std::string>(Keys::kPASSWORD).value();
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         // try with the correct user/pass, but not encoded
         auth.set("Authorization", "Basic " + user + ":" + pass);
@@ -572,12 +567,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
                     return cfg;
                 })};
 
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const port =
-            env.app().config()[Sections::kPORT_RPC].get<std::uint16_t>(Keys::kPORT).value();
-
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const ip = env.app().config()[Sections::kPORT_RPC].get<std::string>(Keys::kIP).value();
+        auto const section = env.app().config().section(Sections::kPORT_RPC);
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        auto const port = section.get<std::uint16_t>(Keys::kPORT).value();
+        auto const ip = section.get<std::string>(Keys::kIP).value();
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         boost::system::error_code ec;
         io_context& ios = getIoContext();
@@ -633,11 +627,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
                     return cfg;
                 })};
 
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const port =
-            env.app().config()[Sections::kPORT_WS].get<std::uint16_t>(Keys::kPORT).value();
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const ip = env.app().config()[Sections::kPORT_WS].get<std::string>(Keys::kIP).value();
+        auto const section = env.app().config().section(Sections::kPORT_WS);
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        auto const port = section.get<std::uint16_t>(Keys::kPORT).value();
+        auto const ip = section.get<std::string>(Keys::kIP).value();
+        // NOLINTEND(bugprone-unchecked-optional-access)
         boost::beast::http::response<boost::beast::http::string_body> resp;
         boost::system::error_code ec;
         doRequest(yield, makeWSUpgrade(ip, port), ip, port, true, resp, ec);
@@ -654,11 +648,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         using namespace test::jtx;
         Env env{*this};
 
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const port =
-            env.app().config()[Sections::kPORT_WS].get<std::uint16_t>(Keys::kPORT).value();
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const ip = env.app().config()[Sections::kPORT_WS].get<std::string>(Keys::kIP).value();
+        auto const section = env.app().config().section(Sections::kPORT_WS);
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        auto const port = section.get<std::uint16_t>(Keys::kPORT).value();
+        auto const ip = section.get<std::string>(Keys::kIP).value();
+        // NOLINTEND(bugprone-unchecked-optional-access)
         boost::beast::http::response<boost::beast::http::string_body> resp;
         boost::system::error_code ec;
         // body content is required here to avoid being
@@ -678,11 +672,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         using namespace boost::beast::http;
         Env env{*this};
 
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const port =
-            env.app().config()[Sections::kPORT_WS].get<std::uint16_t>(Keys::kPORT).value();
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        auto const ip = env.app().config()[Sections::kPORT_WS].get<std::string>(Keys::kIP).value();
+        auto const section = env.app().config().section(Sections::kPORT_WS);
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        auto const port = section.get<std::uint16_t>(Keys::kPORT).value();
+        auto const ip = section.get<std::string>(Keys::kIP).value();
+        // NOLINTEND(bugprone-unchecked-optional-access)
         boost::system::error_code ec;
 
         io_context& ios = getIoContext();
