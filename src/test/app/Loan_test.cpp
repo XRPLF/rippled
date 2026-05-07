@@ -7284,6 +7284,205 @@ protected:
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
     }
 
+    // Verify that LoanPay's minimum cover check uses vault scale (not loan
+    // scale) when the featureLendingProtocolV1_1 amendment is enabled.
+    // Before the amendment, different loans could produce different fee
+    // routing decisions for the same broker-level cover/debt state.
+    void
+    testMinimumBrokerCoverScale()
+    {
+        testcase("LoanPay minimum cover scale consistency");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace loanBroker;
+
+        // Run the scenario with the amendment disabled (expect the bug)
+        // and enabled (expect consistency).
+        for (bool const withAmendment : {false, true})
+        {
+            auto const features = withAmendment ? all : all - featureLendingProtocolV1_1;
+            Env env(*this, features);
+            auto log = env.journal.trace();
+
+            Account const issuer{"issuer"};
+            Account const lender{"lender"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(1'000'000'000), issuer, lender, borrower);
+            env.close();
+
+            // Enable clawback on the issuer *before* any trust lines exist
+            // (asfAllowTrustLineClawback requires an empty owner directory).
+            // We need this so the issuer can claw cover below the withdraw
+            // transactor's minimum — the clawback minimum is less rounded
+            // before the amendment, which is exactly the gap we exploit.
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const IOU = issuer[iouCurrency];
+            env(trust(lender, IOU(1'000'000'000)));
+            env(trust(borrower, IOU(1'000'000'000)));
+            env.close();
+            env(pay(issuer, lender, IOU(100'000'000)));
+            env(pay(issuer, borrower, IOU(100'000'000)));
+            env.close();
+
+            // Small vault deposit => vaultScale = -12.
+            // Cover deposit generous enough for LoanSet to succeed.
+            BrokerParameters const brokerParams{
+                .vaultDeposit = 1'000,
+                .debtMax = 0,
+                .coverRateMin =
+                    TenthBips32{13'370},  // 13.37% — non-round rate produces a messier minimum
+                .coverDeposit = 5'000,
+                .managementFeeRate = TenthBips16{500}};
+
+            BrokerInfo const broker = createVaultAndBroker(env, IOU, lender, brokerParams);
+            Asset const asset{IOU};
+
+            // Create the TINY loan first (while vaultScale is still small).
+            // principal 0.01, 0% interest, 1 payment => loanScale = vaultScale.
+            auto const brokerSle1 = env.le(keylet::loanbroker(broker.brokerID));
+            if (!BEAST_EXPECT(brokerSle1))
+                return;
+            auto const tinyLoanSeq = brokerSle1->at(sfLoanSequence);
+            auto const tinyLoanKeylet = keylet::loan(broker.brokerID, tinyLoanSeq);
+
+            env(set(borrower, broker.brokerID, Number{1, -2}),
+                sig(sfCounterpartySignature, lender),
+                interestRate(TenthBips32{0}),
+                paymentTotal(1),
+                paymentInterval(86400 * 365),
+                fee(XRP(10)));
+            env.close();
+            if (!BEAST_EXPECT(env.le(tinyLoanKeylet)))
+                return;
+
+            // Create the BIG loan second. 100% annual interest over 20
+            // payments pushes totalValueOutstanding high enough that
+            // loanScale > vaultScale.
+            auto const brokerSle2 = env.le(keylet::loanbroker(broker.brokerID));
+            if (!BEAST_EXPECT(brokerSle2))
+                return;
+            auto const bigLoanSeq = brokerSle2->at(sfLoanSequence);
+            auto const bigLoanKeylet = keylet::loan(broker.brokerID, bigLoanSeq);
+
+            env(set(borrower, broker.brokerID, Number{500}),
+                sig(sfCounterpartySignature, lender),
+                interestRate(TenthBips32{100'000}),
+                paymentTotal(20),
+                paymentInterval(86400 * 365),
+                fee(XRP(10)));
+            env.close();
+            if (!BEAST_EXPECT(env.le(bigLoanKeylet)))
+                return;
+
+            // Read scales.
+            auto const tinyLoanSle = env.le(tinyLoanKeylet);
+            auto const bigLoanSle = env.le(bigLoanKeylet);
+            if (!BEAST_EXPECT(tinyLoanSle) || !BEAST_EXPECT(bigLoanSle))
+                return;
+            auto const tinyLoanScale = tinyLoanSle->at(sfLoanScale);
+            auto const bigLoanScale = bigLoanSle->at(sfLoanScale);
+
+            // The tiny loan's scale is frozen at the vault's pre-big-loan
+            // scale, so it should be strictly smaller than the big loan's.
+            if (!BEAST_EXPECT(tinyLoanScale < bigLoanScale))
+                return;
+
+            auto const vaultSle = env.le(keylet::vault(broker.vaultID));
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            auto const vaultScale = getAssetsTotalScale(vaultSle);
+
+            // After the big loan is created the vault absorbs its value,
+            // pushing vaultScale up to match bigLoanScale.
+            BEAST_EXPECT(bigLoanScale == vaultScale);
+
+            // Use issuer clawback (no specific amount) to reduce cover to
+            // the minimum the clawback transactor allows.
+            //
+            // Before the amendment the clawback minimum is the *unrounded*
+            // tenthBipsOfValue — strictly less than the rounded-at-vaultScale
+            // minimum that LoanPay uses for the big loan.
+            //
+            // With the amendment both clawback and LoanPay use the same
+            // rounded-at-vaultScale minimum (via minimumBrokerCover), so
+            // cover lands exactly at that threshold.
+            env(env.json(
+                coverClawback(issuer),
+                loanBrokerID(broker.brokerID),
+                fee(none),
+                seq(none),
+                sig(none)));
+            env.close();
+
+            // Re-read the broker after cover reduction.
+            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            if (!BEAST_EXPECT(brokerSle))
+                return;
+
+            log << "withAmendment=" << withAmendment << " vaultScale=" << vaultScale
+                << " bigLoanScale=" << bigLoanScale << " tinyLoanScale=" << tinyLoanScale
+                << " coverAfterClaw=" << to_string(brokerSle->at(sfCoverAvailable)) << std::endl;
+
+            // Pay each loan independently and observe the fee routing.
+            auto feeGoesToPseudo = [&](Keylet const& loanKeylet) {
+                auto const pseudoAcct = Account("pseudo", brokerSle->at(sfAccount));
+                auto const pseudoBefore = env.balance(pseudoAcct, IOU);
+
+                auto const payLoan = env.le(loanKeylet);
+                if (!BEAST_EXPECT(payLoan))
+                    return false;
+                auto const payment = payLoan->at(sfPeriodicPayment);
+                auto const serviceFee = payLoan->at(sfLoanServiceFee);
+                auto const payAmt = STAmount{asset, payment + serviceFee};
+
+                env(loan::pay(borrower, loanKeylet.key, payAmt), fee(XRP(10)));
+                env.close();
+
+                auto const pseudoAfter = env.balance(pseudoAcct, IOU);
+                return pseudoAfter.number() > pseudoBefore.number();
+            };
+
+            // Pay the big loan first (it uses the larger loanScale).
+            auto const bigResult = feeGoesToPseudo(bigLoanKeylet);
+            // Pay the tiny loan second (it uses the smaller loanScale).
+            auto const tinyResult = feeGoesToPseudo(tinyLoanKeylet);
+
+            log << "bigResult(feeWentToPseudo)=" << bigResult
+                << " tinyResult(feeWentToPseudo)=" << tinyResult << std::endl;
+
+            if (withAmendment)
+            {
+                // With the fix, both LoanPay and clawback use the same
+                // vaultScale minimum.  Cover == minAtVaultScale, so both
+                // loans pass the check => fee to owner for both.
+                BEAST_EXPECTS(
+                    bigResult == tinyResult,
+                    "With amendment: fee routing should be consistent. "
+                    "big=>pseudo=" +
+                        std::to_string(bigResult) + " tiny=>pseudo=" + std::to_string(tinyResult));
+            }
+            else
+            {
+                // Without the fix:
+                //  - Clawback reduced cover to the *unrounded* minimum
+                //    (raw tenthBipsOfValue, at precision -12).
+                //  - Paying the big loan: LoanPay uses bigLoanScale=-11,
+                //    rounds up => a larger minimum => cover < min => pseudo.
+                //  - Paying the tiny loan: LoanPay uses tinyLoanScale=-12,
+                //    rounds up at -12 (no-op) => min == cover => owner.
+                BEAST_EXPECTS(
+                    bigResult != tinyResult,
+                    "Without amendment: expected inconsistent fee routing to "
+                    "demonstrate the bug. big=>pseudo=" +
+                        std::to_string(bigResult) + " tiny=>pseudo=" + std::to_string(tinyResult));
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -7341,6 +7540,7 @@ public:
         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
         testSequentialFLCDepletion();
+        testMinimumBrokerCoverScale();
     }
 };
 
