@@ -211,6 +211,30 @@ trustCreate(
         // LCOV_EXCL_STOP
     }
 
+    if (view.rules().enabled(fixCleanup3_2_0))
+    {
+        // fixCleanup3_2_0 introduces V2 MPT wire format, which uses
+        // xrpAccount() (AccountID{0}) as the serialization sentinel to
+        // distinguish MPT from IOU. A trust line whose account equals
+        // xrpAccount() would make that sentinel ambiguous during STIssue
+        // deserialization, so we reject it here.
+        //
+        // noAccount() (AccountID{1}) is the legacy V1 sentinel and is
+        // likewise rejected for defense-in-depth, even though creating a
+        // valid key pair for either value would require breaking SHA-256.
+        //
+        // The native() check guards against a malformed saBalance that would
+        // slip through as an XRP issue inside a trust-line creation.
+        auto invalidAccount = [](AccountID const& account) {
+            return account == xrpAccount() || account == noAccount();
+        };
+        if (invalidAccount(uLowAccountID) || invalidAccount(uHighAccountID) ||
+            saBalance.get<Issue>().native())
+        {
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
+    }
+
     auto const sleRippleState = std::make_shared<SLE>(ltRIPPLE_STATE, uIndex);
     view.insert(sleRippleState);
 

@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -90,6 +91,21 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
         if (maxAmt > kMAX_MP_TOKEN_AMOUNT)
             return temMALFORMED;
+    }
+
+    // V2 MPT wire format (fixCleanup3_2_0) uses xrpAccount() as the
+    // serialization sentinel and noAccount() was the V1 sentinel. An MPT
+    // whose issuer equals either sentinel would be indistinguishable from the
+    // format marker during STIssue deserialization. Reject such issuers here
+    // as defense-in-depth; deriving a key pair for AccountID{0} or AccountID{1}
+    // would require breaking SHA-256, but the check is cheap.
+    if (ctx.rules.enabled(fixCleanup3_2_0))
+    {
+        auto const account = ctx.tx[sfAccount];
+        if (account == xrpAccount() || account == noAccount())
+        {
+            return temMALFORMED;  // LCOV_EXCL_LINE
+        }
     }
     return tesSUCCESS;
 }
