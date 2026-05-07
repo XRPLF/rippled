@@ -572,7 +572,7 @@ Config::loadFromString(std::string const& fileContents)
         if ((peersInMax && !peersOutMax) || (peersOutMax && !peersInMax))
         {
             Throw<std::runtime_error>(
-                std::string("Both sections [") + Sections::kPEERS_IN_MAX + "]" + "and [" +
+                std::string("Both sections [") + Sections::kPEERS_IN_MAX + "]" + " and [" +
                 Sections::kPEERS_OUT_MAX + "] must be configured");
         }
 
