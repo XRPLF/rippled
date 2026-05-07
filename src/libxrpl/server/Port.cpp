@@ -61,7 +61,7 @@ operator<<(std::ostream& os, Port const& p)
 
     if (!p.secure_gateway_nets_v4.empty() || !p.secure_gateway_nets_v6.empty())
     {
-        os << "secureGateway nets:";
+        os << "secure_gateway nets:";
         for (auto const& net : p.secure_gateway_nets_v4)
         {
             os << net.to_string();
