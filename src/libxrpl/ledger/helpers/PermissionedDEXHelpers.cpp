@@ -35,7 +35,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
         if (!sleCred || !sleCred->isFlag(lsfAccepted))
             return false;
 
-        return !credentials::checkExpired(sleCred, view.header().parentCloseTime);
+        return !credentials::checkExpired(*sleCred, view.header().parentCloseTime);
     });
 
     return inDomain;
