@@ -50,9 +50,9 @@ setCurrentTransactionRules(std::optional<Rules> r)
     bool const enableVaultNumbers = enableCuspRoundingFix ||
         (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
     Number::setMantissaScale(
-        enableCuspRoundingFix    ? MantissaRange::MantissaScale::Large
-            : enableVaultNumbers ? MantissaRange::MantissaScale::LargeLegacy
-                                 : MantissaRange::MantissaScale::Small);
+        enableCuspRoundingFix ? MantissaRange::MantissaScale::Large
+                              : (enableVaultNumbers ? MantissaRange::MantissaScale::LargeLegacy
+                                                    : MantissaRange::MantissaScale::Small));
 
     *getCurrentTransactionRulesRef() = std::move(r);
 }
