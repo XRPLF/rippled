@@ -811,7 +811,7 @@ public:
         (*cfg)[Sections::kPORT_GRPC].set(Keys::kSSL_CERT, getServerCertPath().string());
         (*cfg)[Sections::kPORT_GRPC].set(Keys::kSSL_KEY, getServerKeyPath().string());
         (*cfg)[Sections::kPORT_GRPC].set(
-            "ssl_cert_chain", getCACertPath().string());  // Using CA as intermediate
+            Keys::kSSL_CERT_CHAIN, getCACertPath().string());  // Using CA as intermediate
         (*cfg)[Sections::kPORT_GRPC].set(Keys::kSSL_CLIENT_CA, getCACertPath().string());
 
         Env env(*this, std::move(cfg));

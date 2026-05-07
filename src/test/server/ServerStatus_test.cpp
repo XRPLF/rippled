@@ -302,11 +302,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         {
             auto const user = env.app()
                                   .config()[protoWs ? Sections::kPORT_WS : Sections::kPORT_RPC]
-                                  .get<std::string>("admin_user");
+                                  .get<std::string>(Keys::kADMIN_USER);
 
             auto const password = env.app()
                                       .config()[protoWs ? Sections::kPORT_WS : Sections::kPORT_RPC]
-                                      .get<std::string>("admin_password");
+                                      .get<std::string>(Keys::kADMIN_PASSWORD);
 
             // 1 - FAILS with wrong pass
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)

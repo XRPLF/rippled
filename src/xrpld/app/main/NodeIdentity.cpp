@@ -36,8 +36,10 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
         seed = parseBase58<Seed>(app.config().section(Sections::kNODE_SEED).lines().front());
 
         if (!seed)
+        {
             Throw<std::runtime_error>(
                 std::string("Invalid [") + Sections::kNODE_SEED + "] in configuration file");
+        }
     }
 
     if (seed)

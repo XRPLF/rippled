@@ -16,6 +16,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl::test {

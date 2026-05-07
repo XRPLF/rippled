@@ -20,6 +20,7 @@
 #include <xrpl/server/NetworkOPs.h>
 
 #include <memory>
+#include <string>
 
 namespace xrpl {
 
