@@ -40,8 +40,8 @@ class JSONRPCClient : public AbstractClient
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parsePort(common, cfg[kSECTION_SERVER], log);
-        for (auto const& name : cfg.section(kSECTION_SERVER).values())
+        parsePort(common, cfg[Sections::kSERVER], log);
+        for (auto const& name : cfg.section(Sections::kSERVER).values())
         {
             if (!cfg.exists(name))
                 continue;

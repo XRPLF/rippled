@@ -275,9 +275,9 @@ class HashRouter_test : public beast::unit_test::Suite
         {
             Config cfg;
             // non-default
-            auto& h = cfg.section(kSECTION_HASHROUTER);
-            h.set(kKEY_HOLD_TIME, "600");
-            h.set(kKEY_RELAY_TIME, "15");
+            auto& h = cfg.section(Sections::kHASHROUTER);
+            h.set(Keys::kHOLD_TIME, "600");
+            h.set(Keys::kRELAY_TIME, "15");
             auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 600s);
             BEAST_EXPECT(setup.relayTime == 15s);
@@ -285,9 +285,9 @@ class HashRouter_test : public beast::unit_test::Suite
         {
             Config cfg;
             // equal
-            auto& h = cfg.section(kSECTION_HASHROUTER);
-            h.set(kKEY_HOLD_TIME, "400");
-            h.set(kKEY_RELAY_TIME, "400");
+            auto& h = cfg.section(Sections::kHASHROUTER);
+            h.set(Keys::kHOLD_TIME, "400");
+            h.set(Keys::kRELAY_TIME, "400");
             auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 400s);
             BEAST_EXPECT(setup.relayTime == 400s);
@@ -295,9 +295,9 @@ class HashRouter_test : public beast::unit_test::Suite
         {
             Config cfg;
             // wrong order
-            auto& h = cfg.section(kSECTION_HASHROUTER);
-            h.set(kKEY_HOLD_TIME, "60");
-            h.set(kKEY_RELAY_TIME, "120");
+            auto& h = cfg.section(Sections::kHASHROUTER);
+            h.set(Keys::kHOLD_TIME, "60");
+            h.set(Keys::kRELAY_TIME, "120");
             try
             {
                 setupHashRouter(cfg);
@@ -314,9 +314,9 @@ class HashRouter_test : public beast::unit_test::Suite
         {
             Config cfg;
             // too small hold
-            auto& h = cfg.section(kSECTION_HASHROUTER);
-            h.set(kKEY_HOLD_TIME, "10");
-            h.set(kKEY_RELAY_TIME, "120");
+            auto& h = cfg.section(Sections::kHASHROUTER);
+            h.set(Keys::kHOLD_TIME, "10");
+            h.set(Keys::kRELAY_TIME, "120");
             try
             {
                 setupHashRouter(cfg);
@@ -334,9 +334,9 @@ class HashRouter_test : public beast::unit_test::Suite
         {
             Config cfg;
             // too small relay
-            auto& h = cfg.section(kSECTION_HASHROUTER);
-            h.set(kKEY_HOLD_TIME, "500");
-            h.set(kKEY_RELAY_TIME, "6");
+            auto& h = cfg.section(Sections::kHASHROUTER);
+            h.set(Keys::kHOLD_TIME, "500");
+            h.set(Keys::kRELAY_TIME, "6");
             try
             {
                 setupHashRouter(cfg);
@@ -353,9 +353,9 @@ class HashRouter_test : public beast::unit_test::Suite
         {
             Config cfg;
             // garbage
-            auto& h = cfg.section(kSECTION_HASHROUTER);
-            h.set(kKEY_HOLD_TIME, "alice");
-            h.set(kKEY_RELAY_TIME, "bob");
+            auto& h = cfg.section(Sections::kHASHROUTER);
+            h.set(Keys::kHOLD_TIME, "alice");
+            h.set(Keys::kRELAY_TIME, "bob");
             auto const setup = setupHashRouter(cfg);
             // The set function ignores values that don't convert, so the
             // defaults are left unchanged

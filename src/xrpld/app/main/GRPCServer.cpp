@@ -334,15 +334,15 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
     : app_(app), journal_(app_.getJournal("gRPC Server"))
 {
     // if present, get endpoint from config
-    if (app_.config().exists(kSECTION_PORT_GRPC))
+    if (app_.config().exists(Sections::kPORT_GRPC))
     {
-        Section const& section = app_.config().section(kSECTION_PORT_GRPC);
+        Section const& section = app_.config().section(Sections::kPORT_GRPC);
 
-        auto const optIp = section.get(kKEY_IP);
+        auto const optIp = section.get(Keys::kIP);
         if (!optIp)
             return;
 
-        auto const optPort = section.get(kKEY_PORT);
+        auto const optPort = section.get(Keys::kPORT);
         if (!optPort)
             return;
         try
@@ -360,7 +360,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
             Throw<std::runtime_error>("Error setting grpc server address");
         }
 
-        auto const optSecureGateway = section.get(kKEY_SECURE_GATEWAY);
+        auto const optSecureGateway = section.get(Keys::kSECURE_GATEWAY);
         if (optSecureGateway)
         {
             try
@@ -390,10 +390,10 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
         }
 
         // Read TLS certificate configuration (optional)
-        sslCertPath_ = section.get(kKEY_SSL_CERT);
-        sslKeyPath_ = section.get(kKEY_SSL_KEY);
-        sslCertChainPath_ = section.get(kKEY_SSL_CERT_CHAIN);
-        sslClientCAPath_ = section.get(kKEY_SSL_CLIENT_CA);
+        sslCertPath_ = section.get(Keys::kSSL_CERT);
+        sslKeyPath_ = section.get(Keys::kSSL_KEY);
+        sslCertChainPath_ = section.get(Keys::kSSL_CERT_CHAIN);
+        sslClientCAPath_ = section.get(Keys::kSSL_CLIENT_CA);
 
         // If cert or key is specified, both must be specified
         if (sslCertPath_.has_value() || sslKeyPath_.has_value())

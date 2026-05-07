@@ -431,9 +431,9 @@ class LedgerRPC_test : public beast::unit_test::Suite
         testcase("Ledger with Queued Transactions");
         using namespace test::jtx;
         auto cfg = envconfig([](std::unique_ptr<Config> cfg) {
-            auto& section = cfg->section(kSECTION_TRANSACTION_QUEUE);
-            section.set(kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
-            section.set(kKEY_NORMAL_CONSENSUS_INCREASE_PERCENT, "0");
+            auto& section = cfg->section(Sections::kTRANSACTION_QUEUE);
+            section.set(Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
+            section.set(Keys::kNORMAL_CONSENSUS_INCREASE_PERCENT, "0");
             return cfg;
         });
 

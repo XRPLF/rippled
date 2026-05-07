@@ -431,10 +431,10 @@ public:
 
         Env env{*this, singleThreadIo(envconfig(validator, "")), features};
         auto& cfg = env.app().config();
-        if (!BEAST_EXPECT(cfg.section(kSECTION_VALIDATION_SEED).empty()))
+        if (!BEAST_EXPECT(cfg.section(Sections::kVALIDATION_SEED).empty()))
             return;
         auto const parsedseed =
-            parseBase58<Seed>(cfg.section(kSECTION_VALIDATION_SEED).values()[0]);
+            parseBase58<Seed>(cfg.section(Sections::kVALIDATION_SEED).values()[0]);
         if (BEAST_EXPECT(parsedseed); not parsedseed.has_value())
             return;
 

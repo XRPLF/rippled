@@ -1129,16 +1129,16 @@ parsePorts(Config const& config, std::ostream& log)
 {
     std::vector<Port> result;
 
-    if (!config.exists(kSECTION_SERVER))
+    if (!config.exists(Sections::kSERVER))
     {
         log << "Required section [server] is missing";
         Throw<std::exception>();
     }
 
     ParsedPort common;
-    parsePort(common, config[kSECTION_SERVER], log);
+    parsePort(common, config[Sections::kSERVER], log);
 
-    auto const& names = config.section(kSECTION_SERVER).values();
+    auto const& names = config.section(Sections::kSERVER).values();
     result.reserve(names.size());
     for (auto const& name : names)
     {
@@ -1150,7 +1150,7 @@ parsePorts(Config const& config, std::ostream& log)
 
         // grpc ports are parsed by GRPCServer class. Do not validate
         // grpc port information in this file.
-        if (name == kSECTION_PORT_GRPC)
+        if (name == Sections::kPORT_GRPC)
             continue;
 
         ParsedPort parsed = common;

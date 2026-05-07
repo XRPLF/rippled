@@ -68,7 +68,7 @@ public:
             "5AqDedFv5TJa2w0i21eq3MYywLVJZnFOr7C0kw2AiTzSCjIzditQ8=";
 
         Env env{*this, envconfig([&tokenBlob](std::unique_ptr<Config> cfg) {
-                    cfg->section(kSECTION_VALIDATOR_TOKEN).append(tokenBlob);
+                    cfg->section(Sections::kVALIDATOR_TOKEN).append(tokenBlob);
                     return cfg;
                 })};
         {

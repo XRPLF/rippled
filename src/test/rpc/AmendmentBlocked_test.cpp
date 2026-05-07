@@ -30,7 +30,7 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString(std::string("[") + kSECTION_SIGNING_SUPPORT + "]\ntrue");
+                    cfg->loadFromString(std::string("[") + Sections::kSIGNING_SUPPORT + "]\ntrue");
                     return cfg;
                 })};
         auto const gw = Account{"gateway"};

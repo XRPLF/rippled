@@ -29,7 +29,7 @@ public:
         testcase << "Overload " << (useWS ? "WS" : "HTTP") << " RPC client";
         using namespace jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString(std::string("[") + kSECTION_SIGNING_SUPPORT + "]\ntrue");
+                    cfg->loadFromString(std::string("[") + Sections::kSIGNING_SUPPORT + "]\ntrue");
                     return noAdmin(std::move(cfg));
                 })};
 

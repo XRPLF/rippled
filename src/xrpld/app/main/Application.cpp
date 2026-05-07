@@ -315,13 +315,14 @@ public:
         // PerfLog must be started before any other threads are launched.
         , perfLog_(
               perf::makePerfLog(
-                  perf::setupPerfLog(config_->section(kSECTION_PERF), config_->CONFIG_DIR),
+                  perf::setupPerfLog(config_->section(Sections::kPERF), config_->CONFIG_DIR),
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
         , txMaster_(*this)
-        , collectorManager_(
-              makeCollectorManager(config_->section(kSECTION_INSIGHT), logs_->journal("Collector")))
+        , collectorManager_(makeCollectorManager(
+              config_->section(Sections::kINSIGHT),
+              logs_->journal("Collector")))
         , jobQueue_(
               std::make_unique<JobQueue>(
                   [](std::unique_ptr<Config> const& config) {
@@ -863,7 +864,7 @@ public:
                     megabytes(config_->getValueFor(SizedItem::BurstSize, std::nullopt)),
                     dummyScheduler,
                     0,
-                    config_->section(kSECTION_IMPORT_NODE_DATABASE),
+                    config_->section(Sections::kIMPORT_NODE_DATABASE),
                     j);
 
             JLOG(j.warn()) << "Starting node import from '" << source->getName() << "' to '"
@@ -1219,9 +1220,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             }
             return supported;
         }();
-        Section const& downVoted = config_->section(kSECTION_VETO_AMENDMENTS);
+        Section const& downVoted = config_->section(Sections::kVETO_AMENDMENTS);
 
-        Section const& upVoted = config_->section(kSECTION_AMENDMENTS);
+        Section const& upVoted = config_->section(Sections::kAMENDMENTS);
 
         amendmentTable_ = makeAmendmentTable(
             *this,
@@ -1290,7 +1291,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
-    if (!cluster_->load(config().section(kSECTION_CLUSTER_NODES)))
+    if (!cluster_->load(config().section(Sections::kCLUSTER_NODES)))
     {
         JLOG(journal_.fatal()) << "Invalid entry in cluster configuration.";
         return false;
@@ -1304,7 +1305,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                 getWalletDB(),
                 "ValidatorManifests",
                 validatorKeys_.manifest,
-                config().section(kSECTION_VALIDATOR_KEY_REVOCATION).values()))
+                config().section(Sections::kVALIDATOR_KEY_REVOCATION).values()))
         {
             JLOG(journal_.fatal()) << "Invalid configured validator manifest.";
             return false;
@@ -1315,7 +1316,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         // It is possible to have a valid ValidatorKeys object without
         // setting the signingKey or masterKey. This occurs if the
         // configuration file does not have either
-        // kSECTION_VALIDATOR_TOKEN or kSECTION_VALIDATION_SEED section.
+        // Sections::kVALIDATOR_TOKEN or Sections::kVALIDATION_SEED section.
 
         // masterKey for the configuration-file specified validator keys
         std::optional<PublicKey> localSigningKey;
@@ -1325,8 +1326,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         // Setup trusted validators
         if (!validators_->load(
                 localSigningKey,
-                config().section(kSECTION_VALIDATORS).values(),
-                config().section(kSECTION_VALIDATOR_LIST_KEYS).values(),
+                config().section(Sections::kVALIDATORS).values(),
+                config().section(Sections::kVALIDATOR_LIST_KEYS).values(),
                 config().VALIDATOR_LIST_THRESHOLD))
         {
             JLOG(journal_.fatal()) << "Invalid entry in validator configuration.";
@@ -1334,9 +1335,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         }
     }
 
-    if (!validatorSites_->load(config().section(kSECTION_VALIDATOR_LIST_SITES).values()))
+    if (!validatorSites_->load(config().section(Sections::kVALIDATOR_LIST_SITES).values()))
     {
-        JLOG(journal_.fatal()) << "Invalid entry in [" << kSECTION_VALIDATOR_LIST_SITES << "]";
+        JLOG(journal_.fatal()) << "Invalid entry in [" << Sections::kVALIDATOR_LIST_SITES << "]";
         return false;
     }
 
@@ -1434,7 +1435,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     // Execute start up rpc commands.
     //
-    for (auto const& cmd : config_->section(kSECTION_RPC_STARTUP).lines())
+    for (auto const& cmd : config_->section(Sections::kRPC_STARTUP).lines())
     {
         json::Reader jrReader;
         json::Value jvCommand;
@@ -1442,7 +1443,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         if (!jrReader.parse(cmd, jvCommand))
         {
             JLOG(journal_.fatal())
-                << "Couldn't parse entry in [" << kSECTION_RPC_STARTUP << "]: '" << cmd;
+                << "Couldn't parse entry in [" << Sections::kRPC_STARTUP << "]: '" << cmd;
         }
 
         if (!config_->quiet())
@@ -1498,7 +1499,7 @@ ApplicationImp::start(bool withTimers)
         overlay_->start();
 
     if (grpcServer_->start())
-        fixConfigPorts(*config_, {{kSECTION_PORT_GRPC, grpcServer_->getEndpoint()}});
+        fixConfigPorts(*config_, {{Sections::kPORT_GRPC, grpcServer_->getEndpoint()}});
 
     ledgerCleaner_->start();
     perfLog_->start();
@@ -2166,12 +2167,12 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
             continue;
 
         auto& section = config[name];
-        auto const optPort = section.get(kKEY_PORT);
+        auto const optPort = section.get(Keys::kPORT);
         if (optPort)
         {
             std::uint16_t const port = beast::lexicalCast<std::uint16_t>(*optPort);
             if (port == 0u)
-                section.set(kKEY_PORT, std::to_string(ep.port()));
+                section.set(Keys::kPORT, std::to_string(ep.port()));
         }
     }
 }

@@ -489,7 +489,7 @@ setupPerfLog(Section const& section, boost::filesystem::path const& configDir)
     }
 
     std::uint64_t logInterval = 0;
-    if (getIfExists(section, kKEY_LOG_INTERVAL, logInterval))
+    if (getIfExists(section, Keys::kLOG_INTERVAL, logInterval))
         setup.logInterval = std::chrono::seconds(logInterval);
     return setup;
 }

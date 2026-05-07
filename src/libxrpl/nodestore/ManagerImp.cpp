@@ -66,7 +66,7 @@ ManagerImp::makeBackend(
     Scheduler& scheduler,
     beast::Journal journal)
 {
-    std::string const type{get(parameters, kKEY_TYPE)};
+    std::string const type{get(parameters, Keys::kTYPE)};
     if (type.empty())
         missingBackend();
 

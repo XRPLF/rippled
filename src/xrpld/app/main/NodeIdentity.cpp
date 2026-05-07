@@ -31,13 +31,13 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
         if (!seed)
             Throw<std::runtime_error>("Invalid 'nodeid' in command line");
     }
-    else if (app.config().exists(kSECTION_NODE_SEED))
+    else if (app.config().exists(Sections::kNODE_SEED))
     {
-        seed = parseBase58<Seed>(app.config().section(kSECTION_NODE_SEED).lines().front());
+        seed = parseBase58<Seed>(app.config().section(Sections::kNODE_SEED).lines().front());
 
         if (!seed)
             Throw<std::runtime_error>(
-                std::string("Invalid [") + kSECTION_NODE_SEED + "] in configuration file");
+                std::string("Invalid [") + Sections::kNODE_SEED + "] in configuration file");
     }
 
     if (seed)

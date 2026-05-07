@@ -100,7 +100,7 @@ public:
         {
             // validation seed section -> empty manifest and valid seeds
             Config c;
-            c.section(kSECTION_VALIDATION_SEED).append(seed_);
+            c.section(Sections::kVALIDATION_SEED).append(seed_);
 
             ValidatorKeys k{c, journal};
             if (BEAST_EXPECT(k.keys); k.keys.has_value())
@@ -116,7 +116,7 @@ public:
         {
             // validation seed bad seed -> invalid
             Config c;
-            c.section(kSECTION_VALIDATION_SEED).append("badseed");
+            c.section(Sections::kVALIDATION_SEED).append("badseed");
 
             ValidatorKeys const k{c, journal};
             BEAST_EXPECT(k.configInvalid());
@@ -127,7 +127,7 @@ public:
         {
             // validator token
             Config c;
-            c.section(kSECTION_VALIDATOR_TOKEN).append(tokenBlob_);
+            c.section(Sections::kVALIDATOR_TOKEN).append(tokenBlob_);
             ValidatorKeys k{c, journal};
 
             if (BEAST_EXPECT(k.keys); k.keys.has_value())
@@ -142,7 +142,7 @@ public:
         {
             // invalid validator token
             Config c;
-            c.section(kSECTION_VALIDATOR_TOKEN).append("badtoken");
+            c.section(Sections::kVALIDATOR_TOKEN).append("badtoken");
             ValidatorKeys const k{c, journal};
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
@@ -152,8 +152,8 @@ public:
         {
             // Cannot specify both
             Config c;
-            c.section(kSECTION_VALIDATION_SEED).append(seed_);
-            c.section(kSECTION_VALIDATOR_TOKEN).append(tokenBlob_);
+            c.section(Sections::kVALIDATION_SEED).append(seed_);
+            c.section(Sections::kVALIDATOR_TOKEN).append(tokenBlob_);
             ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
@@ -164,7 +164,7 @@ public:
         {
             // Token manifest and private key must match
             Config c;
-            c.section(kSECTION_VALIDATOR_TOKEN).append(invalidTokenBlob_);
+            c.section(Sections::kVALIDATOR_TOKEN).append(invalidTokenBlob_);
             ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());

@@ -42,8 +42,8 @@ class SHAMapStore_test : public beast::unit_test::Suite
     onlineDelete(std::unique_ptr<Config> cfg)
     {
         cfg->LEDGER_HISTORY = kDELETE_INTERVAL;
-        auto& section = cfg->section(kSECTION_NODE_DATABASE);
-        section.set(kKEY_ONLINE_DELETE, std::to_string(kDELETE_INTERVAL));
+        auto& section = cfg->section(Sections::kNODE_DATABASE);
+        section.set(Keys::kONLINE_DELETE, std::to_string(kDELETE_INTERVAL));
         return cfg;
     }
 
@@ -51,7 +51,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
     advisoryDelete(std::unique_ptr<Config> cfg)
     {
         cfg = onlineDelete(std::move(cfg));
-        cfg->section(kSECTION_NODE_DATABASE).set(kKEY_ADVISORY_DELETE, "1");
+        cfg->section(Sections::kNODE_DATABASE).set(Keys::kADVISORY_DELETE, "1");
         return cfg;
     }
 
@@ -490,13 +490,13 @@ public:
     std::unique_ptr<NodeStore::Backend>
     makeBackendRotating(jtx::Env& env, NodeStoreScheduler& scheduler, std::string path)
     {
-        Section section{env.app().config().section(kSECTION_NODE_DATABASE)};
+        Section section{env.app().config().section(Sections::kNODE_DATABASE)};
         boost::filesystem::path newPath;
 
         if (!BEAST_EXPECT(path.size()))
             return {};
         newPath = path;
-        section.set(kKEY_PATH, newPath.string());
+        section.set(Keys::kPATH, newPath.string());
 
         auto backend{NodeStore::Manager::instance().makeBackend(
             section,
@@ -528,7 +528,7 @@ public:
         auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
 
         constexpr int kREAD_THREADS = 4;
-        auto nscfg = env.app().config().section(kSECTION_NODE_DATABASE);
+        auto nscfg = env.app().config().section(Sections::kNODE_DATABASE);
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
             scheduler,
             kREAD_THREADS,

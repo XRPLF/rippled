@@ -194,8 +194,8 @@ struct Regression_test : public beast::unit_test::Suite
         testcase("Autofilled fee should use the escalated fee");
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->section(kSECTION_TRANSACTION_QUEUE)
-                .set(kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
+            cfg->section(Sections::kTRANSACTION_QUEUE)
+                .set(Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
             cfg->FEES.reference_fee = 10;
             return cfg;
         }));
@@ -235,11 +235,11 @@ struct Regression_test : public beast::unit_test::Suite
         using namespace std::chrono_literals;
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            auto& s = cfg->section(kSECTION_TRANSACTION_QUEUE);
-            s.set(kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "4294967295");
-            s.set(kKEY_MINIMUM_TXN_IN_LEDGER, "4294967295");
-            s.set(kKEY_TARGET_TXN_IN_LEDGER, "4294967295");
-            s.set(kKEY_NORMAL_CONSENSUS_INCREASE_PERCENT, "4294967295");
+            auto& s = cfg->section(Sections::kTRANSACTION_QUEUE);
+            s.set(Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "4294967295");
+            s.set(Keys::kMINIMUM_TXN_IN_LEDGER, "4294967295");
+            s.set(Keys::kTARGET_TXN_IN_LEDGER, "4294967295");
+            s.set(Keys::kNORMAL_CONSENSUS_INCREASE_PERCENT, "4294967295");
 
             return cfg;
         }));

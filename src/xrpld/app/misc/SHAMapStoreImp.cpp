@@ -100,45 +100,45 @@ SHAMapStoreImp::SHAMapStoreImp(
 {
     Config& config{app.config()};
 
-    Section& section{config.section(kSECTION_NODE_DATABASE)};
+    Section& section{config.section(Sections::kNODE_DATABASE)};
     if (section.empty())
     {
         Throw<std::runtime_error>(
-            std::string("Missing [") + kSECTION_NODE_DATABASE + "] entry in configuration file");
+            std::string("Missing [") + Sections::kNODE_DATABASE + "] entry in configuration file");
     }
 
     // RocksDB only. Use sensible defaults if no values specified.
-    if (boost::iequals(get(section, kKEY_TYPE), "RocksDB"))
+    if (boost::iequals(get(section, Keys::kTYPE), "RocksDB"))
     {
-        if (!section.exists(kKEY_CACHE_MB))
+        if (!section.exists(Keys::kCACHE_MB))
         {
             section.set(
-                kKEY_CACHE_MB, std::to_string(config.getValueFor(SizedItem::HashNodeDbCache)));
+                Keys::kCACHE_MB, std::to_string(config.getValueFor(SizedItem::HashNodeDbCache)));
         }
 
-        if (!section.exists(kKEY_FILTER_BITS) && (config.NODE_SIZE >= 2))
-            section.set(kKEY_FILTER_BITS, "10");
+        if (!section.exists(Keys::kFILTER_BITS) && (config.NODE_SIZE >= 2))
+            section.set(Keys::kFILTER_BITS, "10");
     }
 
-    getIfExists(section, kKEY_ONLINE_DELETE, deleteInterval_);
+    getIfExists(section, Keys::kONLINE_DELETE, deleteInterval_);
 
     if (deleteInterval_ != 0u)
     {
         // Configuration that affects the behavior of online delete
-        getIfExists(section, kKEY_DELETE_BATCH, deleteBatch_);
+        getIfExists(section, Keys::kDELETE_BATCH, deleteBatch_);
         std::uint32_t temp = 0;
-        if (getIfExists(section, kKEY_BACK_OFF_MILLISECONDS, temp) ||
+        if (getIfExists(section, Keys::kBACK_OFF_MILLISECONDS, temp) ||
             // Included for backward compatibility with an undocumented setting
-            getIfExists(section, kKEY_BACK_OFF, temp))
+            getIfExists(section, Keys::kBACK_OFF, temp))
         {
             backOff_ = std::chrono::milliseconds{temp};
         }
-        if (getIfExists(section, kKEY_AGE_THRESHOLD_SECONDS, temp))
+        if (getIfExists(section, Keys::kAGE_THRESHOLD_SECONDS, temp))
             ageThreshold_ = std::chrono::seconds{temp};
-        if (getIfExists(section, kKEY_RECOVERY_WAIT_SECONDS, temp))
+        if (getIfExists(section, Keys::kRECOVERY_WAIT_SECONDS, temp))
             recoveryWaitTime_ = std::chrono::seconds{temp};
 
-        getIfExists(section, kKEY_ADVISORY_DELETE, advisoryDelete_);
+        getIfExists(section, Keys::kADVISORY_DELETE, advisoryDelete_);
 
         auto const minInterval =
             config.standalone() ? kMINIMUM_DELETION_INTERVAL_SA : kMINIMUM_DELETION_INTERVAL;
@@ -164,7 +164,7 @@ SHAMapStoreImp::SHAMapStoreImp(
 std::unique_ptr<NodeStore::Database>
 SHAMapStoreImp::makeNodeStore(int readThreads)
 {
-    auto nscfg = app_.config().section(kSECTION_NODE_DATABASE);
+    auto nscfg = app_.config().section(Sections::kNODE_DATABASE);
     std::unique_ptr<NodeStore::Database> db;
 
     if (deleteInterval_ != 0u)
@@ -367,8 +367,8 @@ SHAMapStoreImp::run()
 void
 SHAMapStoreImp::dbPaths()
 {
-    Section const section{app_.config().section(kSECTION_NODE_DATABASE)};
-    boost::filesystem::path dbPath = get(section, kKEY_PATH);
+    Section const section{app_.config().section(Sections::kNODE_DATABASE)};
+    boost::filesystem::path dbPath = get(section, Keys::kPATH);
 
     if (boost::filesystem::exists(dbPath))
     {
@@ -433,7 +433,7 @@ SHAMapStoreImp::dbPaths()
         (!archiveDbExists && !state.archiveDb.empty()) || (writableDbExists != archiveDbExists) ||
         state.writableDb.empty() != state.archiveDb.empty())
     {
-        boost::filesystem::path stateDbPathName = app_.config().legacy(kSECTION_DATABASE_PATH);
+        boost::filesystem::path stateDbPathName = app_.config().legacy(Sections::kDATABASE_PATH);
         stateDbPathName /= dbName_;
         stateDbPathName += "*";
 
@@ -445,7 +445,7 @@ SHAMapStoreImp::dbPaths()
                          << "The existing data is in a corrupted state.\n"
                          << "To resume operation, remove the files matching "
                          << stateDbPathName.string() << " and contents of the directory "
-                         << get(section, kKEY_PATH) << '\n'
+                         << get(section, Keys::kPATH) << '\n'
                          << "Optionally, you can move those files to another\n"
                          << "location if you wish to analyze or back up the data.\n"
                          << "However, there is no guarantee that the data in its\n"
@@ -462,7 +462,7 @@ SHAMapStoreImp::dbPaths()
 std::unique_ptr<NodeStore::Backend>
 SHAMapStoreImp::makeBackendRotating(std::string path)
 {
-    Section section{app_.config().section(kSECTION_NODE_DATABASE)};
+    Section section{app_.config().section(Sections::kNODE_DATABASE)};
     boost::filesystem::path newPath;
 
     if (!path.empty())
@@ -471,12 +471,12 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     else
     {
-        boost::filesystem::path p = get(section, kKEY_PATH);
+        boost::filesystem::path p = get(section, Keys::kPATH);
         p /= dbPrefix_;
         p += ".%%%%";
         newPath = boost::filesystem::unique_path(p);
     }
-    section.set(kKEY_PATH, newPath.string());
+    section.set(Keys::kPATH, newPath.string());
 
     auto backend{NodeStore::Manager::instance().makeBackend(
         section,

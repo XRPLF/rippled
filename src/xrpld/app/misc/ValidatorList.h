@@ -233,7 +233,7 @@ class ValidatorList
     std::optional<PublicKey> localPubKey_;
 
     // The below variable contains the Publisher list specified in the local
-    // config file under the title of kSECTION_VALIDATORS or [validators].
+    // config file under the title of Sections::kVALIDATORS or [validators].
     // This list is not associated with the masterKey of any publisher.
 
     // Apropos PublisherListCollection fields, localPublisherList does not

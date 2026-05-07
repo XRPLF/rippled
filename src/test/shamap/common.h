@@ -34,8 +34,8 @@ public:
         , j_(j)
     {
         Section testSection;
-        testSection.set(kKEY_TYPE, "memory");
-        testSection.set(kKEY_PATH, "SHAMap_test");
+        testSection.set(Keys::kTYPE, "memory");
+        testSection.set(Keys::kPATH, "SHAMap_test");
         db_ = NodeStore::Manager::instance().makeDatabase(
             megabytes(4), scheduler_, 1, testSection, j);
     }

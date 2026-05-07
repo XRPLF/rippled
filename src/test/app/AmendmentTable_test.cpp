@@ -82,8 +82,8 @@ private:
     makeConfig()
     {
         auto cfg = test::jtx::envconfig();
-        cfg->section(kSECTION_AMENDMENTS) = makeSection(kSECTION_AMENDMENTS, enabled_);
-        cfg->section(kSECTION_VETO_AMENDMENTS) = makeSection(kSECTION_VETO_AMENDMENTS, vetoed_);
+        cfg->section(Sections::kAMENDMENTS) = makeSection(Sections::kAMENDMENTS, enabled_);
+        cfg->section(Sections::kVETO_AMENDMENTS) = makeSection(Sections::kVETO_AMENDMENTS, vetoed_);
         return cfg;
     }
 

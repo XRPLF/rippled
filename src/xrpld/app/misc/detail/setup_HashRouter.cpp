@@ -18,7 +18,7 @@ setupHashRouter(Config const& config)
     using namespace std::chrono;
 
     HashRouter::Setup setup;
-    auto const& section = config.section(kSECTION_HASHROUTER);
+    auto const& section = config.section(Sections::kHASHROUTER);
 
     std::int32_t tmp{};
 

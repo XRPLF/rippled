@@ -109,9 +109,9 @@ admin = 127.0.0.1
             Env env(*this, makeValidatorConfig());
             auto const& config = env.app().config();
 
-            auto const rpcPort = config[kSECTION_PORT_RPC].get<unsigned int>(kKEY_PORT);
-            auto const grpcPort = config[kSECTION_PORT_GRPC].get<unsigned int>(kKEY_PORT);
-            auto const wsPort = config[kSECTION_PORT_WS].get<unsigned int>(kKEY_PORT);
+            auto const rpcPort = config[Sections::kPORT_RPC].get<unsigned int>(Keys::kPORT);
+            auto const grpcPort = config[Sections::kPORT_GRPC].get<unsigned int>(Keys::kPORT);
+            auto const wsPort = config[Sections::kPORT_WS].get<unsigned int>(Keys::kPORT);
             BEAST_EXPECT(grpcPort);
             BEAST_EXPECT(rpcPort);
             BEAST_EXPECT(wsPort);

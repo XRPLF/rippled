@@ -39,8 +39,8 @@ public:
         , j_(j)
     {
         Section config;
-        config.set(kKEY_TYPE, "memory");
-        config.set(kKEY_PATH, "TestFamily");
+        config.set(Keys::kTYPE, "memory");
+        config.set(Keys::kPATH, "TestFamily");
         db_ = NodeStore::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
     }
 

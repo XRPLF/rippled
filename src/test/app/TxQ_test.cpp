@@ -168,7 +168,7 @@ public:
         using namespace std::chrono;
         testcase("queue sequence");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -381,7 +381,7 @@ public:
         using namespace jtx;
         testcase("queue ticket");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
 
         auto alice = Account("alice");
 
@@ -619,7 +619,7 @@ public:
         using namespace jtx;
         testcase("queue tec");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}));
 
         auto alice = Account("alice");
         auto gw = Account("gw");
@@ -656,7 +656,7 @@ public:
         using namespace std::chrono;
         testcase("local tx retry");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -709,7 +709,7 @@ public:
         using namespace std::chrono;
         testcase("last ledger sequence");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -832,7 +832,7 @@ public:
         using namespace std::chrono;
         testcase("zero transaction fee");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -959,7 +959,7 @@ public:
         using namespace jtx;
         testcase("queued tx fails");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "2"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -1011,7 +1011,7 @@ public:
         Env env(
             *this,
             makeConfig(
-                {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}},
+                {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}},
                 {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
 
         auto alice = Account("alice");
@@ -1255,7 +1255,7 @@ public:
         using namespace std::chrono;
         testcase("tie breaking");
 
-        auto cfg = makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "4"}});
+        auto cfg = makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "4"}});
         cfg->FEES.reference_fee = 10;
         Env env(*this, std::move(cfg));
 
@@ -1468,7 +1468,7 @@ public:
         using namespace jtx;
         testcase("acct tx id");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "1"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "1"}}));
 
         auto alice = Account("alice");
 
@@ -1508,9 +1508,9 @@ public:
             Env env(
                 *this,
                 makeConfig(
-                    {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "2"},
-                     {kKEY_MINIMUM_TXN_IN_LEDGER, "5"},
-                     {kKEY_TARGET_TXN_IN_LEDGER, "4"},
+                    {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "2"},
+                     {Keys::kMINIMUM_TXN_IN_LEDGER, "5"},
+                     {Keys::kTARGET_TXN_IN_LEDGER, "4"},
                      {"maximum_txn_in_ledger", "5"}}));
             auto const baseFee = env.current()->fees().base.drops();
 
@@ -1552,9 +1552,9 @@ public:
             Env const env(
                 *this,
                 makeConfig(
-                    {{kKEY_MINIMUM_TXN_IN_LEDGER, "200"},
-                     {kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "200"},
-                     {kKEY_TARGET_TXN_IN_LEDGER, "4"},
+                    {{Keys::kMINIMUM_TXN_IN_LEDGER, "200"},
+                     {Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "200"},
+                     {Keys::kTARGET_TXN_IN_LEDGER, "4"},
                      {"maximum_txn_in_ledger", "5"}}));
             // should throw
             fail();
@@ -1573,9 +1573,9 @@ public:
             Env const env(
                 *this,
                 makeConfig(
-                    {{kKEY_MINIMUM_TXN_IN_LEDGER, "200"},
-                     {kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "2"},
-                     {kKEY_TARGET_TXN_IN_LEDGER, "4"},
+                    {{Keys::kMINIMUM_TXN_IN_LEDGER, "200"},
+                     {Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "2"},
+                     {Keys::kTARGET_TXN_IN_LEDGER, "4"},
                      {"maximum_txn_in_ledger", "5"}}));
             // should throw
             fail();
@@ -1594,9 +1594,9 @@ public:
             Env const env(
                 *this,
                 makeConfig(
-                    {{kKEY_MINIMUM_TXN_IN_LEDGER, "2"},
-                     {kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "200"},
-                     {kKEY_TARGET_TXN_IN_LEDGER, "4"},
+                    {{Keys::kMINIMUM_TXN_IN_LEDGER, "2"},
+                     {Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "200"},
+                     {Keys::kTARGET_TXN_IN_LEDGER, "4"},
                      {"maximum_txn_in_ledger", "5"}}));
             // should throw
             fail();
@@ -1621,7 +1621,7 @@ public:
         Env env(
             *this,
             makeConfig(
-                {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}},
+                {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}},
                 {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
 
         auto alice = Account("alice");
@@ -1713,7 +1713,7 @@ public:
 
         auto queued = Ter(terQUEUED);
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
@@ -1842,7 +1842,7 @@ public:
 
         auto queued = Ter(terQUEUED);
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
@@ -1993,7 +1993,7 @@ public:
         Env env(
             *this,
             makeConfig(
-                {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}},
+                {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}},
                 {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
 
         auto alice = Account("alice");
@@ -2396,7 +2396,7 @@ public:
 
         auto queued = Ter(terQUEUED);
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
@@ -2565,8 +2565,8 @@ public:
         Env env(
             *this,
             makeConfig(
-                {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "1"},
-                 {kKEY_LEDGERS_IN_QUEUE, "10"},
+                {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "1"},
+                 {Keys::kLEDGERS_IN_QUEUE, "10"},
                  {"maximum_txn_per_account", "20"}}));
 
         auto const baseFee = env.current()->fees().base.drops();
@@ -2647,8 +2647,8 @@ public:
         testcase("full queue gap handling");
 
         auto cfg = makeConfig(
-            {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "1"},
-             {kKEY_LEDGERS_IN_QUEUE, "10"},
+            {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "1"},
+             {Keys::kLEDGERS_IN_QUEUE, "10"},
              {"maximum_txn_per_account", "11"}});
         cfg->FEES.reference_fee = 10;
         Env env(*this, std::move(cfg));
@@ -2774,7 +2774,7 @@ public:
     {
         testcase("Autofilled sequence should account for TxQ");
         using namespace jtx;
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "6"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "6"}}));
         auto const baseFee = env.current()->fees().base.drops();
         EnvSs envs(env);
         auto const& txQ = env.app().getTxQ();
@@ -2908,7 +2908,7 @@ public:
         using namespace jtx;
         testcase("account info");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
         EnvSs envs(env);
 
@@ -3178,7 +3178,7 @@ public:
         using namespace jtx;
         testcase("server info");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
         EnvSs envs(env);
 
@@ -3404,7 +3404,7 @@ public:
         using namespace jtx;
         testcase("server subscribe");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
 
         json::Value stream;
@@ -3543,7 +3543,7 @@ public:
         using namespace jtx;
         testcase("clear queued acct txs");
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -3753,10 +3753,10 @@ public:
             Env env(
                 *this,
                 makeConfig(
-                    {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"},
-                     {kKEY_NORMAL_CONSENSUS_INCREASE_PERCENT, "25"},
+                    {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"},
+                     {Keys::kNORMAL_CONSENSUS_INCREASE_PERCENT, "25"},
                      {"slow_consensus_decrease_percent", "50"},
-                     {kKEY_TARGET_TXN_IN_LEDGER, "10"},
+                     {Keys::kTARGET_TXN_IN_LEDGER, "10"},
                      {"maximum_txn_per_account", "200"}}));
             auto alice = Account("alice");
 
@@ -3839,10 +3839,10 @@ public:
             Env env(
                 *this,
                 makeConfig(
-                    {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"},
-                     {kKEY_NORMAL_CONSENSUS_INCREASE_PERCENT, "150"},
+                    {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"},
+                     {Keys::kNORMAL_CONSENSUS_INCREASE_PERCENT, "150"},
                      {"slow_consensus_decrease_percent", "150"},
-                     {kKEY_TARGET_TXN_IN_LEDGER, "10"},
+                     {Keys::kTARGET_TXN_IN_LEDGER, "10"},
                      {"maximum_txn_per_account", "200"}}));
             auto alice = Account("alice");
 
@@ -3896,7 +3896,7 @@ public:
         testcase("Sequence in queue and open ledger");
         using namespace jtx;
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
 
         auto const alice = Account("alice");
 
@@ -3959,7 +3959,7 @@ public:
         testcase("Ticket in queue and open ledger");
         using namespace jtx;
 
-        Env env(*this, makeConfig({{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
+        Env env(*this, makeConfig({{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}}));
 
         auto alice = Account("alice");
 
@@ -4060,16 +4060,16 @@ public:
 
         constexpr int kLEDGERS_IN_QUEUE = 30;
         auto cfg = makeConfig(
-            {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "1"},
-             {kKEY_LEDGERS_IN_QUEUE, std::to_string(kLEDGERS_IN_QUEUE)},
+            {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "1"},
+             {Keys::kLEDGERS_IN_QUEUE, std::to_string(kLEDGERS_IN_QUEUE)},
              {"maximum_txn_per_account", "10"}},
             {{"account_reserve", "1000"}, {"owner_reserve", "50"}});
 
-        auto& votingSection = cfg->section(kSECTION_VOTING);
+        auto& votingSection = cfg->section(Sections::kVOTING);
         votingSection.set(
-            kKEY_ACCOUNT_RESERVE, std::to_string(cfg->FEES.reference_fee.drops() * 100));
+            Keys::kACCOUNT_RESERVE, std::to_string(cfg->FEES.reference_fee.drops() * 100));
 
-        votingSection.set(kKEY_REFERENCE_FEE, std::to_string(cfg->FEES.reference_fee.drops()));
+        votingSection.set(Keys::kREFERENCE_FEE, std::to_string(cfg->FEES.reference_fee.drops()));
 
         Env env(*this, std::move(cfg));
 
@@ -4226,10 +4226,10 @@ public:
         Account const fiona("fiona");
 
         auto cfg = makeConfig(
-            {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "5"},
-             {kKEY_LEDGERS_IN_QUEUE, "5"},
+            {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "5"},
+             {Keys::kLEDGERS_IN_QUEUE, "5"},
              {"maximum_txn_per_account", "30"},
-             {kKEY_MINIMUM_QUEUE_SIZE, "50"}});
+             {Keys::kMINIMUM_QUEUE_SIZE, "50"}});
 
         Env env(*this, std::move(cfg));
         auto const baseFee = env.current()->fees().base.drops();
@@ -4435,10 +4435,10 @@ public:
         auto usd = gw["USD"];
 
         auto cfg = makeConfig(
-            {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "5"},
-             {kKEY_LEDGERS_IN_QUEUE, "5"},
+            {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "5"},
+             {Keys::kLEDGERS_IN_QUEUE, "5"},
              {"maximum_txn_per_account", "30"},
-             {kKEY_MINIMUM_QUEUE_SIZE, "50"}});
+             {Keys::kMINIMUM_QUEUE_SIZE, "50"}});
 
         Env env(*this, std::move(cfg));
 
@@ -4535,7 +4535,7 @@ public:
         Env env(
             *this,
             makeConfig(
-                {{kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}},
+                {{Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3"}},
                 {{"reference_fee", "0"}, {"account_reserve", "0"}, {"owner_reserve", "0"}}));
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);

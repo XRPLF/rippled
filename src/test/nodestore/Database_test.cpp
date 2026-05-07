@@ -72,8 +72,8 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(kSECTION_SQLITE);
-                    section.set(kKEY_SAFETY_LEVEL, "high");
+                    auto& section = p->section(Sections::kSQLITE);
+                    section.set(Keys::kSAFETY_LEVEL, "high");
                 }
                 p->LEDGER_HISTORY = 100'000'000;
 
@@ -101,8 +101,8 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(kSECTION_SQLITE);
-                    section.set(kKEY_SAFETY_LEVEL, "low");
+                    auto& section = p->section(Sections::kSQLITE);
+                    section.set(Keys::kSAFETY_LEVEL, "low");
                 }
                 p->LEDGER_HISTORY = 100'000'000;
 
@@ -130,10 +130,10 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(kSECTION_SQLITE);
-                    section.set(kKEY_JOURNAL_MODE, "off");
-                    section.set(kKEY_SYNCHRONOUS, "extra");
-                    section.set(kKEY_TEMP_STORE, "default");
+                    auto& section = p->section(Sections::kSQLITE);
+                    section.set(Keys::kJOURNAL_MODE, "off");
+                    section.set(Keys::kSYNCHRONOUS, "extra");
+                    section.set(Keys::kTEMP_STORE, "default");
                 }
 
                 return Env(
@@ -162,10 +162,10 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(kSECTION_SQLITE);
-                    section.set(kKEY_JOURNAL_MODE, "off");
-                    section.set(kKEY_SYNCHRONOUS, "extra");
-                    section.set(kKEY_TEMP_STORE, "default");
+                    auto& section = p->section(Sections::kSQLITE);
+                    section.set(Keys::kJOURNAL_MODE, "off");
+                    section.set(Keys::kSYNCHRONOUS, "extra");
+                    section.set(Keys::kTEMP_STORE, "default");
                 }
                 p->LEDGER_HISTORY = 50'000'000;
 
@@ -198,11 +198,11 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_SAFETY_LEVEL, "low");
-                section.set(kKEY_JOURNAL_MODE, "off");
-                section.set(kKEY_SYNCHRONOUS, "extra");
-                section.set(kKEY_TEMP_STORE, "default");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kSAFETY_LEVEL, "low");
+                section.set(Keys::kJOURNAL_MODE, "off");
+                section.set(Keys::kSYNCHRONOUS, "extra");
+                section.set(Keys::kTEMP_STORE, "default");
             }
 
             try
@@ -229,9 +229,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_SAFETY_LEVEL, "high");
-                section.set(kKEY_JOURNAL_MODE, "off");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kSAFETY_LEVEL, "high");
+                section.set(Keys::kJOURNAL_MODE, "off");
             }
 
             try
@@ -258,9 +258,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_SAFETY_LEVEL, "low");
-                section.set(kKEY_SYNCHRONOUS, "extra");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kSAFETY_LEVEL, "low");
+                section.set(Keys::kSYNCHRONOUS, "extra");
             }
 
             try
@@ -287,9 +287,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_SAFETY_LEVEL, "high");
-                section.set(kKEY_TEMP_STORE, "default");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kSAFETY_LEVEL, "high");
+                section.set(Keys::kTEMP_STORE, "default");
             }
 
             try
@@ -316,8 +316,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_SAFETY_LEVEL, "slow");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kSAFETY_LEVEL, "slow");
             }
 
             try
@@ -344,8 +344,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_JOURNAL_MODE, "fast");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kJOURNAL_MODE, "fast");
             }
 
             try
@@ -372,8 +372,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_SYNCHRONOUS, "instant");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kSYNCHRONOUS, "instant");
             }
 
             try
@@ -400,8 +400,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_TEMP_STORE, "network");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kTEMP_STORE, "network");
             }
 
             try
@@ -435,9 +435,9 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(kSECTION_SQLITE);
-                    section.set(kKEY_PAGE_SIZE, "512");
-                    section.set(kKEY_JOURNAL_SIZE_LIMIT, "2582080");
+                    auto& section = p->section(Sections::kSQLITE);
+                    section.set(Keys::kPAGE_SIZE, "512");
+                    section.set(Keys::kJOURNAL_SIZE_LIMIT, "2582080");
                 }
                 return Env(*this, std::move(p));
             }();
@@ -456,8 +456,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_PAGE_SIZE, "256");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kPAGE_SIZE, "256");
             }
             try
             {
@@ -479,8 +479,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_PAGE_SIZE, "131072");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kPAGE_SIZE, "131072");
             }
             try
             {
@@ -502,8 +502,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(kSECTION_SQLITE);
-                section.set(kKEY_PAGE_SIZE, "513");
+                auto& section = p->section(Sections::kSQLITE);
+                section.set(Keys::kPAGE_SIZE, "513");
             }
             try
             {
@@ -533,8 +533,8 @@ public:
 
         beast::TempDir const nodeDb;
         Section srcParams;
-        srcParams.set(kKEY_TYPE, srcBackendType);
-        srcParams.set(kKEY_PATH, nodeDb.path());
+        srcParams.set(Keys::kTYPE, srcBackendType);
+        srcParams.set(Keys::kPATH, nodeDb.path());
 
         // Create a batch
         auto batch = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue);
@@ -556,8 +556,8 @@ public:
             // Set up the destination database
             beast::TempDir const destDb;
             Section destParams;
-            destParams.set(kKEY_TYPE, destBackendType);
-            destParams.set(kKEY_PATH, destDb.path());
+            destParams.set(Keys::kTYPE, destBackendType);
+            destParams.set(Keys::kPATH, destDb.path());
 
             std::unique_ptr<Database> dest =
                 Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal_);
@@ -594,8 +594,8 @@ public:
 
         beast::TempDir const nodeDb;
         Section nodeParams;
-        nodeParams.set(kKEY_TYPE, type);
-        nodeParams.set(kKEY_PATH, nodeDb.path());
+        nodeParams.set(Keys::kTYPE, type);
+        nodeParams.set(Keys::kPATH, nodeDb.path());
 
         beast::xor_shift_engine rng(seedValue);
 
@@ -654,7 +654,7 @@ public:
             // Set an invalid earliest ledger sequence
             try
             {
-                nodeParams.set(kKEY_EARLIEST_SEQ, "0");
+                nodeParams.set(Keys::kEARLIEST_SEQ, "0");
                 std::unique_ptr<Database> const db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
@@ -665,7 +665,7 @@ public:
 
             {
                 // Set a valid earliest ledger sequence
-                nodeParams.set(kKEY_EARLIEST_SEQ, "1");
+                nodeParams.set(Keys::kEARLIEST_SEQ, "1");
                 std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
 
@@ -677,7 +677,7 @@ public:
             try
             {
                 // Set to default earliest ledger sequence
-                nodeParams.set(kKEY_EARLIEST_SEQ, std::to_string(kXRP_LEDGER_EARLIEST_SEQ));
+                nodeParams.set(Keys::kEARLIEST_SEQ, std::to_string(kXRP_LEDGER_EARLIEST_SEQ));
                 std::unique_ptr<Database> const db2 = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }

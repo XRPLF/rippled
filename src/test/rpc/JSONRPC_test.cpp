@@ -2375,9 +2375,9 @@ public:
         testcase("autofill escalated fees");
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString(std::string("[") + kSECTION_SIGNING_SUPPORT + "]\ntrue");
-                    cfg->section(kSECTION_TRANSACTION_QUEUE)
-                        .set(kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
+                    cfg->loadFromString(std::string("[") + Sections::kSIGNING_SUPPORT + "]\ntrue");
+                    cfg->section(Sections::kTRANSACTION_QUEUE)
+                        .set(Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
                     return cfg;
                 })};
         LoadFeeTrack const& feeTrackOuter = env.app().getFeeTrack();

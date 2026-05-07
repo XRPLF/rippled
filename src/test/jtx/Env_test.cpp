@@ -864,7 +864,7 @@ public:
             jtx::Env const env{
                 *this,
                 jtx::envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection(kSECTION_PORT_RPC);
+                    (*cfg).deprecatedClearSection(Sections::kPORT_RPC);
                     return cfg;
                 }),
                 nullptr,

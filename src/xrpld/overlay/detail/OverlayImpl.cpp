@@ -1519,7 +1519,7 @@ setupOverlay(BasicConfig const& config)
     Overlay::Setup setup;
 
     {
-        auto const& section = config.section(kSECTION_OVERLAY);
+        auto const& section = config.section(Sections::kOVERLAY);
         setup.context = makeSslContext("");
 
         set(setup.ipLimit, "ip_limit", section);
@@ -1538,7 +1538,7 @@ setupOverlay(BasicConfig const& config)
     }
 
     {
-        auto const& section = config.section(kSECTION_CRAWL);
+        auto const& section = config.section(Sections::kCRAWL);
         auto const& values = section.values();
 
         if (values.size() > 1)
@@ -1564,33 +1564,33 @@ setupOverlay(BasicConfig const& config)
 
         if (crawlEnabled)
         {
-            if (get<bool>(section, kKEY_OVERLAY, true))
+            if (get<bool>(section, Keys::kOVERLAY, true))
             {
                 setup.crawlOptions |= CrawlOptions::Overlay;
             }
-            if (get<bool>(section, kKEY_SERVER, true))
+            if (get<bool>(section, Keys::kSERVER, true))
             {
                 setup.crawlOptions |= CrawlOptions::ServerInfo;
             }
-            if (get<bool>(section, kKEY_COUNTS, false))
+            if (get<bool>(section, Keys::kCOUNTS, false))
             {
                 setup.crawlOptions |= CrawlOptions::ServerCounts;
             }
-            if (get<bool>(section, kKEY_UNL, true))
+            if (get<bool>(section, Keys::kUNL, true))
             {
                 setup.crawlOptions |= CrawlOptions::Unl;
             }
         }
     }
     {
-        auto const& section = config.section(kSECTION_VL);
+        auto const& section = config.section(Sections::kVL);
 
         set(setup.vlEnabled, "enabled", section);
     }
 
     try
     {
-        auto id = config.legacy(kSECTION_NETWORK_ID);
+        auto id = config.legacy(Sections::kNETWORK_ID);
 
         if (!id.empty())
         {

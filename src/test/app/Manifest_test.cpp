@@ -247,7 +247,7 @@ public:
 
             auto& app = env.app();
             auto unl = std::make_unique<ValidatorList>(
-                m, m, env.timeKeeper(), app.config().legacy(kSECTION_DATABASE_PATH), env.journal);
+                m, m, env.timeKeeper(), app.config().legacy(Sections::kDATABASE_PATH), env.journal);
 
             {
                 // save should not store untrusted master keys to db

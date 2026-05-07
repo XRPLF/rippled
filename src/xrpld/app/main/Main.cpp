@@ -362,10 +362,10 @@ run(int argc, char** argv)
     std::string importText;
     {
         importText += "Import an existing node database (specified in the [";
-        importText += kSECTION_IMPORT_NODE_DATABASE;
+        importText += Sections::kIMPORT_NODE_DATABASE;
         importText += "] configuration file section) into the current ";
         importText += "node database (specified in the [";
-        importText += kSECTION_NODE_DATABASE;
+        importText += Sections::kNODE_DATABASE;
         importText += "] configuration file section).";
     }
 

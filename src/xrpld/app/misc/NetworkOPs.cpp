@@ -313,7 +313,7 @@ public:
         , consensus_(
               registry_.get().getApp(),
               makeFeeVote(
-                  setupFeeVote(registry_.get().getApp().config().section(kSECTION_VOTING)),
+                  setupFeeVote(registry_.get().getApp().config().section(Sections::kVOTING)),
                   registry_.get().getJournal("FeeVote")),
               ledgerMaster,
               *localTX_,
@@ -2972,11 +2972,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-        if (registry_.get().getApp().config().exists(kSECTION_PORT_GRPC))
+        if (registry_.get().getApp().config().exists(Sections::kPORT_GRPC))
         {
-            auto const& grpcSection = registry_.get().getApp().config().section(kSECTION_PORT_GRPC);
-            auto const optPort = grpcSection.get(kKEY_PORT);
-            if (optPort && grpcSection.get(kKEY_IP))
+            auto const& grpcSection =
+                registry_.get().getApp().config().section(Sections::kPORT_GRPC);
+            auto const optPort = grpcSection.get(Keys::kPORT);
+            if (optPort && grpcSection.get(Keys::kIP))
             {
                 auto& jv = ports.append(json::Value(json::ObjectValue));
                 jv[jss::port] = *optPort;

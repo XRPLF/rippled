@@ -430,8 +430,8 @@ class Simulate_test : public beast::unit_test::Suite
         using namespace jtx;
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->section(kSECTION_TRANSACTION_QUEUE)
-                .set(kKEY_MINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
+            cfg->section(Sections::kTRANSACTION_QUEUE)
+                .set(Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
             return cfg;
         }));
 
