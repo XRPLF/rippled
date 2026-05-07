@@ -141,6 +141,23 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     NumberRoundModeGuard const mg(
         tx.isFlag(tfLoanOverpayment) ? Number::RoundingMode::Upward
                                      : Number::RoundingMode::Downward);
+
+    static_assert(kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION % kLOAN_PAYMENTS_PER_FEE_INCREMENT == 0);
+    std::int64_t constexpr kMAX_FEE_INCREMENTS =
+        kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION / kLOAN_PAYMENTS_PER_FEE_INCREMENT;
+
+    if (view.rules().enabled(fixSecurity3_1_3) &&
+        amount >= regularPayment * kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION)
+    {
+        // The payment handler will never process more than
+        // loanMaximumPaymentsPerTransaction payments (including overpayments),
+        // and one fee increment is charged for every
+        // loanPaymentsPerFeeIncrement, so don't charge more than
+        // loanMaximumPaymentsPerTransaction / loanPaymentsPerFeeIncrement fee
+        // increments.
+        return kMAX_FEE_INCREMENTS * normalCost;
+    }
+
     // Estimate how many payments will be made
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
 
@@ -149,6 +166,10 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     auto const feeIncrements = std::max(
         std::int64_t(1),
         static_cast<std::int64_t>(numPaymentEstimate / kLOAN_PAYMENTS_PER_FEE_INCREMENT));
+    XRPL_ASSERT(
+        !view.rules().enabled(fixSecurity3_1_3) || feeIncrements <= kMAX_FEE_INCREMENTS,
+        "xrpl::LoanPay::calculateBaseFee : number of fee increments is in "
+        "range");
 
     return feeIncrements * normalCost;
 }
