@@ -68,7 +68,7 @@ namespace xrpl::test {
 class AMMExtended_test : public jtx::AMMTest
 {
     // Use small Number mantissas for the life of this test.
-    NumberMantissaScaleGuard const sg{xrpl::MantissaRange::MantissaScale::Small};
+    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::MantissaScale::Small};
 
     // For now, just disable SAV entirely, which locks in the small Number
     // mantissas

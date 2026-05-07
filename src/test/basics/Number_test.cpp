@@ -6,7 +6,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/number.hpp>
 
 #include <array>
 #include <cstdint>
