@@ -32,9 +32,8 @@
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 
-XRPL_FIX   (PermissionedDomainInvariant, Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (Cleanup3_1_3,              Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FIX    (BatchInnerSigs,             Supported::no, VoteBehavior::DefaultNo)
+XRPL_FIX    (Cleanup3_1_3,               Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (BatchInnerSigs,             Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(LendingProtocol,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (IncludeKeyletFields,        Supported::yes, VoteBehavior::DefaultNo)
@@ -49,7 +48,7 @@ XRPL_FIX    (EnforceNFTokenTrustlineV2,  Supported::yes, VoteBehavior::DefaultNo
 XRPL_FIX    (AMMv1_3,                    Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionedDEX,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Batch,                      Supported::no,  VoteBehavior::DefaultNo)
-XRPL_FEATURE(SingleAssetVault,           Supported::yes,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(SingleAssetVault,           Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionDelegation,       Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,         Supported::yes, VoteBehavior::DefaultNo)
 // Check flags in Credential transactions
