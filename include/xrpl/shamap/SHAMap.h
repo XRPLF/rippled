@@ -14,6 +14,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <atomic>
 #include <set>
 #include <stack>
 #include <vector>
@@ -82,8 +83,11 @@ private:
     /** ID to distinguish this map for all others we're sharing nodes with. */
     std::uint32_t cowid_ = 1;
 
-    /** The sequence of the ledger that this map references, if any. */
-    std::uint32_t ledgerSeq_ = 0;
+    /** The sequence of the ledger that this map references, if any.
+     *  Atomic because it is written during ledger acquisition and read
+     *  concurrently by node fetch and sync operations.
+     */
+    std::atomic<std::uint32_t> ledgerSeq_ = 0;
 
     intr_ptr::SharedPtr<SHAMapTreeNode> root_;
     mutable SHAMapState state_;
@@ -537,7 +541,7 @@ SHAMap::setFull()
 inline void
 SHAMap::setLedgerSeq(std::uint32_t lseq)
 {
-    ledgerSeq_ = lseq;
+    ledgerSeq_.store(lseq, std::memory_order_relaxed);
 }
 
 inline void

@@ -61,3 +61,14 @@ if(enable_asan)
         INTERFACE BOOST_USE_ASAN BOOST_USE_UCONTEXT
     )
 endif()
+
+# TSAN also requires the ucontext backend so that Boost.Context uses
+# POSIX ucontext (not fcontext assembly) for fiber switching. This
+# allows TSAN to properly track context switches and avoids false positives.
+# These defines must match what Boost was compiled with (see conan/profiles/sanitizers).
+if(enable_tsan)
+    target_compile_definitions(
+        xrpl_boost
+        INTERFACE BOOST_USE_TSAN BOOST_USE_UCONTEXT
+    )
+endif()

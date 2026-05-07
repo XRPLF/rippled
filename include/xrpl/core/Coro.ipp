@@ -1,12 +1,20 @@
 #pragma once
 
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/sanitizers.h>
+
+#include <cstddef>
 #include <utility>
 
 namespace xrpl {
 
-/// Coroutine stack size (1.5 MB). Increased from 1 MB because
-/// ASAN-instrumented deep call stacks exceeded the original limit.
-constexpr std::size_t kCORO_STACK_SIZE = 1536 * 1024;
+/** Stack size for JobQueue coroutines.
+ *
+ *  Sanitizers significantly increase stack frame sizes
+ *  (TSAN ~3-5x, ASAN ~2-3x), requiring larger coroutine stacks.
+ */
+inline constexpr std::size_t kCORO_STACK_SIZE =
+    XRPL_SANITIZER_ACTIVE ? megabytes(2) : megabytes(1.5);
 
 template <class F>
 JobQueue::Coro::Coro(CoroCreateT, JobQueue& jq, JobType type, std::string name, F&& f)

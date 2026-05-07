@@ -68,6 +68,11 @@ Journal::getNullSink()
 
 //------------------------------------------------------------------------------
 
+Journal::Sink::Sink(Sink const& sink)
+    : thresh_(sink.thresh_.load(std::memory_order_relaxed)), console_(sink.console_)
+{
+}
+
 Journal::Sink::Sink(Severity thresh, bool console) : thresh_(thresh), console_(console)
 {
 }
@@ -77,7 +82,7 @@ Journal::Sink::~Sink() = default;
 bool
 Journal::Sink::active(Severity level) const
 {
-    return level >= thresh_;
+    return level >= thresh_.load(std::memory_order_relaxed);
 }
 
 bool
@@ -95,13 +100,13 @@ Journal::Sink::console(bool output)
 severities::Severity
 Journal::Sink::threshold() const
 {
-    return thresh_;
+    return thresh_.load(std::memory_order_relaxed);
 }
 
 void
 Journal::Sink::threshold(Severity thresh)
 {
-    thresh_ = thresh;
+    thresh_.store(thresh, std::memory_order_relaxed);
 }
 
 //------------------------------------------------------------------------------

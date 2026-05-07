@@ -307,7 +307,7 @@ public:
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs,
         std::unique_ptr<TimeKeeper> timeKeeper)
-        : BasicApp(numberOfThreads(*config))
+        : BasicApp(numberOfThreads(*config), DeferStart{})
         , config_(std::move(config))
         , logs_(std::move(logs))
         , timeKeeper_(std::move(timeKeeper))
@@ -1145,6 +1145,14 @@ private:
 bool
 ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 {
+    // NOTE: The main io_context threads are NOT started until start().
+    // However, subsystem-specific threads (resource manager, nodestore
+    // read threads) are started here because they use their own
+    // threading and do not contend with io_context setup work.
+
+    resourceManager_->start();
+    nodeStore_->startReadThreads();
+
     // We want to intercept CTRL-C and the standard termination signal SIGTERM
     // and terminate the process. This handler will NEVER be invoked twice.
     //
@@ -1484,6 +1492,11 @@ void
 ApplicationImp::start(bool withTimers)
 {
     JLOG(journal_.info()) << "Application starting. Version is " << BuildInfo::getVersionString();
+
+    // Start IO threads now that all setup is complete.
+    // This must happen before starting subsystems that post work
+    // to the io_context (resolver, overlay, etc.).
+    startIOThreads();
 
     if (withTimers)
     {

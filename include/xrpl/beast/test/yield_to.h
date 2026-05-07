@@ -11,11 +11,33 @@
 #include <boost/thread/csbl/memory/allocator_arg.hpp>
 
 #include <condition_variable>
+#include <cstddef>
 #include <mutex>
 #include <thread>
 #include <vector>
 
 namespace beast::test {
+
+/** Stack size for yield_to coroutines.
+ *
+ *  Sanitizers significantly increase stack frame sizes
+ *  (TSAN ~3-5x, ASAN ~2-3x), requiring larger coroutine stacks.
+ *
+ *  @note This duplicates the detection logic from xrpl/basics/sanitizers.h
+ *        because xrpl.beast cannot depend on xrpl.basics (levelization
+ *        constraint).
+ */
+#if defined(__SANITIZE_THREAD__) || defined(__SANITIZE_ADDRESS__)
+inline constexpr std::size_t yieldStackSize = 2 * 1024 * 1024;
+#elif defined(__has_feature)
+#if __has_feature(thread_sanitizer) || __has_feature(address_sanitizer)
+inline constexpr std::size_t yieldStackSize = 2 * 1024 * 1024;
+#else
+inline constexpr std::size_t yieldStackSize = 1.5 * 1024 * 1024;
+#endif
+#else
+inline constexpr std::size_t yieldStackSize = 1.5 * 1024 * 1024;
+#endif
 
 /** Mix-in to support tests using asio coroutines.
 
@@ -111,7 +133,7 @@ EnableYieldTo::spawn(F0&& f, FN&&... fn)
     boost::asio::spawn(
         ios_,
         boost::allocator_arg,
-        boost::context::fixedsize_stack(2 * 1024 * 1024),
+        boost::context::fixedsize_stack(yieldStackSize),
         [&](yield_context yield) {
             f(yield);
             std::scoped_lock const lock{m_};

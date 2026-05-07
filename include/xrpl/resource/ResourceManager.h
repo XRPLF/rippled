@@ -21,6 +21,15 @@ protected:
 public:
     ~Manager() override = 0;
 
+    /** Start the manager's background thread.
+        Must be called after construction to begin periodic charge decay
+        and inactive-consumer sweeps.
+        @note Not thread-safe. Must be called exactly once, before any
+              concurrent access to the manager.
+    */
+    virtual void
+    start() = 0;
+
     /** Create a new endpoint keyed by inbound IP address or the forwarded
      * IP if proxied. */
     virtual Consumer

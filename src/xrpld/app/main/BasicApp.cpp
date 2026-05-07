@@ -7,15 +7,26 @@
 #include <cstddef>
 #include <string>
 
-BasicApp::BasicApp(std::size_t numberOfThreads)
+BasicApp::BasicApp(std::size_t numberOfThreads) : numberOfThreads_(numberOfThreads)
 {
     work_.emplace(boost::asio::make_work_guard(io_context_));
-    threads_.reserve(numberOfThreads);
+    startIOThreads();
+}
 
-    for (std::size_t i = 0; i < numberOfThreads; ++i)
+BasicApp::BasicApp(std::size_t numberOfThreads, DeferStart) : numberOfThreads_(numberOfThreads)
+{
+    work_.emplace(boost::asio::make_work_guard(io_context_));
+}
+
+void
+BasicApp::startIOThreads()
+{
+    threads_.reserve(numberOfThreads_);
+
+    for (std::size_t i = 0; i < numberOfThreads_; ++i)
     {
-        threads_.emplace_back([this, i]() {
-            beast::setCurrentThreadName("io svc #" + std::to_string(i));
+        threads_.emplace_back([this, n = i]() {
+            beast::setCurrentThreadName("io svc #" + std::to_string(n));
             this->io_context_.run();
         });
     }

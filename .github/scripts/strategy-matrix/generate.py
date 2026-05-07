@@ -235,16 +235,14 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Add the configuration to the list, with the most unique fields first,
         # so that they are easier to identify in the GitHub Actions UI, as long
         # names get truncated.
-        # Add Address and UB sanitizers as separate configurations for specific
-        # bookworm distros. Thread sanitizer is currently disabled (see below).
-        # GCC-Asan xrpld-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
-        if os[
-            "distro_version"
-        ] == "bookworm" and f"{os['compiler_name']}-{os['compiler_version']}" in [
-            "gcc-15",
-            "clang-20",
-        ]:
-            # Add ASAN configuration.
+        # Add sanitizer jobs for specific bookworm distros.
+        # GCC sanitizers run independently because combining ASAN+UBSAN inflates
+        # GCC data sections past ASAN's 2GB shadow memory limit
+        # (see https://github.com/google/sanitizers/issues/856).
+        # Clang doesn't have this issue, so TSAN+UBSAN stay combined but ASAN and UBSAN are separated.
+        compiler_id = f"{os['compiler_name']}-{os['compiler_version']}"
+        if os["distro_version"] == "bookworm" and compiler_id == "gcc-15":
+            # Add separate ASAN, TSAN, and UBSAN configurations for GCC.
             configurations.append(
                 {
                     "config_name": config_name + "-asan",
@@ -257,7 +255,21 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "sanitizers": "address",
                 }
             )
-            # Add UBSAN configuration.
+            # TSAN instrumentation significantly increases memory usage during
+            # compilation, so reduce build parallelism to avoid OOM on CI runners.
+            configurations.append(
+                {
+                    "config_name": config_name + "-tsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "thread",
+                    "nproc_subtract": 20,
+                }
+            )
             configurations.append(
                 {
                     "config_name": config_name + "-ubsan",
@@ -270,21 +282,47 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "sanitizers": "undefinedbehavior",
                 }
             )
-            # TSAN is deactivated due to seg faults with latest compilers.
-            activate_tsan = False
-            if activate_tsan:
-                configurations.append(
-                    {
-                        "config_name": config_name + "-tsan-ubsan",
-                        "cmake_args": cmake_args,
-                        "cmake_target": cmake_target,
-                        "build_only": build_only,
-                        "build_type": build_type,
-                        "os": os,
-                        "architecture": architecture,
-                        "sanitizers": "thread,undefinedbehavior",
-                    }
-                )
+        elif os["distro_version"] == "bookworm" and compiler_id == "clang-20":
+            # Add combined ASAN+UBSAN and TSAN+UBSAN configurations for Clang.
+            configurations.append(
+                {
+                    "config_name": config_name + "-asan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "address",
+                }
+            )
+            configurations.append(
+                {
+                    "config_name": config_name + "-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "undefinedbehavior",
+                }
+            )
+            # TSAN instrumentation significantly increases memory usage during
+            # compilation, so reduce build parallelism to avoid OOM on CI runners.
+            configurations.append(
+                {
+                    "config_name": config_name + "-tsan-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "thread,undefinedbehavior",
+                    "nproc_subtract": 20,
+                }
+            )
         else:
             configurations.append(
                 {

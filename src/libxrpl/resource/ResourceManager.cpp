@@ -39,6 +39,11 @@ public:
     ManagerImp(beast::insight::Collector::ptr const& collector, beast::Journal journal)
         : journal_(journal), logic_(collector, stopwatch(), journal)
     {
+    }
+
+    void
+    start() override
+    {
         thread_ = std::thread{&ManagerImp::run, this};
     }
 
@@ -49,12 +54,15 @@ public:
 
     ~ManagerImp() override
     {
+        if (thread_.joinable())
         {
-            std::scoped_lock const lock(mutex_);
-            stop_ = true;
-            cond_.notify_one();
+            {
+                std::scoped_lock const lock(mutex_);
+                stop_ = true;
+                cond_.notify_one();
+            }
+            thread_.join();
         }
-        thread_.join();
     }
 
     Consumer

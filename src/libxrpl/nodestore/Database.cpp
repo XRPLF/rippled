@@ -40,7 +40,7 @@ Database::Database(
     , scheduler_(scheduler)
     , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", kXRP_LEDGER_EARLIEST_SEQ))
     , requestBundle_(get<int>(config, "rq_bundle", 4))
-    , readThreads_(std::max(1, readThreads))
+    , desiredReadThreads_(std::max(1, readThreads))
 {
     XRPL_ASSERT(readThreads, "xrpl::NodeStore::Database::Database : nonzero threads input");
 
@@ -49,8 +49,14 @@ Database::Database(
 
     if (requestBundle_ < 1 || requestBundle_ > 64)
         Throw<std::runtime_error>("Invalid rq_bundle");
+}
 
-    for (int i = readThreads_.load(); i != 0; --i)
+void
+Database::startReadThreads()
+{
+    readThreads_ = desiredReadThreads_;
+
+    for (int i = desiredReadThreads_; i != 0; --i)
     {
         std::thread t(
             [this](int i) {

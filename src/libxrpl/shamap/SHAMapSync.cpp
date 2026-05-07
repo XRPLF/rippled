@@ -537,7 +537,11 @@ SHAMap::addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFil
         Serializer s;
         root_->serializeWithPrefix(s);
         filter->gotNode(
-            false, root_->getHash(), ledgerSeq_, std::move(s.modData()), root_->getType());
+            false,
+            root_->getHash(),
+            ledgerSeq_.load(std::memory_order_relaxed),
+            std::move(s.modData()),
+            root_->getType());
     }
 
     return SHAMapAddNode::useful();
@@ -643,7 +647,11 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
             Serializer s;
             newNode->serializeWithPrefix(s);
             filter->gotNode(
-                false, childHash, ledgerSeq_, std::move(s.modData()), newNode->getType());
+                false,
+                childHash,
+                ledgerSeq_.load(std::memory_order_relaxed),
+                std::move(s.modData()),
+                newNode->getType());
         }
 
         return SHAMapAddNode::useful();

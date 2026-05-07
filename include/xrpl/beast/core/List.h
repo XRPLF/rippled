@@ -307,7 +307,7 @@ public:
     reference
     front() noexcept
     {
-        return element_from(head_.next_);
+        return elementFrom(head_.next_);
     }
 
     /** Obtain a const reference to the first element.

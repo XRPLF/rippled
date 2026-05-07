@@ -103,6 +103,7 @@ words:
   - dxrpl
   - enabled
   - endmacro
+  - eventfd
   - exceptioned
   - Falco
   - fcontext
