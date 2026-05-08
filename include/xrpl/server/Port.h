@@ -13,6 +13,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <vector>
 
 namespace boost::asio::ssl {
 class context;  // NOLINT(readability-identifier-naming) -- external library name

@@ -117,9 +117,12 @@ struct Keys
     static constexpr auto kMAX_DIVERGED_TIME = "max_diverged_time";
     static constexpr auto kMAX_LEDGER_COUNTS_TO_STORE = "max_ledger_counts_to_store";
     static constexpr auto kMAX_UNKNOWN_TIME = "max_unknown_time";
+    static constexpr auto kMAXIMUM_TXN_IN_LEDGER = "maximum_txn_in_ledger";
+    static constexpr auto kMAXIMUM_TXN_PER_ACCOUNT = "maximum_txn_per_account";
     static constexpr auto kMEMORY_LEVEL = "memory_level";
     static constexpr auto kMIN_LEDGERS_TO_COMPUTE_SIZE_LIMIT = "min_ledgers_to_compute_size_limit";
     static constexpr auto kMINIMUM_ESCALATION_MULTIPLIER = "minimum_escalation_multiplier";
+    static constexpr auto kMINIMUM_LAST_LEDGER_BUFFER = "minimum_last_ledger_buffer";
     static constexpr auto kMINIMUM_QUEUE_SIZE = "minimum_queue_size";
     static constexpr auto kMINIMUM_TXN_IN_LEDGER = "minimum_txn_in_ledger";
     static constexpr auto kMINIMUM_TXN_IN_LEDGER_STANDALONE = "minimum_txn_in_ledger_standalone";
@@ -148,6 +151,7 @@ struct Keys
     static constexpr auto kSERVER = "server";
     static constexpr auto kSERVER_MAX_WINDOW_BITS = "server_max_window_bits";
     static constexpr auto kSERVER_NO_CONTEXT_TAKEOVER = "server_no_context_takeover";
+    static constexpr auto kSLOW_CONSENSUS_DECREASE_PERCENT = "slow_consensus_decrease_percent";
     static constexpr auto kSSL_CERT = "ssl_cert";
     static constexpr auto kSSL_CERT_CHAIN = "ssl_cert_chain";
     static constexpr auto kSSL_CHAIN = "ssl_chain";

@@ -1357,8 +1357,8 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
     if (c.exists(Sections::kSQLITE))
     {
         auto& s = c.section(Sections::kSQLITE);
-        set(journalSizeLimit, "journal_size_limit", s);
-        set(pageSize, "page_size", s);
+        set(journalSizeLimit, Keys::kJOURNAL_SIZE_LIMIT, s);
+        set(pageSize, Keys::kPAGE_SIZE, s);
         if (pageSize < 512 || pageSize > 65536)
             Throw<std::runtime_error>("Invalid page_size. Must be between 512 and 65536.");
 
