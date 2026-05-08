@@ -216,7 +216,6 @@ xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.config > xrpl.basics
 xrpl.core > xrpl.basics
-xrpl.core > xrpl.config
 xrpl.core > xrpl.json
 xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
@@ -226,7 +225,6 @@ xrpl.ledger > xrpl.server
 xrpl.ledger > xrpl.shamap
 xrpl.net > xrpl.basics
 xrpl.nodestore > xrpl.basics
-xrpl.nodestore > xrpl.config
 xrpl.nodestore > xrpl.protocol
 xrpl.protocol > xrpl.basics
 xrpl.protocol > xrpl.json
@@ -239,7 +237,6 @@ xrpl.resource > xrpl.basics
 xrpl.resource > xrpl.json
 xrpl.resource > xrpl.protocol
 xrpl.server > xrpl.basics
-xrpl.server > xrpl.config
 xrpl.server > xrpl.core
 xrpl.server > xrpl.json
 xrpl.server > xrpl.protocol

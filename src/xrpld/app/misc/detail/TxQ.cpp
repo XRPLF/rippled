@@ -1873,15 +1873,15 @@ setupTxQ(Config const& config)
 {
     TxQ::Setup setup;
     auto const& section = config.section(Sections::kTRANSACTION_QUEUE);
-    set(setup.ledgersInQueue, "ledgers_in_queue", section);
-    set(setup.queueSizeMin, "minimum_queue_size", section);
-    set(setup.retrySequencePercent, "retry_sequence_percent", section);
-    set(setup.minimumEscalationMultiplier, "minimum_escalation_multiplier", section);
-    set(setup.minimumTxnInLedger, "minimum_txn_in_ledger", section);
-    set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone", section);
-    set(setup.targetTxnInLedger, "target_txn_in_ledger", section);
+    set(setup.ledgersInQueue, Keys::kLEDGERS_IN_QUEUE, section);
+    set(setup.queueSizeMin, Keys::kMINIMUM_QUEUE_SIZE, section);
+    set(setup.retrySequencePercent, Keys::kRETRY_SEQUENCE_PERCENT, section);
+    set(setup.minimumEscalationMultiplier, Keys::kMINIMUM_ESCALATION_MULTIPLIER, section);
+    set(setup.minimumTxnInLedger, Keys::kMINIMUM_TXN_IN_LEDGER, section);
+    set(setup.minimumTxnInLedgerSA, Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, section);
+    set(setup.targetTxnInLedger, Keys::kTARGET_TXN_IN_LEDGER, section);
     std::uint32_t max = 0;
-    if (set(max, "maximum_txn_in_ledger", section))
+    if (set(max, Keys::kMAXIMUM_TXN_IN_LEDGER, section))
     {
         if (max < setup.minimumTxnInLedger)
         {
@@ -1909,7 +1909,7 @@ setupTxQ(Config const& config)
        moot. (There are other ways to do that, including
        minimum_txn_in_ledger_.)
     */
-    set(setup.normalConsensusIncreasePercent, "normal_consensus_increase_percent", section);
+    set(setup.normalConsensusIncreasePercent, Keys::kNORMAL_CONSENSUS_INCREASE_PERCENT, section);
     setup.normalConsensusIncreasePercent =
         std::clamp(setup.normalConsensusIncreasePercent, 0u, 1000u);
 
@@ -1917,11 +1917,11 @@ setupTxQ(Config const& config)
        are nonsensical (uint overflows happen, so the limit grows
        instead of shrinking). 0 is not recommended.
     */
-    set(setup.slowConsensusDecreasePercent, "slow_consensus_decrease_percent", section);
+    set(setup.slowConsensusDecreasePercent, Keys::kSLOW_CONSENSUS_DECREASE_PERCENT, section);
     setup.slowConsensusDecreasePercent = std::clamp(setup.slowConsensusDecreasePercent, 0u, 100u);
 
-    set(setup.maximumTxnPerAccount, "maximum_txn_per_account", section);
-    set(setup.minimumLastLedgerBuffer, "minimum_last_ledger_buffer", section);
+    set(setup.maximumTxnPerAccount, Keys::kMAXIMUM_TXN_PER_ACCOUNT, section);
+    set(setup.minimumLastLedgerBuffer, Keys::kMINIMUM_LAST_LEDGER_BUFFER, section);
 
     setup.standAlone = config.standalone();
     return setup;

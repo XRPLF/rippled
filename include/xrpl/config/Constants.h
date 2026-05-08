@@ -119,6 +119,7 @@ struct Keys
     static constexpr auto kMAX_UNKNOWN_TIME = "max_unknown_time";
     static constexpr auto kMEMORY_LEVEL = "memory_level";
     static constexpr auto kMIN_LEDGERS_TO_COMPUTE_SIZE_LIMIT = "min_ledgers_to_compute_size_limit";
+    static constexpr auto kMINIMUM_ESCALATION_MULTIPLIER = "minimum_escalation_multiplier";
     static constexpr auto kMINIMUM_QUEUE_SIZE = "minimum_queue_size";
     static constexpr auto kMINIMUM_TXN_IN_LEDGER = "minimum_txn_in_ledger";
     static constexpr auto kMINIMUM_TXN_IN_LEDGER_STANDALONE = "minimum_txn_in_ledger_standalone";

@@ -23,7 +23,7 @@ setupHashRouter(Config const& config)
 
     std::int32_t tmp{};
 
-    if (set(tmp, "hold_time", section))
+    if (set(tmp, Keys::kHOLD_TIME, section))
     {
         if (tmp < 12)
         {
@@ -33,7 +33,7 @@ setupHashRouter(Config const& config)
         }
         setup.holdTime = seconds(tmp);
     }
-    if (set(tmp, "relay_time", section))
+    if (set(tmp, Keys::kRELAY_TIME, section))
     {
         if (tmp < 8)
         {
