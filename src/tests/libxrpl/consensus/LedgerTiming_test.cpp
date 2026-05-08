@@ -107,7 +107,7 @@ protected:
         EXPECT_TRUE(close == tp{30s});
     }
 
-    void
+    static void
     run()
     {
         testGetNextLedgerTimeResolution();

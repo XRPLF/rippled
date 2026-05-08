@@ -695,7 +695,7 @@ protected:
         }
     }
 
-    void
+    static void
     run()
     {
         testInsert();

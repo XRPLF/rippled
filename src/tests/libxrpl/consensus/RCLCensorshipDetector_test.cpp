@@ -50,7 +50,7 @@ protected:
     }
 
 public:
-    void
+    static void
     run()
     {
         SCOPED_TRACE("Censorship Detector");
