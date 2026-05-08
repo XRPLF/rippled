@@ -76,13 +76,9 @@ test.basics > xrpl.protocol
 test.beast > xrpl.basics
 test.conditions > xrpl.basics
 test.conditions > xrpl.conditions
-test.consensus > test.csf
 test.consensus > test.jtx
-test.consensus > test.toplevel
-test.consensus > test.unit_test
 test.consensus > xrpl.basics
 test.consensus > xrpld.app
-test.consensus > xrpld.consensus
 test.consensus > xrpl.ledger
 test.consensus > xrpl.protocol
 test.consensus > xrpl.shamap
@@ -189,6 +185,8 @@ test.unit_test > xrpl.basics
 test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.core
+tests.libxrpl > xrpld.app
+tests.libxrpl > xrpld.consensus
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.ledger
 tests.libxrpl > xrpl.net
