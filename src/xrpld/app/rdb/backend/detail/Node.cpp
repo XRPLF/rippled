@@ -7,7 +7,6 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
@@ -18,6 +17,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep

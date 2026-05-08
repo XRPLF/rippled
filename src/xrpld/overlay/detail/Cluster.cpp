@@ -2,11 +2,11 @@
 
 #include <xrpld/overlay/ClusterNode.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 

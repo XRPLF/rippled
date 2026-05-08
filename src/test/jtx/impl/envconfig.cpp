@@ -4,7 +4,7 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/config/BasicConfig.h>
 
 #include <atomic>
 #include <map>

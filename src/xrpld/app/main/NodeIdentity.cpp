@@ -3,8 +3,8 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>

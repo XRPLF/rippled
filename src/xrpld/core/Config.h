@@ -1,9 +1,9 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization

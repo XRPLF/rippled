@@ -1,7 +1,7 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/config/BasicConfig.h>
 
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/network_v4.hpp>

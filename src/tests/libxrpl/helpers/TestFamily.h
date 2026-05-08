@@ -1,7 +1,7 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/shamap/Family.h>

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>

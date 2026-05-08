@@ -16,7 +16,6 @@
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/Slice.h>
@@ -36,6 +35,7 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/BuildInfo.h>

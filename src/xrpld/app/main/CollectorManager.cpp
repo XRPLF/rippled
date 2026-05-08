@@ -1,6 +1,5 @@
 #include <xrpld/app/main/CollectorManager.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Group.h>
 #include <xrpl/beast/insight/Groups.h>
@@ -8,6 +7,7 @@
 #include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 
 #include <memory>
 #include <string>

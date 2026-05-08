@@ -1,6 +1,5 @@
-#include <xrpl/basics/BasicConfig.h>
-
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/config/BasicConfig.h>
 
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>

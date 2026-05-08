@@ -1,0 +1,378 @@
+#pragma once
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/config/Constants.h>
+
+#include <boost/beast/core/string.hpp>
+#include <boost/lexical_cast.hpp>
+
+#include <algorithm>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+namespace xrpl {
+
+using IniFileSections = std::unordered_map<std::string, std::vector<std::string>>;
+
+//------------------------------------------------------------------------------
+
+/** Holds a collection of configuration values.
+    A configuration file contains zero or more sections.
+*/
+class Section
+{
+private:
+    std::string name_;
+    std::unordered_map<std::string, std::string> lookup_;
+    std::vector<std::string> lines_;
+    std::vector<std::string> values_;
+    bool hadTrailingComments_ = false;
+
+    using const_iterator = decltype(lookup_)::const_iterator;
+
+public:
+    /** Create an empty section. */
+    explicit Section(std::string name = "");
+
+    /** Returns the name of this section. */
+    [[nodiscard]] std::string const&
+    name() const
+    {
+        return name_;
+    }
+
+    /** Returns all the lines in the section.
+        This includes everything.
+    */
+    [[nodiscard]] std::vector<std::string> const&
+    lines() const
+    {
+        return lines_;
+    }
+
+    /** Returns all the values in the section.
+        Values are non-empty lines which are not key/value pairs.
+    */
+    [[nodiscard]] std::vector<std::string> const&
+    values() const
+    {
+        return values_;
+    }
+
+    /**
+     * Set the legacy value for this section.
+     */
+    void
+    legacy(std::string value)
+    {
+        if (lines_.empty())
+        {
+            lines_.emplace_back(std::move(value));
+        }
+        else
+        {
+            lines_[0] = std::move(value);
+        }
+    }
+
+    /**
+     * Get the legacy value for this section.
+     *
+     * @return The retrieved value. A section with an empty legacy value returns
+               an empty string.
+     */
+    [[nodiscard]] std::string
+    legacy() const
+    {
+        if (lines_.empty())
+            return "";
+        if (lines_.size() > 1)
+        {
+            Throw<std::runtime_error>(
+                "A legacy value must have exactly one line. Section: " + name_);
+        }
+        return lines_[0];
+    }
+
+    /** Set a key/value pair.
+        The previous value is discarded.
+    */
+    void
+    set(std::string const& key, std::string const& value);
+
+    /** Append a set of lines to this section.
+        Lines containing key/value pairs are added to the map,
+        else they are added to the values list. Everything is
+        added to the lines list.
+    */
+    void
+    append(std::vector<std::string> const& lines);
+
+    /** Append a line to this section. */
+    void
+    append(std::string const& line)
+    {
+        append(std::vector<std::string>{line});
+    }
+
+    /** Returns `true` if a key with the given name exists. */
+    [[nodiscard]] bool
+    exists(std::string const& name) const;
+
+    template <class T = std::string>
+    [[nodiscard]] std::optional<T>
+    get(std::string const& name) const
+    {
+        auto const iter = lookup_.find(name);
+        if (iter == lookup_.end())
+            return std::nullopt;
+        return boost::lexical_cast<T>(iter->second);
+    }
+
+    /// Returns a value if present, else another value.
+    template <class T>
+    [[nodiscard]] T
+    valueOr(std::string const& name, T const& other) const
+    {
+        auto const v = get<T>(name);
+        return v.has_value() ? *v : other;
+    }
+
+    // indicates if trailing comments were seen
+    // during the appending of any lines/values
+    [[nodiscard]] bool
+    hadTrailingComments() const
+    {
+        return hadTrailingComments_;
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream&, Section const& section);
+
+    // Returns `true` if there are no key/value pairs.
+    [[nodiscard]] bool
+    empty() const
+    {
+        return lookup_.empty();
+    }
+
+    // Returns the number of key/value pairs.
+    [[nodiscard]] std::size_t
+    size() const
+    {
+        return lookup_.size();
+    }
+
+    // For iteration of key/value pairs.
+    [[nodiscard]] const_iterator
+    begin() const
+    {
+        return lookup_.cbegin();
+    }
+
+    // For iteration of key/value pairs.
+    [[nodiscard]] const_iterator
+    cbegin() const
+    {
+        return lookup_.cbegin();
+    }
+
+    // For iteration of key/value pairs.
+    [[nodiscard]] const_iterator
+    end() const
+    {
+        return lookup_.cend();
+    }
+
+    // For iteration of key/value pairs.
+    [[nodiscard]] const_iterator
+    cend() const
+    {
+        return lookup_.cend();
+    }
+};
+
+//------------------------------------------------------------------------------
+
+/** Holds unparsed configuration information.
+    The raw data sections are processed with intermediate parsers specific
+    to each module instead of being all parsed in a central location.
+*/
+class BasicConfig
+{
+private:
+    std::unordered_map<std::string, Section> map_;
+
+public:
+    /** Returns `true` if a section with the given name exists. */
+    [[nodiscard]] bool
+    exists(std::string const& name) const;
+
+    /** Returns the section with the given name.
+        If the section does not exist, an empty section is returned.
+    */
+    /** @{ */
+    Section&
+    section(std::string const& name);
+
+    [[nodiscard]] Section const&
+    section(std::string const& name) const;
+
+    Section const&
+    operator[](std::string const& name) const
+    {
+        return section(name);
+    }
+
+    Section&
+    operator[](std::string const& name)
+    {
+        return section(name);
+    }
+    /** @} */
+
+    /** Overwrite a key/value pair with a command line argument
+        If the section does not exist it is created.
+        The previous value, if any, is overwritten.
+    */
+    void
+    overwrite(std::string const& section, std::string const& key, std::string const& value);
+
+    /** Remove all the key/value pairs from the section.
+     */
+    void
+    deprecatedClearSection(std::string const& section);
+
+    /**
+     *  Set a value that is not a key/value pair.
+     *
+     *  The value is stored as the section's first value and may be retrieved
+     *  through section::legacy.
+     *
+     *  @param section Name of the section to modify.
+     *  @param value Contents of the legacy value.
+     */
+    void
+    legacy(std::string const& section, std::string value);
+
+    /**
+     *  Get the legacy value of a section. A section with a
+     *  single-line value may be retrieved as a legacy value.
+     *
+     *  @param sectionName Retrieve the contents of this section's
+     *         legacy value.
+     *  @return Contents of the legacy value.
+     */
+    [[nodiscard]] std::string
+    legacy(std::string const& sectionName) const;
+
+    friend std::ostream&
+    operator<<(std::ostream& ss, BasicConfig const& c);
+
+    // indicates if trailing comments were seen
+    // in any loaded Sections
+    [[nodiscard]] bool
+    hadTrailingComments() const
+    {
+        return std::ranges::any_of(map_, [](auto s) { return s.second.hadTrailingComments(); });
+    }
+
+protected:
+    void
+    build(IniFileSections const& ifs);
+};
+
+//------------------------------------------------------------------------------
+
+/** Set a value from a configuration Section
+    If the named value is not found or doesn't parse as a T,
+    the variable is unchanged.
+    @return `true` if value was set.
+*/
+template <class T>
+bool
+set(T& target, std::string const& name, Section const& section)
+{
+    bool foundAndValid = false;
+    try
+    {
+        auto const val = section.get<T>(name);
+        if ((foundAndValid = val.has_value()))
+            target = *val;
+    }
+    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
+    {
+    }
+    return foundAndValid;
+}
+
+/** Set a value from a configuration Section
+    If the named value is not found or doesn't cast to T,
+    the variable is assigned the default.
+    @return `true` if the named value was found and is valid.
+*/
+template <class T>
+bool
+set(T& target, T const& defaultValue, std::string const& name, Section const& section)
+{
+    bool const foundAndValid = set<T>(target, name, section);
+    if (!foundAndValid)
+        target = defaultValue;
+    return foundAndValid;
+}
+
+/** Retrieve a key/value pair from a section.
+    @return The value string converted to T if it exists
+            and can be parsed, or else defaultValue.
+*/
+// NOTE This routine might be more clumsy than the previous two
+template <class T = std::string>
+T
+get(Section const& section, std::string const& name, T const& defaultValue = T{})
+{
+    try
+    {
+        return section.valueOr<T>(name, defaultValue);
+    }
+    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
+    {
+    }
+    return defaultValue;
+}
+
+inline std::string
+get(Section const& section, std::string const& name, char const* defaultValue)
+{
+    try
+    {
+        auto const val = section.get(name);
+        if (val.has_value())
+            return *val;
+    }
+    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
+    {
+    }
+    return defaultValue;
+}
+
+template <class T>
+bool
+getIfExists(Section const& section, std::string const& name, T& v)
+{
+    return set<T>(v, name, section);
+}
+
+template <>
+inline bool
+getIfExists<bool>(Section const& section, std::string const& name, bool& v)
+{
+    int intVal = 0;
+    auto stat = getIfExists(section, name, intVal);
+    if (stat)
+        v = bool(intVal);
+    return stat;
+}
+
+}  // namespace xrpl

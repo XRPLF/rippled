@@ -1,8 +1,8 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 

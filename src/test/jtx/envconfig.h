@@ -2,7 +2,7 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/config/BasicConfig.h>
 
 namespace xrpl::test {
 

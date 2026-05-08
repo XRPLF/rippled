@@ -3,9 +3,9 @@
 
 #include <xrpld/overlay/Cluster.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>

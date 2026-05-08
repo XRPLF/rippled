@@ -4,7 +4,6 @@
 #include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SlabAllocator.h>
 #include <xrpl/basics/base_uint.h>
@@ -12,6 +11,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite_info.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/git/Git.h>
 #include <xrpl/json/json_writer.h>

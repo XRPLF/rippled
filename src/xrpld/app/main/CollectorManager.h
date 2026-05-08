@@ -1,7 +1,7 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/insight/Insight.h>
+#include <xrpl/config/BasicConfig.h>
 
 namespace xrpl {
 

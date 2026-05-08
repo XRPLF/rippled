@@ -7,13 +7,13 @@
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 #include <xrpld/peerfinder/detail/StoreSqdb.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/PublicKey.h>
 
 #include <boost/asio/executor_work_guard.hpp>

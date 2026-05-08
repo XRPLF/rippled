@@ -20,12 +20,12 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>

@@ -6,7 +6,6 @@
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base64.h>
@@ -14,6 +13,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>

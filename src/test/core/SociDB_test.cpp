@@ -1,8 +1,8 @@
 #include <test/jtx/TestSuite.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/rdb/SociDB.h>
 
 #include <boost/algorithm/string/predicate.hpp>
