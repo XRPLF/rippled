@@ -236,7 +236,7 @@ public:
         map_.resize(partitions_);
         XRPL_ASSERT(
             partitions_,
-            "xrpl::partitioned_unordered_map::partitioned_unordered_map : "
+            "xrpl::PartitionedUnorderedMap::PartitionedUnorderedMap : "
             "nonzero partitions");
     }
 

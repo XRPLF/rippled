@@ -418,6 +418,7 @@ LoanSet::doApply()
     auto const paymentTotal = tx[~sfPaymentTotal].value_or(kDEFAULT_PAYMENT_TOTAL);
 
     auto const properties = computeLoanProperties(
+        view.rules(),
         vaultAsset,
         principalRequested,
         interestRate,
@@ -652,11 +653,13 @@ LoanSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 LoanSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
