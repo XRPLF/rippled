@@ -9,10 +9,10 @@
 
 namespace xrpl::test {
 
-class LedgerTrie_test : public ::testing::Test
+class LedgerTrieTest : public ::testing::Test
 {
 protected:
-    void
+    static void
     testInsert()
     {
         using namespace csf;
@@ -139,7 +139,7 @@ protected:
         }
     }
 
-    void
+    static void
     testRemove()
     {
         using namespace csf;
@@ -271,7 +271,7 @@ protected:
         }
     }
 
-    void
+    static void
     testEmpty()
     {
         using namespace csf;
@@ -291,7 +291,7 @@ protected:
         EXPECT_TRUE(t.empty());
     }
 
-    void
+    static void
     testSupport()
     {
         using namespace csf;
@@ -338,7 +338,7 @@ protected:
         EXPECT_TRUE(t.branchSupport(h["abe"]) == 1);
     }
 
-    void
+    static void
     testGetPreferred()
     {
         using namespace csf;
@@ -616,7 +616,7 @@ protected:
         }
     }
 
-    void
+    static void
     testRootRelated()
     {
         using namespace csf;
@@ -645,7 +645,7 @@ protected:
         EXPECT_TRUE(t.tipSupport(h[""]) == 0);
     }
 
-    void
+    static void
     testStress()
     {
         using namespace csf;
@@ -708,7 +708,7 @@ protected:
     }
 };
 
-TEST_F(LedgerTrie_test, ledger_trie)
+TEST_F(LedgerTrieTest, ledger_trie)
 {
     run();
 }

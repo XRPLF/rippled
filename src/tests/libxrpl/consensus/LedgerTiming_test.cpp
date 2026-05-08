@@ -9,10 +9,10 @@
 
 namespace xrpl::test {
 
-class LedgerTiming_test : public ::testing::Test
+class LedgerTimingTest : public ::testing::Test
 {
 protected:
-    void
+    static void
     testGetNextLedgerTimeResolution()
     {
         // helper to iteratively call into getNextLedgerTimeResolution
@@ -66,7 +66,7 @@ protected:
         EXPECT_TRUE(increases.equal == 97);
     }
 
-    void
+    static void
     testRoundCloseTime()
     {
         using namespace std::chrono_literals;
@@ -86,7 +86,7 @@ protected:
         EXPECT_TRUE(tp{60s} == roundCloseTime(tp{61s}, 60s));
     }
 
-    void
+    static void
     testEffCloseTime()
     {
         using namespace std::chrono_literals;
@@ -116,7 +116,7 @@ protected:
     }
 };
 
-TEST_F(LedgerTiming_test, ledger_timing)
+TEST_F(LedgerTimingTest, ledger_timing)
 {
     run();
 }

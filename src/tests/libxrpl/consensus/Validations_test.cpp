@@ -40,7 +40,7 @@ expireValidations(ValidationStore& validations)
 
 }  // namespace
 
-class Validations_test : public ::testing::Test
+class ValidationsTest : public ::testing::Test
 {
 protected:
     using clock_type = beast::AbstractClock<std::chrono::steady_clock> const;
@@ -90,7 +90,7 @@ protected:
             loadFee_ = fee;
         }
 
-        PeerID
+        [[nodiscard]] PeerID
         nodeID() const
         {
             return nodeID_;
@@ -102,18 +102,18 @@ protected:
             signIdx_++;
         }
 
-        PeerKey
+        [[nodiscard]] PeerKey
         currKey() const
         {
             return std::make_pair(nodeID_, signIdx_);
         }
 
-        PeerKey
+        [[nodiscard]] PeerKey
         masterKey() const
         {
             return std::make_pair(nodeID_, 0);
         }
-        NetClock::time_point
+        [[nodiscard]] NetClock::time_point
         now() const
         {
             return toNetClock(c_);
@@ -121,7 +121,7 @@ protected:
 
         // Issue a new validation with given sequence number and id and
         // with signing and seen times offset from the common clock
-        Validation
+        [[nodiscard]] Validation
         validate(
             Ledger::ID id,
             Ledger::Seq seq,
@@ -143,20 +143,20 @@ protected:
             return v;
         }
 
-        Validation
+        [[nodiscard]] Validation
         validate(Ledger ledger, NetClock::duration signOffset, NetClock::duration seenOffset) const
         {
             return validate(ledger.id(), ledger.seq(), signOffset, seenOffset, true);
         }
 
-        Validation
+        [[nodiscard]] Validation
         validate(Ledger ledger) const
         {
             return validate(
                 ledger.id(), ledger.seq(), NetClock::duration{0}, NetClock::duration{0}, true);
         }
 
-        Validation
+        [[nodiscard]] Validation
         partial(Ledger ledger) const
         {
             return validate(
@@ -192,7 +192,7 @@ protected:
         {
         }
 
-        NetClock::time_point
+        [[nodiscard]] NetClock::time_point
         now() const
         {
             return toNetClock(c_);
@@ -253,9 +253,9 @@ protected:
         }
     };
 
-    Ledger const genesisLedger{Ledger::MakeGenesis{}};
+    Ledger const genesisLedger_{Ledger::MakeGenesis{}};
 
-    void
+    static void
     testAddValidation()
     {
         using namespace std::chrono_literals;
@@ -400,7 +400,7 @@ protected:
         std::vector<Trigger> const triggers = {
             [&](TestValidations& vals) { vals.currentTrusted(); },
             [&](TestValidations& vals) { vals.getCurrentNodeIDs(); },
-            [&](TestValidations& vals) { vals.getPreferred(genesisLedger); },
+            [&](TestValidations& vals) { vals.getPreferred(genesisLedger_); },
             [&](TestValidations& vals) { vals.getNodesAfter(ledgerA, ledgerA.id()); }};
         for (Trigger const& trigger : triggers)
         {
@@ -411,7 +411,7 @@ protected:
             trigger(harness.vals());
             EXPECT_TRUE(harness.vals().getNodesAfter(ledgerA, ledgerA.id()) == 1);
             EXPECT_TRUE(
-                harness.vals().getPreferred(genesisLedger) ==
+                harness.vals().getPreferred(genesisLedger_) ==
                 std::make_pair(ledgerAB.seq(), ledgerAB.id()));
             harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
 
@@ -419,11 +419,11 @@ protected:
             trigger(harness.vals());
 
             EXPECT_TRUE(harness.vals().getNodesAfter(ledgerA, ledgerA.id()) == 0);
-            EXPECT_TRUE(harness.vals().getPreferred(genesisLedger) == std::nullopt);
+            EXPECT_TRUE(harness.vals().getPreferred(genesisLedger_) == std::nullopt);
         }
     }
 
-    void
+    static void
     testGetNodesAfter()
     {
         // Test getting number of nodes working on a validation descending
@@ -473,7 +473,7 @@ protected:
         EXPECT_TRUE(harness.vals().getNodesAfter(ledgerAD, ledgerAB.id()) == 2);
     }
 
-    void
+    static void
     testCurrentTrusted()
     {
         using namespace std::chrono_literals;
@@ -512,7 +512,7 @@ protected:
         EXPECT_TRUE(harness.vals().currentTrusted().empty());
     }
 
-    void
+    static void
     testGetCurrentPublicKeys()
     {
         using namespace std::chrono_literals;
@@ -553,7 +553,7 @@ protected:
         EXPECT_TRUE(harness.vals().getCurrentNodeIDs().empty());
     }
 
-    void
+    static void
     testTrustedByLedgerFunctions()
     {
         // Test the Validations functions that calculate a value by ledger ID
@@ -660,7 +660,7 @@ protected:
         compare();
     }
 
-    void
+    static void
     testExpire()
     {
         // Verify expiring clears out validations stored by ledger
@@ -668,8 +668,8 @@ protected:
         LedgerHistoryHelper h;
         TestHarness harness(h.oracle);
         Node const a = harness.makeNode();
-        constexpr Ledger::Seq one(1);
-        constexpr Ledger::Seq two(2);
+        constexpr Ledger::Seq kONE(1);
+        constexpr Ledger::Seq kTWO(2);
 
         // simple cases
         Ledger const ledgerA = h["a"];
@@ -685,12 +685,12 @@ protected:
         Ledger const ledgerB = h["ab"];
         EXPECT_TRUE(ValStatus::Current == harness.add(a.validate(ledgerB)));
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
-        harness.vals().setSeqToKeep(ledgerB.seq(), ledgerB.seq() + one);
+        harness.vals().setSeqToKeep(ledgerB.seq(), ledgerB.seq() + kONE);
         harness.clock().advance(harness.parms().validationSET_EXPIRES);
         expireValidations(harness.vals());
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
         // change toKeep
-        harness.vals().setSeqToKeep(ledgerB.seq() + one, ledgerB.seq() + two);
+        harness.vals().setSeqToKeep(ledgerB.seq() + kONE, ledgerB.seq() + kTWO);
         // advance clock slowly
         int const loops =
             harness.parms().validationSET_EXPIRES / harness.parms().validationFRESHNESS + 1;
@@ -705,13 +705,13 @@ protected:
         Ledger const ledgerC = h["abc"];
         EXPECT_TRUE(ValStatus::Current == harness.add(a.validate(ledgerC)));
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerC.id()) == 1);
-        harness.vals().setSeqToKeep(ledgerC.seq() - one, ledgerC.seq());
+        harness.vals().setSeqToKeep(ledgerC.seq() - kONE, ledgerC.seq());
         harness.clock().advance(harness.parms().validationSET_EXPIRES);
         expireValidations(harness.vals());
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerC.id()) == 0);
     }
 
-    void
+    static void
     testFlush()
     {
         // Test final flush of validations
@@ -744,7 +744,7 @@ protected:
         expected.find(trustedNode1.nodeID())->second = newVal;
     }
 
-    void
+    static void
     testGetPreferredLedger()
     {
         using namespace std::chrono_literals;
@@ -812,7 +812,7 @@ protected:
             EXPECT_TRUE(harness.vals().getPreferred(ledger) == pref(ledgerACD));
     }
 
-    void
+    static void
     testGetPreferredLCL()
     {
         using namespace std::chrono_literals;
@@ -879,20 +879,20 @@ protected:
         // Validation is available
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ID{2}) == 1);
         // but ledger based data is not
-        EXPECT_TRUE(harness.vals().getNodesAfter(genesisLedger, ID{0}) == 0);
+        EXPECT_TRUE(harness.vals().getNodesAfter(genesisLedger_, ID{0}) == 0);
         // Initial preferred branch falls back to the ledger we are trying to
         // acquire
-        EXPECT_TRUE(harness.vals().getPreferred(genesisLedger) == std::make_pair(Seq{2}, ID{2}));
+        EXPECT_TRUE(harness.vals().getPreferred(genesisLedger_) == std::make_pair(Seq{2}, ID{2}));
 
         // After adding another unavailable validation, the preferred ledger
         // breaks ties via higher ID
         EXPECT_TRUE(ValStatus::Current == harness.add(b.validate(ID{3}, Seq{2}, 0s, 0s, true)));
-        EXPECT_TRUE(harness.vals().getPreferred(genesisLedger) == std::make_pair(Seq{2}, ID{3}));
+        EXPECT_TRUE(harness.vals().getPreferred(genesisLedger_) == std::make_pair(Seq{2}, ID{3}));
 
         // Create the ledger
         Ledger const ledgerAB = h["ab"];
         // Now it should be available
-        EXPECT_TRUE(harness.vals().getNodesAfter(genesisLedger, ID{0}) == 1);
+        EXPECT_TRUE(harness.vals().getNodesAfter(genesisLedger_, ID{0}) == 1);
 
         // Create a validation that is not available
         harness.clock().advance(5s);
@@ -900,7 +900,7 @@ protected:
         EXPECT_TRUE(ValStatus::Current == harness.add(val2));
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ID{4}) == 1);
         EXPECT_TRUE(
-            harness.vals().getPreferred(genesisLedger) ==
+            harness.vals().getPreferred(genesisLedger_) ==
             std::make_pair(ledgerAB.seq(), ledgerAB.id()));
 
         // Another node requesting that ledger still doesn't change things
@@ -908,7 +908,7 @@ protected:
         EXPECT_TRUE(ValStatus::Current == harness.add(val3));
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ID{4}) == 2);
         EXPECT_TRUE(
-            harness.vals().getPreferred(genesisLedger) ==
+            harness.vals().getPreferred(genesisLedger_) ==
             std::make_pair(ledgerAB.seq(), ledgerAB.id()));
 
         // Switch to validation that is available
@@ -917,11 +917,11 @@ protected:
         EXPECT_TRUE(ValStatus::Current == harness.add(a.partial(ledgerABCDE)));
         EXPECT_TRUE(ValStatus::Current == harness.add(b.partial(ledgerABCDE)));
         EXPECT_TRUE(
-            harness.vals().getPreferred(genesisLedger) ==
+            harness.vals().getPreferred(genesisLedger_) ==
             std::make_pair(ledgerABCDE.seq(), ledgerABCDE.id()));
     }
 
-    void
+    static void
     testNumTrustedForLedger()
     {
         SCOPED_TRACE("NumTrustedForLedger");
@@ -938,7 +938,7 @@ protected:
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerA.id()) == 1);
     }
 
-    void
+    static void
     testSeqEnforcer()
     {
         SCOPED_TRACE("SeqEnforcer");
@@ -971,20 +971,21 @@ protected:
                            hash_set<PeerID> const& listed,
                            std::vector<Validation> const& trustedVals) {
             Ledger::ID const testID =
-                trustedVals.empty() ? this->genesisLedger.id() : trustedVals[0].ledgerID();
+                trustedVals.empty() ? this->genesisLedger_.id() : trustedVals[0].ledgerID();
             Ledger::Seq const testSeq =
-                trustedVals.empty() ? this->genesisLedger.seq() : trustedVals[0].seq();
+                trustedVals.empty() ? this->genesisLedger_.seq() : trustedVals[0].seq();
             EXPECT_TRUE(vals.currentTrusted() == trustedVals);
             EXPECT_TRUE(vals.getCurrentNodeIDs() == listed);
             EXPECT_TRUE(
-                vals.getNodesAfter(this->genesisLedger, genesisLedger.id()) == trustedVals.size());
+                vals.getNodesAfter(this->genesisLedger_, genesisLedger_.id()) ==
+                trustedVals.size());
             if (trustedVals.empty())
             {
-                EXPECT_TRUE(vals.getPreferred(this->genesisLedger) == std::nullopt);
+                EXPECT_TRUE(vals.getPreferred(this->genesisLedger_) == std::nullopt);
             }
             else
             {
-                EXPECT_TRUE(vals.getPreferred(this->genesisLedger)->second == testID);
+                EXPECT_TRUE(vals.getPreferred(this->genesisLedger_)->second == testID);
             }
             EXPECT_TRUE(vals.getTrustedForLedger(testID, testSeq) == trustedVals);
             EXPECT_TRUE(vals.numTrustedForLedger(testID) == trustedVals.size());
@@ -1041,16 +1042,16 @@ protected:
             EXPECT_TRUE(vals.currentTrusted() == trustedVals);
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            EXPECT_TRUE(vals.getPreferred(genesisLedger)->second == v.ledgerID());
-            EXPECT_TRUE(vals.getNodesAfter(genesisLedger, genesisLedger.id()) == 0);
+            EXPECT_TRUE(vals.getPreferred(genesisLedger_)->second == v.ledgerID());
+            EXPECT_TRUE(vals.getNodesAfter(genesisLedger_, genesisLedger_.id()) == 0);
 
             trustedVals.clear();
             harness.vals().trustChanged({}, {a.nodeID()});
             // make acquiring ledger available
             h["ab"];
             EXPECT_TRUE(vals.currentTrusted() == trustedVals);
-            EXPECT_TRUE(vals.getPreferred(genesisLedger) == std::nullopt);
-            EXPECT_TRUE(vals.getNodesAfter(genesisLedger, genesisLedger.id()) == 0);
+            EXPECT_TRUE(vals.getPreferred(genesisLedger_) == std::nullopt);
+            EXPECT_TRUE(vals.getNodesAfter(genesisLedger_, genesisLedger_.id()) == 0);
         }
     }
 
@@ -1074,7 +1075,7 @@ protected:
     }
 };
 
-TEST_F(Validations_test, validations)
+TEST_F(ValidationsTest, validations)
 {
     run();
 }

@@ -8,10 +8,10 @@
 
 namespace xrpl::test {
 
-class RCLCensorshipDetector_test : public ::testing::Test
+class RclCensorshipDetectorTest : public ::testing::Test
 {
 protected:
-    void
+    static void
     test(
         RCLCensorshipDetector<int, int>& cdet,
         int round,
@@ -80,7 +80,7 @@ public:
     }
 };
 
-TEST_F(RCLCensorshipDetector_test, rcl_censorship_detector)
+TEST_F(RclCensorshipDetectorTest, rcl_censorship_detector)
 {
     run();
 }

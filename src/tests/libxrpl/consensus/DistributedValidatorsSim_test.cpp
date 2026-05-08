@@ -24,16 +24,16 @@ namespace xrpl::test {
 
 /** In progress simulations for diversifying and distributing validators
  */
-class DistributedValidators_test : public ::testing::Test
+class DistributedValidatorsTest : public ::testing::Test
 {
 protected:
-    std::ostream& log = std::cout;
+    std::ostream& log_ = std::cout;
 
-    std::string const&
-    arg() const
+    [[nodiscard]] static std::string const&
+    arg()
     {
-        static std::string const empty;
-        return empty;
+        static std::string const kEMPTY;
+        return kEMPTY;
     }
 
     void
@@ -53,7 +53,7 @@ protected:
             ledgerLog(prefix + "_ledger.csv", std::ofstream::app);
 
         // title
-        log << prefix << "(" << numPeers << "," << delay.count() << ")" << std::endl;
+        log_ << prefix << "(" << numPeers << "," << delay.count() << ")" << std::endl;
 
         // number of peers, UNLs, connections
         EXPECT_TRUE(numPeers >= 1);
@@ -102,22 +102,22 @@ protected:
         // EXPECT_TRUE(sim.branches() == 1);
         // EXPECT_TRUE(sim.synchronized());
 
-        log << std::right;
-        log << "| Peers: " << std::setw(2) << peers.size();
-        log << " | Duration: " << std::setw(6) << duration_cast<milliseconds>(simDuration).count()
-            << " ms";
-        log << " | Branches: " << std::setw(1) << sim.branches();
-        log << " | Synchronized: " << std::setw(1) << (sim.synchronized() ? "Y" : "N");
-        log << " |" << std::endl;
+        log_ << std::right;
+        log_ << "| Peers: " << std::setw(2) << peers.size();
+        log_ << " | Duration: " << std::setw(6) << duration_cast<milliseconds>(simDuration).count()
+             << " ms";
+        log_ << " | Branches: " << std::setw(1) << sim.branches();
+        log_ << " | Synchronized: " << std::setw(1) << (sim.synchronized() ? "Y" : "N");
+        log_ << " |" << std::endl;
 
-        txCollector.report(simDuration, log, true);
-        ledgerCollector.report(simDuration, log, false);
+        txCollector.report(simDuration, log_, true);
+        ledgerCollector.report(simDuration, log_, false);
 
         std::string const tag = std::to_string(numPeers);
         txCollector.csv(simDuration, txLog, tag, printHeaders);
         ledgerCollector.csv(simDuration, ledgerLog, tag, printHeaders);
 
-        log << std::endl;
+        log_ << std::endl;
     }
 
     void
@@ -137,7 +137,7 @@ protected:
             ledgerLog(prefix + "_ledger.csv", std::ofstream::app);
 
         // title
-        log << prefix << "(" << numPeers << "," << delay.count() << ")" << std::endl;
+        log_ << prefix << "(" << numPeers << "," << delay.count() << ")" << std::endl;
 
         // number of peers, UNLs, connections
         int const numCNLs = std::max(int(1.00 * numPeers), 1);
@@ -198,22 +198,22 @@ protected:
         // EXPECT_TRUE(sim.branches() == 1);
         // EXPECT_TRUE(sim.synchronized());
 
-        log << std::right;
-        log << "| Peers: " << std::setw(2) << peers.size();
-        log << " | Duration: " << std::setw(6) << duration_cast<milliseconds>(simDuration).count()
-            << " ms";
-        log << " | Branches: " << std::setw(1) << sim.branches();
-        log << " | Synchronized: " << std::setw(1) << (sim.synchronized() ? "Y" : "N");
-        log << " |" << std::endl;
+        log_ << std::right;
+        log_ << "| Peers: " << std::setw(2) << peers.size();
+        log_ << " | Duration: " << std::setw(6) << duration_cast<milliseconds>(simDuration).count()
+             << " ms";
+        log_ << " | Branches: " << std::setw(1) << sim.branches();
+        log_ << " | Synchronized: " << std::setw(1) << (sim.synchronized() ? "Y" : "N");
+        log_ << " |" << std::endl;
 
-        txCollector.report(simDuration, log, true);
-        ledgerCollector.report(simDuration, log, false);
+        txCollector.report(simDuration, log_, true);
+        ledgerCollector.report(simDuration, log_, false);
 
         std::string const tag = std::to_string(numPeers);
         txCollector.csv(simDuration, txLog, tag, printHeaders);
         ledgerCollector.csv(simDuration, ledgerLog, tag, printHeaders);
 
-        log << std::endl;
+        log_ << std::endl;
     }
 
     void
@@ -230,7 +230,7 @@ protected:
 
         std::chrono::milliseconds const delay(delayCount);
 
-        log << "DistributedValidators: 1 to " << maxNumValidators << " Peers" << std::endl;
+        log_ << "DistributedValidators: 1 to " << maxNumValidators << " Peers" << std::endl;
 
         /**
          * Simulate with N = 1 to N
@@ -258,7 +258,7 @@ protected:
     }
 };
 
-TEST_F(DistributedValidators_test, DISABLED_distributed_validators)
+TEST_F(DistributedValidatorsTest, DISABLED_distributed_validators)
 {
     run();
 }

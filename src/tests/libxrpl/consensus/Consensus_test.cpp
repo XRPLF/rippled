@@ -12,6 +12,8 @@
 #include <csf/PeerGroup.h>
 #include <csf/Sim.h>
 #include <csf/SimTime.h>
+#include <csf/Tx.h>
+#include <csf/Validation.h>
 #include <csf/collectors.h>
 #include <csf/csf.h>
 #include <csf/events.h>
@@ -113,10 +115,10 @@ isStalled(
 
 }  // namespace
 
-class Consensus_test : public ::testing::Test
+class ConsensusTest : public ::testing::Test
 {
 protected:
-    void
+    static void
     testShouldCloseLedger()
     {
         using namespace std::chrono_literals;
@@ -146,7 +148,7 @@ protected:
         EXPECT_TRUE(shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, p));
     }
 
-    void
+    static void
     testCheckConsensus()
     {
         using namespace std::chrono_literals;
@@ -218,7 +220,7 @@ protected:
         EXPECT_TRUE(ConsensusState::Yes == checkConsensus(10, 8, 1, 0, 1s, 19s, true, p, true));
     }
 
-    void
+    static void
     testStandalone()
     {
         using namespace std::chrono_literals;
@@ -243,7 +245,7 @@ protected:
         EXPECT_TRUE(peer->prevProposers == 0);
     }
 
-    void
+    static void
     testPeersAgree()
     {
         using namespace csf;
@@ -281,7 +283,7 @@ protected:
         }
     }
 
-    void
+    static void
     testSlowPeers()
     {
         using namespace csf;
@@ -437,7 +439,7 @@ protected:
         }
     }
 
-    void
+    static void
     testCloseTimeDisagree()
     {
         using namespace csf;
@@ -503,7 +505,7 @@ protected:
         }
     }
 
-    void
+    static void
     testWrongLCL()
     {
         using namespace csf;
@@ -675,7 +677,7 @@ protected:
         }
     }
 
-    void
+    static void
     testConsensusCloseTimeRounding()
     {
         using namespace csf;
@@ -775,7 +777,7 @@ protected:
         EXPECT_TRUE(sim.synchronized());
     }
 
-    void
+    static void
     testFork()
     {
         using namespace csf;
@@ -832,7 +834,7 @@ protected:
         }
     }
 
-    void
+    static void
     testHubNetwork()
     {
         using namespace csf;
@@ -915,7 +917,7 @@ protected:
         }
     };
 
-    void
+    static void
     testPreferredByBranch()
     {
         using namespace csf;
@@ -1049,7 +1051,7 @@ protected:
         }
     };
 
-    void
+    static void
     testPauseForLaggards()
     {
         using namespace csf;
@@ -1137,7 +1139,7 @@ protected:
         EXPECT_TRUE(sim.synchronized());
     }
 
-    void
+    static void
     testDisputes()
     {
         SCOPED_TRACE("disputes");
@@ -1479,7 +1481,7 @@ protected:
         }
     }
 
-    void
+    static void
     run()
     {
         testShouldCloseLedger();
@@ -1499,7 +1501,7 @@ protected:
     }
 };
 
-TEST_F(Consensus_test, consensus)
+TEST_F(ConsensusTest, consensus)
 {
     run();
 }

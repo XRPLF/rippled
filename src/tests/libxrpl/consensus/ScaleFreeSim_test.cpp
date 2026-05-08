@@ -17,10 +17,10 @@
 
 namespace xrpl::test {
 
-class ScaleFreeSim_test : public ::testing::Test
+class ScaleFreeSimTest : public ::testing::Test
 {
 protected:
-    std::ostream& log = std::cout;
+    std::ostream& log_ = std::cout;
 
     void
     run()
@@ -31,14 +31,14 @@ protected:
         // Generate a quasi-random scale free network and simulate consensus
         // as we vary transaction submission rates
 
-        int const N = 100;  // Peers
+        int const n = 100;  // Peers
 
         int const numUNLs = 15;  //  UNL lists
-        int const minUNLSize = N / 4, maxUNLSize = N / 2;
+        int const minUNLSize = n / 4, maxUNLSize = n / 2;
 
         ConsensusParms const parms{};
         Sim sim;
-        PeerGroup network = sim.createGroup(N);
+        PeerGroup network = sim.createGroup(n);
 
         // generate trust ranks
         std::vector<double> const ranks =
@@ -91,15 +91,15 @@ protected:
 
         // TODO: Clean up this formatting mess!!
 
-        log << "Peers: " << network.size() << std::endl;
-        log << "Simulated Duration: " << duration_cast<milliseconds>(simDuration).count() << " ms"
-            << std::endl;
-        log << "Branches: " << sim.branches() << std::endl;
-        log << "Synchronized: " << (sim.synchronized() ? "Y" : "N") << std::endl;
-        log << std::endl;
+        log_ << "Peers: " << network.size() << std::endl;
+        log_ << "Simulated Duration: " << duration_cast<milliseconds>(simDuration).count() << " ms"
+             << std::endl;
+        log_ << "Branches: " << sim.branches() << std::endl;
+        log_ << "Synchronized: " << (sim.synchronized() ? "Y" : "N") << std::endl;
+        log_ << std::endl;
 
-        txCollector.report(simDuration, log);
-        ledgerCollector.report(simDuration, log);
+        txCollector.report(simDuration, log_);
+        ledgerCollector.report(simDuration, log_);
         // Print summary?
         // # forks?  # of LCLs?
         // # peers
@@ -108,7 +108,7 @@ protected:
     }
 };
 
-TEST_F(ScaleFreeSim_test, DISABLED_scale_free_sim)
+TEST_F(ScaleFreeSimTest, DISABLED_scale_free_sim)
 {
     run();
 }

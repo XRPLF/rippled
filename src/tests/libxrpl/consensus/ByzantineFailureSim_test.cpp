@@ -15,10 +15,10 @@
 
 namespace xrpl::test {
 
-class ByzantineFailureSim_test : public ::testing::Test
+class ByzantineFailureSimTest : public ::testing::Test
 {
 protected:
-    void
+    static void
     run()
     {
         using namespace csf;
@@ -84,7 +84,7 @@ protected:
     }
 };
 
-TEST_F(ByzantineFailureSim_test, DISABLED_byzantine_failure_sim)
+TEST_F(ByzantineFailureSimTest, DISABLED_byzantine_failure_sim)
 {
     run();
 }
