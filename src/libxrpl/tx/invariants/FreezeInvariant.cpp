@@ -117,9 +117,7 @@ TransfersNotFrozen::finalize(
 }
 
 bool
-TransfersNotFrozen::isValidEntry(
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+TransfersNotFrozen::isValidEntry(std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     if (after.getType() == ltACCOUNT_ROOT)
     {
@@ -184,9 +182,7 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 }
 
 void
-TransfersNotFrozen::recordBalanceChanges(
-    SLE const& after,
-    STAmount const& balanceChange)
+TransfersNotFrozen::recordBalanceChanges(SLE const& after, STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after.at(sfBalance).get<Issue>().currency;

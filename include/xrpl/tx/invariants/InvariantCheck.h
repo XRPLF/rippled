@@ -69,10 +69,7 @@ public:
      * @param after ledger entry after modification by the transaction
      */
     void
-    visitEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        SLE const& after);
+    visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after);
 
     /**
      * @brief called after all ledger entries have been visited to determine

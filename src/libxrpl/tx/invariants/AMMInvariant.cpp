@@ -25,10 +25,7 @@
 namespace xrpl {
 
 void
-ValidAMM::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+ValidAMM::visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     if (isDelete)
         return;

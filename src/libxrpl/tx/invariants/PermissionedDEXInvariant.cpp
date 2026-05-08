@@ -19,10 +19,7 @@
 namespace xrpl {
 
 void
-ValidPermissionedDEX::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+ValidPermissionedDEX::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     if (after.getType() == ltDIR_NODE)
     {

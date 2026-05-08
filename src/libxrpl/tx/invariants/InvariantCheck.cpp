@@ -64,10 +64,7 @@ hasPrivilege(STTx const& tx, Privilege priv)
 #pragma pop_macro("TRANSACTION")
 
 void
-TransactionFeeCheck::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    SLE const&)
+TransactionFeeCheck::visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&)
 {
     // nothing to do
 }
@@ -110,10 +107,7 @@ TransactionFeeCheck::finalize(
 //------------------------------------------------------------------------------
 
 void
-XRPNotCreated::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+XRPNotCreated::visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     /* We go through all modified ledger entries, looking only at account roots,
      * escrow payments, and payment channels. We remove from the total any
@@ -189,10 +183,7 @@ XRPNotCreated::finalize(
 //------------------------------------------------------------------------------
 
 void
-XRPBalanceChecks::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+XRPBalanceChecks::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     auto isBad = [](STAmount const& balance) {
         if (!balance.native())
@@ -239,10 +230,7 @@ XRPBalanceChecks::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoBadOffers::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+NoBadOffers::visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     auto isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
@@ -283,10 +271,7 @@ NoBadOffers::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoZeroEscrow::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+NoZeroEscrow::visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     auto isBad = [](STAmount const& amount) {
         // XRP case
@@ -563,10 +548,7 @@ AccountRootsDeletedClean::finalize(
 //------------------------------------------------------------------------------
 
 void
-LedgerEntryTypesMatch::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+LedgerEntryTypesMatch::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     if (before && before->getType() != after.getType())
         typeMismatch_ = true;
@@ -617,10 +599,7 @@ LedgerEntryTypesMatch::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoXRPTrustLines::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    SLE const& after)
+NoXRPTrustLines::visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const& after)
 {
     bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
 
@@ -707,10 +686,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidNewAccountRoot::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+ValidNewAccountRoot::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     if (!before && after.getType() == ltACCOUNT_ROOT)
     {
@@ -784,10 +760,7 @@ ValidNewAccountRoot::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidClawback::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    SLE const&)
+ValidClawback::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const&)
 {
     if (before && before->getType() == ltRIPPLE_STATE)
         trustlinesChanged_++;

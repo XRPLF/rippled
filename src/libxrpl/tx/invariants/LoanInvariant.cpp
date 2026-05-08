@@ -17,10 +17,7 @@
 namespace xrpl {
 
 void
-ValidLoan::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+ValidLoan::visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     if (after.getType() == ltLOAN)
     {

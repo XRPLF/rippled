@@ -63,10 +63,7 @@ ValidVault::Shares::make(SLE const& from)
 }
 
 void
-ValidVault::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+ValidVault::visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     // If `before` is empty, this means an object is being created, in which
     // case `isDelete` must be false. Otherwise `before` and `after` are set and

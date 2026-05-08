@@ -34,8 +34,7 @@ ValidNFTokenPage::visitEntry(
     static constexpr uint256 const& kPAGE_BITS = nft::kPAGE_MASK;
     static constexpr uint256 const kACCOUNT_BITS = ~kPAGE_BITS;
 
-    if ((before && before->getType() != ltNFTOKEN_PAGE) ||
-        after.getType() != ltNFTOKEN_PAGE)
+    if ((before && before->getType() != ltNFTOKEN_PAGE) || after.getType() != ltNFTOKEN_PAGE)
         return;
 
     auto check = [this, isDelete](SLE const& sle) {
@@ -186,10 +185,7 @@ ValidNFTokenPage::finalize(
 
 //------------------------------------------------------------------------------
 void
-NFTokenCountTracking::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+NFTokenCountTracking::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     if (before && before->getType() == ltACCOUNT_ROOT)
     {

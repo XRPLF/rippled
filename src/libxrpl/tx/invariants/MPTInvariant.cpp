@@ -280,10 +280,7 @@ ValidMPTIssuance::finalize(
 }
 
 void
-ValidMPTPayment::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    SLE const& after)
+ValidMPTPayment::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
     if (overflow_)
         return;
