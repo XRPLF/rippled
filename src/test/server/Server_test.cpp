@@ -8,7 +8,7 @@
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>
 #include <xrpl/server/Server.h>

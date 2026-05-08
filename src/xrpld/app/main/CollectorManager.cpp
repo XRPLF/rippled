@@ -8,6 +8,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 
 #include <memory>
 #include <string>

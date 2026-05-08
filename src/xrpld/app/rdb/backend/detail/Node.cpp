@@ -17,7 +17,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep

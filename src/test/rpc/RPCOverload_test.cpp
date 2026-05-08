@@ -10,7 +10,7 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>

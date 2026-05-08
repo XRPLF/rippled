@@ -2,8 +2,6 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/config/BasicConfig.h>
-
 namespace xrpl::test {
 
 extern std::atomic<bool> gEnvUseIPv4;

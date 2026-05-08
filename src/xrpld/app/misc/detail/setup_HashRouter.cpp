@@ -4,6 +4,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 
 #include <chrono>

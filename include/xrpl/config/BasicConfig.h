@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/config/Constants.h>
 
 #include <boost/beast/core/string.hpp>
 #include <boost/lexical_cast.hpp>

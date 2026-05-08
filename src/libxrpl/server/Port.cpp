@@ -6,6 +6,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
