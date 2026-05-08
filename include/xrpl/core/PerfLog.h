@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/config/BasicConfig.h>
 #include <xrpl/core/JobTypes.h>
 #include <xrpl/json/json_value.h>
 
@@ -18,6 +17,7 @@ class Journal;
 
 namespace xrpl {
 class Application;
+class Section;
 namespace perf {
 
 /**

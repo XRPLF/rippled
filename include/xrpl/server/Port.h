@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/config/BasicConfig.h>
 
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/network_v4.hpp>
@@ -20,6 +19,8 @@ class context;  // NOLINT(readability-identifier-naming) -- external library nam
 }  // namespace boost::asio::ssl
 
 namespace xrpl {
+
+class Section;
 
 /** Configuration information for a Server listening port. */
 struct Port
