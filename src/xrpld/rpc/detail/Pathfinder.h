@@ -10,7 +10,21 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
 
+#include <unordered_set>
+
 namespace xrpl {
+
+struct STPathHash
+{
+    std::size_t
+    operator()(STPath const& path) const noexcept
+    {
+        std::size_t h = path.size();
+        for (auto const& elem : path)
+            h ^= elem.hash() + 0x9e3779b9 + (h << 6) + (h >> 2);
+        return h;
+    }
+};
 
 /** Calculates payment paths.
 
@@ -187,6 +201,7 @@ private:
 
     STPathElement source_;
     STPathSet completePaths_;
+    std::unordered_set<STPath, STPathHash> completePathsIndex_;
     std::vector<PathRank> pathRanks_;
     std::map<PathType, STPathSet> paths_;
 

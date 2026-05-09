@@ -111,6 +111,12 @@ public:
     bool
     operator!=(STPathElement const& t) const;
 
+    [[nodiscard]] std::size_t
+    hash() const noexcept
+    {
+        return hash_value_;
+    }
+
 private:
     static std::size_t
     getHash(STPathElement const& element);
