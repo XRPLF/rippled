@@ -12,6 +12,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -21,12 +22,14 @@ namespace xrpl {
 std::uint32_t
 NFTokenCreateOffer::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfNFTokenCreateOfferMask;
 }
 
 NotTEC
 NFTokenCreateOffer::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const txFlags = ctx.tx.getFlags();
 
     auto const nftFlags = nft::getFlags(ctx.tx[sfNFTokenID]);
@@ -50,6 +53,7 @@ NFTokenCreateOffer::preflight(PreflightContext const& ctx)
 TER
 NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
         return tecEXPIRED;
 
@@ -77,6 +81,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenCreateOffer::doApply()
 {
+    TRACE_FUNC();
     // Use implementation shared with NFTokenMint
     return nft::tokenOfferCreateApply(
         view(),
@@ -107,6 +112,7 @@ NFTokenCreateOffer::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

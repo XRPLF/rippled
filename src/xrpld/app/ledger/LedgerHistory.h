@@ -5,6 +5,7 @@
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 
@@ -30,6 +31,7 @@ public:
     float
     getCacheHitRate()
     {
+    TRACE_FUNC();
         return ledgers_by_hash_.getHitRate();
     }
 
@@ -53,6 +55,7 @@ public:
     void
     sweep()
     {
+    TRACE_FUNC();
         ledgers_by_hash_.sweep();
         consensus_validated_.sweep();
     }

@@ -98,6 +98,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/error.hpp>
@@ -162,6 +163,7 @@ private:
         void
         start()
         {
+    TRACE_FUNC();
             probe_.sample(std::ref(*this));
         }
 
@@ -169,6 +171,7 @@ private:
         void
         operator()(Duration const& elapsed)
         {
+    TRACE_FUNC();
             using namespace std::chrono;
             auto const lastSample = ceil<milliseconds>(elapsed);
 
@@ -185,18 +188,21 @@ private:
         [[nodiscard]] std::chrono::milliseconds
         get() const
         {
+    TRACE_FUNC();
             return lastSample_.load();
         }
 
         void
         cancel()
         {
+    TRACE_FUNC();
             probe_.cancel();
         }
 
         void
         cancelAsync()
         {
+    TRACE_FUNC();
             probe_.cancelAsync();
         }
     };
@@ -282,6 +288,7 @@ public:
     static std::size_t
     numberOfThreads(Config const& config)
     {
+    TRACE_FUNC();
 #if XRPL_SINGLE_IO_SERVICE_THREAD
         return 1;
 #else
@@ -461,6 +468,7 @@ public:
               getIoContext())
         , grpcServer_(std::make_unique<GRPCServer>(*this))
     {
+    TRACE_FUNC();
         initAccountIdCache(config_->getValueFor(SizedItem::AccountIdCacheSize));
 
         add(resourceManager_.get());
@@ -507,48 +515,56 @@ public:
     std::uint64_t
     instanceID() const override
     {
+    TRACE_FUNC();
         return instanceCookie_;
     }
 
     Logs&
     getLogs() override
     {
+    TRACE_FUNC();
         return *logs_;
     }
 
     Config&
     config() override
     {
+    TRACE_FUNC();
         return *config_;
     }
 
     CollectorManager&
     getCollectorManager() override
     {
+    TRACE_FUNC();
         return *collectorManager_;
     }
 
     Family&
     getNodeFamily() override
     {
+    TRACE_FUNC();
         return nodeFamily_;
     }
 
     TimeKeeper&
     getTimeKeeper() override
     {
+    TRACE_FUNC();
         return *timeKeeper_;
     }
 
     JobQueue&
     getJobQueue() override
     {
+    TRACE_FUNC();
         return *jobQueue_;
     }
 
     std::pair<PublicKey, SecretKey> const&
     nodeIdentity() override
     {
+    TRACE_FUNC();
         if (nodeIdentity_)
             return *nodeIdentity_;
 
@@ -558,6 +574,7 @@ public:
     std::optional<PublicKey const>
     getValidationPublicKey() const override
     {
+    TRACE_FUNC();
         if (!validatorKeys_.keys)
             return {};
 
@@ -567,12 +584,14 @@ public:
     NetworkOPs&
     getOPs() override
     {
+    TRACE_FUNC();
         return *networkOPs_;
     }
 
     ServerHandler&
     getServerHandler() override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(
             serverHandler_,
             "xrpl::ApplicationImp::getServerHandler : non-null server "
@@ -583,54 +602,63 @@ public:
     boost::asio::io_context&
     getIOContext() override
     {
+    TRACE_FUNC();
         return getIoContext();
     }
 
     std::chrono::milliseconds
     getIOLatency() override
     {
+    TRACE_FUNC();
         return io_latency_sampler_.get();
     }
 
     LedgerMaster&
     getLedgerMaster() override
     {
+    TRACE_FUNC();
         return *ledgerMaster_;
     }
 
     LedgerCleaner&
     getLedgerCleaner() override
     {
+    TRACE_FUNC();
         return *ledgerCleaner_;
     }
 
     LedgerReplayer&
     getLedgerReplayer() override
     {
+    TRACE_FUNC();
         return *ledgerReplayer_;
     }
 
     InboundLedgers&
     getInboundLedgers() override
     {
+    TRACE_FUNC();
         return *inboundLedgers_;
     }
 
     InboundTransactions&
     getInboundTransactions() override
     {
+    TRACE_FUNC();
         return *inboundTransactions_;
     }
 
     TaggedCache<uint256, AcceptedLedger>&
     getAcceptedLedgerCache() override
     {
+    TRACE_FUNC();
         return acceptedLedgerCache_;
     }
 
     void
     gotTXSet(std::shared_ptr<SHAMap> const& set, bool fromAcquire) const
     {
+    TRACE_FUNC();
         if (set)
             networkOPs_->mapComplete(set, fromAcquire);
     }
@@ -638,144 +666,168 @@ public:
     TransactionMaster&
     getMasterTransaction() override
     {
+    TRACE_FUNC();
         return txMaster_;
     }
 
     perf::PerfLog&
     getPerfLog() override
     {
+    TRACE_FUNC();
         return *perfLog_;
     }
 
     NodeCache&
     getTempNodeCache() override
     {
+    TRACE_FUNC();
         return tempNodeCache_;
     }
 
     NodeStore::Database&
     getNodeStore() override
     {
+    TRACE_FUNC();
         return *nodeStore_;
     }
 
     Application::MutexType&
     getMasterMutex() override
     {
+    TRACE_FUNC();
         return masterMutex_;
     }
 
     LoadManager&
     getLoadManager() override
     {
+    TRACE_FUNC();
         return *loadManager_;
     }
 
     Resource::Manager&
     getResourceManager() override
     {
+    TRACE_FUNC();
         return *resourceManager_;
     }
 
     OrderBookDB&
     getOrderBookDB() override
     {
+    TRACE_FUNC();
         return *orderBookDB_;
     }
 
     PathRequestManager&
     getPathRequestManager() override
     {
+    TRACE_FUNC();
         return *pathRequestManager_;
     }
 
     CachedSLEs&
     getCachedSLEs() override
     {
+    TRACE_FUNC();
         return cachedSLEs_;
     }
 
     NetworkIDService&
     getNetworkIDService() override
     {
+    TRACE_FUNC();
         return *networkIDService_;
     }
 
     AmendmentTable&
     getAmendmentTable() override
     {
+    TRACE_FUNC();
         return *amendmentTable_;
     }
 
     LoadFeeTrack&
     getFeeTrack() override
     {
+    TRACE_FUNC();
         return *feeTrack_;
     }
 
     HashRouter&
     getHashRouter() override
     {
+    TRACE_FUNC();
         return *hashRouter_;
     }
 
     RCLValidations&
     getValidations() override
     {
+    TRACE_FUNC();
         return validations_;
     }
 
     ValidatorList&
     getValidators() override
     {
+    TRACE_FUNC();
         return *validators_;
     }
 
     ValidatorSite&
     getValidatorSites() override
     {
+    TRACE_FUNC();
         return *validatorSites_;
     }
 
     ManifestCache&
     getValidatorManifests() override
     {
+    TRACE_FUNC();
         return *validatorManifests_;
     }
 
     ManifestCache&
     getPublisherManifests() override
     {
+    TRACE_FUNC();
         return *publisherManifests_;
     }
 
     Cluster&
     getCluster() override
     {
+    TRACE_FUNC();
         return *cluster_;
     }
 
     PeerReservationTable&
     getPeerReservations() override
     {
+    TRACE_FUNC();
         return *peerReservations_;
     }
 
     SHAMapStore&
     getSHAMapStore() override
     {
+    TRACE_FUNC();
         return *shaMapStore_;
     }
 
     PendingSaves&
     getPendingSaves() override
     {
+    TRACE_FUNC();
         return pendingSaves_;
     }
 
     OpenLedger&
     getOpenLedger() override
     {
+    TRACE_FUNC();
         return *openLedger_;  // NOLINT(bugprone-unchecked-optional-access) emplaced during
                               // initialization before any caller
     }
@@ -783,6 +835,7 @@ public:
     OpenLedger const&
     getOpenLedger() const override
     {
+    TRACE_FUNC();
         return *openLedger_;  // NOLINT(bugprone-unchecked-optional-access) emplaced during
                               // initialization before any caller
     }
@@ -790,6 +843,7 @@ public:
     Overlay&
     getOverlay() override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(overlay_, "xrpl::ApplicationImp::overlay : non-null overlay");
         return *overlay_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
@@ -797,6 +851,7 @@ public:
     TxQ&
     getTxQ() override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(txQ_, "xrpl::ApplicationImp::getTxQ : non-null transaction queue");
         return *txQ_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
@@ -804,6 +859,7 @@ public:
     RelationalDatabase&
     getRelationalDatabase() override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(
             relationalDatabase_,
             "xrpl::ApplicationImp::getRelationalDatabase : non-null relational database");
@@ -813,6 +869,7 @@ public:
     DatabaseCon&
     getWalletDB() override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(walletDB_, "xrpl::ApplicationImp::getWalletDB : non-null wallet database");
         return *walletDB_;
     }
@@ -828,6 +885,7 @@ public:
     bool
     initRelationalDatabase()
     {
+    TRACE_FUNC();
         XRPL_ASSERT(
             walletDB_.get() == nullptr,
             "xrpl::ApplicationImp::initRelationalDatabase : null wallet "
@@ -855,6 +913,7 @@ public:
     bool
     initNodeStore() const
     {
+    TRACE_FUNC();
         if (config_->doImport)
         {
             auto j = logs_->journal("NodeObject");
@@ -898,6 +957,7 @@ public:
     void
     setSweepTimer()
     {
+    TRACE_FUNC();
         // Only start the timer if waitHandlerCounter_ is not yet joined.
         if (auto optionalCountedHandler =
                 waitHandlerCounter_.wrap([this](boost::system::error_code const& e) {
@@ -927,6 +987,7 @@ public:
     void
     setEntropyTimer()
     {
+    TRACE_FUNC();
         // Only start the timer if waitHandlerCounter_ is not yet joined.
         if (auto optionalCountedHandler =
                 waitHandlerCounter_.wrap([this](boost::system::error_code const& e) {
@@ -955,6 +1016,7 @@ public:
     void
     doSweep()
     {
+    TRACE_FUNC();
         XRPL_ASSERT(
             relationalDatabase_, "xrpl::ApplicationImp::doSweep : non-null relational database");
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) assert above
@@ -1093,18 +1155,21 @@ public:
     LedgerIndex
     getMaxDisallowedLedger() override
     {
+    TRACE_FUNC();
         return maxDisallowedLedger_;
     }
 
     std::optional<uint256> const&
     getTrapTxID() const override
     {
+    TRACE_FUNC();
         return trapTxID_;
     }
 
     size_t
     getNumberOfThreads() const override
     {
+    TRACE_FUNC();
         return BasicApp::getNumberOfThreads();
     }
 
@@ -1135,6 +1200,7 @@ private:
     Application&
     getApp() override
     {
+    TRACE_FUNC();
         return *this;
     }
 };
@@ -1145,6 +1211,7 @@ private:
 bool
 ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 {
+    TRACE_FUNC();
     // We want to intercept CTRL-C and the standard termination signal SIGTERM
     // and terminate the process. This handler will NEVER be invoked twice.
     //
@@ -1483,6 +1550,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 void
 ApplicationImp::start(bool withTimers)
 {
+    TRACE_FUNC();
     JLOG(journal_.info()) << "Application starting. Version is " << BuildInfo::getVersionString();
 
     if (withTimers)
@@ -1508,6 +1576,7 @@ ApplicationImp::start(bool withTimers)
 void
 ApplicationImp::run()
 {
+    TRACE_FUNC();
     if (!config_->standalone())
     {
         // VFALCO NOTE This seems unnecessary. If we properly refactor the load
@@ -1600,6 +1669,7 @@ ApplicationImp::run()
 void
 ApplicationImp::signalStop(std::string msg)
 {
+    TRACE_FUNC();
     if (!isTimeToStop.test_and_set(std::memory_order_acquire))
     {
         if (msg.empty())
@@ -1616,24 +1686,28 @@ ApplicationImp::signalStop(std::string msg)
 bool
 ApplicationImp::checkSigs() const
 {
+    TRACE_FUNC();
     return checkSigs_;
 }
 
 void
 ApplicationImp::checkSigs(bool check)
 {
+    TRACE_FUNC();
     checkSigs_ = check;
 }
 
 bool
 ApplicationImp::isStopping() const
 {
+    TRACE_FUNC();
     return isTimeToStop.test(std::memory_order_relaxed);
 }
 
 int
 ApplicationImp::fdRequired() const
 {
+    TRACE_FUNC();
     // Standard handles, config file, misc I/O etc:
     int needed = 128;
 
@@ -1659,6 +1733,7 @@ ApplicationImp::fdRequired() const
 void
 ApplicationImp::startGenesisLedger()
 {
+    TRACE_FUNC();
     std::vector<uint256> const initialAmendments = (config_->START_UP == StartUpType::Fresh)
         ? amendmentTable_->getDesired()
         : std::vector<uint256>{};
@@ -1685,6 +1760,7 @@ ApplicationImp::startGenesisLedger()
 std::shared_ptr<Ledger>
 ApplicationImp::getLastFullLedger()
 {
+    TRACE_FUNC();
     auto j = getJournal("Ledger");
 
     try
@@ -1729,6 +1805,7 @@ ApplicationImp::getLastFullLedger()
 std::shared_ptr<Ledger>
 ApplicationImp::loadLedgerFromFile(std::string const& name)
 {
+    TRACE_FUNC();
     try
     {
         std::ifstream ledgerFile(name, std::ios::in);
@@ -1868,6 +1945,7 @@ ApplicationImp::loadOldLedger(
     bool isFileName,
     std::optional<uint256> trapTxID)
 {
+    TRACE_FUNC();
     try
     {
         std::shared_ptr<Ledger const> loadLedger, replayLedger;
@@ -2079,6 +2157,7 @@ ApplicationImp::loadOldLedger(
 bool
 ApplicationImp::serverOkay(std::string& reason)
 {
+    TRACE_FUNC();
     if (!config().ELB_SUPPORT)
         return true;
 
@@ -2127,12 +2206,14 @@ ApplicationImp::serverOkay(std::string& reason)
 beast::Journal
 ApplicationImp::getJournal(std::string const& name)
 {
+    TRACE_FUNC();
     return logs_->journal(name);
 }
 
 void
 ApplicationImp::setMaxDisallowedLedger()
 {
+    TRACE_FUNC();
     auto seq = getRelationalDatabase().getMaxLedgerSeq();
     if (seq)
         maxDisallowedLedger_ = *seq;
@@ -2154,6 +2235,7 @@ makeApplication(
     std::unique_ptr<Logs> logs,
     std::unique_ptr<TimeKeeper> timeKeeper)
 {
+    TRACE_FUNC();
     return std::make_unique<ApplicationImp>(
         std::move(config), std::move(logs), std::move(timeKeeper));
 }
@@ -2161,6 +2243,7 @@ makeApplication(
 void
 fixConfigPorts(Config& config, Endpoints const& endpoints)
 {
+    TRACE_FUNC();
     for (auto const& [name, ep] : endpoints)
     {
         if (!config.exists(name))

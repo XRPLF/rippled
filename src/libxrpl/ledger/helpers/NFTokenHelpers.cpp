@@ -28,6 +28,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -44,6 +45,7 @@ namespace xrpl::nft {
 static std::shared_ptr<SLE const>
 locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
 {
+    TRACE_FUNC();
     auto const first = keylet::nftpage(keylet::nftpageMin(owner), id);
     auto const last = keylet::nftpageMax(owner);
 
@@ -57,6 +59,7 @@ locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
 static std::shared_ptr<SLE>
 locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
 {
+    TRACE_FUNC();
     auto const first = keylet::nftpage(keylet::nftpageMin(owner), id);
     auto const last = keylet::nftpageMax(owner);
 
@@ -74,6 +77,7 @@ getPageForToken(
     uint256 const& id,
     std::function<void(ApplyView&, AccountID const&)> const& createCallback)
 {
+    TRACE_FUNC();
     auto const base = keylet::nftpageMin(owner);
     auto const first = keylet::nftpage(base, id);
     auto const last = keylet::nftpageMax(owner);
@@ -212,6 +216,7 @@ getPageForToken(
 bool
 compareTokens(uint256 const& a, uint256 const& b)
 {
+    TRACE_FUNC();
     // The sort of NFTokens needs to be fully deterministic, but the sort
     // is weird because we sort on the low 96-bits first. But if the low
     // 96-bits are identical we still need a fully deterministic sort.
@@ -230,6 +235,7 @@ changeTokenURI(
     uint256 const& nftokenID,
     std::optional<xrpl::Slice> const& uri)
 {
+    TRACE_FUNC();
     std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
@@ -262,6 +268,7 @@ changeTokenURI(
 TER
 insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(nft.isFieldPresent(sfNFTokenID), "xrpl::nft::insertToken : has NFT token");
 
     // First, we need to locate the page the NFT belongs to, creating it
@@ -298,6 +305,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 static bool
 mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE> const& p2)
 {
+    TRACE_FUNC();
     if (p1->key() >= p2->key())
         Throw<std::runtime_error>("mergePages: pages passed in out of order!");
 
@@ -355,6 +363,7 @@ mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE>
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
+    TRACE_FUNC();
     std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
@@ -372,6 +381,7 @@ removeToken(
     uint256 const& nftokenID,
     std::shared_ptr<SLE> const& curr)
 {
+    TRACE_FUNC();
     // We found a page, but the given NFT may not be in it.
     auto arr = curr->getFieldArray(sfNFTokens);
 
@@ -535,6 +545,7 @@ removeToken(
 std::optional<STObject>
 findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID)
 {
+    TRACE_FUNC();
     std::shared_ptr<SLE const> const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
@@ -554,6 +565,7 @@ findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID
 std::optional<TokenAndPage>
 findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
+    TRACE_FUNC();
     std::shared_ptr<SLE> page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
@@ -575,6 +587,7 @@ findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftoken
 std::size_t
 removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t maxDeletableOffers)
 {
+    TRACE_FUNC();
     if (maxDeletableOffers == 0)
         return 0;
 
@@ -625,6 +638,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
 bool
 deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
 {
+    TRACE_FUNC();
     if (offer->getType() != ltNFTOKEN_OFFER)
         return false;
 
@@ -653,6 +667,7 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
 bool
 repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
 {
+    TRACE_FUNC();
     bool didRepair = false;
 
     auto const last = keylet::nftpageMax(owner);
@@ -780,6 +795,7 @@ tokenOfferCreatePreflight(
     std::optional<AccountID> const& owner,
     std::uint32_t txFlags)
 {
+    TRACE_FUNC();
     if (amount.negative())
     {
         // An offer for a negative amount makes no sense.
@@ -833,6 +849,7 @@ tokenOfferCreatePreclaim(
     std::optional<AccountID> const& owner,
     std::uint32_t txFlags)
 {
+    TRACE_FUNC();
     if (((nftFlags & nft::kFLAG_CREATE_TRUST_LINES) == 0) && !amount.native() && (xferFee != 0u))
     {
         if (!view.exists(keylet::account(nftIssuer)))
@@ -933,6 +950,7 @@ tokenOfferCreateApply(
     beast::Journal j,
     std::uint32_t txFlags)
 {
+    TRACE_FUNC();
     Keylet const acctKeylet = keylet::account(acctID);
     if (auto const acct = view.read(acctKeylet);
         priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
@@ -999,6 +1017,7 @@ checkTrustlineAuthorized(
     beast::Journal const j,
     Issue const& issue)
 {
+    TRACE_FUNC();
     // Only valid for custom currencies
     XRPL_ASSERT(!isXRP(issue.currency), "xrpl::nft::checkTrustlineAuthorized : valid to check.");
 
@@ -1051,6 +1070,7 @@ checkTrustlineDeepFrozen(
     beast::Journal const j,
     Issue const& issue)
 {
+    TRACE_FUNC();
     // Only valid for custom currencies
     XRPL_ASSERT(!isXRP(issue.currency), "xrpl::nft::checkTrustlineDeepFrozen : valid to check.");
 

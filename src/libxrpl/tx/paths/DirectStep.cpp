@@ -22,6 +22,7 @@
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -104,22 +105,26 @@ public:
     [[nodiscard]] AccountID const&
     src() const
     {
+    TRACE_FUNC();
         return src_;
     }
     [[nodiscard]] AccountID const&
     dst() const
     {
+    TRACE_FUNC();
         return dst_;
     }
     [[nodiscard]] Currency const&
     currency() const
     {
+    TRACE_FUNC();
         return currency_;
     }
 
     [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
+    TRACE_FUNC();
         if (!cache_)
             return std::nullopt;
         return EitherAmount(cache_->in);
@@ -128,6 +133,7 @@ public:
     [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
+    TRACE_FUNC();
         if (!cache_)
             return std::nullopt;
         return EitherAmount(cache_->out);
@@ -136,12 +142,14 @@ public:
     [[nodiscard]] std::optional<AccountID>
     directStepSrcAcct() const override
     {
+    TRACE_FUNC();
         return src_;
     }
 
     [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
+    TRACE_FUNC();
         return std::make_pair(src_, dst_);
     }
 
@@ -186,12 +194,14 @@ public:
     friend bool
     operator==(DirectStepI const& lhs, DirectStepI const& rhs)
     {
+    TRACE_FUNC();
         return lhs.src_ == rhs.src_ && lhs.dst_ == rhs.dst_ && lhs.currency_ == rhs.currency_;
     }
 
     friend bool
     operator!=(DirectStepI const& lhs, DirectStepI const& rhs)
     {
+    TRACE_FUNC();
         return !(lhs == rhs);
     }
 
@@ -199,6 +209,7 @@ protected:
     std::string
     logStringImpl(char const* name) const
     {
+    TRACE_FUNC();
         std::ostringstream ostr;
         ostr << name << ": "
              << "\nSrc: " << src_ << "\nDst: " << dst_;
@@ -209,6 +220,7 @@ private:
     [[nodiscard]] bool
     equal(Step const& rhs) const override
     {
+    TRACE_FUNC();
         if (auto ds = dynamic_cast<DirectStepI const*>(&rhs))
         {
             return *this == *ds;
@@ -245,6 +257,7 @@ public:
     static bool
     verifyPrevStepDebtDirection(DebtDirection)
     {
+    TRACE_FUNC();
         // A payment doesn't care whether or not prevStepRedeems.
         return true;
     }
@@ -252,6 +265,7 @@ public:
     static bool
     verifyDstQualityIn(std::uint32_t dstQIn)
     {
+    TRACE_FUNC();
         // Payments have no particular expectations for what dstQIn will be.
         return true;
     }
@@ -274,6 +288,7 @@ public:
     [[nodiscard]] std::string
     logString() const override
     {
+    TRACE_FUNC();
         return logStringImpl("DirectIPaymentStep");
     }
 };
@@ -296,6 +311,7 @@ public:
     static bool
     verifyPrevStepDebtDirection(DebtDirection prevStepDir)
     {
+    TRACE_FUNC();
         // During offer crossing we rely on the fact that prevStepRedeems
         // will *always* issue.  That's because:
         //  o If there's a prevStep_, it will always be a BookStep.
@@ -309,6 +325,7 @@ public:
     static bool
     verifyDstQualityIn(std::uint32_t dstQIn)
     {
+    TRACE_FUNC();
         // Due to a couple of factors dstQIn is always QUALITY_ONE for
         // offer crossing.  If that changes we need to know.
         return dstQIn == QUALITY_ONE;
@@ -332,6 +349,7 @@ public:
     [[nodiscard]] std::string
     logString() const override
     {
+    TRACE_FUNC();
         return logStringImpl("DirectIOfferCrossingStep");
     }
 };
@@ -341,6 +359,7 @@ public:
 std::uint32_t
 DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
 {
+    TRACE_FUNC();
     if (src_ == dst_)
         return QUALITY_ONE;
 
@@ -382,6 +401,7 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
 std::uint32_t
 DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir)
 {
+    TRACE_FUNC();
     // If offer crossing then ignore trust line Quality fields.  This
     // preserves a long-standing tradition.
     return QUALITY_ONE;
@@ -390,12 +410,14 @@ DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir)
 std::pair<IOUAmount, DebtDirection>
 DirectIPaymentStep::maxFlow(ReadView const& sb, IOUAmount const&) const
 {
+    TRACE_FUNC();
     return maxPaymentFlow(sb);
 }
 
 std::pair<IOUAmount, DebtDirection>
 DirectIOfferCrossingStep::maxFlow(ReadView const& sb, IOUAmount const& desired) const
 {
+    TRACE_FUNC();
     // When isLast and offer crossing then ignore trust line limits.  Offer
     // crossing has the ability to exceed the limit set by a trust line.
     // We presume that if someone is creating an offer then they intend to
@@ -417,6 +439,7 @@ DirectIOfferCrossingStep::maxFlow(ReadView const& sb, IOUAmount const& desired) 
 TER
 DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const
 {
+    TRACE_FUNC();
     // Since this is a payment a trust line must be present.  Perform all
     // trust line related checks.
     {
@@ -467,6 +490,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
 TER
 DirectIOfferCrossingStep::check(StrandContext const&, std::shared_ptr<const SLE> const&)
 {
+    TRACE_FUNC();
     // The standard checks are all we can do because any remaining checks
     // require the existence of a trust line.  Offer crossing does not
     // require a pre-existing trust line.
@@ -479,6 +503,7 @@ template <class TDerived>
 std::pair<IOUAmount, DebtDirection>
 DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
+    TRACE_FUNC();
     auto const srcOwed = toAmount<IOUAmount>(
         accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_));
 
@@ -493,6 +518,7 @@ template <class TDerived>
 DebtDirection
 DirectStepI<TDerived>::debtDirection(ReadView const& sb, StrandDirection dir) const
 {
+    TRACE_FUNC();
     if (dir == StrandDirection::Forward && cache_)
         return cache_->srcDebtDir;
 
@@ -508,6 +534,7 @@ DirectStepI<TDerived>::revImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& out)
 {
+    TRACE_FUNC();
     cache_.reset();
 
     auto const [maxSrcToDst, srcDebtDir] = static_cast<TDerived const*>(this)->maxFlow(sb, out);
@@ -580,6 +607,7 @@ DirectStepI<TDerived>::setCacheLimiting(
     IOUAmount const& fwdOut,
     DebtDirection srcDebtDir)
 {
+    TRACE_FUNC();
     // NOLINTBEGIN(bugprone-unchecked-optional-access) cache_ always set before setCacheLimiting is
     // called
     if (cache_->in < fwdIn)
@@ -622,6 +650,7 @@ DirectStepI<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& in)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(cache_, "xrpl::DirectStepI::fwdImp : cache is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
@@ -687,6 +716,7 @@ template <class TDerived>
 std::pair<bool, EitherAmount>
 DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in)
 {
+    TRACE_FUNC();
     if (!cache_)
     {
         JLOG(j_.trace()) << "Expected valid cache in validFwd";
@@ -739,6 +769,7 @@ template <class TDerived>
 std::pair<std::uint32_t, std::uint32_t>
 DirectStepI<TDerived>::qualitiesSrcRedeems(ReadView const& sb) const
 {
+    TRACE_FUNC();
     if (prevStep_ == nullptr)
         return {QUALITY_ONE, QUALITY_ONE};
 
@@ -756,6 +787,7 @@ std::pair<std::uint32_t, std::uint32_t>
 DirectStepI<TDerived>::qualitiesSrcIssues(ReadView const& sb, DebtDirection prevStepDebtDirection)
     const
 {
+    TRACE_FUNC();
     // Charge a transfer rate when issuing and previous step redeems
 
     XRPL_ASSERT(
@@ -780,6 +812,7 @@ DirectStepI<TDerived>::qualities(
     DebtDirection srcDebtDir,
     StrandDirection strandDir) const
 {
+    TRACE_FUNC();
     if (redeems(srcDebtDir))
     {
         return qualitiesSrcRedeems(sb);
@@ -797,6 +830,7 @@ template <class TDerived>
 std::uint32_t
 DirectStepI<TDerived>::lineQualityIn(ReadView const& v) const
 {
+    TRACE_FUNC();
     // dst quality in
     return static_cast<TDerived const*>(this)->quality(v, QualityDirection::In);
 }
@@ -805,6 +839,7 @@ template <class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
 DirectStepI<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
+    TRACE_FUNC();
     auto const dir = this->debtDirection(v, StrandDirection::Forward);
 
     auto const [srcQOut, dstQIn] =
@@ -824,6 +859,7 @@ template <class TDerived>
 TER
 DirectStepI<TDerived>::check(StrandContext const& ctx) const
 {
+    TRACE_FUNC();
     // The following checks apply for both payments and offer crossing.
     if (!src_ || !dst_)
     {
@@ -911,6 +947,7 @@ directStepEqual(
     AccountID const& dst,
     Currency const& currency)
 {
+    TRACE_FUNC();
     if (auto ds = dynamic_cast<DirectStepI<DirectIPaymentStep> const*>(&step))
     {
         return ds->src() == src && ds->dst() == dst && ds->currency() == currency;
@@ -928,6 +965,7 @@ makeDirectStepI(
     AccountID const& dst,
     Currency const& c)
 {
+    TRACE_FUNC();
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
     if (ctx.offerCrossing != OfferCrossing::No)

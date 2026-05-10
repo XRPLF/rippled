@@ -5,6 +5,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -23,6 +24,7 @@ namespace {
 LocalValue<bool>&
 getStaticSTNumberSwitchover()
 {
+    TRACE_FUNC();
     static LocalValue<bool> kR{true};
     return kR;
 }
@@ -31,12 +33,14 @@ getStaticSTNumberSwitchover()
 bool
 getSTNumberSwitchover()
 {
+    TRACE_FUNC();
     return *getStaticSTNumberSwitchover();
 }
 
 void
 setSTNumberSwitchover(bool v)
 {
+    TRACE_FUNC();
     *getStaticSTNumberSwitchover() = v;
 }
 
@@ -52,6 +56,7 @@ static int constexpr kMAX_EXPONENT = STAmount::kMAX_OFFSET;
 IOUAmount
 IOUAmount::fromNumber(Number const& number)
 {
+    TRACE_FUNC();
     // Need to create a default IOUAmount and assign directly so it doesn't try
     // to normalize, which calls fromNumber
     IOUAmount result{};
@@ -63,12 +68,14 @@ IOUAmount::fromNumber(Number const& number)
 IOUAmount
 IOUAmount::minPositiveAmount()
 {
+    TRACE_FUNC();
     return IOUAmount(kMIN_MANTISSA, kMIN_EXPONENT);
 }
 
 void
 IOUAmount::normalize()
 {
+    TRACE_FUNC();
     if (mantissa_ == 0)
     {
         *this = beast::kZERO;
@@ -121,6 +128,7 @@ IOUAmount::normalize()
 
 IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
 {
+    TRACE_FUNC();
     if (exponent_ > kMAX_EXPONENT)
         Throw<std::overflow_error>("value overflow");
     if (exponent_ < kMIN_EXPONENT)
@@ -130,6 +138,7 @@ IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
 IOUAmount&
 IOUAmount::operator+=(IOUAmount const& other)
 {
+    TRACE_FUNC();
     if (other == beast::kZERO)
         return *this;
 
@@ -176,12 +185,14 @@ IOUAmount::operator+=(IOUAmount const& other)
 std::string
 to_string(IOUAmount const& amount)
 {
+    TRACE_FUNC();
     return to_string(Number{amount});
 }
 
 IOUAmount
 mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
 {
+    TRACE_FUNC();
     using namespace boost::multiprecision;
 
     if (den == 0u)

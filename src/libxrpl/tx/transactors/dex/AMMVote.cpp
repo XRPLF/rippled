@@ -19,6 +19,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -31,6 +32,7 @@ namespace xrpl {
 bool
 AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ammEnabled(ctx.rules))
         return false;
 
@@ -41,6 +43,7 @@ AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 AMMVote::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid asset pair.";
@@ -59,6 +62,7 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
@@ -82,6 +86,7 @@ AMMVote::preclaim(PreclaimContext const& ctx)
 static std::pair<TER, bool>
 applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
 {
+    TRACE_FUNC();
     auto const feeNew = ctx.tx[sfTradingFee];
     auto ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
@@ -238,6 +243,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
 TER
 AMMVote::doApply()
 {
+    TRACE_FUNC();
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
@@ -260,6 +266,7 @@ AMMVote::visitInvariantEntry(
 bool
 AMMVote::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

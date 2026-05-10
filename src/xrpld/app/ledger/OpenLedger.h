@@ -10,6 +10,7 @@
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <mutex>
 
@@ -197,6 +198,7 @@ OpenLedger::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
+    TRACE_FUNC();
     for (auto iter = txs.begin(); iter != txs.end(); ++iter)
     {
         try

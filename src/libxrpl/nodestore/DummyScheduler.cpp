@@ -2,12 +2,14 @@
 
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Task.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl::NodeStore {
 
 void
 DummyScheduler::scheduleTask(Task& task)
 {
+    TRACE_FUNC();
     // Invoke the task synchronously.
     task.performScheduledTask();
 }

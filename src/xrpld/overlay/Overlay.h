@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/server/Handoff.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -164,6 +165,7 @@ public:
     void
     foreach(Function f) const
     {
+    TRACE_FUNC();
         for (auto const& p : getActivePeers())
             f(p);
     }

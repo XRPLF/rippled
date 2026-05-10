@@ -19,6 +19,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <stdexcept>
@@ -28,6 +29,7 @@ namespace xrpl {
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfVaultID] == beast::kZERO)
     {
         JLOG(ctx.j.debug()) << "VaultDeposit: zero/empty vault ID.";
@@ -43,6 +45,7 @@ VaultDeposit::preflight(PreflightContext const& ctx)
 TER
 VaultDeposit::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
@@ -137,6 +140,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 TER
 VaultDeposit::doApply()
 {
+    TRACE_FUNC();
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -294,6 +298,7 @@ VaultDeposit::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

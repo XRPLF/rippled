@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl::RPC {
 
@@ -55,6 +56,7 @@ public:
     /** Returns true if the Status is *not* OK. */
     operator bool() const
     {
+    TRACE_FUNC();
         return code_ != kOK;
     }
 
@@ -62,6 +64,7 @@ public:
     bool
     operator!() const
     {
+    TRACE_FUNC();
         return !bool(*this);
     }
 
@@ -70,6 +73,7 @@ public:
     [[nodiscard]] TER
     toTER() const
     {
+    TRACE_FUNC();
         XRPL_ASSERT(type_ == Type::TER, "xrpl::RPC::Status::toTER : type is TER");
         return TER::fromInt(code_);
     }
@@ -79,6 +83,7 @@ public:
     [[nodiscard]] ErrorCodeI
     toErrorCode() const
     {
+    TRACE_FUNC();
         XRPL_ASSERT(type_ == Type::ErrorCodeI, "xrpl::RPC::Status::toTER : type is error code");
         return ErrorCodeI(code_);
     }
@@ -88,6 +93,7 @@ public:
     void
     inject(json::Value& object) const
     {
+    TRACE_FUNC();
         if (auto ec = toErrorCode())
         {
             if (messages_.empty())
@@ -104,6 +110,7 @@ public:
     [[nodiscard]] Strings const&
     messages() const
     {
+    TRACE_FUNC();
         return messages_;
     }
 
@@ -114,6 +121,7 @@ public:
     [[nodiscard]] Type
     type() const
     {
+    TRACE_FUNC();
         return type_;
     }
 

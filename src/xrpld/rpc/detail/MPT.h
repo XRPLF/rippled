@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -23,21 +24,25 @@ public:
     }
     operator MPTID const&() const
     {
+    TRACE_FUNC();
         return mptID_;
     }
     [[nodiscard]] MPTID const&
     getMptID() const
     {
+    TRACE_FUNC();
         return mptID_;
     }
     [[nodiscard]] bool
     isZeroBalance() const
     {
+    TRACE_FUNC();
         return zeroBalance_;
     }
     [[nodiscard]] bool
     isMaxedOut() const
     {
+    TRACE_FUNC();
         return maxedOut_;
     }
 };

@@ -9,6 +9,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -38,6 +39,7 @@ SHAMap::walkBranch(
     Delta& differences,
     int& maxCount) const
 {
+    TRACE_FUNC();
     // Walk a branch of a SHAMap that's matched by an empty branch or single
     // item in the other map
     std::stack<SHAMapTreeNode*, std::vector<SHAMapTreeNode*>> nodeStack;
@@ -129,6 +131,7 @@ SHAMap::walkBranch(
 bool
 SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
 {
+    TRACE_FUNC();
     // compare two hash trees, add up to maxCount differences to the difference
     // table return value: true=complete table of differences given, false=too
     // many differences throws on corrupt tables or missing nodes CAUTION:
@@ -244,6 +247,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
 void
 SHAMap::walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) const
 {
+    TRACE_FUNC();
     if (!root_->isInner())  // root_ is only node, and we have it
         return;
 
@@ -282,6 +286,7 @@ SHAMap::walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) co
 bool
 SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) const
 {
+    TRACE_FUNC();
     if (!root_->isInner())  // root_ is only node, and we have it
         return false;
 

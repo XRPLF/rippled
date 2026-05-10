@@ -15,6 +15,7 @@
 #include <xrpl/protocol/detail/b58_utils.h>
 #include <xrpl/protocol/detail/token_errors.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/small_vector.hpp>
 #include <boost/endian/conversion.hpp>
@@ -138,6 +139,7 @@ template <class Hasher>
 static typename Hasher::result_type
 digest(void const* data, std::size_t size) noexcept
 {
+    TRACE_FUNC();
     Hasher h;
     h(data, size);
     return static_cast<typename Hasher::result_type>(h);
@@ -147,6 +149,7 @@ template <class Hasher, class T, std::size_t N, class = std::enable_if_t<sizeof(
 static typename Hasher::result_type
 digest(std::array<T, N> const& v)
 {
+    TRACE_FUNC();
     return digest<Hasher>(v.data(), v.size());
 }
 
@@ -155,6 +158,7 @@ template <class Hasher, class... Args>
 static typename Hasher::result_type
 digest2(Args const&... args)
 {
+    TRACE_FUNC();
     return digest<Hasher>(digest<Hasher>(args...));
 }
 
@@ -170,6 +174,7 @@ digest2(Args const&... args)
 static void
 checksum(void* out, void const* message, std::size_t size)
 {
+    TRACE_FUNC();
     auto const h = digest2<sha256_hasher>(message, size);
     std::memcpy(out, h.data(), 4);
 }
@@ -177,6 +182,7 @@ checksum(void* out, void const* message, std::size_t size)
 [[nodiscard]] std::string
 encodeBase58Token(TokenType type, void const* token, std::size_t size)
 {
+    TRACE_FUNC();
 #ifndef _MSC_VER
     return b58_fast::encodeBase58Token(type, token, size);
 #else
@@ -187,6 +193,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
 [[nodiscard]] std::string
 decodeBase58Token(std::string const& s, TokenType type)
 {
+    TRACE_FUNC();
 #ifndef _MSC_VER
     return b58_fast::decodeBase58Token(s, type);
 #else
@@ -201,6 +208,7 @@ namespace detail {
 std::string
 encodeBase58(void const* message, std::size_t size, void* temp, std::size_t tempSize)
 {
+    TRACE_FUNC();
     auto pbegin = reinterpret_cast<unsigned char const*>(message);
     auto const pend = pbegin + size;
 
@@ -248,6 +256,7 @@ encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp
 std::string
 decodeBase58(std::string const& s)
 {
+    TRACE_FUNC();
     auto psz = reinterpret_cast<unsigned char const*>(s.c_str());
     auto remain = s.size();
     // Skip and count leading zeroes
@@ -296,6 +305,7 @@ decodeBase58(std::string const& s)
 std::string
 encodeBase58Token(TokenType type, void const* token, std::size_t size)
 {
+    TRACE_FUNC();
     // expanded token includes type + 4 byte checksum
     auto const expanded = 1 + size + 4;
 
@@ -319,6 +329,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
 std::string
 decodeBase58Token(std::string const& s, TokenType type)
 {
+    TRACE_FUNC();
     std::string const ret = detail::decodeBase58(s);
 
     // Reject zero length tokens
@@ -349,6 +360,7 @@ namespace detail {
 B58Result<std::span<std::uint8_t>>
 b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
 {
+    TRACE_FUNC();
     // Max valid input is 38 bytes:
     // (33 bytes for nodepublic + 1 byte token + 4 bytes checksum)
     if (input.size() > 38)
@@ -470,6 +482,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
 B58Result<std::span<std::uint8_t>>
 b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
 {
+    TRACE_FUNC();
     // Convert from b58 to b 58^10
 
     // Max encoded value is 38 bytes
@@ -610,6 +623,7 @@ encodeBase58Token(
     std::span<std::uint8_t const> input,
     std::span<std::uint8_t> out)
 {
+    TRACE_FUNC();
     constexpr std::size_t kTMP_BUF_SIZE = 128;
     std::array<std::uint8_t, kTMP_BUF_SIZE> buf{};
     if (input.size() > kTMP_BUF_SIZE - 5)
@@ -638,6 +652,7 @@ encodeBase58Token(
 B58Result<std::span<std::uint8_t>>
 decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> outBuf)
 {
+    TRACE_FUNC();
     std::array<std::uint8_t, 64> tmpBuf{};
     auto const decodeResult = detail::b58ToB256Be(s, std::span(tmpBuf.data(), tmpBuf.size()));
 
@@ -673,6 +688,7 @@ decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> ou
 [[nodiscard]] std::string
 encodeBase58Token(TokenType type, void const* token, std::size_t size)
 {
+    TRACE_FUNC();
     std::string sr;
     // The largest object encoded as base58 is 33 bytes; This will be encoded in
     // at most ceil(log(2^256,58)) bytes, or 46 bytes. 128 is plenty (and
@@ -693,6 +709,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
 [[nodiscard]] std::string
 decodeBase58Token(std::string const& s, TokenType type)
 {
+    TRACE_FUNC();
     std::string sr;
     // The largest object encoded as base58 is 33 bytes; 64 is plenty (and
     // there's no benefit making it smaller)

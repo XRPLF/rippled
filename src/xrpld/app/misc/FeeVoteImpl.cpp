@@ -19,6 +19,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -43,6 +44,7 @@ private:
 public:
     VotableValue(value_type current, value_type target) : current_(current), target_(target)
     {
+    TRACE_FUNC();
         // Add our vote
         ++voteMap_[target_];
     }
@@ -50,18 +52,21 @@ public:
     void
     addVote(value_type vote)
     {
+    TRACE_FUNC();
         ++voteMap_[vote];
     }
 
     void
     noVote()
     {
+    TRACE_FUNC();
         addVote(current_);
     }
 
     [[nodiscard]] value_type
     current() const
     {
+    TRACE_FUNC();
         return current_;
     }
 
@@ -72,6 +77,7 @@ public:
 auto
 VotableValue::getVotes() const -> std::pair<value_type, bool>
 {
+    TRACE_FUNC();
     value_type ourVote = current_;
     int weight = 0;
     for (auto const& [key, val] : voteMap_)
@@ -121,6 +127,7 @@ FeeVoteImpl::FeeVoteImpl(FeeSetup const& setup, beast::Journal journal)
 void
 FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation& v)
 {
+    TRACE_FUNC();
     // Values should always be in a valid range (because the voting process
     // will ignore out-of-range values) but if we detect such a case, we do
     // not send a value.
@@ -179,6 +186,7 @@ FeeVoteImpl::doVoting(
     std::vector<std::shared_ptr<STValidation>> const& set,
     std::shared_ptr<SHAMap> const& initialPosition)
 {
+    TRACE_FUNC();
     // LCL must be flag ledger
     XRPL_ASSERT(
         lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
@@ -319,6 +327,7 @@ FeeVoteImpl::doVoting(
 std::unique_ptr<FeeVote>
 makeFeeVote(FeeSetup const& setup, beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::make_unique<FeeVoteImpl>(setup, journal);
 }
 

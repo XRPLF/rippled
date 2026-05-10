@@ -7,6 +7,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <google/protobuf/message.h>
 
@@ -63,6 +64,7 @@ PeerSetImpl::addPeers(
     std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
     std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded)
 {
+    TRACE_FUNC();
     using ScoredPeer = std::pair<int, std::shared_ptr<Peer>>;
 
     auto const& overlay = app_.getOverlay();
@@ -96,6 +98,7 @@ PeerSetImpl::sendRequest(
     protocol::MessageType type,
     std::shared_ptr<Peer> const& peer)
 {
+    TRACE_FUNC();
     auto packet = std::make_shared<Message>(message, type);
     if (peer)
     {
@@ -113,6 +116,7 @@ PeerSetImpl::sendRequest(
 std::set<Peer::id_t> const&
 PeerSetImpl::getPeerIds() const
 {
+    TRACE_FUNC();
     return peers_;
 }
 
@@ -126,6 +130,7 @@ public:
     std::unique_ptr<PeerSet>
     build() override
     {
+    TRACE_FUNC();
         return std::make_unique<PeerSetImpl>(app_);
     }
 
@@ -136,6 +141,7 @@ private:
 std::unique_ptr<PeerSetBuilder>
 makePeerSetBuilder(Application& app)
 {
+    TRACE_FUNC();
     return std::make_unique<PeerSetBuilderImpl>(app);
 }
 
@@ -152,6 +158,7 @@ public:
         std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
         std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded) override
     {
+    TRACE_FUNC();
         JLOG(j_.error()) << "DummyPeerSet addPeers should not be called";
     }
 
@@ -161,12 +168,14 @@ public:
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) override
     {
+    TRACE_FUNC();
         JLOG(j_.error()) << "DummyPeerSet sendRequest should not be called";
     }
 
     [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override
     {
+    TRACE_FUNC();
         static std::set<Peer::id_t> const kEMPTY_PEERS;
         JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
         return kEMPTY_PEERS;
@@ -179,6 +188,7 @@ private:
 std::unique_ptr<PeerSet>
 makeDummyPeerSet(Application& app)
 {
+    TRACE_FUNC();
     return std::make_unique<DummyPeerSet>(app);
 }
 

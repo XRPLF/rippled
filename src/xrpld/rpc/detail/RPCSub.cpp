@@ -11,6 +11,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/io_context.hpp>
 
@@ -47,6 +48,7 @@ public:
         , j_(registry.getJournal("RPCSub"))
         , logs_(registry.getLogs())
     {
+    TRACE_FUNC();
         ParsedUrl pUrl;
 
         if (!parseUrl(pUrl, strUrl))
@@ -84,6 +86,7 @@ public:
     void
     send(json::Value const& jvObj, bool broadcast) override
     {
+    TRACE_FUNC();
         std::scoped_lock const sl(lock_);
 
         auto jm = broadcast ? j_.debug() : j_.info();
@@ -104,6 +107,7 @@ public:
     void
     setUsername(std::string const& strUsername) override
     {
+    TRACE_FUNC();
         std::scoped_lock const sl(lock_);
 
         username_ = strUsername;
@@ -112,6 +116,7 @@ public:
     void
     setPassword(std::string const& strPassword) override
     {
+    TRACE_FUNC();
         std::scoped_lock const sl(lock_);
 
         password_ = strPassword;
@@ -123,6 +128,7 @@ private:
     void
     sendThread()
     {
+    TRACE_FUNC();
         json::Value jvEvent;
         bool bSend = false;
 
@@ -217,6 +223,7 @@ makeRPCSub(
     std::string const& strPassword,
     ServiceRegistry& registry)
 {
+    TRACE_FUNC();
     return std::make_shared<RPCSubImp>(
         std::ref(source),
         std::ref(ioContext),

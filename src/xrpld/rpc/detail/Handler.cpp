@@ -10,6 +10,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -26,6 +27,7 @@ template <typename Function>
 Handler::Method<json::Value>
 byRef(Function const& f)
 {
+    TRACE_FUNC();
     return [f](JsonContext& context, json::Value& result) {
         result = f(context);
         if (result.type() != json::ObjectValue)
@@ -44,6 +46,7 @@ template <class Object, class HandlerImpl>
 Status
 handle(JsonContext& context, Object& object)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         context.apiVersion >= HandlerImpl::minApiVer &&
             context.apiVersion <= HandlerImpl::maxApiVer,
@@ -66,6 +69,7 @@ template <typename HandlerImpl>
 Handler
 handlerFrom()
 {
+    TRACE_FUNC();
     return {
         HandlerImpl::name,
         &handle<json::Value, HandlerImpl>,
@@ -371,6 +375,7 @@ private:
         unsigned minVer,
         unsigned maxVer)
     {
+    TRACE_FUNC();
         XRPL_ASSERT(minVer <= maxVer, "xrpl::RPC::HandlerTable : valid API version range");
         XRPL_ASSERT(
             maxVer <= RPC::kAPI_MAXIMUM_VALID_VERSION,
@@ -387,6 +392,7 @@ private:
     template <std::size_t N>
     explicit HandlerTable(Handler const (&entries)[N])
     {
+    TRACE_FUNC();
         for (auto const& entry : entries)
         {
             if (overlappingApiVersion(
@@ -409,6 +415,7 @@ public:
     static HandlerTable const&
     instance()
     {
+    TRACE_FUNC();
         static HandlerTable const kHANDLER_TABLE(kHANDLER_ARRAY);
         return kHANDLER_TABLE;
     }
@@ -416,6 +423,7 @@ public:
     [[nodiscard]] Handler const*
     getHandler(unsigned version, bool betaEnabled, std::string const& name) const
     {
+    TRACE_FUNC();
         if (version < RPC::kAPI_MINIMUM_SUPPORTED_VERSION ||
             version > (betaEnabled ? RPC::kAPI_BETA_VERSION : RPC::kAPI_MAXIMUM_SUPPORTED_VERSION))
             return nullptr;
@@ -431,6 +439,7 @@ public:
     [[nodiscard]] std::set<char const*>
     getHandlerNames() const
     {
+    TRACE_FUNC();
         std::set<char const*> ret;
         for (auto const& i : table_)
             ret.insert(i.second.name);
@@ -445,6 +454,7 @@ private:
     void
     addHandler()
     {
+    TRACE_FUNC();
         static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
         static_assert(HandlerImpl::maxApiVer <= RPC::kAPI_MAXIMUM_VALID_VERSION);
         static_assert(RPC::kAPI_MINIMUM_SUPPORTED_VERSION <= HandlerImpl::minApiVer);
@@ -468,12 +478,14 @@ private:
 Handler const*
 getHandler(unsigned version, bool betaEnabled, std::string const& name)
 {
+    TRACE_FUNC();
     return HandlerTable::instance().getHandler(version, betaEnabled, name);
 }
 
 std::set<char const*>
 getHandlerNames()
 {
+    TRACE_FUNC();
     return HandlerTable::instance().getHandlerNames();
 }
 

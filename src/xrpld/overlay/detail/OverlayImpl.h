@@ -17,6 +17,7 @@
 #include <xrpl/core/Job.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
@@ -140,18 +141,21 @@ public:
     PeerFinder::Manager&
     peerFinder()
     {
+    TRACE_FUNC();
         return *peerFinder_;
     }
 
     Resource::Manager&
     resourceManager()
     {
+    TRACE_FUNC();
         return resourceManager_;
     }
 
     Setup const&
     setup() const
     {
+    TRACE_FUNC();
         return setup_;
     }
 
@@ -252,6 +256,7 @@ public:
     void
     forEach(UnaryFunc&& f) const
     {
+    TRACE_FUNC();
         std::vector<std::weak_ptr<PeerImp>> wp;
         {
             std::scoped_lock const lock(mutex_);
@@ -284,6 +289,7 @@ public:
     static bool
     isPeerUpgrade(boost::beast::http::response<Body> const& response)
     {
+    TRACE_FUNC();
         if (!isUpgrade(response))
             return false;
         return response.result() == boost::beast::http::status::switching_protocols;
@@ -293,6 +299,7 @@ public:
     static bool
     isUpgrade(boost::beast::http::header<true, Fields> const& req)
     {
+    TRACE_FUNC();
         if (req.version() < 11)
             return false;
         if (req.method() != boost::beast::http::verb::get)
@@ -306,6 +313,7 @@ public:
     static bool
     isUpgrade(boost::beast::http::header<false, Fields> const& req)
     {
+    TRACE_FUNC();
         if (req.version() < 11)
             return false;
         if (!boost::beast::http::token_list{req["Connection"]}.exists("upgrade"))
@@ -325,42 +333,49 @@ public:
     void
     incJqTransOverflow() override
     {
+    TRACE_FUNC();
         ++jqTransOverflow_;
     }
 
     std::uint64_t
     getJqTransOverflow() const override
     {
+    TRACE_FUNC();
         return jqTransOverflow_;
     }
 
     void
     incPeerDisconnect() override
     {
+    TRACE_FUNC();
         ++peerDisconnects_;
     }
 
     std::uint64_t
     getPeerDisconnect() const override
     {
+    TRACE_FUNC();
         return peerDisconnects_;
     }
 
     void
     incPeerDisconnectCharges() override
     {
+    TRACE_FUNC();
         ++peerDisconnectsCharges_;
     }
 
     std::uint64_t
     getPeerDisconnectCharges() const override
     {
+    TRACE_FUNC();
         return peerDisconnectsCharges_;
     }
 
     std::optional<std::uint32_t>
     networkID() const override
     {
+    TRACE_FUNC();
         return setup_.networkID;
     }
 
@@ -400,6 +415,7 @@ public:
     json::Value
     txMetrics() const override
     {
+    TRACE_FUNC();
         return txMetrics_.json();
     }
 
@@ -408,6 +424,7 @@ public:
     void
     addTxMetrics(Args... args)
     {
+    TRACE_FUNC();
         if (!strand_.running_in_this_thread())
             return post(strand_, std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
 
@@ -571,6 +588,7 @@ private:
     void
     collectMetrics()
     {
+    TRACE_FUNC();
         auto counts = traffic_.getCounts();
         std::scoped_lock const lock(statsMutex_);
         XRPL_ASSERT(

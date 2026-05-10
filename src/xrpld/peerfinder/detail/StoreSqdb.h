@@ -4,6 +4,7 @@
 #include <xrpld/peerfinder/detail/Store.h>
 
 #include <xrpl/rdb/SociDB.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl::PeerFinder {
 
@@ -32,6 +33,7 @@ public:
     void
     open(BasicConfig const& config)
     {
+    TRACE_FUNC();
         init(config);
         update();
     }
@@ -41,6 +43,7 @@ public:
     std::size_t
     load(load_callback const& cb) override
     {
+    TRACE_FUNC();
         std::size_t n(0);
 
         readPeerFinderDB(sqlDb_, [&](std::string const& s, int valence) {
@@ -65,6 +68,7 @@ public:
     void
     save(std::vector<Entry> const& v) override
     {
+    TRACE_FUNC();
         savePeerFinderDB(sqlDb_, v);
     }
 
@@ -73,6 +77,7 @@ public:
     void
     update()
     {
+    TRACE_FUNC();
         updatePeerFinderDB(sqlDb_, CurrentSchemaVersion, journal_);
     }
 
@@ -80,6 +85,7 @@ private:
     void
     init(BasicConfig const& config)
     {
+    TRACE_FUNC();
         initPeerFinderDB(sqlDb_, config, journal_);
     }
 };

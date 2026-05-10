@@ -28,6 +28,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -49,6 +50,7 @@ using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 std::variant<std::optional<LedgerSpecifier>, json::Value>
 parseLedgerArgs(RPC::Context& context, json::Value const& params)
 {
+    TRACE_FUNC();
     json::Value response;
     // if ledger_index_min or max is specified, then ledger_hash or ledger_index
     // should not be specified. Error out if it is
@@ -132,6 +134,7 @@ parseLedgerArgs(RPC::Context& context, json::Value const& params)
 std::variant<LedgerRange, RPC::Status>
 getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledgerSpecifier)
 {
+    TRACE_FUNC();
     std::uint32_t uValidatedMin = 0;
     std::uint32_t uValidatedMax = 0;
     bool const bValidated = context.ledgerMaster.getValidatedRange(uValidatedMin, uValidatedMax);
@@ -211,6 +214,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
 std::pair<AccountTxResult, RPC::Status>
 doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 {
+    TRACE_FUNC();
     context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
     AccountTxResult result;
@@ -278,6 +282,7 @@ populateJsonResponse(
     AccountTxArgs const& args,
     RPC::JsonContext const& context)
 {
+    TRACE_FUNC();
     json::Value response;
     RPC::Status const& error = res.second;
     if (error.toErrorCode() != RpcSuccess)
@@ -386,6 +391,7 @@ populateJsonResponse(
 json::Value
 doAccountTx(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (!context.app.config().useTxTables())
         return rpcError(RpcNotEnabled);
 

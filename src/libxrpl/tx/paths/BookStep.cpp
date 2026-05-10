@@ -36,6 +36,7 @@
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -103,6 +104,7 @@ private:
         , j_(ctx.j)
         , strandDeliver_(ctx.strandDeliver)
     {
+    TRACE_FUNC();
         if (auto const ammSle = ctx.view.read(keylet::amm(in, out));
             ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::kZERO)
         {
@@ -121,12 +123,14 @@ public:
     [[nodiscard]] Book const&
     book() const
     {
+    TRACE_FUNC();
         return book_;
     }
 
     [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
+    TRACE_FUNC();
         if (!cache_)
             return std::nullopt;
         return EitherAmount(cache_->in);
@@ -135,6 +139,7 @@ public:
     [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
+    TRACE_FUNC();
         if (!cache_)
             return std::nullopt;
         return EitherAmount(cache_->out);
@@ -143,12 +148,14 @@ public:
     [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
+    TRACE_FUNC();
         return ownerPaysTransferFee_ ? DebtDirection::Issues : DebtDirection::Redeems;
     }
 
     [[nodiscard]] std::optional<Book>
     bookStepBook() const override
     {
+    TRACE_FUNC();
         return book_;
     }
 
@@ -185,6 +192,7 @@ public:
     [[nodiscard]] bool
     inactive() const override
     {
+    TRACE_FUNC();
         return inactive_;
     }
 
@@ -192,6 +200,7 @@ protected:
     std::string
     logStringImpl(char const* name) const
     {
+    TRACE_FUNC();
         std::ostringstream ostr;
         ostr << name << ": "
              << "\ninIss: " << book_.in.getIssuer() << "\noutIss: " << book_.out.getIssuer()
@@ -206,12 +215,14 @@ private:
     friend bool
     operator==(BookStep const& lhs, BookStep const& rhs)
     {
+    TRACE_FUNC();
         return lhs.book_ == rhs.book_;
     }
 
     friend bool
     operator!=(BookStep const& lhs, BookStep const& rhs)
     {
+    TRACE_FUNC();
         return !(lhs == rhs);
     }
 
@@ -303,6 +314,7 @@ public:
         FlowOfferStream<TIn, TOut>&,
         bool) const
     {
+    TRACE_FUNC();
         return false;
     }
 
@@ -310,6 +322,7 @@ public:
     [[nodiscard]] bool
     checkQualityThreshold(Quality const& quality) const
     {
+    TRACE_FUNC();
         return true;
     }
 
@@ -318,6 +331,7 @@ public:
     [[nodiscard]] std::optional<Quality>
     qualityThreshold(Quality const& lobQuality) const
     {
+    TRACE_FUNC();
         return lobQuality;
     }
 
@@ -325,6 +339,7 @@ public:
     std::uint32_t
     getOfrInRate(Step const*, AccountID const&, std::uint32_t trIn) const
     {
+    TRACE_FUNC();
         return trIn;
     }
 
@@ -332,6 +347,7 @@ public:
     std::uint32_t
     getOfrOutRate(Step const*, AccountID const&, AccountID const&, std::uint32_t trOut) const
     {
+    TRACE_FUNC();
         return trOut;
     }
 
@@ -344,6 +360,7 @@ public:
         OfferType,
         Rules const&) const
     {
+    TRACE_FUNC();
         // Charge the offer owner, not the sender
         // Charge a fee even if the owner is the same as the issuer
         // (the old code does not charge a fee)
@@ -364,6 +381,7 @@ public:
     [[nodiscard]] std::string
     logString() const override
     {
+    TRACE_FUNC();
         return this->logStringImpl("BookPaymentStep");
     }
 };
@@ -381,6 +399,7 @@ private:
     static Quality
     getQuality(std::optional<Quality> const& limitQuality)
     {
+    TRACE_FUNC();
         // It's really a programming error if the quality is missing.
         XRPL_ASSERT(limitQuality, "xrpl::BookOfferCrossingStep::getQuality : nonzero quality");
         if (!limitQuality)
@@ -406,6 +425,7 @@ public:
         FlowOfferStream<TIn, TOut>& offers,
         bool const offerAttempted) const
     {
+    TRACE_FUNC();
         // This method supports some correct but slightly surprising
         // behavior in offer crossing.  The scenario:
         //
@@ -458,6 +478,7 @@ public:
     [[nodiscard]] bool
     checkQualityThreshold(Quality const& quality) const
     {
+    TRACE_FUNC();
         return !defaultPath_ || quality >= qualityThreshold_;
     }
 
@@ -474,6 +495,7 @@ public:
     [[nodiscard]] std::optional<Quality>
     qualityThreshold(Quality const& lobQuality) const
     {
+    TRACE_FUNC();
         if (this->ammLiquidity_ && !this->ammLiquidity_->multiPath() &&
             qualityThreshold_ > lobQuality)
             return std::nullopt;
@@ -485,6 +507,7 @@ public:
     std::uint32_t
     getOfrInRate(Step const* prevStep, AccountID const& owner, std::uint32_t trIn) const
     {
+    TRACE_FUNC();
         auto const srcAcct = (prevStep != nullptr) ? prevStep->directStepSrcAcct() : std::nullopt;
 
         return owner == srcAcct  // If offer crossing && prevStep is DirectI
@@ -500,6 +523,7 @@ public:
         AccountID const& strandDst,
         std::uint32_t trOut) const
     {
+    TRACE_FUNC();
         return                                                    // If offer crossing
             (prevStep != nullptr) && prevStep->bookStepBook() &&  // && prevStep is BookStep
                 owner == strandDst                                // && dest is offer owner
@@ -516,6 +540,7 @@ public:
         OfferType offerType,
         Rules const& rules) const
     {
+    TRACE_FUNC();
         // Offer x-ing does not charge a transfer fee when the offer's owner
         // is the same as the strand dst. It is important that
         // `qualityUpperBound` is an upper bound on the quality (it is used to
@@ -548,6 +573,7 @@ public:
     [[nodiscard]] std::string
     logString() const override
     {
+    TRACE_FUNC();
         return this->logStringImpl("BookOfferCrossingStep");
     }
 
@@ -562,6 +588,7 @@ template <class TIn, class TOut, class TDerived>
 bool
 BookStep<TIn, TOut, TDerived>::equal(Step const& rhs) const
 {
+    TRACE_FUNC();
     if (auto bs = dynamic_cast<BookStep<TIn, TOut, TDerived> const*>(&rhs))
         return book_ == bs->book_;
     return false;
@@ -571,6 +598,7 @@ template <class TIn, class TOut, class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
 BookStep<TIn, TOut, TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
+    TRACE_FUNC();
     auto const dir = this->debtDirection(v, StrandDirection::Forward);
 
     std::optional<std::pair<Quality, OfferType>> const res = tipOfferQuality(v);
@@ -589,6 +617,7 @@ template <class TIn, class TOut, class TDerived>
 std::pair<std::optional<QualityFunction>, DebtDirection>
 BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const
 {
+    TRACE_FUNC();
     auto const dir = this->debtDirection(v, StrandDirection::Forward);
 
     std::optional<QualityFunction> const res = tipOfferQualityF(v);
@@ -624,6 +653,7 @@ template <class TIn, class TOut, class TDerived>
 std::uint32_t
 BookStep<TIn, TOut, TDerived>::offersUsed() const
 {
+    TRACE_FUNC();
     return offersUsed_;
 }
 
@@ -639,6 +669,7 @@ limitStepIn(
     std::uint32_t transferRateOut,
     TIn const& limit)
 {
+    TRACE_FUNC();
     if (limit < stpAmt.in)
     {
         stpAmt.in = limit;
@@ -668,6 +699,7 @@ limitStepOut(
     std::uint32_t transferRateOut,
     TOut const& limit)
 {
+    TRACE_FUNC();
     if (limit < stpAmt.out)
     {
         stpAmt.out = limit;
@@ -689,6 +721,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     DebtDirection prevStepDir,
     Callback& callback) const
 {
+    TRACE_FUNC();
     // Charge the offer owner, not the sender
     // Charge a fee even if the owner is the same as the issuer
     // (the old code does not charge a fee)
@@ -862,6 +895,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     TAmounts<TIn, TOut> const& stepAmt,
     TOut const& ownerGives) const
 {
+    TRACE_FUNC();
     if (!offer.checkInvariant(ofrAmt, j_))
     {
         // purposely written as separate if statements so we get logging even
@@ -905,6 +939,7 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
     ReadView const& view,
     std::optional<Quality> const& clobQuality) const
 {
+    TRACE_FUNC();
     if (ammLiquidity_)
         return ammLiquidity_->getOffer(view, clobQuality);
     return std::nullopt;
@@ -914,6 +949,7 @@ template <class TIn, class TOut, class TDerived>
 std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
 BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
 {
+    TRACE_FUNC();
     // This can be simplified (and sped up) if directories are never empty.
     Sandbox sb(&view, TapNone);
     BookTip bt(sb, book_);
@@ -953,6 +989,7 @@ auto
 BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
     -> std::optional<std::pair<Quality, OfferType>>
 {
+    TRACE_FUNC();
     auto const res = tip(view);
     if (!res)
     {
@@ -970,6 +1007,7 @@ template <class TIn, class TOut, class TDerived>
 std::optional<QualityFunction>
 BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
 {
+    TRACE_FUNC();
     auto const res = tip(view);
     if (!res)
     {
@@ -987,6 +1025,7 @@ template <class TCollection>
 static auto
 sum(TCollection const& col)
 {
+    TRACE_FUNC();
     using TResult = std::decay_t<decltype(*col.begin())>;
     if (col.empty())
         return TResult{beast::kZERO};
@@ -1001,6 +1040,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     TOut const& out)
 {
+    TRACE_FUNC();
     cache_.reset();
 
     TAmounts<TIn, TOut> result(beast::kZERO, beast::kZERO);
@@ -1112,6 +1152,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     TIn const& in)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(cache_, "xrpl::BookStep::fwdImp : cache is set");
 
     TAmounts<TIn, TOut> result(beast::kZERO, beast::kZERO);
@@ -1273,6 +1314,7 @@ BookStep<TIn, TOut, TDerived>::validFwd(
     ApplyView& afView,
     EitherAmount const& in)
 {
+    TRACE_FUNC();
     if (!cache_)
     {
         JLOG(j_.trace()) << "Expected valid cache in validFwd";
@@ -1309,6 +1351,7 @@ template <class TIn, class TOut, class TDerived>
 TER
 BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
 {
+    TRACE_FUNC();
     if (book_.in == book_.out)
     {
         JLOG(j_.debug()) << "BookStep: Book with same in and out issuer " << *this;
@@ -1385,6 +1428,7 @@ BookStep<TIn, TOut, TDerived>::rate(
     Asset const& asset,
     AccountID const& dstAccount) const
 {
+    TRACE_FUNC();
     auto const& issuer = asset.getIssuer();
     if (isXRP(issuer) || issuer == dstAccount)
         return kPARITY_RATE;
@@ -1397,6 +1441,7 @@ template <class TIn, class TOut, class TDerived>
 bool
 BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const& owner) const
 {
+    TRACE_FUNC();
     if (!isTesSuccess(canTrade(view, book_.in)) || !isTesSuccess(canTrade(view, book_.out)))
         return false;
 
@@ -1454,6 +1499,7 @@ template <class TIn, class TOut, class TDerived>
 static bool
 equalHelper(Step const& step, xrpl::Book const& book)
 {
+    TRACE_FUNC();
     if (auto bs = dynamic_cast<BookStep<TIn, TOut, TDerived> const*>(&step))
         return book == bs->book();
     return false;
@@ -1462,6 +1508,7 @@ equalHelper(Step const& step, xrpl::Book const& book)
 bool
 bookStepEqual(Step const& step, xrpl::Book const& book)
 {
+    TRACE_FUNC();
     return std::visit(
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
             using TIn_ = typename TIn::amount_type;
@@ -1490,6 +1537,7 @@ template <class TIn, class TOut>
 static std::pair<TER, std::unique_ptr<Step>>
 makeBookStepHelper(StrandContext const& ctx, Asset const& in, Asset const& out)
 {
+    TRACE_FUNC();
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
     if (ctx.offerCrossing != OfferCrossing::No)
@@ -1513,18 +1561,21 @@ makeBookStepHelper(StrandContext const& ctx, Asset const& in, Asset const& out)
 std::pair<TER, std::unique_ptr<Step>>
 makeBookStepIi(StrandContext const& ctx, Issue const& in, Issue const& out)
 {
+    TRACE_FUNC();
     return makeBookStepHelper<IOUAmount, IOUAmount>(ctx, in, out);
 }
 
 std::pair<TER, std::unique_ptr<Step>>
 makeBookStepIx(StrandContext const& ctx, Issue const& in)
 {
+    TRACE_FUNC();
     return makeBookStepHelper<IOUAmount, XRPAmount>(ctx, in, xrpIssue());
 }
 
 std::pair<TER, std::unique_ptr<Step>>
 makeBookStepXi(StrandContext const& ctx, Issue const& out)
 {
+    TRACE_FUNC();
     return makeBookStepHelper<XRPAmount, IOUAmount>(ctx, xrpIssue(), out);
 }
 
@@ -1532,30 +1583,35 @@ makeBookStepXi(StrandContext const& ctx, Issue const& out)
 std::pair<TER, std::unique_ptr<Step>>
 makeBookStepMm(StrandContext const& ctx, MPTIssue const& in, MPTIssue const& out)
 {
+    TRACE_FUNC();
     return makeBookStepHelper<MPTAmount, MPTAmount>(ctx, in, out);
 }
 
 std::pair<TER, std::unique_ptr<Step>>
 makeBookStepMi(StrandContext const& ctx, MPTIssue const& in, Issue const& out)
 {
+    TRACE_FUNC();
     return makeBookStepHelper<MPTAmount, IOUAmount>(ctx, in, out);
 }
 
 std::pair<TER, std::unique_ptr<Step>>
 makeBookStepIm(StrandContext const& ctx, Issue const& in, MPTIssue const& out)
 {
+    TRACE_FUNC();
     return makeBookStepHelper<IOUAmount, MPTAmount>(ctx, in, out);
 }
 
 std::pair<TER, std::unique_ptr<Step>>
 makeBookStepMx(StrandContext const& ctx, MPTIssue const& in)
 {
+    TRACE_FUNC();
     return makeBookStepHelper<MPTAmount, XRPAmount>(ctx, in, xrpIssue());
 }
 
 std::pair<TER, std::unique_ptr<Step>>
 makeBookStepXm(StrandContext const& ctx, MPTIssue const& out)
 {
+    TRACE_FUNC();
     return makeBookStepHelper<XRPAmount, MPTAmount>(ctx, xrpIssue(), out);
 }
 

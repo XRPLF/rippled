@@ -30,6 +30,7 @@
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -40,12 +41,14 @@ namespace xrpl {
 bool
 AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC
 AccountDelete::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
     {
         // An account cannot be deleted and give itself the resulting XRP.
@@ -61,6 +64,7 @@ AccountDelete::preflight(PreflightContext const& ctx)
 XRPAmount
 AccountDelete::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     // The fee required for AccountDelete is one owner reserve.
     return calculateOwnerReserveFee(view, tx);
 }
@@ -85,6 +89,7 @@ offerDelete(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return offerDelete(view, sleDel, j);
 }
 
@@ -97,6 +102,7 @@ removeSignersFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return SignerListSet::removeFromLedger(registry, view, account, j);
 }
 
@@ -109,6 +115,7 @@ removeTicketFromLedger(
     std::shared_ptr<SLE> const&,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return Transactor::ticketDelete(view, account, delIndex, j);
 }
 
@@ -121,6 +128,7 @@ removeDepositPreauthFromLedger(
     std::shared_ptr<SLE> const&,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return DepositPreauth::removeFromLedger(view, delIndex, j);
 }
 
@@ -133,6 +141,7 @@ removeNFTokenOfferFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal)
 {
+    TRACE_FUNC();
     if (!nft::deleteTokenOffer(view, sleDel))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -148,6 +157,7 @@ removeDIDFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return DIDDelete::deleteSLE(view, sleDel, account, j);
 }
 
@@ -160,6 +170,7 @@ removeOracleFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return OracleDelete::deleteOracle(view, sleDel, account, j);
 }
 
@@ -172,6 +183,7 @@ removeCredentialFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return credentials::deleteSLE(view, sleDel, j);
 }
 
@@ -184,6 +196,7 @@ removeDelegateFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
@@ -193,6 +206,7 @@ removeDelegateFromLedger(
 DeleterFuncPtr
 nonObligationDeleter(LedgerEntryType t)
 {
+    TRACE_FUNC();
     switch (t)
     {
         case ltOFFER:
@@ -223,6 +237,7 @@ nonObligationDeleter(LedgerEntryType t)
 TER
 AccountDelete::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
 
@@ -344,6 +359,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 TER
 AccountDelete::doApply()
 {
+    TRACE_FUNC();
     auto src = view().peek(keylet::account(account_));
     XRPL_ASSERT(src, "xrpl::AccountDelete::doApply : non-null source account");
 
@@ -432,6 +448,7 @@ AccountDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

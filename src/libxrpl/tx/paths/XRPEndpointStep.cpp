@@ -20,6 +20,7 @@
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -48,6 +49,7 @@ private:
     [[nodiscard]] std::optional<EitherAmount>
     cached() const
     {
+    TRACE_FUNC();
         if (!cache_)
             return std::nullopt;
         return EitherAmount(*cache_);
@@ -62,12 +64,14 @@ public:
     [[nodiscard]] AccountID const&
     acc() const
     {
+    TRACE_FUNC();
         return acc_;
     }
 
     [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
+    TRACE_FUNC();
         if (isLast_)
             return std::make_pair(xrpAccount(), acc_);
         return std::make_pair(acc_, xrpAccount());
@@ -76,18 +80,21 @@ public:
     [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
+    TRACE_FUNC();
         return cached();
     }
 
     [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
+    TRACE_FUNC();
         return cached();
     }
 
     [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
+    TRACE_FUNC();
         return DebtDirection::Issues;
     }
 
@@ -119,12 +126,14 @@ protected:
     XRPAmount
     xrpLiquidImpl(ReadView& sb, std::int32_t reserveReduction) const
     {
+    TRACE_FUNC();
         return xrpl::xrpLiquid(sb, acc_, reserveReduction, j_);
     }
 
     std::string
     logStringImpl(char const* name) const
     {
+    TRACE_FUNC();
         std::ostringstream ostr;
         ostr << name << ": "
              << "\nAcc: " << acc_;
@@ -139,12 +148,14 @@ private:
     friend bool
     operator!=(XRPEndpointStep const& lhs, XRPEndpointStep const& rhs)
     {
+    TRACE_FUNC();
         return !(lhs == rhs);
     }
 
     [[nodiscard]] bool
     equal(Step const& rhs) const override
     {
+    TRACE_FUNC();
         if (auto ds = dynamic_cast<XRPEndpointStep const*>(&rhs))
         {
             return *this == *ds;
@@ -175,6 +186,7 @@ public:
     XRPAmount
     xrpLiquid(ReadView& sb) const
     {
+    TRACE_FUNC();
         return xrpLiquidImpl(sb, 0);
         ;
     }
@@ -182,6 +194,7 @@ public:
     [[nodiscard]] std::string
     logString() const override
     {
+    TRACE_FUNC();
         return logStringImpl("XRPEndpointPaymentStep");
     }
 };
@@ -200,6 +213,7 @@ private:
     static std::int32_t
     computeReserveReduction(StrandContext const& ctx, AccountID const& acc)
     {
+    TRACE_FUNC();
         if (ctx.isFirst)
         {
             return ctx.strandDeliver.visit(
@@ -227,12 +241,14 @@ public:
     XRPAmount
     xrpLiquid(ReadView& sb) const
     {
+    TRACE_FUNC();
         return xrpLiquidImpl(sb, reserveReduction_);
     }
 
     [[nodiscard]] std::string
     logString() const override
     {
+    TRACE_FUNC();
         return logStringImpl("XRPEndpointOfferCrossingStep");
     }
 
@@ -246,6 +262,7 @@ template <class TDerived>
 inline bool
 operator==(XRPEndpointStep<TDerived> const& lhs, XRPEndpointStep<TDerived> const& rhs)
 {
+    TRACE_FUNC();
     return lhs.acc_ == rhs.acc_ && lhs.isLast_ == rhs.isLast_;
 }
 
@@ -253,6 +270,7 @@ template <class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
 XRPEndpointStep<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
+    TRACE_FUNC();
     return {Quality{STAmount::kU_RATE_ONE}, this->debtDirection(v, StrandDirection::Forward)};
 }
 
@@ -264,6 +282,7 @@ XRPEndpointStep<TDerived>::revImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     XRPAmount const& out)
 {
+    TRACE_FUNC();
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
 
     auto const result = isLast_ ? out : std::min(balance, out);
@@ -286,6 +305,7 @@ XRPEndpointStep<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     XRPAmount const& in)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(cache_, "xrpl::XRPEndpointStep::fwdImp : cache is set");
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
 
@@ -305,6 +325,7 @@ template <class TDerived>
 std::pair<bool, EitherAmount>
 XRPEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in)
 {
+    TRACE_FUNC();
     if (!cache_)
     {
         JLOG(j_.error()) << "Expected valid cache in validFwd";
@@ -337,6 +358,7 @@ template <class TDerived>
 TER
 XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
 {
+    TRACE_FUNC();
     if (!acc_)
     {
         JLOG(j_.debug()) << "XRPEndpointStep: specified bad account.";
@@ -381,6 +403,7 @@ namespace test {
 bool
 xrpEndpointStepEqual(Step const& step, AccountID const& acc)
 {
+    TRACE_FUNC();
     if (auto xs = dynamic_cast<XRPEndpointStep<XRPEndpointPaymentStep> const*>(&step))
     {
         return xs->acc() == acc;
@@ -394,6 +417,7 @@ xrpEndpointStepEqual(Step const& step, AccountID const& acc)
 std::pair<TER, std::unique_ptr<Step>>
 makeXrpEndpointStep(StrandContext const& ctx, AccountID const& acc)
 {
+    TRACE_FUNC();
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
     if (ctx.offerCrossing != OfferCrossing::No)

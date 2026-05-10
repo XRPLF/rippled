@@ -1,4 +1,5 @@
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -22,6 +23,7 @@ getFileContents(
     boost::filesystem::path const& sourcePath,
     std::optional<std::size_t> maxSize)
 {
+    TRACE_FUNC();
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 
@@ -62,6 +64,7 @@ writeFileContents(
     boost::filesystem::path const& destPath,
     std::string const& contents)
 {
+    TRACE_FUNC();
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 

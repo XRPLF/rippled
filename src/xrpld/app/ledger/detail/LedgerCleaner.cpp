@@ -22,6 +22,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <condition_variable>
@@ -83,6 +84,7 @@ public:
 
     ~LedgerCleanerImp() override
     {
+    TRACE_FUNC();
         if (thread_.joinable())
             logicError("LedgerCleanerImp::stop not called.");
     }
@@ -90,12 +92,14 @@ public:
     void
     start() override
     {
+    TRACE_FUNC();
         thread_ = std::thread{&LedgerCleanerImp::run, this};
     }
 
     void
     stop() override
     {
+    TRACE_FUNC();
         JLOG(j_.info()) << "Stopping";
         {
             std::scoped_lock const lock(mutex_);
@@ -114,6 +118,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map) override
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(mutex_);
 
         if (maxRange_ == 0)
@@ -141,6 +146,7 @@ public:
     void
     clean(json::Value const& params) override
     {
+    TRACE_FUNC();
         LedgerIndex minRange = 0;
         LedgerIndex maxRange = 0;
         app_.getLedgerMaster().getFullValidatedRange(minRange, maxRange);
@@ -225,6 +231,7 @@ private:
     void
     run()
     {
+    TRACE_FUNC();
         beast::setCurrentThreadName("LedgerCleaner");
         JLOG(j_.debug()) << "Started";
 
@@ -246,6 +253,7 @@ private:
     LedgerHash
     getLedgerHash(std::shared_ptr<ReadView const>& ledger, LedgerIndex index)
     {
+    TRACE_FUNC();
         std::optional<LedgerHash> hash;
         try
         {
@@ -274,6 +282,7 @@ private:
         bool doNodes,
         bool doTxns)
     {
+    TRACE_FUNC();
         auto nodeLedger = app_.getInboundLedgers().acquire(
             ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
         if (!nodeLedger)
@@ -328,6 +337,7 @@ private:
     LedgerHash
     getHash(LedgerIndex const& ledgerIndex, std::shared_ptr<ReadView const>& referenceLedger)
     {
+    TRACE_FUNC();
         LedgerHash ledgerHash;
 
         if (!referenceLedger || (referenceLedger->header().seq < ledgerIndex))
@@ -375,6 +385,7 @@ private:
     void
     doLedgerCleaner()
     {
+    TRACE_FUNC();
         auto shouldExit = [this] {
             std::scoped_lock const lock(mutex_);
             return shouldExit_;
@@ -451,6 +462,7 @@ private:
 std::unique_ptr<LedgerCleaner>
 makeLedgerCleaner(Application& app, beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::make_unique<LedgerCleanerImp>(app, journal);
 }
 

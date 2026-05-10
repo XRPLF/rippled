@@ -51,6 +51,7 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/apply.h>  // Validity::Valid
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <chrono>
@@ -89,12 +90,14 @@ public:
     [[nodiscard]] bool
     isMultiSigning() const
     {
+    TRACE_FUNC();
         return multiSigningAcctID_ != nullptr;
     }
 
     [[nodiscard]] bool
     isSingleSigning() const
     {
+    TRACE_FUNC();
         return !isMultiSigning();
     }
 
@@ -102,12 +105,14 @@ public:
     [[nodiscard]] bool
     editFields() const
     {
+    TRACE_FUNC();
         return !isMultiSigning();
     }
 
     [[nodiscard]] bool
     validMultiSign() const
     {
+    TRACE_FUNC();
         return isMultiSigning() && multiSignPublicKey_ && !multiSignature_.empty();
     }
 
@@ -115,6 +120,7 @@ public:
     [[nodiscard]] AccountID const&
     getSigner() const
     {
+    TRACE_FUNC();
         if (multiSigningAcctID_ == nullptr)
             logicError("Accessing unknown SigningForParams::getSigner()");
         return *multiSigningAcctID_;
@@ -123,6 +129,7 @@ public:
     [[nodiscard]] PublicKey const&
     getPublicKey() const
     {
+    TRACE_FUNC();
         if (!multiSignPublicKey_)
             logicError("Accessing unknown SigningForParams::getPublicKey()");
         return *multiSignPublicKey_;
@@ -131,30 +138,35 @@ public:
     [[nodiscard]] Buffer const&
     getSignature() const
     {
+    TRACE_FUNC();
         return multiSignature_;
     }
 
     [[nodiscard]] std::optional<std::reference_wrapper<SField const>> const&
     getSignatureTarget() const
     {
+    TRACE_FUNC();
         return signatureTarget_;
     }
 
     void
     setPublicKey(PublicKey const& multiSignPublicKey)
     {
+    TRACE_FUNC();
         multiSignPublicKey_ = multiSignPublicKey;
     }
 
     void
     setSignatureTarget(std::optional<std::reference_wrapper<SField const>> const& field)
     {
+    TRACE_FUNC();
         signatureTarget_ = field;
     }
 
     void
     moveMultiSignature(Buffer&& multiSignature)
     {
+    TRACE_FUNC();
         multiSignature_ = std::move(multiSignature);
     }
 };
@@ -167,6 +179,7 @@ acctMatchesPubKey(
     AccountID const& accountID,
     PublicKey const& publicKey)
 {
+    TRACE_FUNC();
     auto const publicKeyAcctID = calcAccountID(publicKey);
     bool const isMasterKey = publicKeyAcctID == accountID;
 
@@ -205,6 +218,7 @@ checkPayment(
     Application& app,
     bool doPath)
 {
+    TRACE_FUNC();
     // Only path find for Payments.
     if (txJson[jss::TransactionType].asString() != jss::Payment)
         return json::Value();
@@ -351,6 +365,7 @@ checkTxJsonFields(
     LoadFeeTrack const& feeTrack,
     unsigned apiVersion)
 {
+    TRACE_FUNC();
     std::pair<json::Value, AccountID> ret;
 
     if (!txJson.isObject())
@@ -441,6 +456,7 @@ transactionPreProcessImpl(
     std::chrono::seconds validatedLedgerAge,
     Application& app)
 {
+    TRACE_FUNC();
     auto j = app.getJournal("RPCHandler");
 
     json::Value jvResult;
@@ -686,6 +702,7 @@ transactionConstructImpl(
     Rules const& rules,
     Application& app)
 {
+    TRACE_FUNC();
     std::pair<json::Value, Transaction::pointer> ret;
 
     // Turn the passed in STTx into a Transaction.
@@ -755,6 +772,7 @@ transactionConstructImpl(
 static json::Value
 transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 {
+    TRACE_FUNC();
     json::Value jvResult;
     try
     {
@@ -799,6 +817,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 [[nodiscard]] static XRPAmount
 getTxFee(Application const& app, Config const& config, json::Value tx)
 {
+    TRACE_FUNC();
     auto const& ledger = app.getOpenLedger().current();
     // autofilling only needed in this function so that the `STParsedJSONObject`
     // parsing works properly it should not be modifying the actual `tx` object
@@ -880,6 +899,7 @@ getCurrentNetworkFee(
     int mult,
     int div)
 {
+    TRACE_FUNC();
     XRPAmount const feeDefault = getTxFee(app, config, tx);
 
     auto ledger = app.getOpenLedger().current();
@@ -917,6 +937,7 @@ checkFee(
     TxQ const& txQ,
     Application const& app)
 {
+    TRACE_FUNC();
     json::Value& tx(request[jss::tx_json]);
     if (tx.isMember(jss::Fee))
         return json::Value();
@@ -982,6 +1003,7 @@ transactionSign(
     std::chrono::seconds validatedLedgerAge,
     Application& app)
 {
+    TRACE_FUNC();
     using namespace detail;
 
     auto j = app.getJournal("RPCHandler");
@@ -1017,6 +1039,7 @@ transactionSubmit(
     Application& app,
     ProcessTransactionFn const& processTransaction)
 {
+    TRACE_FUNC();
     using namespace detail;
 
     auto const& ledger = app.getOpenLedger().current();
@@ -1058,6 +1081,7 @@ namespace detail {
 static json::Value
 checkMultiSignFields(json::Value const& jvRequest)
 {
+    TRACE_FUNC();
     if (!jvRequest.isMember(jss::tx_json))
         return RPC::missingFieldError(jss::tx_json);
 
@@ -1094,6 +1118,7 @@ checkMultiSignFields(json::Value const& jvRequest)
 static json::Value
 sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 {
+    TRACE_FUNC();
     if (signers.empty())
         return RPC::makeParamError("Signers array may not be empty.");
 
@@ -1139,6 +1164,7 @@ transactionSignFor(
     std::chrono::seconds validatedLedgerAge,
     Application& app)
 {
+    TRACE_FUNC();
     auto const& ledger = app.getOpenLedger().current();
     auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSignFor: " << jvRequest;
@@ -1252,6 +1278,7 @@ transactionSubmitMultiSigned(
     Application& app,
     ProcessTransactionFn const& processTransaction)
 {
+    TRACE_FUNC();
     auto const& ledger = app.getOpenLedger().current();
     auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSubmitMultiSigned: " << jvRequest;

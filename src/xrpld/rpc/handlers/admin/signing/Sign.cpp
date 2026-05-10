@@ -7,6 +7,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -17,6 +18,7 @@ namespace xrpl {
 json::Value
 doSign(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {
         return RPC::makeError(RpcNotSupported, "Signing is not supported by this server.");

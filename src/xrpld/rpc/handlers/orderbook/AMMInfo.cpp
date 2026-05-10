@@ -23,6 +23,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <date/date.h>
 
@@ -38,6 +39,7 @@ namespace xrpl {
 Expected<Asset, ErrorCodeI>
 getAsset(json::Value const& v, beast::Journal j)
 {
+    TRACE_FUNC();
     try
     {
         return assetFromJson(v);
@@ -52,6 +54,7 @@ getAsset(json::Value const& v, beast::Journal j)
 std::string
 toIso8601(NetClock::time_point tp)
 {
+    TRACE_FUNC();
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
     return date::format(
@@ -63,6 +66,7 @@ toIso8601(NetClock::time_point tp)
 json::Value
 doAMMInfo(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto const& params(context.params);
     json::Value result;
 

@@ -30,6 +30,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -42,6 +43,7 @@ namespace xrpl {
 bool
 AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ammEnabled(ctx.rules))
         return false;
 
@@ -55,6 +57,7 @@ AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 AMMCreate::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 
@@ -88,6 +91,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
 XRPAmount
 AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     // The fee required for AMMCreate is one owner reserve.
     return calculateOwnerReserveFee(view, tx);
 }
@@ -95,6 +99,7 @@ AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 TER
 AMMCreate::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const accountID = ctx.tx[sfAccount];
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
@@ -238,6 +243,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 static std::pair<TER, bool>
 applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
 {
+    TRACE_FUNC();
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 
@@ -381,6 +387,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 TER
 AMMCreate::doApply()
 {
+    TRACE_FUNC();
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
@@ -403,6 +410,7 @@ AMMCreate::visitInvariantEntry(
 bool
 AMMCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

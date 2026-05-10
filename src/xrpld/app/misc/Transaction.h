@@ -9,6 +9,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 #include <variant>
@@ -63,42 +64,49 @@ public:
     std::shared_ptr<STTx const> const&
     getSTransaction()
     {
+    TRACE_FUNC();
         return transaction_;
     }
 
     uint256 const&
     getID() const
     {
+    TRACE_FUNC();
         return transactionID_;
     }
 
     LedgerIndex
     getLedger() const
     {
+    TRACE_FUNC();
         return ledgerIndex_;
     }
 
     bool
     isValidated() const
     {
+    TRACE_FUNC();
         return ledgerIndex_ != 0;
     }
 
     TransStatus
     getStatus() const
     {
+    TRACE_FUNC();
         return status_;
     }
 
     TER
     getResult()
     {
+    TRACE_FUNC();
         return result_;
     }
 
     void
     setResult(TER terResult)
     {
+    TRACE_FUNC();
         result_ = terResult;
     }
 
@@ -112,12 +120,14 @@ public:
     void
     setStatus(TransStatus status)
     {
+    TRACE_FUNC();
         status_ = status;
     }
 
     void
     setLedger(LedgerIndex ledger)
     {
+    TRACE_FUNC();
         ledgerIndex_ = ledger;
     }
 
@@ -127,6 +137,7 @@ public:
     void
     setApplying()
     {
+    TRACE_FUNC();
         // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
         applying_ = true;
@@ -140,6 +151,7 @@ public:
     bool
     getApplying() const
     {
+    TRACE_FUNC();
         // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
         return applying_;
@@ -151,6 +163,7 @@ public:
     void
     clearApplying()
     {
+    TRACE_FUNC();
         // Note that all access to applying_ are made by NetworkOPsImp, and must
         // be done under that class's lock.
         applying_ = false;
@@ -164,6 +177,7 @@ public:
         void
         clear()
         {
+    TRACE_FUNC();
             applied = false;
             broadcast = false;
             queued = false;
@@ -177,6 +191,7 @@ public:
         [[nodiscard]] bool
         any() const
         {
+    TRACE_FUNC();
             return applied || broadcast || queued || kept;
         }
 
@@ -193,6 +208,7 @@ public:
     SubmitResult
     getSubmitResult() const
     {
+    TRACE_FUNC();
         return submitResult_;
     }
 
@@ -202,6 +218,7 @@ public:
     void
     clearSubmitResult()
     {
+    TRACE_FUNC();
         submitResult_.clear();
     }
 
@@ -211,6 +228,7 @@ public:
     void
     setApplied()
     {
+    TRACE_FUNC();
         submitResult_.applied = true;
     }
 
@@ -220,6 +238,7 @@ public:
     void
     setQueued()
     {
+    TRACE_FUNC();
         submitResult_.queued = true;
     }
 
@@ -229,6 +248,7 @@ public:
     void
     setBroadcast()
     {
+    TRACE_FUNC();
         submitResult_.broadcast = true;
     }
 
@@ -238,6 +258,7 @@ public:
     void
     setKept()
     {
+    TRACE_FUNC();
         submitResult_.kept = true;
     }
 
@@ -270,6 +291,7 @@ public:
     std::optional<CurrentLedgerState>
     getCurrentLedgerState() const
     {
+    TRACE_FUNC();
         return currentLedgerState_;
     }
 
@@ -287,6 +309,7 @@ public:
         std::uint32_t accountSeq,
         std::uint32_t availableSeq)
     {
+    TRACE_FUNC();
         currentLedgerState_.emplace(validatedLedger, fee, accountSeq, availableSeq);
     }
 
@@ -309,6 +332,7 @@ public:
         [[nodiscard]] bool
         isFound() const
         {
+    TRACE_FUNC();
             return std::holds_alternative<std::pair<uint256, uint32_t>>(locator);
         }
 
@@ -318,6 +342,7 @@ public:
         uint256 const&
         getNodestoreHash()
         {
+    TRACE_FUNC();
             return std::get<std::pair<uint256, uint32_t>>(locator).first;
         }
 
@@ -327,6 +352,7 @@ public:
         uint32_t
         getLedgerSequence()
         {
+    TRACE_FUNC();
             return std::get<std::pair<uint256, uint32_t>>(locator).second;
         }
 
@@ -336,6 +362,7 @@ public:
         ClosedInterval<uint32_t> const&
         getLedgerRangeSearched()
         {
+    TRACE_FUNC();
             return std::get<ClosedInterval<uint32_t>>(locator);
         }
     };

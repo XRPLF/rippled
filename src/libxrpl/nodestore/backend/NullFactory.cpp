@@ -7,6 +7,7 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <functional>
@@ -27,6 +28,7 @@ public:
     std::string
     getName() override
     {
+    TRACE_FUNC();
         return std::string();
     }
 
@@ -38,6 +40,7 @@ public:
     bool
     isOpen() override
     {
+    TRACE_FUNC();
         return false;
     }
 
@@ -49,12 +52,14 @@ public:
     Status
     fetch(uint256 const&, std::shared_ptr<NodeObject>*) override
     {
+    TRACE_FUNC();
         return Status::NotFound;
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256> const& hashes) override
     {
+    TRACE_FUNC();
         return {};
     }
 
@@ -81,6 +86,7 @@ public:
     int
     getWriteLoad() override
     {
+    TRACE_FUNC();
         return 0;
     }
 
@@ -93,6 +99,7 @@ public:
     [[nodiscard]] int
     fdRequired() const override
     {
+    TRACE_FUNC();
         return 0;
     }
 
@@ -109,18 +116,21 @@ private:
 public:
     explicit NullFactory(Manager& manager) : manager_(manager)
     {
+    TRACE_FUNC();
         manager_.insert(*this);
     }
 
     [[nodiscard]] std::string
     getName() const override
     {
+    TRACE_FUNC();
         return "none";
     }
 
     std::unique_ptr<Backend>
     createInstance(size_t, Section const&, std::size_t, Scheduler&, beast::Journal) override
     {
+    TRACE_FUNC();
         return std::make_unique<NullBackend>();
     }
 };
@@ -128,6 +138,7 @@ public:
 void
 registerNullFactory(Manager& manager)
 {
+    TRACE_FUNC();
     static NullFactory const kINSTANCE{manager};
 }
 

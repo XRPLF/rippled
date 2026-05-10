@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -17,6 +18,7 @@ insertNFTSyntheticInJson(
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     insertNFTokenID(response[jss::meta], transaction, transactionMeta);
     insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
 }

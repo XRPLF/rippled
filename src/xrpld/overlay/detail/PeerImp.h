@@ -14,6 +14,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
@@ -196,6 +197,7 @@ private:
         void
         update(Resource::Charge f, std::string const& add)
         {
+    TRACE_FUNC();
             XRPL_ASSERT(f >= fee, "xrpl::PeerImp::ChargeWithContext::update : fee increases");
             fee = f;
             if (!context.empty())
@@ -319,12 +321,14 @@ public:
     beast::Journal const&
     pJournal() const
     {
+    TRACE_FUNC();
         return pJournal_;
     }
 
     std::shared_ptr<PeerFinder::Slot> const&
     slot()
     {
+    TRACE_FUNC();
         return slot_;
     }
 
@@ -370,6 +374,7 @@ public:
     beast::IP::Endpoint
     getRemoteAddress() const override
     {
+    TRACE_FUNC();
         return remoteAddress_;
     }
 
@@ -383,6 +388,7 @@ public:
     Peer::id_t
     id() const override
     {
+    TRACE_FUNC();
         return id_;
     }
 
@@ -405,6 +411,7 @@ public:
     PublicKey const&
     getNodePublic() const override
     {
+    TRACE_FUNC();
         return publicKey_;
     }
 
@@ -416,6 +423,7 @@ public:
     clock_type::duration
     uptime() const
     {
+    TRACE_FUNC();
         return clock_type::now() - creationTime_;
     }
 
@@ -428,6 +436,7 @@ public:
     std::optional<std::size_t>
     publisherListSequence(PublicKey const& pubKey) const override
     {
+    TRACE_FUNC();
         std::scoped_lock const sl(recentLock_);
 
         auto iter = publisherListSequences_.find(pubKey);
@@ -439,6 +448,7 @@ public:
     void
     setPublisherListSequence(PublicKey const& pubKey, std::size_t const seq) override
     {
+    TRACE_FUNC();
         std::scoped_lock const sl(recentLock_);
 
         publisherListSequences_[pubKey] = seq;
@@ -451,6 +461,7 @@ public:
     uint256 const&
     getClosedLedgerHash() const override
     {
+    TRACE_FUNC();
         return closedLedgerHash_;
     }
 
@@ -479,12 +490,14 @@ public:
     bool
     compressionEnabled() const override
     {
+    TRACE_FUNC();
         return compressionEnabled_ == Compressed::On;
     }
 
     bool
     txReduceRelayEnabled() const override
     {
+    TRACE_FUNC();
         return txReduceRelayEnabled_;
     }
 
@@ -666,12 +679,14 @@ private:
     std::string const&
     fingerprint() const override
     {
+    TRACE_FUNC();
         return fingerprint_;
     }
 
     std::string const&
     prefix() const
     {
+    TRACE_FUNC();
         return prefix_;
     }
 
@@ -848,6 +863,7 @@ PeerImp::PeerImp(
           peerFeatureEnabled(headers_, kFEATURE_LEDGER_REPLAY, app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
+    TRACE_FUNC();
     readBuffer_.commit(
         boost::asio::buffer_copy(readBuffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
     JLOG(journal_.info()) << "compression enabled " << (compressionEnabled_ == Compressed::On)
@@ -864,6 +880,7 @@ template <class FwdIt, class>
 void
 PeerImp::sendEndpoints(FwdIt first, FwdIt last)
 {
+    TRACE_FUNC();
     protocol::TMEndpoints tm;
 
     while (first != last)

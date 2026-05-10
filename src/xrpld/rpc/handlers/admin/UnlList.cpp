@@ -6,6 +6,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <utility>
 
@@ -14,6 +15,7 @@ namespace xrpl {
 json::Value
 doUnlList(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     json::Value obj(json::ObjectValue);
 
     context.app.getValidators().forEachListed(

@@ -6,6 +6,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -22,6 +23,7 @@ STArray::STArray(STArray&& other) : STBase(other.getFName()), v_(std::move(other
 STArray&
 STArray::operator=(STArray&& other)
 {
+    TRACE_FUNC();
     setFName(other.getFName());
     v_ = std::move(other.v_);
     return *this;
@@ -29,6 +31,7 @@ STArray::operator=(STArray&& other)
 
 STArray::STArray(int n)
 {
+    TRACE_FUNC();
     v_.reserve(n);
 }
 
@@ -38,11 +41,13 @@ STArray::STArray(SField const& f) : STBase(f)
 
 STArray::STArray(SField const& f, std::size_t n) : STBase(f)
 {
+    TRACE_FUNC();
     v_.reserve(n);
 }
 
 STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
 {
+    TRACE_FUNC();
     while (!sit.empty())
     {
         int type = 0, field = 0;
@@ -80,18 +85,21 @@ STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
 STBase*
 STArray::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STArray::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
 std::string
 STArray::getFullText() const
 {
+    TRACE_FUNC();
     std::string r = "[";
 
     bool first = true;
@@ -111,6 +119,7 @@ STArray::getFullText() const
 std::string
 STArray::getText() const
 {
+    TRACE_FUNC();
     std::string r = "[";
 
     bool first = true;
@@ -130,6 +139,7 @@ STArray::getText() const
 json::Value
 STArray::getJson(JsonOptions p) const
 {
+    TRACE_FUNC();
     json::Value v = json::ArrayValue;
     for (auto const& object : v_)
     {
@@ -145,6 +155,7 @@ STArray::getJson(JsonOptions p) const
 void
 STArray::add(Serializer& s) const
 {
+    TRACE_FUNC();
     for (STObject const& object : v_)
     {
         object.addFieldID(s);
@@ -156,12 +167,14 @@ STArray::add(Serializer& s) const
 SerializedTypeID
 STArray::getSType() const
 {
+    TRACE_FUNC();
     return STI_ARRAY;
 }
 
 bool
 STArray::isEquivalent(STBase const& t) const
 {
+    TRACE_FUNC();
     auto v = dynamic_cast<STArray const*>(&t);
     return v != nullptr && v_ == v->v_;
 }
@@ -169,12 +182,14 @@ STArray::isEquivalent(STBase const& t) const
 bool
 STArray::isDefault() const
 {
+    TRACE_FUNC();
     return v_.empty();
 }
 
 void
 STArray::sort(bool (*compare)(STObject const&, STObject const&))
 {
+    TRACE_FUNC();
     std::ranges::sort(v_, compare);
 }
 

@@ -13,6 +13,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -45,12 +46,14 @@ public:
     [[nodiscard]] bool
     hashMatches(uint256 hash) const
     {
+    TRACE_FUNC();
         return defsHash_ == hash;
     }
 
     [[nodiscard]] json::Value const&
     get() const
     {
+    TRACE_FUNC();
         return defs_;
     }
 };
@@ -58,6 +61,7 @@ public:
 std::string
 ServerDefinitions::translate(std::string const& inp)
 {
+    TRACE_FUNC();
     auto replace = [&](std::string_view oldStr, std::string_view newStr) -> std::string {
         std::string out = inp;
         boost::replace_all(out, oldStr, newStr);
@@ -374,6 +378,7 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
 ServerDefinitions const&
 getDefinitions()
 {
+    TRACE_FUNC();
     static ServerDefinitions const kDEFS{};
     return kDEFS;
 }
@@ -383,12 +388,14 @@ getDefinitions()
 json::Value const&
 getServerDefinitionsJson()
 {
+    TRACE_FUNC();
     return detail::getDefinitions().get();
 }
 
 json::Value
 doServerDefinitions(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto& params = context.params;
 
     uint256 hash;

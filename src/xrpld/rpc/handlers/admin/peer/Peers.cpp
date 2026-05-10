@@ -11,6 +11,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 
@@ -19,6 +20,7 @@ namespace xrpl {
 json::Value
 doPeers(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     json::Value jvResult(json::ObjectValue);
 
     jvResult[jss::peers] = context.app.getOverlay().json();

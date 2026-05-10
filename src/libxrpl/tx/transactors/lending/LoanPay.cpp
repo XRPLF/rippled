@@ -25,6 +25,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/lending/LoanManage.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <bit>
@@ -36,18 +37,21 @@ namespace xrpl {
 bool
 LoanPay::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 std::uint32_t
 LoanPay::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfLoanPayMask;
 }
 
 NotTEC
 LoanPay::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfLoanID] == beast::kZERO)
         return temINVALID;
 
@@ -73,6 +77,7 @@ LoanPay::preflight(PreflightContext const& ctx)
 XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     using namespace Lending;
 
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
@@ -156,6 +161,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 TER
 LoanPay::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -259,6 +265,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
 TER
 LoanPay::doApply()
 {
+    TRACE_FUNC();
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
 
@@ -656,6 +663,7 @@ LoanPay::visitInvariantEntry(
 bool
 LoanPay::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

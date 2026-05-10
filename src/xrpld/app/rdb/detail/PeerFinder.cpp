@@ -8,6 +8,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/rdb/SociDB.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/optional/optional.hpp>
 
@@ -27,6 +28,7 @@ namespace xrpl {
 void
 initPeerFinderDB(soci::session& session, BasicConfig const& config, beast::Journal j)
 {
+    TRACE_FUNC();
     DBConfig const sociConfig(config, "peerfinder");
     sociConfig.open(session);
 
@@ -59,6 +61,7 @@ initPeerFinderDB(soci::session& session, BasicConfig const& config, beast::Journ
 void
 updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Journal j)
 {
+    TRACE_FUNC();
     soci::transaction tr(session);
     // get version
     int version(0);
@@ -208,6 +211,7 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
 void
 readPeerFinderDB(soci::session& session, std::function<void(std::string const&, int)> const& func)
 {
+    TRACE_FUNC();
     std::string s;
     int valence = 0;
     soci::statement st =
@@ -228,6 +232,7 @@ readPeerFinderDB(soci::session& session, std::function<void(std::string const&, 
 void
 savePeerFinderDB(soci::session& session, std::vector<PeerFinder::Store::Entry> const& v)
 {
+    TRACE_FUNC();
     soci::transaction tr(session);
     session << "DELETE FROM PeerFinder_BootstrapCache;";
 

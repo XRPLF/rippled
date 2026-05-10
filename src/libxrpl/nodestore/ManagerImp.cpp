@@ -10,6 +10,7 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseNodeImp.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -26,6 +27,7 @@ namespace xrpl::NodeStore {
 ManagerImp&
 ManagerImp::instance()
 {
+    TRACE_FUNC();
     static ManagerImp k_;
     return k_;
 }
@@ -33,6 +35,7 @@ ManagerImp::instance()
 void
 ManagerImp::missingBackend()
 {
+    TRACE_FUNC();
     Throw<std::runtime_error>(
         "Your xrpld.cfg is missing a [node_db] entry, "
         "please see the xrpld-example.cfg file!");
@@ -53,6 +56,7 @@ registerMemoryFactory(Manager& manager);
 
 ManagerImp::ManagerImp()
 {
+    TRACE_FUNC();
     registerNuDBFactory(*this);
     registerRocksDBFactory(*this);
     registerNullFactory(*this);
@@ -66,6 +70,7 @@ ManagerImp::makeBackend(
     Scheduler& scheduler,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     std::string const type{get(parameters, "type")};
     if (type.empty())
         missingBackend();
@@ -88,6 +93,7 @@ ManagerImp::makeDatabase(
     Section const& config,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     auto backend{makeBackend(config, burstSize, scheduler, journal)};
     backend->open();
     return std::make_unique<DatabaseNodeImp>(
@@ -97,6 +103,7 @@ ManagerImp::makeDatabase(
 void
 ManagerImp::insert(Factory& factory)
 {
+    TRACE_FUNC();
     std::scoped_lock const _(mutex_);
     list_.push_back(&factory);
 }
@@ -104,6 +111,7 @@ ManagerImp::insert(Factory& factory)
 void
 ManagerImp::erase(Factory& factory)
 {
+    TRACE_FUNC();
     std::scoped_lock const _(mutex_);
     auto const iter =
         std::ranges::find_if(list_, [&factory](Factory* other) { return other == &factory; });
@@ -114,6 +122,7 @@ ManagerImp::erase(Factory& factory)
 Factory*
 ManagerImp::find(std::string const& name)
 {
+    TRACE_FUNC();
     std::scoped_lock const _(mutex_);
     auto const iter = std::ranges::find_if(
         list_, [&name](Factory* other) { return boost::iequals(name, other->getName()); });
@@ -127,6 +136,7 @@ ManagerImp::find(std::string const& name)
 Manager&
 Manager::instance()
 {
+    TRACE_FUNC();
     return ManagerImp::instance();
 }
 

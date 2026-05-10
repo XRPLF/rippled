@@ -8,6 +8,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 #include <string>
@@ -17,6 +18,7 @@ namespace xrpl {
 json::Value
 doPeerReservationsAdd(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto const& params = context.params;
 
     if (!params.isMember(jss::public_key))

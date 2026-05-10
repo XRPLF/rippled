@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/buffer.hpp>
 
@@ -40,6 +41,7 @@ public:
     [[nodiscard]] google::protobuf::int64
     ByteCount() const override
     {
+    TRACE_FUNC();
         return count_;
     }
 };
@@ -58,6 +60,7 @@ template <class Buffers>
 bool
 ZeroCopyInputStream<Buffers>::Next(void const** data, int* size)
 {
+    TRACE_FUNC();
     *data = pos_.data();
     *size = boost::asio::buffer_size(pos_);
     if (first_ == last_)
@@ -71,6 +74,7 @@ template <class Buffers>
 void
 ZeroCopyInputStream<Buffers>::BackUp(int count)
 {
+    TRACE_FUNC();
     --first_;
     pos_ = *first_ + (boost::asio::buffer_size(*first_) - count);
     count_ -= count;
@@ -80,6 +84,7 @@ template <class Buffers>
 bool
 ZeroCopyInputStream<Buffers>::Skip(int count)
 {
+    TRACE_FUNC();
     if (first_ == last_)
         return false;
     while (count > 0)
@@ -135,6 +140,7 @@ public:
     [[nodiscard]] google::protobuf::int64
     ByteCount() const override
     {
+    TRACE_FUNC();
         return count_;
     }
 };
@@ -153,6 +159,7 @@ ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(Streambuf& streambuf, std:
 template <class Streambuf>
 ZeroCopyOutputStream<Streambuf>::~ZeroCopyOutputStream()
 {
+    TRACE_FUNC();
     if (commit_ != 0)
         streambuf_.commit(commit_);
 }
@@ -161,6 +168,7 @@ template <class Streambuf>
 bool
 ZeroCopyOutputStream<Streambuf>::Next(void** data, int* size)
 {
+    TRACE_FUNC();
     if (commit_ != 0)
     {
         streambuf_.commit(commit_);
@@ -184,6 +192,7 @@ template <class Streambuf>
 void
 ZeroCopyOutputStream<Streambuf>::BackUp(int count)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(count <= commit_, "xrpl::ZeroCopyOutputStream::BackUp : valid input");
     auto const n = commit_ - count;
     streambuf_.commit(n);

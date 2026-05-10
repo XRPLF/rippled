@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <unordered_set>
@@ -14,6 +15,7 @@ namespace xrpl {
 NotTEC
 checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
 {
+    TRACE_FUNC();
     if (!delegate)
         return terNO_DELEGATE_PERMISSION;
 
@@ -36,6 +38,7 @@ loadGranularPermission(
     TxType const& txType,
     std::unordered_set<GranularPermissionType>& granularPermissions)
 {
+    TRACE_FUNC();
     if (!delegate)
         return;
 

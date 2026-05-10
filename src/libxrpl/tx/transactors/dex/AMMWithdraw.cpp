@@ -29,6 +29,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <bit>
@@ -44,6 +45,7 @@ namespace xrpl {
 bool
 AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ammEnabled(ctx.rules))
         return false;
 
@@ -58,12 +60,14 @@ AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 AMMWithdraw::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfAMMWithdrawMask;
 }
 
 NotTEC
 AMMWithdraw::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const flags = ctx.tx.getFlags();
 
     auto const amount = ctx.tx[~sfAmount];
@@ -180,6 +184,7 @@ tokensWithdraw(
     std::optional<STAmount> const& tokensIn,
     std::uint32_t flags)
 {
+    TRACE_FUNC();
     if ((flags & (tfWithdrawAll | tfOneAssetWithdrawAll)) != 0u)
         return lpTokens;
     return tokensIn;
@@ -188,6 +193,7 @@ tokensWithdraw(
 TER
 AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const accountID = ctx.tx[sfAccount];
 
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
@@ -311,6 +317,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 std::pair<TER, bool>
 AMMWithdraw::applyGuts(Sandbox& sb)
 {
+    TRACE_FUNC();
     auto const amount = ctx_.tx[~sfAmount];
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
@@ -429,6 +436,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 TER
 AMMWithdraw::doApply()
 {
+    TRACE_FUNC();
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
@@ -452,6 +460,7 @@ AMMWithdraw::withdraw(
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     TER ter;
     STAmount newLPTokenBalance;
     std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) = withdraw(
@@ -491,6 +500,7 @@ AMMWithdraw::withdraw(
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
 {
+    TRACE_FUNC();
     auto const lpTokens = ammLPHolds(view, ammSle, account, journal);
     auto const expected = ammHolds(
         view, ammSle, amountWithdraw.asset(), std::nullopt, freezeHandling, authHandling, journal);
@@ -724,6 +734,7 @@ adjustLPTokensIn(
     STAmount const& lpTokensWithdraw,
     WithdrawAll withdrawAll)
 {
+    TRACE_FUNC();
     if (!rules.enabled(fixAMMv1_3) || withdrawAll == WithdrawAll::Yes)
         return lpTokensWithdraw;
     return adjustLPTokens(lptAMMBalance, lpTokensWithdraw, IsDeposit::No);
@@ -743,6 +754,7 @@ AMMWithdraw::equalWithdrawTokens(
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     TER ter;
     STAmount newLPTokenBalance;
     std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) = equalWithdrawTokens(
@@ -773,6 +785,7 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     Asset const& asset2,
     beast::Journal const& journal)
 {
+    TRACE_FUNC();
     TER ter;
     bool updateBalance = true;
     if (lpTokenBalance == beast::kZERO)
@@ -813,6 +826,7 @@ AMMWithdraw::equalWithdrawTokens(
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
 {
+    TRACE_FUNC();
     try
     {
         // Withdrawing all tokens in the pool
@@ -916,6 +930,7 @@ AMMWithdraw::equalWithdrawLimit(
     STAmount const& amount2,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     auto frac = Number{amount} / amountBalance;
     auto tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::No);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
@@ -984,6 +999,7 @@ AMMWithdraw::singleWithdraw(
     STAmount const& amount,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     auto const tokens = adjustLPTokensIn(
         view.rules(),
         lptAMMBalance,
@@ -1036,6 +1052,7 @@ AMMWithdraw::singleWithdrawTokens(
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     auto const tokensAdj =
         adjustLPTokensIn(view.rules(), lptAMMBalance, lpTokensWithdraw, isWithdrawAll(ctx_.tx));
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
@@ -1089,6 +1106,7 @@ AMMWithdraw::singleWithdrawEPrice(
     STAmount const& ePrice,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     // LPTokens is asset in => E = t / a and formula (8) is:
     // a = A*(t1**2 + t1*(f - 2))/(t1*f - 1)
     // substitute a as t/E =>
@@ -1141,6 +1159,7 @@ AMMWithdraw::singleWithdrawEPrice(
 WithdrawAll
 AMMWithdraw::isWithdrawAll(STTx const& tx)
 {
+    TRACE_FUNC();
     if ((tx[sfFlags] & (tfWithdrawAll | tfOneAssetWithdrawAll)) != 0u)
         return WithdrawAll::Yes;
     return WithdrawAll::No;
@@ -1156,6 +1175,7 @@ AMMWithdraw::visitInvariantEntry(
 bool
 AMMWithdraw::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

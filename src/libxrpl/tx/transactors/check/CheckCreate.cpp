@@ -23,6 +23,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -33,12 +34,14 @@ namespace xrpl {
 bool
 CheckCreate::checkExtraFeatures(xrpl::PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return ctx.rules.enabled(featureMPTokensV2) || !ctx.tx[sfSendMax].holds<MPTIssue>();
 }
 
 NotTEC
 CheckCreate::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
     {
         // They wrote a check to themselves.
@@ -77,6 +80,7 @@ CheckCreate::preflight(PreflightContext const& ctx)
 TER
 CheckCreate::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     AccountID const dstId{ctx.tx[sfDestination]};
     AccountID const srcId{ctx.tx[sfAccount]};
     auto const sleDst = ctx.view.read(keylet::account(dstId));
@@ -177,6 +181,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
+    TRACE_FUNC();
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -258,6 +263,7 @@ CheckCreate::visitInvariantEntry(
 bool
 CheckCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

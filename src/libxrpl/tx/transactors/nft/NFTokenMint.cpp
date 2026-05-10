@@ -20,6 +20,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/endian/conversion.hpp>
 
@@ -35,12 +36,14 @@ namespace xrpl {
 static std::uint16_t
 extractNFTokenFlagsFromTxFlags(std::uint32_t txFlags)
 {
+    TRACE_FUNC();
     return static_cast<std::uint16_t>(txFlags & 0x0000FFFF);
 }
 
 static bool
 hasOfferFields(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return ctx.tx.isFieldPresent(sfAmount) || ctx.tx.isFieldPresent(sfDestination) ||
         ctx.tx.isFieldPresent(sfExpiration);
 }
@@ -48,12 +51,14 @@ hasOfferFields(PreflightContext const& ctx)
 bool
 NFTokenMint::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return ctx.rules.enabled(featureNFTokenMintOffer) || !hasOfferFields(ctx);
 }
 
 std::uint32_t
 NFTokenMint::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
     // accounts allowed a TrustLine to be added to the issuer of that token
     // without explicit permission from that issuer.  This was enabled by
@@ -84,6 +89,7 @@ NFTokenMint::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 NFTokenMint::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (auto const f = ctx.tx[~sfTransferFee])
     {
         if (f > kMAX_TRANSFER_FEE)
@@ -139,6 +145,7 @@ NFTokenMint::createNFTokenID(
     nft::Taxon taxon,
     std::uint32_t tokenSeq)
 {
+    TRACE_FUNC();
     // An issuer may issue several NFTs with the same taxon; to ensure that NFTs
     // are spread across multiple pages we lightly mix the taxon up by using the
     // sequence (which is not under the issuer's direct control) as the seed for
@@ -182,6 +189,7 @@ NFTokenMint::createNFTokenID(
 TER
 NFTokenMint::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     // The issuer of the NFT may or may not be the account executing this
     // transaction. Check that and verify that this is allowed:
     if (auto issuer = ctx.tx[~sfIssuer])
@@ -222,6 +230,7 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenMint::doApply()
 {
+    TRACE_FUNC();
     auto const issuer = ctx_.tx[~sfIssuer].value_or(account_);
 
     auto const tokenSeq = [this, &issuer]() -> Expected<std::uint32_t, TER> {
@@ -354,6 +363,7 @@ NFTokenMint::visitInvariantEntry(
 bool
 NFTokenMint::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

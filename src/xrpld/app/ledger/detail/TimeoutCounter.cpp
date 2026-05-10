@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/error.hpp>
 #include <boost/system/detail/error_code.hpp>
@@ -31,6 +32,7 @@ TimeoutCounter::TimeoutCounter(
     , queueJobParameter_(std::move(jobParameter))
     , timer_(app_.getIOContext())
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         (timerInterval_ > 10ms) && (timerInterval_ < 30s),
         "xrpl::TimeoutCounter::TimeoutCounter : interval input inside range");
@@ -39,6 +41,7 @@ TimeoutCounter::TimeoutCounter(
 void
 TimeoutCounter::setTimer(ScopedLockType& sl)
 {
+    TRACE_FUNC();
     if (isDone())
         return;
     timer_.expires_after(timerInterval_);
@@ -57,6 +60,7 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
 void
 TimeoutCounter::queueJob(ScopedLockType& sl)
 {
+    TRACE_FUNC();
     if (isDone())
         return;
     if (queueJobParameter_.jobLimit &&
@@ -79,6 +83,7 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
 void
 TimeoutCounter::invokeOnTimer()
 {
+    TRACE_FUNC();
     ScopedLockType sl(mtx_);
 
     if (isDone())
@@ -104,6 +109,7 @@ TimeoutCounter::invokeOnTimer()
 void
 TimeoutCounter::cancel()
 {
+    TRACE_FUNC();
     ScopedLockType const sl(mtx_);
     if (!isDone())
     {

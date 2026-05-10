@@ -15,6 +15,7 @@
 #include <xrpl/nodestore/Types.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <atomic>
@@ -42,6 +43,7 @@ Database::Database(
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , readThreads_(std::max(1, readThreads))
 {
+    TRACE_FUNC();
     XRPL_ASSERT(readThreads, "xrpl::NodeStore::Database::Database : nonzero threads input");
 
     if (earliestLedgerSeq_ < 1)
@@ -124,6 +126,7 @@ Database::Database(
 
 Database::~Database()
 {
+    TRACE_FUNC();
     // NOTE!
     // Any derived class should call the stop() method in its
     // destructor.  Otherwise, occasionally, the derived class may
@@ -136,12 +139,14 @@ Database::~Database()
 bool
 Database::isStopping() const
 {
+    TRACE_FUNC();
     return readStopping_.load(std::memory_order_relaxed);
 }
 
 void
 Database::stop()
 {
+    TRACE_FUNC();
     {
         std::scoped_lock const lock(readLock_);
 
@@ -179,6 +184,7 @@ Database::asyncFetch(
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(readLock_);
 
     if (!isStopping())
@@ -191,6 +197,7 @@ Database::asyncFetch(
 void
 Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
+    TRACE_FUNC();
     Batch batch;
     batch.reserve(BatchWritePreallocationSize);
     auto storeBatch = [&, fname = __func__]() {
@@ -233,6 +240,17 @@ Database::fetchNodeObject(
     FetchType fetchType,
     bool duplicate)
 {
+    TRACE_FUNC();
+
+    {
+        std::scoped_lock const lock(negCacheMutex_);
+        if (negCache_.count(hash))
+        {
+            ++fetchTotalCount_;
+            return nullptr;
+        }
+    }
+
     FetchReport fetchReport(fetchType);
 
     using namespace std::chrono;
@@ -246,6 +264,12 @@ Database::fetchNodeObject(
         ++fetchHitCount_;
         fetchSz_ += nodeObject->getData().size();
     }
+    else
+    {
+        std::scoped_lock const lock(negCacheMutex_);
+        if (negCache_.size() < kNegCacheMax)
+            negCache_.insert(hash);
+    }
     ++fetchTotalCount_;
 
     fetchReport.elapsed = duration_cast<milliseconds>(dur);
@@ -254,8 +278,23 @@ Database::fetchNodeObject(
 }
 
 void
+Database::negCacheErase(uint256 const& hash)
+{
+    std::scoped_lock const lock(negCacheMutex_);
+    negCache_.erase(hash);
+}
+
+void
+Database::negCacheClear()
+{
+    std::scoped_lock const lock(negCacheMutex_);
+    negCache_.clear();
+}
+
+void
 Database::getCountsJson(json::Value& obj)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(obj.isObject(), "xrpl::NodeStore::Database::getCountsJson : valid input type");
 
     {

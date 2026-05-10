@@ -5,6 +5,7 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <google/protobuf/message.h>
 
@@ -25,6 +26,7 @@ Message::Message(
     : category_(static_cast<std::size_t>(TrafficCount::categorize(message, type, false)))
     , validatorKey_(validator)
 {
+    TRACE_FUNC();
     using namespace xrpl::compression;
 
     auto const messageBytes = messageSize(message);
@@ -47,6 +49,7 @@ Message::Message(
 std::size_t
 Message::messageSize(::google::protobuf::Message const& message)
 {
+    TRACE_FUNC();
 #if defined(GOOGLE_PROTOBUF_VERSION) && (GOOGLE_PROTOBUF_VERSION >= 3011000)
     return message.ByteSizeLong();
 #else
@@ -58,12 +61,14 @@ Message::messageSize(::google::protobuf::Message const& message)
 std::size_t
 Message::totalSize(::google::protobuf::Message const& message)
 {
+    TRACE_FUNC();
     return messageSize(message) + compression::kHEADER_BYTES;
 }
 
 void
 Message::compress()
 {
+    TRACE_FUNC();
     using namespace xrpl::compression;
     auto const messageBytes = buffer_.size() - kHEADER_BYTES;
 
@@ -170,6 +175,7 @@ Message::setHeader(
     Algorithm compression,
     std::uint32_t uncompressedBytes)
 {
+    TRACE_FUNC();
     auto h = in;
 
     auto pack = [](std::uint8_t*& in, std::uint32_t size) {
@@ -194,12 +200,14 @@ Message::setHeader(
 std::size_t
 Message::getBufferSize()
 {
+    TRACE_FUNC();
     return buffer_.size();
 }
 
 std::vector<uint8_t> const&
 Message::getBuffer(Compressed tryCompressed)
 {
+    TRACE_FUNC();
     if (tryCompressed == Compressed::Off)
         return buffer_;
 
@@ -216,6 +224,7 @@ Message::getBuffer(Compressed tryCompressed)
 int
 Message::getType(std::uint8_t const* in)
 {
+    TRACE_FUNC();
     int const type = (static_cast<int>(*(in + 4)) << 8) + *(in + 5);
     return type;
 }

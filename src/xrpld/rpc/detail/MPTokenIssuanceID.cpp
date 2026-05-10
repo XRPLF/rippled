@@ -12,6 +12,7 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -23,6 +24,7 @@ canHaveMPTokenIssuanceID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     if (!serializedTx)
         return false;
 
@@ -40,6 +42,7 @@ canHaveMPTokenIssuanceID(
 std::optional<MPTID>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     for (STObject const& node : transactionMeta.getNodes())
     {
         if (node.getFieldU16(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE ||
@@ -59,6 +62,7 @@ insertMPTokenIssuanceID(
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     if (!canHaveMPTokenIssuanceID(transaction, transactionMeta))
         return;
 

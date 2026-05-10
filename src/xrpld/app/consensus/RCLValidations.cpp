@@ -19,6 +19,7 @@
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <memory>
@@ -36,6 +37,7 @@ RCLValidatedLedger::RCLValidatedLedger(
     beast::Journal j)
     : ledgerID_{ledger->header().hash}, ledgerSeq_{ledger->seq()}, j_{j}
 {
+    TRACE_FUNC();
     auto const hashIndex = ledger->read(keylet::skip());
     if (hashIndex)
     {
@@ -53,23 +55,27 @@ RCLValidatedLedger::RCLValidatedLedger(
 auto
 RCLValidatedLedger::minSeq() const -> Seq
 {
+    TRACE_FUNC();
     return seq() - std::min(seq(), static_cast<Seq>(ancestors_.size()));
 }
 
 auto
 RCLValidatedLedger::seq() const -> Seq
 {
+    TRACE_FUNC();
     return ledgerSeq_;
 }
 auto
 RCLValidatedLedger::id() const -> ID
 {
+    TRACE_FUNC();
     return ledgerID_;
 }
 
 auto
 RCLValidatedLedger::operator[](Seq const& s) const -> ID
 {
+    TRACE_FUNC();
     if (s >= minSeq() && s <= seq())
     {
         if (s == seq())
@@ -89,6 +95,7 @@ RCLValidatedLedger::operator[](Seq const& s) const -> ID
 RCLValidatedLedger::Seq
 mismatch(RCLValidatedLedger const& a, RCLValidatedLedger const& b)
 {
+    TRACE_FUNC();
     using Seq = RCLValidatedLedger::Seq;
 
     // Find overlapping interval for known sequence for the ledgers
@@ -111,12 +118,14 @@ RCLValidationsAdaptor::RCLValidationsAdaptor(Application& app, beast::Journal j)
 NetClock::time_point
 RCLValidationsAdaptor::now() const
 {
+    TRACE_FUNC();
     return app_.getTimeKeeper().closeTime();
 }
 
 std::optional<RCLValidatedLedger>
 RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     auto ledger = perf::measureDurationAndLog(
         [&]() { return app_.getLedgerMaster().getLedgerByHash(hash); },
@@ -154,6 +163,7 @@ handleNewValidation(
     BypassAccept const bypassAccept,
     std::optional<beast::Journal> j)
 {
+    TRACE_FUNC();
     auto const& signingKey = val->getSignerPublic();
     auto const& hash = val->getLedgerHash();
     auto const seq = val->getFieldU32(sfLedgerSequence);

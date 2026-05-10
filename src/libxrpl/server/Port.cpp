@@ -6,6 +6,7 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -26,6 +27,7 @@ namespace xrpl {
 bool
 Port::secure() const
 {
+    TRACE_FUNC();
     return protocol.count("peer") > 0 || protocol.count("https") > 0 || protocol.count("wss") > 0 ||
         protocol.count("wss2") > 0;
 }
@@ -33,6 +35,7 @@ Port::secure() const
 std::string
 Port::protocols() const
 {
+    TRACE_FUNC();
     std::string s;
     for (auto iter = protocol.cbegin(); iter != protocol.cend(); ++iter)
         s += (iter != protocol.cbegin() ? "," : "") + *iter;
@@ -42,6 +45,7 @@ Port::protocols() const
 std::ostream&
 operator<<(std::ostream& os, Port const& p)
 {
+    TRACE_FUNC();
     os << "'" << p.name << "' (ip=" << p.ip << ":" << p.port << ", ";
 
     if (!p.admin_nets_v4.empty() || !p.admin_nets_v6.empty())
@@ -88,6 +92,7 @@ populate(
     std::vector<boost::asio::ip::network_v4>& nets4,
     std::vector<boost::asio::ip::network_v6>& nets6)
 {
+    TRACE_FUNC();
     auto const optResult = section.get(field);
     if (!optResult)
         return;
@@ -193,6 +198,7 @@ populate(
 void
 parsePort(ParsedPort& port, Section const& section, std::ostream& log)
 {
+    TRACE_FUNC();
     port.name = section.name();
     {
         auto const optResult = section.get("ip");

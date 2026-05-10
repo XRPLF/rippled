@@ -5,6 +5,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/flat_map.hpp>
 
@@ -43,6 +44,7 @@ public:
     DisputedTx(Tx tx, bool ourVote, std::size_t numPeers, beast::Journal j)
         : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
+    TRACE_FUNC();
         votes_.reserve(numPeers);
     }
 
@@ -50,6 +52,7 @@ public:
     [[nodiscard]] TxID_t const&
     id() const
     {
+    TRACE_FUNC();
         return tx_.id();
     }
 
@@ -57,6 +60,7 @@ public:
     [[nodiscard]] bool
     getOurVote() const
     {
+    TRACE_FUNC();
         return ourVote_;
     }
 
@@ -70,6 +74,7 @@ public:
         beast::Journal j,
         std::unique_ptr<std::stringstream> const& clog) const
     {
+    TRACE_FUNC();
         // at() can throw, but the map is built by hand to ensure all valid
         // values are available.
         auto const& currentCutoff = p.avalancheCutoffs.at(avalancheState_);
@@ -130,6 +135,7 @@ public:
     [[nodiscard]] Tx const&
     tx() const
     {
+    TRACE_FUNC();
         return tx_;
     }
 
@@ -137,6 +143,7 @@ public:
     void
     setOurVote(bool o)
     {
+    TRACE_FUNC();
         ourVote_ = o;
     }
 
@@ -196,6 +203,7 @@ template <class Tx, class NodeId>
 bool
 DisputedTx<Tx, NodeId>::setVote(NodeId const& peer, bool votesYes)
 {
+    TRACE_FUNC();
     auto const [it, inserted] = votes_.insert(std::make_pair(peer, votesYes));
 
     // new vote
@@ -239,6 +247,7 @@ template <class Tx, class NodeId>
 void
 DisputedTx<Tx, NodeId>::unVote(NodeId const& peer)
 {
+    TRACE_FUNC();
     auto it = votes_.find(peer);
 
     if (it != votes_.end())
@@ -260,6 +269,7 @@ template <class Tx, class NodeId>
 bool
 DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusParms const& p)
 {
+    TRACE_FUNC();
     if (ourVote_ && (nays_ == 0))
         return false;
 
@@ -318,6 +328,7 @@ template <class Tx, class NodeId>
 json::Value
 DisputedTx<Tx, NodeId>::getJson() const
 {
+    TRACE_FUNC();
     using std::to_string;
 
     json::Value ret(json::ObjectValue);

@@ -22,6 +22,7 @@
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/directory.hpp>
@@ -45,6 +46,7 @@ namespace xrpl {
 void
 SHAMapStoreImp::SavedStateDB::init(BasicConfig const& config, std::string const& dbName)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex);
     initStateDB(sqlDb, config, dbName);
 }
@@ -52,6 +54,7 @@ SHAMapStoreImp::SavedStateDB::init(BasicConfig const& config, std::string const&
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex);
 
     return xrpl::getCanDelete(sqlDb);
@@ -60,6 +63,7 @@ SHAMapStoreImp::SavedStateDB::getCanDelete()
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex);
 
     return xrpl::setCanDelete(sqlDb, canDelete);
@@ -68,6 +72,7 @@ SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 SavedState
 SHAMapStoreImp::SavedStateDB::getState()
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex);
 
     return xrpl::getSavedState(sqlDb);
@@ -76,6 +81,7 @@ SHAMapStoreImp::SavedStateDB::getState()
 void
 SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex);
     xrpl::setSavedState(sqlDb, state);
 }
@@ -83,6 +89,7 @@ SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex);
     xrpl::setLastRotated(sqlDb, seq);
 }
@@ -99,6 +106,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     , working_(true)
     , canDelete_(std::numeric_limits<LedgerIndex>::max())
 {
+    TRACE_FUNC();
     Config& config{app.config()};
 
     Section& section{config.section(ConfigSection::nodeDatabase())};
@@ -164,6 +172,7 @@ SHAMapStoreImp::SHAMapStoreImp(
 std::unique_ptr<NodeStore::Database>
 SHAMapStoreImp::makeNodeStore(int readThreads)
 {
+    TRACE_FUNC();
     auto nscfg = app_.config().section(ConfigSection::nodeDatabase());
     std::unique_ptr<NodeStore::Database> db;
 
@@ -208,6 +217,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 void
 SHAMapStoreImp::onLedgerClosed(std::shared_ptr<Ledger const> const& ledger)
 {
+    TRACE_FUNC();
     {
         std::scoped_lock const lock(mutex_);
         newLedger_ = ledger;
@@ -219,6 +229,7 @@ SHAMapStoreImp::onLedgerClosed(std::shared_ptr<Ledger const> const& ledger)
 void
 SHAMapStoreImp::rendezvous() const
 {
+    TRACE_FUNC();
     if (!working_)
         return;
 
@@ -229,12 +240,14 @@ SHAMapStoreImp::rendezvous() const
 int
 SHAMapStoreImp::fdRequired() const
 {
+    TRACE_FUNC();
     return fdRequired_;
 }
 
 bool
 SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
+    TRACE_FUNC();
     // Copy a single record from node to dbRotating_
     dbRotating_->fetchNodeObject(
         node.getHash().asUint256(), 0, NodeStore::FetchType::Synchronous, true);
@@ -250,6 +263,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 void
 SHAMapStoreImp::run()
 {
+    TRACE_FUNC();
     beast::setCurrentThreadName("SHAMapStore");
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
@@ -367,6 +381,7 @@ SHAMapStoreImp::run()
 void
 SHAMapStoreImp::dbPaths()
 {
+    TRACE_FUNC();
     Section const section{app_.config().section(ConfigSection::nodeDatabase())};
     boost::filesystem::path dbPath = get(section, "path");
 
@@ -462,6 +477,7 @@ SHAMapStoreImp::dbPaths()
 std::unique_ptr<NodeStore::Backend>
 SHAMapStoreImp::makeBackendRotating(std::string path)
 {
+    TRACE_FUNC();
     Section section{app_.config().section(ConfigSection::nodeDatabase())};
     boost::filesystem::path newPath;
 
@@ -494,6 +510,7 @@ SHAMapStoreImp::clearSql(
     std::function<std::optional<LedgerIndex>()> const& getMinSeq,
     std::function<void(LedgerIndex)> const& deleteBeforeSeq)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(deleteInterval_, "xrpl::SHAMapStoreImp::clearSql : nonzero delete interval");
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
@@ -538,6 +555,7 @@ SHAMapStoreImp::clearSql(
 void
 SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 {
+    TRACE_FUNC();
     ledgerMaster_->clearLedgerCachePrior(validatedSeq);
     // Also clear the FullBelowCache so its generation counter is bumped.
     // This prevents stale "full below" markers from persisting across
@@ -548,6 +566,7 @@ SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 void
 SHAMapStoreImp::freshenCaches()
 {
+    TRACE_FUNC();
     if (freshenCache(*app_.getNodeFamily().getTreeNodeCache()))
         return;
 
@@ -557,6 +576,7 @@ SHAMapStoreImp::freshenCaches()
 void
 SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 {
+    TRACE_FUNC();
     // Do not allow ledgers to be acquired from the network
     // that are about to be deleted.
     minimumOnline_ = lastRotated + 1;
@@ -599,6 +619,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 SHAMapStoreImp::HealthResult
 SHAMapStoreImp::healthWait()
 {
+    TRACE_FUNC();
     auto age = ledgerMaster_->getValidatedLedgerAge();
     OperatingMode mode = netOPs_->getOperatingMode();
     std::unique_lock lock(mutex_);
@@ -621,6 +642,7 @@ SHAMapStoreImp::healthWait()
 void
 SHAMapStoreImp::stop()
 {
+    TRACE_FUNC();
     if (thread_.joinable())
     {
         {
@@ -635,6 +657,7 @@ SHAMapStoreImp::stop()
 std::optional<LedgerIndex>
 SHAMapStoreImp::minimumOnline() const
 {
+    TRACE_FUNC();
     // minimumOnline_ with 0 value is equivalent to unknown/not set.
     // Don't attempt to acquire ledgers if that value is unknown.
     if ((deleteInterval_ != 0u) && (minimumOnline_ != 0u))
@@ -647,6 +670,7 @@ SHAMapStoreImp::minimumOnline() const
 std::unique_ptr<SHAMapStore>
 makeSHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::make_unique<SHAMapStoreImp>(app, scheduler, journal);
 }
 

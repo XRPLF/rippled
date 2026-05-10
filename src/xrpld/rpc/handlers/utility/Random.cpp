@@ -5,6 +5,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <exception>
 
@@ -21,6 +22,7 @@ struct JsonContext;
 json::Value
 doRandom(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     // TODO(tom): the try/catch is almost certainly redundant, we catch at the
     // top level too.
     try

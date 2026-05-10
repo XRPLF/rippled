@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/app/misc/detail/WorkBase.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl::detail {
 
@@ -27,6 +28,7 @@ private:
     socket_type&
     stream()
     {
+    TRACE_FUNC();
         return socket_;
     }
 };
@@ -48,6 +50,7 @@ inline WorkPlain::WorkPlain(
 inline void
 WorkPlain::onConnect(error_code const& ec)
 {
+    TRACE_FUNC();
     if (ec)
     {
         fail(ec);

@@ -8,6 +8,7 @@
 #include <xrpl/beast/container/aged_container_utility.h>
 #include <xrpl/beast/container/aged_unordered_map.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <mutex>
 #include <optional>
@@ -98,6 +99,7 @@ public:
     bool
     operator()(time_point now, Seq s, ValidationParms const& p)
     {
+    TRACE_FUNC();
         if (now > (when_ + p.validationSET_EXPIRES))
             seq_ = Seq{0};
         if (s <= seq_)
@@ -110,6 +112,7 @@ public:
     [[nodiscard]] Seq
     largest() const
     {
+    TRACE_FUNC();
         return seq_;
     }
 };
@@ -132,6 +135,7 @@ isCurrent(
     NetClock::time_point signTime,
     NetClock::time_point seenTime)
 {
+    TRACE_FUNC();
     // Because this can be called on untrusted, possibly
     // malicious validations, we do our math in a way
     // that avoids any chance of overflowing or underflowing
@@ -161,6 +165,7 @@ enum class ValStatus {
 inline std::string
 to_string(ValStatus m)
 {
+    TRACE_FUNC();
     switch (m)
     {
         case ValStatus::Current:
@@ -336,6 +341,7 @@ private:
     void
     removeTrie(std::scoped_lock<Mutex> const&, NodeID const& nodeID, Validation const& val)
     {
+    TRACE_FUNC();
         {
             auto it = acquiring_.find(std::make_pair(val.seq(), val.ledgerID()));
             if (it != acquiring_.end())
@@ -359,6 +365,7 @@ private:
     void
     checkAcquired(std::scoped_lock<Mutex> const& lock)
     {
+    TRACE_FUNC();
         for (auto it = acquiring_.begin(); it != acquiring_.end();)
         {
             if (std::optional<Ledger> ledger = adaptor_.acquire(it->first.second))
@@ -379,6 +386,7 @@ private:
     void
     updateTrie(std::scoped_lock<Mutex> const&, NodeID const& nodeID, Ledger ledger)
     {
+    TRACE_FUNC();
         auto const [it, inserted] = lastLedger_.emplace(nodeID, ledger);
         if (!inserted)
         {
@@ -408,6 +416,7 @@ private:
         Validation const& val,
         std::optional<std::pair<Seq, ID>> prior)
     {
+    TRACE_FUNC();
         XRPL_ASSERT(val.trusted(), "xrpl::Validations::updateTrie : trusted input validation");
 
         // Clear any prior acquiring ledger for this node
@@ -459,6 +468,7 @@ private:
     auto
     withTrie(std::scoped_lock<Mutex> const& lock, F&& f)
     {
+    TRACE_FUNC();
         // Call current to flush any stale validations
         current(lock, [](auto) {}, [](auto, auto) {});
         checkAcquired(lock);
@@ -485,6 +495,7 @@ private:
     void
     current(std::scoped_lock<Mutex> const& lock, Pre&& pre, F&& f)
     {
+    TRACE_FUNC();
         NetClock::time_point const t = adaptor_.now();
         pre(current_.size());
         auto it = current_.begin();
@@ -522,6 +533,7 @@ private:
     void
     byLedger(std::scoped_lock<Mutex> const&, ID const& ledgerID, Pre&& pre, F&& f)
     {
+    TRACE_FUNC();
         auto it = byLedger_.find(ledgerID);
         if (it != byLedger_.end())
         {
@@ -554,6 +566,7 @@ public:
     Adaptor const&
     adaptor() const
     {
+    TRACE_FUNC();
         return adaptor_;
     }
 
@@ -562,6 +575,7 @@ public:
     ValidationParms const&
     parms() const
     {
+    TRACE_FUNC();
         return parms_;
     }
 
@@ -575,6 +589,7 @@ public:
     bool
     canValidateSeq(Seq const s)
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         return localSeqEnforcer_(byLedger_.clock().now(), s, parms_);
     }
@@ -590,6 +605,7 @@ public:
     ValStatus
     add(NodeID const& nodeID, Validation const& val)
     {
+    TRACE_FUNC();
         if (!isCurrent(parms_, adaptor_.now(), val.signTime(), val.seenTime()))
             return ValStatus::Stale;
 
@@ -682,6 +698,7 @@ public:
     void
     setSeqToKeep(Seq const& low, Seq const& high)
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         XRPL_ASSERT(low < high, "xrpl::Validations::setSeqToKeep : valid inputs");
         toKeep_ = {low, high};
@@ -695,6 +712,7 @@ public:
     void
     expire(beast::Journal& j)
     {
+    TRACE_FUNC();
         auto const start = std::chrono::steady_clock::now();
         {
             std::scoped_lock const lock{mutex_};
@@ -754,6 +772,7 @@ public:
     void
     trustChanged(hash_set<NodeID> const& added, hash_set<NodeID> const& removed)
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
 
         for (auto& [nodeId, validation] : current_)
@@ -790,6 +809,7 @@ public:
     json::Value
     getJsonTrie() const
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         return trie_.getJson();
     }
@@ -809,6 +829,7 @@ public:
     std::optional<std::pair<Seq, ID>>
     getPreferred(Ledger const& curr)
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         std::optional<SpanTip<Ledger>> preferred = withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
             return trie.getPreferred(localSeqEnforcer_.largest());
@@ -863,6 +884,7 @@ public:
     ID
     getPreferred(Ledger const& curr, Seq minValidSeq)
     {
+    TRACE_FUNC();
         std::optional<std::pair<Seq, ID>> preferred = getPreferred(curr);
         if (preferred && preferred->first >= minValidSeq)
             return preferred->second;
@@ -888,6 +910,7 @@ public:
     ID
     getPreferredLCL(Ledger const& lcl, Seq minSeq, hash_map<ID, std::uint32_t> const& peerCounts)
     {
+    TRACE_FUNC();
         std::optional<std::pair<Seq, ID>> preferred = getPreferred(lcl);
 
         // Trusted validations exist, but stick with local preferred ledger if
@@ -921,6 +944,7 @@ public:
     std::size_t
     getNodesAfter(Ledger const& ledger, ID const& ledgerID)
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
 
         // Use trie if ledger is the right one
@@ -945,6 +969,7 @@ public:
     std::vector<WrappedValidationType>
     currentTrusted()
     {
+    TRACE_FUNC();
         std::vector<WrappedValidationType> ret;
         std::scoped_lock const lock{mutex_};
         current(
@@ -964,6 +989,7 @@ public:
     auto
     getCurrentNodeIDs() -> hash_set<NodeID>
     {
+    TRACE_FUNC();
         hash_set<NodeID> ret;
         std::scoped_lock const lock{mutex_};
         current(
@@ -982,6 +1008,7 @@ public:
     std::size_t
     numTrustedForLedger(ID const& ledgerID)
     {
+    TRACE_FUNC();
         std::size_t count = 0;
         std::scoped_lock const lock{mutex_};
         byLedger(
@@ -1004,6 +1031,7 @@ public:
     std::vector<WrappedValidationType>
     getTrustedForLedger(ID const& ledgerID, Seq const& seq)
     {
+    TRACE_FUNC();
         std::vector<WrappedValidationType> res;
         std::scoped_lock const lock{mutex_};
         byLedger(
@@ -1027,6 +1055,7 @@ public:
     std::vector<std::uint32_t>
     fees(ID const& ledgerID, std::uint32_t baseFee)
     {
+    TRACE_FUNC();
         std::vector<std::uint32_t> res;
         std::scoped_lock const lock{mutex_};
         byLedger(
@@ -1055,6 +1084,7 @@ public:
     void
     flush()
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         current_.clear();
     }
@@ -1077,6 +1107,7 @@ public:
     std::size_t
     laggards(Seq const seq, hash_set<NodeKey>& trustedKeys)
     {
+    TRACE_FUNC();
         std::size_t laggards = 0;
 
         current(
@@ -1098,6 +1129,7 @@ public:
     std::size_t
     sizeOfCurrentCache() const
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         return current_.size();
     }
@@ -1105,6 +1137,7 @@ public:
     std::size_t
     sizeOfSeqEnforcersCache() const
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         return seqEnforcers_.size();
     }
@@ -1112,6 +1145,7 @@ public:
     std::size_t
     sizeOfByLedgerCache() const
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         return byLedger_.size();
     }
@@ -1119,6 +1153,7 @@ public:
     std::size_t
     sizeOfBySequenceCache() const
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         return bySequence_.size();
     }

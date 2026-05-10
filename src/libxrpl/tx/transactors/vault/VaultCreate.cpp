@@ -24,6 +24,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -34,6 +35,7 @@ namespace xrpl {
 bool
 VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ctx.rules.enabled(featureMPTokensV1))
         return false;
 
@@ -46,12 +48,14 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 VaultCreate::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfVaultCreateMask;
 }
 
 NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!validDataLength(ctx.tx[~sfData], kMAX_DATA_PAYLOAD_LENGTH))
         return temMALFORMED;
 
@@ -102,6 +106,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 TER
 VaultCreate::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const vaultAsset = ctx.tx[sfAsset];
     auto const account = ctx.tx[sfAccount];
 
@@ -139,6 +144,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 TER
 VaultCreate::doApply()
 {
+    TRACE_FUNC();
     // All return codes in `doApply` must be `tec`, `ter`, or `tes`.
     // As we move checks into `preflight` and `preclaim`,
     // we can consider downgrading them to `tef` or `tem`.
@@ -260,6 +266,7 @@ VaultCreate::visitInvariantEntry(
 bool
 VaultCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

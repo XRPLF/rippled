@@ -13,6 +13,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <utility>
@@ -22,18 +23,21 @@ namespace xrpl {
 STBase*
 STValidation::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STValidation::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
 SOTemplate const&
 STValidation::validationFormat()
 {
+    TRACE_FUNC();
     // We can't have this be a magic static at namespace scope because
     // it relies on the SField's below being initialized, and we can't
     // guarantee the initialization order.
@@ -68,36 +72,42 @@ STValidation::validationFormat()
 uint256
 STValidation::getSigningHash() const
 {
+    TRACE_FUNC();
     return STObject::getSigningHash(HashPrefix::Validation);
 }
 
 uint256
 STValidation::getLedgerHash() const
 {
+    TRACE_FUNC();
     return getFieldH256(sfLedgerHash);
 }
 
 uint256
 STValidation::getConsensusHash() const
 {
+    TRACE_FUNC();
     return getFieldH256(sfConsensusHash);
 }
 
 NetClock::time_point
 STValidation::getSignTime() const
 {
+    TRACE_FUNC();
     return NetClock::time_point{NetClock::duration{getFieldU32(sfSigningTime)}};
 }
 
 NetClock::time_point
 STValidation::getSeenTime() const noexcept
 {
+    TRACE_FUNC();
     return seenTime_;
 }
 
 bool
 STValidation::isValid() const noexcept
 {
+    TRACE_FUNC();
     if (!valid_)
     {
         XRPL_ASSERT(
@@ -117,18 +127,21 @@ STValidation::isValid() const noexcept
 bool
 STValidation::isFull() const noexcept
 {
+    TRACE_FUNC();
     return (getFlags() & kVF_FULL_VALIDATION) != 0;
 }
 
 Blob
 STValidation::getSignature() const
 {
+    TRACE_FUNC();
     return getFieldVL(sfSignature);
 }
 
 Blob
 STValidation::getSerialized() const
 {
+    TRACE_FUNC();
     Serializer s;
     add(s);
     return s.peekData();

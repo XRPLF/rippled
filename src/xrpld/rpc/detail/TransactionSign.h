@@ -6,6 +6,7 @@
 
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -75,6 +76,7 @@ using ProcessTransactionFn = std::function<void(
 inline ProcessTransactionFn
 getProcessTxnFn(NetworkOPs& netOPs)
 {
+    TRACE_FUNC();
     return [&netOPs](
                std::shared_ptr<Transaction>& transaction,
                bool bUnlimited,

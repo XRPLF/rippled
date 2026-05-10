@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -17,6 +18,7 @@ public:
     [[nodiscard]] bool
     isOk() const
     {
+    TRACE_FUNC();
         return isOk_;
     }
 

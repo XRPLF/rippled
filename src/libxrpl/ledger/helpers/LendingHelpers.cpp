@@ -20,6 +20,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -31,6 +32,7 @@ namespace xrpl {
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
 {
+    TRACE_FUNC();
     if (!rules.enabled(featureSingleAssetVault))
         return false;
 
@@ -46,6 +48,7 @@ checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
 LoanPaymentParts&
 LoanPaymentParts::operator+=(LoanPaymentParts const& other)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
 
         other.principalPaid >= beast::kZERO,
@@ -70,6 +73,7 @@ LoanPaymentParts::operator+=(LoanPaymentParts const& other)
 bool
 LoanPaymentParts::operator==(LoanPaymentParts const& other) const
 {
+    TRACE_FUNC();
     return principalPaid == other.principalPaid && interestPaid == other.interestPaid &&
         valueChange == other.valueChange && feePaid == other.feePaid;
 }
@@ -82,6 +86,7 @@ LoanPaymentParts::operator==(LoanPaymentParts const& other) const
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 {
+    TRACE_FUNC();
     // Need floating point math, since we're dividing by a large number
     return tenthBipsOfValue(Number(paymentInterval), interestRate) / kSECONDS_IN_YEAR;
 }
@@ -93,6 +98,7 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 {
+    TRACE_FUNC();
     return roundToAsset(asset, value, scale, Number::RoundingMode::Downward) ==
         roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
 }
@@ -102,6 +108,7 @@ namespace detail {
 void
 LoanStateDeltas::nonNegative()
 {
+    TRACE_FUNC();
     if (principal < beast::kZERO)
         principal = kNUM_ZERO;
     if (interest < beast::kZERO)
@@ -117,6 +124,7 @@ LoanStateDeltas::nonNegative()
 Number
 computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining)
 {
+    TRACE_FUNC();
     return power(1 + periodicRate, paymentsRemaining);
 }
 
@@ -128,6 +136,7 @@ computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining)
 Number
 computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining)
 {
+    TRACE_FUNC();
     if (paymentsRemaining == 0)
         return kNUM_ZERO;
 
@@ -151,6 +160,7 @@ loanPeriodicPayment(
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
 {
+    TRACE_FUNC();
     if (principalOutstanding == 0 || paymentsRemaining == 0)
         return 0;
 
@@ -172,6 +182,7 @@ loanPrincipalFromPeriodicPayment(
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
 {
+    TRACE_FUNC();
     if (paymentsRemaining == 0)
         return kNUM_ZERO;
 
@@ -193,6 +204,7 @@ computeInterestAndFeeParts(
     TenthBips16 managementFeeRate,
     std::int32_t loanScale)
 {
+    TRACE_FUNC();
     auto const fee = computeManagementFee(asset, interest, managementFeeRate, loanScale);
 
     return std::make_pair(interest - fee, fee);
@@ -210,6 +222,7 @@ loanLatePaymentInterest(
     NetClock::time_point parentCloseTime,
     std::uint32_t nextPaymentDueDate)
 {
+    TRACE_FUNC();
     if (principalOutstanding == beast::kZERO)
         return kNUM_ZERO;
 
@@ -245,6 +258,7 @@ loanAccruedInterest(
     std::uint32_t prevPaymentDate,
     std::uint32_t paymentInterval)
 {
+    TRACE_FUNC();
     if (periodicRate == beast::kZERO)
         return kNUM_ZERO;
 
@@ -289,6 +303,7 @@ doPayment(
     UInt32OptionalProxy& nextDueDateProxy,
     std::uint32_t paymentInterval)
 {
+    TRACE_FUNC();
     XRPL_ASSERT_PARTS(nextDueDateProxy, "xrpl::detail::doPayment", "Next due date proxy set");
 
     if (payment.specialCase == PaymentSpecialCase::Final)
@@ -412,6 +427,7 @@ tryOverpayment(
     TenthBips16 const managementFeeRate,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Calculate what the loan state SHOULD be theoretically (at full precision)
     auto const theoreticalState = computeTheoreticalLoanState(
         periodicPayment, periodicRate, paymentRemaining, managementFeeRate);
@@ -594,6 +610,7 @@ doOverpayment(
     TenthBips16 const managementFeeRate,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const loanState = constructLoanState(
         totalValueOutstandingProxy, principalOutstandingProxy, managementFeeOutstandingProxy);
     auto const periodicPayment = periodicPaymentProxy;
@@ -712,6 +729,7 @@ computeLatePayment(
     TenthBips16 managementFeeRate,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Check if the due date has passed. If not, reject the payment as
     // being too soon
     if (!hasExpired(view, nextDueDate))
@@ -812,6 +830,7 @@ computeFullPayment(
     TenthBips16 managementFeeRate,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Full payment must be made before the final scheduled payment.
     if (paymentRemaining <= 1)
     {
@@ -906,6 +925,7 @@ computeFullPayment(
 Number
 PaymentComponents::trackedInterestPart() const
 {
+    TRACE_FUNC();
     return trackedValueDelta - (trackedPrincipalDelta + trackedManagementFeeDelta);
 }
 
@@ -939,6 +959,7 @@ computePaymentComponents(
     std::uint32_t paymentRemaining,
     TenthBips16 managementFeeRate)
 {
+    TRACE_FUNC();
     XRPL_ASSERT_PARTS(
         isRounded(asset, totalValueOutstanding, scale) &&
             isRounded(asset, principalOutstanding, scale) &&
@@ -1149,6 +1170,7 @@ computeOverpaymentComponents(
     TenthBips32 const overpaymentFeeRate,
     TenthBips16 const managementFeeRate)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         overpayment > 0 && isRounded(asset, overpayment, loanScale),
         "xrpl::detail::computeOverpaymentComponents : valid overpayment "
@@ -1200,6 +1222,7 @@ computeOverpaymentComponents(
 detail::LoanStateDeltas
 operator-(LoanState const& lhs, LoanState const& rhs)
 {
+    TRACE_FUNC();
     detail::LoanStateDeltas result{
         .principal = lhs.principalOutstanding - rhs.principalOutstanding,
         .interest = lhs.interestDue - rhs.interestDue,
@@ -1212,6 +1235,7 @@ operator-(LoanState const& lhs, LoanState const& rhs)
 LoanState
 operator-(LoanState const& lhs, detail::LoanStateDeltas const& rhs)
 {
+    TRACE_FUNC();
     LoanState result{
         .valueOutstanding = lhs.valueOutstanding - rhs.total(),
         .principalOutstanding = lhs.principalOutstanding - rhs.principal,
@@ -1225,6 +1249,7 @@ operator-(LoanState const& lhs, detail::LoanStateDeltas const& rhs)
 LoanState
 operator+(LoanState const& lhs, detail::LoanStateDeltas const& rhs)
 {
+    TRACE_FUNC();
     LoanState result{
         .valueOutstanding = lhs.valueOutstanding + rhs.total(),
         .principalOutstanding = lhs.principalOutstanding + rhs.principal,
@@ -1244,6 +1269,7 @@ checkLoanGuards(
     LoanProperties const& properties,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const totalInterestOutstanding =
         properties.loanState.valueOutstanding - principalRequested;
     // Guard 1: if there is no computed total interest over the life of the
@@ -1329,6 +1355,7 @@ computeFullPaymentInterest(
     std::uint32_t startDate,
     TenthBips32 closeInterestRate)
 {
+    TRACE_FUNC();
     auto const accruedInterest = detail::loanAccruedInterest(
         theoreticalPrincipalOutstanding,
         periodicRate,
@@ -1384,6 +1411,7 @@ computeTheoreticalLoanState(
     std::uint32_t const paymentRemaining,
     TenthBips32 const managementFeeRate)
 {
+    TRACE_FUNC();
     if (paymentRemaining == 0)
     {
         return LoanState{
@@ -1443,6 +1471,7 @@ constructLoanState(
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding)
 {
+    TRACE_FUNC();
     // This implementation is pretty trivial, but ensures the calculations
     // are consistent everywhere, and reduces copy/paste errors.
     return LoanState{
@@ -1455,6 +1484,7 @@ constructLoanState(
 LoanState
 constructRoundedLoanState(SLE::const_ref loan)
 {
+    TRACE_FUNC();
     return constructLoanState(
         loan->at(sfTotalValueOutstanding),
         loan->at(sfPrincipalOutstanding),
@@ -1474,6 +1504,7 @@ computeManagementFee(
     TenthBips32 managementFeeRate,
     std::int32_t scale)
 {
+    TRACE_FUNC();
     return roundToAsset(
         asset, tenthBipsOfValue(value, managementFeeRate), scale, Number::RoundingMode::Downward);
 }
@@ -1496,6 +1527,7 @@ computeLoanProperties(
     TenthBips32 managementFeeRate,
     std::int32_t minimumScale)
 {
+    TRACE_FUNC();
     auto const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
     XRPL_ASSERT(interestRate == 0 || periodicRate > 0, "xrpl::computeLoanProperties : valid rate");
     return computeLoanProperties(
@@ -1524,6 +1556,7 @@ computeLoanProperties(
     TenthBips32 managementFeeRate,
     std::int32_t minimumScale)
 {
+    TRACE_FUNC();
     auto const periodicPayment =
         detail::loanPeriodicPayment(principalOutstanding, periodicRate, paymentsRemaining);
 
@@ -1608,6 +1641,7 @@ loanMakePayment(
     LoanPaymentType const paymentType,
     beast::Journal j)
 {
+    TRACE_FUNC();
     using namespace Lending;
 
     auto principalOutstandingProxy = loan->at(sfPrincipalOutstanding);

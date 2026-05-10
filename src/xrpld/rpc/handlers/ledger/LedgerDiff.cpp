@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <grpcpp/support/status.h>
 #include <org/xrpl/rpc/v1/get_ledger_diff.pb.h>
@@ -17,6 +18,7 @@ namespace xrpl {
 std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
 doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context)
 {
+    TRACE_FUNC();
     org::xrpl::rpc::v1::GetLedgerDiffRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDiffResponse response;
     grpc::Status const status = grpc::Status::OK;

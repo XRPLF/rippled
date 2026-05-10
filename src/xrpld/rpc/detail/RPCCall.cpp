@@ -28,6 +28,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_context.hpp>
@@ -70,6 +71,7 @@ createHTTPPost(
     std::string const& strMsg,
     std::unordered_map<std::string, std::string> const& mapRequestHeaders)
 {
+    TRACE_FUNC();
     std::ostringstream s;
 
     // CHECKME this uses a different version than the replies below use. Is
@@ -102,6 +104,7 @@ private:
     static bool
     jvParseLedger(json::Value& jvRequest, std::string const& strLedger)
     {
+    TRACE_FUNC();
         if (strLedger == "current" || strLedger == "closed" || strLedger == "validated")
         {
             jvRequest[jss::ledger_index] = strLedger;
@@ -123,6 +126,7 @@ private:
     static json::Value
     jvParseCurrencyIssuer(std::string const& strCurrencyIssuer)
     {
+    TRACE_FUNC();
         // Matches a sequence of 3 characters from
         // `xrpl::detail::isoCharSet` (the currency),
         // optionally followed by a forward slash and some other characters
@@ -156,6 +160,7 @@ private:
     static bool
     validPublicKey(std::string const& strPk, TokenType type = TokenType::AccountPublic)
     {
+    TRACE_FUNC();
         if (parseBase58<xrpl::PublicKey>(type, strPk))
             return true;
 
@@ -176,6 +181,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseAsIs(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value v(json::ObjectValue);
 
         if (jvParams.isArray() && (jvParams.size() > 0))
@@ -188,6 +194,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseInternal(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value v(json::ObjectValue);
         v[jss::internal_command] = jvParams[0u];
 
@@ -205,6 +212,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseManifest(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         if (jvParams.size() == 1)
         {
             json::Value jvRequest(json::ObjectValue);
@@ -317,6 +325,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseBookOffers(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value jvRequest(json::ObjectValue);
 
         json::Value jvTakerPays = jvParseCurrencyIssuer(jvParams[0u].asString());
@@ -459,6 +468,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseEvented(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         return rpcError(RpcNoEvents);
     }
 
@@ -515,6 +525,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseSignFor(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         bool const bOffline = 4 == jvParams.size() && jvParams[3u].asString() == "offline";
 
         if (3 == jvParams.size() || bOffline)
@@ -543,6 +554,7 @@ private:
     json::Value
     parseJson(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Reader reader;
         json::Value jvRequest;
 
@@ -565,6 +577,7 @@ private:
     bool
     isValidJson2(json::Value const& jv)
     {
+    TRACE_FUNC();
         if (jv.isArray())
         {
             if (jv.size() == 0)
@@ -593,6 +606,7 @@ private:
     json::Value
     parseJson2(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Reader reader;
         json::Value jv;
         bool const validParse = reader.parse(jvParams[0u].asString(), jv);
@@ -675,6 +689,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseLedgerId(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value jvRequest(json::ObjectValue);
 
         std::string const strLedger = jvParams[0u].asString();
@@ -714,6 +729,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseLogLevel(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value jvRequest(json::ObjectValue);
 
         if (jvParams.size() == 1)
@@ -741,6 +757,7 @@ private:
     json::Value
     parseAccountCurrencies(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         return parseAccountRaw1(jvParams);
     }
 
@@ -763,6 +780,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseChannelAuthorize(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value jvRequest(json::ObjectValue);
 
         unsigned int index = 0;
@@ -807,6 +825,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseChannelVerify(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         std::string const strPk = jvParams[0u].asString();
 
         if (!validPublicKey(strPk))
@@ -836,6 +855,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseAccountRaw2(json::Value const& jvParams, char const* const acc2Field)
     {
+    TRACE_FUNC();
         std::array<char const* const, 2> accFields{{jss::account, acc2Field}};
         auto const nParams = jvParams.size();
         json::Value jvRequest(json::ObjectValue);
@@ -878,6 +898,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseAccountRaw1(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         std::string const strIdent = jvParams[0u].asString();
         unsigned int const iCursor = jvParams.size();
 
@@ -899,6 +920,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseVault(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         std::string const strVaultID = jvParams[0u].asString();
         uint256 id = beast::kZERO;
         if (!id.parseHex(strVaultID))
@@ -932,6 +954,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parsePeerReservationsDel(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value jvRequest;
         jvRequest[jss::public_key] = jvParams[0u].asString();
         return jvRequest;
@@ -1000,6 +1023,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseSignSubmit(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value txJSON;
         json::Reader reader;
         bool const bOffline = jvParams.size() >= 3 && jvParams[2u].asString() == "offline";
@@ -1050,6 +1074,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseSubmitMultiSigned(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         if (1 == jvParams.size())
         {
             json::Value txJSON;
@@ -1070,6 +1095,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseTransactionEntry(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         // Parameter count should have already been verified.
         XRPL_ASSERT(
             jvParams.size() == 2, "xrpl::RPCParser::parseTransactionEntry : valid parameter count");
@@ -1096,6 +1122,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseTx(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value jvRequest{json::ObjectValue};
 
         if (jvParams.size() == 2 || jvParams.size() == 4)
@@ -1129,6 +1156,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseTxHistory(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value jvRequest{json::ObjectValue};
 
         jvRequest[jss::start] = jvParams[0u].asUInt();
@@ -1146,6 +1174,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseValidationCreate(json::Value const& jvParams)
     {
+    TRACE_FUNC();
         json::Value jvRequest{json::ObjectValue};
 
         if (jvParams.size() != 0u)
@@ -1255,6 +1284,7 @@ public:
     json::Value
     parseCommand(std::string strMethod, json::Value jvParams, bool allowAnyCommand)
     {
+    TRACE_FUNC();
         if (auto stream = j_.trace())
         {
             stream << "Method: '" << strMethod << "'";
@@ -1523,6 +1553,7 @@ public:
 std::string
 jsonrpcRequest(std::string const& strMethod, json::Value const& params, json::Value const& id)
 {
+    TRACE_FUNC();
     json::Value request;
     request[jss::method] = strMethod;
     request[jss::params] = params;
@@ -1547,6 +1578,7 @@ struct RPCCallImp
     static void
     callRPCHandler(json::Value* jvOutput, json::Value const& jvInput)
     {
+    TRACE_FUNC();
         (*jvOutput) = jvInput;
     }
 
@@ -1558,6 +1590,7 @@ struct RPCCallImp
         std::string const& strData,
         beast::Journal j)
     {
+    TRACE_FUNC();
         if (callbackFuncP)
         {
             // Only care about the result, if we care to deliver it
@@ -1606,6 +1639,7 @@ struct RPCCallImp
         std::string const& strHost,
         beast::Journal j)
     {
+    TRACE_FUNC();
         JLOG(j.debug()) << "requestRPC: strPath='" << strPath << "'";
 
         std::ostream osRequest(&sb);
@@ -1624,6 +1658,7 @@ rpcCmdToJson(
     unsigned int apiVersion,
     beast::Journal j)
 {
+    TRACE_FUNC();
     json::Value jvRequest(json::ObjectValue);
 
     RPCParser rpParser(apiVersion, j);
@@ -1670,6 +1705,7 @@ rpcClient(
     unsigned int apiVersion,
     std::unordered_map<std::string, std::string> const& headers)
 {
+    TRACE_FUNC();
     static_assert(RpcBadSyntax == 1 && RpcSuccess == 0, "Expect specific rpc enum values.");
     if (args.empty())
         return {RpcBadSyntax, {}};  // rpcBAD_SYNTAX = print usage
@@ -1818,6 +1854,7 @@ namespace RPCCall {
 int
 fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs)
 {
+    TRACE_FUNC();
     auto const result = rpcClient(vCmd, config, logs, RPC::kAPI_COMMAND_LINE_VERSION);
 
     std::cout << result.second.toStyledString();
@@ -1843,6 +1880,7 @@ fromNetwork(
     std::function<void(json::Value const& jvInput)> callbackFuncP,
     std::unordered_map<std::string, std::string> headers)
 {
+    TRACE_FUNC();
     auto j = logs.journal("HTTPClient");
 
     // Connect to localhost

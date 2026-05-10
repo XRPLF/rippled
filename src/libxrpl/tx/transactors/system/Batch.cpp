@@ -18,6 +18,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <bit>
@@ -53,6 +54,7 @@ namespace xrpl {
 XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     XRPAmount const maxAmount{std::numeric_limits<XRPAmount::value_type>::max()};
 
     // batchBase: view.fees().base for batch processing + default base fee
@@ -164,6 +166,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 std::uint32_t
 Batch::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfBatchMask;
 }
 
@@ -203,6 +206,7 @@ Batch::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 Batch::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const flags = ctx.tx.getFlags();
 
@@ -385,6 +389,7 @@ Batch::preflight(PreflightContext const& ctx)
 NotTEC
 Batch::preflightSigValidated(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
@@ -492,6 +497,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
 NotTEC
 Batch::checkSign(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     if (auto ret = Transactor::checkSign(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -514,6 +520,7 @@ Batch::checkSign(PreclaimContext const& ctx)
 TER
 Batch::doApply()
 {
+    TRACE_FUNC();
     return tesSUCCESS;
 }
 
@@ -528,6 +535,7 @@ Batch::visitInvariantEntry(
 bool
 Batch::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

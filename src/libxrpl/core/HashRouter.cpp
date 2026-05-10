@@ -4,6 +4,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/container/detail/aged_unordered_container.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <functional>
@@ -17,6 +18,7 @@ namespace xrpl {
 auto
 HashRouter::emplace(uint256 const& key) -> std::pair<Entry&, bool>
 {
+    TRACE_FUNC();
     auto iter = suppressionMap_.find(key);
 
     if (iter != suppressionMap_.end())
@@ -34,6 +36,7 @@ HashRouter::emplace(uint256 const& key) -> std::pair<Entry&, bool>
 void
 HashRouter::addSuppression(uint256 const& key)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     emplace(key);
@@ -42,12 +45,14 @@ HashRouter::addSuppression(uint256 const& key)
 bool
 HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer)
 {
+    TRACE_FUNC();
     return addSuppressionPeerWithStatus(key, peer).first;
 }
 
 std::pair<bool, std::optional<Stopwatch::time_point>>
 HashRouter::addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     auto result = emplace(key);
@@ -58,6 +63,7 @@ HashRouter::addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer)
 bool
 HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer, HashRouterFlags& flags)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     auto [s, created] = emplace(key);
@@ -73,6 +79,7 @@ HashRouter::shouldProcess(
     HashRouterFlags& flags,
     std::chrono::seconds txInterval)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     auto result = emplace(key);
@@ -85,6 +92,7 @@ HashRouter::shouldProcess(
 HashRouterFlags
 HashRouter::getFlags(uint256 const& key)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     return emplace(key).first.getFlags();
@@ -93,6 +101,7 @@ HashRouter::getFlags(uint256 const& key)
 bool
 HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(static_cast<bool>(flags), "xrpl::HashRouter::setFlags : valid input");
 
     std::scoped_lock const lock(mutex_);
@@ -109,6 +118,7 @@ HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
 auto
 HashRouter::shouldRelay(uint256 const& key) -> std::optional<std::set<PeerShortID>>
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     auto& s = emplace(key).first;

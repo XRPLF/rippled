@@ -15,6 +15,7 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 #include <xrpl/server/Manifest.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>
@@ -38,6 +39,7 @@ namespace xrpl {
 std::unique_ptr<DatabaseCon>
 makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
+    TRACE_FUNC();
     // wallet database
     return std::make_unique<DatabaseCon>(
         setup, kWALLET_DB_NAME, std::array<std::string, 0>(), kWALLET_DB_INIT, j);
@@ -46,6 +48,7 @@ makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j)
 std::unique_ptr<DatabaseCon>
 makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname, beast::Journal j)
 {
+    TRACE_FUNC();
     // wallet database
     return std::make_unique<DatabaseCon>(
         setup, dbname.data(), std::array<std::string, 0>(), kWALLET_DB_INIT, j);
@@ -58,6 +61,7 @@ getManifests(
     ManifestCache& cache,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Load manifests stored in database
     std::string const sql = "SELECT RawData FROM " + dbTable + ";";
     soci::blob sociRawData(session);
@@ -87,6 +91,7 @@ getManifests(
 static void
 saveManifest(soci::session& session, std::string const& dbTable, std::string const& serialized)
 {
+    TRACE_FUNC();
     // soci does not support bulk insertion of blob data
     // Do not reuse blob because manifest ecdsa signatures vary in length
     // but blob write length is expected to be >= the last write
@@ -103,6 +108,7 @@ saveManifests(
     hash_map<PublicKey, Manifest> const& map,
     beast::Journal j)
 {
+    TRACE_FUNC();
     soci::transaction tr(session);
     session << "DELETE FROM " << dbTable;
     for (auto const& v : map)
@@ -123,6 +129,7 @@ saveManifests(
 void
 addValidatorManifest(soci::session& session, std::string const& serialized)
 {
+    TRACE_FUNC();
     soci::transaction tr(session);
     saveManifest(session, "ValidatorManifests", serialized);
     tr.commit();
@@ -131,12 +138,14 @@ addValidatorManifest(soci::session& session, std::string const& serialized)
 void
 clearNodeIdentity(soci::session& session)
 {
+    TRACE_FUNC();
     session << "DELETE FROM NodeIdentity;";
 }
 
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(soci::session& session)
 {
+    TRACE_FUNC();
     {
         // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<std::string> pubKO, priKO;
@@ -172,6 +181,7 @@ getNodeIdentity(soci::session& session)
 std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual>
 getPeerReservationTable(soci::session& session, beast::Journal j)
 {
+    TRACE_FUNC();
     std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual> table;
     // These values must be boost::optionals (not std) because SOCI expects
     // boost::optionals.
@@ -210,6 +220,7 @@ insertPeerReservation(
     PublicKey const& nodeId,
     std::string const& description)
 {
+    TRACE_FUNC();
     auto const sNodeId = toBase58(TokenType::NodePublic, nodeId);
     session << "INSERT INTO PeerReservations (PublicKey, Description) "
                "VALUES (:nodeId, :desc) "
@@ -221,6 +232,7 @@ insertPeerReservation(
 void
 deletePeerReservation(soci::session& session, PublicKey const& nodeId)
 {
+    TRACE_FUNC();
     auto const sNodeId = toBase58(TokenType::NodePublic, nodeId);
     session << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId", soci::use(sNodeId);
 }
@@ -228,6 +240,7 @@ deletePeerReservation(soci::session& session, PublicKey const& nodeId)
 bool
 createFeatureVotes(soci::session& session)
 {
+    TRACE_FUNC();
     soci::transaction tr(session);
     std::string const sql =
         "SELECT count(*) FROM sqlite_master "
@@ -257,6 +270,7 @@ readAmendments(
         boost::optional<std::string> amendmentName,
         boost::optional<AmendmentVote> vote)> const& callback)
 {
+    TRACE_FUNC();
     // lambda that converts the internally stored int to an AmendmentVote.
     auto intToVote = [](boost::optional<int> const& dbVote) -> boost::optional<AmendmentVote> {
         return safeCast<AmendmentVote>(dbVote.value_or(1));
@@ -291,6 +305,7 @@ voteAmendment(
     std::string const& name,
     AmendmentVote vote)
 {
+    TRACE_FUNC();
     soci::transaction tr(session);
     std::string sql =
         "INSERT INTO FeatureVotes (AmendmentHash, AmendmentName, Veto) VALUES "

@@ -5,6 +5,7 @@
 #include <xrpl/json/Output.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <ctime>
 #include <string>
@@ -14,6 +15,7 @@ namespace xrpl {
 std::string
 getHTTPHeaderTimestamp()
 {
+    TRACE_FUNC();
     // CHECKME This is probably called often enough that optimizing it makes
     //         sense. There's no point in doing all this work if this function
     //         gets called multiple times a second.
@@ -33,6 +35,7 @@ getHTTPHeaderTimestamp()
 void
 httpReply(int nStatus, std::string const& content, json::Output const& output, beast::Journal j)
 {
+    TRACE_FUNC();
     JLOG(j.trace()) << "HTTP Reply " << nStatus << " " << content;
 
     if (content.empty() && nStatus == 401)

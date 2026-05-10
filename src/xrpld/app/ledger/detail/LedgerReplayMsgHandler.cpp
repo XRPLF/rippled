@@ -18,6 +18,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -41,6 +42,7 @@ protocol::TMProofPathResponse
 LedgerReplayMsgHandler::processProofPathRequest(
     std::shared_ptr<protocol::TMProofPathRequest> const& msg)
 {
+    TRACE_FUNC();
     protocol::TMProofPathRequest& packet = *msg;
     protocol::TMProofPathResponse reply;
 
@@ -105,6 +107,7 @@ bool
 LedgerReplayMsgHandler::processProofPathResponse(
     std::shared_ptr<protocol::TMProofPathResponse> const& msg)
 {
+    TRACE_FUNC();
     protocol::TMProofPathResponse const& reply = *msg;
     if (reply.has_error() || !reply.has_key() || !reply.has_ledgerhash() || !reply.has_type() ||
         !reply.has_ledgerheader() || reply.path_size() == 0)
@@ -174,6 +177,7 @@ protocol::TMReplayDeltaResponse
 LedgerReplayMsgHandler::processReplayDeltaRequest(
     std::shared_ptr<protocol::TMReplayDeltaRequest> const& msg)
 {
+    TRACE_FUNC();
     protocol::TMReplayDeltaRequest const& packet = *msg;
     protocol::TMReplayDeltaResponse reply;
 
@@ -213,6 +217,7 @@ bool
 LedgerReplayMsgHandler::processReplayDeltaResponse(
     std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg)
 {
+    TRACE_FUNC();
     protocol::TMReplayDeltaResponse const& reply = *msg;
     if (reply.has_error() || !reply.has_ledgerheader())
     {

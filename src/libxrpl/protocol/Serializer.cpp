@@ -8,6 +8,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/endian/conversion.hpp>
 
@@ -24,6 +25,7 @@ namespace xrpl {
 int
 Serializer::add16(std::uint16_t i)
 {
+    TRACE_FUNC();
     int const ret = data_.size();
     data_.push_back(static_cast<unsigned char>(i >> 8));
     data_.push_back(static_cast<unsigned char>(i & 0xff));
@@ -33,6 +35,7 @@ Serializer::add16(std::uint16_t i)
 int
 Serializer::add32(HashPrefix p)
 {
+    TRACE_FUNC();
     // This should never trigger; the size & type of a hash prefix are
     // integral parts of the protocol and unlikely to ever change.
     static_assert(std::is_same_v<std::uint32_t, std::underlying_type_t<decltype(p)>>);
@@ -44,36 +47,42 @@ template <>
 int
 Serializer::addInteger(unsigned char i)
 {
+    TRACE_FUNC();
     return add8(i);
 }
 template <>
 int
 Serializer::addInteger(std::uint16_t i)
 {
+    TRACE_FUNC();
     return add16(i);
 }
 template <>
 int
 Serializer::addInteger(std::uint32_t i)
 {
+    TRACE_FUNC();
     return add32(i);
 }
 template <>
 int
 Serializer::addInteger(std::uint64_t i)
 {
+    TRACE_FUNC();
     return add64(i);
 }
 template <>
 int
 Serializer::addInteger(std::int32_t i)
 {
+    TRACE_FUNC();
     return add32(i);
 }
 
 int
 Serializer::addRaw(Blob const& vector)
 {
+    TRACE_FUNC();
     int const ret = data_.size();
     data_.insert(data_.end(), vector.begin(), vector.end());
     return ret;
@@ -82,6 +91,7 @@ Serializer::addRaw(Blob const& vector)
 int
 Serializer::addRaw(Slice slice)
 {
+    TRACE_FUNC();
     int const ret = data_.size();
     data_.insert(data_.end(), slice.begin(), slice.end());
     return ret;
@@ -90,6 +100,7 @@ Serializer::addRaw(Slice slice)
 int
 Serializer::addRaw(Serializer const& s)
 {
+    TRACE_FUNC();
     int const ret = data_.size();
     data_.insert(data_.end(), s.begin(), s.end());
     return ret;
@@ -98,6 +109,7 @@ Serializer::addRaw(Serializer const& s)
 int
 Serializer::addRaw(void const* ptr, int len)
 {
+    TRACE_FUNC();
     int const ret = data_.size();
     data_.insert(data_.end(), (char const*)ptr, ((char const*)ptr) + len);
     return ret;
@@ -106,6 +118,7 @@ Serializer::addRaw(void const* ptr, int len)
 int
 Serializer::addFieldID(int type, int name)
 {
+    TRACE_FUNC();
     int const ret = data_.size();
     XRPL_ASSERT(
         (type > 0) && (type < 256) && (name > 0) && (name < 256),
@@ -145,6 +158,7 @@ Serializer::addFieldID(int type, int name)
 int
 Serializer::add8(unsigned char byte)
 {
+    TRACE_FUNC();
     int const ret = data_.size();
     data_.push_back(byte);
     return ret;
@@ -153,6 +167,7 @@ Serializer::add8(unsigned char byte)
 bool
 Serializer::get8(int& byte, int offset) const
 {
+    TRACE_FUNC();
     if (offset >= data_.size())
         return false;
 
@@ -163,6 +178,7 @@ Serializer::get8(int& byte, int offset) const
 bool
 Serializer::chop(int bytes)
 {
+    TRACE_FUNC();
     if (bytes > data_.size())
         return false;
 
@@ -173,12 +189,14 @@ Serializer::chop(int bytes)
 uint256
 Serializer::getSHA512Half() const
 {
+    TRACE_FUNC();
     return sha512Half(makeSlice(data_));
 }
 
 int
 Serializer::addVL(Blob const& vector)
 {
+    TRACE_FUNC();
     int const ret = addEncoded(vector.size());
     addRaw(vector);
     XRPL_ASSERT(
@@ -190,6 +208,7 @@ Serializer::addVL(Blob const& vector)
 int
 Serializer::addVL(Slice const& slice)
 {
+    TRACE_FUNC();
     int const ret = addEncoded(slice.size());
     if (!slice.empty())
         addRaw(slice.data(), slice.size());
@@ -199,6 +218,7 @@ Serializer::addVL(Slice const& slice)
 int
 Serializer::addVL(void const* ptr, int len)
 {
+    TRACE_FUNC();
     int const ret = addEncoded(len);
 
     if (len != 0)
@@ -210,6 +230,7 @@ Serializer::addVL(void const* ptr, int len)
 int
 Serializer::addEncoded(int length)
 {
+    TRACE_FUNC();
     std::array<std::uint8_t, 4> bytes{};
     int numBytes = 0;
 
@@ -244,6 +265,7 @@ Serializer::addEncoded(int length)
 int
 Serializer::encodeLengthLength(int length)
 {
+    TRACE_FUNC();
     if (length < 0)
         Throw<std::overflow_error>("len<0");
 
@@ -263,6 +285,7 @@ Serializer::encodeLengthLength(int length)
 int
 Serializer::decodeLengthLength(int b1)
 {
+    TRACE_FUNC();
     if (b1 < 0)
         Throw<std::overflow_error>("b1<0");
 
@@ -282,6 +305,7 @@ Serializer::decodeLengthLength(int b1)
 int
 Serializer::decodeVLLength(int b1)
 {
+    TRACE_FUNC();
     if (b1 < 0)
         Throw<std::overflow_error>("b1<0");
 
@@ -294,6 +318,7 @@ Serializer::decodeVLLength(int b1)
 int
 Serializer::decodeVLLength(int b1, int b2)
 {
+    TRACE_FUNC();
     if (b1 < 193)
         Throw<std::overflow_error>("b1<193");
 
@@ -306,6 +331,7 @@ Serializer::decodeVLLength(int b1, int b2)
 int
 Serializer::decodeVLLength(int b1, int b2, int b3)
 {
+    TRACE_FUNC();
     if (b1 < 241)
         Throw<std::overflow_error>("b1<241");
 
@@ -325,6 +351,7 @@ SerialIter::SerialIter(void const* data, std::size_t size) noexcept
 void
 SerialIter::reset() noexcept
 {
+    TRACE_FUNC();
     p_ -= used_;
     remain_ += used_;
     used_ = 0;
@@ -333,6 +360,7 @@ SerialIter::reset() noexcept
 void
 SerialIter::skip(int length)
 {
+    TRACE_FUNC();
     if (remain_ < length)
         Throw<std::runtime_error>("invalid SerialIter skip");
     p_ += length;
@@ -343,6 +371,7 @@ SerialIter::skip(int length)
 unsigned char
 SerialIter::get8()
 {
+    TRACE_FUNC();
     if (remain_ < 1)
         Throw<std::runtime_error>("invalid SerialIter get8");
     unsigned char const t = *p_;
@@ -355,6 +384,7 @@ SerialIter::get8()
 std::uint16_t
 SerialIter::get16()
 {
+    TRACE_FUNC();
     if (remain_ < 2)
         Throw<std::runtime_error>("invalid SerialIter get16");
     auto t = p_;
@@ -367,6 +397,7 @@ SerialIter::get16()
 std::uint32_t
 SerialIter::get32()
 {
+    TRACE_FUNC();
     if (remain_ < 4)
         Throw<std::runtime_error>("invalid SerialIter get32");
     auto t = p_;
@@ -380,6 +411,7 @@ SerialIter::get32()
 std::uint64_t
 SerialIter::get64()
 {
+    TRACE_FUNC();
     if (remain_ < 8)
         Throw<std::runtime_error>("invalid SerialIter get64");
     auto t = p_;
@@ -394,6 +426,7 @@ SerialIter::get64()
 std::int32_t
 SerialIter::geti32()
 {
+    TRACE_FUNC();
     if (remain_ < 4)
         Throw<std::runtime_error>("invalid SerialIter geti32");
     auto t = p_;
@@ -406,6 +439,7 @@ SerialIter::geti32()
 std::int64_t
 SerialIter::geti64()
 {
+    TRACE_FUNC();
     if (remain_ < 8)
         Throw<std::runtime_error>("invalid SerialIter geti64");
     auto t = p_;
@@ -418,6 +452,7 @@ SerialIter::geti64()
 void
 SerialIter::getFieldID(int& type, int& name)
 {
+    TRACE_FUNC();
     type = get8();
     name = type & 15;
     type >>= 4;
@@ -444,6 +479,7 @@ template <class T>
 T
 SerialIter::getRawHelper(int size)
 {
+    TRACE_FUNC();
     static_assert(std::is_same_v<T, Blob> || std::is_same_v<T, Buffer>, "");
     if (remain_ < size)
         Throw<std::runtime_error>("invalid SerialIter getRaw");
@@ -465,12 +501,14 @@ SerialIter::getRawHelper(int size)
 Blob
 SerialIter::getRaw(int size)
 {
+    TRACE_FUNC();
     return getRawHelper<Blob>(size);
 }
 
 int
 SerialIter::getVLDataLength()
 {
+    TRACE_FUNC();
     int const b1 = get8();
     int datLen = 0;
     int const lenLen = Serializer::decodeLengthLength(b1);
@@ -496,6 +534,7 @@ SerialIter::getVLDataLength()
 Slice
 SerialIter::getSlice(std::size_t bytes)
 {
+    TRACE_FUNC();
     if (bytes > remain_)
         Throw<std::runtime_error>("invalid SerialIter getSlice");
     Slice const s(p_, bytes);
@@ -509,12 +548,14 @@ SerialIter::getSlice(std::size_t bytes)
 Blob
 SerialIter::getVL()
 {
+    TRACE_FUNC();
     return getRaw(getVLDataLength());
 }
 
 Buffer
 SerialIter::getVLBuffer()
 {
+    TRACE_FUNC();
     return getRawHelper<Buffer>(getVLDataLength());
 }
 

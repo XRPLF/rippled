@@ -11,6 +11,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -19,6 +20,7 @@ namespace xrpl {
 NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
     if (domain == beast::kZERO)
         return temMALFORMED;
@@ -29,6 +31,7 @@ PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 TER
 PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
     auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domain));
 
@@ -48,6 +51,7 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainDelete::doApply()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         ctx_.tx.isFieldPresent(sfDomainID),
         "xrpl::PermissionedDomainDelete::doApply : required field present");
@@ -89,6 +93,7 @@ PermissionedDomainDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

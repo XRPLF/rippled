@@ -9,6 +9,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -17,6 +18,7 @@ namespace xrpl {
 NotTEC
 OfferCancel::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfOfferSequence] == 0u)
     {
         JLOG(ctx.j.trace()) << "OfferCancel::preflight: missing sequence";
@@ -31,6 +33,7 @@ OfferCancel::preflight(PreflightContext const& ctx)
 TER
 OfferCancel::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const id = ctx.tx[sfAccount];
     auto const offerSequence = ctx.tx[sfOfferSequence];
 
@@ -53,6 +56,7 @@ OfferCancel::preclaim(PreclaimContext const& ctx)
 TER
 OfferCancel::doApply()
 {
+    TRACE_FUNC();
     auto const offerSequence = ctx_.tx[sfOfferSequence];
 
     auto const sle = view().read(keylet::account(account_));
@@ -80,6 +84,7 @@ OfferCancel::visitInvariantEntry(
 bool
 OfferCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

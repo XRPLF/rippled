@@ -43,6 +43,7 @@
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/buffer.hpp>
@@ -81,6 +82,7 @@ class CanonicalTXSet;
 static bool
 isStatusRequest(http_request_type const& request)
 {
+    TRACE_FUNC();
     return request.version() >= 11 && request.target() == "/" && request.body().size() == 0 &&
         request.method() == boost::beast::http::verb::get;
 }
@@ -88,6 +90,7 @@ isStatusRequest(http_request_type const& request)
 static Handoff
 statusRequestResponse(http_request_type const& request, boost::beast::http::status status)
 {
+    TRACE_FUNC();
     using namespace boost::beast::http;
     Handoff handoff;
     response<string_body> msg;
@@ -106,6 +109,7 @@ statusRequestResponse(http_request_type const& request, boost::beast::http::stat
 static bool
 authorized(Port const& port, std::map<std::string, std::string> const& h)
 {
+    TRACE_FUNC();
     if (port.user.empty() || port.password.empty())
         return true;
 
@@ -138,6 +142,7 @@ ServerHandler::ServerHandler(
     , server_(makeServer(*this, ioContext, app_.getJournal("Server")))
     , jobQueue_(jobQueue)
 {
+    TRACE_FUNC();
     auto const& group(cm.group("rpc"));
     rpc_requests_ = group->makeCounter("requests");
     rpc_size_ = group->makeEvent("size");
@@ -146,12 +151,14 @@ ServerHandler::ServerHandler(
 
 ServerHandler::~ServerHandler()
 {
+    TRACE_FUNC();
     server_ = nullptr;
 }
 
 void
 ServerHandler::setup(Setup const& setup, beast::Journal journal)
 {
+    TRACE_FUNC();
     setup_ = setup;
     endpoints_ = server_->ports(setup.ports);
 
@@ -179,6 +186,7 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
 void
 ServerHandler::stop()
 {
+    TRACE_FUNC();
     server_->close();
     {
         std::unique_lock lock(mutex_);
@@ -191,6 +199,7 @@ ServerHandler::stop()
 bool
 ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
 {
+    TRACE_FUNC();
     auto const& port = session.port();
 
     auto const c = [this, &port]() {
@@ -214,6 +223,7 @@ ServerHandler::onHandoff(
     http_request_type&& request,
     boost::asio::ip::tcp::endpoint const& remoteAddress)
 {
+    TRACE_FUNC();
     using namespace boost::beast;
     auto const& p{session.port().protocol};
     bool const isWs{
@@ -264,12 +274,14 @@ ServerHandler::onHandoff(
 static inline json::Output
 makeOutput(Session& session)
 {
+    TRACE_FUNC();
     return [&](boost::beast::string_view const& b) { session.write(b.data(), b.size()); };
 }
 
 static std::map<std::string, std::string>
 buildMap(boost::beast::http::fields const& h)
 {
+    TRACE_FUNC();
     std::map<std::string, std::string> c;
     for (auto const& e : h)
     {
@@ -287,6 +299,7 @@ template <class ConstBufferSequence>
 static std::string
 buffersToString(ConstBufferSequence const& bs)
 {
+    TRACE_FUNC();
     using boost::asio::buffer_size;
     std::string s;
     s.reserve(buffer_size(bs));
@@ -300,6 +313,7 @@ buffersToString(ConstBufferSequence const& bs)
 void
 ServerHandler::onRequest(Session& session)
 {
+    TRACE_FUNC();
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
     {
@@ -335,6 +349,7 @@ ServerHandler::onWSMessage(
     std::shared_ptr<WSSession> session,
     std::vector<boost::asio::const_buffer> const& buffers)
 {
+    TRACE_FUNC();
     json::Value jv;
     auto const size = boost::asio::buffer_size(buffers);
     if (size > RPC::Tuning::kMAX_REQUEST_SIZE || !json::Reader{}.parse(jv, buffers) ||
@@ -378,6 +393,7 @@ ServerHandler::onWSMessage(
 void
 ServerHandler::onClose(Session& session, boost::system::error_code const&)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     --count_[session.port()];
 }
@@ -385,6 +401,7 @@ ServerHandler::onClose(Session& session, boost::system::error_code const&)
 void
 ServerHandler::onStopped(Server&)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     stopped_ = true;
     condition_.notify_one();
@@ -396,6 +413,7 @@ template <class T>
 void
 logDuration(json::Value const& request, T const& duration, beast::Journal& journal)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     auto const level = [&]() {
         if (duration >= 10s)
@@ -416,6 +434,7 @@ ServerHandler::processSession(
     std::shared_ptr<JobQueue::Coro> const& coro,
     json::Value const& jv)
 {
+    TRACE_FUNC();
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))
     {
@@ -558,6 +577,7 @@ ServerHandler::processSession(
     std::shared_ptr<Session> const& session,
     std::shared_ptr<JobQueue::Coro> coro)
 {
+    TRACE_FUNC();
     processRequest(
         session->port(),
         buffersToString(session->request().body().data()),
@@ -585,6 +605,7 @@ ServerHandler::processSession(
 static json::Value
 makeJsonError(json::Int code, json::Value&& message)
 {
+    TRACE_FUNC();
     json::Value sub{json::ObjectValue};
     sub["code"] = code;
     sub["message"] = std::move(message);
@@ -608,6 +629,7 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
+    TRACE_FUNC();
     auto rpcJ = app_.getJournal("RPC");
 
     json::Value jsonOrig;
@@ -1027,6 +1049,7 @@ ServerHandler::processRequest(
 Handoff
 ServerHandler::statusResponse(http_request_type const& request) const
 {
+    TRACE_FUNC();
     using namespace boost::beast::http;
     Handoff handoff;
     response<string_body> msg;
@@ -1057,6 +1080,7 @@ ServerHandler::statusResponse(http_request_type const& request) const
 void
 ServerHandler::Setup::makeContexts()
 {
+    TRACE_FUNC();
     for (auto& p : ports)
     {
         if (p.secure())
@@ -1081,6 +1105,7 @@ ServerHandler::Setup::makeContexts()
 static Port
 toPort(ParsedPort const& parsed, std::ostream& log)
 {
+    TRACE_FUNC();
     Port p;
     p.name = parsed.name;
 
@@ -1127,6 +1152,7 @@ toPort(ParsedPort const& parsed, std::ostream& log)
 static std::vector<Port>
 parsePorts(Config const& config, std::ostream& log)
 {
+    TRACE_FUNC();
     std::vector<Port> result;
 
     if (!config.exists("server"))
@@ -1201,6 +1227,7 @@ parsePorts(Config const& config, std::ostream& log)
 static void
 setupClient(ServerHandler::Setup& setup)
 {
+    TRACE_FUNC();
     decltype(setup.ports)::const_iterator iter;
     for (iter = setup.ports.cbegin(); iter != setup.ports.cend(); ++iter)
     {
@@ -1230,6 +1257,7 @@ setupClient(ServerHandler::Setup& setup)
 static void
 setupOverlay(ServerHandler::Setup& setup)
 {
+    TRACE_FUNC();
     auto const iter = std::ranges::find_if(
         setup.ports, [](Port const& port) { return port.protocol.count("peer") != 0; });
     if (iter == setup.ports.cend())
@@ -1243,6 +1271,7 @@ setupOverlay(ServerHandler::Setup& setup)
 ServerHandler::Setup
 setupServerHandler(Config const& config, std::ostream& log)
 {
+    TRACE_FUNC();
     ServerHandler::Setup setup;
     setup.ports = parsePorts(config, log);
 
@@ -1261,6 +1290,7 @@ makeServerHandler(
     Resource::Manager& resourceManager,
     CollectorManager& cm)
 {
+    TRACE_FUNC();
     return std::make_unique<ServerHandler>(
         ServerHandler::ServerHandlerCreator(),
         app,

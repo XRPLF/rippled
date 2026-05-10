@@ -20,6 +20,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -32,6 +33,7 @@ namespace xrpl {
 bool
 DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     bool const authArrPresent = ctx.tx.isFieldPresent(sfAuthorizeCredentials);
     bool const unauthArrPresent = ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
     bool const authCredPresent = authArrPresent || unauthArrPresent;
@@ -42,6 +44,7 @@ DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 DepositPreauth::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     bool const authArrPresent = ctx.tx.isFieldPresent(sfAuthorizeCredentials);
     bool const unauthArrPresent = ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
     int const authCredPresent =
@@ -96,6 +99,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
 TER
 DepositPreauth::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     AccountID const account(ctx.tx[sfAccount]);
 
     // Determine which operation we're performing: authorizing or unauthorizing.
@@ -151,6 +155,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
 TER
 DepositPreauth::doApply()
 {
+    TRACE_FUNC();
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
         auto const sleOwner = view().peek(keylet::account(account_));
@@ -266,6 +271,7 @@ DepositPreauth::doApply()
 TER
 DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
 {
+    TRACE_FUNC();
     // Existence already checked in preclaim and AccountDelete
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
     if (!slePreauth)
@@ -313,6 +319,7 @@ DepositPreauth::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

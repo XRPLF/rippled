@@ -7,6 +7,7 @@
 #include <xrpl/beast/container/detail/aged_unordered_container.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <utility>
@@ -49,6 +50,7 @@ SlotImp::SlotImp(beast::IP::Endpoint remoteEndpoint, bool fixed, clock_type& clo
 void
 SlotImp::state(State state)
 {
+    TRACE_FUNC();
     // Must go through activate() to set active state
     XRPL_ASSERT(
         state != State::Active, "xrpl::PeerFinder::SlotImp::state : input state is not active");
@@ -82,6 +84,7 @@ SlotImp::state(State state)
 void
 SlotImp::activate(clock_type::time_point const& now)
 {
+    TRACE_FUNC();
     // Can only become active from the accept or connected state
     XRPL_ASSERT(
         state_ == State::Accept || state_ == State::Connected,
@@ -104,6 +107,7 @@ SlotImp::RecentT::RecentT(clock_type& clock) : cache_(clock)
 void
 SlotImp::RecentT::insert(beast::IP::Endpoint const& ep, std::uint32_t hops)
 {
+    TRACE_FUNC();
     auto const result(cache_.emplace(ep, hops));
     if (!result.second)
     {
@@ -119,6 +123,7 @@ SlotImp::RecentT::insert(beast::IP::Endpoint const& ep, std::uint32_t hops)
 bool
 SlotImp::RecentT::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
 {
+    TRACE_FUNC();
     auto const iter(cache_.find(ep));
     if (iter == cache_.end())
         return false;
@@ -131,6 +136,7 @@ SlotImp::RecentT::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
 void
 SlotImp::RecentT::expire()
 {
+    TRACE_FUNC();
     beast::expire(cache_, Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
 }
 

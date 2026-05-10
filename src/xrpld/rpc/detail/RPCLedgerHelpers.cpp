@@ -20,6 +20,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <org/xrpl/rpc/v1/ledger.pb.h>
 
@@ -33,6 +34,7 @@ namespace {
 bool
 isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
 {
+    TRACE_FUNC();
     if (standalone)
         return false;
 
@@ -47,6 +49,7 @@ ledgerFromHash(
     Context const& context,
     json::StaticString const fieldName)
 {
+    TRACE_FUNC();
     uint256 ledgerHash;
     if (!ledgerHash.parseHex(hash.asString()))
         return {RpcInvalidParams, expectedFieldMessage(fieldName, "hex string")};
@@ -61,6 +64,7 @@ ledgerFromIndex(
     Context const& context,
     json::StaticString const fieldName)
 {
+    TRACE_FUNC();
     auto const index = indexValue.asString();
 
     if (index == "current" || index.empty())
@@ -83,6 +87,7 @@ template <class T>
 Status
 ledgerFromRequest(T& ledger, JsonContext const& context)
 {
+    TRACE_FUNC();
     ledger.reset();
 
     auto& params = context.params;
@@ -150,6 +155,7 @@ template <class T, class R>
 Status
 ledgerFromRequest(T& ledger, GRPCContext<R> const& context)
 {
+    TRACE_FUNC();
     R const& request = context.params;
     return ledgerFromSpecifier(ledger, request.ledger(), context);
 }
@@ -179,6 +185,7 @@ ledgerFromSpecifier(
     org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
     Context const& context)
 {
+    TRACE_FUNC();
     ledger.reset();
 
     using LedgerCase = org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase;
@@ -222,6 +229,7 @@ template <class T>
 Status
 getLedger(T& ledger, uint256 const& ledgerHash, Context const& context)
 {
+    TRACE_FUNC();
     ledger = context.ledgerMaster.getLedgerByHash(ledgerHash);
     if (ledger == nullptr)
         return {RpcLgrNotFound, "ledgerNotFound"};
@@ -232,6 +240,7 @@ template <class T>
 Status
 getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
 {
+    TRACE_FUNC();
     ledger = context.ledgerMaster.getLedgerBySeq(ledgerIndex);
     if (ledger == nullptr)
     {
@@ -261,6 +270,7 @@ template <class T>
 Status
 getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
 {
+    TRACE_FUNC();
     if (isValidatedOld(context.ledgerMaster, context.app.config().standalone()))
     {
         if (context.apiVersion == 1)
@@ -352,6 +362,7 @@ lookupLedger(
     JsonContext const& context,
     json::Value& result)
 {
+    TRACE_FUNC();
     if (auto status = ledgerFromRequest(ledger, context))
         return status;
 
@@ -374,6 +385,7 @@ lookupLedger(
 json::Value
 lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext const& context)
 {
+    TRACE_FUNC();
     json::Value result;
     if (auto status = lookupLedger(ledger, context, result))
         status.inject(result);
@@ -384,6 +396,7 @@ lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext const& context
 Expected<std::shared_ptr<Ledger const>, json::Value>
 getOrAcquireLedger(RPC::JsonContext const& context)
 {
+    TRACE_FUNC();
     auto const hasHash = context.params.isMember(jss::ledger_hash);
     auto const hasIndex = context.params.isMember(jss::ledger_index);
     std::uint32_t ledgerIndex = 0;

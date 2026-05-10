@@ -17,6 +17,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/error.hpp>
 #include <boost/beast/http/field.hpp>
@@ -114,6 +115,7 @@ ValidatorSite::ValidatorSite(
 
 ValidatorSite::~ValidatorSite()
 {
+    TRACE_FUNC();
     std::unique_lock<std::mutex> lock{state_mutex_};
     if (timer_.expiry() > clock_type::time_point{})
     {
@@ -132,6 +134,7 @@ ValidatorSite::~ValidatorSite()
 bool
 ValidatorSite::missingSite(std::scoped_lock<std::mutex> const& lockSites)
 {
+    TRACE_FUNC();
     auto const sites = app_.getValidators().loadLists();
     return sites.empty() || load(sites, lockSites);
 }
@@ -139,6 +142,7 @@ ValidatorSite::missingSite(std::scoped_lock<std::mutex> const& lockSites)
 bool
 ValidatorSite::load(std::vector<std::string> const& siteURIs)
 {
+    TRACE_FUNC();
     JLOG(j_.debug()) << "Loading configured validator list sites";
 
     std::scoped_lock const lock{sites_mutex_};
@@ -151,6 +155,7 @@ ValidatorSite::load(
     std::vector<std::string> const& siteURIs,
     std::scoped_lock<std::mutex> const& lockSites)
 {
+    TRACE_FUNC();
     // If no sites are provided, act as if a site failed to load.
     if (siteURIs.empty())
     {
@@ -178,6 +183,7 @@ ValidatorSite::load(
 void
 ValidatorSite::start()
 {
+    TRACE_FUNC();
     std::scoped_lock const l0{sites_mutex_};
     std::scoped_lock const l1{state_mutex_};
     if (timer_.expiry() == clock_type::time_point{})
@@ -187,6 +193,7 @@ ValidatorSite::start()
 void
 ValidatorSite::join()
 {
+    TRACE_FUNC();
     std::unique_lock<std::mutex> lock{state_mutex_};
     cv_.wait(lock, [&] { return !pending_; });
 }
@@ -194,6 +201,7 @@ ValidatorSite::join()
 void
 ValidatorSite::stop()
 {
+    TRACE_FUNC();
     std::unique_lock<std::mutex> lock{state_mutex_};
     stopping_ = true;
     // work::cancel() must be called before the
@@ -222,6 +230,7 @@ ValidatorSite::setTimer(
     std::scoped_lock<std::mutex> const& siteLock,
     std::scoped_lock<std::mutex> const& stateLock)
 {
+    TRACE_FUNC();
     auto next = std::ranges::min_element(
         sites_, [](Site const& a, Site const& b) { return a.nextRefresh < b.nextRefresh; });
 
@@ -242,6 +251,7 @@ ValidatorSite::makeRequest(
     std::size_t siteIdx,
     std::scoped_lock<std::mutex> const& sitesLock)
 {
+    TRACE_FUNC();
     fetching_ = true;
     sites_[siteIdx].activeResource = resource;
     std::shared_ptr<detail::Work> sp;
@@ -322,6 +332,7 @@ ValidatorSite::makeRequest(
 void
 ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
 {
+    TRACE_FUNC();
     if (ec)
         return;
 
@@ -351,6 +362,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
 void
 ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
 {
+    TRACE_FUNC();
     if (ec)
     {
         // Restart the timer if any errors are encountered, unless the error
@@ -385,6 +397,7 @@ ValidatorSite::parseJsonResponse(
     std::size_t siteIdx,
     std::scoped_lock<std::mutex> const& sitesLock)
 {
+    TRACE_FUNC();
     json::Value const body = [&res, siteIdx, this]() {
         json::Reader r;
         json::Value body;
@@ -503,6 +516,7 @@ ValidatorSite::processRedirect(
     std::size_t siteIdx,
     std::scoped_lock<std::mutex> const& sitesLock)
 {
+    TRACE_FUNC();
     using namespace boost::beast::http;
     std::shared_ptr<Site::Resource> newLocation;
     if (!res.contains(field::location) || res[field::location].empty())
@@ -545,6 +559,7 @@ ValidatorSite::onSiteFetch(
     detail::response_type const& res,
     std::size_t siteIdx)
 {
+    TRACE_FUNC();
     std::scoped_lock lockSites{sites_mutex_};
     {
         if (endpoint != endpoint_type{})
@@ -630,6 +645,7 @@ ValidatorSite::onTextFetch(
     std::string const& res,
     std::size_t siteIdx)
 {
+    TRACE_FUNC();
     std::scoped_lock const lockSites{sites_mutex_};
     {
         try
@@ -667,6 +683,7 @@ ValidatorSite::onTextFetch(
 json::Value
 ValidatorSite::getJson() const
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     using Int = json::Value::Int;
 

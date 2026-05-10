@@ -5,6 +5,7 @@
 #include <optional>
 #include <thread>
 #include <vector>
+#include <xrpl/basics/TraceLog.h>
 
 // This is so that the io_context can outlive all the children
 class BasicApp
@@ -21,12 +22,14 @@ public:
     boost::asio::io_context&
     getIoContext()
     {
+    TRACE_FUNC();
         return io_context_;
     }
 
     [[nodiscard]] size_t
     getNumberOfThreads() const
     {
+    TRACE_FUNC();
         return threads_.size();
     }
 };

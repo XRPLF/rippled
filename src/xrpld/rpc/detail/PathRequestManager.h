@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 #include <xrpld/rpc/detail/RippleLineCache.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 #include <mutex>
@@ -21,6 +22,7 @@ public:
         beast::insight::Collector::ptr const& collector)
         : app_(app), journal_(journal), lastIdentifier_(0)
     {
+    TRACE_FUNC();
         fast_ = collector->makeEvent("pathfind_fast");
         full_ = collector->makeEvent("pathfind_full");
     }
@@ -68,12 +70,14 @@ public:
     void
     reportFast(std::chrono::milliseconds ms)
     {
+    TRACE_FUNC();
         fast_.notify(ms);
     }
 
     void
     reportFull(std::chrono::milliseconds ms)
     {
+    TRACE_FUNC();
         full_.notify(ms);
     }
 

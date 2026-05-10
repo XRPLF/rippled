@@ -23,6 +23,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -42,6 +43,7 @@ static std::uint32_t const kDEFAULT_SIGNER_LIST_ID = 0;
 std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, SignerListSet::Operation>
 SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
+    TRACE_FUNC();
     // Check the quorum.  A non-zero quorum means we're creating or replacing
     // the list.  A zero quorum means we're destroying the list.
     auto const quorum = tx[sfSignerQuorum];
@@ -73,6 +75,7 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
 std::uint32_t
 SignerListSet::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // 0 means "Allow any flags"
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
@@ -80,6 +83,7 @@ SignerListSet::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 SignerListSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
 
     if (!isTesSuccess(std::get<0>(result)))
@@ -110,6 +114,7 @@ SignerListSet::preflight(PreflightContext const& ctx)
 TER
 SignerListSet::doApply()
 {
+    TRACE_FUNC();
     // Perform the operation preCompute() decided on.
     switch (do_)
     {
@@ -131,6 +136,7 @@ SignerListSet::doApply()
 void
 SignerListSet::preCompute()
 {
+    TRACE_FUNC();
     // Get the quorum and operation info.
     auto result = determineOperation(ctx_.tx, view().flags(), j_);
     XRPL_ASSERT(
@@ -152,6 +158,7 @@ SignerListSet::preCompute()
 static int
 signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
 {
+    TRACE_FUNC();
     // We always compute the full change in OwnerCount, taking into account:
     //  o The fact that we're adding/removing a SignerList and
     //  o Accounting for the number of entries in the list.
@@ -185,6 +192,7 @@ removeSignersFromLedger(
     Keylet const& signerListKeylet,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
     SLE::pointer const signers = view.peek(signerListKeylet);
@@ -230,6 +238,7 @@ SignerListSet::removeFromLedger(
     AccountID const& account,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const accountKeylet = keylet::account(account);
     auto const ownerDirKeylet = keylet::ownerDir(account);
     auto const signerListKeylet = keylet::signers(account);
@@ -246,6 +255,7 @@ SignerListSet::validateQuorumAndSignerEntries(
     beast::Journal j,
     Rules const& rules)
 {
+    TRACE_FUNC();
     // Reject if there are too many or too few entries in the list.
     {
         std::size_t const signerCount = signers.size();
@@ -300,6 +310,7 @@ SignerListSet::validateQuorumAndSignerEntries(
 TER
 SignerListSet::replaceSignerList()
 {
+    TRACE_FUNC();
     auto const accountKeylet = keylet::account(account_);
     auto const ownerDirKeylet = keylet::ownerDir(account_);
     auto const signerListKeylet = keylet::signers(account_);
@@ -356,6 +367,7 @@ SignerListSet::replaceSignerList()
 TER
 SignerListSet::destroySignerList()
 {
+    TRACE_FUNC();
     auto const accountKeylet = keylet::account(account_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
@@ -375,6 +387,7 @@ SignerListSet::destroySignerList()
 void
 SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const
 {
+    TRACE_FUNC();
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
@@ -421,6 +434,7 @@ SignerListSet::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

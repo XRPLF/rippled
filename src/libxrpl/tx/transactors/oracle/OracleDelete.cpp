@@ -12,6 +12,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -20,12 +21,14 @@ namespace xrpl {
 NotTEC
 OracleDelete::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tesSUCCESS;
 }
 
 TER
 OracleDelete::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
@@ -55,6 +58,7 @@ OracleDelete::deleteOracle(
     AccountID const& account,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -82,6 +86,7 @@ OracleDelete::deleteOracle(
 TER
 OracleDelete::doApply()
 {
+    TRACE_FUNC();
     if (auto sle = ctx_.view().peek(keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])))
         return deleteOracle(ctx_.view(), sle, account_, j_);
 
@@ -104,6 +109,7 @@ OracleDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

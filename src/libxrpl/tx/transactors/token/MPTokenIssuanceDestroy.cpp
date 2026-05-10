@@ -8,6 +8,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -16,12 +17,14 @@ namespace xrpl {
 NotTEC
 MPTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tesSUCCESS;
 }
 
 TER
 MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     // ensure that issuance exists
     auto const sleMPT = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMPT)
@@ -44,6 +47,7 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 TER
 MPTokenIssuanceDestroy::doApply()
 {
+    TRACE_FUNC();
     auto const mpt = view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
     if (account_ != mpt->getAccountID(sfIssuer))
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -74,6 +78,7 @@ MPTokenIssuanceDestroy::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

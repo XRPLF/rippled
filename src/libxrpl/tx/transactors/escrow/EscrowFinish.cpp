@@ -29,6 +29,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <system_error>
@@ -47,6 +48,7 @@ constexpr HashRouterFlags kSF_CF_VALID = HashRouterFlags::PRIVATE6;
 static bool
 checkCondition(Slice f, Slice c)
 {
+    TRACE_FUNC();
     using namespace xrpl::cryptoconditions;
 
     std::error_code ec;
@@ -65,12 +67,14 @@ checkCondition(Slice f, Slice c)
 bool
 EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC
 EscrowFinish::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const cb = ctx.tx[~sfCondition];
     auto const fb = ctx.tx[~sfFulfillment];
 
@@ -85,6 +89,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
 NotTEC
 EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const cb = ctx.tx[~sfCondition];
     auto const fb = ctx.tx[~sfFulfillment];
 
@@ -120,6 +125,7 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
 XRPAmount
 EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     XRPAmount extraFee{0};
 
     if (auto const fb = tx[~sfFulfillment])
@@ -144,6 +150,7 @@ escrowFinishPreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
+    TRACE_FUNC();
     AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tesSUCCESS
     if (issuer == dest)
@@ -167,6 +174,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
     AccountID const& dest,
     STAmount const& amount)
 {
+    TRACE_FUNC();
     AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the dest, return tesSUCCESS
     if (issuer == dest)
@@ -195,6 +203,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
 TER
 EscrowFinish::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.view.rules().enabled(featureCredentials))
     {
         if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
@@ -229,6 +238,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 TER
 EscrowFinish::doApply()
 {
+    TRACE_FUNC();
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
@@ -415,6 +425,7 @@ EscrowFinish::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 }  // namespace xrpl

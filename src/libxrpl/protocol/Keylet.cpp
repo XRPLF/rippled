@@ -3,12 +3,14 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
 bool
 Keylet::check(STLedgerEntry const& sle) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         sle.getType() != ltANY && sle.getType() != ltCHILD,
         "xrpl::Keylet::check : valid input type");

@@ -16,6 +16,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <functional>
@@ -99,6 +100,7 @@ public:
         , whenBroadcast(clock.now())
         , squelches(clock)
     {
+    TRACE_FUNC();
         config({});
     }
 
@@ -107,6 +109,7 @@ public:
     void
     load()
     {
+    TRACE_FUNC();
         std::scoped_lock const _(lock);
         bootcache.load();
     }
@@ -120,6 +123,7 @@ public:
     void
     stop()
     {
+    TRACE_FUNC();
         std::scoped_lock const _(lock);
         stopping = true;
         if (fetchSource != nullptr)
@@ -135,6 +139,7 @@ public:
     void
     config(Config const& c)
     {
+    TRACE_FUNC();
         std::scoped_lock const _(lock);
         config_ = c;
         counts_.onConfig(config_);
@@ -143,6 +148,7 @@ public:
     Config
     config()
     {
+    TRACE_FUNC();
         std::scoped_lock const _(lock);
         return config_;
     }
@@ -150,12 +156,14 @@ public:
     void
     addFixedPeer(std::string const& name, beast::IP::Endpoint const& ep)
     {
+    TRACE_FUNC();
         addFixedPeer(name, std::vector<beast::IP::Endpoint>{ep});
     }
 
     void
     addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses)
     {
+    TRACE_FUNC();
         std::scoped_lock const _(lock);
 
         if (addresses.empty())
@@ -195,6 +203,7 @@ public:
         beast::IP::Endpoint const& checkedAddress,
         boost::system::error_code ec)
     {
+    TRACE_FUNC();
         if (ec == boost::asio::error::operation_aborted)
             return;
 
@@ -237,6 +246,7 @@ public:
         beast::IP::Endpoint const& localEndpoint,
         beast::IP::Endpoint const& remoteEndpoint)
     {
+    TRACE_FUNC();
         JLOG(journal.debug()) << beast::Leftw(18) << "Logic accept" << remoteEndpoint
                               << " on local " << localEndpoint;
 
@@ -286,6 +296,7 @@ public:
     std::pair<SlotImp::ptr, Result>
     newOutboundSlot(beast::IP::Endpoint const& remoteEndpoint)
     {
+    TRACE_FUNC();
         JLOG(journal.debug()) << beast::Leftw(18) << "Logic connect " << remoteEndpoint;
 
         std::scoped_lock const _(lock);
@@ -322,6 +333,7 @@ public:
     bool
     onConnected(SlotImp::ptr const& slot, beast::IP::Endpoint const& localEndpoint)
     {
+    TRACE_FUNC();
         beast::WrappedSink sink{journal.sink(), slot->prefix()};
         beast::Journal const journal{sink};
 
@@ -360,6 +372,7 @@ public:
     Result
     activate(SlotImp::ptr const& slot, PublicKey const& key, bool reserved)
     {
+    TRACE_FUNC();
         beast::WrappedSink sink{journal.sink(), slot->prefix()};
         beast::Journal const journal{sink};
 
@@ -439,6 +452,7 @@ public:
     std::vector<Endpoint>
     redirect(SlotImp::ptr const& slot)
     {
+    TRACE_FUNC();
         std::scoped_lock const _(lock);
         RedirectHandouts h(slot);
         livecache.hops.shuffle();
@@ -455,6 +469,7 @@ public:
     std::vector<beast::IP::Endpoint>
     autoconnect()
     {
+    TRACE_FUNC();
         std::vector<beast::IP::Endpoint> none;
 
         std::scoped_lock const _(lock);
@@ -560,6 +575,7 @@ public:
     std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
     buildEndpointsForPeers()
     {
+    TRACE_FUNC();
         std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>> result;
 
         std::scoped_lock const _(lock);
@@ -642,6 +658,7 @@ public:
     void
     oncePerSecond()
     {
+    TRACE_FUNC();
         std::scoped_lock const _(lock);
 
         // Expire the Livecache
@@ -663,6 +680,7 @@ public:
     void
     preprocess(SlotImp::ptr const& slot, Endpoints& list)
     {
+    TRACE_FUNC();
         bool neighbor(false);
         for (auto iter = list.begin(); iter != list.end();)
         {
@@ -727,6 +745,7 @@ public:
     void
     onEndpoints(SlotImp::ptr const& slot, Endpoints list)
     {
+    TRACE_FUNC();
         beast::WrappedSink sink{journal.sink(), slot->prefix()};
         beast::Journal const journal{sink};
 
@@ -824,6 +843,7 @@ public:
     void
     remove(SlotImp::ptr const& slot)
     {
+    TRACE_FUNC();
         {
             auto const iter = slots.find(slot->remoteEndpoint());
             // The slot must exist in the table
@@ -872,6 +892,7 @@ public:
     void
     onClosed(SlotImp::ptr const& slot)
     {
+    TRACE_FUNC();
         std::scoped_lock const _(lock);
 
         remove(slot);
@@ -932,6 +953,7 @@ public:
     void
     onFailure(SlotImp::ptr const& slot)
     {
+    TRACE_FUNC();
         std::scoped_lock const _(lock);
 
         bootcache.onFailure(slot->remoteEndpoint());
@@ -949,6 +971,7 @@ public:
     bool
     fixed(beast::IP::Endpoint const& endpoint) const
     {
+    TRACE_FUNC();
         for (auto const& entry : fixed_)
         {
             if (entry.first == endpoint)
@@ -963,6 +986,7 @@ public:
     bool
     fixed(beast::IP::Address const& address) const
     {
+    TRACE_FUNC();
         for (auto const& entry : fixed_)
         {
             if (entry.first.address() == address)
@@ -982,6 +1006,7 @@ public:
     void
     getFixed(std::size_t needed, Container& c, typename ConnectHandouts::Squelches& squelches)
     {
+    TRACE_FUNC();
         auto const now(clock.now());
         for (auto iter = fixed_.begin(); needed && iter != fixed_.end(); ++iter)
         {
@@ -1003,12 +1028,14 @@ public:
     void
     addStaticSource(std::shared_ptr<Source> const& source)
     {
+    TRACE_FUNC();
         fetch(source);
     }
 
     void
     addSource(std::shared_ptr<Source> const& source)
     {
+    TRACE_FUNC();
         sources.push_back(source);
     }
 
@@ -1024,6 +1051,7 @@ public:
     int
     addBootcacheAddresses(IPAddresses const& list)
     {
+    TRACE_FUNC();
         int count(0);
         std::scoped_lock const _(lock);
         for (auto const& addr : list)
@@ -1038,6 +1066,7 @@ public:
     void
     fetch(std::shared_ptr<Source> const& source)
     {
+    TRACE_FUNC();
         Source::Results results;
 
         {
@@ -1086,6 +1115,7 @@ public:
     bool
     isValidAddress(beast::IP::Endpoint const& address)
     {
+    TRACE_FUNC();
         if (isUnspecified(address))
             return false;
         if (!isPublic(address))
@@ -1104,6 +1134,7 @@ public:
     void
     writeSlots(beast::PropertyStream::Set& set, Slots const& slots)
     {
+    TRACE_FUNC();
         for (auto const& entry : slots)
         {
             beast::PropertyStream::Map item(set);
@@ -1125,6 +1156,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map)
     {
+    TRACE_FUNC();
         std::scoped_lock const _(lock);
 
         // VFALCO NOTE These ugly casts are needed because
@@ -1168,12 +1200,14 @@ public:
     Counts const&
     counts() const
     {
+    TRACE_FUNC();
         return counts_;
     }
 
     static std::string
     stateString(Slot::State state)
     {
+    TRACE_FUNC();
         switch (state)
         {
             case Slot::State::Accept:
@@ -1203,6 +1237,7 @@ Logic<Checker>::onRedirects(
     FwdIter last,
     boost::asio::ip::tcp::endpoint const& remoteAddress)
 {
+    TRACE_FUNC();
     std::scoped_lock const _(lock);
     std::size_t n = 0;
     for (; first != last && n < Tuning::MaxRedirects; ++first, ++n)

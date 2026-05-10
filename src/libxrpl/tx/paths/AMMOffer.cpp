@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMLiquidity.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <stdexcept>
 
@@ -37,6 +38,7 @@ template <StepAmount TIn, StepAmount TOut>
 Asset const&
 AMMOffer<TIn, TOut>::assetIn() const
 {
+    TRACE_FUNC();
     return ammLiquidity_.assetIn();
 }
 
@@ -44,6 +46,7 @@ template <StepAmount TIn, StepAmount TOut>
 Asset const&
 AMMOffer<TIn, TOut>::assetOut() const
 {
+    TRACE_FUNC();
     return ammLiquidity_.assetOut();
 }
 
@@ -51,6 +54,7 @@ template <StepAmount TIn, StepAmount TOut>
 AccountID const&
 AMMOffer<TIn, TOut>::owner() const
 {
+    TRACE_FUNC();
     return ammLiquidity_.ammAccount();
 }
 
@@ -58,6 +62,7 @@ template <StepAmount TIn, StepAmount TOut>
 TAmounts<TIn, TOut> const&
 AMMOffer<TIn, TOut>::amount() const
 {
+    TRACE_FUNC();
     return amounts_;
 }
 
@@ -65,6 +70,7 @@ template <StepAmount TIn, StepAmount TOut>
 void
 AMMOffer<TIn, TOut>::consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed)
 {
+    TRACE_FUNC();
     // Consumed offer must be less or equal to the original
     if (consumed.in > amounts_.in || consumed.out > amounts_.out)
         Throw<std::logic_error>("Invalid consumed AMM offer.");
@@ -84,6 +90,7 @@ AMMOffer<TIn, TOut>::limitOut(
     TOut const& limit,
     bool roundUp) const
 {
+    TRACE_FUNC();
     // Change the offer size proportionally to the original offer quality
     // to keep the strands quality order unchanged. The taker pays slightly
     // more for the offer in this case, which results in a slightly higher
@@ -107,6 +114,7 @@ TAmounts<TIn, TOut>
 AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp)
     const
 {
+    TRACE_FUNC();
     // See the comments above in limitOut().
     if (ammLiquidity_.multiPath())
     {
@@ -123,6 +131,7 @@ template <StepAmount TIn, StepAmount TOut>
 QualityFunction
 AMMOffer<TIn, TOut>::getQualityFunc() const
 {
+    TRACE_FUNC();
     if (ammLiquidity_.multiPath())
         return QualityFunction{quality(), QualityFunction::CLOBLikeTag{}};
     return QualityFunction{balances_, ammLiquidity_.tradingFee(), QualityFunction::AMMTag{}};
@@ -132,6 +141,7 @@ template <StepAmount TIn, StepAmount TOut>
 bool
 AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const
 {
+    TRACE_FUNC();
     if (consumed.in > amounts_.in || consumed.out > amounts_.out)
     {
         JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed " << to_string(consumed.in)

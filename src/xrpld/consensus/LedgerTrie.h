@@ -3,6 +3,7 @@
 #include <xrpl/basics/ToString.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -44,6 +45,7 @@ public:
     [[nodiscard]] ID
     ancestor(Seq const& s) const
     {
+    TRACE_FUNC();
         XRPL_ASSERT(s <= seq, "xrpl::SpanTip::ancestor : valid input");
         return ledger_[s];
     }
@@ -87,12 +89,14 @@ public:
     [[nodiscard]] Seq
     start() const
     {
+    TRACE_FUNC();
         return start_;
     }
 
     [[nodiscard]] Seq
     end() const
     {
+    TRACE_FUNC();
         return end_;
     }
 
@@ -100,6 +104,7 @@ public:
     [[nodiscard]] std::optional<Span>
     from(Seq spot) const
     {
+    TRACE_FUNC();
         return sub(spot, end_);
     }
 
@@ -107,6 +112,7 @@ public:
     [[nodiscard]] std::optional<Span>
     before(Seq spot) const
     {
+    TRACE_FUNC();
         return sub(start_, spot);
     }
 
@@ -114,6 +120,7 @@ public:
     [[nodiscard]] ID
     startID() const
     {
+    TRACE_FUNC();
         return ledger_[start_];
     }
 
@@ -122,6 +129,7 @@ public:
     [[nodiscard]] Seq
     diff(Ledger const& o) const
     {
+    TRACE_FUNC();
         return clamp(mismatch(ledger_, o));
     }
 
@@ -129,6 +137,7 @@ public:
     [[nodiscard]] SpanTip<Ledger>
     tip() const
     {
+    TRACE_FUNC();
         Seq const tipSeq{end_ - Seq{1}};
         return SpanTip<Ledger>{tipSeq, ledger_[tipSeq], ledger_};
     }
@@ -143,6 +152,7 @@ private:
     [[nodiscard]] Seq
     clamp(Seq val) const
     {
+    TRACE_FUNC();
         return std::min(std::max(start_, val), end_);
     }
 
@@ -150,6 +160,7 @@ private:
     [[nodiscard]] std::optional<Span>
     sub(Seq from, Seq to) const
     {
+    TRACE_FUNC();
         Seq const newFrom = clamp(from);
         Seq const newTo = clamp(to);
         if (newFrom < newTo)
@@ -160,12 +171,14 @@ private:
     friend std::ostream&
     operator<<(std::ostream& o, Span const& s)
     {
+    TRACE_FUNC();
         return o << s.tip().id << "[" << s.start_ << "," << s.end_ << ")";
     }
 
     friend Span
     merge(Span const& a, Span const& b)
     {
+    TRACE_FUNC();
         // Return combined span, using ledger_ from higher sequence span
         if (a.end_ < b.end_)
             return Span(std::min(a.start_, b.start_), b.end_, b.ledger_);
@@ -204,6 +217,7 @@ struct Node
     void
     erase(Node const* child)
     {
+    TRACE_FUNC();
         auto it = std::find_if(
             children.begin(), children.end(), [child](std::unique_ptr<Node> const& curr) {
                 return curr.get() == child;
@@ -216,12 +230,14 @@ struct Node
     friend std::ostream&
     operator<<(std::ostream& o, Node const& s)
     {
+    TRACE_FUNC();
         return o << s.span << "(T:" << s.tipSupport << ",B:" << s.branchSupport << ")";
     }
 
     [[nodiscard]] json::Value
     getJson() const
     {
+    TRACE_FUNC();
         json::Value res;
         std::stringstream sps;
         sps << span;
@@ -345,6 +361,7 @@ class LedgerTrie
     [[nodiscard]] std::pair<Node*, Seq>
     find(Ledger const& ledger) const
     {
+    TRACE_FUNC();
         // NOLINTNEXTLINE(misc-const-correctness)
         Node* curr = root_.get();
 
@@ -384,6 +401,7 @@ class LedgerTrie
     Node*
     findByLedgerID(Ledger const& ledger, Node* parent = nullptr) const
     {
+    TRACE_FUNC();
         if (parent == nullptr)
             parent = root_.get();
         if (ledger.id() == parent->span.tip().id)
@@ -400,6 +418,7 @@ class LedgerTrie
     void
     dumpImpl(std::ostream& o, std::unique_ptr<Node> const& curr, int offset) const
     {
+    TRACE_FUNC();
         if (curr)
         {
             if (offset > 0)
@@ -426,6 +445,7 @@ public:
     void
     insert(Ledger const& ledger, std::uint32_t count = 1)
     {
+    TRACE_FUNC();
         auto const [loc, diffSeq] = find(ledger);
 
         // There is always a place to insert
@@ -512,6 +532,7 @@ public:
     bool
     remove(Ledger const& ledger, std::uint32_t count = 1)
     {
+    TRACE_FUNC();
         Node* loc = findByLedgerID(ledger);
         // Must be exact match with tip support
         if ((loc == nullptr) || loc->tipSupport == 0)
@@ -570,6 +591,7 @@ public:
     [[nodiscard]] std::uint32_t
     tipSupport(Ledger const& ledger) const
     {
+    TRACE_FUNC();
         if (auto const* loc = findByLedgerID(ledger))
             return loc->tipSupport;
         return 0;
@@ -584,6 +606,7 @@ public:
     [[nodiscard]] std::uint32_t
     branchSupport(Ledger const& ledger) const
     {
+    TRACE_FUNC();
         Node const* loc = findByLedgerID(ledger);
         if (loc == nullptr)
         {
@@ -658,6 +681,7 @@ public:
     [[nodiscard]] std::optional<SpanTip<Ledger>>
     getPreferred(Seq const largestIssued) const
     {
+    TRACE_FUNC();
         if (empty())
             return std::nullopt;
 
@@ -761,6 +785,7 @@ public:
     [[nodiscard]] bool
     empty() const
     {
+    TRACE_FUNC();
         return !root_ || root_->branchSupport == 0;
     }
 
@@ -769,6 +794,7 @@ public:
     void
     dump(std::ostream& o) const
     {
+    TRACE_FUNC();
         dumpImpl(o, root_, 0);
     }
 
@@ -777,6 +803,7 @@ public:
     [[nodiscard]] json::Value
     getJson() const
     {
+    TRACE_FUNC();
         json::Value res;
         res["trie"] = root_->getJson();
         res["seq_support"] = json::ObjectValue;
@@ -790,6 +817,7 @@ public:
     [[nodiscard]] bool
     checkInvariants() const
     {
+    TRACE_FUNC();
         std::map<Seq, std::uint32_t> expectedSeqSupport;
 
         std::stack<Node const*> nodes;

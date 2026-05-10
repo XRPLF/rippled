@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/TraceLog.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -58,6 +59,7 @@ template <class F>
 auto
 withTxnType(Rules const& rules, TxType txnType, F&& f)
 {
+    TRACE_FUNC();
     // These global updates really should have been for every Transaction
     // step: preflight, preclaim, calculateBaseFee, and doApply. Unfortunately,
     // they were only included in doApply (via Transactor::operator()). That may
@@ -121,6 +123,7 @@ template <class T>
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return TxConsequences(ctx.tx);
 };
 
@@ -130,6 +133,7 @@ template <class T>
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return TxConsequences(ctx.tx, TxConsequences::Category::Blocker);
 };
 
@@ -139,12 +143,14 @@ template <class T>
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return T::makeTxConsequences(ctx);
 };
 
 static std::pair<NotTEC, TxConsequences>
 invokePreflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     try
     {
         return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
@@ -167,6 +173,7 @@ invokePreflight(PreflightContext const& ctx)
 static TER
 invokePreclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     try
     {
         // use name hiding to accomplish compile-time polymorphism of static
@@ -242,6 +249,7 @@ invokePreclaim(PreclaimContext const& ctx)
 static XRPAmount
 invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     try
     {
         return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T>() {
@@ -264,6 +272,7 @@ TxConsequences::TxConsequences(NotTEC pfResult)
     , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         !isTesSuccess(pfResult), "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
@@ -279,22 +288,26 @@ TxConsequences::TxConsequences(STTx const& tx)
 
 TxConsequences::TxConsequences(STTx const& tx, Category category) : TxConsequences(tx)
 {
+    TRACE_FUNC();
     isBlocker_ = (category == TxConsequences::Category::Blocker);
 }
 
 TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend) : TxConsequences(tx)
 {
+    TRACE_FUNC();
     potentialSpend_ = potentialSpend;
 }
 
 TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed) : TxConsequences(tx)
 {
+    TRACE_FUNC();
     sequencesConsumed_ = sequencesConsumed;
 }
 
 static ApplyResult
 invokeApply(ApplyContext& ctx)
 {
+    TRACE_FUNC();
     try
     {
         return withTxnType(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
@@ -319,6 +332,7 @@ invokeApply(ApplyContext& ctx)
 std::unique_ptr<Transactor>
 makeTransactor(ApplyContext& ctx)
 {
+    TRACE_FUNC();
     return withTxnType(
         ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() -> std::unique_ptr<Transactor> {
             return std::make_unique<T>(ctx);
@@ -333,6 +347,7 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
+    TRACE_FUNC();
     PreflightContext const pfCtx(registry, tx, rules, flags, j);
     try
     {
@@ -354,6 +369,7 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
+    TRACE_FUNC();
     PreflightContext const pfCtx(registry, tx, parentBatchId, rules, flags, j);
     try
     {
@@ -369,6 +385,7 @@ preflight(
 PreclaimResult
 preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view)
 {
+    TRACE_FUNC();
     std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
     {
@@ -429,18 +446,21 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
 XRPAmount
 calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     return invokeCalculateBaseFee(view, tx);
 }
 
 XRPAmount
 calculateDefaultBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     return Transactor::calculateBaseFee(view, tx);
 }
 
 ApplyResult
 doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenView& view)
 {
+    TRACE_FUNC();
     if (preclaimResult.view.seq() != view.seq())
     {
         // Logic error from the caller. Don't have enough

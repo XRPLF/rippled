@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 

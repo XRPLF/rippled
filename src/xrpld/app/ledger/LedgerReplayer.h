@@ -5,6 +5,7 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <mutex>
 #include <vector>
@@ -103,6 +104,7 @@ public:
     std::size_t
     tasksSize() const
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(mtx_);
         return tasks_.size();
     }
@@ -110,6 +112,7 @@ public:
     std::size_t
     deltasSize() const
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(mtx_);
         return deltas_.size();
     }
@@ -117,6 +120,7 @@ public:
     std::size_t
     skipListsSize() const
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(mtx_);
         return skipLists_.size();
     }

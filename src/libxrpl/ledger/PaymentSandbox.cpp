@@ -10,6 +10,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -25,6 +26,7 @@ namespace detail {
 auto
 DeferredCredits::makeKeyIOU(AccountID const& a1, AccountID const& a2, Currency const& c) -> KeyIOU
 {
+    TRACE_FUNC();
     if (a1 < a2)
     {
         return std::make_tuple(a1, a2, c);
@@ -40,6 +42,7 @@ DeferredCredits::creditIOU(
     STAmount const& amount,
     STAmount const& preCreditSenderBalance)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         sender != receiver, "xrpl::detail::DeferredCredits::creditIOU : sender is not receiver");
     XRPL_ASSERT(!amount.negative(), "xrpl::detail::DeferredCredits::creditIOU : positive amount");
@@ -90,6 +93,7 @@ DeferredCredits::creditMPT(
     std::uint64_t preCreditBalanceHolder,
     std::int64_t preCreditBalanceIssuer)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         amount.holds<MPTIssue>(),
         "xrpl::detail::DeferredCredits::creditMPT : amount is for MPTIssue");
@@ -153,6 +157,7 @@ DeferredCredits::issuerSelfDebitMPT(
     std::uint64_t amount,
     std::int64_t origBalance)
 {
+    TRACE_FUNC();
     auto const& mptID = issue.getMptID();
     auto i = creditsMPT_.find(mptID);
 
@@ -172,6 +177,7 @@ DeferredCredits::issuerSelfDebitMPT(
 void
 DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next)
 {
+    TRACE_FUNC();
     auto const v = std::max(cur, next);
     auto r = ownerCounts_.emplace(id, v);
     if (!r.second)
@@ -184,6 +190,7 @@ DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_
 std::optional<std::uint32_t>
 DeferredCredits::ownerCount(AccountID const& id) const
 {
+    TRACE_FUNC();
     auto i = ownerCounts_.find(id);
     if (i != ownerCounts_.end())
         return i->second;
@@ -197,6 +204,7 @@ DeferredCredits::adjustmentsIOU(
     AccountID const& other,
     Currency const& currency) const -> std::optional<AdjustmentIOU>
 {
+    TRACE_FUNC();
     std::optional<AdjustmentIOU> result;
 
     KeyIOU const k = makeKeyIOU(main, other, currency);
@@ -219,6 +227,7 @@ DeferredCredits::adjustmentsIOU(
 auto
 DeferredCredits::adjustmentsMPT(xrpl::MPTID const& mptID) const -> std::optional<AdjustmentMPT>
 {
+    TRACE_FUNC();
     auto i = creditsMPT_.find(mptID);
     if (i == creditsMPT_.end())
         return std::nullopt;
@@ -228,6 +237,7 @@ DeferredCredits::adjustmentsMPT(xrpl::MPTID const& mptID) const -> std::optional
 void
 DeferredCredits::apply(DeferredCredits& to)
 {
+    TRACE_FUNC();
     for (auto const& i : creditsIOU_)
     {
         auto r = to.creditsIOU_.emplace(i);
@@ -285,6 +295,7 @@ PaymentSandbox::balanceHookIOU(
     AccountID const& issuer,
     STAmount const& amount) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(amount.holds<Issue>(), "balanceHookIOU: amount is for Issue");
 
     /*
@@ -337,6 +348,7 @@ STAmount
 PaymentSandbox::balanceHookMPT(AccountID const& account, MPTIssue const& issue, std::int64_t amount)
     const
 {
+    TRACE_FUNC();
     auto const& issuer = issue.getIssuer();
     bool const accountIsHolder = account != issuer;
 
@@ -374,6 +386,7 @@ PaymentSandbox::balanceHookMPT(AccountID const& account, MPTIssue const& issue, 
 STAmount
 PaymentSandbox::balanceHookSelfIssueMPT(xrpl::MPTIssue const& issue, std::int64_t amount) const
 {
+    TRACE_FUNC();
     std::int64_t selfDebited = 0;
     std::int64_t lastBal = amount;
     for (auto curSB = this; curSB != nullptr; curSB = curSB->ps_)
@@ -394,6 +407,7 @@ PaymentSandbox::balanceHookSelfIssueMPT(xrpl::MPTIssue const& issue, std::int64_
 std::uint32_t
 PaymentSandbox::ownerCountHook(AccountID const& account, std::uint32_t count) const
 {
+    TRACE_FUNC();
     std::uint32_t result = count;
     for (auto curSB = this; curSB != nullptr; curSB = curSB->ps_)
     {
@@ -410,6 +424,7 @@ PaymentSandbox::creditHookIOU(
     STAmount const& amount,
     STAmount const& preCreditBalance)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(amount.holds<Issue>(), "creditHookIOU: amount is for Issue");
 
     tab_.creditIOU(from, to, amount, preCreditBalance);
@@ -423,6 +438,7 @@ PaymentSandbox::creditHookMPT(
     std::uint64_t preCreditBalanceHolder,
     std::int64_t preCreditBalanceIssuer)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(amount.holds<MPTIssue>(), "creditHookMPT: amount is for MPTIssue");
 
     tab_.creditMPT(from, to, amount, preCreditBalanceHolder, preCreditBalanceIssuer);
@@ -434,6 +450,7 @@ PaymentSandbox::issuerSelfDebitHookMPT(
     std::uint64_t amount,
     std::int64_t origBalance)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(amount > 0, "PaymentSandbox::issuerSelfDebitHookMPT: amount must be > 0");
 
     tab_.issuerSelfDebitMPT(issue, amount, origBalance);
@@ -445,12 +462,14 @@ PaymentSandbox::adjustOwnerCountHook(
     std::uint32_t cur,
     std::uint32_t next)
 {
+    TRACE_FUNC();
     tab_.ownerCount(account, cur, next);
 }
 
 void
 PaymentSandbox::apply(RawView& to)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!ps_, "xrpl::PaymentSandbox::apply : non-null sandbox");
     items_.apply(to);
 }
@@ -458,6 +477,7 @@ PaymentSandbox::apply(RawView& to)
 void
 PaymentSandbox::apply(PaymentSandbox& to)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(ps_ == &to, "xrpl::PaymentSandbox::apply : matching sandbox");
     items_.apply(to);
     tab_.apply(to.tab_);
@@ -466,6 +486,7 @@ PaymentSandbox::apply(PaymentSandbox& to)
 XRPAmount
 PaymentSandbox::xrpDestroyed() const
 {
+    TRACE_FUNC();
     return items_.dropsDestroyed();
 }
 

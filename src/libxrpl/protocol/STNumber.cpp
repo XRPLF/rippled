@@ -11,6 +11,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/regex/v5/regbase.hpp>
@@ -33,6 +34,7 @@ STNumber::STNumber(SField const& field, Number const& value) : STTakesAsset(fiel
 
 STNumber::STNumber(SerialIter& sit, SField const& field) : STTakesAsset(field)
 {
+    TRACE_FUNC();
     // We must call these methods in separate statements
     // to guarantee their order of execution.
     auto mantissa = sit.geti64();
@@ -43,18 +45,21 @@ STNumber::STNumber(SerialIter& sit, SField const& field) : STTakesAsset(field)
 SerializedTypeID
 STNumber::getSType() const
 {
+    TRACE_FUNC();
     return STI_NUMBER;
 }
 
 std::string
 STNumber::getText() const
 {
+    TRACE_FUNC();
     return to_string(value_);
 }
 
 void
 STNumber::associateAsset(Asset const& a)
 {
+    TRACE_FUNC();
     STTakesAsset::associateAsset(a);
 
     XRPL_ASSERT_PARTS(
@@ -68,6 +73,7 @@ STNumber::associateAsset(Asset const& a)
 void
 STNumber::add(Serializer& s) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(getFName().isBinary(), "xrpl::STNumber::add : field is binary");
     XRPL_ASSERT(getFName().fieldType == getSType(), "xrpl::STNumber::add : field type match");
 
@@ -115,30 +121,35 @@ STNumber::add(Serializer& s) const
 Number const&
 STNumber::value() const
 {
+    TRACE_FUNC();
     return value_;
 }
 
 void
 STNumber::setValue(Number const& v)
 {
+    TRACE_FUNC();
     value_ = v;
 }
 
 STBase*
 STNumber::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STNumber::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
 bool
 STNumber::isEquivalent(STBase const& t) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         t.getSType() == this->getSType(), "xrpl::STNumber::isEquivalent : field type match");
     STNumber const& v = dynamic_cast<STNumber const&>(t);
@@ -148,18 +159,21 @@ STNumber::isEquivalent(STBase const& t) const
 bool
 STNumber::isDefault() const
 {
+    TRACE_FUNC();
     return value_ == Number();
 }
 
 std::ostream&
 operator<<(std::ostream& out, STNumber const& rhs)
 {
+    TRACE_FUNC();
     return out << rhs.getText();
 }
 
 NumberParts
 partsFromString(std::string const& number)
 {
+    TRACE_FUNC();
     static boost::regex const kRE_NUMBER(
         "^"                       // the beginning of the string
         "([-+]?)"                 // (optional) + or - character
@@ -220,6 +234,7 @@ partsFromString(std::string const& number)
 STNumber
 numberFromJson(SField const& field, json::Value const& value)
 {
+    TRACE_FUNC();
     NumberParts parts;
 
     if (value.isInt())

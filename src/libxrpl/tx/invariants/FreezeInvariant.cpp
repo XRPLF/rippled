@@ -15,6 +15,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <utility>
@@ -27,6 +28,7 @@ TransfersNotFrozen::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     /*
      * A trust line freeze state alone doesn't determine if a transfer is
      * frozen. The transfer must be examined "end-to-end" because both sides of
@@ -59,6 +61,7 @@ TransfersNotFrozen::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     /*
      * We check this invariant regardless of deep freeze amendment status,
      * allowing for detection and logging of potential issues even when the
@@ -111,6 +114,7 @@ TransfersNotFrozen::isValidEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     // `after` can never be null, even if the trust line is deleted.
     XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
     if (!after)
@@ -139,6 +143,7 @@ TransfersNotFrozen::calculateBalanceChange(
     std::shared_ptr<SLE const> const& after,
     bool isDelete)
 {
+    TRACE_FUNC();
     auto const getBalance = [](auto const& line, auto const& other, bool zero) {
         STAmount const amt = line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
         return zero ? amt.zeroed() : amt;
@@ -164,6 +169,7 @@ TransfersNotFrozen::calculateBalanceChange(
 void
 TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         change.balanceChangeSign,
         "xrpl::TransfersNotFrozen::recordBalance : valid trustline "
@@ -184,6 +190,7 @@ TransfersNotFrozen::recordBalanceChanges(
     std::shared_ptr<SLE const> const& after,
     STAmount const& balanceChange)
 {
+    TRACE_FUNC();
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after->at(sfBalance).get<Issue>().currency;
 
@@ -201,6 +208,7 @@ TransfersNotFrozen::recordBalanceChanges(
 std::shared_ptr<SLE const>
 TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
+    TRACE_FUNC();
     if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
     {
         return it->second;
@@ -217,6 +225,7 @@ TransfersNotFrozen::validateIssuerChanges(
     beast::Journal const& j,
     bool enforce)
 {
+    TRACE_FUNC();
     if (!issuer)
     {
         return false;
@@ -259,6 +268,7 @@ TransfersNotFrozen::validateFrozenState(
     bool enforce,
     bool globalFreeze)
 {
+    TRACE_FUNC();
     bool const freeze =
         change.balanceChangeSign < 0 && change.line->isFlag(high ? lsfLowFreeze : lsfHighFreeze);
     bool const deepFreeze = change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);

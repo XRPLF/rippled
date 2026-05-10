@@ -19,6 +19,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -106,6 +107,7 @@ private:
               (ctx.isFirst || (ctx.prevStep != nullptr && !ctx.prevStep->bookStepBook())))
         , j_(ctx.j)
     {
+    TRACE_FUNC();
         XRPL_ASSERT(
             src_ == mptIssue_.getIssuer() || dst_ == mptIssue_.getIssuer(),
             "MPTEndpointStep::MPTEndpointStep src or dst must be an issuer");
@@ -115,22 +117,26 @@ public:
     [[nodiscard]] AccountID const&
     src() const
     {
+    TRACE_FUNC();
         return src_;
     }
     [[nodiscard]] AccountID const&
     dst() const
     {
+    TRACE_FUNC();
         return dst_;
     }
     [[nodiscard]] MPTID const&
     mptID() const
     {
+    TRACE_FUNC();
         return mptIssue_.getMptID();
     }
 
     [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
+    TRACE_FUNC();
         if (!cache_)
             return std::nullopt;
         return EitherAmount(cache_->in);
@@ -139,6 +145,7 @@ public:
     [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
+    TRACE_FUNC();
         if (!cache_)
             return std::nullopt;
         return EitherAmount(cache_->out);
@@ -147,12 +154,14 @@ public:
     [[nodiscard]] std::optional<AccountID>
     directStepSrcAcct() const override
     {
+    TRACE_FUNC();
         return src_;
     }
 
     [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
+    TRACE_FUNC();
         return std::make_pair(src_, dst_);
     }
 
@@ -197,12 +206,14 @@ public:
     friend bool
     operator==(MPTEndpointStep const& lhs, MPTEndpointStep const& rhs)
     {
+    TRACE_FUNC();
         return lhs.src_ == rhs.src_ && lhs.dst_ == rhs.dst_ && lhs.mptIssue_ == rhs.mptIssue_;
     }
 
     friend bool
     operator!=(MPTEndpointStep const& lhs, MPTEndpointStep const& rhs)
     {
+    TRACE_FUNC();
         return !(lhs == rhs);
     }
 
@@ -210,6 +221,7 @@ protected:
     std::string
     logStringImpl(char const* name) const
     {
+    TRACE_FUNC();
         std::ostringstream ostr;
         ostr << name << ": "
              << "\nSrc: " << src_ << "\nDst: " << dst_;
@@ -220,6 +232,7 @@ private:
     [[nodiscard]] bool
     equal(Step const& rhs) const override
     {
+    TRACE_FUNC();
         if (auto ds = dynamic_cast<MPTEndpointStep const*>(&rhs))
         {
             return *this == *ds;
@@ -257,6 +270,7 @@ public:
     static bool
     verifyPrevStepDebtDirection(DebtDirection)
     {
+    TRACE_FUNC();
         // A payment doesn't care regardless of prevStepRedeems.
         return true;
     }
@@ -269,6 +283,7 @@ public:
     [[nodiscard]] std::string
     logString() const override
     {
+    TRACE_FUNC();
         return logStringImpl("MPTEndpointPaymentStep");
     }
 
@@ -276,6 +291,7 @@ public:
     static TER
     checkCreateMPT(ApplyView&, DebtDirection)
     {
+    TRACE_FUNC();
         return tesSUCCESS;
     }
 };
@@ -299,6 +315,7 @@ public:
     static bool
     verifyPrevStepDebtDirection(DebtDirection prevStepDir)
     {
+    TRACE_FUNC();
         // During offer crossing we rely on the fact that prevStepRedeems
         // will *always* issue.  That's because:
         //  o If there's a prevStep_, it will always be a BookStep.
@@ -317,6 +334,7 @@ public:
     [[nodiscard]] std::string
     logString() const override
     {
+    TRACE_FUNC();
         return logStringImpl("MPTEndpointOfferCrossingStep");
     }
 
@@ -331,6 +349,7 @@ TER
 MPTEndpointPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc)
     const
 {
+    TRACE_FUNC();
     // Since this is a payment, MPToken must be present.  Perform all
     // MPToken related checks.
 
@@ -395,12 +414,14 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SL
 TER
 MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> const&)
 {
+    TRACE_FUNC();
     return tesSUCCESS;
 }
 
 TER
 MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view, xrpl::DebtDirection srcDebtDir)
 {
+    TRACE_FUNC();
     // TakerPays is the last step if offer crossing
     if (isLast_)
     {
@@ -424,6 +445,7 @@ template <class TDerived>
 std::pair<MPTAmount, DebtDirection>
 MPTEndpointStep<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
+    TRACE_FUNC();
     auto const maxFlow = accountFunds(
         sb, src_, mptIssue_, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
 
@@ -455,6 +477,7 @@ template <class TDerived>
 DebtDirection
 MPTEndpointStep<TDerived>::debtDirection(ReadView const& sb, StrandDirection dir) const
 {
+    TRACE_FUNC();
     if (dir == StrandDirection::Forward && cache_)
         return cache_->srcDebtDir;
 
@@ -469,6 +492,7 @@ MPTEndpointStep<TDerived>::revImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     MPTAmount const& out)
 {
+    TRACE_FUNC();
     cache_.reset();
 
     auto const [maxSrcToDst, srcDebtDir] = static_cast<TDerived const*>(this)->maxPaymentFlow(sb);
@@ -557,6 +581,7 @@ MPTEndpointStep<TDerived>::setCacheLimiting(
     MPTAmount const& fwdOut,
     DebtDirection srcDebtDir)
 {
+    TRACE_FUNC();
     // NOLINTBEGIN(bugprone-unchecked-optional-access) cache_ always set before setCacheLimiting is
     // called
     if (cache_->in < fwdIn)
@@ -599,6 +624,7 @@ MPTEndpointStep<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     MPTAmount const& in)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(cache_, "MPTEndpointStep<TDerived>::fwdImp : valid cache");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
@@ -681,6 +707,7 @@ template <class TDerived>
 std::pair<bool, EitherAmount>
 MPTEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in)
 {
+    TRACE_FUNC();
     if (!cache_)
     {
         JLOG(j_.trace()) << "Expected valid cache in validFwd";
@@ -732,6 +759,7 @@ template <class TDerived>
 std::pair<std::uint32_t, std::uint32_t>
 MPTEndpointStep<TDerived>::qualitiesSrcRedeems(ReadView const& sb) const
 {
+    TRACE_FUNC();
     if (prevStep_ == nullptr)
         return {QUALITY_ONE, QUALITY_ONE};
 
@@ -750,6 +778,7 @@ MPTEndpointStep<TDerived>::qualitiesSrcIssues(
     ReadView const& sb,
     DebtDirection prevStepDebtDirection) const
 {
+    TRACE_FUNC();
     // Charge a transfer rate when issuing and previous step redeems
 
     XRPL_ASSERT(
@@ -772,6 +801,7 @@ MPTEndpointStep<TDerived>::qualities(
     DebtDirection srcDebtDir,
     StrandDirection strandDir) const
 {
+    TRACE_FUNC();
     if (redeems(srcDebtDir))
     {
         return qualitiesSrcRedeems(sb);
@@ -789,6 +819,7 @@ template <class TDerived>
 std::uint32_t
 MPTEndpointStep<TDerived>::lineQualityIn(ReadView const& v) const
 {
+    TRACE_FUNC();
     // dst quality in
     return QUALITY_ONE;
 }
@@ -797,6 +828,7 @@ template <class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
 MPTEndpointStep<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
+    TRACE_FUNC();
     auto const dir = this->debtDirection(v, StrandDirection::Forward);
 
     auto const [srcQOut, dstQIn] =
@@ -817,6 +849,7 @@ template <class TDerived>
 TER
 MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
 {
+    TRACE_FUNC();
     // The following checks apply for both payments and offer crossing.
     if (!src_ || !dst_)
     {
@@ -893,6 +926,7 @@ template <class TDerived>
 void
 MPTEndpointStep<TDerived>::resetCache(xrpl::DebtDirection dir)
 {
+    TRACE_FUNC();
     cache_.emplace(MPTAmount(beast::kZERO), MPTAmount(beast::kZERO), MPTAmount(beast::kZERO), dir);
 }
 
@@ -905,6 +939,7 @@ makeMptEndpointStep(
     AccountID const& dst,
     MPTID const& mpt)
 {
+    TRACE_FUNC();
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
     if (ctx.offerCrossing != OfferCrossing::No)
@@ -934,6 +969,7 @@ mptEndpointStepEqual(
     AccountID const& dst,
     MPTID const& mptid)
 {
+    TRACE_FUNC();
     if (auto ds = dynamic_cast<MPTEndpointStep<MPTEndpointPaymentStep> const*>(&step))
     {
         return ds->src() == src && ds->dst() == dst && ds->mptID() == mptid;

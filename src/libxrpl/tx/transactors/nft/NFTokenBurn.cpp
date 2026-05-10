@@ -11,6 +11,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <memory>
@@ -20,12 +21,14 @@ namespace xrpl {
 NotTEC
 NFTokenBurn::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tesSUCCESS;
 }
 
 TER
 NFTokenBurn::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const owner = [&ctx]() {
         if (ctx.tx.isFieldPresent(sfOwner))
             return ctx.tx.getAccountID(sfOwner);
@@ -59,6 +62,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenBurn::doApply()
 {
+    TRACE_FUNC();
     // Remove the token, effectively burning it:
     auto const ret = nft::removeToken(
         view(),
@@ -105,6 +109,7 @@ NFTokenBurn::visitInvariantEntry(
 bool
 NFTokenBurn::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

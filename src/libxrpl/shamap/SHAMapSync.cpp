@@ -15,6 +15,7 @@
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -36,6 +37,7 @@ SHAMap::visitLeaves(
     std::function<void(boost::intrusive_ptr<SHAMapItem const> const& item)> const& leafFunction)
     const
 {
+    TRACE_FUNC();
     visitNodes([&leafFunction](SHAMapTreeNode& node) {
         if (!node.isInner())
             leafFunction(safeDowncast<SHAMapLeafNode&>(node).peekItem());
@@ -46,6 +48,7 @@ SHAMap::visitLeaves(
 void
 SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
 {
+    TRACE_FUNC();
     if (!root_)
         return;
 
@@ -110,6 +113,7 @@ SHAMap::visitDifferences(
     SHAMap const* have,
     std::function<bool(SHAMapTreeNode const&)> const& function) const
 {
+    TRACE_FUNC();
     // Visit every node in this SHAMap that is not present
     // in the specified SHAMap
     if (!root_)
@@ -177,6 +181,7 @@ SHAMap::visitDifferences(
 void
 SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 {
+    TRACE_FUNC();
     SHAMapInnerNode*& node = std::get<0>(se);
     SHAMapNodeID& nodeID = std::get<1>(se);
     int& firstChild = std::get<2>(se);
@@ -262,6 +267,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 void
 SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
 {
+    TRACE_FUNC();
     // Process all deferred reads
     int complete = 0;
     while (complete != mn.deferred)
@@ -309,6 +315,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
 std::vector<std::pair<SHAMapNodeID, uint256>>
 SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(root_->getHash().isNonZero(), "xrpl::SHAMap::getMissingNodes : nonzero root hash");
     XRPL_ASSERT(max > 0, "xrpl::SHAMap::getMissingNodes : valid max input");
 
@@ -419,6 +426,7 @@ SHAMap::getNodeFat(
     bool fatLeaves,
     std::uint32_t depth) const
 {
+    TRACE_FUNC();
     // Gets a node and some of its children
     // to a specified depth
 
@@ -505,12 +513,14 @@ SHAMap::getNodeFat(
 void
 SHAMap::serializeRoot(Serializer& s) const
 {
+    TRACE_FUNC();
     root_->serializeForWire(s);
 }
 
 SHAMapAddNode
 SHAMap::addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter* filter)
 {
+    TRACE_FUNC();
     // we already have a root_ node
     if (root_->getHash().isNonZero())
     {
@@ -546,6 +556,7 @@ SHAMap::addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFil
 SHAMapAddNode
 SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncFilter* filter)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!node.isRoot(), "xrpl::SHAMap::addKnownNode : valid node input");
 
     if (!isSynching())
@@ -656,6 +667,7 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
 bool
 SHAMap::deepCompare(SHAMap& other) const
 {
+    TRACE_FUNC();
     // Intended for debug/test only
     std::stack<std::pair<SHAMapTreeNode*, SHAMapTreeNode*>> stack;
 
@@ -727,6 +739,7 @@ SHAMap::deepCompare(SHAMap& other) const
 bool
 SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetNodeHash) const
 {
+    TRACE_FUNC();
     auto node = root_.get();
     SHAMapNodeID nodeID;
 
@@ -749,6 +762,7 @@ SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetN
 bool
 SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
 {
+    TRACE_FUNC();
     auto node = root_.get();
     SHAMapNodeID nodeID;
 
@@ -776,6 +790,7 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
 std::optional<std::vector<Blob>>
 SHAMap::getProofPath(uint256 const& key) const
 {
+    TRACE_FUNC();
     SharedPtrNodeStack stack;
     walkTowardsKey(key, &stack);
 
@@ -809,6 +824,7 @@ SHAMap::getProofPath(uint256 const& key) const
 bool
 SHAMap::verifyProofPath(uint256 const& rootHash, uint256 const& key, std::vector<Blob> const& path)
 {
+    TRACE_FUNC();
     if (path.empty() || path.size() > 65)
         return false;
 

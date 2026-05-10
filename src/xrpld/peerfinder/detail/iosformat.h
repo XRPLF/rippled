@@ -3,6 +3,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <xrpl/basics/TraceLog.h>
 
 namespace beast {
 
@@ -20,6 +21,7 @@ struct Leftw
     friend std::basic_ios<CharT, Traits>&
     operator<<(std::basic_ios<CharT, Traits>& ios, Leftw const& p)
     {
+    TRACE_FUNC();
         ios.setf(std::ios_base::left, std::ios_base::adjustfield);
         ios.width(p.width);
         return ios;
@@ -31,6 +33,7 @@ template <class CharT, class Traits, class Allocator>
 std::basic_string<CharT, Traits, Allocator>
 heading(std::basic_string<CharT, Traits, Allocator> title, int width = 80, CharT fill = CharT('-'))
 {
+    TRACE_FUNC();
     title.reserve(width);
     title.push_back(CharT(' '));
     title.resize(width, fill);
@@ -50,6 +53,7 @@ struct Divider
     friend std::basic_ostream<CharT, Traits>&
     operator<<(std::basic_ostream<CharT, Traits>& os, Divider const& d)
     {
+    TRACE_FUNC();
         os << std::basic_string<CharT, Traits>(d.width, d.fill);
         return os;
     }
@@ -67,6 +71,7 @@ struct Fpad
     friend std::basic_ostream<CharT, Traits>&
     operator<<(std::basic_ostream<CharT, Traits>& os, Fpad const& f)
     {
+    TRACE_FUNC();
         os << std::basic_string<CharT, Traits>(f.width, f.fill);
         return os;
     }
@@ -80,6 +85,7 @@ template <typename T>
 std::string
 to_string(T const& t)
 {
+    TRACE_FUNC();
     std::stringstream ss;
     ss << t;
     return ss.str();
@@ -109,6 +115,7 @@ public:
     friend std::basic_ostream<CharT2, Traits2>&
     operator<<(std::basic_ostream<CharT2, Traits2>& os, FieldT<CharT, Traits, Allocator> const& f)
     {
+    TRACE_FUNC();
         std::size_t const length(f.text.length());
         if (f.right)
         {
@@ -136,6 +143,7 @@ field(
     int pad = 0,
     bool right = false)
 {
+    TRACE_FUNC();
     return FieldT<CharT, Traits, Allocator>(text, width, pad, right);
 }
 
@@ -143,6 +151,7 @@ template <class CharT>
 FieldT<CharT>
 field(CharT const* text, int width = 8, int pad = 0, bool right = false)
 {
+    TRACE_FUNC();
     return FieldT<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
         std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(text),
         width,
@@ -154,6 +163,7 @@ template <typename T>
 FieldT<char>
 field(T const& t, int width = 8, int pad = 0, bool right = false)
 {
+    TRACE_FUNC();
     std::string const text(detail::to_string(t));
     return field(text, width, pad, right);
 }
@@ -162,6 +172,7 @@ template <class CharT, class Traits, class Allocator>
 FieldT<CharT, Traits, Allocator>
 rField(std::basic_string<CharT, Traits, Allocator> const& text, int width = 8, int pad = 0)
 {
+    TRACE_FUNC();
     return FieldT<CharT, Traits, Allocator>(text, width, pad, true);
 }
 
@@ -169,6 +180,7 @@ template <class CharT>
 FieldT<CharT>
 rField(CharT const* text, int width = 8, int pad = 0)
 {
+    TRACE_FUNC();
     return FieldT<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
         std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>>(text),
         width,
@@ -180,6 +192,7 @@ template <typename T>
 FieldT<char>
 rField(T const& t, int width = 8, int pad = 0)
 {
+    TRACE_FUNC();
     std::string const text(detail::to_string(t));
     return field(text, width, pad, true);
 }

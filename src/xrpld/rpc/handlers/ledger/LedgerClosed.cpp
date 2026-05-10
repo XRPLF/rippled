@@ -6,12 +6,14 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
 json::Value
 doLedgerClosed(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto ledger = context.ledgerMaster.getClosedLedger();
     XRPL_ASSERT(ledger, "xrpl::doLedgerClosed : non-null closed ledger");
 

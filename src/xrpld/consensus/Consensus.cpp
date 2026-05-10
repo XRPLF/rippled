@@ -5,6 +5,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <chrono>
@@ -28,6 +29,7 @@ shouldCloseLedger(
     beast::Journal j,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     CLOG(clog) << "shouldCloseLedger params anyTransactions: " << anyTransactions
                << ", prevProposers: " << prevProposers << ", proposersClosed: " << proposersClosed
                << ", proposersValidated: " << proposersValidated
@@ -99,6 +101,7 @@ checkConsensusReached(
     bool stalled,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     CLOG(clog) << "checkConsensusReached params: agreeing: " << agreeing << ", total: " << total
                << ", count_self: " << countSelf << ", minConsensusPct: " << minConsensusPct
                << ", reachedMax: " << reachedMax << ". ";
@@ -171,6 +174,7 @@ checkConsensus(
     beast::Journal j,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     CLOG(clog) << "checkConsensus: prop=" << currentProposers << "/" << prevProposers
                << " agree=" << currentAgree << " validated=" << currentFinished
                << " time=" << currentAgreeTime.count() << "/" << previousAgreeTime.count()

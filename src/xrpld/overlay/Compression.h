@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/CompressionAlgorithms.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl::compression {
 
@@ -31,6 +32,7 @@ decompress(
     std::size_t decompressedSize,
     Algorithm algorithm = Algorithm::LZ4)
 {
+    TRACE_FUNC();
     try
     {
         if (algorithm == Algorithm::LZ4)
@@ -70,6 +72,7 @@ compress(
     BufferFactory&& bf,
     Algorithm algorithm = Algorithm::LZ4)
 {
+    TRACE_FUNC();
     try
     {
         if (algorithm == Algorithm::LZ4)

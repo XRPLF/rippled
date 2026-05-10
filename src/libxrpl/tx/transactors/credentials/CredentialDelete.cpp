@@ -14,6 +14,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -25,6 +26,7 @@ using namespace credentials;
 std::uint32_t
 CredentialDelete::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // 0 means "Allow any flags"
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
@@ -32,6 +34,7 @@ CredentialDelete::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 CredentialDelete::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const subject = ctx.tx[~sfSubject];
     auto const issuer = ctx.tx[~sfIssuer];
 
@@ -64,6 +67,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
 TER
 CredentialDelete::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     AccountID const account{ctx.tx[sfAccount]};
     auto const subject = ctx.tx[~sfSubject].value_or(account);
     auto const issuer = ctx.tx[~sfIssuer].value_or(account);
@@ -78,6 +82,7 @@ CredentialDelete::preclaim(PreclaimContext const& ctx)
 TER
 CredentialDelete::doApply()
 {
+    TRACE_FUNC();
     auto const subject = ctx_.tx[~sfSubject].value_or(account_);
     auto const issuer = ctx_.tx[~sfIssuer].value_or(account_);
 
@@ -112,6 +117,7 @@ CredentialDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 }  // namespace xrpl

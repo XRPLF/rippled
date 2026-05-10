@@ -8,6 +8,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STVector256.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -21,6 +22,7 @@ namespace {
 LocalValue<std::optional<Rules>>&
 getCurrentTransactionRulesRef()
 {
+    TRACE_FUNC();
     static LocalValue<std::optional<Rules>> kR;
     return kR;
 }
@@ -29,12 +31,14 @@ getCurrentTransactionRulesRef()
 std::optional<Rules> const&
 getCurrentTransactionRules()
 {
+    TRACE_FUNC();
     return *getCurrentTransactionRulesRef();
 }
 
 void
 setCurrentTransactionRules(std::optional<Rules> r)
 {
+    TRACE_FUNC();
     // Make global changes associated with the rules before the value is moved.
     // Push the appropriate setting, instead of having the class pull every time
     // the value is needed. That could get expensive fast.
@@ -65,6 +69,7 @@ public:
         STVector256 const& amendments)
         : digest_(digest), presets_(presets)
     {
+    TRACE_FUNC();
         set_.reserve(amendments.size());
         set_.insert(amendments.begin(), amendments.end());
     }
@@ -72,12 +77,14 @@ public:
     [[nodiscard]] std::unordered_set<uint256, beast::Uhash<>> const&
     presets() const
     {
+    TRACE_FUNC();
         return presets_;
     }
 
     [[nodiscard]] bool
     enabled(uint256 const& feature) const
     {
+    TRACE_FUNC();
         if (presets_.contains(feature))
             return true;
         return set_.contains(feature);
@@ -86,6 +93,7 @@ public:
     bool
     operator==(Impl const& other) const
     {
+    TRACE_FUNC();
         if (!digest_ && !other.digest_)
             return true;
         if (!digest_ || !other.digest_)
@@ -114,12 +122,14 @@ Rules::Rules(
 std::unordered_set<uint256, beast::Uhash<>> const&
 Rules::presets() const
 {
+    TRACE_FUNC();
     return impl_->presets();
 }
 
 bool
 Rules::enabled(uint256 const& feature) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(impl_, "xrpl::Rules::enabled : initialized");
 
     return impl_->enabled(feature);
@@ -128,6 +138,7 @@ Rules::enabled(uint256 const& feature) const
 bool
 Rules::operator==(Rules const& other) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(impl_ && other.impl_, "xrpl::Rules::operator==(Rules) const : both initialized");
     if (impl_.get() == other.impl_.get())
         return true;
@@ -137,12 +148,14 @@ Rules::operator==(Rules const& other) const
 bool
 Rules::operator!=(Rules const& other) const
 {
+    TRACE_FUNC();
     return !(*this == other);
 }
 
 bool
 isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
 {
+    TRACE_FUNC();
     auto const& rules = getCurrentTransactionRules();
     if (!rules)
         return resultIfNoRules;
@@ -152,6 +165,7 @@ isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
 bool
 isFeatureEnabled(uint256 const& feature)
 {
+    TRACE_FUNC();
     return isFeatureEnabled(feature, false);
 }
 

@@ -21,6 +21,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -37,6 +38,7 @@ template <>
 NotTEC
 preflightHelper<Issue>(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx.isFieldPresent(sfHolder))
         return temMALFORMED;
 
@@ -56,6 +58,7 @@ template <>
 NotTEC
 preflightHelper<MPTIssue>(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
@@ -78,6 +81,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
 NotTEC
 Clawback::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (auto const ret = std::visit(
             [&]<typename T>(T const&) { return preflightHelper<T>(ctx); },
             ctx.tx[sfAmount].asset().value());
@@ -105,6 +109,7 @@ preclaimHelper<Issue>(
     AccountID const& holder,
     STAmount const& clawAmount)
 {
+    TRACE_FUNC();
     std::uint32_t const issuerFlagsIn = sleIssuer.getFieldU32(sfFlags);
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
@@ -158,6 +163,7 @@ preclaimHelper<MPTIssue>(
     AccountID const& holder,
     STAmount const& clawAmount)
 {
+    TRACE_FUNC();
     auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
@@ -187,6 +193,7 @@ preclaimHelper<MPTIssue>(
 TER
 Clawback::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     AccountID const issuer = ctx.tx[sfAccount];
     auto const clawAmount = ctx.tx[sfAmount];
     AccountID const holder = clawAmount.holds<Issue>() ? clawAmount.getIssuer() : ctx.tx[sfHolder];
@@ -222,6 +229,7 @@ template <>
 TER
 applyHelper<Issue>(ApplyContext& ctx)
 {
+    TRACE_FUNC();
     AccountID const issuer = ctx.tx[sfAccount];
     STAmount clawAmount = ctx.tx[sfAmount];
     AccountID const holder = clawAmount.getIssuer();  // cannot be reference
@@ -248,6 +256,7 @@ template <>
 TER
 applyHelper<MPTIssue>(ApplyContext& ctx)
 {
+    TRACE_FUNC();
     AccountID const issuer = ctx.tx[sfAccount];
     auto clawAmount = ctx.tx[sfAmount];
     AccountID const holder = ctx.tx[sfHolder];
@@ -273,6 +282,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
 TER
 Clawback::doApply()
 {
+    TRACE_FUNC();
     return std::visit(
         [&]<typename T>(T const&) { return applyHelper<T>(ctx_); },
         ctx_.tx[sfAmount].asset().value());
@@ -289,6 +299,7 @@ Clawback::visitInvariantEntry(
 bool
 Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

@@ -62,6 +62,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -126,6 +127,7 @@ RCLConsensus::Adaptor::Adaptor(
     , valCookie_(1 + randInt(cryptoPrng(), std::numeric_limits<std::uint64_t>::max() - 1))
     , nUnlVote_(validatorKeys_.nodeID, j_)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(valCookie_, "xrpl::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " + std::to_string(valCookie_) + ")";
@@ -147,6 +149,7 @@ RCLConsensus::Adaptor::Adaptor(
 std::optional<RCLCxLedger>
 RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 {
+    TRACE_FUNC();
     // we need to switch the ledger we're working from
     auto built = ledgerMaster_.getLedgerByHash(hash);
     if (!built)
@@ -183,6 +186,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 void
 RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
 {
+    TRACE_FUNC();
     protocol::TMProposeSet prop;
 
     auto const& proposal = peerPos.proposal();
@@ -205,6 +209,7 @@ RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
 void
 RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 {
+    TRACE_FUNC();
     // If we didn't relay this transaction recently, relay it to all peers
     if (app_.getHashRouter().shouldRelay(tx.id()))
     {
@@ -225,6 +230,7 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
+    TRACE_FUNC();
     JLOG(j_.trace()) << (proposal.isBowOut() ? "We bow out: " : "We propose: ")
                      << xrpl::to_string(proposal.prevLedger()) << " -> "
                      << xrpl::to_string(proposal.position());
@@ -267,12 +273,14 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 void
 RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 {
+    TRACE_FUNC();
     inboundTransactions_.giveSet(txns.id(), txns.map, false);
 }
 
 std::optional<RCLTxSet>
 RCLConsensus::Adaptor::acquireTxSet(RCLTxSet::ID const& setId)
 {
+    TRACE_FUNC();
     if (auto txns = inboundTransactions_.getSet(setId, true))
     {
         return RCLTxSet{std::move(txns)};
@@ -283,18 +291,21 @@ RCLConsensus::Adaptor::acquireTxSet(RCLTxSet::ID const& setId)
 bool
 RCLConsensus::Adaptor::hasOpenTransactions() const
 {
+    TRACE_FUNC();
     return !app_.getOpenLedger().empty();
 }
 
 std::size_t
 RCLConsensus::Adaptor::proposersValidated(LedgerHash const& h) const
 {
+    TRACE_FUNC();
     return app_.getValidations().numTrustedForLedger(h);
 }
 
 std::size_t
 RCLConsensus::Adaptor::proposersFinished(RCLCxLedger const& ledger, LedgerHash const& h) const
 {
+    TRACE_FUNC();
     RCLValidations& vals = app_.getValidations();
     return vals.getNodesAfter(RCLValidatedLedger(ledger.ledger, vals.adaptor().journal()), h);
 }
@@ -305,6 +316,7 @@ RCLConsensus::Adaptor::getPrevLedger(
     RCLCxLedger const& ledger,
     ConsensusMode mode)
 {
+    TRACE_FUNC();
     RCLValidations& vals = app_.getValidations();
     uint256 netLgr = vals.getPreferred(
         RCLValidatedLedger{ledger.ledger, vals.adaptor().journal()},
@@ -327,6 +339,7 @@ RCLConsensus::Adaptor::onClose(
     NetClock::time_point const& closeTime,
     ConsensusMode mode) -> Result
 {
+    TRACE_FUNC();
     bool const wrongLCL = mode == ConsensusMode::WrongLedger;
     bool const proposing = mode == ConsensusMode::Proposing;
 
@@ -422,6 +435,7 @@ RCLConsensus::Adaptor::onForceAccept(
     ConsensusMode const& mode,
     json::Value&& consensusJson)
 {
+    TRACE_FUNC();
     doAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(consensusJson));
 }
 
@@ -435,6 +449,7 @@ RCLConsensus::Adaptor::onAccept(
     json::Value&& consensusJson,
     bool const validating)
 {
+    TRACE_FUNC();
     app_.getJobQueue().addJob(
         JtAccept,
         "AcceptLedger",
@@ -460,6 +475,7 @@ RCLConsensus::Adaptor::doAccept(
     ConsensusMode const& mode,
     json::Value&& consensusJson)
 {
+    TRACE_FUNC();
     prevProposers_ = result.proposers;
     prevRoundTime_ = result.roundTime.read();
 
@@ -719,6 +735,7 @@ RCLConsensus::Adaptor::notify(
     RCLCxLedger const& ledger,
     bool haveCorrectLCL)
 {
+    TRACE_FUNC();
     protocol::TMStatusChange s;
 
     if (!haveCorrectLCL)
@@ -763,6 +780,7 @@ RCLConsensus::Adaptor::buildLCL(
     std::chrono::milliseconds roundTime,
     std::set<TxID>& failedTxs)
 {
+    TRACE_FUNC();
     std::shared_ptr<Ledger> built = [&]() {
         if (auto const replayData = ledgerMaster_.releaseReplay())
         {
@@ -803,6 +821,7 @@ RCLConsensus::Adaptor::buildLCL(
 void
 RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
 
     auto validationTime = app_.getTimeKeeper().closeTime();
@@ -890,6 +909,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 void
 RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
 {
+    TRACE_FUNC();
     JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
                     << ", after=" << to_string(after);
 
@@ -905,6 +925,7 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
 json::Value
 RCLConsensus::getJson(bool full) const
 {
+    TRACE_FUNC();
     json::Value ret;
     {
         std::scoped_lock const _{mutex_};
@@ -919,6 +940,7 @@ RCLConsensus::timerEntry(
     NetClock::time_point const& now,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     try
     {
         std::scoped_lock const _{mutex_};
@@ -938,6 +960,7 @@ RCLConsensus::timerEntry(
 void
 RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
 {
+    TRACE_FUNC();
     try
     {
         std::scoped_lock const _{mutex_};
@@ -958,6 +981,7 @@ RCLConsensus::simulate(
     NetClock::time_point const& now,
     std::optional<std::chrono::milliseconds> consensusDelay)
 {
+    TRACE_FUNC();
     std::scoped_lock const _{mutex_};
     consensus_.simulate(now, consensusDelay);
 }
@@ -965,6 +989,7 @@ RCLConsensus::simulate(
 bool
 RCLConsensus::peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal)
 {
+    TRACE_FUNC();
     std::scoped_lock const _{mutex_};
     return consensus_.peerProposal(now, newProposal);
 }
@@ -972,6 +997,7 @@ RCLConsensus::peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& 
 bool
 RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID> const& nowTrusted)
 {
+    TRACE_FUNC();
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
     validating_ = validatorKeys_.keys && prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
@@ -1019,18 +1045,21 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID
 bool
 RCLConsensus::Adaptor::haveValidated() const
 {
+    TRACE_FUNC();
     return ledgerMaster_.haveValidated();
 }
 
 LedgerIndex
 RCLConsensus::Adaptor::getValidLedgerIndex() const
 {
+    TRACE_FUNC();
     return ledgerMaster_.getValidLedgerIndex();
 }
 
 std::pair<std::size_t, hash_set<RCLConsensus::Adaptor::NodeKey_t>>
 RCLConsensus::Adaptor::getQuorumKeys() const
 {
+    TRACE_FUNC();
     return app_.getValidators().getQuorumKeys();
 }
 
@@ -1039,18 +1068,21 @@ RCLConsensus::Adaptor::laggards(
     Ledger_t::Seq const seq,
     hash_set<RCLConsensus::Adaptor::NodeKey_t>& trustedKeys) const
 {
+    TRACE_FUNC();
     return app_.getValidations().laggards(seq, trustedKeys);
 }
 
 bool
 RCLConsensus::Adaptor::validator() const
 {
+    TRACE_FUNC();
     return validatorKeys_.keys.has_value();
 }
 
 void
 RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
 {
+    TRACE_FUNC();
     if ((positions == 0u) && app_.getOPs().isFull())
         app_.getOPs().setMode(OperatingMode::CONNECTED);
 }
@@ -1064,6 +1096,7 @@ RCLConsensus::startRound(
     hash_set<NodeID> const& nowTrusted,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     std::scoped_lock const _{mutex_};
     consensus_.startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr, nowTrusted), clog);
@@ -1072,6 +1105,7 @@ RCLConsensus::startRound(
 RclConsensusLogger::RclConsensusLogger(char const* label, bool const validating, beast::Journal j)
     : j_(j)
 {
+    TRACE_FUNC();
     if (!validating && !j.info())
         return;
     start_ = std::chrono::steady_clock::now();
@@ -1083,6 +1117,7 @@ RclConsensusLogger::RclConsensusLogger(char const* label, bool const validating,
 
 RclConsensusLogger::~RclConsensusLogger()
 {
+    TRACE_FUNC();
     if (!ss_)
         return;
     auto const duration = std::chrono::duration_cast<std::chrono::milliseconds>(

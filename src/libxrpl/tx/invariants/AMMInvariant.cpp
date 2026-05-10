@@ -18,6 +18,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <string>
@@ -30,6 +31,7 @@ ValidAMM::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (isDelete)
         return;
 
@@ -68,6 +70,7 @@ validBalances(
     STAmount const& lptAMMBalance,
     ValidAMM::ZeroAllowed zeroAllowed)
 {
+    TRACE_FUNC();
     bool const positive =
         amount > beast::kZERO && amount2 > beast::kZERO && lptAMMBalance > beast::kZERO;
     if (zeroAllowed == ValidAMM::ZeroAllowed::Yes)
@@ -81,6 +84,7 @@ validBalances(
 bool
 ValidAMM::finalizeVote(bool enforce, beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (lptAMMBalanceAfter_ != lptAMMBalanceBefore_ || ammPoolChanged_)
     {
         // LPTokens and the pool can not change on vote
@@ -99,6 +103,7 @@ ValidAMM::finalizeVote(bool enforce, beast::Journal const& j) const
 bool
 ValidAMM::finalizeBid(bool enforce, beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (ammPoolChanged_)
     {
         // The pool can not change on bid
@@ -131,6 +136,7 @@ ValidAMM::finalizeCreate(
     bool enforce,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (!ammAccount_)
     {
         // LCOV_EXCL_START
@@ -171,6 +177,7 @@ ValidAMM::finalizeCreate(
 bool
 ValidAMM::finalizeDelete(bool enforce, TER res, beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (ammAccount_)
     {
         // LCOV_EXCL_START
@@ -188,6 +195,7 @@ ValidAMM::finalizeDelete(bool enforce, TER res, beast::Journal const& j) const
 bool
 ValidAMM::finalizeDEX(bool enforce, beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (ammAccount_)
     {
         // LCOV_EXCL_START
@@ -207,6 +215,7 @@ ValidAMM::generalInvariant(
     ZeroAllowed zeroAllowed,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     // NOLINTBEGIN(bugprone-unchecked-optional-access) ammAccount_ and lptAMMBalanceAfter_ set
     // together in visitEntry; callers only invoke this inside else-of-if(!ammAccount_)
     auto const [amount, amount2] = ammPoolHolds(
@@ -253,6 +262,7 @@ ValidAMM::finalizeDeposit(
     bool enforce,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (!ammAccount_)
     {
         // LCOV_EXCL_START
@@ -276,6 +286,7 @@ ValidAMM::finalizeWithdraw(
     bool enforce,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (!ammAccount_)
     {
         // Last Withdraw or Clawback deleted AMM
@@ -297,6 +308,7 @@ ValidAMM::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     // Delete may return tecINCOMPLETE if there are too many
     // trustlines to delete.
     if (!isTesSuccess(result) && result != tecINCOMPLETE)

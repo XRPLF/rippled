@@ -19,6 +19,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <exception>
 #include <functional>
@@ -29,6 +30,7 @@ namespace xrpl {
 static Expected<NetworkOPs::FailHard, json::Value>
 getFailHard(RPC::JsonContext const& context)
 {
+    TRACE_FUNC();
     if (context.params.isMember(jss::fail_hard) && !context.params[jss::fail_hard].isBool())
     {
         return Unexpected(RPC::expectedFieldError(jss::fail_hard, "boolean"));
@@ -44,6 +46,7 @@ getFailHard(RPC::JsonContext const& context)
 json::Value
 doSubmit(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
     if (!context.params.isMember(jss::tx_blob))

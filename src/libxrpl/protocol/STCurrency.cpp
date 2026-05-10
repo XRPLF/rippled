@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <memory>
@@ -32,30 +33,35 @@ STCurrency::STCurrency(SField const& name, Currency const& currency)
 SerializedTypeID
 STCurrency::getSType() const
 {
+    TRACE_FUNC();
     return STI_CURRENCY;
 }
 
 std::string
 STCurrency::getText() const
 {
+    TRACE_FUNC();
     return to_string(currency_);
 }
 
 json::Value
 STCurrency::getJson(JsonOptions) const
 {
+    TRACE_FUNC();
     return to_string(currency_);
 }
 
 void
 STCurrency::add(Serializer& s) const
 {
+    TRACE_FUNC();
     s.addBitString(currency_);
 }
 
 bool
 STCurrency::isEquivalent(STBase const& t) const
 {
+    TRACE_FUNC();
     STCurrency const* v = dynamic_cast<STCurrency const*>(&t);
     return (v != nullptr) && (*v == *this);
 }
@@ -63,30 +69,35 @@ STCurrency::isEquivalent(STBase const& t) const
 bool
 STCurrency::isDefault() const
 {
+    TRACE_FUNC();
     return isXRP(currency_);
 }
 
 std::unique_ptr<STCurrency>
 STCurrency::construct(SerialIter& sit, SField const& name)
 {
+    TRACE_FUNC();
     return std::make_unique<STCurrency>(sit, name);
 }
 
 STBase*
 STCurrency::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STCurrency::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
 STCurrency
 currencyFromJson(SField const& name, json::Value const& v)
 {
+    TRACE_FUNC();
     if (!v.isString())
     {
         Throw<std::runtime_error>("currencyFromJson currency must be a string Json value");

@@ -9,6 +9,7 @@
 #include <xrpl/core/LoadEvent.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <chrono>
@@ -33,6 +34,7 @@ JobQueue::JobQueue(
     , perfLog_(perfLog)
     , collector_(collector)
 {
+    TRACE_FUNC();
     JLOG(journal_.info()) << "Using " << threadCount << "  threads";
 
     hook_ = collector_->makeHook(std::bind(&JobQueue::collect, this));
@@ -58,6 +60,7 @@ JobQueue::JobQueue(
 
 JobQueue::~JobQueue()
 {
+    TRACE_FUNC();
     // Must unhook before destroying
     hook_ = beast::insight::Hook();
 }
@@ -65,6 +68,7 @@ JobQueue::~JobQueue()
 void
 JobQueue::collect()
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     job_count_ = jobSet_.size();
 }
@@ -72,6 +76,7 @@ JobQueue::collect()
 bool
 JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction const& func)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(type != JtInvalid, "xrpl::JobQueue::addRefCountedJob : valid input job type");
 
     auto iter(jobData_.find(type));
@@ -119,6 +124,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 int
 JobQueue::getJobCount(JobType t) const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     JobDataMap::const_iterator const c = jobData_.find(t);
@@ -129,6 +135,7 @@ JobQueue::getJobCount(JobType t) const
 int
 JobQueue::getJobCountTotal(JobType t) const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     JobDataMap::const_iterator const c = jobData_.find(t);
@@ -139,6 +146,7 @@ JobQueue::getJobCountTotal(JobType t) const
 int
 JobQueue::getJobCountGE(JobType t) const
 {
+    TRACE_FUNC();
     // return the number of jobs at this priority level or greater
     int ret = 0;
 
@@ -156,6 +164,7 @@ JobQueue::getJobCountGE(JobType t) const
 std::unique_ptr<LoadEvent>
 JobQueue::makeLoadEvent(JobType t, std::string const& name)
 {
+    TRACE_FUNC();
     JobDataMap::iterator const iter(jobData_.find(t));
     XRPL_ASSERT(iter != jobData_.end(), "xrpl::JobQueue::makeLoadEvent : valid job type input");
 
@@ -168,6 +177,7 @@ JobQueue::makeLoadEvent(JobType t, std::string const& name)
 void
 JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
 {
+    TRACE_FUNC();
     if (isStopped())
         logicError("JobQueue::addLoadEvents() called after JobQueue stopped");
 
@@ -179,12 +189,14 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
 bool
 JobQueue::isOverloaded()
 {
+    TRACE_FUNC();
     return std::ranges::any_of(jobData_, [](auto& entry) { return entry.second.load().isOver(); });
 }
 
 json::Value
 JobQueue::getJson(int c)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     json::Value ret(json::ObjectValue);
 
@@ -242,6 +254,7 @@ JobQueue::getJson(int c)
 void
 JobQueue::rendezvous()
 {
+    TRACE_FUNC();
     std::unique_lock<std::mutex> lock(mutex_);
     cv_.wait(lock, [this] { return processCount_ == 0 && jobSet_.empty(); });
 }
@@ -249,6 +262,7 @@ JobQueue::rendezvous()
 JobTypeData&
 JobQueue::getJobTypeData(JobType type)
 {
+    TRACE_FUNC();
     JobDataMap::iterator const c(jobData_.find(type));
     XRPL_ASSERT(c != jobData_.end(), "xrpl::JobQueue::getJobTypeData : valid job type input");
 
@@ -263,6 +277,7 @@ JobQueue::getJobTypeData(JobType type)
 void
 JobQueue::stop()
 {
+    TRACE_FUNC();
     stopping_ = true;
     using namespace std::chrono_literals;
     jobCounter_.join("JobQueue", 1s, journal_);
@@ -284,12 +299,14 @@ JobQueue::stop()
 bool
 JobQueue::isStopped() const
 {
+    TRACE_FUNC();
     return stopped_;
 }
 
 void
 JobQueue::getNextJob(Job& job)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!jobSet_.empty(), "xrpl::JobQueue::getNextJob : non-empty jobs");
 
     std::set<Job>::const_iterator iter;
@@ -320,6 +337,7 @@ JobQueue::getNextJob(Job& job)
 void
 JobQueue::finishJob(JobType type)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(type != JtInvalid, "xrpl::JobQueue::finishJob : valid input job type");
 
     JobTypeData& data = getJobTypeData(type);
@@ -341,6 +359,7 @@ JobQueue::finishJob(JobType type)
 void
 JobQueue::processTask(int instance)
 {
+    TRACE_FUNC();
     JobType type = JtInvalid;
 
     {
@@ -392,6 +411,7 @@ JobQueue::processTask(int instance)
 int
 JobQueue::getJobLimit(JobType type)
 {
+    TRACE_FUNC();
     JobTypeInfo const& j(JobTypes::instance().get(type));
     XRPL_ASSERT(j.type() != JtInvalid, "xrpl::JobQueue::getJobLimit : valid job type");
 

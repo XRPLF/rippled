@@ -8,6 +8,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/container/aged_map.h>
 #include <xrpl/beast/utility/maybe_const.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
@@ -60,6 +61,7 @@ public:
             Endpoint const&
             operator()(Element const& e) const
             {
+    TRACE_FUNC();
                 return e.endpoint;
             }
         };
@@ -77,48 +79,56 @@ public:
         [[nodiscard]] iterator
         begin() const
         {
+    TRACE_FUNC();
             return iterator(list_.get().cbegin(), Transform());
         }
 
         [[nodiscard]] iterator
         cbegin() const
         {
+    TRACE_FUNC();
             return iterator(list_.get().cbegin(), Transform());
         }
 
         [[nodiscard]] iterator
         end() const
         {
+    TRACE_FUNC();
             return iterator(list_.get().cend(), Transform());
         }
 
         [[nodiscard]] iterator
         cend() const
         {
+    TRACE_FUNC();
             return iterator(list_.get().cend(), Transform());
         }
 
         [[nodiscard]] reverse_iterator
         rbegin() const
         {
+    TRACE_FUNC();
             return reverse_iterator(list_.get().crbegin(), Transform());
         }
 
         [[nodiscard]] reverse_iterator
         crbegin() const
         {
+    TRACE_FUNC();
             return reverse_iterator(list_.get().crbegin(), Transform());
         }
 
         [[nodiscard]] reverse_iterator
         rend() const
         {
+    TRACE_FUNC();
             return reverse_iterator(list_.get().crend(), Transform());
         }
 
         [[nodiscard]] reverse_iterator
         crend() const
         {
+    TRACE_FUNC();
             return reverse_iterator(list_.get().crend(), Transform());
         }
 
@@ -126,6 +136,7 @@ public:
         void
         moveBack(const_iterator pos)
         {
+    TRACE_FUNC();
             auto& e(const_cast<Element&>(*pos.base()));
             list_.get().erase(list_.get().iterator_to(e));
             list_.get().push_back(e);
@@ -147,6 +158,7 @@ protected:
     static Hop<IsConst>
     makeHop(typename beast::MaybeConst<IsConst, list_type>::type& list)
     {
+    TRACE_FUNC();
         return Hop<IsConst>(list);
     }
 };
@@ -217,6 +229,7 @@ public:
             operator()(typename beast::MaybeConst<IsConst, typename lists_type::value_type>::type&
                            list) const
             {
+    TRACE_FUNC();
                 return makeHop<IsConst>(list);
             }
         };
@@ -236,72 +249,84 @@ public:
         iterator
         begin()
         {
+    TRACE_FUNC();
             return iterator(lists_.begin(), Transform<false>());
         }
 
         [[nodiscard]] const_iterator
         begin() const
         {
+    TRACE_FUNC();
             return const_iterator(lists_.cbegin(), Transform<true>());
         }
 
         [[nodiscard]] const_iterator
         cbegin() const
         {
+    TRACE_FUNC();
             return const_iterator(lists_.cbegin(), Transform<true>());
         }
 
         iterator
         end()
         {
+    TRACE_FUNC();
             return iterator(lists_.end(), Transform<false>());
         }
 
         [[nodiscard]] const_iterator
         end() const
         {
+    TRACE_FUNC();
             return const_iterator(lists_.cend(), Transform<true>());
         }
 
         [[nodiscard]] const_iterator
         cend() const
         {
+    TRACE_FUNC();
             return const_iterator(lists_.cend(), Transform<true>());
         }
 
         reverse_iterator
         rbegin()
         {
+    TRACE_FUNC();
             return reverse_iterator(lists_.rbegin(), Transform<false>());
         }
 
         [[nodiscard]] const_reverse_iterator
         rbegin() const
         {
+    TRACE_FUNC();
             return const_reverse_iterator(lists_.crbegin(), Transform<true>());
         }
 
         [[nodiscard]] const_reverse_iterator
         crbegin() const
         {
+    TRACE_FUNC();
             return const_reverse_iterator(lists_.crbegin(), Transform<true>());
         }
 
         reverse_iterator
         rend()
         {
+    TRACE_FUNC();
             return reverse_iterator(lists_.rend(), Transform<false>());
         }
 
         [[nodiscard]] const_reverse_iterator
         rend() const
         {
+    TRACE_FUNC();
             return const_reverse_iterator(lists_.crend(), Transform<true>());
         }
 
         [[nodiscard]] const_reverse_iterator
         crend() const
         {
+    TRACE_FUNC();
             return const_reverse_iterator(lists_.crend(), Transform<true>());
         }
 
@@ -334,6 +359,7 @@ public:
     [[nodiscard]] bool
     empty() const
     {
+    TRACE_FUNC();
         return cache_.empty();
     }
 
@@ -341,6 +367,7 @@ public:
     typename cache_type::size_type
     size() const
     {
+    TRACE_FUNC();
         return cache_.size();
     }
 
@@ -369,6 +396,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::expire()
 {
+    TRACE_FUNC();
     std::size_t n(0);
     typename cache_type::time_point const expired(
         cache_.clock().now() - Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
@@ -391,6 +419,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::insert(Endpoint const& ep)
 {
+    TRACE_FUNC();
     // The caller already incremented hop, so if we got a
     // message at maxHops we will store it at maxHops + 1.
     // This means we won't give out the address to other peers
@@ -438,6 +467,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::onWrite(beast::PropertyStream::Map& map)
 {
+    TRACE_FUNC();
     typename cache_type::time_point const expired(
         cache_.clock().now() - Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
     map["size"] = size();
@@ -461,6 +491,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::HopsT::shuffle()
 {
+    TRACE_FUNC();
     for (auto& list : lists_)
     {
         std::vector<std::reference_wrapper<Element>> v;
@@ -477,6 +508,7 @@ template <class Allocator>
 std::string
 Livecache<Allocator>::HopsT::histogram() const
 {
+    TRACE_FUNC();
     std::string s;
     for (auto const& h : hist_)
     {
@@ -490,6 +522,7 @@ Livecache<Allocator>::HopsT::histogram() const
 template <class Allocator>
 Livecache<Allocator>::HopsT::HopsT(Allocator const& alloc)
 {
+    TRACE_FUNC();
     std::ranges::fill(hist_, 0);
 }
 
@@ -497,6 +530,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::HopsT::insert(Element& e)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         e.endpoint.hops <= Tuning::kMAX_HOPS + 1,
         "xrpl::PeerFinder::Livecache::hops_t::insert : maximum input hops");
@@ -509,6 +543,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::HopsT::reinsert(Element& e, std::uint32_t numHops)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         numHops <= Tuning::kMAX_HOPS + 1,
         "xrpl::PeerFinder::Livecache::hops_t::reinsert : maximum hops input");
@@ -526,6 +561,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::HopsT::remove(Element& e)
 {
+    TRACE_FUNC();
     --hist_[e.endpoint.hops];
 
     auto& list = lists_[e.endpoint.hops];

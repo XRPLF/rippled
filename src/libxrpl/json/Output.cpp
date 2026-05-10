@@ -2,6 +2,7 @@
 
 #include <xrpl/json/Writer.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <string>
 
@@ -12,6 +13,7 @@ namespace {
 void
 outputJson(json::Value const& value, Writer& writer)
 {
+    TRACE_FUNC();
     switch (value.type())
     {
         case json::NullValue: {
@@ -74,6 +76,7 @@ outputJson(json::Value const& value, Writer& writer)
 void
 outputJson(json::Value const& value, Output const& out)
 {
+    TRACE_FUNC();
     Writer writer(out);
     outputJson(value, writer);
 }
@@ -81,6 +84,7 @@ outputJson(json::Value const& value, Output const& out)
 std::string
 jsonAsString(json::Value const& value)
 {
+    TRACE_FUNC();
     std::string s;
     Writer writer(stringOutput(s));
     outputJson(value, writer);

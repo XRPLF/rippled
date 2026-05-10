@@ -1,12 +1,14 @@
 #pragma once
 
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
 inline STAmount
 largestAmount(STAmount const& amt)
 {
+    TRACE_FUNC();
     return amt.asset().visit(
         [&](Issue const& issue) -> STAmount {
             if (issue.native())
@@ -19,6 +21,7 @@ largestAmount(STAmount const& amt)
 inline STAmount
 convertAmount(STAmount const& amt, bool all)
 {
+    TRACE_FUNC();
     if (!all)
         return amt;
 
@@ -28,6 +31,7 @@ convertAmount(STAmount const& amt, bool all)
 inline bool
 convertAllCheck(STAmount const& a)
 {
+    TRACE_FUNC();
     return a == largestAmount(a);
 }
 

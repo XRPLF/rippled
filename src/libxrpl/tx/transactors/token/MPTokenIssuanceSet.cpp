@@ -19,6 +19,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <array>
@@ -31,6 +32,7 @@ namespace xrpl {
 bool
 MPTokenIssuanceSet::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return !ctx.tx.isFieldPresent(sfDomainID) ||
         (ctx.rules.enabled(featurePermissionedDomains) &&
          ctx.rules.enabled(featureSingleAssetVault));
@@ -39,6 +41,7 @@ MPTokenIssuanceSet::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfMPTokenIssuanceSetMask;
 }
 
@@ -75,6 +78,7 @@ static constexpr std::array<MPTMutabilityFlags, 6> kMPT_MUTABILITY_FLAGS = {
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
     auto const metadata = ctx.tx[~sfMPTokenMetadata];
     auto const transferFee = ctx.tx[~sfTransferFee];
@@ -144,6 +148,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 NotTEC
 MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
         return tesSUCCESS;
@@ -179,6 +184,7 @@ MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
 TER
 MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     // ensure that issuance exists
     auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMptIssuance)
@@ -272,6 +278,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 TER
 MPTokenIssuanceSet::doApply()
 {
+    TRACE_FUNC();
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const txFlags = ctx_.tx.getFlags();
     auto const holderID = ctx_.tx[~sfHolder];
@@ -394,6 +401,7 @@ MPTokenIssuanceSet::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

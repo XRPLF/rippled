@@ -19,6 +19,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -28,6 +29,7 @@ namespace xrpl {
 bool
 MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx.isFieldPresent(sfDomainID) &&
         !(ctx.rules.enabled(featurePermissionedDomains) &&
           ctx.rules.enabled(featureSingleAssetVault)))
@@ -42,6 +44,7 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // This mask is only compared against sfFlags
     return tfMPTokenIssuanceCreateMask;
 }
@@ -49,6 +52,7 @@ MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // If the mutable flags field is included, at least one flag must be
     // specified.
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
@@ -97,6 +101,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 Expected<MPTID, TER>
 MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
 {
+    TRACE_FUNC();
     auto const acct = view.peek(keylet::account(args.account));
     if (!acct)
         return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
@@ -153,6 +158,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
 TER
 MPTokenIssuanceCreate::doApply()
 {
+    TRACE_FUNC();
     auto const& tx = ctx_.tx;
     auto const result = create(
         view(),
@@ -188,6 +194,7 @@ MPTokenIssuanceCreate::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

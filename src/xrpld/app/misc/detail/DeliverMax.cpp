@@ -2,12 +2,14 @@
 
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl::RPC {
 
 void
 insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion)
 {
+    TRACE_FUNC();
     if (txJson.isMember(jss::Amount))
     {
         if (txnType == ttPAYMENT)

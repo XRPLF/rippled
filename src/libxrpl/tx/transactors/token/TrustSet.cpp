@@ -25,6 +25,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -42,6 +43,7 @@ computeFreezeFlags(
     bool bSetDeepFreeze,
     bool bClearDeepFreeze)
 {
+    TRACE_FUNC();
     if (bSetFreeze && !bClearFreeze && !bNoFreeze)
     {
         uFlags |= (bHigh ? xrpl::lsfHighFreeze : xrpl::lsfLowFreeze);
@@ -69,12 +71,14 @@ namespace xrpl {
 std::uint32_t
 TrustSet::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfTrustSetMask;
 }
 
 NotTEC
 TrustSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -129,6 +133,7 @@ TrustSet::preflight(PreflightContext const& ctx)
 NotTEC
 TrustSet::checkPermission(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
         return tesSUCCESS;
@@ -191,6 +196,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
 TER
 TrustSet::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const id = ctx.tx[sfAccount];
 
     auto const sle = ctx.view.read(keylet::account(id));
@@ -332,6 +338,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 TER
 TrustSet::doApply()
 {
+    TRACE_FUNC();
     TER terResult = tesSUCCESS;
 
     STAmount const saLimitAmount(ctx_.tx.getFieldAmount(sfLimitAmount));
@@ -687,6 +694,7 @@ TrustSet::visitInvariantEntry(
 bool
 TrustSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

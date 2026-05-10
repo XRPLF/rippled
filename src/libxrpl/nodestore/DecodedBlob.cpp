@@ -5,6 +5,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <memory>
@@ -14,6 +15,7 @@ namespace xrpl::NodeStore {
 
 DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 {
+    TRACE_FUNC();
     /*  Data format:
 
         Bytes
@@ -59,6 +61,7 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 std::shared_ptr<NodeObject>
 DecodedBlob::createObject()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(success_, "xrpl::NodeStore::DecodedBlob::createObject : valid object type");
 
     std::shared_ptr<NodeObject> object;

@@ -12,6 +12,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <string>
 
@@ -20,6 +21,7 @@ namespace xrpl {
 json::Value
 doUnsubscribe(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     InfoSub::pointer ispSub;
     json::Value jvResult(json::ObjectValue);
     bool removeUrl{false};

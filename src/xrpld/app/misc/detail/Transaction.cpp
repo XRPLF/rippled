@@ -19,6 +19,7 @@
 #include <xrpl/protocol/TxSearched.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/optional/optional.hpp>
 
@@ -38,6 +39,7 @@ Transaction::Transaction(
     Application& app) noexcept
     : transaction_(stx), app_(app), j_(app.getJournal("Ledger"))
 {
+    TRACE_FUNC();
     try
     {
         transactionID_ = transaction_->getTransactionID();
@@ -62,6 +64,7 @@ Transaction::setStatus(
     std::optional<std::uint32_t> tseq,
     std::optional<std::uint32_t> netID)
 {
+    TRACE_FUNC();
     status_ = ts;
     ledgerIndex_ = lseq;
     if (tseq)
@@ -73,6 +76,7 @@ Transaction::setStatus(
 TransStatus
 Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 {
+    TRACE_FUNC();
     auto const c = (status) ? safeCast<TxnSql>((*status)[0]) : TxnSql::Unknown;
 
     switch (static_cast<TxnSql>(c))
@@ -103,6 +107,7 @@ Transaction::transactionFromSQL(
     Blob const& rawTxn,
     Application& app)
 {
+    TRACE_FUNC();
     std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
 
     SerialIter it(makeSlice(rawTxn));
@@ -118,6 +123,7 @@ Transaction::transactionFromSQL(
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 Transaction::load(uint256 const& id, Application& app, ErrorCodeI& ec)
 {
+    TRACE_FUNC();
     return load(id, app, std::nullopt, ec);
 }
 
@@ -128,6 +134,7 @@ Transaction::load(
     ClosedInterval<uint32_t> const& range,
     ErrorCodeI& ec)
 {
+    TRACE_FUNC();
     using op = std::optional<ClosedInterval<uint32_t>>;
 
     return load(id, app, op{range}, ec);
@@ -140,6 +147,7 @@ Transaction::load(
     std::optional<ClosedInterval<uint32_t>> const& range,
     ErrorCodeI& ec)
 {
+    TRACE_FUNC();
     auto& db = app.getRelationalDatabase();
 
     return db.getTransaction(id, range, ec);
@@ -149,6 +157,7 @@ Transaction::load(
 json::Value
 Transaction::getJson(JsonOptions options, bool binary) const
 {
+    TRACE_FUNC();
     // Note, we explicitly suppress `include_date` option here
     json::Value ret(transaction_->getJson(options & ~JsonOptions::KIncludeDate, binary));
 

@@ -9,6 +9,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/server/Wallet.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/program_options/variables_map.hpp>
 
@@ -22,6 +23,7 @@ namespace xrpl {
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(Application& app, boost::program_options::variables_map const& cmdline)
 {
+    TRACE_FUNC();
     std::optional<Seed> seed;
 
     if (cmdline.contains("nodeid"))

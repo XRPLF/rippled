@@ -10,6 +10,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <functional>
@@ -25,6 +26,7 @@ dirFirst(
     unsigned int& index,
     uint256& entry)
 {
+    TRACE_FUNC();
     return detail::internalDirFirst(view, root, page, index, entry);
 }
 
@@ -36,6 +38,7 @@ dirNext(
     unsigned int& index,
     uint256& entry)
 {
+    TRACE_FUNC();
     return detail::internalDirNext(view, root, page, index, entry);
 }
 
@@ -47,6 +50,7 @@ cdirFirst(
     unsigned int& index,
     uint256& entry)
 {
+    TRACE_FUNC();
     return detail::internalDirFirst(view, root, page, index, entry);
 }
 
@@ -58,6 +62,7 @@ cdirNext(
     unsigned int& index,
     uint256& entry)
 {
+    TRACE_FUNC();
     return detail::internalDirNext(view, root, page, index, entry);
 }
 
@@ -67,6 +72,7 @@ forEachItem(
     Keylet const& root,
     std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::forEachItem : valid root type");
 
     if (root.type != ltDIR_NODE)
@@ -97,6 +103,7 @@ forEachItemAfter(
     unsigned int limit,
     std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::forEachItemAfter : valid root type");
 
     if (root.type != ltDIR_NODE)
@@ -170,6 +177,7 @@ forEachItemAfter(
 bool
 dirIsEmpty(ReadView const& view, Keylet const& k)
 {
+    TRACE_FUNC();
     auto const sleNode = view.read(k);
     if (!sleNode)
         return true;
@@ -184,6 +192,7 @@ dirIsEmpty(ReadView const& view, Keylet const& k)
 std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account)
 {
+    TRACE_FUNC();
     return [account](std::shared_ptr<SLE> const& sle) { (*sle)[sfOwner] = account; };
 }
 

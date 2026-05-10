@@ -1,4 +1,5 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <google/protobuf/message.h>
 
@@ -33,6 +34,7 @@ TrafficCount::categorize(
     protocol::MessageType type,
     bool inbound)
 {
+    TRACE_FUNC();
     if (auto item = kTYPE_LOOKUP.find(type); item != kTYPE_LOOKUP.end())
         return item->second;
 

@@ -10,6 +10,7 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <exception>
@@ -26,6 +27,7 @@ LoadManager::LoadManager(Application& app, beast::Journal journal)
 
 LoadManager::~LoadManager()
 {
+    TRACE_FUNC();
     try
     {
         stop();
@@ -42,6 +44,7 @@ LoadManager::~LoadManager()
 void
 LoadManager::activateStallDetector()
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(mutex_);
     armed_ = true;
     lastHeartbeat_ = std::chrono::steady_clock::now();
@@ -50,6 +53,7 @@ LoadManager::activateStallDetector()
 void
 LoadManager::heartbeat()
 {
+    TRACE_FUNC();
     auto const heartbeat = std::chrono::steady_clock::now();
     std::scoped_lock const sl(mutex_);
     lastHeartbeat_ = heartbeat;
@@ -60,6 +64,7 @@ LoadManager::heartbeat()
 void
 LoadManager::start()
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << "Starting";
     XRPL_ASSERT(!thread_.joinable(), "xrpl::LoadManager::start : thread not joinable");
 
@@ -69,6 +74,7 @@ LoadManager::start()
 void
 LoadManager::stop()
 {
+    TRACE_FUNC();
     {
         std::scoped_lock const lock(mutex_);
         stop_ = true;
@@ -87,6 +93,7 @@ LoadManager::stop()
 void
 LoadManager::run()
 {
+    TRACE_FUNC();
     beast::setCurrentThreadName("LoadManager");
 
     using namespace std::chrono_literals;
@@ -176,6 +183,7 @@ LoadManager::run()
 std::unique_ptr<LoadManager>
 makeLoadManager(Application& app, beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::unique_ptr<LoadManager>{new LoadManager{app, journal}};
 }
 

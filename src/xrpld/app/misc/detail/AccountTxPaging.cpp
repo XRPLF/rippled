@@ -12,6 +12,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -29,6 +30,7 @@ convertBlobsToTxResult(
     Blob const& rawMeta,
     Application& app)
 {
+    TRACE_FUNC();
     SerialIter it(makeSlice(rawTxn));
     auto txn = std::make_shared<STTx const>(it);
     std::string reason;
@@ -57,6 +59,7 @@ convertBlobsToTxResult(
 void
 saveLedgerAsync(Application& app, std::uint32_t seq)
 {
+    TRACE_FUNC();
     if (auto l = app.getLedgerMaster().getLedgerBySeq(seq))
         pendSaveValidated(app, l, false, false);
 }

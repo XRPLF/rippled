@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -27,6 +28,7 @@ public:
     [[nodiscard]] ID const&
     id() const
     {
+    TRACE_FUNC();
         return tx->key();
     }
 
@@ -67,6 +69,7 @@ public:
         bool
         insert(Tx const& t)
         {
+    TRACE_FUNC();
             return map_->addItem(SHAMapNodeType::TnTransactionNm, t.tx);
         }
 
@@ -78,6 +81,7 @@ public:
         bool
         erase(Tx::ID const& entry)
         {
+    TRACE_FUNC();
             return map_->delItem(entry);
         }
     };
@@ -107,6 +111,7 @@ public:
     [[nodiscard]] bool
     exists(Tx::ID const& entry) const
     {
+    TRACE_FUNC();
         return map->hasItem(entry);
     }
 
@@ -124,6 +129,7 @@ public:
     [[nodiscard]] boost::intrusive_ptr<SHAMapItem const> const&
     find(Tx::ID const& entry) const
     {
+    TRACE_FUNC();
         return map->peekItem(entry);
     }
 
@@ -131,6 +137,7 @@ public:
     [[nodiscard]] ID
     id() const
     {
+    TRACE_FUNC();
         return map->getHash().asUint256();
     }
 
@@ -145,6 +152,7 @@ public:
     [[nodiscard]] std::map<Tx::ID, bool>
     compare(RCLTxSet const& j) const
     {
+    TRACE_FUNC();
         SHAMap::Delta delta;
 
         // Bound the work we do in case of a malicious

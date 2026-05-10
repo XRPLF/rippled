@@ -6,6 +6,7 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <optional>
@@ -76,6 +77,7 @@ public:
     NodeId const&
     nodeID() const
     {
+    TRACE_FUNC();
         return nodeID_;
     }
 
@@ -83,6 +85,7 @@ public:
     Position const&
     position() const
     {
+    TRACE_FUNC();
         return position_;
     }
 
@@ -90,6 +93,7 @@ public:
     LedgerId const&
     prevLedger() const
     {
+    TRACE_FUNC();
         return previousLedger_;
     }
 
@@ -103,6 +107,7 @@ public:
     std::uint32_t
     proposeSeq() const
     {
+    TRACE_FUNC();
         return proposeSeq_;
     }
 
@@ -110,6 +115,7 @@ public:
     NetClock::time_point const&
     closeTime() const
     {
+    TRACE_FUNC();
         return closeTime_;
     }
 
@@ -117,6 +123,7 @@ public:
     NetClock::time_point const&
     seenTime() const
     {
+    TRACE_FUNC();
         return time_;
     }
 
@@ -126,6 +133,7 @@ public:
     bool
     isInitial() const
     {
+    TRACE_FUNC();
         return proposeSeq_ == kSEQ_JOIN;
     }
 
@@ -133,6 +141,7 @@ public:
     bool
     isBowOut() const
     {
+    TRACE_FUNC();
         return proposeSeq_ == kSEQ_LEAVE;
     }
 
@@ -140,6 +149,7 @@ public:
     bool
     isStale(NetClock::time_point cutoff) const
     {
+    TRACE_FUNC();
         return time_ <= cutoff;
     }
 
@@ -156,6 +166,7 @@ public:
         NetClock::time_point newCloseTime,
         NetClock::time_point now)
     {
+    TRACE_FUNC();
         signingHash_.reset();
         position_ = newPosition;
         closeTime_ = newCloseTime;
@@ -173,6 +184,7 @@ public:
     void
     bowOut(NetClock::time_point now)
     {
+    TRACE_FUNC();
         signingHash_.reset();
         time_ = now;
         proposeSeq_ = kSEQ_LEAVE;
@@ -181,6 +193,7 @@ public:
     std::string
     render() const
     {
+    TRACE_FUNC();
         std::stringstream ss;
         ss << "proposal: previous_ledger: " << previousLedger_ << " proposal_seq: " << proposeSeq_
            << " position: " << position_ << " close_time: " << to_string(closeTime_)
@@ -193,6 +206,7 @@ public:
     json::Value
     getJson() const
     {
+    TRACE_FUNC();
         using std::to_string;
 
         json::Value ret = json::ObjectValue;
@@ -213,6 +227,7 @@ public:
     uint256 const&
     signingHash() const
     {
+    TRACE_FUNC();
         if (!signingHash_)
         {
             signingHash_ = sha512Half(
@@ -255,6 +270,7 @@ operator==(
     ConsensusProposal<NodeId, LedgerId, Position> const& a,
     ConsensusProposal<NodeId, LedgerId, Position> const& b)
 {
+    TRACE_FUNC();
     return a.nodeID() == b.nodeID() && a.proposeSeq() == b.proposeSeq() &&
         a.prevLedger() == b.prevLedger() && a.position() == b.position() &&
         a.closeTime() == b.closeTime() && a.seenTime() == b.seenTime();

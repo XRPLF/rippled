@@ -20,6 +20,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <cstdint>
@@ -45,6 +46,7 @@ using namespace credentials;
 std::uint32_t
 CredentialCreate::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // 0 means "Allow any flags"
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
@@ -52,6 +54,7 @@ CredentialCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 CredentialCreate::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -81,6 +84,7 @@ CredentialCreate::preflight(PreflightContext const& ctx)
 TER
 CredentialCreate::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const credType(ctx.tx[sfCredentialType]);
     auto const subject = ctx.tx[sfSubject];
 
@@ -102,6 +106,7 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
 TER
 CredentialCreate::doApply()
 {
+    TRACE_FUNC();
     auto const subject = ctx_.tx[sfSubject];
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(subject, account_, credType);
@@ -194,6 +199,7 @@ CredentialCreate::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 }  // namespace xrpl

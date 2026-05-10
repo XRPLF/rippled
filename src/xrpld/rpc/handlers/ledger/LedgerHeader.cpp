@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -20,6 +21,7 @@ namespace xrpl {
 json::Value
 doLedgerHeader(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     std::shared_ptr<ReadView const> lpLedger;
     auto jvResult = RPC::lookupLedger(lpLedger, context);
 

@@ -12,6 +12,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <stdexcept>
@@ -23,6 +24,7 @@ namespace xrpl {
 std::size_t
 STPathElement::getHash(STPathElement const& element)
 {
+    TRACE_FUNC();
     std::size_t hashAccount = 2654435761;
     std::size_t hashCurrency = 2654435761;
     std::size_t hashIssuer = 2654435761;
@@ -52,6 +54,7 @@ STPathElement::getHash(STPathElement const& element)
 
 STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
 {
+    TRACE_FUNC();
     std::vector<STPathElement> path;
     for (;;)
     {
@@ -109,12 +112,14 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
 STBase*
 STPathSet::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STPathSet::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
@@ -142,6 +147,7 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 bool
 STPathSet::isEquivalent(STBase const& t) const
 {
+    TRACE_FUNC();
     STPathSet const* v = dynamic_cast<STPathSet const*>(&t);
     return (v != nullptr) && (value_ == v->value_);
 }
@@ -149,12 +155,14 @@ STPathSet::isEquivalent(STBase const& t) const
 bool
 STPathSet::isDefault() const
 {
+    TRACE_FUNC();
     return value_.empty();
 }
 
 bool
 STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const
 {
+    TRACE_FUNC();
     for (auto& p : path_)
     {
         if (p.getAccountID() == account && p.getPathAsset() == asset && p.getIssuerID() == issuer)
@@ -167,6 +175,7 @@ STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID cons
 json::Value
 STPath::getJson(JsonOptions) const
 {
+    TRACE_FUNC();
     json::Value ret(json::ArrayValue);
 
     for (auto const& it : path_)
@@ -201,6 +210,7 @@ STPath::getJson(JsonOptions) const
 json::Value
 STPathSet::getJson(JsonOptions options) const
 {
+    TRACE_FUNC();
     json::Value ret(json::ArrayValue);
     for (auto const& it : value_)
         ret.append(it.getJson(options));
@@ -211,12 +221,14 @@ STPathSet::getJson(JsonOptions options) const
 SerializedTypeID
 STPathSet::getSType() const
 {
+    TRACE_FUNC();
     return STI_PATHSET;
 }
 
 void
 STPathSet::add(Serializer& s) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(getFName().isBinary(), "xrpl::STPathSet::add : field is binary");
     XRPL_ASSERT(getFName().fieldType == STI_PATHSET, "xrpl::STPathSet::add : valid field type");
     bool first = true;

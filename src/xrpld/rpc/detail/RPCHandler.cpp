@@ -16,6 +16,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 #include <chrono>
@@ -110,6 +111,7 @@ namespace {
 ErrorCodeI
 fillHandler(JsonContext& context, Handler const*& result)
 {
+    TRACE_FUNC();
     if (!isUnlimited(context.role))
     {
         // Count all jobs at jtCLIENT priority or higher.
@@ -157,6 +159,7 @@ template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
+    TRACE_FUNC();
     static std::atomic<std::uint64_t> kREQUEST_ID{0};
     auto& perfLog = context.app.getPerfLog();
     std::uint64_t const curId = ++kREQUEST_ID;
@@ -192,6 +195,7 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
 Status
 doCommand(RPC::JsonContext& context, json::Value& result)
 {
+    TRACE_FUNC();
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
@@ -226,6 +230,7 @@ doCommand(RPC::JsonContext& context, json::Value& result)
 Role
 roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
 {
+    TRACE_FUNC();
     auto handler = RPC::getHandler(version, betaEnabled, method);
 
     if (handler == nullptr)

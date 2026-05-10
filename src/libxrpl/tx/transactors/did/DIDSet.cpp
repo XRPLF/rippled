@@ -17,6 +17,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <memory>
@@ -40,6 +41,7 @@ namespace xrpl {
 NotTEC
 DIDSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ctx.tx.isFieldPresent(sfURI) && !ctx.tx.isFieldPresent(sfDIDDocument) &&
         !ctx.tx.isFieldPresent(sfData))
         return temEMPTY_DID;
@@ -66,6 +68,7 @@ DIDSet::preflight(PreflightContext const& ctx)
 static TER
 addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owner)
 {
+    TRACE_FUNC();
     auto const sleAccount = ctx.view().peek(keylet::account(owner));
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -99,6 +102,7 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
 TER
 DIDSet::doApply()
 {
+    TRACE_FUNC();
     // Edit ledger object if it already exists
     Keylet const didKeylet = keylet::did(account_);
     if (auto const sleDID = ctx_.view().peek(didKeylet))
@@ -161,6 +165,7 @@ DIDSet::visitInvariantEntry(
 bool
 DIDSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

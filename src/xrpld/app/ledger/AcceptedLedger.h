@@ -3,6 +3,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AcceptedLedgerTx.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -30,24 +31,28 @@ public:
     [[nodiscard]] std::shared_ptr<ReadView const> const&
     getLedger() const
     {
+    TRACE_FUNC();
         return ledger_;
     }
 
     [[nodiscard]] std::size_t
     size() const
     {
+    TRACE_FUNC();
         return transactions_.size();
     }
 
     [[nodiscard]] auto
     begin() const
     {
+    TRACE_FUNC();
         return transactions_.begin();
     }
 
     [[nodiscard]] auto
     end() const
     {
+    TRACE_FUNC();
         return transactions_.end();
     }
 

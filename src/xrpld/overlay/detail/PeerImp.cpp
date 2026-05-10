@@ -63,6 +63,7 @@
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/bind_executor.hpp>
@@ -167,6 +168,7 @@ PeerImp::PeerImp(
           peerFeatureEnabled(headers_, kFEATURE_LEDGER_REPLAY, app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
+    TRACE_FUNC();
     JLOG(journal_.info()) << "compression enabled " << (compressionEnabled_ == Compressed::On)
                           << " vp reduce-relay base squelch enabled "
                           << peerFeatureEnabled(
@@ -178,6 +180,7 @@ PeerImp::PeerImp(
 
 PeerImp::~PeerImp()
 {
+    TRACE_FUNC();
     bool const inCluster{cluster()};
 
     overlay_.deletePeer(id_);
@@ -195,12 +198,14 @@ PeerImp::~PeerImp()
 static bool
 stringIsUint256Sized(std::string const& pBuffStr)
 {
+    TRACE_FUNC();
     return pBuffStr.size() == uint256::size();
 }
 
 void
 PeerImp::run()
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         post(strand_, std::bind(&PeerImp::run, shared_from_this()));
@@ -263,6 +268,7 @@ PeerImp::run()
 void
 PeerImp::stop()
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         post(strand_, std::bind(&PeerImp::stop, shared_from_this()));
@@ -286,6 +292,7 @@ PeerImp::stop()
 void
 PeerImp::send(std::shared_ptr<Message> const& m)
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         post(strand_, std::bind(&PeerImp::send, shared_from_this(), m));
@@ -356,6 +363,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 void
 PeerImp::sendTxQueue()
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         post(strand_, std::bind(&PeerImp::sendTxQueue, shared_from_this()));
@@ -376,6 +384,7 @@ PeerImp::sendTxQueue()
 void
 PeerImp::addTxQueue(uint256 const& hash)
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         post(strand_, std::bind(&PeerImp::addTxQueue, shared_from_this(), hash));
@@ -395,6 +404,7 @@ PeerImp::addTxQueue(uint256 const& hash)
 void
 PeerImp::removeTxQueue(uint256 const& hash)
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         post(strand_, std::bind(&PeerImp::removeTxQueue, shared_from_this(), hash));
@@ -408,6 +418,7 @@ PeerImp::removeTxQueue(uint256 const& hash)
 void
 PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 {
+    TRACE_FUNC();
     if ((usage_.charge(fee, context) == Resource::Disposition::Drop) &&
         usage_.disconnect(pJournal_) && strand_.running_in_this_thread())
     {
@@ -422,6 +433,7 @@ PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 bool
 PeerImp::crawl() const
 {
+    TRACE_FUNC();
     auto const iter = headers_.find("Crawl");
     if (iter == headers_.end())
         return false;
@@ -431,12 +443,14 @@ PeerImp::crawl() const
 bool
 PeerImp::cluster() const
 {
+    TRACE_FUNC();
     return static_cast<bool>(app_.getCluster().member(publicKey_));
 }
 
 std::string
 PeerImp::getVersion() const
 {
+    TRACE_FUNC();
     if (inbound_)
         return headers_["User-Agent"];
     return headers_["Server"];
@@ -445,6 +459,7 @@ PeerImp::getVersion() const
 json::Value
 PeerImp::json()
 {
+    TRACE_FUNC();
     json::Value ret(json::ObjectValue);
 
     ret[jss::public_key] = toBase58(TokenType::NodePublic, publicKey_);
@@ -559,6 +574,7 @@ PeerImp::json()
 bool
 PeerImp::supportsFeature(ProtocolFeature f) const
 {
+    TRACE_FUNC();
     switch (f)
     {
         case ProtocolFeature::ValidatorListPropagation:
@@ -576,6 +592,7 @@ PeerImp::supportsFeature(ProtocolFeature f) const
 bool
 PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
 {
+    TRACE_FUNC();
     {
         std::scoped_lock const sl(recentLock_);
         if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_) &&
@@ -590,6 +607,7 @@ PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
 void
 PeerImp::ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(recentLock_);
 
     minSeq = minLedger_;
@@ -599,6 +617,7 @@ PeerImp::ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const
 bool
 PeerImp::hasTxSet(uint256 const& hash) const
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(recentLock_);
     return std::ranges::find(recentTxSets_, hash) != recentTxSets_.end();
 }
@@ -606,6 +625,7 @@ PeerImp::hasTxSet(uint256 const& hash) const
 void
 PeerImp::cycleStatus()
 {
+    TRACE_FUNC();
     // Operations on closedLedgerHash_ and previousLedgerHash_ must be
     // guarded by recentLock_.
     std::scoped_lock const sl(recentLock_);
@@ -616,6 +636,7 @@ PeerImp::cycleStatus()
 bool
 PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(recentLock_);
     return (tracking_ != Tracking::Diverged) && (uMin >= minLedger_) && (uMax <= maxLedger_);
 }
@@ -625,6 +646,7 @@ PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 void
 PeerImp::fail(std::string const& name, error_code ec)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(strand_.running_in_this_thread(), "xrpl::PeerImp::fail : strand in this thread");
 
     if (!socket_.is_open())
@@ -638,6 +660,7 @@ PeerImp::fail(std::string const& name, error_code ec)
 void
 PeerImp::fail(std::string const& reason)
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         post(
@@ -663,6 +686,7 @@ PeerImp::fail(std::string const& reason)
 void
 PeerImp::tryAsyncShutdown()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
         "xrpl::PeerImp::tryAsyncShutdown : strand in this thread");
@@ -685,6 +709,7 @@ PeerImp::tryAsyncShutdown()
 void
 PeerImp::shutdown()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(strand_.running_in_this_thread(), "xrpl::PeerImp::shutdown: strand in this thread");
 
     if (!socket_.is_open() || shutdown_)
@@ -700,6 +725,7 @@ PeerImp::shutdown()
 void
 PeerImp::onShutdown(error_code ec)
 {
+    TRACE_FUNC();
     cancelTimer();
     if (ec)
     {
@@ -724,6 +750,7 @@ PeerImp::onShutdown(error_code ec)
 void
 PeerImp::close()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(strand_.running_in_this_thread(), "xrpl::PeerImp::close : strand in this thread");
 
     if (!socket_.is_open())
@@ -748,6 +775,7 @@ PeerImp::close()
 void
 PeerImp::setTimer(std::chrono::seconds interval)
 {
+    TRACE_FUNC();
     try
     {
         timer_.expires_after(interval);
@@ -768,6 +796,7 @@ PeerImp::setTimer(std::chrono::seconds interval)
 std::string
 PeerImp::makePrefix(std::string const& fingerprint)
 {
+    TRACE_FUNC();
     std::stringstream ss;
     ss << "[" << fingerprint << "] ";
     return ss.str();
@@ -776,6 +805,7 @@ PeerImp::makePrefix(std::string const& fingerprint)
 void
 PeerImp::onTimer(error_code const& ec)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(strand_.running_in_this_thread(), "xrpl::PeerImp::onTimer : strand in this thread");
 
     if (!socket_.is_open())
@@ -848,6 +878,7 @@ PeerImp::onTimer(error_code const& ec)
 void
 PeerImp::cancelTimer() noexcept
 {
+    TRACE_FUNC();
     try
     {
         timer_.cancel();
@@ -862,6 +893,7 @@ PeerImp::cancelTimer() noexcept
 void
 PeerImp::doAccept()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(readBuffer_.size() == 0, "xrpl::PeerImp::doAccept : empty read buffer");
 
     JLOG(journal_.debug()) << "doAccept";
@@ -946,6 +978,7 @@ PeerImp::doAccept()
 std::string
 PeerImp::name() const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{nameMutex_};
     return name_;
 }
@@ -953,6 +986,7 @@ PeerImp::name() const
 std::string
 PeerImp::domain() const
 {
+    TRACE_FUNC();
     return headers_["Server-Domain"];
 }
 
@@ -963,6 +997,7 @@ PeerImp::domain() const
 void
 PeerImp::doProtocolStart()
 {
+    TRACE_FUNC();
     // a shutdown was initiated before the handshare, there is nothing to do
     if (shutdown_)
     {
@@ -1008,6 +1043,7 @@ PeerImp::doProtocolStart()
 void
 PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         strand_.running_in_this_thread(), "xrpl::PeerImp::onReadMessage : strand in this thread");
 
@@ -1107,6 +1143,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
 void
 PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         strand_.running_in_this_thread(), "xrpl::PeerImp::onWriteMessage : strand in this thread");
 
@@ -1173,6 +1210,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
 void
 PeerImp::onMessageUnknown(std::uint16_t type)
 {
+    TRACE_FUNC();
     // TODO
 }
 
@@ -1184,6 +1222,7 @@ PeerImp::onMessageBegin(
     std::size_t uncompressedSize,
     bool isCompressed)
 {
+    TRACE_FUNC();
     auto const name = protocolMessageName(type);
     loadEvent_ = app_.getJobQueue().makeLoadEvent(JtPeer, name);
     fee_ = {.fee = Resource::kFEE_TRIVIAL_PEER, .context = name};
@@ -1219,6 +1258,7 @@ PeerImp::onMessageBegin(
 void
 PeerImp::onMessageEnd(std::uint16_t, std::shared_ptr<::google::protobuf::Message> const&)
 {
+    TRACE_FUNC();
     loadEvent_.reset();
     charge(fee_.fee, fee_.context);
 }
@@ -1226,6 +1266,7 @@ PeerImp::onMessageEnd(std::uint16_t, std::shared_ptr<::google::protobuf::Message
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
 {
+    TRACE_FUNC();
     auto const s = m->list_size();
 
     if (s == 0)
@@ -1245,6 +1286,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMPing> const& m)
 {
+    TRACE_FUNC();
     if (m->type() == protocol::TMPing::ptPING)
     {
         // We have received a ping request, reply with a pong
@@ -1286,6 +1328,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPing> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
 {
+    TRACE_FUNC();
     // VFALCO NOTE I think we should drop the peer immediately
     if (!cluster())
     {
@@ -1355,6 +1398,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
 {
+    TRACE_FUNC();
     // Don't allow endpoints from peers that are not known tracking or are
     // not using a version of the message that we support:
     if (tracking_.load() != Tracking::Converged || m->version() != 2)
@@ -1412,6 +1456,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMTransaction> const& m)
 {
+    TRACE_FUNC();
     handleTransaction(m, true, false);
 }
 
@@ -1421,6 +1466,7 @@ PeerImp::handleTransaction(
     bool eraseTxQueue,
     bool batch)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(eraseTxQueue != batch, ("xrpl::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::Diverged)
         return;
@@ -1548,6 +1594,7 @@ PeerImp::handleTransaction(
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
+    TRACE_FUNC();
     auto badData = [&](std::string const& msg) {
         fee_.update(Resource::kFEE_INVALID_DATA, "get_ledger " + msg);
         JLOG(pJournal_.warn()) << "TMGetLedger: " << msg;
@@ -1658,6 +1705,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
 {
+    TRACE_FUNC();
     JLOG(pJournal_.trace()) << "onMessage, TMProofPathRequest";
     if (!ledgerReplayEnabled_)
     {
@@ -1693,6 +1741,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathResponse> const& m)
 {
+    TRACE_FUNC();
     if (!ledgerReplayEnabled_)
     {
         fee_.update(Resource::kFEE_MALFORMED_REQUEST, "proof_path_response disabled");
@@ -1708,6 +1757,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathResponse> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
 {
+    TRACE_FUNC();
     JLOG(pJournal_.trace()) << "onMessage, TMReplayDeltaRequest";
     if (!ledgerReplayEnabled_)
     {
@@ -1743,6 +1793,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m)
 {
+    TRACE_FUNC();
     if (!ledgerReplayEnabled_)
     {
         fee_.update(Resource::kFEE_MALFORMED_REQUEST, "replay_delta_response disabled");
@@ -1758,6 +1809,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 {
+    TRACE_FUNC();
     auto badData = [&](std::string const& msg) {
         fee_.update(Resource::kFEE_INVALID_DATA, msg);
         JLOG(pJournal_.warn()) << "TMLedgerData: " << msg;
@@ -1853,6 +1905,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
+    TRACE_FUNC();
     protocol::TMProposeSet const& set = *m;
 
     auto const sig = makeSlice(set.signature());
@@ -1958,6 +2011,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 {
+    TRACE_FUNC();
     JLOG(pJournal_.trace()) << "Status: Change";
 
     if (!m->has_networktime())
@@ -2131,6 +2185,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 void
 PeerImp::checkTracking(std::uint32_t validationSeq)
 {
+    TRACE_FUNC();
     std::uint32_t serverSeq = 0;
     {
         // Extract the sequence number of the highest
@@ -2150,6 +2205,7 @@ PeerImp::checkTracking(std::uint32_t validationSeq)
 void
 PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
 {
+    TRACE_FUNC();
     int const diff = std::max(seq1, seq2) - std::min(seq1, seq2);
 
     if (diff < Tuning::ConvergedLedgerLimit)
@@ -2171,6 +2227,7 @@ PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
 {
+    TRACE_FUNC();
     if (!stringIsUint256Sized(m->hash()))
     {
         fee_.update(Resource::kFEE_MALFORMED_REQUEST, "bad hash");
@@ -2200,6 +2257,7 @@ PeerImp::onValidatorListMessage(
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs)
 {
+    TRACE_FUNC();
     // If there are no blobs, the message is malformed (possibly because of
     // ValidatorList class rules), so charge accordingly and skip processing.
     if (blobs.empty())
@@ -2392,6 +2450,7 @@ PeerImp::onValidatorListMessage(
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
 {
+    TRACE_FUNC();
     try
     {
         if (!supportsFeature(ProtocolFeature::ValidatorListPropagation))
@@ -2416,6 +2475,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m)
 {
+    TRACE_FUNC();
     try
     {
         if (!supportsFeature(ProtocolFeature::ValidatorList2Propagation))
@@ -2449,6 +2509,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 {
+    TRACE_FUNC();
     if (m->validation().size() < 50)
     {
         JLOG(pJournal_.warn()) << "Validation: Too small";
@@ -2555,6 +2616,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 {
+    TRACE_FUNC();
     protocol::TMGetObjectByHash const& packet = *m;
 
     JLOG(pJournal_.trace()) << "received TMGetObjectByHash " << packet.type() << " "
@@ -2707,6 +2769,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
 {
+    TRACE_FUNC();
     if (!txReduceRelayEnabled())
     {
         JLOG(pJournal_.error()) << "TMHaveTransactions: tx reduce-relay is disabled";
@@ -2724,6 +2787,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
 void
 PeerImp::handleHaveTransactions(std::shared_ptr<protocol::TMHaveTransactions> const& m)
 {
+    TRACE_FUNC();
     protocol::TMGetObjectByHash tmBH;
     tmBH.set_type(protocol::TMGetObjectByHash_ObjectType_otTRANSACTIONS);
     tmBH.set_query(true);
@@ -2770,6 +2834,7 @@ PeerImp::handleHaveTransactions(std::shared_ptr<protocol::TMHaveTransactions> co
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
 {
+    TRACE_FUNC();
     if (!txReduceRelayEnabled())
     {
         JLOG(pJournal_.error()) << "TMTransactions: tx reduce-relay is disabled";
@@ -2794,6 +2859,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 {
+    TRACE_FUNC();
     using on_message_fn = void (PeerImp::*)(std::shared_ptr<protocol::TMSquelch> const&);
     if (!strand_.running_in_this_thread())
     {
@@ -2840,6 +2906,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 void
 PeerImp::addLedger(uint256 const& hash, std::scoped_lock<std::mutex> const& lockedRecentLock)
 {
+    TRACE_FUNC();
     // lockedRecentLock is passed as a reminder that recentLock_ must be
     // locked by the caller.
     (void)lockedRecentLock;
@@ -2853,6 +2920,7 @@ PeerImp::addLedger(uint256 const& hash, std::scoped_lock<std::mutex> const& lock
 void
 PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
 {
+    TRACE_FUNC();
     // VFALCO TODO Invert this dependency using an observer and shared state
     // object. Don't queue fetch pack jobs if we're under load or we already
     // have some queued.
@@ -2886,6 +2954,7 @@ PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
 void
 PeerImp::doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
 {
+    TRACE_FUNC();
     protocol::TMTransactions reply;
 
     JLOG(pJournal_.trace()) << "received TMGetObjectByHash requesting tx "
@@ -2942,6 +3011,7 @@ PeerImp::checkTransaction(
     std::shared_ptr<STTx const> const& stx,
     bool batch)
 {
+    TRACE_FUNC();
     // VFALCO TODO Rewrite to not use exceptions
     try
     {
@@ -3074,6 +3144,7 @@ PeerImp::checkPropose(
     std::shared_ptr<protocol::TMProposeSet> const& packet,
     RCLCxPeerPos peerPos)
 {
+    TRACE_FUNC();
     JLOG(pJournal_.trace()) << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
 
     XRPL_ASSERT(packet, "xrpl::PeerImp::checkPropose : non-null packet");
@@ -3122,6 +3193,7 @@ PeerImp::checkValidation(
     uint256 const& key,
     std::shared_ptr<protocol::TMValidation> const& packet)
 {
+    TRACE_FUNC();
     if (!val->isValid())
     {
         std::string const desc{"Validation forwarded by peer is invalid"};
@@ -3161,6 +3233,7 @@ PeerImp::checkValidation(
 static std::shared_ptr<PeerImp>
 getPeerWithTree(OverlayImpl& ov, uint256 const& rootHash, PeerImp const* skip)
 {
+    TRACE_FUNC();
     std::shared_ptr<PeerImp> ret;
     int retScore = 0;
 
@@ -3189,6 +3262,7 @@ getPeerWithLedger(
     LedgerIndex ledger,
     PeerImp const* skip)
 {
+    TRACE_FUNC();
     std::shared_ptr<PeerImp> ret;
     int retScore = 0;
 
@@ -3212,6 +3286,7 @@ PeerImp::sendLedgerBase(
     std::shared_ptr<Ledger const> const& ledger,
     protocol::TMLedgerData& ledgerData)
 {
+    TRACE_FUNC();
     JLOG(pJournal_.trace()) << "sendLedgerBase: Base data";
 
     Serializer s(sizeof(LedgerHeader));
@@ -3247,6 +3322,7 @@ PeerImp::sendLedgerBase(
 std::shared_ptr<Ledger const>
 PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
+    TRACE_FUNC();
     JLOG(pJournal_.trace()) << "getLedger: Ledger";
 
     std::shared_ptr<Ledger const> ledger;
@@ -3331,6 +3407,7 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
 std::shared_ptr<SHAMap const>
 PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
 {
+    TRACE_FUNC();
     JLOG(pJournal_.trace()) << "getTxSet: TX set";
 
     uint256 const txSetHash{m->ledgerhash()};
@@ -3363,6 +3440,7 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
 void
 PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
+    TRACE_FUNC();
     // Do not resource charge a peer responding to a relay
     if (!m->has_requestcookie())
         charge(Resource::kFEE_MODERATE_BURDEN_PEER, "received a get ledger request");
@@ -3534,6 +3612,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
 int
 PeerImp::getScore(bool haveItem) const
 {
+    TRACE_FUNC();
     // Random component of score, used to break ties and avoid
     // overloading the "best" peer
     static int const kSP_RANDOM_MAX = 9999;
@@ -3576,6 +3655,7 @@ PeerImp::getScore(bool haveItem) const
 bool
 PeerImp::isHighLatency() const
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(recentLock_);
     return latency_ >= kPEER_HIGH_LATENCY;
 }
@@ -3583,6 +3663,7 @@ PeerImp::isHighLatency() const
 void
 PeerImp::Metrics::addMessage(std::uint64_t bytes)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     std::unique_lock const lock{mutex_};
 
@@ -3607,6 +3688,7 @@ PeerImp::Metrics::addMessage(std::uint64_t bytes)
 std::uint64_t
 PeerImp::Metrics::averageBytes() const
 {
+    TRACE_FUNC();
     std::shared_lock const lock{mutex_};
     return rollingAvgBytes_;
 }
@@ -3614,6 +3696,7 @@ PeerImp::Metrics::averageBytes() const
 std::uint64_t
 PeerImp::Metrics::totalBytes() const
 {
+    TRACE_FUNC();
     std::shared_lock const lock{mutex_};
     return totalBytes_;
 }

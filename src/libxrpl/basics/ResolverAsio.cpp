@@ -6,6 +6,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/dispatch.hpp>
@@ -47,6 +48,7 @@ class AsyncObject
 public:
     ~AsyncObject()
     {
+    TRACE_FUNC();
         // Destroying the object with I/O pending? Not a clean exit!
         XRPL_ASSERT(pending_.load() == 0, "xrpl::AsyncObject::~AsyncObject : nothing pending");
     }
@@ -60,16 +62,19 @@ public:
     public:
         explicit CompletionCounter(Derived* owner) : owner_(owner)
         {
+    TRACE_FUNC();
             ++owner_->pending_;
         }
 
         CompletionCounter(CompletionCounter const& other) : owner_(other.owner_)
         {
+    TRACE_FUNC();
             ++owner_->pending_;
         }
 
         ~CompletionCounter()
         {
+    TRACE_FUNC();
             if (--owner_->pending_ == 0)
                 owner_->asyncHandlersComplete();
         }
@@ -84,12 +89,14 @@ public:
     void
     addReference()
     {
+    TRACE_FUNC();
         ++pending_;
     }
 
     void
     removeReference()
     {
+    TRACE_FUNC();
         if (--pending_ == 0)
             (static_cast<Derived*>(this))->asyncHandlersComplete();
     }
@@ -128,6 +135,7 @@ public:
         template <class StringSequence>
         Work(StringSequence const& inNames, HandlerType handler) : handler(std::move(handler))
         {
+    TRACE_FUNC();
             names.reserve(inNames.size());
 
             std::reverse_copy(inNames.begin(), inNames.end(), std::back_inserter(names));
@@ -148,6 +156,7 @@ public:
 
     ~ResolverAsioImpl() override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(work.empty(), "xrpl::ResolverAsioImpl::~ResolverAsioImpl : no pending work");
         XRPL_ASSERT(stopped, "xrpl::ResolverAsioImpl::~ResolverAsioImpl : stopped");
     }
@@ -157,6 +166,7 @@ public:
     void
     asyncHandlersComplete()
     {
+    TRACE_FUNC();
         std::unique_lock<std::mutex> const lk{mut};
         asyncHandlersCompleted = true;
         cv.notify_all();
@@ -171,6 +181,7 @@ public:
     void
     start() override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(stopped == true, "xrpl::ResolverAsioImpl::start : stopped");
         XRPL_ASSERT(stop_called == false, "xrpl::ResolverAsioImpl::start : not stopping");
 
@@ -187,6 +198,7 @@ public:
     void
     stopAsync() override
     {
+    TRACE_FUNC();
         if (!stop_called.exchange(true))
         {
             boost::asio::dispatch(
@@ -201,6 +213,7 @@ public:
     void
     stop() override
     {
+    TRACE_FUNC();
         stopAsync();
 
         JLOG(journal.debug()) << "Waiting to stop";
@@ -213,6 +226,7 @@ public:
     void
     resolve(std::vector<std::string> const& names, HandlerType const& handler) override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(stop_called == false, "xrpl::ResolverAsioImpl::resolve : not stopping");
         XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::resolve : names non-empty");
 
@@ -231,6 +245,7 @@ public:
     void
     doStop(CompletionCounter)
     {
+    TRACE_FUNC();
         XRPL_ASSERT(stop_called == true, "xrpl::ResolverAsioImpl::do_stop : stopping");
 
         if (!stopped.exchange(true))
@@ -250,6 +265,7 @@ public:
         boost::asio::ip::tcp::resolver::results_type results,
         CompletionCounter)
     {
+    TRACE_FUNC();
         if (ec == boost::asio::error::operation_aborted)
             return;
 
@@ -278,6 +294,7 @@ public:
     static HostAndPort
     parseName(std::string const& str)
     {
+    TRACE_FUNC();
         // first attempt to parse as an endpoint (IP addr + port).
         // If that doesn't succeed, fall back to generic name + port parsing
 
@@ -324,6 +341,7 @@ public:
     void
     doWork(CompletionCounter)
     {
+    TRACE_FUNC();
         if (stop_called)
             return;
 
@@ -369,6 +387,7 @@ public:
     void
     doResolve(std::vector<std::string> const& names, HandlerType const& handler, CompletionCounter)
     {
+    TRACE_FUNC();
         XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::do_resolve : names non-empty");
 
         if (!stop_called)
@@ -395,6 +414,7 @@ public:
 std::unique_ptr<ResolverAsio>
 ResolverAsio::make(boost::asio::io_context& ioContext, beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::make_unique<ResolverAsioImpl>(ioContext, journal);
 }
 

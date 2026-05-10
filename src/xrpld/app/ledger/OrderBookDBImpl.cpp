@@ -20,6 +20,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <exception>
@@ -44,12 +45,14 @@ OrderBookDBImpl::OrderBookDBImpl(ServiceRegistry& registry, OrderBookDBConfig co
 std::unique_ptr<OrderBookDB>
 makeOrderBookDb(ServiceRegistry& registry, OrderBookDBConfig const& config)
 {
+    TRACE_FUNC();
     return std::make_unique<OrderBookDBImpl>(registry, config);
 }
 
 void
 OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
 {
+    TRACE_FUNC();
     if (!standalone_ && registry_.get().getOPs().isNeedNetworkLedger())
     {
         JLOG(j_.warn()) << "Eliding full order book update: no ledger";
@@ -93,6 +96,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
 void
 OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
 {
+    TRACE_FUNC();
     if (pathSearchMax_ == 0)
         return;  // pathfinding has been disabled
 
@@ -223,6 +227,7 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
 void
 OrderBookDBImpl::addOrderBook(Book const& book)
 {
+    TRACE_FUNC();
     bool const toXRP = isXRP(book.out);
 
     std::scoped_lock const sl(lock_);
@@ -250,6 +255,7 @@ OrderBookDBImpl::addOrderBook(Book const& book)
 std::vector<Book>
 OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> const& domain)
 {
+    TRACE_FUNC();
     std::vector<Book> ret;
 
     {
@@ -282,6 +288,7 @@ OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> 
 int
 OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<uint256> const& domain)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
 
     if (!domain)
@@ -301,6 +308,7 @@ OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<uint256> const& d
 bool
 OrderBookDBImpl::isBookToXRP(Asset const& asset, std::optional<Domain> const& domain)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
     if (domain)
         return xrpDomainBooks_.contains({asset, *domain});
@@ -310,6 +318,7 @@ OrderBookDBImpl::isBookToXRP(Asset const& asset, std::optional<Domain> const& do
 BookListeners::pointer
 OrderBookDBImpl::makeBookListeners(Book const& book)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
     auto ret = getBookListeners(book);
 
@@ -330,6 +339,7 @@ OrderBookDBImpl::makeBookListeners(Book const& book)
 BookListeners::pointer
 OrderBookDBImpl::getBookListeners(Book const& book)
 {
+    TRACE_FUNC();
     BookListeners::pointer ret;
     std::scoped_lock const sl(lock_);
 
@@ -348,6 +358,7 @@ OrderBookDBImpl::processTxn(
     AcceptedLedgerTx const& alTx,
     MultiApiJson const& jvObj)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
 
     // For this particular transaction, maintain the set of unique

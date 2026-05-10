@@ -5,6 +5,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Wallet.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <iterator>
@@ -18,6 +19,7 @@ namespace xrpl {
 auto
 PeerReservation::toJson() const -> json::Value
 {
+    TRACE_FUNC();
     json::Value result{json::ObjectValue};
     result[jss::node] = toBase58(TokenType::NodePublic, nodeId);
     if (!description.empty())
@@ -30,6 +32,7 @@ PeerReservation::toJson() const -> json::Value
 auto
 PeerReservationTable::list() const -> std::vector<PeerReservation>
 {
+    TRACE_FUNC();
     std::vector<PeerReservation> list;
     {
         std::scoped_lock const lock(mutex_);
@@ -49,6 +52,7 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
 bool
 PeerReservationTable::load(DatabaseCon& connection)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     connection_ = &connection;
@@ -62,6 +66,7 @@ PeerReservationTable::load(DatabaseCon& connection)
 std::optional<PeerReservation>
 PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
 {
+    TRACE_FUNC();
     std::optional<PeerReservation> previous;
 
     std::scoped_lock const lock(mutex_);
@@ -96,6 +101,7 @@ PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
 std::optional<PeerReservation>
 PeerReservationTable::erase(PublicKey const& nodeId)
 {
+    TRACE_FUNC();
     std::optional<PeerReservation> previous;
 
     std::scoped_lock const lock(mutex_);

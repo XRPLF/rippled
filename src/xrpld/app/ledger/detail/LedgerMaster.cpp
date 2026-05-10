@@ -55,6 +55,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/icl/concept/interval_set.hpp>
 
@@ -99,6 +100,7 @@ shouldAcquire(
     std::uint32_t const candidateLedger,
     beast::Journal j)
 {
+    TRACE_FUNC();
     bool const ret = [&]() {
         // Fetch ledger if it may be the current ledger
         if (candidateLedger >= currentLedger)
@@ -143,18 +145,21 @@ LedgerMaster::LedgerMaster(
 LedgerIndex
 LedgerMaster::getCurrentLedgerIndex()
 {
+    TRACE_FUNC();
     return app_.getOpenLedger().current()->header().seq;
 }
 
 LedgerIndex
 LedgerMaster::getValidLedgerIndex()
 {
+    TRACE_FUNC();
     return validLedgerSeq_;
 }
 
 bool
 LedgerMaster::isCompatible(ReadView const& view, beast::Journal::Stream s, char const* reason)
 {
+    TRACE_FUNC();
     auto validLedger = getValidatedLedger();
 
     if (validLedger && !areCompatible(*validLedger, view, s, reason))
@@ -178,6 +183,7 @@ LedgerMaster::isCompatible(ReadView const& view, beast::Journal::Stream s, char 
 std::chrono::seconds
 LedgerMaster::getPublishedLedgerAge()
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     std::chrono::seconds const pubClose{pubLedgerClose_.load()};
     if (pubClose == 0s)
@@ -202,6 +208,7 @@ LedgerMaster::getPublishedLedgerAge()
 std::chrono::seconds
 LedgerMaster::getValidatedLedgerAge()
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
 
     std::chrono::seconds const valClose{validLedgerSign_.load()};
@@ -227,6 +234,7 @@ LedgerMaster::getValidatedLedgerAge()
 bool
 LedgerMaster::isCaughtUp(std::string& reason)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
 
     if (getPublishedLedgerAge() > 3min)
@@ -252,6 +260,7 @@ LedgerMaster::isCaughtUp(std::string& reason)
 void
 LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 {
+    TRACE_FUNC();
     std::vector<NetClock::time_point> times;
     std::optional<uint256> consensusHash;
 
@@ -334,6 +343,7 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 void
 LedgerMaster::setPubLedger(std::shared_ptr<Ledger const> const& l)
 {
+    TRACE_FUNC();
     pubLedger_ = l;
     pubLedgerClose_ = l->header().closeTime.time_since_epoch().count();
     pubLedgerSeq_ = l->header().seq;
@@ -342,6 +352,7 @@ LedgerMaster::setPubLedger(std::shared_ptr<Ledger const> const& l)
 void
 LedgerMaster::addHeldTransaction(std::shared_ptr<Transaction> const& transaction)
 {
+    TRACE_FUNC();
     std::scoped_lock const ml(mutex_);
     heldTransactions_.insert(transaction->getSTransaction());
 }
@@ -352,6 +363,7 @@ LedgerMaster::addHeldTransaction(std::shared_ptr<Transaction> const& transaction
 bool
 LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(ledger, "xrpl::LedgerMaster::canBeCurrent : non-null input");
 
     // Never jump to a candidate ledger that precedes our
@@ -417,6 +429,7 @@ LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 void
 LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(lastClosed, "xrpl::LedgerMaster::switchLCL : non-null input");
     if (!lastClosed->isImmutable())
         logicError("mutable ledger in switchLCL");
@@ -443,12 +456,14 @@ LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
 bool
 LedgerMaster::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
+    TRACE_FUNC();
     return ledgerHistory_.fixIndex(ledgerIndex, ledgerHash);
 }
 
 bool
 LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
+    TRACE_FUNC();
     bool const validated = ledger->header().validated;
     // Returns true if we already had the ledger
     return ledgerHistory_.insert(ledger, validated);
@@ -462,6 +477,7 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 void
 LedgerMaster::applyHeldTransactions()
 {
+    TRACE_FUNC();
     CanonicalTXSet const set = [this]() {
         std::scoped_lock const sl(mutex_);
         // VFALCO NOTE The hash for an open ledger is undefined so we use
@@ -478,6 +494,7 @@ LedgerMaster::applyHeldTransactions()
 std::shared_ptr<STTx const>
 LedgerMaster::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(mutex_);
 
     return heldTransactions_.popAcctTransaction(tx);
@@ -486,12 +503,14 @@ LedgerMaster::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
 void
 LedgerMaster::setBuildingLedger(LedgerIndex i)
 {
+    TRACE_FUNC();
     buildingLedgerSeq_.store(i);
 }
 
 bool
 LedgerMaster::haveLedger(std::uint32_t seq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(completeLock_);
     return boost::icl::contains(completeLedgers_, seq);
 }
@@ -499,6 +518,7 @@ LedgerMaster::haveLedger(std::uint32_t seq)
 void
 LedgerMaster::clearLedger(std::uint32_t seq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(completeLock_);
     completeLedgers_.erase(seq);
 }
@@ -506,6 +526,7 @@ LedgerMaster::clearLedger(std::uint32_t seq)
 bool
 LedgerMaster::isValidated(ReadView const& ledger)
 {
+    TRACE_FUNC();
     if (ledger.open())
         return false;
 
@@ -551,6 +572,7 @@ LedgerMaster::isValidated(ReadView const& ledger)
 bool
 LedgerMaster::getFullValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
 {
+    TRACE_FUNC();
     // Validated ledger is likely not stored in the DB yet so we use the
     // published ledger which is.
     maxVal = pubLedgerSeq_.load();
@@ -580,6 +602,7 @@ LedgerMaster::getFullValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal
 bool
 LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
 {
+    TRACE_FUNC();
     if (!getFullValidatedRange(minVal, maxVal))
         return false;
 
@@ -625,6 +648,7 @@ LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
 std::uint32_t
 LedgerMaster::getEarliestFetch()
 {
+    TRACE_FUNC();
     // The earliest ledger we will let people fetch is ledger zero,
     // unless that creates a larger range than allowed
     std::uint32_t e = getClosedLedger()->header().seq;
@@ -643,6 +667,7 @@ LedgerMaster::getEarliestFetch()
 void
 LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
 {
+    TRACE_FUNC();
     std::uint32_t seq = ledger->header().seq;
     uint256 prevHash = ledger->header().parentHash;
 
@@ -714,6 +739,7 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
 void
 LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
 {
+    TRACE_FUNC();
     LedgerIndex const ledgerIndex = missing + 1;
 
     auto const haveHash{getLedgerHashForHistory(ledgerIndex, reason)};
@@ -761,6 +787,7 @@ LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
 void
 LedgerMaster::fixMismatch(ReadView const& ledger)
 {
+    TRACE_FUNC();
     int invalidate = 0;
     std::optional<uint256> hash;
 
@@ -816,6 +843,7 @@ LedgerMaster::setFullLedger(
     bool isSynchronous,
     bool isCurrent)
 {
+    TRACE_FUNC();
     // A new ledger has been accepted as part of the trusted chain
     JLOG(journal_.debug()) << "Ledger " << ledger->header().seq
                            << " accepted :" << ledger->header().hash;
@@ -874,6 +902,7 @@ LedgerMaster::setFullLedger(
 void
 LedgerMaster::failedSave(std::uint32_t seq, uint256 const& hash)
 {
+    TRACE_FUNC();
     clearLedger(seq);
     app_.getInboundLedgers().acquire(hash, seq, InboundLedger::Reason::GENERIC);
 }
@@ -883,6 +912,7 @@ LedgerMaster::failedSave(std::uint32_t seq, uint256 const& hash)
 void
 LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
 {
+    TRACE_FUNC();
     std::size_t valCount = 0;
 
     if (seq != 0)
@@ -937,12 +967,14 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
 std::size_t
 LedgerMaster::getNeededValidations()
 {
+    TRACE_FUNC();
     return standalone_ ? 0 : app_.getValidators().quorum();
 }
 
 void
 LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 {
+    TRACE_FUNC();
     // Can we accept this ledger as our new last fully-validated ledger
 
     if (!canBeCurrent(ledger))
@@ -1085,6 +1117,7 @@ LedgerMaster::consensusBuilt(
     uint256 const& consensusHash,
     json::Value consensus)
 {
+    TRACE_FUNC();
     // Because we just built a ledger, we are no longer building one
     setBuildingLedger(0);
 
@@ -1182,6 +1215,7 @@ LedgerMaster::consensusBuilt(
 std::optional<LedgerHash>
 LedgerMaster::getLedgerHashForHistory(LedgerIndex index, InboundLedger::Reason reason)
 {
+    TRACE_FUNC();
     // Try to get the hash of a ledger we need to fetch for history
     std::optional<LedgerHash> ret;
     auto const& l{histLedger_};
@@ -1202,6 +1236,7 @@ LedgerMaster::getLedgerHashForHistory(LedgerIndex index, InboundLedger::Reason r
 std::vector<std::shared_ptr<Ledger const>>
 LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl)
 {
+    TRACE_FUNC();
     std::vector<std::shared_ptr<Ledger const>> ret;
 
     JLOG(journal_.trace()) << "findNewLedgersToPublish<";
@@ -1343,6 +1378,7 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
 void
 LedgerMaster::tryAdvance()
 {
+    TRACE_FUNC();
     std::scoped_lock const ml(mutex_);
 
     // Can't advance without at least one fully-valid ledger
@@ -1377,6 +1413,7 @@ LedgerMaster::tryAdvance()
 void
 LedgerMaster::updatePaths()
 {
+    TRACE_FUNC();
     {
         std::scoped_lock const ml(mutex_);
         if (app_.getOPs().isNeedNetworkLedger())
@@ -1483,6 +1520,7 @@ LedgerMaster::updatePaths()
 bool
 LedgerMaster::newPathRequest()
 {
+    TRACE_FUNC();
     std::unique_lock ml(mutex_);
     pathFindNewRequest_ = newPFWork("PthFindNewReq", ml);
     return pathFindNewRequest_;
@@ -1491,6 +1529,7 @@ LedgerMaster::newPathRequest()
 bool
 LedgerMaster::isNewPathRequest()
 {
+    TRACE_FUNC();
     std::scoped_lock const ml(mutex_);
     bool const ret = pathFindNewRequest_;
     pathFindNewRequest_ = false;
@@ -1502,6 +1541,7 @@ LedgerMaster::isNewPathRequest()
 bool
 LedgerMaster::newOrderBookDB()
 {
+    TRACE_FUNC();
     std::unique_lock ml(mutex_);
     pathLedger_.reset();
 
@@ -1513,6 +1553,7 @@ LedgerMaster::newOrderBookDB()
 bool
 LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&)
 {
+    TRACE_FUNC();
     if (!app_.isStopping() && pathFindThread_ < 2 && app_.getPathRequestManager().requestsPending())
     {
         JLOG(journal_.debug()) << "newPFWork: Creating job. path find threads: " << pathFindThread_;
@@ -1529,6 +1570,7 @@ LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>
 std::recursive_mutex&
 LedgerMaster::peekMutex()
 {
+    TRACE_FUNC();
     return mutex_;
 }
 
@@ -1536,18 +1578,21 @@ LedgerMaster::peekMutex()
 std::shared_ptr<ReadView const>
 LedgerMaster::getCurrentLedger()
 {
+    TRACE_FUNC();
     return app_.getOpenLedger().current();
 }
 
 std::shared_ptr<Ledger const>
 LedgerMaster::getValidatedLedger()
 {
+    TRACE_FUNC();
     return validLedger_.get();
 }
 
 Rules
 LedgerMaster::getValidatedRules()
 {
+    TRACE_FUNC();
     // Once we have a guarantee that there's always a last validated
     // ledger then we can dispense with the if.
 
@@ -1563,6 +1608,7 @@ LedgerMaster::getValidatedRules()
 std::shared_ptr<ReadView const>
 LedgerMaster::getPublishedLedger()
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     return pubLedger_;
 }
@@ -1570,6 +1616,7 @@ LedgerMaster::getPublishedLedger()
 std::string
 LedgerMaster::getCompleteLedgers()
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(completeLock_);
     return to_string(completeLedgers_);
 }
@@ -1577,6 +1624,7 @@ LedgerMaster::getCompleteLedgers()
 std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeBySeq(LedgerIndex ledgerIndex)
 {
+    TRACE_FUNC();
     uint256 const hash = getHashBySeq(ledgerIndex);
     return hash.isNonZero() ? getCloseTimeByHash(hash, ledgerIndex) : std::nullopt;
 }
@@ -1584,6 +1632,7 @@ LedgerMaster::getCloseTimeBySeq(LedgerIndex ledgerIndex)
 std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t index)
 {
+    TRACE_FUNC();
     auto nodeObject = app_.getNodeStore().fetchNodeObject(ledgerHash, index);
     if (nodeObject && (nodeObject->getData().size() >= 120))
     {
@@ -1603,6 +1652,7 @@ LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t ind
 uint256
 LedgerMaster::getHashBySeq(std::uint32_t index)
 {
+    TRACE_FUNC();
     uint256 hash = ledgerHistory_.getLedgerHash(index);
 
     if (hash.isNonZero())
@@ -1614,6 +1664,7 @@ LedgerMaster::getHashBySeq(std::uint32_t index)
 std::optional<LedgerHash>
 LedgerMaster::walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason)
 {
+    TRACE_FUNC();
     std::optional<LedgerHash> ledgerHash;
 
     if (auto referenceLedger = validLedger_.get())
@@ -1628,6 +1679,7 @@ LedgerMaster::walkHashBySeq(
     std::shared_ptr<ReadView const> const& referenceLedger,
     InboundLedger::Reason reason)
 {
+    TRACE_FUNC();
     if (!referenceLedger || (referenceLedger->header().seq < index))
     {
         // Nothing we can do. No validated ledger.
@@ -1680,6 +1732,7 @@ LedgerMaster::walkHashBySeq(
 std::shared_ptr<Ledger const>
 LedgerMaster::getLedgerBySeq(std::uint32_t index)
 {
+    TRACE_FUNC();
     if (index <= validLedgerSeq_)
     {
         // Always prefer a validated ledger
@@ -1716,6 +1769,7 @@ LedgerMaster::getLedgerBySeq(std::uint32_t index)
 std::shared_ptr<Ledger const>
 LedgerMaster::getLedgerByHash(uint256 const& hash)
 {
+    TRACE_FUNC();
     if (auto ret = ledgerHistory_.getLedgerByHash(hash))
         return ret;
 
@@ -1729,6 +1783,7 @@ LedgerMaster::getLedgerByHash(uint256 const& hash)
 void
 LedgerMaster::setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(completeLock_);
     completeLedgers_.insert(range(minV, maxV));
 }
@@ -1736,6 +1791,7 @@ LedgerMaster::setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV)
 void
 LedgerMaster::sweep()
 {
+    TRACE_FUNC();
     ledgerHistory_.sweep();
     fetch_packs_.sweep();
 }
@@ -1743,12 +1799,14 @@ LedgerMaster::sweep()
 float
 LedgerMaster::getCacheHitRate()
 {
+    TRACE_FUNC();
     return ledgerHistory_.getCacheHitRate();
 }
 
 void
 LedgerMaster::clearPriorLedgers(LedgerIndex seq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(completeLock_);
     if (seq > 0)
         completeLedgers_.erase(range(0u, seq - 1));
@@ -1757,18 +1815,21 @@ LedgerMaster::clearPriorLedgers(LedgerIndex seq)
 void
 LedgerMaster::clearLedgerCachePrior(LedgerIndex seq)
 {
+    TRACE_FUNC();
     ledgerHistory_.clearLedgerCachePrior(seq);
 }
 
 void
 LedgerMaster::takeReplay(std::unique_ptr<LedgerReplay> replay)
 {
+    TRACE_FUNC();
     replayData_ = std::move(replay);
 }
 
 std::unique_ptr<LedgerReplay>
 LedgerMaster::releaseReplay()
 {
+    TRACE_FUNC();
     return std::move(replayData_);
 }
 
@@ -1779,6 +1840,7 @@ LedgerMaster::fetchForHistory(
     InboundLedger::Reason reason,
     std::unique_lock<std::recursive_mutex>& sl)
 {
+    TRACE_FUNC();
     ScopeUnlock const sul{sl};
     if (auto hash = getLedgerHashForHistory(missing, reason))
     {
@@ -1873,6 +1935,7 @@ LedgerMaster::fetchForHistory(
 void
 LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
 {
+    TRACE_FUNC();
     do
     {
         advanceWork_ = false;  // If there's work to do, we'll make progress
@@ -1962,12 +2025,14 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
 void
 LedgerMaster::addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data)
 {
+    TRACE_FUNC();
     fetch_packs_.canonicalizeReplaceClient(hash, data);
 }
 
 std::optional<Blob>
 LedgerMaster::getFetchPack(uint256 const& hash)
 {
+    TRACE_FUNC();
     Blob data;
     if (fetch_packs_.retrieve(hash, data))
     {
@@ -1981,6 +2046,7 @@ LedgerMaster::getFetchPack(uint256 const& hash)
 void
 LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
 {
+    TRACE_FUNC();
     if (!gotFetchPackThread_.test_and_set(std::memory_order_acquire))
     {
         app_.getJobQueue().addJob(JtLedgerData, "GotFetchPack", [&]() {
@@ -2024,6 +2090,7 @@ populateFetchPack(
     std::uint32_t seq,
     bool withLeaves = true)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(cnt, "xrpl::populateFetchPack : nonzero count input");
 
     Serializer s(1024);
@@ -2053,6 +2120,7 @@ LedgerMaster::makeFetchPack(
     uint256 haveLedgerHash,
     UptimeClock::time_point uptime)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     if (UptimeClock::now() > uptime + 1s)
     {
@@ -2170,6 +2238,7 @@ LedgerMaster::makeFetchPack(
 std::size_t
 LedgerMaster::getFetchPackCacheSize() const
 {
+    TRACE_FUNC();
     return fetch_packs_.getCacheSize();
 }
 
@@ -2177,12 +2246,14 @@ LedgerMaster::getFetchPackCacheSize() const
 std::optional<LedgerIndex>
 LedgerMaster::minSqlSeq()
 {
+    TRACE_FUNC();
     return app_.getRelationalDatabase().getMinLedgerSeq();
 }
 
 std::optional<uint256>
 LedgerMaster::txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
 {
+    TRACE_FUNC();
     uint32_t first = 0, last = 0;
 
     if (!getValidatedRange(first, last) || last < ledgerSeq)

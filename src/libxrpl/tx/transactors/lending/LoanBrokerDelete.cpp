@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -24,12 +25,14 @@ namespace xrpl {
 bool
 LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
 LoanBrokerDelete::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfLoanBrokerID] == beast::kZERO)
         return temINVALID;
 
@@ -39,6 +42,7 @@ LoanBrokerDelete::preflight(PreflightContext const& ctx)
 TER
 LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -112,6 +116,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
 TER
 LoanBrokerDelete::doApply()
 {
+    TRACE_FUNC();
     auto const& tx = ctx_.tx;
 
     auto const brokerID = tx[sfLoanBrokerID];
@@ -207,6 +212,7 @@ LoanBrokerDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

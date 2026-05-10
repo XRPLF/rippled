@@ -14,6 +14,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -22,12 +23,14 @@ namespace xrpl {
 bool
 VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return !ctx.tx.isFieldPresent(sfDomainID) || ctx.rules.enabled(featurePermissionedDomains);
 }
 
 NotTEC
 VaultSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfVaultID] == beast::kZERO)
     {
         JLOG(ctx.j.debug()) << "VaultSet: zero/empty vault ID.";
@@ -65,6 +68,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 TER
 VaultSet::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
@@ -118,6 +122,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 TER
 VaultSet::doApply()
 {
+    TRACE_FUNC();
     // All return codes in `doApply` must be `tec`, `ter`, or `tes`.
     // As we move checks into `preflight` and `preclaim`,
     // we can consider downgrading them to `tef` or `tem`.
@@ -190,6 +195,7 @@ VaultSet::visitInvariantEntry(
 bool
 VaultSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

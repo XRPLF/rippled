@@ -18,6 +18,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Consumer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
@@ -78,6 +79,7 @@ ConnectAttempt::ConnectAttempt(
 
 ConnectAttempt::~ConnectAttempt()
 {
+    TRACE_FUNC();
     // slot_ will be null if we successfully connected
     // and transferred ownership to a PeerImp
     if (slot_ != nullptr)
@@ -87,6 +89,7 @@ ConnectAttempt::~ConnectAttempt()
 void
 ConnectAttempt::stop()
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         boost::asio::post(strand_, std::bind(&ConnectAttempt::stop, shared_from_this()));
@@ -104,6 +107,7 @@ ConnectAttempt::stop()
 void
 ConnectAttempt::run()
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         boost::asio::post(strand_, std::bind(&ConnectAttempt::run, shared_from_this()));
@@ -129,6 +133,7 @@ ConnectAttempt::run()
 void
 ConnectAttempt::shutdown()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         strand_.running_in_this_thread(), "xrpl::ConnectAttempt::shutdown: strand in this thread");
 
@@ -144,6 +149,7 @@ ConnectAttempt::shutdown()
 void
 ConnectAttempt::tryAsyncShutdown()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
         "xrpl::ConnectAttempt::tryAsyncShutdown : strand in this thread");
@@ -170,6 +176,7 @@ ConnectAttempt::tryAsyncShutdown()
 void
 ConnectAttempt::onShutdown(error_code ec)
 {
+    TRACE_FUNC();
     cancelTimer();
 
     if (ec)
@@ -196,6 +203,7 @@ ConnectAttempt::onShutdown(error_code ec)
 void
 ConnectAttempt::close()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         strand_.running_in_this_thread(), "xrpl::ConnectAttempt::close : strand in this thread");
     if (!socket_.is_open())
@@ -210,6 +218,7 @@ ConnectAttempt::close()
 void
 ConnectAttempt::fail(std::string const& reason)
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << reason;
     shutdown();
 }
@@ -217,6 +226,7 @@ ConnectAttempt::fail(std::string const& reason)
 void
 ConnectAttempt::fail(std::string const& name, error_code ec)
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << name << ": " << ec.message();
     shutdown();
 }
@@ -224,6 +234,7 @@ ConnectAttempt::fail(std::string const& name, error_code ec)
 void
 ConnectAttempt::setTimer(ConnectionStep step)
 {
+    TRACE_FUNC();
     currentStep_ = step;
 
     // Set global timer (only if not already set)
@@ -293,6 +304,7 @@ ConnectAttempt::setTimer(ConnectionStep step)
 void
 ConnectAttempt::cancelTimer()
 {
+    TRACE_FUNC();
     try
     {
         timer_.cancel();
@@ -307,6 +319,7 @@ ConnectAttempt::cancelTimer()
 void
 ConnectAttempt::onTimer(error_code ec)
 {
+    TRACE_FUNC();
     if (!socket_.is_open())
         return;
 
@@ -346,6 +359,7 @@ ConnectAttempt::onTimer(error_code ec)
 void
 ConnectAttempt::onConnect(error_code ec)
 {
+    TRACE_FUNC();
     ioPending_ = false;
 
     if (ec)
@@ -392,6 +406,7 @@ ConnectAttempt::onConnect(error_code ec)
 void
 ConnectAttempt::onHandshake(error_code ec)
 {
+    TRACE_FUNC();
     ioPending_ = false;
 
     if (ec)
@@ -464,6 +479,7 @@ ConnectAttempt::onHandshake(error_code ec)
 void
 ConnectAttempt::onWrite(error_code ec)
 {
+    TRACE_FUNC();
     ioPending_ = false;
 
     if (ec)
@@ -500,6 +516,7 @@ ConnectAttempt::onWrite(error_code ec)
 void
 ConnectAttempt::onRead(error_code ec)
 {
+    TRACE_FUNC();
     cancelTimer();
     ioPending_ = false;
     currentStep_ = ConnectionStep::Complete;
@@ -537,6 +554,7 @@ ConnectAttempt::onRead(error_code ec)
 void
 ConnectAttempt::processResponse()
 {
+    TRACE_FUNC();
     if (!OverlayImpl::isPeerUpgrade(response_))
     {
         // A peer may respond with service_unavailable and a list of alternative

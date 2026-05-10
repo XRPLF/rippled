@@ -1,6 +1,7 @@
 #include <xrpld/app/main/BasicApp.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/executor_work_guard.hpp>
 
@@ -9,6 +10,7 @@
 
 BasicApp::BasicApp(std::size_t numberOfThreads)
 {
+    TRACE_FUNC();
     work_.emplace(boost::asio::make_work_guard(io_context_));
     threads_.reserve(numberOfThreads);
 
@@ -23,6 +25,7 @@ BasicApp::BasicApp(std::size_t numberOfThreads)
 
 BasicApp::~BasicApp()
 {
+    TRACE_FUNC();
     work_.reset();
 
     for (auto& t : threads_)

@@ -9,6 +9,7 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/beast/core/string.hpp>
 #include <boost/core/ignore_unused.hpp>
@@ -59,6 +60,7 @@ public:
     MemoryDB&
     open(std::string const& path)
     {
+    TRACE_FUNC();
         std::scoped_lock const _(mutex_);
         auto const result =
             map_.emplace(std::piecewise_construct, std::make_tuple(path), std::make_tuple());
@@ -74,6 +76,7 @@ MemoryFactory* gMemoryFactory = nullptr;
 void
 registerMemoryFactory(Manager& manager)
 {
+    TRACE_FUNC();
     static MemoryFactory kINSTANCE{manager};
     gMemoryFactory = &kINSTANCE;
 }
@@ -93,6 +96,7 @@ public:
     MemoryBackend(size_t keyBytes, Section const& keyValues, beast::Journal journal)
         : name_(get(keyValues, "path")), journal_(journal)
     {
+    TRACE_FUNC();
         boost::ignore_unused(journal_);  // Keep unused journal_ just in case.
         if (name_.empty())
             Throw<std::runtime_error>("Missing path in Memory backend");
@@ -100,30 +104,35 @@ public:
 
     ~MemoryBackend() override
     {
+    TRACE_FUNC();
         close();
     }
 
     std::string
     getName() override
     {
+    TRACE_FUNC();
         return name_;
     }
 
     void
     open(bool) override
     {
+    TRACE_FUNC();
         db_ = &gMemoryFactory->open(name_);
     }
 
     bool
     isOpen() override
     {
+    TRACE_FUNC();
         return static_cast<bool>(db_);
     }
 
     void
     close() override
     {
+    TRACE_FUNC();
         db_ = nullptr;
     }
 
@@ -132,6 +141,7 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::fetch : non-null database");
 
         std::scoped_lock const _(db_->mutex);
@@ -149,6 +159,7 @@ public:
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256> const& hashes) override
     {
+    TRACE_FUNC();
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
         for (auto const& h : hashes)
@@ -171,6 +182,7 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::store : non-null database");
         std::scoped_lock const _(db_->mutex);
         db_->table.emplace(object->getHash(), object);
@@ -179,6 +191,7 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
+    TRACE_FUNC();
         for (auto const& e : batch)
             store(e);
     }
@@ -191,6 +204,7 @@ public:
     void
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::forEach : non-null database");
         for (auto const& e : db_->table)
             f(e.second);
@@ -199,6 +213,7 @@ public:
     int
     getWriteLoad() override
     {
+    TRACE_FUNC();
         return 0;
     }
 
@@ -210,6 +225,7 @@ public:
     [[nodiscard]] int
     fdRequired() const override
     {
+    TRACE_FUNC();
         return 0;
     }
 };
@@ -218,12 +234,14 @@ public:
 
 MemoryFactory::MemoryFactory(Manager& manager) : manager_(manager)
 {
+    TRACE_FUNC();
     manager_.insert(*this);
 }
 
 std::string
 MemoryFactory::getName() const
 {
+    TRACE_FUNC();
     return "Memory";
 }
 
@@ -235,6 +253,7 @@ MemoryFactory::createInstance(
     Scheduler& scheduler,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::make_unique<MemoryBackend>(keyBytes, keyValues, journal);
 }
 

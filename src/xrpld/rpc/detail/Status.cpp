@@ -5,6 +5,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <sstream>
 #include <string>
@@ -14,6 +15,7 @@ namespace xrpl::RPC {
 std::string
 Status::codeString() const
 {
+    TRACE_FUNC();
     if (!*this)
         return "";
 
@@ -47,6 +49,7 @@ Status::codeString() const
 void
 Status::fillJson(json::Value& value)
 {
+    TRACE_FUNC();
     if (!*this)
         return;
 
@@ -66,6 +69,7 @@ Status::fillJson(json::Value& value)
 std::string
 Status::message() const
 {
+    TRACE_FUNC();
     std::string result;
     for (auto& m : messages_)
     {
@@ -80,6 +84,7 @@ Status::message() const
 std::string
 Status::toString() const
 {
+    TRACE_FUNC();
     if (*this)
         return codeString() + ":" + message();
     return "";

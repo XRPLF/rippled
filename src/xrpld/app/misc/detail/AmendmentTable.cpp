@@ -22,6 +22,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Wallet.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/join.hpp>
 #include <boost/optional/optional.hpp>
@@ -49,6 +50,7 @@ namespace xrpl {
 static std::vector<std::pair<uint256, std::string>>
 parseSection(Section const& section)
 {
+    TRACE_FUNC();
     static boost::regex const kRE1(
         "^"                        // start of line
         "(?:\\s*)"                 // whitespace (optional)
@@ -128,6 +130,7 @@ public:
     void
     trustChanged(hash_set<PublicKey> const& allTrusted, std::scoped_lock<std::mutex> const& lock)
     {
+    TRACE_FUNC();
         decltype(recordedVotes_) newRecordedVotes;
         newRecordedVotes.reserve(allTrusted.size());
 
@@ -164,6 +167,7 @@ public:
         beast::Journal j,
         std::scoped_lock<std::mutex> const& lock)
     {
+    TRACE_FUNC();
         // When we get an STValidation we save the upVotes it contains, but
         // we also set an expiration for those upVotes.  The following constant
         // controls the timeout.
@@ -261,6 +265,7 @@ public:
     [[nodiscard]] std::pair<int, hash_map<uint256, int>>
     getVotes(Rules const& rules, std::scoped_lock<std::mutex> const& lock) const
     {
+    TRACE_FUNC();
         hash_map<uint256, int> ret;
         int available = 0;
         for (auto& validatorVotes : recordedVotes_)
@@ -321,6 +326,7 @@ public:
         TrustedVotes const& trustedVotes,
         std::scoped_lock<std::mutex> const& lock)
     {
+    TRACE_FUNC();
         // process validations for ledger before flag ledger.
         auto [trustedCount, newVotes] = trustedVotes.getVotes(rules, lock);
 
@@ -337,6 +343,7 @@ public:
     [[nodiscard]] bool
     passes(uint256 const& amendment) const
     {
+    TRACE_FUNC();
         auto const& it = votes_.find(amendment);
 
         if (it == votes_.end())
@@ -353,6 +360,7 @@ public:
     [[nodiscard]] int
     votes(uint256 const& amendment) const
     {
+    TRACE_FUNC();
         auto const& it = votes_.find(amendment);
 
         if (it == votes_.end())
@@ -364,12 +372,14 @@ public:
     [[nodiscard]] int
     trustedValidations() const
     {
+    TRACE_FUNC();
         return trustedValidations_;
     }
 
     [[nodiscard]] int
     threshold() const
     {
+    TRACE_FUNC();
         return threshold_;
     }
 };
@@ -510,6 +520,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     beast::Journal journal)
     : majorityTime_(majorityTime), j_(journal), db_(registry.getWalletDB())
 {
+    TRACE_FUNC();
     std::scoped_lock lock(mutex_);
 
     // Find out if the FeatureVotes table exists in WalletDB
@@ -635,6 +646,7 @@ AmendmentTableImpl::AmendmentTableImpl(
 AmendmentState&
 AmendmentTableImpl::add(uint256 const& amendmentHash, std::scoped_lock<std::mutex> const&)
 {
+    TRACE_FUNC();
     // call with the mutex held
     return amendmentMap_[amendmentHash];
 }
@@ -642,6 +654,7 @@ AmendmentTableImpl::add(uint256 const& amendmentHash, std::scoped_lock<std::mute
 AmendmentState*
 AmendmentTableImpl::get(uint256 const& amendmentHash, std::scoped_lock<std::mutex> const& lock)
 {
+    TRACE_FUNC();
     // Forward to the const version of get.
     return const_cast<AmendmentState*>(std::as_const(*this).get(amendmentHash, lock));
 }
@@ -649,6 +662,7 @@ AmendmentTableImpl::get(uint256 const& amendmentHash, std::scoped_lock<std::mute
 AmendmentState const*
 AmendmentTableImpl::get(uint256 const& amendmentHash, std::scoped_lock<std::mutex> const&) const
 {
+    TRACE_FUNC();
     // call with the mutex held
     auto ret = amendmentMap_.find(amendmentHash);
 
@@ -661,6 +675,7 @@ AmendmentTableImpl::get(uint256 const& amendmentHash, std::scoped_lock<std::mute
 uint256
 AmendmentTableImpl::find(std::string const& name) const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     for (auto const& e : amendmentMap_)
@@ -678,6 +693,7 @@ AmendmentTableImpl::persistVote(
     std::string const& name,
     AmendmentVote vote) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         vote != AmendmentVote::Obsolete,
         "xrpl::AmendmentTableImpl::persistVote : valid vote input");
@@ -688,6 +704,7 @@ AmendmentTableImpl::persistVote(
 bool
 AmendmentTableImpl::veto(uint256 const& amendment)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     AmendmentState& s = add(amendment, lock);
 
@@ -701,6 +718,7 @@ AmendmentTableImpl::veto(uint256 const& amendment)
 bool
 AmendmentTableImpl::unVeto(uint256 const& amendment)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     AmendmentState* const s = get(amendment, lock);
 
@@ -714,6 +732,7 @@ AmendmentTableImpl::unVeto(uint256 const& amendment)
 bool
 AmendmentTableImpl::enable(uint256 const& amendment)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     AmendmentState& s = add(amendment, lock);
 
@@ -734,6 +753,7 @@ AmendmentTableImpl::enable(uint256 const& amendment)
 bool
 AmendmentTableImpl::isEnabled(uint256 const& amendment) const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     AmendmentState const* s = get(amendment, lock);
     return (s != nullptr) && s->enabled;
@@ -742,6 +762,7 @@ AmendmentTableImpl::isEnabled(uint256 const& amendment) const
 bool
 AmendmentTableImpl::isSupported(uint256 const& amendment) const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     AmendmentState const* s = get(amendment, lock);
     return (s != nullptr) && s->supported;
@@ -750,6 +771,7 @@ AmendmentTableImpl::isSupported(uint256 const& amendment) const
 bool
 AmendmentTableImpl::hasUnsupportedEnabled() const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     return unsupportedEnabled_;
 }
@@ -757,6 +779,7 @@ AmendmentTableImpl::hasUnsupportedEnabled() const
 std::optional<NetClock::time_point>
 AmendmentTableImpl::firstUnsupportedExpected() const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     return firstUnsupportedExpected_;
 }
@@ -764,6 +787,7 @@ AmendmentTableImpl::firstUnsupportedExpected() const
 std::vector<uint256>
 AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
 {
+    TRACE_FUNC();
     // Get the list of amendments we support and do not
     // veto, but that are not already enabled
     std::vector<uint256> amendments;
@@ -791,6 +815,7 @@ AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
 std::vector<uint256>
 AmendmentTableImpl::getDesired() const
 {
+    TRACE_FUNC();
     // Get the list of amendments we support and do not veto
     return doValidation({});
 }
@@ -803,6 +828,7 @@ AmendmentTableImpl::doVoting(
     majorityAmendments_t const& majorityAmendments,
     std::vector<std::shared_ptr<STValidation>> const& valSet)
 {
+    TRACE_FUNC();
     JLOG(j_.trace()) << "voting at " << closeTime.time_since_epoch().count() << ": "
                      << enabledAmendments.size() << ", " << majorityAmendments.size() << ", "
                      << valSet.size();
@@ -889,6 +915,7 @@ AmendmentTableImpl::doVoting(
 bool
 AmendmentTableImpl::needValidatedLedger(LedgerIndex ledgerSeq) const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     // Is there a ledger in which an amendment could have been enabled
@@ -903,6 +930,7 @@ AmendmentTableImpl::doValidatedLedger(
     std::set<uint256> const& enabled,
     majorityAmendments_t const& majority)
 {
+    TRACE_FUNC();
     for (auto& e : enabled)
         enable(e);
 
@@ -937,6 +965,7 @@ AmendmentTableImpl::doValidatedLedger(
 void
 AmendmentTableImpl::trustChanged(hash_set<PublicKey> const& allTrusted)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     previousTrustedVotes_.trustChanged(allTrusted, lock);
 }
@@ -949,6 +978,7 @@ AmendmentTableImpl::injectJson(
     bool isAdmin,
     std::scoped_lock<std::mutex> const&) const
 {
+    TRACE_FUNC();
     if (!fs.name.empty())
         v[jss::name] = fs.name;
 
@@ -983,6 +1013,7 @@ AmendmentTableImpl::injectJson(
 json::Value
 AmendmentTableImpl::getJson(bool isAdmin) const
 {
+    TRACE_FUNC();
     json::Value ret(json::ObjectValue);
     {
         std::scoped_lock const lock(mutex_);
@@ -998,6 +1029,7 @@ AmendmentTableImpl::getJson(bool isAdmin) const
 json::Value
 AmendmentTableImpl::getJson(uint256 const& amendmentID, bool isAdmin) const
 {
+    TRACE_FUNC();
     json::Value ret = json::ObjectValue;
 
     {
@@ -1022,6 +1054,7 @@ makeAmendmentTable(
     Section const& vetoed,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::make_unique<AmendmentTableImpl>(
         registry, majorityTime, supported, enabled, vetoed, journal);
 }

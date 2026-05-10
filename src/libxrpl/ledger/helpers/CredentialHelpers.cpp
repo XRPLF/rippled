@@ -20,6 +20,7 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <limits>
@@ -35,6 +36,7 @@ namespace credentials {
 bool
 checkExpired(std::shared_ptr<SLE const> const& sleCredential, NetClock::time_point const& closed)
 {
+    TRACE_FUNC();
     std::uint32_t const exp =
         (*sleCredential)[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
     std::uint32_t const now = closed.time_since_epoch().count();
@@ -44,6 +46,7 @@ checkExpired(std::shared_ptr<SLE const> const& sleCredential, NetClock::time_poi
 bool
 removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
+    TRACE_FUNC();
     auto const closeTime = view.header().parentCloseTime;
     bool foundExpired = false;
 
@@ -68,6 +71,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 TER
 deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Journal j)
 {
+    TRACE_FUNC();
     if (!sleCredential)
         return tecNO_ENTRY;
 
@@ -122,6 +126,7 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 NotTEC
 checkFields(STTx const& tx, beast::Journal j)
 {
+    TRACE_FUNC();
     if (!tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
@@ -150,6 +155,7 @@ checkFields(STTx const& tx, beast::Journal j)
 TER
 valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal j)
 {
+    TRACE_FUNC();
     if (!tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
@@ -184,6 +190,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
 TER
 validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
 {
+    TRACE_FUNC();
     // Note, permissioned domain objects can be deleted at any time
     auto const slePD = view.read(keylet::permissionedDomain(domainID));
     if (!slePD)
@@ -225,6 +232,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
 TER
 authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, AccountID const& dst)
 {
+    TRACE_FUNC();
     std::set<std::pair<AccountID, Slice>> sorted;
     std::vector<std::shared_ptr<SLE const>> lifeExtender;
     lifeExtender.reserve(credIDs.size());
@@ -249,6 +257,7 @@ authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, Accou
 std::set<std::pair<AccountID, Slice>>
 makeSorted(STArray const& credentials)
 {
+    TRACE_FUNC();
     std::set<std::pair<AccountID, Slice>> out;
     for (auto const& cred : credentials)
     {
@@ -262,6 +271,7 @@ makeSorted(STArray const& credentials)
 NotTEC
 checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 {
+    TRACE_FUNC();
     if (credentials.empty() || (credentials.size() > maxSize))
     {
         JLOG(j.trace()) << "Malformed transaction: "
@@ -308,6 +318,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j)
 {
+    TRACE_FUNC();
     auto const slePD = view.read(keylet::permissionedDomain(domainID));
     if (!slePD)
         return tecOBJECT_NOT_FOUND;
@@ -347,6 +358,7 @@ verifyDepositPreauth(
     std::shared_ptr<SLE const> const& sleDst,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // If depositPreauth is enabled, then an account that requires
     // authorization has at least two ways to get a payment in:
     //  1. If src == dst, or

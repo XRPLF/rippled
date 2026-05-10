@@ -14,6 +14,7 @@
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/utility/string_view.hpp>
 
@@ -32,16 +33,19 @@ namespace xrpl {
 
 SecretKey::~SecretKey()
 {
+    TRACE_FUNC();
     secureErase(buf_, sizeof(buf_));
 }
 
 SecretKey::SecretKey(std::array<std::uint8_t, 32> const& key)
 {
+    TRACE_FUNC();
     std::memcpy(buf_, key.data(), key.size());
 }
 
 SecretKey::SecretKey(Slice const& slice)
 {
+    TRACE_FUNC();
     if (slice.size() != sizeof(buf_))
         logicError("SecretKey::SecretKey: invalid size");
     std::memcpy(buf_, slice.data(), sizeof(buf_));
@@ -50,6 +54,7 @@ SecretKey::SecretKey(Slice const& slice)
 std::string
 SecretKey::toString() const
 {
+    TRACE_FUNC();
     return strHex(*this);
 }
 
@@ -58,6 +63,7 @@ namespace detail {
 void
 copyUint32(std::uint8_t* out, std::uint32_t v)
 {
+    TRACE_FUNC();
     *out++ = v >> 24;
     *out++ = (v >> 16) & 0xff;
     *out++ = (v >> 8) & 0xff;
@@ -67,6 +73,7 @@ copyUint32(std::uint8_t* out, std::uint32_t v)
 uint256
 deriveDeterministicRootKey(Seed const& seed)
 {
+    TRACE_FUNC();
     // We fill this buffer with the seed and append a 32-bit "counter"
     // that counts how many attempts we've had to make to generate a
     // non-zero key that's less than the curve's order:
@@ -126,6 +133,7 @@ private:
     [[nodiscard]] uint256
     calculateTweak(std::uint32_t seq) const
     {
+    TRACE_FUNC();
         // We fill the buffer with the generator, the provided sequence
         // and a 32-bit counter tracking the number of attempts we have
         // already made looking for a non-zero key that's less than the
@@ -160,6 +168,7 @@ private:
 public:
     explicit Generator(Seed const& seed) : root_(deriveDeterministicRootKey(seed))
     {
+    TRACE_FUNC();
         secp256k1_pubkey pubkey;
         if (secp256k1_ec_pubkey_create(secp256k1Context(), &pubkey, root_.data()) != 1)
             logicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
@@ -173,6 +182,7 @@ public:
 
     ~Generator()
     {
+    TRACE_FUNC();
         secureErase(root_.data(), root_.size());
         secureErase(generator_.data(), generator_.size());
     }
@@ -181,6 +191,7 @@ public:
     std::pair<PublicKey, SecretKey>
     operator()(std::size_t ordinal) const
     {
+    TRACE_FUNC();
         // Generates Nth secret key:
         auto gsk = [this, tweak = calculateTweak(ordinal)]() {
             auto rpk = root_;
@@ -204,6 +215,7 @@ public:
 Buffer
 signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
 {
+    TRACE_FUNC();
     if (publicKeyType(pk.slice()) != KeyType::Secp256k1)
         logicError("sign: secp256k1 required for digest signing");
 
@@ -229,6 +241,7 @@ signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
 Buffer
 sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 {
+    TRACE_FUNC();
     auto const type = publicKeyType(pk.slice());
     if (!type)
         logicError("sign: invalid type");
@@ -270,6 +283,7 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 SecretKey
 randomSecretKey()
 {
+    TRACE_FUNC();
     std::uint8_t buf[32];
     beast::rngfill(buf, sizeof(buf), cryptoPrng());
     SecretKey const sk(Slice{buf, sizeof(buf)});
@@ -280,6 +294,7 @@ randomSecretKey()
 SecretKey
 generateSecretKey(KeyType type, Seed const& seed)
 {
+    TRACE_FUNC();
     if (type == KeyType::Ed25519)
     {
         auto key = sha512HalfS(Slice(seed.data(), seed.size()));
@@ -302,6 +317,7 @@ generateSecretKey(KeyType type, Seed const& seed)
 PublicKey
 derivePublicKey(KeyType type, SecretKey const& sk)
 {
+    TRACE_FUNC();
     switch (type)
     {
         case KeyType::Secp256k1: {
@@ -334,6 +350,7 @@ derivePublicKey(KeyType type, SecretKey const& sk)
 std::pair<PublicKey, SecretKey>
 generateKeyPair(KeyType type, Seed const& seed)
 {
+    TRACE_FUNC();
     switch (type)
     {
         case KeyType::Secp256k1: {
@@ -351,6 +368,7 @@ generateKeyPair(KeyType type, Seed const& seed)
 std::pair<PublicKey, SecretKey>
 randomKeyPair(KeyType type)
 {
+    TRACE_FUNC();
     auto const sk = randomSecretKey();
     return {derivePublicKey(type, sk), sk};
 }
@@ -359,6 +377,7 @@ template <>
 std::optional<SecretKey>
 parseBase58(TokenType type, std::string const& s)
 {
+    TRACE_FUNC();
     auto const result = decodeBase58Token(s, type);
     if (result.empty())
         return std::nullopt;

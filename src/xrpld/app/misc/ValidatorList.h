@@ -9,6 +9,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/server/Manifest.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/thread/shared_mutex.hpp>
 
@@ -481,6 +482,7 @@ public:
     std::size_t
     quorum() const
     {
+    TRACE_FUNC();
         return quorum_;
     }
 
@@ -646,6 +648,7 @@ public:
     QuorumKeys
     getQuorumKeys() const
     {
+    TRACE_FUNC();
         shared_lock const readLock{mutex_};
         return {quorum_, trustedSigningKeys_};
     }
@@ -829,6 +832,7 @@ private:
     friend void
     hash_append(Hasher& h, PublisherListCollection pl)
     {
+    TRACE_FUNC();
         using beast::hash_append;
         hash_append(h, pl.rawManifest, buildBlobInfos(pl), pl.rawVersion);
     }
@@ -886,6 +890,7 @@ template <class Hasher>
 void
 hash_append(Hasher& h, ValidatorBlobInfo const& blobInfo)
 {
+    TRACE_FUNC();
     using beast::hash_append;
     hash_append(h, blobInfo.blob, blobInfo.signature);
     if (blobInfo.manifest)
@@ -898,6 +903,7 @@ template <class Hasher>
 void
 hash_append(Hasher& h, std::vector<ValidatorBlobInfo> const& blobs)
 {
+    TRACE_FUNC();
     for (auto const& item : blobs)
         hash_append(h, item);
 }
@@ -906,6 +912,7 @@ template <class Hasher>
 void
 hash_append(Hasher& h, std::map<std::size_t, ValidatorBlobInfo> const& blobs)
 {
+    TRACE_FUNC();
     for (auto const& [_, item] : blobs)
     {
         (void)_;
@@ -921,6 +928,7 @@ template <class Hasher>
 void
 hash_append(Hasher& h, TMValidatorList const& msg)
 {
+    TRACE_FUNC();
     using beast::hash_append;
     hash_append(h, msg.manifest(), msg.blob(), msg.signature(), msg.version());
 }
@@ -929,6 +937,7 @@ template <class Hasher>
 void
 hash_append(Hasher& h, TMValidatorListCollection const& msg)
 {
+    TRACE_FUNC();
     using beast::hash_append;
     hash_append(h, msg.manifest(), xrpl::ValidatorList::parseBlobs(msg), msg.version());
 }

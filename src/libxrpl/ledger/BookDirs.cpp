@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 
@@ -17,6 +18,7 @@ BookDirs::BookDirs(ReadView const& view, Book const& book)
     , next_quality_(getQualityNext(root_))
     , key_(view_->succ(root_, next_quality_).value_or(beast::kZERO))
 {
+    TRACE_FUNC();
     XRPL_ASSERT(root_ != beast::kZERO, "xrpl::BookDirs::BookDirs : nonzero root");
     if (key_ != beast::kZERO)
     {
@@ -32,6 +34,7 @@ BookDirs::BookDirs(ReadView const& view, Book const& book)
 auto
 BookDirs::begin() const -> BookDirs::const_iterator
 {
+    TRACE_FUNC();
     auto it = BookDirs::const_iterator(*view_, root_, key_);
     if (key_ != beast::kZERO)
     {
@@ -46,12 +49,14 @@ BookDirs::begin() const -> BookDirs::const_iterator
 auto
 BookDirs::end() const -> BookDirs::const_iterator
 {
+    TRACE_FUNC();
     return BookDirs::const_iterator(*view_, root_, key_);
 }
 
 bool
 BookDirs::const_iterator::operator==(BookDirs::const_iterator const& other) const
 {
+    TRACE_FUNC();
     if (view_ == nullptr || other.view_ == nullptr)
         return false;
 
@@ -65,6 +70,7 @@ BookDirs::const_iterator::operator==(BookDirs::const_iterator const& other) cons
 BookDirs::const_iterator::reference
 BookDirs::const_iterator::operator*() const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         index_ != beast::kZERO, "xrpl::BookDirs::const_iterator::operator* : nonzero index");
     if (!cache_)
@@ -75,6 +81,7 @@ BookDirs::const_iterator::operator*() const
 BookDirs::const_iterator&
 BookDirs::const_iterator::operator++()
 {
+    TRACE_FUNC();
     using beast::kZERO;
 
     XRPL_ASSERT(index_ != kZERO, "xrpl::BookDirs::const_iterator::operator++ : nonzero index");
@@ -104,6 +111,7 @@ BookDirs::const_iterator::operator++()
 BookDirs::const_iterator
 BookDirs::const_iterator::operator++(int)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         index_ != beast::kZERO, "xrpl::BookDirs::const_iterator::operator++(int) : nonzero index");
     const_iterator tmp(*this);

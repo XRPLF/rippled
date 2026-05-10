@@ -9,11 +9,13 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 json::Value
 doManifest(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto& params = context.params;
 
     if (!params.isMember(jss::public_key))

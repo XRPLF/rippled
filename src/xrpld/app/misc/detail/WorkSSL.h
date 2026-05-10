@@ -5,6 +5,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/net/HTTPClientSSLContext.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/ssl.hpp>
 #include <boost/format.hpp>
@@ -41,6 +42,7 @@ private:
     stream_type&
     stream()
     {
+    TRACE_FUNC();
         return stream_;
     }
 

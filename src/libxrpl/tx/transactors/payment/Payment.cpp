@@ -36,6 +36,7 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/paths/RippleCalc.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -48,6 +49,7 @@ namespace xrpl {
 TxConsequences
 Payment::makeTxConsequences(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
         STAmount const maxAmount = tx.isFieldPresent(sfSendMax) ? tx[sfSendMax] : tx[sfAmount];
 
@@ -65,6 +67,7 @@ getMaxSourceAmount(
     STAmount const& dstAmount,
     std::optional<STAmount> const& sendMax)
 {
+    TRACE_FUNC();
     if (sendMax)
     {
         return *sendMax;
@@ -85,6 +88,7 @@ getMaxSourceAmount(
 bool
 Payment::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
         return false;
     if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDEX))
@@ -96,6 +100,7 @@ Payment::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 Payment::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto& tx = ctx.tx;
 
     STAmount const dstAmount(tx.getFieldAmount(sfAmount));
@@ -112,6 +117,7 @@ Payment::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 Payment::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -271,6 +277,7 @@ Payment::preflight(PreflightContext const& ctx)
 NotTEC
 Payment::checkPermission(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
         return tesSUCCESS;
@@ -310,6 +317,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
 TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const txFlags = ctx.tx.getFlags();
     bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
@@ -403,6 +411,7 @@ Payment::preclaim(PreclaimContext const& ctx)
 TER
 Payment::doApply()
 {
+    TRACE_FUNC();
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
     // Ripple if source or destination is non-native or if there are paths.
@@ -689,6 +698,7 @@ Payment::visitInvariantEntry(
 bool
 Payment::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

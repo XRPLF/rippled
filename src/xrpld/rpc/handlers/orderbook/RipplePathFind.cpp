@@ -13,6 +13,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <utility>
@@ -23,6 +24,7 @@ namespace xrpl {
 json::Value
 doRipplePathFind(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (context.app.config().PATH_SEARCH_MAX == 0)
         return rpcError(RpcNotSupported);
 

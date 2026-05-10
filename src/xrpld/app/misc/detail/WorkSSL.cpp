@@ -5,6 +5,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/io_context.hpp>
@@ -37,6 +38,7 @@ WorkSSL::WorkSSL(
           boost::asio::ssl::context::tlsv12_client)
     , stream_(socket_, context_.context())
 {
+    TRACE_FUNC();
     auto ec = context_.preConnectVerify(stream_, host_);
     if (ec)
         Throw<std::runtime_error>(boost::str(boost::format("preConnectVerify: %s") % ec.message()));
@@ -45,6 +47,7 @@ WorkSSL::WorkSSL(
 void
 WorkSSL::onConnect(error_code const& ec)
 {
+    TRACE_FUNC();
     auto err = ec ? ec : context_.postConnectVerify(stream_, host_);
     if (err)
     {
@@ -61,6 +64,7 @@ WorkSSL::onConnect(error_code const& ec)
 void
 WorkSSL::onHandshake(error_code const& ec)
 {
+    TRACE_FUNC();
     if (ec)
     {
         fail(ec);

@@ -6,12 +6,14 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
 json::Value
 doNFTBuyOffers(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (!context.params.isMember(jss::nft_id))
         return RPC::missingFieldError(jss::nft_id);
 

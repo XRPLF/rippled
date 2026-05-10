@@ -6,6 +6,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <functional>
 #include <mutex>
@@ -25,18 +26,21 @@ private:
         bool
         operator()(ClusterNode const& lhs, ClusterNode const& rhs) const
         {
+    TRACE_FUNC();
             return lhs.identity() < rhs.identity();
         }
 
         bool
         operator()(ClusterNode const& lhs, PublicKey const& rhs) const
         {
+    TRACE_FUNC();
             return lhs.identity() < rhs;
         }
 
         bool
         operator()(PublicKey const& lhs, ClusterNode const& rhs) const
         {
+    TRACE_FUNC();
             return lhs < rhs.identity();
         }
     };

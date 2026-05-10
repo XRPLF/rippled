@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -45,6 +46,7 @@ private:
 
         ~AsyncOp() override
         {
+    TRACE_FUNC();
             checker.remove(*this);
         }
 
@@ -121,6 +123,7 @@ template <class Handler>
 void
 Checker<Protocol>::AsyncOp<Handler>::stop()
 {
+    TRACE_FUNC();
     error_code ec;
     socket.cancel(ec);
 }
@@ -130,6 +133,7 @@ template <class Handler>
 void
 Checker<Protocol>::AsyncOp<Handler>::operator()(error_code const& ec)
 {
+    TRACE_FUNC();
     handler(ec);
 }
 
@@ -143,6 +147,7 @@ Checker<Protocol>::Checker(boost::asio::io_context& ioContext) : ioContext_(ioCo
 template <class Protocol>
 Checker<Protocol>::~Checker()
 {
+    TRACE_FUNC();
     wait();
 }
 
@@ -150,6 +155,7 @@ template <class Protocol>
 void
 Checker<Protocol>::stop()
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     if (!stop_)
     {
@@ -163,6 +169,7 @@ template <class Protocol>
 void
 Checker<Protocol>::wait()
 {
+    TRACE_FUNC();
     std::unique_lock<std::mutex> lock(mutex_);
     while (!list_.empty())
         cond_.wait(lock);
@@ -173,6 +180,7 @@ template <class Handler>
 void
 Checker<Protocol>::asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& handler)
 {
+    TRACE_FUNC();
     auto const op =
         std::make_shared<AsyncOp<Handler>>(*this, ioContext_, std::forward<Handler>(handler));
     {
@@ -188,6 +196,7 @@ template <class Protocol>
 void
 Checker<Protocol>::remove(BasicAsyncOp& op)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     list_.erase(list_.iterator_to(op));
     if (list_.size() == 0)

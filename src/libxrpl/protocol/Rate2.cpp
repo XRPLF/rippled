@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 
@@ -16,6 +17,7 @@ namespace detail {
 STAmount
 asAmount(Rate const& rate)
 {
+    TRACE_FUNC();
     return {noIssue(), rate.value, -9, false};
 }
 
@@ -25,6 +27,7 @@ namespace nft {
 Rate
 transferFeeAsRate(std::uint16_t fee)
 {
+    TRACE_FUNC();
     return Rate{static_cast<std::uint32_t>(fee) * 10000};
 }
 
@@ -33,6 +36,7 @@ transferFeeAsRate(std::uint16_t fee)
 STAmount
 multiply(STAmount const& amount, Rate const& rate)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(rate.value, "xrpl::nft::multiply : nonzero rate input");
 
     if (rate == kPARITY_RATE)
@@ -44,6 +48,7 @@ multiply(STAmount const& amount, Rate const& rate)
 STAmount
 multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(rate.value, "xrpl::nft::multiplyRound : nonzero rate input");
 
     if (rate == kPARITY_RATE)
@@ -55,6 +60,7 @@ multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
 STAmount
 multiplyRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool roundUp)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(rate.value, "xrpl::nft::multiplyRound(Issue) : nonzero rate input");
 
     if (rate == kPARITY_RATE)
@@ -68,6 +74,7 @@ multiplyRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool
 STAmount
 divide(STAmount const& amount, Rate const& rate)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(rate.value, "xrpl::nft::divide : nonzero rate input");
 
     if (rate == kPARITY_RATE)
@@ -79,6 +86,7 @@ divide(STAmount const& amount, Rate const& rate)
 STAmount
 divideRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(rate.value, "xrpl::nft::divideRound : nonzero rate input");
 
     if (rate == kPARITY_RATE)
@@ -90,6 +98,7 @@ divideRound(STAmount const& amount, Rate const& rate, bool roundUp)
 STAmount
 divideRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool roundUp)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(rate.value, "xrpl::nft::divideRound(Issue) : nonzero rate input");
 
     if (rate == kPARITY_RATE)

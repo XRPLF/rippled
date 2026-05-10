@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -33,18 +34,21 @@ namespace xrpl {
 bool
 LoanManage::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 std::uint32_t
 LoanManage::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfLoanManageMask;
 }
 
 NotTEC
 LoanManage::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfLoanID] == beast::kZERO)
         return temINVALID;
 
@@ -66,6 +70,7 @@ LoanManage::preflight(PreflightContext const& ctx)
 TER
 LoanManage::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -132,6 +137,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
 static Number
 owedToVault(SLE::ref loanSle)
 {
+    TRACE_FUNC();
     // Spec section 3.2.3.2, defines the default amount as
     //
     // DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
@@ -155,6 +161,7 @@ LoanManage::defaultLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Calculate the amount of the Default that First-Loss Capital covers:
 
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
@@ -305,6 +312,7 @@ LoanManage::impairLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
+    TRACE_FUNC();
     Number const lossUnrealized = owedToVault(loanSle);
 
     // The vault may be at a different scale than the loan. Reduce rounding
@@ -347,6 +355,7 @@ LoanManage::unimpairLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
@@ -391,6 +400,7 @@ LoanManage::unimpairLoan(
 TER
 LoanManage::doApply()
 {
+    TRACE_FUNC();
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
 
@@ -445,6 +455,7 @@ LoanManage::visitInvariantEntry(
 bool
 LoanManage::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

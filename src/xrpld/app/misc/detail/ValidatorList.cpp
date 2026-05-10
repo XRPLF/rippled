@@ -28,6 +28,7 @@
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/regex/v5/regex.hpp>
@@ -62,6 +63,7 @@ namespace xrpl {
 std::string
 to_string(ListDisposition disposition)
 {
+    TRACE_FUNC();
     switch (disposition)
     {
         case ListDisposition::Accepted:
@@ -88,6 +90,7 @@ to_string(ListDisposition disposition)
 
 ValidatorList::PublisherListStats::PublisherListStats(ListDisposition d)
 {
+    TRACE_FUNC();
     ++dispositions[d];
 }
 
@@ -98,24 +101,28 @@ ValidatorList::PublisherListStats::PublisherListStats(
     std::size_t seq)
     : publisherKey(key), status(stat), sequence(seq)
 {
+    TRACE_FUNC();
     ++dispositions[d];
 }
 
 ListDisposition
 ValidatorList::PublisherListStats::bestDisposition() const
 {
+    TRACE_FUNC();
     return dispositions.empty() ? ListDisposition::Invalid : dispositions.begin()->first;
 }
 
 ListDisposition
 ValidatorList::PublisherListStats::worstDisposition() const
 {
+    TRACE_FUNC();
     return dispositions.empty() ? ListDisposition::Invalid : dispositions.rbegin()->first;
 }
 
 void
 ValidatorList::PublisherListStats::mergeDispositions(PublisherListStats const& src)
 {
+    TRACE_FUNC();
     for (auto const& [disp, count] : src.dispositions)
     {
         dispositions[disp] += count;
@@ -157,6 +164,7 @@ ValidatorList::load(
     std::vector<std::string> const& publisherKeys,
     std::optional<std::size_t> listThreshold)
 {
+    TRACE_FUNC();
     static boost::regex const kRE(
         "[[:space:]]*"       // skip leading whitespace
         "([[:alnum:]]+)"     // node identity
@@ -291,6 +299,7 @@ ValidatorList::load(
 boost::filesystem::path
 ValidatorList::getCacheFileName(ValidatorList::scoped_lock const&, PublicKey const& pubKey) const
 {
+    TRACE_FUNC();
     return dataPath_ / (kFILE_PREFIX + strHex(pubKey));
 }
 
@@ -301,6 +310,7 @@ ValidatorList::buildFileData(
     ValidatorList::PublisherListCollection const& pubCollection,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return buildFileData(pubKey, pubCollection, {}, j);
 }
 
@@ -312,6 +322,7 @@ ValidatorList::buildFileData(
     std::optional<std::uint32_t> forceVersion,
     beast::Journal j)
 {
+    TRACE_FUNC();
     json::Value value(json::ObjectValue);
 
     XRPL_ASSERT(
@@ -369,6 +380,7 @@ void
 ValidatorList::cacheValidatorFile(ValidatorList::scoped_lock const& lock, PublicKey const& pubKey)
     const
 {
+    TRACE_FUNC();
     if (dataPath_.empty())
         return;
 
@@ -397,6 +409,7 @@ ValidatorList::cacheValidatorFile(ValidatorList::scoped_lock const& lock, Public
 std::vector<ValidatorBlobInfo>
 ValidatorList::parseBlobs(std::uint32_t version, json::Value const& body)
 {
+    TRACE_FUNC();
     std::vector<ValidatorBlobInfo> result;
     switch (version)
     {
@@ -455,6 +468,7 @@ ValidatorList::parseBlobs(std::uint32_t version, json::Value const& body)
 std::vector<ValidatorBlobInfo>
 ValidatorList::parseBlobs(protocol::TMValidatorList const& body)
 {
+    TRACE_FUNC();
     return {{body.blob(), body.signature(), {}}};
 }
 
@@ -462,6 +476,7 @@ ValidatorList::parseBlobs(protocol::TMValidatorList const& body)
 std::vector<ValidatorBlobInfo>
 ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
 {
+    TRACE_FUNC();
     if (body.blobs_size() > kMAX_SUPPORTED_BLOBS)
         return {};
     std::vector<ValidatorBlobInfo> result;
@@ -499,6 +514,7 @@ splitMessage(
     std::size_t begin = 0,
     std::size_t end = 0)
 {
+    TRACE_FUNC();
     if (begin == 0 && end == 0)
         end = largeMsg.blobs_size();
     XRPL_ASSERT(begin < end, "xrpl::splitMessage : valid inputs");
@@ -520,6 +536,7 @@ splitMessageParts(
     std::size_t begin,
     std::size_t end)
 {
+    TRACE_FUNC();
     if (end <= begin)
         return 0;
     if (end - begin == 1)
@@ -579,6 +596,7 @@ buildValidatorListMessage(
     ValidatorBlobInfo const& currentBlob,
     std::size_t maxSize)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         messages.empty(),
         "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : empty messages "
@@ -612,6 +630,7 @@ buildValidatorListMessage(
     std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
     std::size_t maxSize)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         messages.empty(),
         "xrpl::buildValidatorListMessage(std::map<std::size_t, "
@@ -661,6 +680,7 @@ ValidatorList::buildValidatorListMessages(
     std::vector<ValidatorList::MessageWithHash>& messages,
     std::size_t maxSize /*= kMAXIMUM_MESSAGE_SIZE*/)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         !blobInfos.empty(),
         "xrpl::ValidatorList::buildValidatorListMessages : empty messages "
@@ -727,6 +747,7 @@ ValidatorList::sendValidatorList(
     HashRouter& hashRouter,
     beast::Journal j)
 {
+    TRACE_FUNC();
     std::size_t messageVersion = 0;
     if (peer.supportsFeature(ProtocolFeature::ValidatorList2Propagation))
     {
@@ -801,6 +822,7 @@ ValidatorList::sendValidatorList(
     HashRouter& hashRouter,
     beast::Journal j)
 {
+    TRACE_FUNC();
     std::vector<ValidatorList::MessageWithHash> messages;
     sendValidatorList(
         peer,
@@ -821,6 +843,7 @@ ValidatorList::buildBlobInfos(
     std::map<std::size_t, ValidatorBlobInfo>& blobInfos,
     ValidatorList::PublisherListCollection const& lists)
 {
+    TRACE_FUNC();
     auto const& current = lists.current;
     auto const& remaining = lists.remaining;
     blobInfos[current.sequence] = {
@@ -838,6 +861,7 @@ ValidatorList::buildBlobInfos(
 std::map<std::size_t, ValidatorBlobInfo>
 ValidatorList::buildBlobInfos(ValidatorList::PublisherListCollection const& lists)
 {
+    TRACE_FUNC();
     std::map<std::size_t, ValidatorBlobInfo> result;
     buildBlobInfos(result, lists);
     return result;
@@ -854,6 +878,7 @@ ValidatorList::broadcastBlobs(
     HashRouter& hashRouter,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const toSkip = hashRouter.shouldRelay(hash);
 
     if (toSkip)
@@ -920,6 +945,7 @@ ValidatorList::applyListsAndBroadcast(
     HashRouter& hashRouter,
     NetworkOPs& networkOPs)
 {
+    TRACE_FUNC();
     auto const result = applyLists(manifest, version, blobs, std::move(siteUri), hash);
     auto const disposition = result.bestDisposition();
 
@@ -978,6 +1004,7 @@ ValidatorList::applyLists(
     std::string siteUri,
     std::optional<uint256> const& hash /* = {} */)
 {
+    TRACE_FUNC();
     if (std::count(
             std::begin(kSUPPORTED_LIST_VERSIONS), std::end(kSUPPORTED_LIST_VERSIONS), version) != 1)
         return PublisherListStats{ListDisposition::UnsupportedVersion};
@@ -1054,6 +1081,7 @@ ValidatorList::updatePublisherList(
     std::vector<PublicKey> const& oldList,
     ValidatorList::scoped_lock const&)
 {
+    TRACE_FUNC();
     // Update keyListings_ for added and removed keys
     std::vector<PublicKey> const& publisherList = current.list;
     std::vector<std::string> const& manifests = current.manifests;
@@ -1123,6 +1151,7 @@ ValidatorList::applyList(
     std::optional<uint256> const& hash,
     ValidatorList::scoped_lock const& lock)
 {
+    TRACE_FUNC();
     using namespace std::string_literals;
 
     json::Value list;
@@ -1282,6 +1311,7 @@ ValidatorList::applyList(
 std::vector<std::string>
 ValidatorList::loadLists()
 {
+    TRACE_FUNC();
     using namespace std::string_literals;
     using namespace boost::filesystem;
     using namespace boost::system::errc;
@@ -1342,6 +1372,7 @@ ValidatorList::verify(
     std::string const& blob,
     std::string const& signature)
 {
+    TRACE_FUNC();
     if (!publisherLists_.contains(manifest.masterKey))
         return {ListDisposition::Untrusted, {}};
 
@@ -1429,6 +1460,7 @@ ValidatorList::verify(
 bool
 ValidatorList::listed(PublicKey const& identity) const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey(identity);
@@ -1438,6 +1470,7 @@ ValidatorList::listed(PublicKey const& identity) const
 bool
 ValidatorList::trusted(ValidatorList::shared_lock const&, PublicKey const& identity) const
 {
+    TRACE_FUNC();
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     return trustedMasterKeys_.contains(pubKey);
 }
@@ -1445,6 +1478,7 @@ ValidatorList::trusted(ValidatorList::shared_lock const&, PublicKey const& ident
 bool
 ValidatorList::trusted(PublicKey const& identity) const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
     return trusted(readLock, identity);
 }
@@ -1452,6 +1486,7 @@ ValidatorList::trusted(PublicKey const& identity) const
 std::optional<PublicKey>
 ValidatorList::getListedKey(PublicKey const& identity) const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
 
     auto pubKey = validatorManifests_.getMasterKey(identity);
@@ -1463,6 +1498,7 @@ ValidatorList::getListedKey(PublicKey const& identity) const
 std::optional<PublicKey>
 ValidatorList::getTrustedKey(ValidatorList::shared_lock const&, PublicKey const& identity) const
 {
+    TRACE_FUNC();
     auto pubKey = validatorManifests_.getMasterKey(identity);
     if (trustedMasterKeys_.contains(pubKey))
         return pubKey;
@@ -1472,6 +1508,7 @@ ValidatorList::getTrustedKey(ValidatorList::shared_lock const&, PublicKey const&
 std::optional<PublicKey>
 ValidatorList::getTrustedKey(PublicKey const& identity) const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
 
     return getTrustedKey(readLock, identity);
@@ -1480,6 +1517,7 @@ ValidatorList::getTrustedKey(PublicKey const& identity) const
 bool
 ValidatorList::trustedPublisher(PublicKey const& identity) const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
     return (identity.size() != 0u) && publisherLists_.contains(identity) &&
         publisherLists_.at(identity).status < PublisherStatus::Revoked;
@@ -1488,6 +1526,7 @@ ValidatorList::trustedPublisher(PublicKey const& identity) const
 std::optional<PublicKey>
 ValidatorList::localPublicKey() const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
     return localPubKey_;
 }
@@ -1498,6 +1537,7 @@ ValidatorList::removePublisherList(
     PublicKey const& publisherKey,
     PublisherStatus reason)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         reason != PublisherStatus::Available && reason != PublisherStatus::Unavailable,
         "xrpl::ValidatorList::removePublisherList : valid reason input");
@@ -1532,12 +1572,14 @@ ValidatorList::removePublisherList(
 std::size_t
 ValidatorList::count(ValidatorList::shared_lock const&) const
 {
+    TRACE_FUNC();
     return publisherLists_.size() + static_cast<size_t>(!localPublisherList_.list.empty());
 }
 
 std::size_t
 ValidatorList::count() const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
     return count(readLock);
 }
@@ -1545,6 +1587,7 @@ ValidatorList::count() const
 std::optional<TimeKeeper::time_point>
 ValidatorList::expires(ValidatorList::shared_lock const&) const
 {
+    TRACE_FUNC();
     std::optional<TimeKeeper::time_point> res{};
     for (auto const& [_, collection] : publisherLists_)
     {
@@ -1598,6 +1641,7 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
 std::optional<TimeKeeper::time_point>
 ValidatorList::expires() const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
     return expires(readLock);
 }
@@ -1605,6 +1649,7 @@ ValidatorList::expires() const
 json::Value
 ValidatorList::getJson() const
 {
+    TRACE_FUNC();
     json::Value res(json::ObjectValue);
 
     std::shared_lock const readLock{mutex_};
@@ -1735,6 +1780,7 @@ ValidatorList::getJson() const
 void
 ValidatorList::forEachListed(std::function<void(PublicKey const&, bool)> func) const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
 
     for (auto const& v : keyListings_)
@@ -1751,6 +1797,7 @@ ValidatorList::forEachAvailable(
         std::size_t maxSequence,
         uint256 const& hash)> func) const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
 
     for (auto const& [key, plCollection] : publisherLists_)
@@ -1775,6 +1822,7 @@ ValidatorList::getAvailable(
     std::string_view pubKey,
     std::optional<std::uint32_t> forceVersion /* = {} */)
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
 
     auto const keyBlob = strViewUnHex(pubKey);
@@ -1803,6 +1851,7 @@ ValidatorList::calculateQuorum(
     std::size_t effectiveUnlSize,
     std::size_t seenSize)
 {
+    TRACE_FUNC();
     // Use quorum if specified via command line.
     if (minimumQuorum_ > 0)
     {
@@ -1897,6 +1946,7 @@ ValidatorList::updateTrusted(
     Overlay& overlay,
     HashRouter& hashRouter)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     if (timeKeeper_.now() > closeTime + 30s)
         closeTime = timeKeeper_.now();
@@ -2074,6 +2124,7 @@ ValidatorList::updateTrusted(
 hash_set<PublicKey>
 ValidatorList::getTrustedMasterKeys() const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
     return trustedMasterKeys_;
 }
@@ -2081,6 +2132,7 @@ ValidatorList::getTrustedMasterKeys() const
 std::size_t
 ValidatorList::getListThreshold() const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
     return listThreshold_;
 }
@@ -2088,6 +2140,7 @@ ValidatorList::getListThreshold() const
 hash_set<PublicKey>
 ValidatorList::getNegativeUNL() const
 {
+    TRACE_FUNC();
     std::shared_lock const readLock{mutex_};
     return negativeUNL_;
 }
@@ -2095,6 +2148,7 @@ ValidatorList::getNegativeUNL() const
 void
 ValidatorList::setNegativeUNL(hash_set<PublicKey> const& negUnl)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock{mutex_};
     negativeUNL_ = negUnl;
 }
@@ -2102,6 +2156,7 @@ ValidatorList::setNegativeUNL(hash_set<PublicKey> const& negUnl)
 std::vector<std::shared_ptr<STValidation>>
 ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& validations) const
 {
+    TRACE_FUNC();
     // Remove validations that are from validators on the negative UNL.
     auto ret = std::move(validations);
 

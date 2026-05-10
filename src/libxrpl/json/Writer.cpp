@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/json/Output.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <map>
@@ -42,6 +43,7 @@ auto const kINTEGRAL_FLOATS_BECOME_INTS = false;
 size_t
 lengthWithoutTrailingZeros(std::string const& s)
 {
+    TRACE_FUNC();
     auto dotPos = s.find('.');
     if (dotPos == std::string::npos)
         return s.size();
@@ -75,12 +77,14 @@ public:
     [[nodiscard]] bool
     empty() const
     {
+    TRACE_FUNC();
         return stack_.empty();
     }
 
     void
     start(CollectionType ct)
     {
+    TRACE_FUNC();
         char const ch = (ct == CollectionType::Array) ? kOPEN_BRACKET : kOPEN_BRACE;
         output({&ch, 1});
         stack_.emplace(Collection{.type = ct});
@@ -89,6 +93,7 @@ public:
     void
     output(boost::beast::string_view const& bytes)
     {
+    TRACE_FUNC();
         markStarted();
         output_(bytes);
     }
@@ -96,6 +101,7 @@ public:
     void
     stringOutput(boost::beast::string_view const& bytes)
     {
+    TRACE_FUNC();
         markStarted();
         std::size_t position = 0, writtenUntil = 0;
 
@@ -122,6 +128,7 @@ public:
     void
     markStarted()
     {
+    TRACE_FUNC();
         check(!isFinished(), "isFinished() in output.");
         isStarted_ = true;
     }
@@ -129,6 +136,7 @@ public:
     void
     nextCollectionEntry(CollectionType type, std::string const& message)
     {
+    TRACE_FUNC();
         check(!empty(), "empty () in " + message);
 
         auto t = stack_.top().type;
@@ -151,6 +159,7 @@ public:
     void
     writeObjectTag(std::string const& tag)
     {
+    TRACE_FUNC();
 #ifndef NDEBUG
         // Make sure we haven't already seen this tag.
         auto& tags = stack_.top().tags;
@@ -165,12 +174,14 @@ public:
     [[nodiscard]] bool
     isFinished() const
     {
+    TRACE_FUNC();
         return isStarted_ && empty();
     }
 
     void
     finish()
     {
+    TRACE_FUNC();
         check(!empty(), "Empty stack in finish()");
 
         auto isArray = stack_.top().type == CollectionType::Array;
@@ -182,6 +193,7 @@ public:
     void
     finishAll()
     {
+    TRACE_FUNC();
         if (isStarted_)
         {
             while (!isFinished())
@@ -192,6 +204,7 @@ public:
     [[nodiscard]] Output const&
     getOutput() const
     {
+    TRACE_FUNC();
         return output_;
     }
 
@@ -226,18 +239,21 @@ Writer::Writer(Output const& output) : impl_(std::make_unique<Impl>(output))
 
 Writer::~Writer()
 {
+    TRACE_FUNC();
     if (impl_)
         impl_->finishAll();
 }
 
 Writer::Writer(Writer&& w) noexcept
 {
+    TRACE_FUNC();
     impl_ = std::move(w.impl_);
 }
 
 Writer&
 Writer::operator=(Writer&& w) noexcept
 {
+    TRACE_FUNC();
     impl_ = std::move(w.impl_);
     return *this;
 }
@@ -245,18 +261,21 @@ Writer::operator=(Writer&& w) noexcept
 void
 Writer::output(char const* s)
 {
+    TRACE_FUNC();
     impl_->stringOutput(s);
 }
 
 void
 Writer::output(std::string const& s)
 {
+    TRACE_FUNC();
     impl_->stringOutput(s);
 }
 
 void
 Writer::output(json::Value const& value)
 {
+    TRACE_FUNC();
     impl_->markStarted();
     outputJson(value, impl_->getOutput());
 }
@@ -264,6 +283,7 @@ Writer::output(json::Value const& value)
 void
 Writer::output(float f)
 {
+    TRACE_FUNC();
     auto s = xrpl::to_string(f);
     impl_->output({s.data(), lengthWithoutTrailingZeros(s)});
 }
@@ -271,6 +291,7 @@ Writer::output(float f)
 void
 Writer::output(double f)
 {
+    TRACE_FUNC();
     auto s = xrpl::to_string(f);
     impl_->output({s.data(), lengthWithoutTrailingZeros(s)});
 }
@@ -278,24 +299,28 @@ Writer::output(double f)
 void
 Writer::output(std::nullptr_t)
 {
+    TRACE_FUNC();
     impl_->output("null");
 }
 
 void
 Writer::output(bool b)
 {
+    TRACE_FUNC();
     impl_->output(b ? "true" : "false");
 }
 
 void
 Writer::implOutput(std::string const& s)
 {
+    TRACE_FUNC();
     impl_->output(s);
 }
 
 void
 Writer::finishAll()
 {
+    TRACE_FUNC();
     if (impl_)
         impl_->finishAll();
 }
@@ -303,12 +328,14 @@ Writer::finishAll()
 void
 Writer::rawAppend()
 {
+    TRACE_FUNC();
     impl_->nextCollectionEntry(CollectionType::Array, "append");
 }
 
 void
 Writer::rawSet(std::string const& tag)
 {
+    TRACE_FUNC();
     check(!tag.empty(), "Tag can't be empty");
 
     impl_->nextCollectionEntry(CollectionType::Object, "set");
@@ -318,12 +345,14 @@ Writer::rawSet(std::string const& tag)
 void
 Writer::startRoot(CollectionType type)
 {
+    TRACE_FUNC();
     impl_->start(type);
 }
 
 void
 Writer::startAppend(CollectionType type)
 {
+    TRACE_FUNC();
     impl_->nextCollectionEntry(CollectionType::Array, "startAppend");
     impl_->start(type);
 }
@@ -331,6 +360,7 @@ Writer::startAppend(CollectionType type)
 void
 Writer::startSet(CollectionType type, std::string const& key)
 {
+    TRACE_FUNC();
     impl_->nextCollectionEntry(CollectionType::Object, "startSet");
     impl_->writeObjectTag(key);
     impl_->start(type);
@@ -339,6 +369,7 @@ Writer::startSet(CollectionType type, std::string const& key)
 void
 Writer::finish()
 {
+    TRACE_FUNC();
     if (impl_)
         impl_->finish();
 }

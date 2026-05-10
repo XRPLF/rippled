@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -19,6 +20,7 @@ accountSourceAssets(
     std::shared_ptr<AssetCache> const& lrCache,
     bool includeXRP)
 {
+    TRACE_FUNC();
     hash_set<PathAsset> assets;
 
     // YYY Only bother if they are above reserve
@@ -63,6 +65,7 @@ accountDestAssets(
     std::shared_ptr<AssetCache> const& lrCache,
     bool includeXRP)
 {
+    TRACE_FUNC();
     hash_set<PathAsset> assets;
 
     if (includeXRP)

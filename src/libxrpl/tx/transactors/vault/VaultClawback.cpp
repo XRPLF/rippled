@@ -25,6 +25,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -36,6 +37,7 @@ namespace xrpl {
 NotTEC
 VaultClawback::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfVaultID] == beast::kZERO)
     {
         JLOG(ctx.j.debug()) << "VaultClawback: zero/empty vault ID.";
@@ -66,6 +68,7 @@ clawbackAmount(
     std::optional<STAmount> const& maybeAmount,
     AccountID const& account)
 {
+    TRACE_FUNC();
     if (maybeAmount)
         return *maybeAmount;
 
@@ -79,6 +82,7 @@ clawbackAmount(
 TER
 VaultClawback::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
@@ -230,6 +234,7 @@ VaultClawback::assetsToClawback(
     AccountID const& holder,
     STAmount const& clawbackAmount)
 {
+    TRACE_FUNC();
     if (clawbackAmount.asset() != vault->at(sfAsset))
     {
         // preclaim should have blocked this , now it's an internal error
@@ -336,6 +341,7 @@ VaultClawback::assetsToClawback(
 TER
 VaultClawback::doApply()
 {
+    TRACE_FUNC();
     auto const& tx = ctx_.tx;
     auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
@@ -471,6 +477,7 @@ VaultClawback::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

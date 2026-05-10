@@ -9,6 +9,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_match.hpp>
@@ -29,6 +30,7 @@ Cluster::Cluster(beast::Journal j) : j_(j)
 std::optional<std::string>
 Cluster::member(PublicKey const& identity) const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     auto iter = nodes_.find(identity);
@@ -40,6 +42,7 @@ Cluster::member(PublicKey const& identity) const
 std::size_t
 Cluster::size() const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     return nodes_.size();
@@ -52,6 +55,7 @@ Cluster::update(
     std::uint32_t loadFee,
     NetClock::time_point reportTime)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     auto iter = nodes_.find(identity);
@@ -74,6 +78,7 @@ Cluster::update(
 void
 Cluster::forEach(std::function<void(ClusterNode const&)> func) const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     for (auto const& ni : nodes_)
         func(ni);
@@ -82,6 +87,7 @@ Cluster::forEach(std::function<void(ClusterNode const&)> func) const
 bool
 Cluster::load(Section const& nodes)
 {
+    TRACE_FUNC();
     static boost::regex const kRE(
         "[[:space:]]*"       // skip leading whitespace
         "([[:alnum:]]+)"     // node identity

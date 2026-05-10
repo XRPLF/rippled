@@ -18,6 +18,7 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -40,6 +41,7 @@ SQLiteDatabase::makeLedgerDBs(
     DatabaseCon::Setup const& setup,
     DatabaseCon::CheckpointerSetup const& checkpointerSetup)
 {
+    TRACE_FUNC();
     auto [lgr, tx, res] = detail::makeLedgerDBs(config, setup, checkpointerSetup, j_);
     txdb_ = std::move(tx);
     ledgerDb_ = std::move(lgr);
@@ -49,6 +51,7 @@ SQLiteDatabase::makeLedgerDBs(
 std::optional<LedgerIndex>
 SQLiteDatabase::getMinLedgerSeq()
 {
+    TRACE_FUNC();
     /* if databases exists, use it */
     if (existsLedger())
     {
@@ -63,6 +66,7 @@ SQLiteDatabase::getMinLedgerSeq()
 std::optional<LedgerIndex>
 SQLiteDatabase::getTransactionsMinLedgerSeq()
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -78,6 +82,7 @@ SQLiteDatabase::getTransactionsMinLedgerSeq()
 std::optional<LedgerIndex>
 SQLiteDatabase::getAccountTransactionsMinLedgerSeq()
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -93,6 +98,7 @@ SQLiteDatabase::getAccountTransactionsMinLedgerSeq()
 std::optional<LedgerIndex>
 SQLiteDatabase::getMaxLedgerSeq()
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -105,6 +111,7 @@ SQLiteDatabase::getMaxLedgerSeq()
 void
 SQLiteDatabase::deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return;
 
@@ -119,6 +126,7 @@ SQLiteDatabase::deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq)
 void
 SQLiteDatabase::deleteBeforeLedgerSeq(LedgerIndex ledgerSeq)
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -130,6 +138,7 @@ SQLiteDatabase::deleteBeforeLedgerSeq(LedgerIndex ledgerSeq)
 void
 SQLiteDatabase::deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return;
 
@@ -144,6 +153,7 @@ SQLiteDatabase::deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
 void
 SQLiteDatabase::deleteAccountTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return;
 
@@ -158,6 +168,7 @@ SQLiteDatabase::deleteAccountTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
 std::size_t
 SQLiteDatabase::getTransactionCount()
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return 0;
 
@@ -173,6 +184,7 @@ SQLiteDatabase::getTransactionCount()
 std::size_t
 SQLiteDatabase::getAccountTransactionCount()
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return 0;
 
@@ -188,6 +200,7 @@ SQLiteDatabase::getAccountTransactionCount()
 RelationalDatabase::CountMinMax
 SQLiteDatabase::getLedgerCountMinMax()
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -200,6 +213,7 @@ SQLiteDatabase::getLedgerCountMinMax()
 bool
 SQLiteDatabase::saveValidatedLedger(std::shared_ptr<Ledger const> const& ledger, bool current)
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         if (!detail::saveValidatedLedger(
@@ -213,6 +227,7 @@ SQLiteDatabase::saveValidatedLedger(std::shared_ptr<Ledger const> const& ledger,
 std::optional<LedgerHeader>
 SQLiteDatabase::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -228,6 +243,7 @@ SQLiteDatabase::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
 std::optional<LedgerHeader>
 SQLiteDatabase::getNewestLedgerInfo()
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -243,6 +259,7 @@ SQLiteDatabase::getNewestLedgerInfo()
 std::optional<LedgerHeader>
 SQLiteDatabase::getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex)
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -258,6 +275,7 @@ SQLiteDatabase::getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex)
 std::optional<LedgerHeader>
 SQLiteDatabase::getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex)
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -273,6 +291,7 @@ SQLiteDatabase::getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex)
 std::optional<LedgerHeader>
 SQLiteDatabase::getLedgerInfoByHash(uint256 const& ledgerHash)
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -288,6 +307,7 @@ SQLiteDatabase::getLedgerInfoByHash(uint256 const& ledgerHash)
 uint256
 SQLiteDatabase::getHashByIndex(LedgerIndex ledgerIndex)
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -303,6 +323,7 @@ SQLiteDatabase::getHashByIndex(LedgerIndex ledgerIndex)
 std::optional<LedgerHashPair>
 SQLiteDatabase::getHashesByIndex(LedgerIndex ledgerIndex)
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -318,6 +339,7 @@ SQLiteDatabase::getHashesByIndex(LedgerIndex ledgerIndex)
 std::map<LedgerIndex, LedgerHashPair>
 SQLiteDatabase::getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq)
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -333,6 +355,7 @@ SQLiteDatabase::getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq)
 std::vector<std::shared_ptr<Transaction>>
 SQLiteDatabase::getTxHistory(LedgerIndex startIndex)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -351,6 +374,7 @@ SQLiteDatabase::getTxHistory(LedgerIndex startIndex)
 RelationalDatabase::AccountTxs
 SQLiteDatabase::getOldestAccountTxs(AccountTxOptions const& options)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -369,6 +393,7 @@ SQLiteDatabase::getOldestAccountTxs(AccountTxOptions const& options)
 RelationalDatabase::AccountTxs
 SQLiteDatabase::getNewestAccountTxs(AccountTxOptions const& options)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -387,6 +412,7 @@ SQLiteDatabase::getNewestAccountTxs(AccountTxOptions const& options)
 RelationalDatabase::MetaTxsList
 SQLiteDatabase::getOldestAccountTxsB(AccountTxOptions const& options)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -402,6 +428,7 @@ SQLiteDatabase::getOldestAccountTxsB(AccountTxOptions const& options)
 RelationalDatabase::MetaTxsList
 SQLiteDatabase::getNewestAccountTxsB(AccountTxOptions const& options)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -417,6 +444,7 @@ SQLiteDatabase::getNewestAccountTxsB(AccountTxOptions const& options)
 std::pair<RelationalDatabase::AccountTxs, std::optional<RelationalDatabase::AccountTxMarker>>
 SQLiteDatabase::oldestAccountTxPage(AccountTxPageOptions const& options)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -447,6 +475,7 @@ SQLiteDatabase::oldestAccountTxPage(AccountTxPageOptions const& options)
 std::pair<RelationalDatabase::AccountTxs, std::optional<RelationalDatabase::AccountTxMarker>>
 SQLiteDatabase::newestAccountTxPage(AccountTxPageOptions const& options)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -477,6 +506,7 @@ SQLiteDatabase::newestAccountTxPage(AccountTxPageOptions const& options)
 std::pair<RelationalDatabase::MetaTxsList, std::optional<RelationalDatabase::AccountTxMarker>>
 SQLiteDatabase::oldestAccountTxPageB(AccountTxPageOptions const& options)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -505,6 +535,7 @@ SQLiteDatabase::oldestAccountTxPageB(AccountTxPageOptions const& options)
 std::pair<RelationalDatabase::MetaTxsList, std::optional<RelationalDatabase::AccountTxMarker>>
 SQLiteDatabase::newestAccountTxPageB(AccountTxPageOptions const& options)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return {};
 
@@ -536,6 +567,7 @@ SQLiteDatabase::getTransaction(
     std::optional<ClosedInterval<std::uint32_t>> const& range,
     ErrorCodeI& ec)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return TxSearched::Unknown;
 
@@ -551,6 +583,7 @@ SQLiteDatabase::getTransaction(
 SQLiteDatabase::SQLiteDatabase(SQLiteDatabase&& rhs) noexcept
     : registry_(rhs.registry_), useTxTables_(rhs.useTxTables_), j_(rhs.j_)
 {
+    TRACE_FUNC();
     std::exchange(ledgerDb_, std::move(rhs.ledgerDb_));
     std::exchange(txdb_, std::move(rhs.txdb_));
 }
@@ -558,6 +591,7 @@ SQLiteDatabase::SQLiteDatabase(SQLiteDatabase&& rhs) noexcept
 bool
 SQLiteDatabase::ledgerDbHasSpace(Config const& config)
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         auto db = checkoutLedger();
@@ -570,6 +604,7 @@ SQLiteDatabase::ledgerDbHasSpace(Config const& config)
 bool
 SQLiteDatabase::transactionDbHasSpace(Config const& config)
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return true;
 
@@ -585,6 +620,7 @@ SQLiteDatabase::transactionDbHasSpace(Config const& config)
 std::uint32_t
 SQLiteDatabase::getKBUsedAll()
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         return xrpl::getKBUsedAll(ledgerDb_->getSession());
@@ -596,6 +632,7 @@ SQLiteDatabase::getKBUsedAll()
 std::uint32_t
 SQLiteDatabase::getKBUsedLedger()
 {
+    TRACE_FUNC();
     if (existsLedger())
     {
         return xrpl::getKBUsedDB(ledgerDb_->getSession());
@@ -607,6 +644,7 @@ SQLiteDatabase::getKBUsedLedger()
 std::uint32_t
 SQLiteDatabase::getKBUsedTransaction()
 {
+    TRACE_FUNC();
     if (!useTxTables_)
         return 0;
 
@@ -621,12 +659,14 @@ SQLiteDatabase::getKBUsedTransaction()
 void
 SQLiteDatabase::closeLedgerDB()
 {
+    TRACE_FUNC();
     ledgerDb_.reset();
 }
 
 void
 SQLiteDatabase::closeTransactionDB()
 {
+    TRACE_FUNC();
     txdb_.reset();
 }
 
@@ -635,6 +675,7 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     , useTxTables_(config.useTxTables())
     , j_(registry.getJournal("SQLiteDatabase"))
 {
+    TRACE_FUNC();
     DatabaseCon::Setup const setup = setupDatabaseCon(config, j_);
     if (!makeLedgerDBs(
             config,
@@ -651,6 +692,7 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
 SQLiteDatabase
 setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
+    TRACE_FUNC();
     return {registry, config, jobQueue};
 }
 

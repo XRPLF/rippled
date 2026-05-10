@@ -40,6 +40,7 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -56,6 +57,7 @@ namespace xrpl {
 NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 {
+    TRACE_FUNC();
     if (isPseudoTx(ctx.tx) && ctx.tx.isFlag(tfInnerBatchTxn))
     {
         JLOG(ctx.j.warn()) << "Pseudo transactions cannot contain the "
@@ -114,6 +116,7 @@ namespace detail {
 NotTEC
 preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
 {
+    TRACE_FUNC();
     if (auto const spk = sigObject.getFieldVL(sfSigningPubKey);
         !spk.empty() && !publicKeyType(makeSlice(spk)))
     {
@@ -126,6 +129,7 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
 std::optional<NotTEC>
 preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::Journal j)
 {
+    TRACE_FUNC();
     if ((flags & TapDryRun) != 0u)  // simulation
     {
         std::optional<Slice> const signature = sigObject[~sfTxnSignature];
@@ -169,6 +173,7 @@ preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::J
 NotTEC
 Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
+    TRACE_FUNC();
     if (ctx.tx.isFieldPresent(sfDelegate))
     {
         if (!ctx.rules.enabled(featurePermissionDelegationV1_1))
@@ -223,6 +228,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 NotTEC
 Transactor::preflight2(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (auto const ret = detail::preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
     {
         // Skips following checks if the transaction is being simulated,
@@ -269,6 +275,7 @@ Transactor::Transactor(ApplyContext& ctx)
 bool
 Transactor::validDataLength(std::optional<Slice> const& slice, std::size_t maxLength)
 {
+    TRACE_FUNC();
     if (!slice)
         return true;
     return !slice->empty() && slice->length() <= maxLength;
@@ -277,18 +284,21 @@ Transactor::validDataLength(std::optional<Slice> const& slice, std::size_t maxLe
 std::uint32_t
 Transactor::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfUniversalMask;
 }
 
 NotTEC
 Transactor::preflightSigValidated(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tesSUCCESS;
 }
 
 NotTEC
 Transactor::checkPermission(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
         return tesSUCCESS;
@@ -305,6 +315,7 @@ Transactor::checkPermission(ReadView const& view, STTx const& tx)
 XRPAmount
 Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     // Returns the fee in fee units.
 
     // The computation has two parts:
@@ -324,6 +335,7 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 XRPAmount
 Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     // Assumption: One reserve increment is typically much greater than one base
     // fee.
     // This check is in an assert so that it will come to the attention of
@@ -348,12 +360,14 @@ Transactor::minimumFee(
     Fees const& fees,
     ApplyFlags flags)
 {
+    TRACE_FUNC();
     return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, (flags & TapUnlimited) != 0u);
 }
 
 TER
 Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 {
+    TRACE_FUNC();
     if (!ctx.tx[sfFee].native())
         return temBAD_FEE;
 
@@ -421,6 +435,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 TER
 Transactor::payFee()
 {
+    TRACE_FUNC();
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
     auto const feePayer = ctx_.tx.getFeePayer();
@@ -441,6 +456,7 @@ Transactor::payFee()
 NotTEC
 Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j)
 {
+    TRACE_FUNC();
     auto const id = tx.getAccountID(sfAccount);
 
     auto const sle = view.read(keylet::account(id));
@@ -506,6 +522,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
 NotTEC
 Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const id = ctx.tx.getAccountID(sfAccount);
 
     auto const sle = ctx.view.read(keylet::account(id));
@@ -534,6 +551,7 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(sleAccount, "xrpl::Transactor::consumeSeqProxy : non-null account");
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
@@ -555,6 +573,7 @@ Transactor::ticketDelete(
     uint256 const& ticketIndex,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
     SLE::pointer const sleTicket = view.peek(keylet::kTICKET(ticketIndex));
@@ -617,12 +636,14 @@ Transactor::ticketDelete(
 void
 Transactor::preCompute()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(account_ != beast::kZERO, "xrpl::Transactor::preCompute : nonzero account");
 }
 
 TER
 Transactor::apply()
 {
+    TRACE_FUNC();
     preCompute();
 
     // If the transactor requires a valid account and the transaction doesn't
@@ -665,6 +686,7 @@ Transactor::checkSign(
     STObject const& sigObject,
     beast::Journal const j)
 {
+    TRACE_FUNC();
     {
         auto const sle = view.read(keylet::account(idAccount));
 
@@ -725,6 +747,7 @@ Transactor::checkSign(
 NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const idAccount = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
                                                              : ctx.tx.getAccountID(sfAccount);
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
@@ -733,6 +756,7 @@ Transactor::checkSign(PreclaimContext const& ctx)
 NotTEC
 Transactor::checkBatchSign(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     NotTEC ret = tesSUCCESS;
     STArray const& signers{ctx.tx.getFieldArray(sfBatchSigners)};
     for (auto const& signer : signers)
@@ -782,6 +806,7 @@ Transactor::checkSingleSign(
     std::shared_ptr<SLE const> sleAccount,
     beast::Journal const j)
 {
+    TRACE_FUNC();
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
     // Signed with regular key.
@@ -814,6 +839,7 @@ Transactor::checkMultiSign(
     STObject const& sigObject,
     beast::Journal const j)
 {
+    TRACE_FUNC();
     // Get id's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
@@ -971,6 +997,7 @@ Transactor::checkMultiSign(
 static void
 removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast::Journal viewJ)
 {
+    TRACE_FUNC();
     int removed = 0;
 
     for (auto const& index : offers)
@@ -991,6 +1018,7 @@ removeExpiredNFTokenOffers(
     std::vector<uint256> const& offers,
     beast::Journal viewJ)
 {
+    TRACE_FUNC();
     std::size_t removed = 0;
 
     for (auto const& index : offers)
@@ -1007,6 +1035,7 @@ removeExpiredNFTokenOffers(
 static void
 removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
 {
+    TRACE_FUNC();
     for (auto const& index : creds)
     {
         if (auto const sle = view.peek(keylet::credential(index)))
@@ -1020,6 +1049,7 @@ removeDeletedTrustLines(
     std::vector<uint256> const& trustLines,
     beast::Journal viewJ)
 {
+    TRACE_FUNC();
     if (trustLines.size() > kMAX_DELETABLE_AMM_TRUST_LINES)
     {
         JLOG(viewJ.error()) << "removeDeletedTrustLines: deleted trustlines exceed max "
@@ -1040,6 +1070,7 @@ removeDeletedTrustLines(
 static void
 removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Journal viewJ)
 {
+    TRACE_FUNC();
     // There could be at most two MPTs - one for each side of AMM pool
     if (mpts.size() > 2)
     {
@@ -1065,6 +1096,7 @@ removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Jour
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
 {
+    TRACE_FUNC();
     ctx_.discard();
 
     auto const txnAcct = view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
@@ -1116,12 +1148,14 @@ Transactor::reset(XRPAmount fee)
 void
 Transactor::trapTransaction(uint256 txHash) const
 {
+    TRACE_FUNC();
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
 
 [[nodiscard]] TER
 Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
 {
+    TRACE_FUNC();
     try
     {
         // Phase 1: visit modified entries
@@ -1156,6 +1190,7 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
 [[nodiscard]] TER
 Transactor::checkInvariants(TER result, XRPAmount fee)
 {
+    TRACE_FUNC();
     // Transaction invariants first (more specific). These check post-conditions of the specific
     // transaction. If these fail, the transaction's core logic is wrong.
     auto const txResult = checkTransactionInvariants(result, fee);
@@ -1176,6 +1211,7 @@ Transactor::checkInvariants(TER result, XRPAmount fee)
 ApplyResult
 Transactor::operator()()
 {
+    TRACE_FUNC();
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
     // These global updates really should have been for every Transaction

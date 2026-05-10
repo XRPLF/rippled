@@ -22,6 +22,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -37,6 +38,7 @@ namespace xrpl::detail {
 void
 ApplyStateTable::apply(RawView& to) const
 {
+    TRACE_FUNC();
     to.rawDestroyXRP(dropsDestroyed_);
     for (auto const& item : items_)
     {
@@ -61,6 +63,7 @@ ApplyStateTable::apply(RawView& to) const
 std::size_t
 ApplyStateTable::size() const
 {
+    TRACE_FUNC();
     std::size_t ret = 0;
     for (auto& item : items_)
     {
@@ -86,6 +89,7 @@ ApplyStateTable::visit(
         std::shared_ptr<SLE const> const& before,
         std::shared_ptr<SLE const> const& after)> const& func) const
 {
+    TRACE_FUNC();
     for (auto& item : items_)
     {
         switch (item.second.first)
@@ -118,6 +122,7 @@ ApplyStateTable::apply(
     bool isDryRun,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Build metadata and insert
     auto const sTx = std::make_shared<Serializer>();
     tx.add(*sTx);
@@ -287,6 +292,7 @@ ApplyStateTable::apply(
 bool
 ApplyStateTable::exists(ReadView const& base, Keylet const& k) const
 {
+    TRACE_FUNC();
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.exists(k);
@@ -310,6 +316,7 @@ ApplyStateTable::succ(
     key_type const& key,
     std::optional<key_type> const& last) const -> std::optional<key_type>
 {
+    TRACE_FUNC();
     std::optional<key_type> next = key;
     items_t::const_iterator iter;
     // Find base successor that is
@@ -342,6 +349,7 @@ ApplyStateTable::succ(
 std::shared_ptr<SLE const>
 ApplyStateTable::read(ReadView const& base, Keylet const& k) const
 {
+    TRACE_FUNC();
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.read(k);
@@ -364,6 +372,7 @@ ApplyStateTable::read(ReadView const& base, Keylet const& k) const
 std::shared_ptr<SLE>
 ApplyStateTable::peek(ReadView const& base, Keylet const& k)
 {
+    TRACE_FUNC();
     auto iter = items_.lower_bound(k.key);
     if (iter == items_.end() || iter->first != k.key)
     {
@@ -398,6 +407,7 @@ ApplyStateTable::peek(ReadView const& base, Keylet const& k)
 void
 ApplyStateTable::erase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
         Throw<std::logic_error>("ApplyStateTable::erase: missing key");
@@ -422,6 +432,7 @@ ApplyStateTable::erase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 void
 ApplyStateTable::rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     using namespace std;
     auto const result = items_.emplace(
         piecewise_construct, forward_as_tuple(sle->key()), forward_as_tuple(Action::Erase, sle));
@@ -447,6 +458,7 @@ ApplyStateTable::rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 void
 ApplyStateTable::insert(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     auto const iter = items_.lower_bound(sle->key());
     if (iter == items_.end() || iter->first != sle->key())
     {
@@ -477,6 +489,7 @@ ApplyStateTable::insert(ReadView const& base, std::shared_ptr<SLE> const& sle)
 void
 ApplyStateTable::replace(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     auto const iter = items_.lower_bound(sle->key());
     if (iter == items_.end() || iter->first != sle->key())
     {
@@ -506,6 +519,7 @@ ApplyStateTable::replace(ReadView const& base, std::shared_ptr<SLE> const& sle)
 void
 ApplyStateTable::update(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
         Throw<std::logic_error>("ApplyStateTable::update: missing key");
@@ -529,6 +543,7 @@ ApplyStateTable::update(ReadView const& base, std::shared_ptr<SLE> const& sle)
 void
 ApplyStateTable::destroyXRP(XRPAmount const& fee)
 {
+    TRACE_FUNC();
     dropsDestroyed_ += fee;
 }
 
@@ -538,6 +553,7 @@ ApplyStateTable::destroyXRP(XRPAmount const& fee)
 void
 ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     key_type prevTxID;
     LedgerIndex prevLgrID = 0;
 
@@ -571,6 +587,7 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 std::shared_ptr<SLE>
 ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j)
 {
+    TRACE_FUNC();
     {
         auto miter = mods.find(key);
         if (miter != mods.end())
@@ -621,6 +638,7 @@ ApplyStateTable::threadTx(
     Mods& mods,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const sle = getForMod(base, keylet::account(to).key, mods, j);
     if (!sle)
     {
@@ -644,6 +662,7 @@ ApplyStateTable::threadOwners(
     Mods& mods,
     beast::Journal j)
 {
+    TRACE_FUNC();
     LedgerEntryType const ledgerType{sle->getType()};
     switch (ledgerType)
     {

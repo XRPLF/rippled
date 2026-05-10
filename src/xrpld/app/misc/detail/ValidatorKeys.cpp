@@ -11,12 +11,14 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/server/Manifest.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <utility>
 
 namespace xrpl {
 ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
 {
+    TRACE_FUNC();
     if (config.exists(SECTION_VALIDATOR_TOKEN) && config.exists(SECTION_VALIDATION_SEED))
     {
         configInvalid_ = true;

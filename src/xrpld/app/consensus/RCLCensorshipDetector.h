@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/algorithm.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <utility>
@@ -26,6 +27,7 @@ public:
     friend bool
     operator<(TxIDSeq const& lhs, TxIDSeq const& rhs)
     {
+    TRACE_FUNC();
         if (lhs.txid != rhs.txid)
             return lhs.txid < rhs.txid;
         return lhs.seq < rhs.seq;
@@ -34,12 +36,14 @@ public:
     friend bool
     operator<(TxIDSeq const& lhs, TxID const& rhs)
     {
+    TRACE_FUNC();
         return lhs.txid < rhs;
     }
 
     friend bool
     operator<(TxID const& lhs, TxIDSeq const& rhs)
     {
+    TRACE_FUNC();
         return lhs < rhs.txid;
     }
 
@@ -59,6 +63,7 @@ public:
     void
     propose(TxIDSeqVec proposed)
     {
+    TRACE_FUNC();
         // We want to remove any entries that we proposed in a previous round
         // that did not make it in yet if we are no longer proposing them.
         // And we also want to preserve the Sequence of entries that we proposed
@@ -91,6 +96,7 @@ public:
     void
     check(std::vector<TxID> accepted, Predicate&& pred)
     {
+    TRACE_FUNC();
         auto acceptTxid = accepted.begin();
         auto const ae = accepted.end();
         std::sort(acceptTxid, ae);
@@ -116,6 +122,7 @@ public:
     void
     reset()
     {
+    TRACE_FUNC();
         tracker_.clear();
     }
 };

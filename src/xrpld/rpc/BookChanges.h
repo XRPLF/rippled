@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -26,6 +27,7 @@ template <class L>
 json::Value
 computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 {
+    TRACE_FUNC();
     std::map<
         std::string,
         std::tuple<

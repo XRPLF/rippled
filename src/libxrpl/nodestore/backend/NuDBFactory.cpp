@@ -14,6 +14,7 @@
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -78,6 +79,7 @@ public:
         , deletePath(false)
         , scheduler(scheduler)
     {
+    TRACE_FUNC();
         if (name.empty())
             Throw<std::runtime_error>("nodestore: Missing path in NuDB backend");
     }
@@ -98,12 +100,14 @@ public:
         , deletePath(false)
         , scheduler(scheduler)
     {
+    TRACE_FUNC();
         if (name.empty())
             Throw<std::runtime_error>("nodestore: Missing path in NuDB backend");
     }
 
     ~NuDBBackend() override
     {
+    TRACE_FUNC();
         try
         {
             // close can throw and we don't want the destructor to throw.
@@ -119,18 +123,21 @@ public:
     std::string
     getName() override
     {
+    TRACE_FUNC();
         return name;
     }
 
     [[nodiscard]] std::optional<std::size_t>
     getBlockSize() const override
     {
+    TRACE_FUNC();
         return blockSize;
     }
 
     void
     open(bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt) override
     {
+    TRACE_FUNC();
         using namespace boost::filesystem;
         if (db.is_open())
         {
@@ -169,18 +176,21 @@ public:
     bool
     isOpen() override
     {
+    TRACE_FUNC();
         return db.is_open();
     }
 
     void
     open(bool createIfMissing) override
     {
+    TRACE_FUNC();
         open(createIfMissing, kAPPNUM, nudb::make_uid(), nudb::make_salt());
     }
 
     void
     close() override
     {
+    TRACE_FUNC();
         if (db.is_open())
         {
             nudb::error_code ec;
@@ -207,6 +217,7 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
+    TRACE_FUNC();
         Status status = Status::Ok;
         pno->reset();
         nudb::error_code ec;
@@ -235,6 +246,7 @@ public:
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256> const& hashes) override
     {
+    TRACE_FUNC();
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
         for (auto const& h : hashes)
@@ -257,6 +269,7 @@ public:
     void
     doInsert(std::shared_ptr<NodeObject> const& no)
     {
+    TRACE_FUNC();
         EncodedBlob const e(no);
         nudb::error_code ec;
         nudb::detail::buffer bf;
@@ -269,6 +282,7 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& no) override
     {
+    TRACE_FUNC();
         BatchWriteReport report{};
         report.writeCount = 1;
         auto const start = std::chrono::steady_clock::now();
@@ -281,6 +295,7 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
+    TRACE_FUNC();
         BatchWriteReport report{};
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
@@ -299,6 +314,7 @@ public:
     void
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
+    TRACE_FUNC();
         auto const dp = db.dat_path();
         auto const kp = db.key_path();
         auto const lp = db.log_path();
@@ -336,18 +352,21 @@ public:
     int
     getWriteLoad() override
     {
+    TRACE_FUNC();
         return 0;
     }
 
     void
     setDeletePath() override
     {
+    TRACE_FUNC();
         deletePath = true;
     }
 
     void
     verify() override
     {
+    TRACE_FUNC();
         auto const dp = db.dat_path();
         auto const kp = db.key_path();
         auto const lp = db.log_path();
@@ -367,6 +386,7 @@ public:
     [[nodiscard]] int
     fdRequired() const override
     {
+    TRACE_FUNC();
         return 3;
     }
 
@@ -374,6 +394,7 @@ private:
     static std::size_t
     parseBlockSize(std::string const& name, Section const& keyValues, beast::Journal journal)
     {
+    TRACE_FUNC();
         using namespace boost::filesystem;
         auto const folder = path(name);
         auto const kp = (folder / "nudb.key").string();
@@ -423,12 +444,14 @@ private:
 public:
     explicit NuDBFactory(Manager& manager) : manager_(manager)
     {
+    TRACE_FUNC();
         manager_.insert(*this);
     }
 
     [[nodiscard]] std::string
     getName() const override
     {
+    TRACE_FUNC();
         return "NuDB";
     }
 
@@ -440,6 +463,7 @@ public:
         Scheduler& scheduler,
         beast::Journal journal) override
     {
+    TRACE_FUNC();
         return std::make_unique<NuDBBackend>(keyBytes, keyValues, burstSize, scheduler, journal);
     }
 
@@ -452,6 +476,7 @@ public:
         nudb::context& context,
         beast::Journal journal) override
     {
+    TRACE_FUNC();
         return std::make_unique<NuDBBackend>(
             keyBytes, keyValues, burstSize, scheduler, context, journal);
     }
@@ -460,6 +485,7 @@ public:
 void
 registerNuDBFactory(Manager& manager)
 {
+    TRACE_FUNC();
     static NuDBFactory const kINSTANCE{manager};
 }
 

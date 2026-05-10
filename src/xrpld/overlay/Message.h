@@ -5,6 +5,7 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/messages.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -66,6 +67,7 @@ public:
     std::size_t
     getCategory() const
     {
+    TRACE_FUNC();
         return category_;
     }
 
@@ -73,6 +75,7 @@ public:
     std::optional<PublicKey> const&
     getValidatorKey() const
     {
+    TRACE_FUNC();
         return validatorKey_;
     }
 

@@ -24,6 +24,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -45,6 +46,7 @@ creditLimit(
     AccountID const& issuer,
     Currency const& currency)
 {
+    TRACE_FUNC();
     STAmount result(Issue{currency, account});
 
     auto sleRippleState = view.read(keylet::line(account, issuer, currency));
@@ -66,6 +68,7 @@ creditLimit(
 IOUAmount
 creditLimit2(ReadView const& v, AccountID const& acc, AccountID const& iss, Currency const& cur)
 {
+    TRACE_FUNC();
     return toAmount<IOUAmount>(creditLimit(v, acc, iss, cur));
 }
 
@@ -76,6 +79,7 @@ creditBalance(
     AccountID const& issuer,
     Currency const& currency)
 {
+    TRACE_FUNC();
     STAmount result(Issue{currency, account});
 
     auto sleRippleState = view.read(keylet::line(account, issuer, currency));
@@ -109,6 +113,7 @@ isIndividualFrozen(
     Currency const& currency,
     AccountID const& issuer)
 {
+    TRACE_FUNC();
     if (isXRP(currency))
         return false;
     if (issuer != account)
@@ -130,6 +135,7 @@ isFrozen(
     Currency const& currency,
     AccountID const& issuer)
 {
+    TRACE_FUNC();
     if (isXRP(currency))
         return false;
     auto sle = view.read(keylet::account(issuer));
@@ -152,6 +158,7 @@ isDeepFrozen(
     Currency const& currency,
     AccountID const& issuer)
 {
+    TRACE_FUNC();
     if (isXRP(currency))
     {
         return false;
@@ -197,6 +204,7 @@ trustCreate(
     std::uint32_t uQualityOut,
     beast::Journal j)
 {
+    TRACE_FUNC();
     JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
                     << to_string(uDstAccountID) << ", " << saBalance.getFullText();
 
@@ -299,6 +307,7 @@ trustDelete(
     AccountID const& uHighAccountID,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Detect legacy dirs.
     std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
     std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode);
@@ -339,6 +348,7 @@ updateTrustLine(
     STAmount const& after,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (!state)
         return false;
     std::uint32_t const flags(state->getFieldU32(sfFlags));
@@ -387,6 +397,7 @@ issueIOU(
     Issue const& issue,
     beast::Journal j)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         !isXRP(account) && !isXRP(issue.account),
         "xrpl::issueIOU : neither account nor issuer is XRP");
@@ -481,6 +492,7 @@ redeemIOU(
     Issue const& issue,
     beast::Journal j)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         !isXRP(account) && !isXRP(issue.account),
         "xrpl::redeemIOU : neither account nor issuer is XRP");
@@ -553,6 +565,7 @@ redeemIOU(
 TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, AuthType authType)
 {
+    TRACE_FUNC();
     if (isXRP(issue) || issue.account == account)
         return tesSUCCESS;
 
@@ -582,6 +595,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
 TER
 canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, AccountID const& to)
 {
+    TRACE_FUNC();
     if (issue.native())
         return tesSUCCESS;
 
@@ -625,6 +639,7 @@ addEmptyHolding(
     Issue const& issue,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     // Every account can hold XRP. An issuer can issue directly.
     if (issue.native() || accountID == issue.getIssuer())
         return tesSUCCESS;
@@ -678,6 +693,7 @@ removeEmptyHolding(
     Issue const& issue,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     if (issue.native())
     {
         auto const sle = view.read(keylet::account(accountID));
@@ -741,6 +757,7 @@ deleteAMMTrustLine(
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (!sleState || sleState->getType() != ltRIPPLE_STATE)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -789,6 +806,7 @@ deleteAMMMPToken(
     AccountID const& ammAccountID,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (!view.dirRemove(
             keylet::ownerDir(ammAccountID), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE

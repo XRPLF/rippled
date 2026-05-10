@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -12,6 +13,7 @@ namespace xrpl {
 json::Value
 doBookChanges(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     std::shared_ptr<ReadView const> ledger;
 
     json::Value result = RPC::lookupLedger(ledger, context);

@@ -24,6 +24,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -34,6 +35,7 @@ namespace xrpl {
 TxConsequences
 AccountSet::makeTxConsequences(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // The AccountSet may be a blocker, but only if it sets or clears
     // specific account flags.
     auto getTxConsequencesCategory = [](STTx const& tx) {
@@ -60,12 +62,14 @@ AccountSet::makeTxConsequences(PreflightContext const& ctx)
 std::uint32_t
 AccountSet::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfAccountSetMask;
 }
 
 NotTEC
 AccountSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -178,6 +182,7 @@ AccountSet::preflight(PreflightContext const& ctx)
 NotTEC
 AccountSet::checkPermission(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     // AccountSet is prohibited to be granted on a transaction level,
     // but some granular permissions are allowed.
     auto const delegate = tx[~sfDelegate];
@@ -227,6 +232,7 @@ AccountSet::checkPermission(ReadView const& view, STTx const& tx)
 TER
 AccountSet::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const id = ctx.tx[sfAccount];
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
@@ -290,6 +296,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
 TER
 AccountSet::doApply()
 {
+    TRACE_FUNC();
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -668,6 +675,7 @@ AccountSet::visitInvariantEntry(
 bool
 AccountSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

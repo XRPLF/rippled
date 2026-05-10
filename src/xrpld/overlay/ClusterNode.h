@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <string>
@@ -26,24 +27,28 @@ public:
     [[nodiscard]] std::string const&
     name() const
     {
+    TRACE_FUNC();
         return name_;
     }
 
     [[nodiscard]] std::uint32_t
     getLoadFee() const
     {
+    TRACE_FUNC();
         return loadFee_;
     }
 
     [[nodiscard]] NetClock::time_point
     getReportTime() const
     {
+    TRACE_FUNC();
         return reportTime_;
     }
 
     [[nodiscard]] PublicKey const&
     identity() const
     {
+    TRACE_FUNC();
         return identity_;
     }
 

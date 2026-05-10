@@ -14,6 +14,7 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/paths/detail/StrandFlow.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 #include <variant>
@@ -24,6 +25,7 @@ template <class FlowResult>
 static auto
 finishFlow(PaymentSandbox& sb, Asset const& srcAsset, Asset const& dstAsset, FlowResult&& f)
 {
+    TRACE_FUNC();
     path::RippleCalc::Output result;
     if (isTesSuccess(f.ter))
     {
@@ -58,6 +60,7 @@ flow(
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo)
 {
+    TRACE_FUNC();
     Asset const srcAsset = [&]() -> Asset {
         if (sendMax)
             return sendMax->asset();

@@ -14,6 +14,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -43,17 +44,20 @@ SkipListAcquire::SkipListAcquire(
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
 {
+    TRACE_FUNC();
     JLOG(journal_.trace()) << "Create " << hash_;
 }
 
 SkipListAcquire::~SkipListAcquire()
 {
+    TRACE_FUNC();
     JLOG(journal_.trace()) << "Destroy " << hash_;
 }
 
 void
 SkipListAcquire::init(int numPeers)
 {
+    TRACE_FUNC();
     ScopedLockType sl(mtx_);
     if (!isDone())
     {
@@ -65,6 +69,7 @@ SkipListAcquire::init(int numPeers)
 void
 SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
 {
+    TRACE_FUNC();
     if (auto const l = app_.getLedgerMaster().getLedgerByHash(hash_); l)
     {
         JLOG(journal_.trace()) << "existing ledger " << hash_;
@@ -111,6 +116,7 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
 void
 SkipListAcquire::onTimer(bool progress, ScopedLockType& sl)
 {
+    TRACE_FUNC();
     JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
     if (timeouts_ > LedgerReplayParameters::kSUB_TASK_MAX_TIMEOUTS)
     {
@@ -127,6 +133,7 @@ SkipListAcquire::onTimer(bool progress, ScopedLockType& sl)
 std::weak_ptr<TimeoutCounter>
 SkipListAcquire::pmDowncast()
 {
+    TRACE_FUNC();
     return shared_from_this();
 }
 
@@ -135,6 +142,7 @@ SkipListAcquire::processData(
     std::uint32_t ledgerSeq,
     boost::intrusive_ptr<SHAMapItem const> const& item)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(ledgerSeq != 0 && item, "xrpl::SkipListAcquire::processData : valid inputs");
     ScopedLockType sl(mtx_);
     if (isDone())
@@ -162,6 +170,7 @@ SkipListAcquire::processData(
 void
 SkipListAcquire::addDataCallback(OnSkipListDataCB&& cb)
 {
+    TRACE_FUNC();
     ScopedLockType sl(mtx_);
     dataReadyCallbacks_.emplace_back(std::move(cb));
     if (isDone())
@@ -174,6 +183,7 @@ SkipListAcquire::addDataCallback(OnSkipListDataCB&& cb)
 std::shared_ptr<SkipListAcquire::SkipListData const>
 SkipListAcquire::getData() const
 {
+    TRACE_FUNC();
     ScopedLockType const sl(mtx_);
     return data_;
 }
@@ -181,6 +191,7 @@ SkipListAcquire::getData() const
 void
 SkipListAcquire::retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, ScopedLockType& sl)
 {
+    TRACE_FUNC();
     if (auto const hashIndex = ledger->read(keylet::skip());
         hashIndex && hashIndex->isFieldPresent(sfHashes))
     {
@@ -203,6 +214,7 @@ SkipListAcquire::onSkipListAcquired(
     std::uint32_t ledgerSeq,
     ScopedLockType& sl)
 {
+    TRACE_FUNC();
     complete_ = true;
     data_ = std::make_shared<SkipListData>(ledgerSeq, skipList);
     JLOG(journal_.debug()) << "Skip list acquired " << hash_;
@@ -212,6 +224,7 @@ SkipListAcquire::onSkipListAcquired(
 void
 SkipListAcquire::notify(ScopedLockType& sl)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(isDone(), "xrpl::SkipListAcquire::notify : is done");
     std::vector<OnSkipListDataCB> toCall;
     std::swap(toCall, dataReadyCallbacks_);

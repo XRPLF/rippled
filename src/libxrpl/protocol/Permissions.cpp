@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 #include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -15,6 +16,7 @@ namespace xrpl {
 
 Permission::Permission()
 {
+    TRACE_FUNC();
     txFeatureMap_ = {
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
@@ -92,6 +94,7 @@ Permission::Permission()
 Permission const&
 Permission::getInstance()
 {
+    TRACE_FUNC();
     static Permission const kINSTANCE;
     return kINSTANCE;
 }
@@ -99,6 +102,7 @@ Permission::getInstance()
 std::optional<std::string>
 Permission::getPermissionName(std::uint32_t const value) const
 {
+    TRACE_FUNC();
     auto const permissionValue = static_cast<GranularPermissionType>(value);
     if (auto const granular = getGranularName(permissionValue))
         return granular;
@@ -114,6 +118,7 @@ Permission::getPermissionName(std::uint32_t const value) const
 std::optional<std::uint32_t>
 Permission::getGranularValue(std::string const& name) const
 {
+    TRACE_FUNC();
     auto const it = granularPermissionMap_.find(name);
     if (it != granularPermissionMap_.end())
         return static_cast<uint32_t>(it->second);
@@ -124,6 +129,7 @@ Permission::getGranularValue(std::string const& name) const
 std::optional<std::string>
 Permission::getGranularName(GranularPermissionType const& value) const
 {
+    TRACE_FUNC();
     auto const it = granularNameMap_.find(value);
     if (it != granularNameMap_.end())
         return it->second;
@@ -134,6 +140,7 @@ Permission::getGranularName(GranularPermissionType const& value) const
 std::optional<TxType>
 Permission::getGranularTxType(GranularPermissionType const& gpType) const
 {
+    TRACE_FUNC();
     auto const it = granularTxTypeMap_.find(gpType);
     if (it != granularTxTypeMap_.end())
         return it->second;
@@ -144,6 +151,7 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
 std::optional<std::reference_wrapper<uint256 const>>
 Permission::getTxFeature(TxType txType) const
 {
+    TRACE_FUNC();
     auto const txFeaturesIt = txFeatureMap_.find(txType);
     XRPL_ASSERT(
         txFeaturesIt != txFeatureMap_.end(),
@@ -157,6 +165,7 @@ Permission::getTxFeature(TxType txType) const
 bool
 Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const
 {
+    TRACE_FUNC();
     auto const granularPermission =
         getGranularName(static_cast<GranularPermissionType>(permissionValue));
     if (granularPermission)
@@ -191,12 +200,14 @@ Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules
 uint32_t
 Permission::txToPermissionType(TxType const& type)
 {
+    TRACE_FUNC();
     return static_cast<uint32_t>(type) + 1;
 }
 
 TxType
 Permission::permissionToTxType(uint32_t const& value)
 {
+    TRACE_FUNC();
     return static_cast<TxType>(value - 1);
 }
 

@@ -1,6 +1,7 @@
 #include <xrpl/basics/Archive.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -17,6 +18,7 @@ namespace xrpl {
 void
 extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const& dst)
 {
+    TRACE_FUNC();
     if (!is_regular_file(src))
         Throw<std::runtime_error>("Invalid source file");
 

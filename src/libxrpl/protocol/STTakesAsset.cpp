@@ -6,12 +6,14 @@
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
 void
 associateAsset(SLE& sle, Asset const& asset)
 {
+    TRACE_FUNC();
     // Iterating by offset is the only way to get non-const references
     for (int i = 0; i < sle.getCount(); ++i)
     {

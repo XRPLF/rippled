@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -28,6 +29,7 @@ namespace xrpl {
 Currency
 ammLPTCurrency(Asset const& asset1, Asset const& asset2)
 {
+    TRACE_FUNC();
     // AMM LPToken is 0x03 plus 19 bytes of the hash
     std::int32_t constexpr kAMM_CURRENCY_CODE = 0x03;
     auto const& [minA, maxA] = std::minmax(asset1, asset2);
@@ -52,12 +54,14 @@ ammLPTCurrency(Asset const& asset1, Asset const& asset2)
 Issue
 ammLPTIssue(Asset const& asset1, Asset const& asset2, AccountID const& ammAccountID)
 {
+    TRACE_FUNC();
     return Issue(ammLPTCurrency(asset1, asset2), ammAccountID);
 }
 
 NotTEC
 invalidAMMAsset(Asset const& asset, std::optional<std::pair<Asset, Asset>> const& pair)
 {
+    TRACE_FUNC();
     auto const err = asset.visit(
         [](MPTIssue const& issue) -> std::optional<NotTEC> {
             if (issue.getIssuer() == beast::kZERO)
@@ -84,6 +88,7 @@ invalidAMMAssetPair(
     Asset const& asset2,
     std::optional<std::pair<Asset, Asset>> const& pair)
 {
+    TRACE_FUNC();
     if (asset1 == asset2)
         return temBAD_AMM_TOKENS;
     if (auto const res = invalidAMMAsset(asset1, pair))
@@ -99,6 +104,7 @@ invalidAMMAmount(
     std::optional<std::pair<Asset, Asset>> const& pair,
     bool validZero)
 {
+    TRACE_FUNC();
     if (auto const res = invalidAMMAsset(amount.asset(), pair))
         return res;
     if (amount < beast::kZERO || (!validZero && amount == beast::kZERO))
@@ -109,6 +115,7 @@ invalidAMMAmount(
 std::optional<std::uint8_t>
 ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
 {
+    TRACE_FUNC();
     // It should be impossible for expiration to be < TOTAL_TIME_SLOT_SECS,
     // but check just to be safe
     auto const expiration = auctionSlot[sfExpiration];
@@ -128,6 +135,7 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
 bool
 ammEnabled(Rules const& rules)
 {
+    TRACE_FUNC();
     return rules.enabled(featureAMM) && rules.enabled(fixUniversalNumber);
 }
 

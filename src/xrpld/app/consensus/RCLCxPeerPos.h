@@ -7,6 +7,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/static_vector.hpp>
 
@@ -50,6 +51,7 @@ public:
     Slice
     signature() const
     {
+    TRACE_FUNC();
         return {signature_.data(), signature_.size()};
     }
 
@@ -57,6 +59,7 @@ public:
     PublicKey const&
     publicKey() const
     {
+    TRACE_FUNC();
         return publicKey_;
     }
 
@@ -64,12 +67,14 @@ public:
     uint256 const&
     suppressionID() const
     {
+    TRACE_FUNC();
         return suppression_;
     }
 
     Proposal const&
     proposal() const
     {
+    TRACE_FUNC();
         return proposal_;
     }
 
@@ -80,6 +85,7 @@ public:
     std::string
     render() const
     {
+    TRACE_FUNC();
         return proposal_.render();
     }
 
@@ -93,6 +99,7 @@ private:
     void
     hash_append(Hasher& h) const  // NOLINT(readability-identifier-naming)
     {
+    TRACE_FUNC();
         using beast::hash_append;
         hash_append(h, HashPrefix::Proposal);
         hash_append(h, proposal().proposeSeq());

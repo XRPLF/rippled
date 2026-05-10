@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/peerfinder/detail/Tuning.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl::PeerFinder {
 
@@ -18,6 +19,7 @@ public:
     [[nodiscard]] clock_type::time_point const&
     when() const
     {
+    TRACE_FUNC();
         return when_;
     }
 
@@ -25,6 +27,7 @@ public:
     void
     failure(clock_type::time_point const& now)
     {
+    TRACE_FUNC();
         failures_ = std::min(failures_ + 1, Tuning::kCONNECTION_BACKOFF.size() - 1);
         when_ = now + std::chrono::minutes(Tuning::kCONNECTION_BACKOFF[failures_]);
     }
@@ -33,6 +36,7 @@ public:
     void
     success(clock_type::time_point const& now)
     {
+    TRACE_FUNC();
         failures_ = 0;
         when_ = now;
     }

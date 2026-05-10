@@ -10,6 +10,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <functional>
@@ -31,12 +32,14 @@ ApplyViewImpl::apply(
     bool isDryRun,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return items_.apply(to, tx, ter, deliver_, parentBatchId, isDryRun, j);
 }
 
 std::size_t
 ApplyViewImpl::size()
 {
+    TRACE_FUNC();
     return items_.size();
 }
 
@@ -49,6 +52,7 @@ ApplyViewImpl::visit(
         std::shared_ptr<SLE const> const& before,
         std::shared_ptr<SLE const> const& after)> const& func)
 {
+    TRACE_FUNC();
     items_.visit(to, func);
 }
 

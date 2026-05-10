@@ -5,6 +5,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 
@@ -56,6 +57,7 @@ Squelch<ClockType>::addSquelch(
     PublicKey const& validator,
     std::chrono::seconds const& squelchDuration)
 {
+    TRACE_FUNC();
     if (squelchDuration >= kMIN_UNSQUELCH_EXPIRE && squelchDuration <= kMAX_UNSQUELCH_EXPIRE_PEERS)
     {
         squelched_[validator] = ClockType::now() + squelchDuration;
@@ -74,6 +76,7 @@ template <typename ClockType>
 void
 Squelch<ClockType>::removeSquelch(PublicKey const& validator)
 {
+    TRACE_FUNC();
     squelched_.erase(validator);
 }
 
@@ -81,6 +84,7 @@ template <typename ClockType>
 bool
 Squelch<ClockType>::expireSquelch(PublicKey const& validator)
 {
+    TRACE_FUNC();
     auto now = ClockType::now();
 
     auto const& it = squelched_.find(validator);

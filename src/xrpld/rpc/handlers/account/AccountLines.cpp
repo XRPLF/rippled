@@ -21,6 +21,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
@@ -37,6 +38,7 @@ namespace xrpl {
 void
 addLine(json::Value& jsonLines, RPCTrustLine const& line)
 {
+    TRACE_FUNC();
     STAmount const& saBalance(line.getBalance());
     STAmount const& saLimit(line.getLimit());
     STAmount const& saLimitPeer(line.getLimitPeer());
@@ -84,6 +86,7 @@ addLine(json::Value& jsonLines, RPCTrustLine const& line)
 json::Value
 doAccountLines(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto const& params(context.params);
     if (!params.isMember(jss::account))
         return RPC::missingFieldError(jss::account);

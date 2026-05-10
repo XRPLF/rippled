@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -35,6 +36,7 @@ namespace xrpl {
 bool
 checkNear(IOUAmount const& expected, IOUAmount const& actual)
 {
+    TRACE_FUNC();
     double const ratTol = 0.001;
     if (abs(expected.exponent() - actual.exponent()) > 1)
         return false;
@@ -57,6 +59,7 @@ checkNear(IOUAmount const& expected, IOUAmount const& actual)
 static bool
 isXRPAccount(STPathElement const& pe)
 {
+    TRACE_FUNC();
     if (pe.getNodeType() != STPathElement::TypeAccount)
         return false;
     return isXRP(pe.getAccountID());
@@ -69,6 +72,7 @@ toStep(
     STPathElement const* e2,
     Asset const& curAsset)
 {
+    TRACE_FUNC();
     auto& j = ctx.j;
 
     if (ctx.isFirst && e1->isAccount() &&
@@ -181,6 +185,7 @@ toStrand(
     std::optional<uint256> const& domainID,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (isXRP(src) || isXRP(dst) || !isConsistent(deliver) ||
         (sendMaxAsset && !isConsistent(*sendMaxAsset)))
         return {temBAD_PATH, Strand{}};
@@ -586,6 +591,7 @@ toStrands(
     std::optional<uint256> const& domainID,
     beast::Journal j)
 {
+    TRACE_FUNC();
     std::vector<Strand> result;
     result.reserve(1 + paths.size());
     // Insert the strand into result if it is not already part of the vector

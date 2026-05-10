@@ -7,6 +7,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/serialize.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -19,6 +20,7 @@ struct LedgerFill
         std::vector<TxQ::TxDetails> q = {})
         : ledger(l), options(o), txQueue(std::move(q)), context(ctx)
     {
+    TRACE_FUNC();
         if (context != nullptr)
             closeTime = context->ledgerMaster.getCloseTimeBySeq(ledger.seq());
     }

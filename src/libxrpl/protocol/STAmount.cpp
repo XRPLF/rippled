@@ -26,6 +26,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -55,6 +56,7 @@ static std::uint64_t const kTEN_TO17 = kTEN_TO14 * 1000;
 static std::int64_t
 getInt64Value(STAmount const& amount, bool valid, char const* error)
 {
+    TRACE_FUNC();
     if (!valid)
         Throw<std::runtime_error>(error);
     XRPL_ASSERT(amount.exponent() == 0, "xrpl::getInt64Value : exponent is zero");
@@ -74,18 +76,21 @@ getInt64Value(STAmount const& amount, bool valid, char const* error)
 static std::int64_t
 getSNValue(STAmount const& amount)
 {
+    TRACE_FUNC();
     return getInt64Value(amount, amount.native(), "amount is not native!");
 }
 
 static std::int64_t
 getMPTValue(STAmount const& amount)
 {
+    TRACE_FUNC();
     return getInt64Value(amount, amount.holds<MPTIssue>(), "amount is not MPT!");
 }
 
 static bool
 areComparable(STAmount const& v1, STAmount const& v2)
 {
+    TRACE_FUNC();
     return std::visit(
         [&]<ValidIssueType TIss1, ValidIssueType TIss2>(TIss1 const& issue1, TIss2 const& issue2) {
             if constexpr (kIS_ISSUE_V<TIss1> && kIS_ISSUE_V<TIss2>)
@@ -109,6 +114,7 @@ static_assert(kINITIAL_XRP.drops() == STAmount::kMAX_NATIVE_N);
 
 STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 {
+    TRACE_FUNC();
     std::uint64_t value = sit.get64();
 
     // native or MPT
@@ -192,12 +198,14 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 STAmount::STAmount(SField const& name, std::int64_t mantissa)
     : STBase(name), asset_(xrpIssue()), offset_(0)
 {
+    TRACE_FUNC();
     set(mantissa);
 }
 
 STAmount::STAmount(SField const& name, std::uint64_t mantissa, bool negative)
     : STBase(name), asset_(xrpIssue()), value_(mantissa), offset_(0), isNegative_(negative)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         value_ <= std::numeric_limits<std::int64_t>::max(),
         "xrpl::STAmount::STAmount(SField, std::uint64_t, bool) : maximum "
@@ -211,6 +219,7 @@ STAmount::STAmount(SField const& name, STAmount const& from)
     , offset_(from.offset_)
     , isNegative_(from.isNegative_)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         value_ <= std::numeric_limits<std::int64_t>::max(),
         "xrpl::STAmount::STAmount(SField, STAmount) : maximum input");
@@ -222,6 +231,7 @@ STAmount::STAmount(SField const& name, STAmount const& from)
 STAmount::STAmount(std::uint64_t mantissa, bool negative)
     : asset_(xrpIssue()), value_(mantissa), offset_(0), isNegative_(mantissa != 0 && negative)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         value_ <= std::numeric_limits<std::int64_t>::max(),
         "xrpl::STAmount::STAmount(std::uint64_t, bool) : maximum mantissa "
@@ -231,6 +241,7 @@ STAmount::STAmount(std::uint64_t mantissa, bool negative)
 STAmount::STAmount(XRPAmount const& amount)
     : asset_(xrpIssue()), offset_(0), isNegative_(amount < beast::kZERO)
 {
+    TRACE_FUNC();
     if (isNegative_)
     {
         value_ = unsafeCast<std::uint64_t>(-amount.drops());
@@ -246,18 +257,21 @@ STAmount::STAmount(XRPAmount const& amount)
 std::unique_ptr<STAmount>
 STAmount::construct(SerialIter& sit, SField const& name)
 {
+    TRACE_FUNC();
     return std::make_unique<STAmount>(sit, name);
 }
 
 STBase*
 STAmount::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STAmount::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
@@ -269,6 +283,7 @@ STAmount::move(std::size_t n, void* buf)
 XRPAmount
 STAmount::xrp() const
 {
+    TRACE_FUNC();
     if (!native())
         Throw<std::logic_error>("Cannot return non-native STAmount as XRPAmount");
 
@@ -284,6 +299,7 @@ STAmount::xrp() const
 IOUAmount
 STAmount::iou() const
 {
+    TRACE_FUNC();
     if (integral())
         Throw<std::logic_error>("Cannot return non-IOU STAmount as IOUAmount");
 
@@ -299,6 +315,7 @@ STAmount::iou() const
 MPTAmount
 STAmount::mpt() const
 {
+    TRACE_FUNC();
     if (!holds<MPTIssue>())
         Throw<std::logic_error>("Cannot return STAmount as MPTAmount");
 
@@ -314,6 +331,7 @@ STAmount::mpt() const
 STAmount&
 STAmount::operator=(IOUAmount const& iou)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(integral() == false, "xrpl::STAmount::operator=(IOUAmount) : is not integral");
     offset_ = iou.exponent();
     isNegative_ = iou < beast::kZERO;
@@ -331,6 +349,7 @@ STAmount::operator=(IOUAmount const& iou)
 STAmount&
 STAmount::operator=(Number const& number)
 {
+    TRACE_FUNC();
     if (!getCurrentTransactionRules() || isFeatureEnabled(featureSingleAssetVault) ||
         isFeatureEnabled(featureLendingProtocol))
     {
@@ -356,6 +375,7 @@ STAmount::operator=(Number const& number)
 STAmount&
 STAmount::operator+=(STAmount const& a)
 {
+    TRACE_FUNC();
     *this = *this + a;
     return *this;
 }
@@ -363,6 +383,7 @@ STAmount::operator+=(STAmount const& a)
 STAmount&
 STAmount::operator-=(STAmount const& a)
 {
+    TRACE_FUNC();
     *this = *this - a;
     return *this;
 }
@@ -370,6 +391,7 @@ STAmount::operator-=(STAmount const& a)
 STAmount
 operator+(STAmount const& v1, STAmount const& v2)
 {
+    TRACE_FUNC();
     if (!areComparable(v1, v2))
         Throw<std::runtime_error>("Can't add amounts that are't comparable!");
 
@@ -433,6 +455,7 @@ operator+(STAmount const& v1, STAmount const& v2)
 STAmount
 operator-(STAmount const& v1, STAmount const& v2)
 {
+    TRACE_FUNC();
     return v1 + (-v2);
 }
 
@@ -443,6 +466,7 @@ std::uint64_t const STAmount::kU_RATE_ONE = getRate(STAmount(1), STAmount(1));
 void
 STAmount::setIssue(Asset const& asset)
 {
+    TRACE_FUNC();
     asset_ = asset;
 }
 
@@ -458,6 +482,7 @@ STAmount::setIssue(Asset const& asset)
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn)
 {
+    TRACE_FUNC();
     if (offerOut == beast::kZERO)
         return 0;
 
@@ -500,6 +525,7 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
 bool
 canAdd(STAmount const& a, STAmount const& b)
 {
+    TRACE_FUNC();
     // cannot add different currencies
     if (!areComparable(a, b))
         return false;
@@ -577,6 +603,7 @@ canAdd(STAmount const& a, STAmount const& b)
 bool
 canSubtract(STAmount const& a, STAmount const& b)
 {
+    TRACE_FUNC();
     // Cannot subtract different currencies
     if (!areComparable(a, b))
         return false;
@@ -642,6 +669,7 @@ canSubtract(STAmount const& a, STAmount const& b)
 void
 STAmount::setJson(json::Value& elem) const
 {
+    TRACE_FUNC();
     elem = json::ObjectValue;
 
     if (!native())
@@ -666,12 +694,14 @@ STAmount::setJson(json::Value& elem) const
 SerializedTypeID
 STAmount::getSType() const
 {
+    TRACE_FUNC();
     return STI_AMOUNT;
 }
 
 std::string
 STAmount::getFullText() const
 {
+    TRACE_FUNC();
     std::string ret;
 
     ret.reserve(64);
@@ -682,6 +712,7 @@ STAmount::getFullText() const
 std::string
 STAmount::getText() const
 {
+    TRACE_FUNC();
     // keep full internal accuracy, but make more human friendly if possible
     if (*this == beast::kZERO)
         return "0";
@@ -770,6 +801,7 @@ STAmount::getText() const
 json::Value
 STAmount::getJson(JsonOptions) const
 {
+    TRACE_FUNC();
     json::Value elem;
     setJson(elem);
     return elem;
@@ -778,6 +810,7 @@ STAmount::getJson(JsonOptions) const
 void
 STAmount::add(Serializer& s) const
 {
+    TRACE_FUNC();
     asset_.visit(
         [&](MPTIssue const& issue) {
             auto u8 = static_cast<unsigned char>(kMP_TOKEN >> 56);
@@ -826,6 +859,7 @@ STAmount::add(Serializer& s) const
 bool
 STAmount::isEquivalent(STBase const& t) const
 {
+    TRACE_FUNC();
     STAmount const* v = dynamic_cast<STAmount const*>(&t);
     return (v != nullptr) && (*v == *this);
 }
@@ -833,6 +867,7 @@ STAmount::isEquivalent(STBase const& t) const
 bool
 STAmount::isDefault() const
 {
+    TRACE_FUNC();
     return (value_ == 0) && native();
 }
 
@@ -857,6 +892,7 @@ STAmount::isDefault() const
 void
 STAmount::canonicalize()
 {
+    TRACE_FUNC();
     if (integral())
     {
         // native and MPT currency amounts should always have an offset of zero
@@ -988,6 +1024,7 @@ STAmount::canonicalize()
 void
 STAmount::set(std::int64_t v)
 {
+    TRACE_FUNC();
     if (v < 0)
     {
         isNegative_ = true;
@@ -1005,6 +1042,7 @@ STAmount::set(std::int64_t v)
 STAmount
 amountFromQuality(std::uint64_t rate)
 {
+    TRACE_FUNC();
     if (rate == 0)
         return STAmount(noIssue());
 
@@ -1017,6 +1055,7 @@ amountFromQuality(std::uint64_t rate)
 STAmount
 amountFromString(Asset const& asset, std::string const& amount)
 {
+    TRACE_FUNC();
     auto const parts = partsFromString(amount);
     if ((asset.native() || asset.holds<MPTIssue>()) && parts.exponent < 0)
         Throw<std::runtime_error>("XRP and MPT must be specified as integral amount.");
@@ -1026,6 +1065,7 @@ amountFromString(Asset const& asset, std::string const& amount)
 STAmount
 amountFromJson(SField const& name, json::Value const& v)
 {
+    TRACE_FUNC();
     Asset asset;
 
     json::Value value;
@@ -1150,6 +1190,7 @@ amountFromJson(SField const& name, json::Value const& v)
 bool
 amountFromJsonNoThrow(STAmount& result, json::Value const& jvSource)
 {
+    TRACE_FUNC();
     try
     {
         result = amountFromJson(kSF_GENERIC, jvSource);
@@ -1171,6 +1212,7 @@ amountFromJsonNoThrow(STAmount& result, json::Value const& jvSource)
 bool
 operator==(STAmount const& lhs, STAmount const& rhs)
 {
+    TRACE_FUNC();
     return areComparable(lhs, rhs) && lhs.negative() == rhs.negative() &&
         lhs.exponent() == rhs.exponent() && lhs.mantissa() == rhs.mantissa();
 }
@@ -1178,6 +1220,7 @@ operator==(STAmount const& lhs, STAmount const& rhs)
 bool
 operator<(STAmount const& lhs, STAmount const& rhs)
 {
+    TRACE_FUNC();
     if (!areComparable(lhs, rhs))
         Throw<std::runtime_error>("Can't compare amounts that are't comparable!");
 
@@ -1212,6 +1255,7 @@ operator<(STAmount const& lhs, STAmount const& rhs)
 STAmount
 operator-(STAmount const& value)
 {
+    TRACE_FUNC();
     if (value.mantissa() == 0)
         return value;
     return STAmount(
@@ -1234,6 +1278,7 @@ operator-(STAmount const& value)
 static std::uint64_t
 muldiv(std::uint64_t multiplier, std::uint64_t multiplicand, std::uint64_t divisor)
 {
+    TRACE_FUNC();
     boost::multiprecision::uint128_t ret;
 
     boost::multiprecision::multiply(ret, multiplier, multiplicand);
@@ -1256,6 +1301,7 @@ muldivRound(
     std::uint64_t divisor,
     std::uint64_t rounding)
 {
+    TRACE_FUNC();
     boost::multiprecision::uint128_t ret;
 
     boost::multiprecision::multiply(ret, multiplier, multiplicand);
@@ -1275,6 +1321,7 @@ muldivRound(
 STAmount
 divide(STAmount const& num, STAmount const& den, Asset const& asset)
 {
+    TRACE_FUNC();
     if (den == beast::kZERO)
         Throw<std::runtime_error>("division by zero");
 
@@ -1320,6 +1367,7 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
 STAmount
 multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
 {
+    TRACE_FUNC();
     if (v1 == beast::kZERO || v2 == beast::kZERO)
         return STAmount(asset);
 
@@ -1413,6 +1461,7 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
 static void
 canonicalizeRound(bool integral, std::uint64_t& value, int& offset, bool)
 {
+    TRACE_FUNC();
     if (integral)
     {
         if (offset < 0)
@@ -1452,6 +1501,7 @@ canonicalizeRound(bool integral, std::uint64_t& value, int& offset, bool)
 static void
 canonicalizeRoundStrict(bool integral, std::uint64_t& value, int& offset, bool roundUp)
 {
+    TRACE_FUNC();
     if (integral)
     {
         if (offset < 0)
@@ -1489,6 +1539,7 @@ canonicalizeRoundStrict(bool integral, std::uint64_t& value, int& offset, bool r
 STAmount
 roundToScale(STAmount const& value, std::int32_t scale, Number::RoundingMode rounding)
 {
+    TRACE_FUNC();
     // Nothing to do for integral types.
     if (value.integral())
         return value;
@@ -1540,6 +1591,7 @@ template <void (*CanonicalizeFunc)(bool, std::uint64_t&, int&, bool), typename M
 static STAmount
 mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp)
 {
+    TRACE_FUNC();
     if (v1 == beast::kZERO || v2 == beast::kZERO)
         return {asset};
 
@@ -1639,12 +1691,14 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
 STAmount
 mulRound(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp)
 {
+    TRACE_FUNC();
     return mulRoundImpl<canonicalizeRound, DontAffectNumberRoundMode>(v1, v2, asset, roundUp);
 }
 
 STAmount
 mulRoundStrict(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp)
 {
+    TRACE_FUNC();
     return mulRoundImpl<canonicalizeRoundStrict, NumberRoundModeGuard>(v1, v2, asset, roundUp);
 }
 
@@ -1654,6 +1708,7 @@ template <typename MightSaveRound>
 static STAmount
 divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool roundUp)
 {
+    TRACE_FUNC();
     if (den == beast::kZERO)
         Throw<std::runtime_error>("division by zero");
 
@@ -1730,12 +1785,14 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
 STAmount
 divRound(STAmount const& num, STAmount const& den, Asset const& asset, bool roundUp)
 {
+    TRACE_FUNC();
     return divRoundImpl<DontAffectNumberRoundMode>(num, den, asset, roundUp);
 }
 
 STAmount
 divRoundStrict(STAmount const& num, STAmount const& den, Asset const& asset, bool roundUp)
 {
+    TRACE_FUNC();
     return divRoundImpl<NumberRoundModeGuard>(num, den, asset, roundUp);
 }
 

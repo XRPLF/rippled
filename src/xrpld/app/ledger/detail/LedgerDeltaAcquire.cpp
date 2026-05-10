@@ -18,6 +18,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <xrpl.pb.h>
 
@@ -50,17 +51,20 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
     , ledgerSeq_(ledgerSeq)
     , peerSet_(std::move(peerSet))
 {
+    TRACE_FUNC();
     JLOG(journal_.trace()) << "Create " << hash_ << " Seq " << ledgerSeq;
 }
 
 LedgerDeltaAcquire::~LedgerDeltaAcquire()
 {
+    TRACE_FUNC();
     JLOG(journal_.trace()) << "Destroy " << hash_;
 }
 
 void
 LedgerDeltaAcquire::init(int numPeers)
 {
+    TRACE_FUNC();
     ScopedLockType sl(mtx_);
     if (!isDone())
     {
@@ -72,6 +76,7 @@ LedgerDeltaAcquire::init(int numPeers)
 void
 LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
 {
+    TRACE_FUNC();
     fullLedger_ = app_.getLedgerMaster().getLedgerByHash(hash_);
     if (fullLedger_)
     {
@@ -116,6 +121,7 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
 void
 LedgerDeltaAcquire::onTimer(bool progress, ScopedLockType& sl)
 {
+    TRACE_FUNC();
     JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
     if (timeouts_ > LedgerReplayParameters::kSUB_TASK_MAX_TIMEOUTS)
     {
@@ -132,6 +138,7 @@ LedgerDeltaAcquire::onTimer(bool progress, ScopedLockType& sl)
 std::weak_ptr<TimeoutCounter>
 LedgerDeltaAcquire::pmDowncast()
 {
+    TRACE_FUNC();
     return shared_from_this();
 }
 
@@ -140,6 +147,7 @@ LedgerDeltaAcquire::processData(
     LedgerHeader const& info,
     std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns)
 {
+    TRACE_FUNC();
     ScopedLockType sl(mtx_);
     JLOG(journal_.trace()) << "got data for " << hash_;
     if (isDone())
@@ -168,6 +176,7 @@ LedgerDeltaAcquire::processData(
 void
 LedgerDeltaAcquire::addDataCallback(InboundLedger::Reason reason, OnDeltaDataCB&& cb)
 {
+    TRACE_FUNC();
     ScopedLockType sl(mtx_);
     dataReadyCallbacks_.emplace_back(std::move(cb));
     if (!reasons_.contains(reason))
@@ -187,6 +196,7 @@ LedgerDeltaAcquire::addDataCallback(InboundLedger::Reason reason, OnDeltaDataCB&
 std::shared_ptr<Ledger const>
 LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
 {
+    TRACE_FUNC();
     ScopedLockType sl(mtx_);
 
     if (fullLedger_)
@@ -221,6 +231,7 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
 void
 LedgerDeltaAcquire::onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedger::Reason> reason)
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << "onLedgerBuilt " << hash_ << (reason ? " for a new reason" : "");
 
     std::vector<InboundLedger::Reason> reasons(reasons_.begin(), reasons_.end());
@@ -254,6 +265,7 @@ LedgerDeltaAcquire::onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedge
 void
 LedgerDeltaAcquire::notify(ScopedLockType& sl)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(isDone(), "xrpl::LedgerDeltaAcquire::notify : is done");
     std::vector<OnDeltaDataCB> toCall;
     std::swap(toCall, dataReadyCallbacks_);

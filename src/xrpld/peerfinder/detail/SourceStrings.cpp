@@ -4,6 +4,7 @@
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <string>
@@ -24,12 +25,14 @@ public:
     std::string const&
     name() override
     {
+    TRACE_FUNC();
         return name_;
     }
 
     void
     fetch(Results& results, beast::Journal journal) override
     {
+    TRACE_FUNC();
         results.addresses.resize(0);
         results.addresses.reserve(strings_.size());
         for (int i = 0; i < strings_.size(); ++i)
@@ -52,6 +55,7 @@ private:
 std::shared_ptr<Source>
 SourceStrings::make(std::string const& name, Strings const& strings)
 {
+    TRACE_FUNC();
     return std::make_shared<SourceStringsImp>(name, strings);
 }
 

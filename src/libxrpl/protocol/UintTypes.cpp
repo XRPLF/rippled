@@ -3,6 +3,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -35,6 +36,7 @@ constexpr std::size_t kISO_CODE_LENGTH = 3;
 std::string
 to_string(Currency const& currency)
 {
+    TRACE_FUNC();
     if (currency == beast::kZERO)
         return systemCurrencyCode();
 
@@ -64,6 +66,7 @@ to_string(Currency const& currency)
 bool
 toCurrency(Currency& currency, std::string const& code)
 {
+    TRACE_FUNC();
     if (code.empty() || (code.compare(systemCurrencyCode()) == 0))
     {
         currency = beast::kZERO;
@@ -89,6 +92,7 @@ toCurrency(Currency& currency, std::string const& code)
 Currency
 toCurrency(std::string const& code)
 {
+    TRACE_FUNC();
     Currency currency;
     if (!toCurrency(currency, code))
         currency = noCurrency();
@@ -98,6 +102,7 @@ toCurrency(std::string const& code)
 Currency const&
 xrpCurrency()
 {
+    TRACE_FUNC();
     static Currency const kCURRENCY(beast::kZERO);
     return kCURRENCY;
 }
@@ -105,6 +110,7 @@ xrpCurrency()
 Currency const&
 noCurrency()
 {
+    TRACE_FUNC();
     static Currency const kCURRENCY(1);
     return kCURRENCY;
 }
@@ -112,6 +118,7 @@ noCurrency()
 Currency const&
 badCurrency()
 {
+    TRACE_FUNC();
     static Currency const kCURRENCY(0x5852500000000000);
     return kCURRENCY;
 }

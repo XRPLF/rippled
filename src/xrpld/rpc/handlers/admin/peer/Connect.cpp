@@ -10,6 +10,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <string>
 
@@ -23,6 +24,7 @@ namespace xrpl {
 json::Value
 doConnect(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (context.app.config().standalone())
     {
         return RPC::makeError(RpcNotSynced);

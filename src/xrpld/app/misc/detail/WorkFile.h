@@ -5,6 +5,7 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/io_context.hpp>
@@ -51,6 +52,7 @@ inline WorkFile::WorkFile(std::string path, boost::asio::io_context& ios, callba
 
 inline WorkFile::~WorkFile()
 {
+    TRACE_FUNC();
     if (cb_)
         cb_(make_error_code(boost::system::errc::interrupted), {});
 }
@@ -58,6 +60,7 @@ inline WorkFile::~WorkFile()
 inline void
 WorkFile::run()
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         boost::asio::post(
@@ -77,6 +80,7 @@ WorkFile::run()
 inline void
 WorkFile::cancel()
 {
+    TRACE_FUNC();
     // Nothing to do. Either it finished in run, or it didn't start.
 }
 

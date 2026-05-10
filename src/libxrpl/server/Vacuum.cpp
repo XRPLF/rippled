@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -20,6 +21,7 @@ namespace xrpl {
 bool
 doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
+    TRACE_FUNC();
     boost::filesystem::path const dbPath = setup.dataDir / kTX_DB_NAME;
 
     uintmax_t const dbSize = file_size(dbPath);

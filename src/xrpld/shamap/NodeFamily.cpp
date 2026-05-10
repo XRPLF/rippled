@@ -12,6 +12,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/shamap/FullBelowCache.h>
 #include <xrpl/shamap/TreeNodeCache.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <cstdint>
@@ -45,6 +46,7 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
 void
 NodeFamily::sweep()
 {
+    TRACE_FUNC();
     fbCache_->sweep();
     tnCache_->sweep();
 }
@@ -52,6 +54,7 @@ NodeFamily::sweep()
 void
 NodeFamily::reset()
 {
+    TRACE_FUNC();
     {
         std::scoped_lock const lock(maxSeqMutex_);
         maxSeq_ = 0;
@@ -64,6 +67,7 @@ NodeFamily::reset()
 void
 NodeFamily::missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& nodeHash)
 {
+    TRACE_FUNC();
     JLOG(j_.error()) << "Missing node in " << seq;
     std::unique_lock<std::mutex> lock(maxSeqMutex_);
     if (maxSeq_ == 0)
@@ -93,6 +97,7 @@ NodeFamily::missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& nodeHash)
 void
 NodeFamily::acquire(uint256 const& hash, std::uint32_t seq)
 {
+    TRACE_FUNC();
     if (hash.isNonZero())
     {
         JLOG(j_.error()) << "Missing node in " << to_string(hash);

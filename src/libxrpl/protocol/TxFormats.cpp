@@ -1,5 +1,6 @@
 #include <xrpl/protocol/TxFormats.h>
 
+#include <xrpl/basics/TraceLog.h>
 #include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
@@ -12,6 +13,7 @@ namespace xrpl {
 std::vector<SOElement> const&
 TxFormats::getCommonFields()
 {
+    TRACE_FUNC();
     static auto const kCOMMON_FIELDS = std::vector<SOElement>{
         {sfTransactionType, SoeRequired},
         {sfFlags, SoeOptional},
@@ -36,6 +38,7 @@ TxFormats::getCommonFields()
 
 TxFormats::TxFormats()
 {
+    TRACE_FUNC();
 #pragma push_macro("UNWRAP")
 #undef UNWRAP
 #pragma push_macro("TRANSACTION")
@@ -56,6 +59,7 @@ TxFormats::TxFormats()
 TxFormats const&
 TxFormats::getInstance()
 {
+    TRACE_FUNC();
     static TxFormats const kINSTANCE;
     return kINSTANCE;
 }

@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 
@@ -17,6 +18,7 @@ namespace xrpl {
 static std::optional<Seed>
 validationSeed(json::Value const& params)
 {
+    TRACE_FUNC();
     if (!params.isMember(jss::secret))
         return randomSeed();
 
@@ -32,6 +34,7 @@ validationSeed(json::Value const& params)
 json::Value
 doValidationCreate(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     json::Value obj(json::ObjectValue);
 
     auto seed = validationSeed(context.params);

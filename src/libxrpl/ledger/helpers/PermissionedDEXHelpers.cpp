@@ -11,6 +11,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 
@@ -19,6 +20,7 @@ namespace xrpl::permissioned_dex {
 bool
 accountInDomain(ReadView const& view, AccountID const& account, Domain const& domainID)
 {
+    TRACE_FUNC();
     auto const sleDomain = view.read(keylet::permissionedDomain(domainID));
     if (!sleDomain)
         return false;
@@ -48,6 +50,7 @@ offerInDomain(
     Domain const& domainID,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const sleOffer = view.read(keylet::offer(offerID));
 
     // The following are defensive checks that should never happen, since this

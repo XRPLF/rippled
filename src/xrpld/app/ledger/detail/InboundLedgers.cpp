@@ -25,6 +25,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <xrpl.pb.h>
 
@@ -74,6 +75,7 @@ public:
     std::shared_ptr<Ledger const>
     acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
+    TRACE_FUNC();
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
             XRPL_ASSERT(
                 hash.isNonZero(), "xrpl::InboundLedgersImp::acquire::doAcquire : nonzero hash");
@@ -129,6 +131,7 @@ public:
     void
     acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
+    TRACE_FUNC();
         std::unique_lock lock(acquiresMutex_);
         try
         {
@@ -153,6 +156,7 @@ public:
     std::shared_ptr<InboundLedger>
     find(uint256 const& hash) override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(hash.isNonZero(), "xrpl::InboundLedgersImp::find : nonzero input");
 
         std::shared_ptr<InboundLedger> ret;
@@ -190,6 +194,7 @@ public:
         std::shared_ptr<Peer> peer,
         std::shared_ptr<protocol::TMLedgerData> packet) override
     {
+    TRACE_FUNC();
         if (auto ledger = find(hash))
         {
             JLOG(j_.trace()) << "Got data (" << packet->nodes().size()
@@ -222,6 +227,7 @@ public:
     void
     logFailure(uint256 const& h, std::uint32_t seq) override
     {
+    TRACE_FUNC();
         ScopedLockType const sl(lock_);
 
         recentFailures_.emplace(h, seq);
@@ -230,6 +236,7 @@ public:
     bool
     isFailure(uint256 const& h) override
     {
+    TRACE_FUNC();
         ScopedLockType const sl(lock_);
 
         beast::expire(recentFailures_, kREACQUIRE_INTERVAL);
@@ -245,6 +252,7 @@ public:
     void
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packetPtr) override
     {
+    TRACE_FUNC();
         Serializer s;
         try
         {
@@ -275,6 +283,7 @@ public:
     void
     clearFailures() override
     {
+    TRACE_FUNC();
         ScopedLockType const sl(lock_);
 
         recentFailures_.clear();
@@ -284,6 +293,7 @@ public:
     std::size_t
     fetchRate() override
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(fetchRateMutex_);
         return 60 * fetchRate_.value(clock_.now());
     }
@@ -293,6 +303,7 @@ public:
     void
     onLedgerFetched() override
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(fetchRateMutex_);
         fetchRate_.add(1, clock_.now());
     }
@@ -300,6 +311,7 @@ public:
     json::Value
     getInfo() override
     {
+    TRACE_FUNC();
         json::Value ret(json::ObjectValue);
 
         std::vector<std::pair<uint256, std::shared_ptr<InboundLedger>>> acqs;
@@ -346,6 +358,7 @@ public:
     void
     gotFetchPack() override
     {
+    TRACE_FUNC();
         std::vector<std::shared_ptr<InboundLedger>> acquires;
         {
             ScopedLockType const sl(lock_);
@@ -370,6 +383,7 @@ public:
     void
     sweep() override
     {
+    TRACE_FUNC();
         auto const start = clock_.now();
 
         // Make a list of things to sweep, while holding the lock
@@ -418,6 +432,7 @@ public:
     void
     stop() override
     {
+    TRACE_FUNC();
         ScopedLockType const lock(lock_);
         stopping_ = true;
         ledgers_.clear();
@@ -427,6 +442,7 @@ public:
     std::size_t
     cacheSize() override
     {
+    TRACE_FUNC();
         ScopedLockType const lock(lock_);
         return ledgers_.size();
     }
@@ -459,6 +475,7 @@ makeInboundLedgers(
     InboundLedgers::clock_type& clock,
     beast::insight::Collector::ptr const& collector)
 {
+    TRACE_FUNC();
     return std::make_unique<InboundLedgersImp>(app, clock, collector, makePeerSetBuilder(app));
 }
 

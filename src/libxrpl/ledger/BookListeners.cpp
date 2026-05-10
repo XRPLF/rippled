@@ -4,6 +4,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <mutex>
@@ -13,6 +14,7 @@ namespace xrpl {
 void
 BookListeners::addSubscriber(InfoSub::ref sub)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
     listeners_[sub->getSeq()] = sub;
 }
@@ -20,6 +22,7 @@ BookListeners::addSubscriber(InfoSub::ref sub)
 void
 BookListeners::removeSubscriber(std::uint64_t seq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
     listeners_.erase(seq);
 }
@@ -27,6 +30,7 @@ BookListeners::removeSubscriber(std::uint64_t seq)
 void
 BookListeners::publish(MultiApiJson const& jvObj, hash_set<std::uint64_t>& havePublished)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
     auto it = listeners_.cbegin();
 

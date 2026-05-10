@@ -14,6 +14,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <xrpl.pb.h>
 
@@ -50,6 +51,7 @@ TransactionAcquire::TransactionAcquire(
           app.getJournal("TransactionAcquire"))
     , peerSet_(std::move(peerSet))
 {
+    TRACE_FUNC();
     map_ = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app_.getNodeFamily());
     map_->setUnbacked();
 }
@@ -57,6 +59,7 @@ TransactionAcquire::TransactionAcquire(
 void
 TransactionAcquire::done()
 {
+    TRACE_FUNC();
     // We hold a PeerSet lock and so cannot do real work here
 
     if (failed_)
@@ -85,6 +88,7 @@ TransactionAcquire::done()
 void
 TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 {
+    TRACE_FUNC();
     if (timeouts_ > MaxTimeouts)
     {
         failed_ = true;
@@ -101,12 +105,14 @@ TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 std::weak_ptr<TimeoutCounter>
 TransactionAcquire::pmDowncast()
 {
+    TRACE_FUNC();
     return shared_from_this();
 }
 
 void
 TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 {
+    TRACE_FUNC();
     if (complete_)
     {
         JLOG(journal_.info()) << "trigger after complete";
@@ -178,6 +184,7 @@ TransactionAcquire::takeNodes(
     std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
     std::shared_ptr<Peer> const& peer)
 {
+    TRACE_FUNC();
     ScopedLockType const sl(mtx_);
 
     if (complete_)
@@ -238,6 +245,7 @@ TransactionAcquire::takeNodes(
 void
 TransactionAcquire::addPeers(std::size_t limit)
 {
+    TRACE_FUNC();
     peerSet_->addPeers(
         limit,
         [this](auto peer) { return peer->hasTxSet(hash_); },
@@ -247,6 +255,7 @@ TransactionAcquire::addPeers(std::size_t limit)
 void
 TransactionAcquire::init(int numPeers)
 {
+    TRACE_FUNC();
     ScopedLockType sl(mtx_);
 
     addPeers(numPeers);
@@ -257,6 +266,7 @@ TransactionAcquire::init(int numPeers)
 void
 TransactionAcquire::stillNeed()
 {
+    TRACE_FUNC();
     ScopedLockType const sl(mtx_);
 
     timeouts_ = std::min<int>(timeouts_, NormTimeouts);

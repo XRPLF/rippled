@@ -30,6 +30,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <exception>
@@ -45,6 +46,7 @@ namespace xrpl {
 static Expected<std::uint32_t, json::Value>
 getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     // autofill Sequence
     bool const hasTicketSeq = txJson.isMember(sfTicketSequence.jsonName);
     auto const& accountStr = txJson[jss::Account];
@@ -78,6 +80,7 @@ getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
 static std::optional<json::Value>
 autofillSignature(json::Value& sigObject)
 {
+    TRACE_FUNC();
     if (!sigObject.isMember(jss::SigningPubKey))
     {
         // autofill SigningPubKey
@@ -131,6 +134,7 @@ autofillSignature(json::Value& sigObject)
 static std::optional<json::Value>
 autofillTx(json::Value& txJson, RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (!txJson.isMember(jss::Fee))
     {
         // autofill Fee
@@ -172,6 +176,7 @@ autofillTx(json::Value& txJson, RPC::JsonContext& context)
 static json::Value
 getTxJsonFromParams(json::Value const& params)
 {
+    TRACE_FUNC();
     json::Value txJson;
 
     if (params.isMember(jss::tx_blob))
@@ -231,6 +236,7 @@ getTxJsonFromParams(json::Value const& params)
 static json::Value
 simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 {
+    TRACE_FUNC();
     json::Value jvResult;
     // Process the transaction
     OpenView view = *context.app.getOpenLedger().current();
@@ -306,6 +312,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 json::Value
 doSimulate(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
     json::Value txJson;  // the tx as a JSON

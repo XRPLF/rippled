@@ -4,6 +4,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/Job.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
 
@@ -97,6 +98,7 @@ protected:
     bool
     isDone() const
     {
+    TRACE_FUNC();
         return complete_ || failed_;
     }
 

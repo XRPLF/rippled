@@ -6,6 +6,7 @@
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 
@@ -13,6 +14,7 @@ namespace xrpl::RPC {
 
 LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app)
 {
+    TRACE_FUNC();
     if (isAdmin)
     {
         ++inProgress;
@@ -41,6 +43,7 @@ LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app)
 
 LegacyPathFind::~LegacyPathFind()
 {
+    TRACE_FUNC();
     if (isOk_)
         --inProgress;
 }

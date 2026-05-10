@@ -13,6 +13,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -22,12 +23,14 @@ namespace xrpl {
 std::uint32_t
 MPTokenAuthorize::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfMPTokenAuthorizeMask;
 }
 
 NotTEC
 MPTokenAuthorize::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfAccount] == ctx.tx[~sfHolder])
         return temMALFORMED;
 
@@ -37,6 +40,7 @@ MPTokenAuthorize::preflight(PreflightContext const& ctx)
 TER
 MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfHolder];
 
@@ -145,6 +149,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 TER
 MPTokenAuthorize::doApply()
 {
+    TRACE_FUNC();
     auto const& tx = ctx_.tx;
     return authorizeMPToken(
         ctx_.view(),
@@ -172,6 +177,7 @@ MPTokenAuthorize::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

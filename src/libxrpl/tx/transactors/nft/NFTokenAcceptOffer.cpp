@@ -19,6 +19,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -30,6 +31,7 @@ namespace xrpl {
 NotTEC
 NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const bo = ctx.tx[~sfNFTokenBuyOffer];
     auto const so = ctx.tx[~sfNFTokenSellOffer];
 
@@ -54,6 +56,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const checkOffer =
         [&ctx](std::optional<uint256> id) -> std::pair<std::shared_ptr<const SLE>, TER> {
         if (id)
@@ -332,6 +335,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount const& amount)
 {
+    TRACE_FUNC();
     // This should never happen, but it's easy and quick to check.
     if (amount < beast::kZERO)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -358,6 +362,7 @@ NFTokenAcceptOffer::transferNFToken(
     AccountID const& seller,
     uint256 const& nftokenID)
 {
+    TRACE_FUNC();
     auto tokenAndPage = nft::findTokenAndPage(view(), seller, nftokenID);
 
     if (!tokenAndPage)
@@ -405,6 +410,7 @@ NFTokenAcceptOffer::transferNFToken(
 TER
 NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
 {
+    TRACE_FUNC();
     bool const isSell = offer->isFlag(lsfSellNFToken);
     AccountID const owner = (*offer)[sfOwner];
     AccountID const& seller = isSell ? owner : account_;
@@ -440,6 +446,7 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
 TER
 NFTokenAcceptOffer::doApply()
 {
+    TRACE_FUNC();
     auto const loadToken = [this](std::optional<uint256> const& id) {
         std::shared_ptr<SLE> sle;
         if (id)
@@ -584,6 +591,7 @@ NFTokenAcceptOffer::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

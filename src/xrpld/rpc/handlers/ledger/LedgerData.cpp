@@ -15,6 +15,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <grpcpp/support/status.h>
 #include <org/xrpl/rpc/v1/get_ledger_data.pb.h>
@@ -38,6 +39,7 @@ namespace xrpl {
 json::Value
 doLedgerData(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     std::shared_ptr<ReadView const> lpLedger;
     auto const& params = context.params;
 
@@ -133,6 +135,7 @@ doLedgerData(RPC::JsonContext& context)
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
 doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
 {
+    TRACE_FUNC();
     org::xrpl::rpc::v1::GetLedgerDataRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDataResponse response;
     grpc::Status const status = grpc::Status::OK;

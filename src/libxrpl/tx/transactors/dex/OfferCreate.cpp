@@ -41,6 +41,7 @@
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -55,6 +56,7 @@ namespace xrpl {
 TxConsequences
 OfferCreate::makeTxConsequences(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
         auto const& amount{tx[sfTakerGets]};
         return amount.native() ? amount.xrp() : beast::kZERO;
@@ -66,6 +68,7 @@ OfferCreate::makeTxConsequences(PreflightContext const& ctx)
 bool
 OfferCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDEX))
         return false;
 
@@ -76,6 +79,7 @@ OfferCreate::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 OfferCreate::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // The tfOfferCreateMask is built assuming that PermissionedDEX is
     // enabled
     if (ctx.rules.enabled(featurePermissionedDEX))
@@ -88,6 +92,7 @@ OfferCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 OfferCreate::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -166,6 +171,7 @@ OfferCreate::preflight(PreflightContext const& ctx)
 TER
 OfferCreate::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const id = ctx.tx[sfAccount];
 
     auto saTakerPays = ctx.tx[sfTakerPays];
@@ -252,6 +258,7 @@ OfferCreate::checkAcceptAsset(
     beast::Journal const j,
     Asset const& asset)
 {
+    TRACE_FUNC();
     // Only valid for custom currencies
     XRPL_ASSERT(!isXRP(asset), "xrpl::OfferCreate::checkAcceptAsset : input is not XRP");
 
@@ -334,6 +341,7 @@ OfferCreate::flowCross(
     Amounts const& takerAmount,
     std::optional<uint256> const& domainID)
 {
+    TRACE_FUNC();
     try
     {
         // If the taker is unfunded before we begin crossing there's nothing
@@ -538,6 +546,7 @@ OfferCreate::flowCross(
 std::string
 OfferCreate::formatAmount(STAmount const& amount)
 {
+    TRACE_FUNC();
     std::string txt = amount.getText();
     txt += "/";
     amount.asset().visit(
@@ -555,6 +564,7 @@ OfferCreate::applyHybrid(
     STAmount const& saTakerGets,
     std::function<void(SLE::ref, std::optional<uint256>)> const& setDir)
 {
+    TRACE_FUNC();
     if (!sleOffer->isFieldPresent(sfDomainID))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -595,6 +605,7 @@ OfferCreate::applyHybrid(
 std::pair<TER, bool>
 OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 {
+    TRACE_FUNC();
     using beast::kZERO;
 
     std::uint32_t const uTxFlags = ctx_.tx.getFlags();
@@ -951,6 +962,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 TER
 OfferCreate::doApply()
 {
+    TRACE_FUNC();
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
@@ -983,6 +995,7 @@ OfferCreate::visitInvariantEntry(
 bool
 OfferCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

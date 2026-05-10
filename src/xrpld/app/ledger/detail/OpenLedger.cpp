@@ -22,6 +22,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -48,6 +49,7 @@ OpenLedger::OpenLedger(
 bool
 OpenLedger::empty() const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(modify_mutex_);
     return current_->txCount() == 0;
 }
@@ -55,6 +57,7 @@ OpenLedger::empty() const
 std::shared_ptr<OpenView const>
 OpenLedger::current() const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(current_mutex_);
     return current_;
 }
@@ -62,6 +65,7 @@ OpenLedger::current() const
 bool
 OpenLedger::modify(modify_type const& f)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock1(modify_mutex_);
     auto next = std::make_shared<OpenView>(*current_);
     auto const changed = f(*next, j_);
@@ -85,6 +89,7 @@ OpenLedger::accept(
     std::string const& suffix,
     modify_type const& f)
 {
+    TRACE_FUNC();
     JLOG(j_.trace()) << "accept ledger " << ledger->seq() << " " << suffix;
     auto next = create(rules, ledger);
     if (retriesFirst)
@@ -163,6 +168,7 @@ OpenLedger::accept(
 std::shared_ptr<OpenView>
 OpenLedger::create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger)
 {
+    TRACE_FUNC();
     return std::make_shared<OpenView>(
         kOPEN_LEDGER, rules, std::make_shared<CachedLedger const>(ledger, cache_));
 }
@@ -176,6 +182,7 @@ OpenLedger::applyOne(
     ApplyFlags flags,
     beast::Journal j) -> Result
 {
+    TRACE_FUNC();
     if (retry)
         flags = flags | TapRetry;
     // If it's in anybody's proposed set, try to keep it in the ledger
@@ -192,6 +199,7 @@ OpenLedger::applyOne(
 std::string
 debugTxstr(std::shared_ptr<STTx const> const& tx)
 {
+    TRACE_FUNC();
     std::stringstream ss;
     ss << tx->getTransactionID();
     return ss.str().substr(0, 4);
@@ -200,6 +208,7 @@ debugTxstr(std::shared_ptr<STTx const> const& tx)
 std::string
 debugTostr(OrderedTxs const& set)
 {
+    TRACE_FUNC();
     std::stringstream ss;
     for (auto const& item : set)
         ss << debugTxstr(item.second) << ", ";
@@ -209,6 +218,7 @@ debugTostr(OrderedTxs const& set)
 std::string
 debugTostr(SHAMap const& set)
 {
+    TRACE_FUNC();
     std::stringstream ss;
     for (auto const& item : set)
     {
@@ -229,6 +239,7 @@ debugTostr(SHAMap const& set)
 std::string
 debugTostr(std::shared_ptr<ReadView const> const& view)
 {
+    TRACE_FUNC();
     std::stringstream ss;
     for (auto const& item : view->txs)
         ss << debugTxstr(item.first) << ", ";

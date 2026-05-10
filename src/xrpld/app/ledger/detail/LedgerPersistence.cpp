@@ -12,6 +12,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -27,6 +28,7 @@ saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
+    TRACE_FUNC();
     auto j = registry.getJournal("Ledger");
     auto seq = ledger->header().seq;
     if (!registry.getPendingSaves().startWork(seq))
@@ -53,6 +55,7 @@ pendSaveValidated(
     bool isSynchronous,
     bool isCurrent)
 {
+    TRACE_FUNC();
     if (!registry.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED))
     {
         // We have tried to save this ledger recently
@@ -99,6 +102,7 @@ loadLedgerHelper(
     ServiceRegistry& registry,
     bool acquire)
 {
+    TRACE_FUNC();
     bool loaded = false;
     auto ledger = std::make_shared<Ledger>(
         info,
@@ -118,6 +122,7 @@ loadLedgerHelper(
 static void
 finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
 {
+    TRACE_FUNC();
     if (!ledger)
         return;
 
@@ -134,6 +139,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
 std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
 getLatestLedger(Rules const& rules, Fees const& fees, ServiceRegistry& registry)
 {
+    TRACE_FUNC();
     std::optional<LedgerHeader> const info = registry.getRelationalDatabase().getNewestLedgerInfo();
     if (!info)
         return {std::shared_ptr<Ledger>(), {}, {}};
@@ -148,6 +154,7 @@ loadByIndex(
     ServiceRegistry& registry,
     bool acquire)
 {
+    TRACE_FUNC();
     if (std::optional<LedgerHeader> info =
             registry.getRelationalDatabase().getLedgerInfoByIndex(ledgerIndex))
     {
@@ -166,6 +173,7 @@ loadByHash(
     ServiceRegistry& registry,
     bool acquire)
 {
+    TRACE_FUNC();
     if (std::optional<LedgerHeader> info =
             registry.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
     {

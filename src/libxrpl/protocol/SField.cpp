@@ -1,5 +1,6 @@
 #include <xrpl/protocol/SField.h>
 
+#include <xrpl/basics/TraceLog.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <string>
@@ -83,6 +84,7 @@ SField::SField(
     , signingField(signing)
     , jsonName(fieldName.c_str())
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         !knownCodeToField.contains(fieldCodeMem),
         "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldCode is unique");
@@ -103,6 +105,7 @@ SField::SField(PrivateAccessTagT, int fc, char const* fn)
     , signingField(IsSigning::Yes)
     , jsonName(fieldName.c_str())
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         !knownCodeToField.contains(fieldCodeMem),
         "xrpl::SField::SField(fc,fn) : fieldCode is unique");
@@ -115,6 +118,7 @@ SField::SField(PrivateAccessTagT, int fc, char const* fn)
 SField const&
 SField::getField(int code)
 {
+    TRACE_FUNC();
     auto it = knownCodeToField.find(code);
 
     if (it != knownCodeToField.end())
@@ -127,6 +131,7 @@ SField::getField(int code)
 int
 SField::compare(SField const& f1, SField const& f2)
 {
+    TRACE_FUNC();
     // -1 = f1 comes before f2, 0 = illegal combination, 1 = f1 comes after f2
     if ((f1.fieldCodeMem <= 0) || (f2.fieldCodeMem <= 0))
         return 0;
@@ -143,6 +148,7 @@ SField::compare(SField const& f1, SField const& f2)
 SField const&
 SField::getField(std::string const& fieldName)
 {
+    TRACE_FUNC();
     auto it = knownNameToField.find(fieldName);
 
     if (it != knownNameToField.end())

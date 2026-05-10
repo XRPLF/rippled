@@ -33,6 +33,7 @@
 */
 
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -47,6 +48,7 @@ namespace base64 {
 inline char const*
 getAlphabet()
 {
+    TRACE_FUNC();
     static char constexpr kTAB[] = {
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
     return &kTAB[0];
@@ -55,6 +57,7 @@ getAlphabet()
 inline signed char const*
 getInverse()
 {
+    TRACE_FUNC();
     static signed char constexpr kTAB[] = {
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  //   0-15
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  //  16-31
@@ -103,6 +106,7 @@ std::size_t constexpr decodedSize(std::size_t n)
 std::size_t
 encode(void* dest, void const* src, std::size_t len)
 {
+    TRACE_FUNC();
     char* out = static_cast<char*>(dest);  // NOLINT(misc-const-correctness)
     char const* in = static_cast<char const*>(src);
     auto const tab = base64::getAlphabet();
@@ -154,6 +158,7 @@ encode(void* dest, void const* src, std::size_t len)
 std::pair<std::size_t, std::size_t>
 decode(void* dest, char const* src, std::size_t len)
 {
+    TRACE_FUNC();
     char* out = static_cast<char*>(dest);  // NOLINT(misc-const-correctness)
     auto in = reinterpret_cast<unsigned char const*>(src);
     unsigned char c3[3]{}, c4[4]{};
@@ -199,6 +204,7 @@ decode(void* dest, char const* src, std::size_t len)
 std::string
 base64Encode(std::uint8_t const* data, std::size_t len)
 {
+    TRACE_FUNC();
     std::string dest;
     dest.resize(base64::encodedSize(len));
     dest.resize(base64::encode(&dest[0], data, len));
@@ -208,6 +214,7 @@ base64Encode(std::uint8_t const* data, std::size_t len)
 std::string
 base64Decode(std::string_view data)
 {
+    TRACE_FUNC();
     std::string dest;
     dest.resize(base64::decodedSize(data.size()));
     auto const result = base64::decode(&dest[0], data.data(), data.size());

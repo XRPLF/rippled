@@ -2,6 +2,7 @@
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
@@ -29,6 +30,7 @@ struct JsonBody
         template <bool IsRequest, class Fields>
         explicit reader(boost::beast::http::message<IsRequest, JsonBody, Fields> const& m)
         {
+    TRACE_FUNC();
             stream(m.body, [&](void const* data, std::size_t n) {
                 buffer_.commit(
                     boost::asio::buffer_copy(buffer_.prepare(n), boost::asio::buffer(data, n)));
@@ -45,6 +47,7 @@ struct JsonBody
         boost::optional<std::pair<const_buffers_type, bool>>
         get(boost::beast::error_code& ec)
         {
+    TRACE_FUNC();
             return {{buffer_.data(), false}};
         }
 
@@ -72,6 +75,7 @@ struct JsonBody
         static void
         init(boost::beast::error_code& ec)
         {
+    TRACE_FUNC();
             ec.assign(0, ec.category());
         }
 
@@ -80,6 +84,7 @@ struct JsonBody
         boost::optional<std::pair<const_buffers_type, bool>>
         get(boost::beast::error_code& ec)
         {
+    TRACE_FUNC();
             ec.assign(0, ec.category());
             return {{const_buffers_type{body_string_.data(), body_string_.size()}, false}};
         }

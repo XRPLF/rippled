@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -24,30 +25,35 @@ ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags) : flags_(fl
 bool
 ApplyViewBase::open() const
 {
+    TRACE_FUNC();
     return base_->open();
 }
 
 LedgerHeader const&
 ApplyViewBase::header() const
 {
+    TRACE_FUNC();
     return base_->header();
 }
 
 Fees const&
 ApplyViewBase::fees() const
 {
+    TRACE_FUNC();
     return base_->fees();
 }
 
 Rules const&
 ApplyViewBase::rules() const
 {
+    TRACE_FUNC();
     return base_->rules();
 }
 
 bool
 ApplyViewBase::exists(Keylet const& k) const
 {
+    TRACE_FUNC();
     return items_.exists(*base_, k);
 }
 
@@ -55,54 +61,63 @@ auto
 ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last) const
     -> std::optional<key_type>
 {
+    TRACE_FUNC();
     return items_.succ(*base_, key, last);
 }
 
 std::shared_ptr<SLE const>
 ApplyViewBase::read(Keylet const& k) const
 {
+    TRACE_FUNC();
     return items_.read(*base_, k);
 }
 
 auto
 ApplyViewBase::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
 {
+    TRACE_FUNC();
     return base_->slesBegin();
 }
 
 auto
 ApplyViewBase::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
 {
+    TRACE_FUNC();
     return base_->slesEnd();
 }
 
 auto
 ApplyViewBase::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
 {
+    TRACE_FUNC();
     return base_->slesUpperBound(key);
 }
 
 auto
 ApplyViewBase::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
 {
+    TRACE_FUNC();
     return base_->txsBegin();
 }
 
 auto
 ApplyViewBase::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
 {
+    TRACE_FUNC();
     return base_->txsEnd();
 }
 
 bool
 ApplyViewBase::txExists(key_type const& key) const
 {
+    TRACE_FUNC();
     return base_->txExists(key);
 }
 
 auto
 ApplyViewBase::txRead(key_type const& key) const -> tx_type
 {
+    TRACE_FUNC();
     return base_->txRead(key);
 }
 
@@ -111,30 +126,35 @@ ApplyViewBase::txRead(key_type const& key) const -> tx_type
 ApplyFlags
 ApplyViewBase::flags() const
 {
+    TRACE_FUNC();
     return flags_;
 }
 
 std::shared_ptr<SLE>
 ApplyViewBase::peek(Keylet const& k)
 {
+    TRACE_FUNC();
     return items_.peek(*base_, k);
 }
 
 void
 ApplyViewBase::erase(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     items_.erase(*base_, sle);
 }
 
 void
 ApplyViewBase::insert(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     items_.insert(*base_, sle);
 }
 
 void
 ApplyViewBase::update(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     items_.update(*base_, sle);
 }
 
@@ -143,24 +163,28 @@ ApplyViewBase::update(std::shared_ptr<SLE> const& sle)
 void
 ApplyViewBase::rawErase(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     items_.rawErase(*base_, sle);
 }
 
 void
 ApplyViewBase::rawInsert(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     items_.insert(*base_, sle);
 }
 
 void
 ApplyViewBase::rawReplace(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     items_.replace(*base_, sle);
 }
 
 void
 ApplyViewBase::rawDestroyXRP(XRPAmount const& fee)
 {
+    TRACE_FUNC();
     items_.destroyXRP(fee);
 }
 

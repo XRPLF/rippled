@@ -14,6 +14,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -25,6 +26,7 @@ ValidLoanBroker::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (after)
     {
         if (after->getType() == ltLOAN_BROKER)
@@ -56,6 +58,7 @@ ValidLoanBroker::goodZeroDirectory(
     SLE::const_ref dir,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     auto const next = dir->at(~sfIndexNext);
     auto const prev = dir->at(~sfIndexPrevious);
     if ((prev && (*prev != 0u)) || (next && (*next != 0u)))
@@ -99,6 +102,7 @@ ValidLoanBroker::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     // Loan Brokers will not exist on ledger if the Lending Protocol amendment
     // is not enabled, so there's no need to check it.
 

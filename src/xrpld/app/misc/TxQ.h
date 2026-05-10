@@ -7,6 +7,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
@@ -425,6 +426,7 @@ private:
         [[nodiscard]] Snapshot
         getSnapshot() const
         {
+    TRACE_FUNC();
             return {.txnsExpected = txnsExpected_, .escalationMultiplier = escalationMultiplier_};
         }
 
@@ -578,6 +580,7 @@ private:
         [[nodiscard]] TxConsequences const&
         consequences() const
         {
+    TRACE_FUNC();
             return pfResult->consequences;  // NOLINT(bugprone-unchecked-optional-access) invariant:
                                             // pfResult is never empty
         }
@@ -586,6 +589,7 @@ private:
         [[nodiscard]] TxDetails
         getTxDetails() const
         {
+    TRACE_FUNC();
             return {
                 feeLevel,
                 lastValid,
@@ -625,6 +629,7 @@ private:
         bool
         operator()(MaybeTx const& lhs, MaybeTx const& rhs) const
         {
+    TRACE_FUNC();
             if (lhs.feeLevel == rhs.feeLevel)
                 return (lhs.txID ^ MaybeTx::parentHashComp) < (rhs.txID ^ MaybeTx::parentHashComp);
             return lhs.feeLevel > rhs.feeLevel;
@@ -668,6 +673,7 @@ private:
         [[nodiscard]] std::size_t
         getTxnCount() const
         {
+    TRACE_FUNC();
             return transactions.size();
         }
 
@@ -675,6 +681,7 @@ private:
         [[nodiscard]] bool
         empty() const
         {
+    TRACE_FUNC();
             return getTxnCount() == 0u;
         }
 
@@ -831,12 +838,14 @@ template <class T>
 XRPAmount
 toDrops(FeeLevel<T> const& level, XRPAmount baseFee)
 {
+    TRACE_FUNC();
     return mulDiv(level, baseFee, TxQ::kBASE_LEVEL).value_or(XRPAmount(STAmount::kMAX_NATIVE_N));
 }
 
 inline FeeLevel64
 toFeeLevel(XRPAmount const& drops, XRPAmount const& baseFee)
 {
+    TRACE_FUNC();
     return mulDiv(drops, TxQ::kBASE_LEVEL, baseFee)
         .value_or(FeeLevel64(std::numeric_limits<std::uint64_t>::max()));
 }

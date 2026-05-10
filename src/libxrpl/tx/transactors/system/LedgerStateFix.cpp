@@ -11,6 +11,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -19,6 +20,7 @@ namespace xrpl {
 NotTEC
 LedgerStateFix::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     switch (static_cast<FixType>(ctx.tx[sfLedgerFixType]))
     {
         case FixType::NfTokenPageLink:
@@ -36,6 +38,7 @@ LedgerStateFix::preflight(PreflightContext const& ctx)
 XRPAmount
 LedgerStateFix::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     // The fee required for LedgerStateFix is one owner reserve, just like
     // the fee for AccountDelete.
     return calculateOwnerReserveFee(view, tx);
@@ -44,6 +47,7 @@ LedgerStateFix::calculateBaseFee(ReadView const& view, STTx const& tx)
 TER
 LedgerStateFix::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     if (static_cast<FixType>(ctx.tx[sfLedgerFixType]) == FixType::NfTokenPageLink)
     {
         AccountID const owner{ctx.tx[sfOwner]};
@@ -60,6 +64,7 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
 TER
 LedgerStateFix::doApply()
 {
+    TRACE_FUNC();
     if (static_cast<FixType>(ctx_.tx[sfLedgerFixType]) == FixType::NfTokenPageLink)
     {
         if (!nft::repairNFTokenDirectoryLinks(view(), ctx_.tx[sfOwner]))
@@ -88,6 +93,7 @@ LedgerStateFix::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

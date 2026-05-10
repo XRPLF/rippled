@@ -5,6 +5,7 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -40,6 +41,7 @@ public:
     [[nodiscard]] Seq const&
     seq() const
     {
+    TRACE_FUNC();
         return ledger->header().seq;
     }
 
@@ -47,6 +49,7 @@ public:
     [[nodiscard]] ID const&
     id() const
     {
+    TRACE_FUNC();
         return ledger->header().hash;
     }
 
@@ -54,6 +57,7 @@ public:
     [[nodiscard]] ID const&
     parentID() const
     {
+    TRACE_FUNC();
         return ledger->header().parentHash;
     }
 
@@ -61,6 +65,7 @@ public:
     [[nodiscard]] NetClock::duration
     closeTimeResolution() const
     {
+    TRACE_FUNC();
         return ledger->header().closeTimeResolution;
     }
 
@@ -68,6 +73,7 @@ public:
     [[nodiscard]] bool
     closeAgree() const
     {
+    TRACE_FUNC();
         return xrpl::getCloseAgree(ledger->header());
     }
 
@@ -75,6 +81,7 @@ public:
     [[nodiscard]] NetClock::time_point
     closeTime() const
     {
+    TRACE_FUNC();
         return ledger->header().closeTime;
     }
 
@@ -82,6 +89,7 @@ public:
     [[nodiscard]] NetClock::time_point
     parentCloseTime() const
     {
+    TRACE_FUNC();
         return ledger->header().parentCloseTime;
     }
 
@@ -89,6 +97,7 @@ public:
     [[nodiscard]] json::Value
     getJson() const
     {
+    TRACE_FUNC();
         return xrpl::getJson({*ledger, {}});
     }
 

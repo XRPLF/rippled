@@ -10,6 +10,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <optional>
@@ -21,6 +22,7 @@ namespace xrpl {
 Expected<std::vector<SignerEntries::SignerEntry>, NotTEC>
 SignerEntries::deserialize(STObject const& obj, beast::Journal journal, std::string_view annotation)
 {
+    TRACE_FUNC();
     if (!obj.isFieldPresent(sfSignerEntries))
     {
         JLOG(journal.trace()) << "Malformed " << annotation << ": Need signer entry array.";

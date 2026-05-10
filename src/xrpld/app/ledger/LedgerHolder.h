@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <mutex>
 
@@ -24,6 +25,7 @@ public:
     void
     set(std::shared_ptr<Ledger const> ledger)
     {
+    TRACE_FUNC();
         if (!ledger)
             logicError("LedgerHolder::set with nullptr");
         if (!ledger->isImmutable())
@@ -36,6 +38,7 @@ public:
     std::shared_ptr<Ledger const>
     get()
     {
+    TRACE_FUNC();
         std::scoped_lock const sl(lock_);
         return heldLedger_;
     }
@@ -43,6 +46,7 @@ public:
     bool
     empty()
     {
+    TRACE_FUNC();
         std::scoped_lock const sl(lock_);
         return heldLedger_ == nullptr;
     }

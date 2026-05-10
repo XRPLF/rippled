@@ -7,6 +7,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 #include <string>
@@ -19,6 +20,7 @@ namespace xrpl {
 json::Value
 doOwnerInfo(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (!context.params.isMember(jss::account) && !context.params.isMember(jss::ident))
     {
         return RPC::missingFieldError(jss::account);

@@ -3,6 +3,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -38,6 +39,7 @@ public:
     void
     sendRequest(MessageType const& message, std::shared_ptr<Peer> const& peer)
     {
+    TRACE_FUNC();
         this->sendRequest(message, protocolMessageType(message), peer);
     }
 

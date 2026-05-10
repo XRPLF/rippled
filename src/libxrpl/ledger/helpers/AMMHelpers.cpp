@@ -30,6 +30,7 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <chrono>
@@ -45,6 +46,7 @@ namespace xrpl {
 STAmount
 ammLPTokens(STAmount const& asset1, STAmount const& asset2, Asset const& lptIssue)
 {
+    TRACE_FUNC();
     // AMM invariant: sqrt(asset1 * asset2) >= LPTokensBalance
     auto const rounding =
         isFeatureEnabled(fixAMMv1_3) ? Number::RoundingMode::Downward : Number::getround();
@@ -66,6 +68,7 @@ lpTokensOut(
     STAmount const& lptAMMBalance,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     auto const f1 = feeMult(tfee);
     auto const f2 = feeMultHalf(tfee) / f1;
     Number const r = asset1Deposit / asset1Balance;
@@ -99,6 +102,7 @@ ammAssetIn(
     STAmount const& lpTokens,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     auto const f1 = feeMult(tfee);
     auto const f2 = feeMultHalf(tfee) / f1;
     auto const t1 = lpTokens / lptAMMBalance;
@@ -128,6 +132,7 @@ lpTokensIn(
     STAmount const& lptAMMBalance,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     Number const fr = asset1Withdraw / asset1Balance;
     auto const f1 = getFee(tfee);
     auto const c = fr * f1 + 2 - f1;
@@ -159,6 +164,7 @@ ammAssetOut(
     STAmount const& lpTokens,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     auto const f = getFee(tfee);
     Number const t1 = lpTokens / lptAMMBalance;
     if (!isFeatureEnabled(fixAMMv1_3))
@@ -175,12 +181,14 @@ ammAssetOut(
 Number
 square(Number const& n)
 {
+    TRACE_FUNC();
     return n * n;
 }
 
 STAmount
 adjustLPTokens(STAmount const& lptAMMBalance, STAmount const& lpTokens, IsDeposit isDeposit)
 {
+    TRACE_FUNC();
     // Force rounding downward to ensure adjusted tokens are less or equal
     // to requested tokens.
     SaveNumberRoundMode const rm(Number::setround(Number::RoundingMode::Downward));
@@ -199,6 +207,7 @@ adjustAmountsByLPTokens(
     std::uint16_t tfee,
     IsDeposit isDeposit)
 {
+    TRACE_FUNC();
     // AMMv1_3 amendment adjusts tokens and amounts in deposit/withdraw
     if (isFeatureEnabled(fixAMMv1_3))
         return std::make_tuple(amount, amount2, lpTokens);
@@ -269,6 +278,7 @@ adjustAmountsByLPTokens(
 Number
 solveQuadraticEq(Number const& a, Number const& b, Number const& c)
 {
+    TRACE_FUNC();
     return (-b + root2(b * b - 4 * a * c)) / (2 * a);
 }
 
@@ -276,6 +286,7 @@ solveQuadraticEq(Number const& a, Number const& b, Number const& c)
 std::optional<Number>
 solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
 {
+    TRACE_FUNC();
     auto const d = b * b - 4 * a * c;
     if (d < 0)
         return std::nullopt;
@@ -292,6 +303,7 @@ solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
 STAmount
 multiply(STAmount const& amount, Number const& frac, Number::RoundingMode rm)
 {
+    TRACE_FUNC();
     NumberRoundModeGuard const g(rm);
     auto const t = amount * frac;
     return toSTAmount(amount.asset(), t, rm);
@@ -305,6 +317,7 @@ getRoundedAsset(
     std::function<Number()> const& productCb,
     IsDeposit isDeposit)
 {
+    TRACE_FUNC();
     if (!rules.enabled(fixAMMv1_3))
         return toSTAmount(balance.asset(), noRoundCb());
 
@@ -322,6 +335,7 @@ getRoundedLPTokens(
     Number const& frac,
     IsDeposit isDeposit)
 {
+    TRACE_FUNC();
     if (!rules.enabled(fixAMMv1_3))
         return toSTAmount(balance.asset(), balance * frac);
 
@@ -338,6 +352,7 @@ getRoundedLPTokens(
     std::function<Number()> const& productCb,
     IsDeposit isDeposit)
 {
+    TRACE_FUNC();
     if (!rules.enabled(fixAMMv1_3))
         return toSTAmount(lptAMMBalance.asset(), noRoundCb());
 
@@ -362,6 +377,7 @@ adjustAssetInByTokens(
     STAmount const& tokens,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     if (!rules.enabled(fixAMMv1_3))
         return {tokens, amount};
     auto assetAdj = ammAssetIn(balance, lptAMMBalance, tokens, tfee);
@@ -388,6 +404,7 @@ adjustAssetOutByTokens(
     STAmount const& tokens,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     if (!rules.enabled(fixAMMv1_3))
         return {tokens, amount};
     auto assetAdj = ammAssetOut(balance, lptAMMBalance, tokens, tfee);
@@ -412,6 +429,7 @@ adjustFracByTokens(
     STAmount const& tokens,
     Number const& frac)
 {
+    TRACE_FUNC();
     if (!rules.enabled(fixAMMv1_3))
         return frac;
     return tokens / lptAMMBalance;
@@ -427,6 +445,7 @@ ammPoolHolds(
     AuthHandling authHandling,
     beast::Journal const j)
 {
+    TRACE_FUNC();
     auto const assetInBalance =
         accountHolds(view, ammAccountID, asset1, freezeHandling, authHandling, j);
     auto const assetOutBalance =
@@ -444,6 +463,7 @@ ammHolds(
     AuthHandling authHandling,
     beast::Journal const j)
 {
+    TRACE_FUNC();
     auto const assets = [&]() -> std::optional<std::pair<Asset, Asset>> {
         auto const asset1 = ammSle[sfAsset];
         auto const asset2 = ammSle[sfAsset2];
@@ -511,6 +531,7 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
+    TRACE_FUNC();
     // This function looks similar to `accountHolds`. However, it only checks if
     // a LPToken holder has enough balance. On the other hand, `accountHolds`
     // checks if the underlying assets of LPToken are frozen with the
@@ -559,12 +580,14 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
+    TRACE_FUNC();
     return ammLPHolds(view, ammSle[sfAsset], ammSle[sfAsset2], ammSle[sfAccount], lpAccount, j);
 }
 
 std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     XRPL_ASSERT(
         !view.rules().enabled(fixInnerObjTemplate) || ammSle.isFieldPresent(sfAuctionSlot),
@@ -595,6 +618,7 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 STAmount
 ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const& asset)
 {
+    TRACE_FUNC();
     // Get the actual AMM balance without factoring in the balance hook
     return asset.visit(
         [&](MPTIssue const& issue) {
@@ -631,6 +655,7 @@ deleteAMMTrustLines(
     std::uint16_t maxTrustlinesToDelete,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return cleanupOnAccountDelete(
         sb,
         keylet::ownerDir(ammAccountID),
@@ -667,6 +692,7 @@ deleteAMMTrustLines(
 static TER
 deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
 {
+    TRACE_FUNC();
     return cleanupOnAccountDelete(
         sb,
         keylet::ownerDir(ammAccountID),
@@ -712,6 +738,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
 TER
 deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Journal j)
 {
+    TRACE_FUNC();
     auto ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
     {
@@ -773,6 +800,7 @@ initializeFeeAuctionVote(
     Asset const& lptAsset,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     auto const& rules = view.rules();
     // AMM creator gets the voting slot.
     STArray voteSlots;
@@ -822,6 +850,7 @@ initializeFeeAuctionVote(
 Expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount)
 {
+    TRACE_FUNC();
     // Liquidity Provider (LP) must have one LPToken trustline
     std::uint8_t nLPTokenTrustLines = 0;
     // AMM account has at most two IOU (pool tokens, not LPToken) trustlines.
@@ -926,6 +955,7 @@ verifyAndAdjustLPTokenBalance(
     std::shared_ptr<SLE>& ammSle,
     AccountID const& account)
 {
+    TRACE_FUNC();
     auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);
     if (!res.has_value())
     {

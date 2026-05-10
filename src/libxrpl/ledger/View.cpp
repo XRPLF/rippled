@@ -29,6 +29,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -46,6 +47,7 @@ namespace xrpl {
 bool
 hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
 {
+    TRACE_FUNC();
     using d = NetClock::duration;
     using tp = NetClock::time_point;
 
@@ -59,6 +61,7 @@ isVaultPseudoAccountFrozen(
     MPTIssue const& mptShare,
     int depth)
 {
+    TRACE_FUNC();
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
 
@@ -100,6 +103,7 @@ isLPTokenFrozen(
     Asset const& asset,
     Asset const& asset2)
 {
+    TRACE_FUNC();
     return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
 }
 
@@ -110,6 +114,7 @@ areCompatible(
     beast::Journal::Stream& s,
     char const* reason)
 {
+    TRACE_FUNC();
     bool ret = true;
 
     if (validLedger.header().seq < testLedger.header().seq)
@@ -169,6 +174,7 @@ areCompatible(
     beast::Journal::Stream& s,
     char const* reason)
 {
+    TRACE_FUNC();
     bool ret = true;
 
     if (testLedger.header().seq > validIndex)
@@ -204,6 +210,7 @@ areCompatible(
 std::set<uint256>
 getEnabledAmendments(ReadView const& view)
 {
+    TRACE_FUNC();
     std::set<uint256> amendments;
 
     if (auto const sle = view.read(keylet::amendments()))
@@ -221,6 +228,7 @@ getEnabledAmendments(ReadView const& view)
 majorityAmendments_t
 getMajorityAmendments(ReadView const& view)
 {
+    TRACE_FUNC();
     majorityAmendments_t ret;
 
     if (auto const sle = view.read(keylet::amendments()))
@@ -243,6 +251,7 @@ getMajorityAmendments(ReadView const& view)
 std::optional<uint256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 {
+    TRACE_FUNC();
     // Easy cases...
     if (seq > ledger.seq())
     {
@@ -311,6 +320,7 @@ dirLink(
     std::shared_ptr<SLE>& object,
     SF_UINT64 const& node)
 {
+    TRACE_FUNC();
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
     if (!page)
@@ -342,6 +352,7 @@ withdrawToDestExceedsLimit(
     AccountID const& to,
     STAmount const& amount)
 {
+    TRACE_FUNC();
     auto const& issuer = amount.getIssuer();
     if (from == to || to == issuer || isXRP(issuer))
         return tesSUCCESS;
@@ -370,6 +381,7 @@ canWithdraw(
     STAmount const& amount,
     bool hasDestinationTag)
 {
+    TRACE_FUNC();
     if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
         return ret;
 
@@ -393,6 +405,7 @@ canWithdraw(
     STAmount const& amount,
     bool hasDestinationTag)
 {
+    TRACE_FUNC();
     auto const toSle = view.read(keylet::account(to));
 
     return canWithdraw(view, from, to, toSle, amount, hasDestinationTag);
@@ -401,6 +414,7 @@ canWithdraw(
 [[nodiscard]] TER
 canWithdraw(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     auto const from = tx[sfAccount];
     auto const to = tx[~sfDestination].value_or(from);
 
@@ -418,6 +432,7 @@ doWithdraw(
     STAmount const& amount,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
     {
@@ -460,6 +475,7 @@ cleanupOnAccountDelete(
     beast::Journal j,
     std::optional<uint16_t> maxNodesToDelete)
 {
+    TRACE_FUNC();
     // Delete all the entries in the account directory.
     std::shared_ptr<SLE> sleDirNode{};
     unsigned int uDirEntry{0};
@@ -531,6 +547,7 @@ cleanupOnAccountDelete(
 bool
 after(NetClock::time_point now, std::uint32_t mark)
 {
+    TRACE_FUNC();
     return now.time_since_epoch().count() > mark;
 }
 

@@ -15,6 +15,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <optional>
@@ -47,6 +48,7 @@ AttestationBase::AttestationBase(
 bool
 AttestationBase::equalHelper(AttestationBase const& lhs, AttestationBase const& rhs)
 {
+    TRACE_FUNC();
     return std::tie(
                lhs.attestationSignerAccount,
                lhs.publicKey,
@@ -68,6 +70,7 @@ AttestationBase::equalHelper(AttestationBase const& lhs, AttestationBase const& 
 bool
 AttestationBase::sameEventHelper(AttestationBase const& lhs, AttestationBase const& rhs)
 {
+    TRACE_FUNC();
     return std::tie(lhs.sendingAccount, lhs.sendingAmount, lhs.wasLockingChainSend) ==
         std::tie(rhs.sendingAccount, rhs.sendingAmount, rhs.wasLockingChainSend);
 }
@@ -75,6 +78,7 @@ AttestationBase::sameEventHelper(AttestationBase const& lhs, AttestationBase con
 bool
 AttestationBase::verify(STXChainBridge const& bridge) const
 {
+    TRACE_FUNC();
     std::vector<std::uint8_t> const msg = message(bridge);
     return xrpl::verify(publicKey, makeSlice(msg), signature);
 }
@@ -104,6 +108,7 @@ AttestationBase::AttestationBase(json::Value const& v)
 void
 AttestationBase::addHelper(STObject& o) const
 {
+    TRACE_FUNC();
     o[sfAttestationSignerAccount] = attestationSignerAccount;
     o[sfPublicKey] = publicKey;
     o[sfSignature] = signature;
@@ -170,6 +175,7 @@ AttestationClaim::AttestationClaim(STObject const& o)
 AttestationClaim::AttestationClaim(json::Value const& v)
     : AttestationBase{v}, claimID{json::getOrThrow<std::uint64_t>(v, sfXChainClaimID)}
 {
+    TRACE_FUNC();
     if (v.isMember(sfDestination.getJsonName()))
         dst = json::getOrThrow<AccountID>(v, sfDestination);
 }
@@ -177,6 +183,7 @@ AttestationClaim::AttestationClaim(json::Value const& v)
 STObject
 AttestationClaim::toSTObject() const
 {
+    TRACE_FUNC();
     STObject o = STObject::makeInnerObject(sfXChainClaimAttestationCollectionElement);
     addHelper(o);
     o[sfXChainClaimID] = claimID;
@@ -195,6 +202,7 @@ AttestationClaim::message(
     std::uint64_t claimID,
     std::optional<AccountID> const& dst)
 {
+    TRACE_FUNC();
     STObject o{kSF_GENERIC};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainClaimID] = claimID;
@@ -215,6 +223,7 @@ AttestationClaim::message(
 std::vector<std::uint8_t>
 AttestationClaim::message(STXChainBridge const& bridge) const
 {
+    TRACE_FUNC();
     return AttestationClaim::message(
         bridge, sendingAccount, sendingAmount, rewardAccount, wasLockingChainSend, claimID, dst);
 }
@@ -222,12 +231,14 @@ AttestationClaim::message(STXChainBridge const& bridge) const
 bool
 AttestationClaim::validAmounts() const
 {
+    TRACE_FUNC();
     return isLegalNet(sendingAmount);
 }
 
 bool
 AttestationClaim::sameEvent(AttestationClaim const& rhs) const
 {
+    TRACE_FUNC();
     return AttestationClaim::sameEventHelper(*this, rhs) &&
         tie(claimID, dst) == tie(rhs.claimID, rhs.dst);
 }
@@ -235,6 +246,7 @@ AttestationClaim::sameEvent(AttestationClaim const& rhs) const
 bool
 operator==(AttestationClaim const& lhs, AttestationClaim const& rhs)
 {
+    TRACE_FUNC();
     return AttestationClaim::equalHelper(lhs, rhs) &&
         tie(lhs.claimID, lhs.dst) == tie(rhs.claimID, rhs.dst);
 }
@@ -311,6 +323,7 @@ AttestationCreateAccount::AttestationCreateAccount(
 STObject
 AttestationCreateAccount::toSTObject() const
 {
+    TRACE_FUNC();
     STObject o = STObject::makeInnerObject(sfXChainCreateAccountAttestationCollectionElement);
     addHelper(o);
 
@@ -332,6 +345,7 @@ AttestationCreateAccount::message(
     std::uint64_t createCount,
     AccountID const& dst)
 {
+    TRACE_FUNC();
     STObject o{kSF_GENERIC};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainAccountCreateCount] = createCount;
@@ -352,6 +366,7 @@ AttestationCreateAccount::message(
 std::vector<std::uint8_t>
 AttestationCreateAccount::message(STXChainBridge const& bridge) const
 {
+    TRACE_FUNC();
     return AttestationCreateAccount::message(
         bridge,
         sendingAccount,
@@ -366,12 +381,14 @@ AttestationCreateAccount::message(STXChainBridge const& bridge) const
 bool
 AttestationCreateAccount::validAmounts() const
 {
+    TRACE_FUNC();
     return isLegalNet(rewardAmount) && isLegalNet(sendingAmount);
 }
 
 bool
 AttestationCreateAccount::sameEvent(AttestationCreateAccount const& rhs) const
 {
+    TRACE_FUNC();
     return AttestationCreateAccount::sameEventHelper(*this, rhs) &&
         std::tie(createCount, toCreate, rewardAmount) ==
         std::tie(rhs.createCount, rhs.toCreate, rhs.rewardAmount);
@@ -380,6 +397,7 @@ AttestationCreateAccount::sameEvent(AttestationCreateAccount const& rhs) const
 bool
 operator==(AttestationCreateAccount const& lhs, AttestationCreateAccount const& rhs)
 {
+    TRACE_FUNC();
     return AttestationCreateAccount::equalHelper(lhs, rhs) &&
         std::tie(lhs.createCount, lhs.toCreate, lhs.rewardAmount) ==
         std::tie(rhs.createCount, rhs.toCreate, rhs.rewardAmount);
@@ -460,6 +478,7 @@ XChainClaimAttestation::XChainClaimAttestation(
 STObject
 XChainClaimAttestation::toSTObject() const
 {
+    TRACE_FUNC();
     STObject o = STObject::makeInnerObject(sfXChainClaimProofSig);
     o[sfAttestationSignerAccount] = STAccount{sfAttestationSignerAccount, keyAccount};
     o[sfPublicKey] = publicKey;
@@ -474,6 +493,7 @@ XChainClaimAttestation::toSTObject() const
 bool
 operator==(XChainClaimAttestation const& lhs, XChainClaimAttestation const& rhs)
 {
+    TRACE_FUNC();
     return std::tie(
                lhs.keyAccount,
                lhs.publicKey,
@@ -499,6 +519,7 @@ XChainClaimAttestation::MatchFields::MatchFields(
 AttestationMatch
 XChainClaimAttestation::match(XChainClaimAttestation::MatchFields const& rhs) const
 {
+    TRACE_FUNC();
     if (std::tie(amount, wasLockingChainSend) != std::tie(rhs.amount, rhs.wasLockingChainSend))
         return AttestationMatch::NonDstMismatch;
     if (dst != rhs.dst)
@@ -564,6 +585,7 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
 STObject
 XChainCreateAccountAttestation::toSTObject() const
 {
+    TRACE_FUNC();
     STObject o = STObject::makeInnerObject(sfXChainCreateAccountProofSig);
 
     o[sfAttestationSignerAccount] = STAccount{sfAttestationSignerAccount, keyAccount};
@@ -589,6 +611,7 @@ XChainCreateAccountAttestation::MatchFields::MatchFields(
 AttestationMatch
 XChainCreateAccountAttestation::match(XChainCreateAccountAttestation::MatchFields const& rhs) const
 {
+    TRACE_FUNC();
     if (std::tie(amount, rewardAmount, wasLockingChainSend) !=
         std::tie(rhs.amount, rhs.rewardAmount, rhs.wasLockingChainSend))
         return AttestationMatch::NonDstMismatch;
@@ -600,6 +623,7 @@ XChainCreateAccountAttestation::match(XChainCreateAccountAttestation::MatchField
 bool
 operator==(XChainCreateAccountAttestation const& lhs, XChainCreateAccountAttestation const& rhs)
 {
+    TRACE_FUNC();
     return std::tie(
                lhs.keyAccount,
                lhs.publicKey,
@@ -631,6 +655,7 @@ template <class TAttestation>
 typename XChainAttestationsBase<TAttestation>::AttCollection::const_iterator
 XChainAttestationsBase<TAttestation>::begin() const
 {
+    TRACE_FUNC();
     return attestations_.begin();
 }
 
@@ -638,6 +663,7 @@ template <class TAttestation>
 typename XChainAttestationsBase<TAttestation>::AttCollection::const_iterator
 XChainAttestationsBase<TAttestation>::end() const
 {
+    TRACE_FUNC();
     return attestations_.end();
 }
 
@@ -645,6 +671,7 @@ template <class TAttestation>
 typename XChainAttestationsBase<TAttestation>::AttCollection::iterator
 XChainAttestationsBase<TAttestation>::begin()
 {
+    TRACE_FUNC();
     return attestations_.begin();
 }
 
@@ -652,12 +679,14 @@ template <class TAttestation>
 typename XChainAttestationsBase<TAttestation>::AttCollection::iterator
 XChainAttestationsBase<TAttestation>::end()
 {
+    TRACE_FUNC();
     return attestations_.end();
 }
 
 template <class TAttestation>
 XChainAttestationsBase<TAttestation>::XChainAttestationsBase(json::Value const& v)
 {
+    TRACE_FUNC();
     if (!v.isObject())
     {
         Throw<std::runtime_error>(
@@ -682,6 +711,7 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(json::Value const& 
 template <class TAttestation>
 XChainAttestationsBase<TAttestation>::XChainAttestationsBase(STArray const& arr)
 {
+    TRACE_FUNC();
     if (arr.size() > kMAX_ATTESTATIONS)
         Throw<std::runtime_error>("XChainAttestationsBase exceeded max number of attestations");
 
@@ -694,6 +724,7 @@ template <class TAttestation>
 STArray
 XChainAttestationsBase<TAttestation>::toSTArray() const
 {
+    TRACE_FUNC();
     STArray r{TAttestation::arrayFieldName, attestations_.size()};
     for (auto const& e : attestations_)
         r.emplaceBack(e.toSTObject());

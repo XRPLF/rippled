@@ -5,6 +5,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container_hash/hash.hpp>
 #include <boost/multi_index/hashed_index.hpp>
@@ -26,6 +27,7 @@ inline std::size_t
 // NOLINTNEXTLINE(readability-identifier-naming)
 hash_value(xrpl::uint256 const& feature)
 {
+    TRACE_FUNC();
     std::size_t seed = 0;
     using namespace boost;
     for (auto const& n : feature)
@@ -118,6 +120,7 @@ class FeatureCollections
     Feature const&
     getByIndex(size_t i) const
     {
+    TRACE_FUNC();
         if (i >= features_.size())
             logicError("Invalid FeatureBitset index");
         auto const& sequence = features_.get<Feature::ByIndex>();
@@ -126,6 +129,7 @@ class FeatureCollections
     size_t
     getIndex(Feature const& feature) const
     {
+    TRACE_FUNC();
         auto const& sequence = features_.get<Feature::ByIndex>();
         auto const itTo = sequence.iterator_to(feature);
         return itTo - sequence.begin();
@@ -133,6 +137,7 @@ class FeatureCollections
     Feature const*
     getByFeature(uint256 const& feature) const
     {
+    TRACE_FUNC();
         auto const& featureIndex = features_.get<Feature::ByFeature>();
         auto const featureIt = featureIndex.find(feature);
         return featureIt == featureIndex.end() ? nullptr : &*featureIt;
@@ -140,6 +145,7 @@ class FeatureCollections
     Feature const*
     getByName(std::string const& name) const
     {
+    TRACE_FUNC();
         auto const& nameIndex = features_.get<Feature::ByName>();
         auto const nameIt = nameIndex.find(name);
         return nameIt == nameIndex.end() ? nullptr : &*nameIt;
@@ -171,6 +177,7 @@ public:
     std::map<std::string, AmendmentSupport> const&
     allAmendments() const
     {
+    TRACE_FUNC();
         return all_;
     }
 
@@ -180,6 +187,7 @@ public:
     std::map<std::string, VoteBehavior> const&
     supportedAmendments() const
     {
+    TRACE_FUNC();
         return supported_;
     }
 
@@ -187,6 +195,7 @@ public:
     std::size_t
     numDownVotedAmendments() const
     {
+    TRACE_FUNC();
         return downVotes_;
     }
 
@@ -194,6 +203,7 @@ public:
     std::size_t
     numUpVotedAmendments() const
     {
+    TRACE_FUNC();
         return upVotes_;
     }
 };
@@ -202,12 +212,14 @@ public:
 
 FeatureCollections::FeatureCollections()
 {
+    TRACE_FUNC();
     features_.reserve(xrpl::detail::kNUM_FEATURES);
 }
 
 std::optional<uint256>
 FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         readOnly_.load(), "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
     Feature const* feature = getByName(name);
@@ -219,6 +231,7 @@ FeatureCollections::getRegisteredFeature(std::string const& name) const
 void
 check(bool condition, char const* logicErrorMessage)
 {
+    TRACE_FUNC();
     if (!condition)
         logicError(logicErrorMessage);
 }
@@ -226,6 +239,7 @@ check(bool condition, char const* logicErrorMessage)
 uint256
 FeatureCollections::registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
+    TRACE_FUNC();
     check(!readOnly_, "Attempting to register a feature after startup.");
     check(
         support == Supported::Yes || vote == VoteBehavior::DefaultNo,
@@ -275,6 +289,7 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
 bool
 FeatureCollections::registrationIsDone()
 {
+    TRACE_FUNC();
     readOnly_ = true;
     return true;
 }
@@ -282,6 +297,7 @@ FeatureCollections::registrationIsDone()
 size_t
 FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         readOnly_.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
 
@@ -295,6 +311,7 @@ FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 uint256 const&
 FeatureCollections::bitsetIndexToFeature(size_t i) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         readOnly_.load(), "xrpl::FeatureCollections::bitsetIndexToFeature : startup completed");
     Feature const& feature = getByIndex(i);
@@ -304,6 +321,7 @@ FeatureCollections::bitsetIndexToFeature(size_t i) const
 std::string
 FeatureCollections::featureToName(uint256 const& f) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(readOnly_.load(), "xrpl::FeatureCollections::featureToName : startup completed");
     Feature const* feature = getByFeature(f);
     return (feature != nullptr) ? feature->name : to_string(f);
@@ -317,6 +335,7 @@ FeatureCollections gFeatureCollections;
 std::map<std::string, AmendmentSupport> const&
 allAmendments()
 {
+    TRACE_FUNC();
     return gFeatureCollections.allAmendments();
 }
 
@@ -326,6 +345,7 @@ allAmendments()
 std::map<std::string, VoteBehavior> const&
 detail::supportedAmendments()
 {
+    TRACE_FUNC();
     return gFeatureCollections.supportedAmendments();
 }
 
@@ -333,6 +353,7 @@ detail::supportedAmendments()
 std::size_t
 detail::numDownVotedAmendments()
 {
+    TRACE_FUNC();
     return gFeatureCollections.numDownVotedAmendments();
 }
 
@@ -340,6 +361,7 @@ detail::numDownVotedAmendments()
 std::size_t
 detail::numUpVotedAmendments()
 {
+    TRACE_FUNC();
     return gFeatureCollections.numUpVotedAmendments();
 }
 
@@ -348,12 +370,14 @@ detail::numUpVotedAmendments()
 std::optional<uint256>
 getRegisteredFeature(std::string const& name)
 {
+    TRACE_FUNC();
     return gFeatureCollections.getRegisteredFeature(name);
 }
 
 uint256
 registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
+    TRACE_FUNC();
     return gFeatureCollections.registerFeature(name, support, vote);
 }
 
@@ -362,6 +386,7 @@ registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 uint256
 retireFeature(std::string const& name)
 {
+    TRACE_FUNC();
     return registerFeature(name, Supported::Yes, VoteBehavior::Obsolete);
 }
 
@@ -369,24 +394,28 @@ retireFeature(std::string const& name)
 bool
 registrationIsDone()
 {
+    TRACE_FUNC();
     return gFeatureCollections.registrationIsDone();
 }
 
 size_t
 featureToBitsetIndex(uint256 const& f)
 {
+    TRACE_FUNC();
     return gFeatureCollections.featureToBitsetIndex(f);
 }
 
 uint256
 bitsetIndexToFeature(size_t i)
 {
+    TRACE_FUNC();
     return gFeatureCollections.bitsetIndexToFeature(i);
 }
 
 std::string
 featureToName(uint256 const& f)
 {
+    TRACE_FUNC();
     return gFeatureCollections.featureToName(f);
 }
 

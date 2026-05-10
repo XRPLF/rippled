@@ -13,6 +13,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <array>
@@ -25,11 +26,13 @@ namespace xrpl {
 
 Seed::~Seed()
 {
+    TRACE_FUNC();
     secureErase(buf_.data(), buf_.size());
 }
 
 Seed::Seed(Slice const& slice)
 {
+    TRACE_FUNC();
     if (slice.size() != buf_.size())
         logicError("Seed::Seed: invalid size");
     std::memcpy(buf_.data(), slice.data(), buf_.size());
@@ -37,6 +40,7 @@ Seed::Seed(Slice const& slice)
 
 Seed::Seed(uint128 const& seed)
 {
+    TRACE_FUNC();
     if (seed.size() != buf_.size())
         logicError("Seed::Seed: invalid size");
     std::memcpy(buf_.data(), seed.data(), buf_.size());
@@ -47,6 +51,7 @@ Seed::Seed(uint128 const& seed)
 Seed
 randomSeed()
 {
+    TRACE_FUNC();
     std::array<std::uint8_t, 16> buffer{};
     beast::rngfill(buffer.data(), buffer.size(), cryptoPrng());
     Seed const seed(makeSlice(buffer));
@@ -57,6 +62,7 @@ randomSeed()
 Seed
 generateSeed(std::string const& passPhrase)
 {
+    TRACE_FUNC();
     sha512_half_hasher_s h;
     h(passPhrase.data(), passPhrase.size());
     auto const digest = sha512_half_hasher::result_type(h);
@@ -67,6 +73,7 @@ template <>
 std::optional<Seed>
 parseBase58(std::string const& s)
 {
+    TRACE_FUNC();
     auto const result = decodeBase58Token(s, TokenType::FamilySeed);
     if (result.empty())
         return std::nullopt;
@@ -78,6 +85,7 @@ parseBase58(std::string const& s)
 std::optional<Seed>
 parseGenericSeed(std::string const& str, bool rfc1751)
 {
+    TRACE_FUNC();
     if (str.empty())
         return std::nullopt;
 
@@ -115,6 +123,7 @@ parseGenericSeed(std::string const& str, bool rfc1751)
 std::string
 seedAs1751(Seed const& seed)
 {
+    TRACE_FUNC();
     std::string key;
 
     std::reverse_copy(seed.data(), seed.data() + 16, std::back_inserter(key));

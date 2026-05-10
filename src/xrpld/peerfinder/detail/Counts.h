@@ -5,6 +5,7 @@
 #include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl::PeerFinder {
 
@@ -19,6 +20,7 @@ public:
     void
     add(Slot const& s)
     {
+    TRACE_FUNC();
         adjust(s, CountAdjustment::Increment);
     }
 
@@ -26,6 +28,7 @@ public:
     void
     remove(Slot const& s)
     {
+    TRACE_FUNC();
         adjust(s, CountAdjustment::Decrement);
     }
 
@@ -33,6 +36,7 @@ public:
     [[nodiscard]] bool
     canActivate(Slot const& s) const
     {
+    TRACE_FUNC();
         // Must be handshaked and in the right state
         XRPL_ASSERT(
             s.state() == Slot::State::Connected || s.state() == Slot::State::Accept,
@@ -51,6 +55,7 @@ public:
     [[nodiscard]] std::size_t
     attemptsNeeded() const
     {
+    TRACE_FUNC();
         if (attempts_ >= Tuning::MaxConnectAttempts)
             return 0;
         return Tuning::MaxConnectAttempts - attempts_;
@@ -60,6 +65,7 @@ public:
     [[nodiscard]] std::size_t
     attempts() const
     {
+    TRACE_FUNC();
         return attempts_;
     }
 
@@ -67,6 +73,7 @@ public:
     [[nodiscard]] int
     outMax() const
     {
+    TRACE_FUNC();
         return out_max_;
     }
 
@@ -76,6 +83,7 @@ public:
     [[nodiscard]] int
     outActive() const
     {
+    TRACE_FUNC();
         return out_active_;
     }
 
@@ -83,6 +91,7 @@ public:
     [[nodiscard]] std::size_t
     fixed() const
     {
+    TRACE_FUNC();
         return fixed_;
     }
 
@@ -90,6 +99,7 @@ public:
     [[nodiscard]] std::size_t
     fixedActive() const
     {
+    TRACE_FUNC();
         return fixed_active_;
     }
 
@@ -99,6 +109,7 @@ public:
     void
     onConfig(Config const& config)
     {
+    TRACE_FUNC();
         out_max_ = config.outPeers;
         if (config.wantIncoming)
             in_max_ = config.inPeers;
@@ -108,6 +119,7 @@ public:
     [[nodiscard]] int
     acceptCount() const
     {
+    TRACE_FUNC();
         return acceptCount_;
     }
 
@@ -115,6 +127,7 @@ public:
     [[nodiscard]] int
     connectCount() const
     {
+    TRACE_FUNC();
         return attempts_;
     }
 
@@ -122,6 +135,7 @@ public:
     [[nodiscard]] int
     closingCount() const
     {
+    TRACE_FUNC();
         return closingCount_;
     }
 
@@ -129,6 +143,7 @@ public:
     [[nodiscard]] int
     inMax() const
     {
+    TRACE_FUNC();
         return in_max_;
     }
 
@@ -136,6 +151,7 @@ public:
     [[nodiscard]] int
     inboundActive() const
     {
+    TRACE_FUNC();
         return in_active_;
     }
 
@@ -143,6 +159,7 @@ public:
     [[nodiscard]] int
     totalActive() const
     {
+    TRACE_FUNC();
         return in_active_ + out_active_;
     }
 
@@ -152,6 +169,7 @@ public:
     [[nodiscard]] int
     inboundSlotsFree() const
     {
+    TRACE_FUNC();
         if (in_active_ < in_max_)
             return in_max_ - in_active_;
         return 0;
@@ -163,6 +181,7 @@ public:
     [[nodiscard]] int
     outboundSlotsFree() const
     {
+    TRACE_FUNC();
         if (out_active_ < out_max_)
             return out_max_ - out_active_;
         return 0;
@@ -175,6 +194,7 @@ public:
     [[nodiscard]] bool
     isConnectedToNetwork() const
     {
+    TRACE_FUNC();
         // We will consider ourselves connected if we have reached
         // the number of outgoing connections desired, or if connect
         // automatically is false.
@@ -188,6 +208,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map) const
     {
+    TRACE_FUNC();
         map["accept"] = acceptCount();
         map["connect"] = connectCount();
         map["close"] = closingCount();
@@ -202,6 +223,7 @@ public:
     [[nodiscard]] std::string
     stateString() const
     {
+    TRACE_FUNC();
         std::stringstream ss;
         ss << out_active_ << "/" << out_max_ << " out, " << in_active_ << "/" << in_max_ << " in, "
            << connectCount() << " connecting, " << closingCount() << " closing";
@@ -215,6 +237,7 @@ private:
     static void
     adjustCounter(T& counter, CountAdjustment dir)
     {
+    TRACE_FUNC();
         switch (dir)
         {
             case CountAdjustment::Increment:
@@ -237,6 +260,7 @@ private:
     void
     adjust(Slot const& s, CountAdjustment const dir)
     {
+    TRACE_FUNC();
         int const n = static_cast<int>(dir);
         if (s.fixed())
             adjustCounter(fixed_, dir);

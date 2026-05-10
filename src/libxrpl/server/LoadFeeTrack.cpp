@@ -5,6 +5,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -16,6 +17,7 @@ namespace xrpl {
 bool
 LoadFeeTrack::raiseLocalFee()
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
 
     if (++raiseCount_ < 2)
@@ -41,6 +43,7 @@ LoadFeeTrack::raiseLocalFee()
 bool
 LoadFeeTrack::lowerLocalFee()
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
     std::uint32_t const origFee = localTxnLoadFee_;
     raiseCount_ = 0;
@@ -63,6 +66,7 @@ LoadFeeTrack::lowerLocalFee()
 XRPAmount
 scaleFeeLoad(XRPAmount fee, LoadFeeTrack const& feeTrack, Fees const& fees, bool bUnlimited)
 {
+    TRACE_FUNC();
     if (fee == 0)
         return fee;
 

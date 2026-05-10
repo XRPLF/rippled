@@ -11,6 +11,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Logic.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/ip/address.hpp>
 #include <boost/system/detail/error_code.hpp>
@@ -39,6 +40,7 @@ public:
     ManagerImp(beast::insight::Collector::ptr const& collector, beast::Journal journal)
         : journal_(journal), logic_(collector, stopwatch(), journal)
     {
+    TRACE_FUNC();
         thread_ = std::thread{&ManagerImp::run, this};
     }
 
@@ -49,6 +51,7 @@ public:
 
     ~ManagerImp() override
     {
+    TRACE_FUNC();
         {
             std::scoped_lock const lock(mutex_);
             stop_ = true;
@@ -60,6 +63,7 @@ public:
     Consumer
     newInboundEndpoint(beast::IP::Endpoint const& address) override
     {
+    TRACE_FUNC();
         return logic_.newInboundEndpoint(address);
     }
 
@@ -69,6 +73,7 @@ public:
         bool const proxy,
         std::string_view forwardedFor) override
     {
+    TRACE_FUNC();
         if (!proxy)
             return newInboundEndpoint(address);
 
@@ -87,24 +92,28 @@ public:
     Consumer
     newOutboundEndpoint(beast::IP::Endpoint const& address) override
     {
+    TRACE_FUNC();
         return logic_.newOutboundEndpoint(address);
     }
 
     Consumer
     newUnlimitedEndpoint(beast::IP::Endpoint const& address) override
     {
+    TRACE_FUNC();
         return logic_.newUnlimitedEndpoint(address);
     }
 
     Gossip
     exportConsumers() override
     {
+    TRACE_FUNC();
         return logic_.exportConsumers();
     }
 
     void
     importConsumers(std::string const& origin, Gossip const& gossip) override
     {
+    TRACE_FUNC();
         logic_.importConsumers(origin, gossip);
     }
 
@@ -113,12 +122,14 @@ public:
     json::Value
     getJson() override
     {
+    TRACE_FUNC();
         return logic_.getJson();
     }
 
     json::Value
     getJson(int threshold) override
     {
+    TRACE_FUNC();
         return logic_.getJson(threshold);
     }
 
@@ -127,6 +138,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map) override
     {
+    TRACE_FUNC();
         logic_.onWrite(map);
     }
 
@@ -136,6 +148,7 @@ private:
     void
     run()
     {
+    TRACE_FUNC();
         beast::setCurrentThreadName("Resource::Mngr");
         for (;;)
         {
@@ -161,6 +174,7 @@ Manager::~Manager() = default;
 std::unique_ptr<Manager>
 makeManager(beast::insight::Collector::ptr const& collector, beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::make_unique<ManagerImp>(collector, journal);
 }
 

@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <mutex>
@@ -16,12 +17,14 @@ namespace xrpl::detail {
 bool
 CachedViewImpl::exists(Keylet const& k) const
 {
+    TRACE_FUNC();
     return read(k) != nullptr;
 }
 
 std::shared_ptr<SLE const>
 CachedViewImpl::read(Keylet const& k) const
 {
+    TRACE_FUNC();
     static CountedObjects::Counter kHITS{"CachedView::hit"};
     static CountedObjects::Counter kHITSEXPIRED{"CachedView::hitExpired"};
     static CountedObjects::Counter kMISSES{"CachedView::miss"};

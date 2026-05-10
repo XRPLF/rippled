@@ -3,12 +3,14 @@
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/protocol/SystemParameters.h>
 
 #include <condition_variable>
+#include <unordered_set>
 
 namespace xrpl::NodeStore {
 
@@ -223,6 +225,12 @@ protected:
     importInternal(Backend& dstBackend, Database& srcDB);
 
     void
+    negCacheErase(uint256 const& hash);
+
+    void
+    negCacheClear();
+
+    void
     updateFetchMetrics(uint64_t fetches, uint64_t hits, uint64_t duration)
     {
         fetchTotalCount_ += fetches;
@@ -250,6 +258,10 @@ private:
     std::atomic<bool> readStopping_ = false;
     std::atomic<int> readThreads_ = 0;
     std::atomic<int> runningThreads_ = 0;
+
+    mutable std::mutex negCacheMutex_;
+    std::unordered_set<uint256, beast::Uhash<>> negCache_;
+    static constexpr std::size_t kNegCacheMax = 100'000;
 
     virtual std::shared_ptr<NodeObject>
     fetchNodeObject(

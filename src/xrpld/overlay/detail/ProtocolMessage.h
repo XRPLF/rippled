@@ -6,6 +6,7 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/messages.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
@@ -20,18 +21,21 @@ namespace xrpl {
 inline protocol::MessageType
 protocolMessageType(protocol::TMGetLedger const&)
 {
+    TRACE_FUNC();
     return protocol::mtGET_LEDGER;
 }
 
 inline protocol::MessageType
 protocolMessageType(protocol::TMReplayDeltaRequest const&)
 {
+    TRACE_FUNC();
     return protocol::mtREPLAY_DELTA_REQ;
 }
 
 inline protocol::MessageType
 protocolMessageType(protocol::TMProofPathRequest const&)
 {
+    TRACE_FUNC();
     return protocol::mtPROOF_PATH_REQ;
 }
 
@@ -40,6 +44,7 @@ template <class = void>
 std::string
 protocolMessageName(int type)
 {
+    TRACE_FUNC();
     switch (type)
     {
         case protocol::mtMANIFESTS:
@@ -123,6 +128,7 @@ template <typename BufferSequence>
 auto
 buffersBegin(BufferSequence const& bufs)
 {
+    TRACE_FUNC();
     return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::begin(bufs);
 }
 
@@ -130,6 +136,7 @@ template <typename BufferSequence>
 auto
 buffersEnd(BufferSequence const& bufs)
 {
+    TRACE_FUNC();
     return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::end(bufs);
 }
 
@@ -146,6 +153,7 @@ template <class BufferSequence>
 std::optional<MessageHeader>
 parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, std::size_t size)
 {
+    TRACE_FUNC();
     using namespace xrpl::compression;
 
     MessageHeader hdr;
@@ -237,6 +245,7 @@ template <
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
 {
+    TRACE_FUNC();
     auto m = std::make_shared<T>();
 
     ZeroCopyInputStream<Buffers> stream(buffers);
@@ -273,6 +282,7 @@ template <
 bool
 invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 {
+    TRACE_FUNC();
     auto const m = parseMessageContent<T>(header, buffers);
     if (!m)
         return false;
@@ -308,6 +318,7 @@ template <class Buffers, class Handler>
 std::pair<std::size_t, boost::system::error_code>
 invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hint)
 {
+    TRACE_FUNC();
     std::pair<std::size_t, boost::system::error_code> result = {0, {}};
 
     auto const size = boost::asio::buffer_size(buffers);

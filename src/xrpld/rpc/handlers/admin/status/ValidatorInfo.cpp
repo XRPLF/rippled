@@ -9,11 +9,13 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 json::Value
 doValidatorInfo(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     // return error if not configured as validator
     auto const validationPK = context.app.getValidationPublicKey();
     if (!validationPK)

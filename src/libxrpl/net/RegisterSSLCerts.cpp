@@ -1,6 +1,7 @@
 #include <xrpl/net/RegisterSSLCerts.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/ssl/context.hpp>
 #include <boost/system/detail/error_code.hpp>
@@ -23,6 +24,7 @@ namespace xrpl {
 void
 registerSSLCerts(boost::asio::ssl::context& ctx, boost::system::error_code& ec, beast::Journal j)
 {
+    TRACE_FUNC();
 #if BOOST_OS_WINDOWS
     auto certStoreDelete = [](void* h) {
         if (h != nullptr)

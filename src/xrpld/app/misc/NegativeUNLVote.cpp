@@ -18,6 +18,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cmath>
 #include <cstddef>
@@ -40,6 +41,7 @@ NegativeUNLVote::doVoting(
     RCLValidations& validations,
     std::shared_ptr<SHAMap> const& initialSet)
 {
+    TRACE_FUNC();
     // Voting steps:
     // -- build a reliability score table of validators
     // -- process the table and find all candidates to disable or to re-enable
@@ -113,6 +115,7 @@ NegativeUNLVote::addTx(
     NegativeUNLModify modify,
     std::shared_ptr<SHAMap> const& initialSet)
 {
+    TRACE_FUNC();
     STTx const negUnlTx(ttUNL_MODIFY, [&](auto& obj) {
         obj.setFieldU8(sfUNLModifyDisabling, modify == NegativeUNLModify::ToDisable ? 1 : 0);
         obj.setFieldU32(sfLedgerSequence, seq);
@@ -140,6 +143,7 @@ NegativeUNLVote::addTx(
 NodeID
 NegativeUNLVote::choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!candidates.empty(), "xrpl::NegativeUNLVote::choose : non-empty input");
     static_assert(NodeID::kBYTES <= uint256::kBYTES);
     NodeID const randomPad = NodeID::fromVoid(randomPadData.data());
@@ -160,6 +164,7 @@ NegativeUNLVote::buildScoreTable(
     hash_set<NodeID> const& unl,
     RCLValidations& validations)
 {
+    TRACE_FUNC();
     // Find agreed validation messages received for
     // the last FLAG_LEDGER_INTERVAL (i.e. 256) ledgers,
     // for every validator, and fill the score table.
@@ -238,6 +243,7 @@ NegativeUNLVote::findAllCandidates(
     hash_set<NodeID> const& negUnl,
     hash_map<NodeID, std::uint32_t> const& scoreTable)
 {
+    TRACE_FUNC();
     // Compute if need to find more validators to disable
     auto const canAdd = [&]() -> bool {
         auto const maxNegativeListed =
@@ -310,6 +316,7 @@ NegativeUNLVote::findAllCandidates(
 void
 NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     for (auto const& n : nowTrusted)
     {
@@ -324,6 +331,7 @@ NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrust
 void
 NegativeUNLVote::purgeNewValidators(LedgerIndex seq)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     auto i = newValidators_.begin();
     while (i != newValidators_.end())

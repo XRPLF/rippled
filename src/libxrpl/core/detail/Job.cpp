@@ -3,6 +3,7 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/core/LoadEvent.h>
 #include <xrpl/core/LoadMonitor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <functional>
@@ -27,24 +28,28 @@ Job::Job(
     std::function<void()> const& job)
     : type_(type), jobIndex_(index), job_(job), name_(name), queue_time_(clock_type::now())
 {
+    TRACE_FUNC();
     loadEvent_ = std::make_shared<LoadEvent>(std::ref(lm), name, false);
 }
 
 JobType
 Job::getType() const
 {
+    TRACE_FUNC();
     return type_;
 }
 
 Job::clock_type::time_point const&
 Job::queueTime() const
 {
+    TRACE_FUNC();
     return queue_time_;
 }
 
 void
 Job::doJob()
 {
+    TRACE_FUNC();
     beast::setCurrentThreadName("j:" + name_);
     loadEvent_->start();
     loadEvent_->setName(name_);
@@ -59,6 +64,7 @@ Job::doJob()
 bool
 Job::operator>(Job const& j) const
 {
+    TRACE_FUNC();
     if (type_ < j.type_)
         return true;
 
@@ -71,6 +77,7 @@ Job::operator>(Job const& j) const
 bool
 Job::operator>=(Job const& j) const
 {
+    TRACE_FUNC();
     if (type_ < j.type_)
         return true;
 
@@ -83,6 +90,7 @@ Job::operator>=(Job const& j) const
 bool
 Job::operator<(Job const& j) const
 {
+    TRACE_FUNC();
     if (type_ < j.type_)
         return false;
 
@@ -95,6 +103,7 @@ Job::operator<(Job const& j) const
 bool
 Job::operator<=(Job const& j) const
 {
+    TRACE_FUNC();
     if (type_ < j.type_)
         return false;
 

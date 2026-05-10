@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -18,6 +19,7 @@ assetsToSharesDeposit(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
@@ -45,6 +47,7 @@ sharesToAssetsDeposit(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
         shares.asset() == vault->at(sfShareMPTID),
@@ -72,6 +75,7 @@ assetsToSharesWithdraw(
     STAmount const& assets,
     TruncateShares truncate)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesWithdraw : non-negative assets");
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
@@ -98,6 +102,7 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
     XRPL_ASSERT(
         shares.asset() == vault->at(sfShareMPTID),

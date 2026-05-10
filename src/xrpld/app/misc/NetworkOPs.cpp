@@ -115,6 +115,7 @@
 #include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/error.hpp>
 #include <boost/asio/io_context.hpp>
@@ -173,6 +174,7 @@ class NetworkOPsImp final : public NetworkOPs
         TransactionStatus(std::shared_ptr<Transaction> t, bool a, bool l, FailHard f)
             : transaction(std::move(t)), admin(a), local(l), failType(f)
         {
+    TRACE_FUNC();
             XRPL_ASSERT(
                 local || failType == FailHard::No,
                 "xrpl::NetworkOPsImp::TransactionStatus::TransactionStatus : "
@@ -226,6 +228,7 @@ class NetworkOPsImp final : public NetworkOPs
     public:
         explicit StateAccounting()
         {
+    TRACE_FUNC();
             counters_[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].transitions = 1;
         }
 
@@ -257,6 +260,7 @@ class NetworkOPsImp final : public NetworkOPs
         CounterData
         getCounterData() const
         {
+    TRACE_FUNC();
             std::scoped_lock const lock(mutex_);
             return {
                 .counters = counters_,
@@ -281,6 +285,7 @@ class NetworkOPsImp final : public NetworkOPs
         bool
         operator==(ServerFeeSummary const& b) const
         {
+    TRACE_FUNC();
             return !(*this != b);
         }
 
@@ -336,6 +341,7 @@ public:
 
     ~NetworkOPsImp() override
     {
+    TRACE_FUNC();
         // This clear() is necessary to ensure the shared_ptrs in this map get
         // destroyed NOW because the objects in this map invoke methods on this
         // class when they are destroyed
@@ -632,6 +638,7 @@ public:
     void
     stop() override
     {
+    TRACE_FUNC();
         {
             try
             {
@@ -912,48 +919,56 @@ static auto const kGENESIS_ACCOUNT_ID =
 inline OperatingMode
 NetworkOPsImp::getOperatingMode() const
 {
+    TRACE_FUNC();
     return mode_;
 }
 
 inline std::string
 NetworkOPsImp::strOperatingMode(bool const admin /* = false */) const
 {
+    TRACE_FUNC();
     return strOperatingMode(mode_, admin);
 }
 
 inline void
 NetworkOPsImp::setStandAlone()
 {
+    TRACE_FUNC();
     setMode(OperatingMode::FULL);
 }
 
 inline void
 NetworkOPsImp::setNeedNetworkLedger()
 {
+    TRACE_FUNC();
     needNetworkLedger_ = true;
 }
 
 inline void
 NetworkOPsImp::clearNeedNetworkLedger()
 {
+    TRACE_FUNC();
     needNetworkLedger_ = false;
 }
 
 inline bool
 NetworkOPsImp::isNeedNetworkLedger()
 {
+    TRACE_FUNC();
     return needNetworkLedger_;
 }
 
 inline bool
 NetworkOPsImp::isFull()
 {
+    TRACE_FUNC();
     return !needNetworkLedger_ && (mode_ == OperatingMode::FULL);
 }
 
 std::string
 NetworkOPsImp::getHostId(bool forAdmin)
 {
+    TRACE_FUNC();
     static std::string const kHOSTNAME = boost::asio::ip::host_name();
 
     if (forAdmin)
@@ -973,6 +988,7 @@ NetworkOPsImp::getHostId(bool forAdmin)
 void
 NetworkOPsImp::setStateTimer()
 {
+    TRACE_FUNC();
     setHeartbeatTimer();
 
     // Only do this work if a cluster is configured
@@ -987,6 +1003,7 @@ NetworkOPsImp::setTimer(
     std::function<void()> onExpire,
     std::function<void()> onError)
 {
+    TRACE_FUNC();
     // Only start the timer if waitHandlerCounter_ is not yet joined.
     if (auto optionalCountedHandler =
             waitHandlerCounter_.wrap([this, onExpire, onError](boost::system::error_code const& e) {
@@ -1013,6 +1030,7 @@ NetworkOPsImp::setTimer(
 void
 NetworkOPsImp::setHeartbeatTimer()
 {
+    TRACE_FUNC();
     setTimer(
         heartbeatTimer_,
         consensus_.parms().ledgerGRANULARITY,
@@ -1025,6 +1043,7 @@ NetworkOPsImp::setHeartbeatTimer()
 void
 NetworkOPsImp::setClusterTimer()
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
 
     setTimer(
@@ -1039,6 +1058,7 @@ NetworkOPsImp::setClusterTimer()
 void
 NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << "Scheduling AccountHistory job for account "
                            << toBase58(subInfo.index->accountId);
     using namespace std::chrono_literals;
@@ -1052,6 +1072,7 @@ NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
 void
 NetworkOPsImp::processHeartbeatTimer()
 {
+    TRACE_FUNC();
     RclConsensusLogger clog("Heartbeat Timer", consensus_.validating(), journal_);
     {
         std::unique_lock lock{registry_.get().getApp().getMasterMutex()};
@@ -1134,6 +1155,7 @@ NetworkOPsImp::processHeartbeatTimer()
 void
 NetworkOPsImp::processClusterTimer()
 {
+    TRACE_FUNC();
     if (registry_.get().getCluster().size() == 0)
         return;
 
@@ -1181,6 +1203,7 @@ NetworkOPsImp::processClusterTimer()
 std::string
 NetworkOPsImp::strOperatingMode(OperatingMode const mode, bool const admin) const
 {
+    TRACE_FUNC();
     if (mode == OperatingMode::FULL && admin)
     {
         auto const consensusMode = consensus_.mode();
@@ -1200,6 +1223,7 @@ NetworkOPsImp::strOperatingMode(OperatingMode const mode, bool const admin) cons
 void
 NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 {
+    TRACE_FUNC();
     if (isNeedNetworkLedger())
     {
         // Nothing we can do if we've never been in sync
@@ -1256,6 +1280,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 bool
 NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 {
+    TRACE_FUNC();
     auto const newFlags = registry_.get().getHashRouter().getFlags(transaction->getID());
 
     if ((newFlags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
@@ -1312,6 +1337,7 @@ NetworkOPsImp::processTransaction(
     bool bLocal,
     FailHard failType)
 {
+    TRACE_FUNC();
     auto ev = job_queue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
 
     // preProcessTransaction can change our pointer
@@ -1334,6 +1360,7 @@ NetworkOPsImp::doTransactionAsync(
     bool bUnlimited,
     FailHard failType)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     if (transaction->getApplying())
@@ -1357,6 +1384,7 @@ NetworkOPsImp::doTransactionSync(
     bool bUnlimited,
     FailHard failType)
 {
+    TRACE_FUNC();
     std::unique_lock<std::mutex> lock(mutex_);
 
     if (!transaction->getApplying())
@@ -1375,6 +1403,7 @@ NetworkOPsImp::doTransactionSyncBatch(
     std::unique_lock<std::mutex>& lock,
     std::function<bool(std::unique_lock<std::mutex> const&)> retryCallback)
 {
+    TRACE_FUNC();
     do
     {
         if (dispatchState_ == DispatchState::Running)
@@ -1401,6 +1430,7 @@ NetworkOPsImp::doTransactionSyncBatch(
 void
 NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
 {
+    TRACE_FUNC();
     auto ev = job_queue_.makeLoadEvent(JtTxnProc, "ProcessTXNSet");
     std::vector<std::shared_ptr<Transaction>> candidates;
     candidates.reserve(set.size());
@@ -1466,6 +1496,7 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
 void
 NetworkOPsImp::transactionBatch()
 {
+    TRACE_FUNC();
     std::unique_lock<std::mutex> lock(mutex_);
 
     if (dispatchState_ == DispatchState::Running)
@@ -1480,6 +1511,7 @@ NetworkOPsImp::transactionBatch()
 void
 NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 {
+    TRACE_FUNC();
     std::vector<TransactionStatus> submitHeld;
     std::vector<TransactionStatus> transactions;
     transactions_.swap(transactions);
@@ -1733,6 +1765,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 json::Value
 NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID const& account)
 {
+    TRACE_FUNC();
     json::Value jvObjects(json::ObjectValue);
     auto root = keylet::ownerDir(account);
     auto sleNode = lpLedger->read(keylet::page(root));
@@ -1797,18 +1830,21 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
 inline bool
 NetworkOPsImp::isBlocked()
 {
+    TRACE_FUNC();
     return isAmendmentBlocked() || isUNLBlocked();
 }
 
 inline bool
 NetworkOPsImp::isAmendmentBlocked()
 {
+    TRACE_FUNC();
     return amendmentBlocked_;
 }
 
 void
 NetworkOPsImp::setAmendmentBlocked()
 {
+    TRACE_FUNC();
     amendmentBlocked_ = true;
     setMode(OperatingMode::CONNECTED);
 }
@@ -1816,30 +1852,35 @@ NetworkOPsImp::setAmendmentBlocked()
 inline bool
 NetworkOPsImp::isAmendmentWarned()
 {
+    TRACE_FUNC();
     return !amendmentBlocked_ && amendmentWarned_;
 }
 
 inline void
 NetworkOPsImp::setAmendmentWarned()
 {
+    TRACE_FUNC();
     amendmentWarned_ = true;
 }
 
 inline void
 NetworkOPsImp::clearAmendmentWarned()
 {
+    TRACE_FUNC();
     amendmentWarned_ = false;
 }
 
 inline bool
 NetworkOPsImp::isUNLBlocked()
 {
+    TRACE_FUNC();
     return unlBlocked_;
 }
 
 void
 NetworkOPsImp::setUNLBlocked()
 {
+    TRACE_FUNC();
     unlBlocked_ = true;
     setMode(OperatingMode::CONNECTED);
 }
@@ -1847,12 +1888,14 @@ NetworkOPsImp::setUNLBlocked()
 inline void
 NetworkOPsImp::clearUNLBlocked()
 {
+    TRACE_FUNC();
     unlBlocked_ = false;
 }
 
 bool
 NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint256& networkClosed)
 {
+    TRACE_FUNC();
     // Returns true if there's an *abnormal* ledger issue, normal changing in
     // TRACKING mode should return false.  Do we have sufficient validations for
     // our last closed ledger? Or do sufficient nodes agree? And do we have no
@@ -1958,6 +2001,7 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint
 void
 NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLCL)
 {
+    TRACE_FUNC();
     // set the newLCL as our last closed ledger -- this is abnormal code
     JLOG(journal_.error()) << "JUMP last closed ledger to " << newLCL->header().hash;
 
@@ -2015,6 +2059,7 @@ NetworkOPsImp::beginConsensus(
     uint256 const& networkClosed,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(networkClosed.isNonZero(), "xrpl::NetworkOPsImp::beginConsensus : nonzero input");
 
     auto closingInfo = ledgerMaster_.getCurrentLedger()->header();
@@ -2085,6 +2130,7 @@ NetworkOPsImp::beginConsensus(
 bool
 NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
 {
+    TRACE_FUNC();
     auto const& peerKey = peerPos.publicKey();
     if (validatorPK_ == peerKey || validatorMasterPK_ == peerKey)
     {
@@ -2110,6 +2156,7 @@ NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
 void
 NetworkOPsImp::mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire)
 {
+    TRACE_FUNC();
     // We now have an additional transaction set
     // Inform peers we have this set
     protocol::TMHaveTransactionSet msg;
@@ -2126,6 +2173,7 @@ NetworkOPsImp::mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire)
 void
 NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     uint256 const deadLedger = ledgerMaster_.getClosedLedger()->header().parentHash;
     for (auto const& it : registry_.get().getOverlay().getActivePeers())
     {
@@ -2181,6 +2229,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
 void
 NetworkOPsImp::consensusViewChange()
 {
+    TRACE_FUNC();
     if ((mode_ == OperatingMode::FULL) || (mode_ == OperatingMode::TRACKING))
     {
         setMode(OperatingMode::CONNECTED);
@@ -2190,6 +2239,7 @@ NetworkOPsImp::consensusViewChange()
 void
 NetworkOPsImp::pubManifest(Manifest const& mo)
 {
+    TRACE_FUNC();
     // VFALCO consider std::shared_mutex
     std::scoped_lock const sl(subLock_);
 
@@ -2238,6 +2288,7 @@ NetworkOPsImp::ServerFeeSummary::ServerFeeSummary(
 bool
 NetworkOPsImp::ServerFeeSummary::operator!=(NetworkOPsImp::ServerFeeSummary const& b) const
 {
+    TRACE_FUNC();
     if (loadFactorServer != b.loadFactorServer || loadBaseServer != b.loadBaseServer ||
         baseFee != b.baseFee || em.has_value() != b.em.has_value())
         return true;
@@ -2257,6 +2308,7 @@ NetworkOPsImp::ServerFeeSummary::operator!=(NetworkOPsImp::ServerFeeSummary cons
 static std::uint32_t
 trunc32(std::uint64_t v)
 {
+    TRACE_FUNC();
     constexpr std::uint64_t kMAX32 = std::numeric_limits<std::uint32_t>::max();
 
     return std::min(kMAX32, v);
@@ -2265,6 +2317,7 @@ trunc32(std::uint64_t v)
 void
 NetworkOPsImp::pubServer()
 {
+    TRACE_FUNC();
     // VFALCO TODO Don't hold the lock across calls to send...make a copy of the
     //             list into a local array while holding the lock then release
     //             the lock and call send on everyone.
@@ -2328,6 +2381,7 @@ NetworkOPsImp::pubServer()
 void
 NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
 
     auto& streamMap = streamMaps_[SConsensusPhase];
@@ -2355,6 +2409,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 void
 NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 {
+    TRACE_FUNC();
     // VFALCO consider std::shared_mutex
     std::scoped_lock const sl(subLock_);
 
@@ -2461,6 +2516,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 void
 NetworkOPsImp::pubPeerStatus(std::function<json::Value(void)> const& func)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
 
     if (!streamMaps_[SPeerStatus].empty())
@@ -2489,6 +2545,7 @@ NetworkOPsImp::pubPeerStatus(std::function<json::Value(void)> const& func)
 void
 NetworkOPsImp::setMode(OperatingMode om)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     if (om == OperatingMode::CONNECTED)
     {
@@ -2518,6 +2575,7 @@ NetworkOPsImp::setMode(OperatingMode om)
 bool
 NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::string const& source)
 {
+    TRACE_FUNC();
     JLOG(journal_.trace()) << "recvValidation " << val->getLedgerHash() << " from " << source;
 
     std::unique_lock lock(validationsMutex_);
@@ -2576,12 +2634,14 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
 json::Value
 NetworkOPsImp::getConsensusInfo()
 {
+    TRACE_FUNC();
     return consensus_.getJson(true);
 }
 
 json::Value
 NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 {
+    TRACE_FUNC();
     json::Value info = json::ObjectValue;
 
     // System-level warnings
@@ -2993,12 +3053,14 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 void
 NetworkOPsImp::clearLedgerFetch()
 {
+    TRACE_FUNC();
     registry_.get().getInboundLedgers().clearFailures();
 }
 
 json::Value
 NetworkOPsImp::getLedgerFetchInfo()
 {
+    TRACE_FUNC();
     return registry_.get().getInboundLedgers().getInfo();
 }
 
@@ -3008,6 +3070,7 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
+    TRACE_FUNC();
     // never publish an inner txn inside a batch txn. The flag should
     // only be set if the Batch feature is enabled. If Batch is not
     // enabled, the flag is always invalid, so don't publish it
@@ -3045,6 +3108,7 @@ NetworkOPsImp::pubProposedTransaction(
 void
 NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 {
+    TRACE_FUNC();
     // Ledgers are published only when they acquire sufficient validations
     // Holes are filled across connection loss or other catastrophe
 
@@ -3161,6 +3225,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 void
 NetworkOPsImp::reportFeeChange()
 {
+    TRACE_FUNC();
     ServerFeeSummary const f{
         registry_.get().getOpenLedger().current()->fees().base,
         registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current()),
@@ -3176,17 +3241,20 @@ NetworkOPsImp::reportFeeChange()
 void
 NetworkOPsImp::reportConsensusStateChange(ConsensusPhase phase)
 {
+    TRACE_FUNC();
     job_queue_.addJob(JtClientConsensus, "PubCons", [this, phase]() { pubConsensus(phase); });
 }
 
 inline void
 NetworkOPsImp::updateLocalTx(ReadView const& view)
 {
+    TRACE_FUNC();
     localTX_->sweep(view);
 }
 inline std::size_t
 NetworkOPsImp::getLocalTxCount()
 {
+    TRACE_FUNC();
     return localTX_->size();
 }
 
@@ -3200,6 +3268,7 @@ NetworkOPsImp::transJson(
     std::shared_ptr<ReadView const> const& ledger,
     std::optional<std::reference_wrapper<TxMeta const>> meta)
 {
+    TRACE_FUNC();
     json::Value jvObj(json::ObjectValue);
     std::string sToken;
     std::string sHuman;
@@ -3302,6 +3371,7 @@ NetworkOPsImp::pubValidatedTransaction(
     AcceptedLedgerTx const& transaction,
     bool last)
 {
+    TRACE_FUNC();
     auto const& stTxn = transaction.getTxn();
 
     // Create two different Json objects, for different API versions
@@ -3362,6 +3432,7 @@ NetworkOPsImp::pubAccountTransaction(
     AcceptedLedgerTx const& transaction,
     bool last)
 {
+    TRACE_FUNC();
     hash_set<InfoSub::pointer> notify;
     int iProposed = 0;
     int iAccepted = 0;
@@ -3496,6 +3567,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
     std::shared_ptr<STTx const> const& tx,
     TER result)
 {
+    TRACE_FUNC();
     hash_set<InfoSub::pointer> notify;
     int iProposed = 0;
 
@@ -3577,6 +3649,7 @@ NetworkOPsImp::subAccount(
     hash_set<AccountID> const& vnaAccountIDs,
     bool rt)
 {
+    TRACE_FUNC();
     SubInfoMapType& subMap = rt ? subRTAccount_ : subAccount_;
 
     for (auto const& naAccountID : vnaAccountIDs)
@@ -3613,6 +3686,7 @@ NetworkOPsImp::unsubAccount(
     hash_set<AccountID> const& vnaAccountIDs,
     bool rt)
 {
+    TRACE_FUNC();
     for (auto const& naAccountID : vnaAccountIDs)
     {
         // Remove from the InfoSub
@@ -3629,6 +3703,7 @@ NetworkOPsImp::unsubAccountInternal(
     hash_set<AccountID> const& vnaAccountIDs,
     bool rt)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
 
     SubInfoMapType& subMap = rt ? subRTAccount_ : subAccount_;
@@ -3654,6 +3729,7 @@ NetworkOPsImp::unsubAccountInternal(
 void
 NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 {
+    TRACE_FUNC();
     registry_.get().getJobQueue().addJob(JtClientAcctHist, "HistTxStream", [this, subInfo]() {
         auto const& accountId = subInfo.index->accountId;
         auto& lastLedgerSeq = subInfo.index->historyLastLedgerSeq;
@@ -3884,6 +3960,7 @@ NetworkOPsImp::subAccountHistoryStart(
     std::shared_ptr<ReadView const> const& ledger,
     SubAccountHistoryInfoWeak& subInfo)
 {
+    TRACE_FUNC();
     subInfo.index->separationLedgerSeq = ledger->seq();
     auto const& accountId = subInfo.index->accountId;
     auto const accountKeylet = keylet::account(accountId);
@@ -3927,6 +4004,7 @@ NetworkOPsImp::subAccountHistoryStart(
 ErrorCodeI
 NetworkOPsImp::subAccountHistory(InfoSub::ref isrListener, AccountID const& accountId)
 {
+    TRACE_FUNC();
     if (!isrListener->insertSubAccountHistory(accountId))
     {
         JLOG(journal_.debug()) << "subAccountHistory, already subscribed to account "
@@ -3971,6 +4049,7 @@ NetworkOPsImp::unsubAccountHistory(
     AccountID const& account,
     bool historyOnly)
 {
+    TRACE_FUNC();
     if (!historyOnly)
         isrListener->deleteSubAccountHistory(account);
     unsubAccountHistoryInternal(isrListener->getSeq(), account, historyOnly);
@@ -3982,6 +4061,7 @@ NetworkOPsImp::unsubAccountHistoryInternal(
     AccountID const& account,
     bool historyOnly)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     auto simIterator = subAccountHistory_.find(account);
     if (simIterator != subAccountHistory_.end())
@@ -4009,6 +4089,7 @@ NetworkOPsImp::unsubAccountHistoryInternal(
 bool
 NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
 {
+    TRACE_FUNC();
     if (auto listeners = registry_.get().getOrderBookDB().makeBookListeners(book))
     {
         listeners->addSubscriber(isrListener);
@@ -4025,6 +4106,7 @@ NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
 bool
 NetworkOPsImp::unsubBook(std::uint64_t uSeq, Book const& book)
 {
+    TRACE_FUNC();
     if (auto listeners = registry_.get().getOrderBookDB().getBookListeners(book))
         listeners->removeSubscriber(uSeq);
 
@@ -4034,6 +4116,7 @@ NetworkOPsImp::unsubBook(std::uint64_t uSeq, Book const& book)
 std::uint32_t
 NetworkOPsImp::acceptLedger(std::optional<std::chrono::milliseconds> consensusDelay)
 {
+    TRACE_FUNC();
     // This code-path is exclusively used when the server is in standalone
     // mode via `ledger_accept`
     XRPL_ASSERT(standalone_, "xrpl::NetworkOPsImp::acceptLedger : is standalone");
@@ -4052,6 +4135,7 @@ NetworkOPsImp::acceptLedger(std::optional<std::chrono::milliseconds> consensusDe
 bool
 NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
 {
+    TRACE_FUNC();
     if (auto lpClosed = ledgerMaster_.getValidatedLedger())
     {
         jvResult[jss::ledger_index] = lpClosed->header().seq;
@@ -4079,6 +4163,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
 bool
 NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SBookChanges].emplace(isrListener->getSeq(), isrListener).second;
 }
@@ -4087,6 +4172,7 @@ NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SLedger].erase(uSeq) != 0u;
 }
@@ -4095,6 +4181,7 @@ NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 bool
 NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SBookChanges].erase(uSeq) != 0u;
 }
@@ -4103,6 +4190,7 @@ NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subManifests(InfoSub::ref isrListener)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SManifests].emplace(isrListener->getSeq(), isrListener).second;
 }
@@ -4111,6 +4199,7 @@ NetworkOPsImp::subManifests(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubManifests(std::uint64_t uSeq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SManifests].erase(uSeq) != 0u;
 }
@@ -4119,6 +4208,7 @@ NetworkOPsImp::unsubManifests(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subServer(InfoSub::ref isrListener, json::Value& jvResult, bool admin)
 {
+    TRACE_FUNC();
     uint256 uRandom;
 
     if (standalone_)
@@ -4144,6 +4234,7 @@ NetworkOPsImp::subServer(InfoSub::ref isrListener, json::Value& jvResult, bool a
 bool
 NetworkOPsImp::unsubServer(std::uint64_t uSeq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SServer].erase(uSeq) != 0u;
 }
@@ -4152,6 +4243,7 @@ NetworkOPsImp::unsubServer(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subTransactions(InfoSub::ref isrListener)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[STransactions].emplace(isrListener->getSeq(), isrListener).second;
 }
@@ -4160,6 +4252,7 @@ NetworkOPsImp::subTransactions(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubTransactions(std::uint64_t uSeq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[STransactions].erase(uSeq) != 0u;
 }
@@ -4168,6 +4261,7 @@ NetworkOPsImp::unsubTransactions(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subRTTransactions(InfoSub::ref isrListener)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SRtTransactions].emplace(isrListener->getSeq(), isrListener).second;
 }
@@ -4176,6 +4270,7 @@ NetworkOPsImp::subRTTransactions(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubRTTransactions(std::uint64_t uSeq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SRtTransactions].erase(uSeq) != 0u;
 }
@@ -4184,6 +4279,7 @@ NetworkOPsImp::unsubRTTransactions(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subValidations(InfoSub::ref isrListener)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SValidations].emplace(isrListener->getSeq(), isrListener).second;
 }
@@ -4191,6 +4287,7 @@ NetworkOPsImp::subValidations(InfoSub::ref isrListener)
 void
 NetworkOPsImp::stateAccounting(json::Value& obj)
 {
+    TRACE_FUNC();
     accounting_.json(obj);
 }
 
@@ -4198,6 +4295,7 @@ NetworkOPsImp::stateAccounting(json::Value& obj)
 bool
 NetworkOPsImp::unsubValidations(std::uint64_t uSeq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SValidations].erase(uSeq) != 0u;
 }
@@ -4206,6 +4304,7 @@ NetworkOPsImp::unsubValidations(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subPeerStatus(InfoSub::ref isrListener)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SPeerStatus].emplace(isrListener->getSeq(), isrListener).second;
 }
@@ -4214,6 +4313,7 @@ NetworkOPsImp::subPeerStatus(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubPeerStatus(std::uint64_t uSeq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SPeerStatus].erase(uSeq) != 0u;
 }
@@ -4222,6 +4322,7 @@ NetworkOPsImp::unsubPeerStatus(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subConsensus(InfoSub::ref isrListener)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SConsensusPhase].emplace(isrListener->getSeq(), isrListener).second;
 }
@@ -4230,6 +4331,7 @@ NetworkOPsImp::subConsensus(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     return streamMaps_[SConsensusPhase].erase(uSeq) != 0u;
 }
@@ -4237,6 +4339,7 @@ NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 InfoSub::pointer
 NetworkOPsImp::findRpcSub(std::string const& strUrl)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
 
     subRpcMapType::iterator const it = rpcSubMap_.find(strUrl);
@@ -4250,6 +4353,7 @@ NetworkOPsImp::findRpcSub(std::string const& strUrl)
 InfoSub::pointer
 NetworkOPsImp::addRpcSub(std::string const& strUrl, InfoSub::ref rspEntry)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
 
     rpcSubMap_.emplace(strUrl, rspEntry);
@@ -4260,6 +4364,7 @@ NetworkOPsImp::addRpcSub(std::string const& strUrl, InfoSub::ref rspEntry)
 bool
 NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(subLock_);
     auto pInfo = findRpcSub(strUrl);
 
@@ -4496,6 +4601,7 @@ NetworkOPsImp::getBookPage(
     json::Value const& jvMarker,
     json::Value& jvResult)
 {
+    TRACE_FUNC();
     auto& jvOffers = (jvResult[jss::offers] = json::Value(json::arrayValue));
 
     std::map<AccountID, STAmount> umBalance;
@@ -4619,6 +4725,7 @@ NetworkOPsImp::getBookPage(
 inline void
 NetworkOPsImp::collectMetrics()
 {
+    TRACE_FUNC();
     auto [counters, mode, start, initialSync] = accounting_.getCounterData();
     auto const current = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now() - start);
@@ -4650,6 +4757,7 @@ NetworkOPsImp::collectMetrics()
 void
 NetworkOPsImp::StateAccounting::mode(OperatingMode om)
 {
+    TRACE_FUNC();
     auto now = std::chrono::steady_clock::now();
 
     std::scoped_lock const lock(mutex_);
@@ -4669,6 +4777,7 @@ NetworkOPsImp::StateAccounting::mode(OperatingMode om)
 void
 NetworkOPsImp::StateAccounting::json(json::Value& obj) const
 {
+    TRACE_FUNC();
     auto [counters, mode, start, initialSync] = getCounterData();
     auto const current = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now() - start);
@@ -4705,6 +4814,7 @@ makeNetworkOPs(
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector)
 {
+    TRACE_FUNC();
     return std::make_unique<NetworkOPsImp>(
         registry,
         clock,

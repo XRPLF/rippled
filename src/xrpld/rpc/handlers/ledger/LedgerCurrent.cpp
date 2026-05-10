@@ -4,12 +4,14 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
 json::Value
 doLedgerCurrent(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     json::Value jvResult;
     jvResult[jss::ledger_current_index] = context.ledgerMaster.getCurrentLedgerIndex();
     return jvResult;

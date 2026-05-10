@@ -14,6 +14,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -24,6 +25,7 @@ namespace xrpl {
 NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
     if (permissions.size() > kPERMISSION_MAX_SIZE)
         return temARRAY_TOO_LARGE;
@@ -49,6 +51,7 @@ DelegateSet::preflight(PreflightContext const& ctx)
 TER
 DelegateSet::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAccount])))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
@@ -68,6 +71,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
+    TRACE_FUNC();
     auto const sleOwner = ctx_.view().peek(keylet::account(account_));
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -134,6 +138,7 @@ DelegateSet::doApply()
 TER
 DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
 {
+    TRACE_FUNC();
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -184,6 +189,7 @@ DelegateSet::visitInvariantEntry(
 bool
 DelegateSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

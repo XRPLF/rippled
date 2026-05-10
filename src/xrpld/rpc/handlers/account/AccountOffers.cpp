@@ -19,6 +19,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
@@ -35,6 +36,7 @@ namespace xrpl {
 void
 appendOfferJson(std::shared_ptr<SLE const> const& offer, json::Value& offers)
 {
+    TRACE_FUNC();
     STAmount const dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
     json::Value& obj(offers.append(json::ObjectValue));
     offer->getFieldAmount(sfTakerPays).setJson(obj[jss::taker_pays]);
@@ -56,6 +58,7 @@ appendOfferJson(std::shared_ptr<SLE const> const& offer, json::Value& offers)
 json::Value
 doAccountOffers(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto const& params(context.params);
     if (!params.isMember(jss::account))
         return RPC::missingFieldError(jss::account);

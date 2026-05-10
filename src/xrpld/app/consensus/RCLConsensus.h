@@ -12,6 +12,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 #include <memory>
@@ -89,24 +90,28 @@ class RCLConsensus
         bool
         validating() const
         {
+    TRACE_FUNC();
             return validating_;
         }
 
         std::size_t
         prevProposers() const
         {
+    TRACE_FUNC();
             return prevProposers_;
         }
 
         std::chrono::milliseconds
         prevRoundTime() const
         {
+    TRACE_FUNC();
             return prevRoundTime_;
         }
 
         ConsensusMode
         mode() const
         {
+    TRACE_FUNC();
             return mode_;
         }
 
@@ -153,6 +158,7 @@ class RCLConsensus
         ConsensusParms const&
         parms() const
         {
+    TRACE_FUNC();
             return parms_;
         }
 
@@ -405,6 +411,7 @@ public:
     bool
     validating() const
     {
+    TRACE_FUNC();
         return adaptor_.validating();
     }
 
@@ -413,6 +420,7 @@ public:
     std::size_t
     prevProposers() const
     {
+    TRACE_FUNC();
         return adaptor_.prevProposers();
     }
 
@@ -426,6 +434,7 @@ public:
     std::chrono::milliseconds
     prevRoundTime() const
     {
+    TRACE_FUNC();
         return adaptor_.prevRoundTime();
     }
 
@@ -433,12 +442,14 @@ public:
     ConsensusMode
     mode() const
     {
+    TRACE_FUNC();
         return adaptor_.mode();
     }
 
     ConsensusPhase
     phase() const
     {
+    TRACE_FUNC();
         return consensus_.phase();
     }
 
@@ -472,6 +483,7 @@ public:
     RCLCxLedger::ID
     prevLedgerID() const
     {
+    TRACE_FUNC();
         std::scoped_lock const _{mutex_};
         return consensus_.prevLedgerID();
     }
@@ -489,6 +501,7 @@ public:
     ConsensusParms const&
     parms() const
     {
+    TRACE_FUNC();
         return adaptor_.parms();
     }
 
@@ -526,6 +539,7 @@ public:
     std::unique_ptr<std::stringstream> const&
     ss()
     {
+    TRACE_FUNC();
         return ss_;
     }
 };

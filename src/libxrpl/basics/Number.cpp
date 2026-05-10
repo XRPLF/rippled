@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -33,24 +34,28 @@ thread_local std::reference_wrapper<MantissaRange const> Number::kRANGE = kLARGE
 Number::RoundingMode
 Number::getround()
 {
+    TRACE_FUNC();
     return mode;
 }
 
 Number::RoundingMode
 Number::setround(RoundingMode inMode)
 {
+    TRACE_FUNC();
     return std::exchange(Number::mode, inMode);
 }
 
 MantissaRange::MantissaScale
 Number::getMantissaScale()
 {
+    TRACE_FUNC();
     return kRANGE.get().scale;
 }
 
 void
 Number::setMantissaScale(MantissaRange::MantissaScale scale)
 {
+    TRACE_FUNC();
     if (scale != MantissaRange::MantissaScale::Small &&
         scale != MantissaRange::MantissaScale::Large)
         logicError("Unknown mantissa scale");
@@ -130,24 +135,28 @@ private:
 inline void
 Number::Guard::setPositive() noexcept
 {
+    TRACE_FUNC();
     sbit_ = 0;
 }
 
 inline void
 Number::Guard::setNegative() noexcept
 {
+    TRACE_FUNC();
     sbit_ = 1;
 }
 
 inline bool
 Number::Guard::isNegative() const noexcept
 {
+    TRACE_FUNC();
     return sbit_ == 1;
 }
 
 inline void
 Number::Guard::doPush(unsigned d) noexcept
 {
+    TRACE_FUNC();
     xbit_ = xbit_ || ((digits_ & 0x0000'0000'0000'000F) != 0);
     digits_ >>= 4;
     digits_ |= (d & 0x0000'0000'0000'000FULL) << 60;
@@ -157,12 +166,14 @@ template <class T>
 inline void
 Number::Guard::push(T d) noexcept
 {
+    TRACE_FUNC();
     doPush(static_cast<unsigned>(d));
 }
 
 inline unsigned
 Number::Guard::pop() noexcept
 {
+    TRACE_FUNC();
     unsigned const d = (digits_ & 0xF000'0000'0000'0000) >> 60;
     digits_ <<= 4;
     return d;
@@ -175,6 +186,7 @@ Number::Guard::pop() noexcept
 int
 Number::Guard::round() const noexcept
 {
+    TRACE_FUNC();
     auto mode = Number::getround();
 
     if (mode == RoundingMode::TowardsZero)
@@ -217,6 +229,7 @@ Number::Guard::bringIntoRange(
     int& exponent,
     internalrep const& minMantissa)
 {
+    TRACE_FUNC();
     // Bring mantissa back into the minMantissa / maxMantissa range AFTER
     // rounding
     if (mantissa < minMantissa)
@@ -244,6 +257,7 @@ Number::Guard::doRoundUp(
     internalrep const& maxMantissa,
     std::string location)
 {
+    TRACE_FUNC();
     auto r = round();
     if (r == 1 || (r == 0 && (mantissa & 1) == 1))
     {
@@ -269,6 +283,7 @@ Number::Guard::doRoundDown(
     int& exponent,
     internalrep const& minMantissa)
 {
+    TRACE_FUNC();
     auto r = round();
     if (r == 1 || (r == 0 && (mantissa & 1) == 1))
     {
@@ -286,6 +301,7 @@ Number::Guard::doRoundDown(
 void
 Number::Guard::doRound(rep& drops, std::string location) const
 {
+    TRACE_FUNC();
     auto r = round();
     if (r == 1 || (r == 0 && (drops & 1) == 1))
     {
@@ -315,6 +331,7 @@ Number::Guard::doRound(rep& drops, std::string location) const
 Number::internalrep
 Number::externalToInternal(rep mantissa)
 {
+    TRACE_FUNC();
     // If the mantissa is already positive, just return it
     if (mantissa >= 0)
         return mantissa;
@@ -350,6 +367,7 @@ constexpr Number kONE_LRG = Number::oneLarge();
 Number
 Number::one()
 {
+    TRACE_FUNC();
     if (&kRANGE.get() == &kSMALL_RANGE)
         return kONE_SML;
     XRPL_ASSERT(&kRANGE.get() == &kLARGE_RANGE, "Number::one() : valid range");
@@ -367,6 +385,7 @@ doNormalize(
     MantissaRange::rep const& minMantissa,
     MantissaRange::rep const& maxMantissa)
 {
+    TRACE_FUNC();
     auto constexpr kMIN_EXPONENT = Number::kMIN_EXPONENT;
     auto constexpr kMAX_EXPONENT = Number::kMAX_EXPONENT;
     auto constexpr kMAX_REP = Number::kMAX_REP;
@@ -450,6 +469,7 @@ Number::normalize<uint128_t>(
     internalrep const& minMantissa,
     internalrep const& maxMantissa)
 {
+    TRACE_FUNC();
     doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa);
 }
 
@@ -462,6 +482,7 @@ Number::normalize<unsigned long long>(
     internalrep const& minMantissa,
     internalrep const& maxMantissa)
 {
+    TRACE_FUNC();
     doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa);
 }
 
@@ -474,12 +495,14 @@ Number::normalize<unsigned long>(
     internalrep const& minMantissa,
     internalrep const& maxMantissa)
 {
+    TRACE_FUNC();
     doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa);
 }
 
 void
 Number::normalize()
 {
+    TRACE_FUNC();
     auto const& range = kRANGE.get();
     normalize(negative_, mantissa_, exponent_, range.min, range.max);
 }
@@ -490,6 +513,7 @@ Number::normalize()
 Number
 Number::shiftExponent(int exponentDelta) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT_PARTS(isnormal(), "xrpl::Number::shiftExponent", "normalized");
     auto const newExponent = exponent_ + exponentDelta;
     if (newExponent >= kMAX_EXPONENT)
@@ -506,6 +530,7 @@ Number::shiftExponent(int exponentDelta) const
 Number&
 Number::operator+=(Number const& y)
 {
+    TRACE_FUNC();
     constexpr Number kZERO = Number{};
     if (y == kZERO)
         return *this;
@@ -611,6 +636,7 @@ Number::operator+=(Number const& y)
 static inline unsigned
 divu10(uint128_t& u)
 {
+    TRACE_FUNC();
     // q = u * 0.75
     auto q = (u >> 1) + (u >> 2);
     // iterate towards q = u * 0.8
@@ -633,6 +659,7 @@ divu10(uint128_t& u)
 Number&
 Number::operator*=(Number const& y)
 {
+    TRACE_FUNC();
     constexpr Number kZERO = Number{};
     if (*this == kZERO)
         return *this;
@@ -696,6 +723,7 @@ Number::operator*=(Number const& y)
 Number&
 Number::operator/=(Number const& y)
 {
+    TRACE_FUNC();
     constexpr Number kZERO = Number{};
     if (y == kZERO)
         throw std::overflow_error("Number: divide by 0");
@@ -791,6 +819,7 @@ Number::operator/=(Number const& y)
 Number::
 operator rep() const
 {
+    TRACE_FUNC();
     rep drops = mantissa();
     int offset = exponent();
     Guard g;
@@ -820,6 +849,7 @@ operator rep() const
 Number
 Number::truncate() const noexcept
 {
+    TRACE_FUNC();
     if (exponent_ >= 0 || mantissa_ == 0)
         return *this;
 
@@ -838,6 +868,7 @@ Number::truncate() const noexcept
 std::string
 to_string(Number const& amount)
 {
+    TRACE_FUNC();
     // keep full internal accuracy, but make more human friendly if possible
     constexpr Number kZERO = Number{};
     if (amount == kZERO)
@@ -936,6 +967,7 @@ to_string(Number const& amount)
 Number
 power(Number const& f, unsigned n)
 {
+    TRACE_FUNC();
     if (n == 0)
         return Number::one();
     if (n == 1)
@@ -959,6 +991,7 @@ power(Number const& f, unsigned n)
 Number
 root(Number f, unsigned d)
 {
+    TRACE_FUNC();
     constexpr Number kZERO = Number{};
     auto const one = Number::one();
 
@@ -1031,6 +1064,7 @@ root(Number f, unsigned d)
 Number
 root2(Number f)
 {
+    TRACE_FUNC();
     constexpr Number kZERO = Number{};
     auto const one = Number::one();
 
@@ -1078,6 +1112,7 @@ root2(Number f)
 Number
 power(Number const& f, unsigned n, unsigned d)
 {
+    TRACE_FUNC();
     constexpr Number kZERO = Number{};
     auto const one = Number::one();
 

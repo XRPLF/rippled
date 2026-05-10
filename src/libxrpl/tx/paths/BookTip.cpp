@@ -7,6 +7,7 @@
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -20,6 +21,7 @@ BookTip::BookTip(ApplyView& view, Book const& book)
 bool
 BookTip::step(beast::Journal j)
 {
+    TRACE_FUNC();
     if (valid_)
     {
         if (entry_)

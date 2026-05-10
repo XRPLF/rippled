@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <utility>
@@ -25,12 +26,14 @@ namespace xrpl {
 bool
 PermissionedDomainSet::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC
 PermissionedDomainSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (auto err = credentials::checkArray(
             ctx.tx.getFieldArray(sfAcceptedCredentials),
             kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE,
@@ -48,6 +51,7 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
 TER
 PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const account = ctx.tx.getAccountID(sfAccount);
 
     if (!ctx.view.exists(keylet::account(account)))
@@ -77,6 +81,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
+    TRACE_FUNC();
     auto const ownerSle = view().peek(keylet::account(account_));
     if (!ownerSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -147,6 +152,7 @@ PermissionedDomainSet::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

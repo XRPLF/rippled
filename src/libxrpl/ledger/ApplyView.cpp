@@ -11,6 +11,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STVector256.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -33,6 +34,7 @@ createRoot(
     uint256 const& key,
     std::function<void(std::shared_ptr<SLE> const&)> const& describe)
 {
+    TRACE_FUNC();
     auto newRoot = std::make_shared<SLE>(directory);
     newRoot->setFieldH256(sfRootIndex, directory.key);
     describe(newRoot);
@@ -48,6 +50,7 @@ createRoot(
 auto
 findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
 {
+    TRACE_FUNC();
     std::uint64_t const page = start->getFieldU64(sfIndexPrevious);
 
     auto node = start;
@@ -75,6 +78,7 @@ insertKey(
     STVector256& indexes,
     uint256 const& key)
 {
+    TRACE_FUNC();
     if (preserveOrder)
     {
         if (std::ranges::find(indexes, key) != indexes.end())
@@ -112,6 +116,7 @@ insertPage(
     Keylet const& directory,
     std::function<void(std::shared_ptr<SLE> const&)> const& describe)
 {
+    TRACE_FUNC();
     // We rely on modulo arithmetic of unsigned integers (guaranteed in
     // [basic.fundamental] paragraph 2) to detect page representation overflow.
     // For signed integers this would be UB, hence static_assert here.
@@ -168,6 +173,7 @@ ApplyView::dirAdd(
     uint256 const& key,
     std::function<void(std::shared_ptr<SLE> const&)> const& describe)
 {
+    TRACE_FUNC();
     auto root = peek(directory);
 
     if (!root)
@@ -190,6 +196,7 @@ ApplyView::dirAdd(
 bool
 ApplyView::emptyDirDelete(Keylet const& directory)
 {
+    TRACE_FUNC();
     auto node = peek(directory);
 
     if (!node)
@@ -255,6 +262,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
 bool
 ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const& key, bool keepRoot)
 {
+    TRACE_FUNC();
     auto node = peek(keylet::page(directory, page));
 
     if (!node)
@@ -395,6 +403,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
 bool
 ApplyView::dirDelete(Keylet const& directory, std::function<void(uint256 const&)> const& callback)
 {
+    TRACE_FUNC();
     std::optional<std::uint64_t> pi;
 
     do

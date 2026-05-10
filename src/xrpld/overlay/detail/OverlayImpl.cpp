@@ -50,6 +50,7 @@
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/Wallet.h>
 #include <xrpl/server/Writer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/bind_executor.hpp>
@@ -111,6 +112,7 @@ OverlayImpl::Child::Child(OverlayImpl& overlay) : overlay_(overlay)
 
 OverlayImpl::Child::~Child()
 {
+    TRACE_FUNC();
     overlay_.remove(*this);
 }
 
@@ -123,6 +125,7 @@ OverlayImpl::Timer::Timer(OverlayImpl& overlay) : Child(overlay), timer(overlay_
 void
 OverlayImpl::Timer::stop()
 {
+    TRACE_FUNC();
     // This method is only ever called from the same strand that calls
     // Timer::on_timer, ensuring they never execute concurrently.
     stopping = true;
@@ -132,6 +135,7 @@ OverlayImpl::Timer::stop()
 void
 OverlayImpl::Timer::asyncWait()
 {
+    TRACE_FUNC();
     timer.expires_after(std::chrono::seconds(1));
     timer.async_wait(
         boost::asio::bind_executor(
@@ -142,6 +146,7 @@ OverlayImpl::Timer::asyncWait()
 void
 OverlayImpl::Timer::onTimer(error_code ec)
 {
+    TRACE_FUNC();
     if (ec || stopping)
     {
         if (ec && ec != boost::asio::error::operation_aborted)
@@ -204,6 +209,7 @@ OverlayImpl::OverlayImpl(
               return ret;
           }())
 {
+    TRACE_FUNC();
     beast::PropertyStream::Source::add(peerFinder_.get());
 }
 
@@ -213,6 +219,7 @@ OverlayImpl::onHandoff(
     http_request_type&& request,
     endpoint_type remoteEndpoint)
 {
+    TRACE_FUNC();
     auto const id = next_id_++;
     auto peerJournal = app_.getJournal("Peer");
     beast::WrappedSink sink(peerJournal.sink(), makePrefix(id));
@@ -365,6 +372,7 @@ OverlayImpl::onHandoff(
 bool
 OverlayImpl::isPeerUpgrade(http_request_type const& request)
 {
+    TRACE_FUNC();
     if (!isUpgrade(request))
         return false;
     auto const versions = parseProtocolVersions(request["Upgrade"]);
@@ -374,6 +382,7 @@ OverlayImpl::isPeerUpgrade(http_request_type const& request)
 std::string
 OverlayImpl::makePrefix(std::uint32_t id)
 {
+    TRACE_FUNC();
     std::stringstream ss;
     ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
     return ss.str();
@@ -385,6 +394,7 @@ OverlayImpl::makeRedirectResponse(
     http_request_type const& request,
     address_type remoteAddress)
 {
+    TRACE_FUNC();
     boost::beast::http::response<JsonBody> msg;
     msg.version(request.version());
     msg.result(boost::beast::http::status::service_unavailable);
@@ -413,6 +423,7 @@ OverlayImpl::makeErrorResponse(
     address_type remoteAddress,
     std::string text)
 {
+    TRACE_FUNC();
     boost::beast::http::response<boost::beast::http::empty_body> msg;
     msg.version(request.version());
     msg.result(boost::beast::http::status::bad_request);
@@ -429,6 +440,7 @@ OverlayImpl::makeErrorResponse(
 void
 OverlayImpl::connect(beast::IP::Endpoint const& remoteEndpoint)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(work_, "xrpl::OverlayImpl::connect : work is set");
 
     auto usage = resourceManager().newOutboundEndpoint(remoteEndpoint);
@@ -468,6 +480,7 @@ OverlayImpl::connect(beast::IP::Endpoint const& remoteEndpoint)
 void
 OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
 {
+    TRACE_FUNC();
     beast::WrappedSink sink{journal_.sink(), peer->prefix()};
     beast::Journal const journal{sink};
 
@@ -499,6 +512,7 @@ OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
 void
 OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     auto const iter = peers_.find(slot);
     XRPL_ASSERT(iter != peers_.end(), "xrpl::OverlayImpl::remove : valid input");
@@ -508,6 +522,7 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 void
 OverlayImpl::start()
 {
+    TRACE_FUNC();
     PeerFinder::Config const config = PeerFinder::Config::makeConfig(
         app_.config(),
         serverHandler_.setup().overlay.port(),
@@ -595,6 +610,7 @@ OverlayImpl::start()
 void
 OverlayImpl::stop()
 {
+    TRACE_FUNC();
     boost::asio::dispatch(strand_, std::bind(&OverlayImpl::stopChildren, this));
     {
         std::unique_lock<decltype(mutex_)> lock(mutex_);
@@ -612,6 +628,7 @@ OverlayImpl::stop()
 void
 OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 {
+    TRACE_FUNC();
     beast::PropertyStream::Set set("traffic", stream);
     auto const stats = traffic_.getCounts();
     for (auto const& pair : stats)
@@ -634,6 +651,7 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 void
 OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 {
+    TRACE_FUNC();
     beast::WrappedSink sink{journal_.sink(), peer->prefix()};
     beast::Journal const journal{sink};
 
@@ -655,6 +673,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 void
 OverlayImpl::onPeerDeactivate(Peer::id_t id)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     ids_.erase(id);
 }
@@ -664,6 +683,7 @@ OverlayImpl::onManifests(
     std::shared_ptr<protocol::TMManifests> const& m,
     std::shared_ptr<PeerImp> const& from)
 {
+    TRACE_FUNC();
     auto const n = m->list_size();
     auto const& journal = from->pJournal();
 
@@ -719,12 +739,14 @@ OverlayImpl::onManifests(
 void
 OverlayImpl::reportInboundTraffic(TrafficCount::Category cat, int size)
 {
+    TRACE_FUNC();
     traffic_.addCount(cat, true, size);
 }
 
 void
 OverlayImpl::reportOutboundTraffic(TrafficCount::Category cat, int size)
 {
+    TRACE_FUNC();
     traffic_.addCount(cat, false, size);
 }
 /** The number of active peers on the network
@@ -734,6 +756,7 @@ OverlayImpl::reportOutboundTraffic(TrafficCount::Category cat, int size)
 std::size_t
 OverlayImpl::size() const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     return ids_.size();
 }
@@ -741,12 +764,14 @@ OverlayImpl::size() const
 int
 OverlayImpl::limit()
 {
+    TRACE_FUNC();
     return peerFinder_->config().maxPeers;
 }
 
 json::Value
 OverlayImpl::getOverlayInfo() const
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     json::Value jv;
     auto& av = jv[jss::active] = json::Value(json::ArrayValue);
@@ -791,6 +816,7 @@ OverlayImpl::getOverlayInfo() const
 json::Value
 OverlayImpl::getServerInfo()
 {
+    TRACE_FUNC();
     bool const humanReadable = false;
     bool const admin = false;
     bool const counters = false;
@@ -818,12 +844,14 @@ OverlayImpl::getServerInfo()
 json::Value
 OverlayImpl::getServerCounts()
 {
+    TRACE_FUNC();
     return getCountsJson(app_, 10);
 }
 
 json::Value
 OverlayImpl::getUnlInfo()
 {
+    TRACE_FUNC();
     json::Value validators = app_.getValidators().getJson();
 
     if (validators.isMember(jss::publisher_lists))
@@ -854,6 +882,7 @@ OverlayImpl::getUnlInfo()
 json::Value
 OverlayImpl::json()
 {
+    TRACE_FUNC();
     json::Value json;
     for (auto const& peer : getActivePeers())
     {
@@ -865,6 +894,7 @@ OverlayImpl::json()
 bool
 OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
 {
+    TRACE_FUNC();
     if (req.target() != "/crawl" || setup_.crawlOptions == CrawlOptions::Disabled)
         return false;
 
@@ -901,6 +931,7 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
 bool
 OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff)
 {
+    TRACE_FUNC();
     // If the target is in the form "/vl/<validator_list_public_key>",
     // return the most recent validator list for that key.
     constexpr std::string_view kPREFIX("/vl/");
@@ -965,6 +996,7 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
 bool
 OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 {
+    TRACE_FUNC();
     if (req.target() != "/health")
         return false;
     boost::beast::http::response<JsonBody> msg;
@@ -1069,6 +1101,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 bool
 OverlayImpl::processRequest(http_request_type const& req, Handoff& handoff)
 {
+    TRACE_FUNC();
     // Take advantage of || short-circuiting
     return processCrawl(req, handoff) || processValidatorList(req, handoff) ||
         processHealth(req, handoff);
@@ -1077,6 +1110,7 @@ OverlayImpl::processRequest(http_request_type const& req, Handoff& handoff)
 Overlay::PeerSequence
 OverlayImpl::getActivePeers() const
 {
+    TRACE_FUNC();
     Overlay::PeerSequence ret;
     ret.reserve(size());
 
@@ -1092,6 +1126,7 @@ OverlayImpl::getActivePeers(
     std::size_t& disabled,
     std::size_t& enabledInSkip) const
 {
+    TRACE_FUNC();
     Overlay::PeerSequence ret;
     std::scoped_lock const lock(mutex_);
 
@@ -1127,12 +1162,14 @@ OverlayImpl::getActivePeers(
 void
 OverlayImpl::checkTracking(std::uint32_t index)
 {
+    TRACE_FUNC();
     forEach([index](std::shared_ptr<PeerImp> const& sp) { sp->checkTracking(index); });
 }
 
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     auto const iter = ids_.find(id);
     if (iter != ids_.end())
@@ -1145,6 +1182,7 @@ OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     // NOTE The purpose of peer is to delay the destruction of PeerImp
     std::shared_ptr<PeerImp> peer;
@@ -1162,6 +1200,7 @@ OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 void
 OverlayImpl::broadcast(protocol::TMProposeSet& m)
 {
+    TRACE_FUNC();
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
     forEach([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
@@ -1169,6 +1208,7 @@ OverlayImpl::broadcast(protocol::TMProposeSet& m)
 std::set<Peer::id_t>
 OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator)
 {
+    TRACE_FUNC();
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER, validator);
@@ -1184,6 +1224,7 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey cons
 void
 OverlayImpl::broadcast(protocol::TMValidation& m)
 {
+    TRACE_FUNC();
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
     forEach([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
@@ -1191,6 +1232,7 @@ OverlayImpl::broadcast(protocol::TMValidation& m)
 std::set<Peer::id_t>
 OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator)
 {
+    TRACE_FUNC();
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION, validator);
@@ -1206,6 +1248,7 @@ OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey cons
 std::shared_ptr<Message>
 OverlayImpl::getManifestsMessage()
 {
+    TRACE_FUNC();
     std::scoped_lock const g(manifestLock_);
 
     if (auto seq = app_.getValidatorManifests().sequence(); seq != manifestListSeq_)
@@ -1236,6 +1279,7 @@ OverlayImpl::relay(
     std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
     std::set<Peer::id_t> const& toSkip)
 {
+    TRACE_FUNC();
     bool relay = tx.has_value();
     if (relay)
     {
@@ -1325,6 +1369,7 @@ OverlayImpl::relay(
 void
 OverlayImpl::remove(Child& child)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     list_.erase(&child);
     if (list_.empty())
@@ -1334,6 +1379,7 @@ OverlayImpl::remove(Child& child)
 void
 OverlayImpl::stopChildren()
 {
+    TRACE_FUNC();
     // Calling list_[].second->stop() may cause list_ to be modified
     // (OverlayImpl::remove() may be called on this same thread).  So
     // iterating directly over list_ to call child->stop() could lead to
@@ -1366,6 +1412,7 @@ OverlayImpl::stopChildren()
 void
 OverlayImpl::autoConnect()
 {
+    TRACE_FUNC();
     auto const result = peerFinder_->autoconnect();
     for (auto const& addr : result)
         connect(addr);
@@ -1374,6 +1421,7 @@ OverlayImpl::autoConnect()
 void
 OverlayImpl::sendEndpoints()
 {
+    TRACE_FUNC();
     auto const result = peerFinder_->buildEndpointsForPeers();
     for (auto const& e : result)
     {
@@ -1392,6 +1440,7 @@ OverlayImpl::sendEndpoints()
 void
 OverlayImpl::sendTxQueue() const
 {
+    TRACE_FUNC();
     forEach([](auto const& p) {
         if (p->txReduceRelayEnabled())
             p->sendTxQueue();
@@ -1401,6 +1450,7 @@ OverlayImpl::sendTxQueue() const
 std::shared_ptr<Message>
 makeSquelchMessage(PublicKey const& validator, bool squelch, uint32_t squelchDuration)
 {
+    TRACE_FUNC();
     protocol::TMSquelch m;
     m.set_squelch(squelch);
     m.set_validatorpubkey(validator.data(), validator.size());
@@ -1412,6 +1462,7 @@ makeSquelchMessage(PublicKey const& validator, bool squelch, uint32_t squelchDur
 void
 OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
 {
+    TRACE_FUNC();
     if (auto peer = findPeerByShortID(id); peer)
     {
         // optimize - multiple message with different
@@ -1423,6 +1474,7 @@ OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
 void
 OverlayImpl::squelch(PublicKey const& validator, Peer::id_t id, uint32_t squelchDuration) const
 {
+    TRACE_FUNC();
     if (auto peer = findPeerByShortID(id); peer)
     {
         peer->send(makeSquelchMessage(validator, true, squelchDuration));
@@ -1436,6 +1488,7 @@ OverlayImpl::updateSlotAndSquelch(
     std::set<Peer::id_t>&& peers,
     protocol::MessageType type)
 {
+    TRACE_FUNC();
     if (!slots_.baseSquelchReady())
         return;
 
@@ -1466,6 +1519,7 @@ OverlayImpl::updateSlotAndSquelch(
     Peer::id_t peer,
     protocol::MessageType type)
 {
+    TRACE_FUNC();
     if (!slots_.baseSquelchReady())
         return;
 
@@ -1490,6 +1544,7 @@ OverlayImpl::updateSlotAndSquelch(
 void
 OverlayImpl::deletePeer(Peer::id_t id)
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         post(strand_, std::bind(&OverlayImpl::deletePeer, this, id));
@@ -1502,6 +1557,7 @@ OverlayImpl::deletePeer(Peer::id_t id)
 void
 OverlayImpl::deleteIdlePeers()
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         post(strand_, std::bind(&OverlayImpl::deleteIdlePeers, this));
@@ -1516,6 +1572,7 @@ OverlayImpl::deleteIdlePeers()
 Overlay::Setup
 setupOverlay(BasicConfig const& config)
 {
+    TRACE_FUNC();
     Overlay::Setup setup;
 
     {
@@ -1627,6 +1684,7 @@ makeOverlay(
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
 {
+    TRACE_FUNC();
     return std::make_unique<OverlayImpl>(
         app, setup, serverHandler, resourceManager, resolver, ioContext, config, collector);
 }

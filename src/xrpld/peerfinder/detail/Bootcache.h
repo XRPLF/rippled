@@ -6,6 +6,7 @@
 #include <xrpl/basics/comparators.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
@@ -42,18 +43,21 @@ private:
         int&
         valence()
         {
+    TRACE_FUNC();
             return valence_;
         }
 
         [[nodiscard]] int
         valence() const
         {
+    TRACE_FUNC();
             return valence_;
         }
 
         friend bool
         operator<(Entry const& lhs, Entry const& rhs)
         {
+    TRACE_FUNC();
             return lhs.valence() > rhs.valence();
         }
 
@@ -79,6 +83,7 @@ private:
         beast::IP::Endpoint const&
         operator()(map_type::right_map::const_iterator::value_type const& v) const
         {
+    TRACE_FUNC();
             return v.get_left();
         }
     };

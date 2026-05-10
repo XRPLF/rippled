@@ -42,6 +42,7 @@
 #include <xrpl/nodestore/detail/BatchWriter.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 #include <memory>
@@ -68,6 +69,7 @@ public:
     static void
     threadEntry(void* ptr)
     {
+    TRACE_FUNC();
         ThreadParams const* const p(reinterpret_cast<ThreadParams*>(ptr));
         auto const f = p->f;
 
@@ -84,6 +86,7 @@ public:
     void
     StartThread(void (*f)(void*), void* a) override
     {
+    TRACE_FUNC();
         ThreadParams* const p(new ThreadParams(f, a));
         EnvWrapper::StartThread(&RocksDBEnv::threadEntry, p);
     }
@@ -113,6 +116,7 @@ public:
         RocksDBEnv* env)
         : deletePath_(false), journal(journal), keyBytes(keyBytes), batch(*this, scheduler)
     {
+    TRACE_FUNC();
         if (!getIfExists(keyValues, "path", name))
             Throw<std::runtime_error>("Missing path in RocksDBFactory backend");
 
@@ -223,12 +227,14 @@ public:
 
     ~RocksDBBackend() override
     {
+    TRACE_FUNC();
         close();
     }
 
     void
     open(bool createIfMissing) override
     {
+    TRACE_FUNC();
         if (db)
         {
             // LCOV_EXCL_START
@@ -253,12 +259,14 @@ public:
     bool
     isOpen() override
     {
+    TRACE_FUNC();
         return static_cast<bool>(db);
     }
 
     void
     close() override
     {
+    TRACE_FUNC();
         if (db)
         {
             db.reset();
@@ -273,6 +281,7 @@ public:
     std::string
     getName() override
     {
+    TRACE_FUNC();
         return name;
     }
 
@@ -281,6 +290,7 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
 
@@ -333,6 +343,7 @@ public:
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256> const& hashes) override
     {
+    TRACE_FUNC();
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
         for (auto const& h : hashes)
@@ -355,12 +366,14 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
+    TRACE_FUNC();
         batch.store(object);
     }
 
     void
     storeBatch(Batch const& batch) override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(
             db,
             "xrpl::NodeStore::RocksDBBackend::storeBatch : non-null "
@@ -392,6 +405,7 @@ public:
     void
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(db, "xrpl::NodeStore::RocksDBBackend::forEach : non-null database");
         rocksdb::ReadOptions const options;
 
@@ -425,12 +439,14 @@ public:
     int
     getWriteLoad() override
     {
+    TRACE_FUNC();
         return batch.getWriteLoad();
     }
 
     void
     setDeletePath() override
     {
+    TRACE_FUNC();
         deletePath_ = true;
     }
 
@@ -439,6 +455,7 @@ public:
     void
     writeBatch(Batch const& batch) override
     {
+    TRACE_FUNC();
         storeBatch(batch);
     }
 
@@ -446,6 +463,7 @@ public:
     [[nodiscard]] int
     fdRequired() const override
     {
+    TRACE_FUNC();
         return fdMinRequired;
     }
 };
@@ -462,12 +480,14 @@ public:
 
     RocksDBFactory(Manager& manager) : manager_(manager)
     {
+    TRACE_FUNC();
         manager_.insert(*this);
     }
 
     [[nodiscard]] std::string
     getName() const override
     {
+    TRACE_FUNC();
         return "RocksDB";
     }
 
@@ -479,6 +499,7 @@ public:
         Scheduler& scheduler,
         beast::Journal journal) override
     {
+    TRACE_FUNC();
         return std::make_unique<RocksDBBackend>(keyBytes, keyValues, scheduler, journal, &env);
     }
 };
@@ -486,6 +507,7 @@ public:
 void
 registerRocksDBFactory(Manager& manager)
 {
+    TRACE_FUNC();
     static RocksDBFactory const kINSTANCE{manager};
 }
 

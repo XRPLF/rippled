@@ -1,5 +1,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 
+#include <xrpl/basics/TraceLog.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/jss.h>  // IWYU pragma: keep
@@ -11,6 +12,7 @@ namespace xrpl {
 std::vector<SOElement> const&
 LedgerFormats::getCommonFields()
 {
+    TRACE_FUNC();
     static auto const kCOMMON_FIELDS = std::vector<SOElement>{
         {sfLedgerIndex, SoeOptional},
         {sfLedgerEntryType, SoeRequired},
@@ -21,6 +23,7 @@ LedgerFormats::getCommonFields()
 
 LedgerFormats::LedgerFormats()
 {
+    TRACE_FUNC();
 #pragma push_macro("UNWRAP")
 #undef UNWRAP
 #pragma push_macro("LEDGER_ENTRY")
@@ -41,6 +44,7 @@ LedgerFormats::LedgerFormats()
 LedgerFormats const&
 LedgerFormats::getInstance()
 {
+    TRACE_FUNC();
     static LedgerFormats const kINSTANCE;
     return kINSTANCE;
 }

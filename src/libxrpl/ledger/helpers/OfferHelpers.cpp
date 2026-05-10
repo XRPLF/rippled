@@ -11,6 +11,7 @@
 #include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -19,6 +20,7 @@ namespace xrpl {
 TER
 offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
 {
+    TRACE_FUNC();
     if (!sle)
         return tesSUCCESS;
     auto offerIndex = sle->key();

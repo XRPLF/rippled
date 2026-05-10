@@ -1,4 +1,5 @@
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 
@@ -7,6 +8,7 @@ namespace xrpl {
 CountedObjects&
 CountedObjects::getInstance() noexcept
 {
+    TRACE_FUNC();
     static CountedObjects kINSTANCE;
 
     return kINSTANCE;
@@ -19,6 +21,7 @@ CountedObjects::CountedObjects() noexcept : count_(0), head_(nullptr)
 CountedObjects::List
 CountedObjects::getCounts(int minimumThreshold) const
 {
+    TRACE_FUNC();
     List counts;
 
     // When other operations are concurrent, the count

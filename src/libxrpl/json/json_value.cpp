@@ -6,6 +6,7 @@
 #include <xrpl/json/detail/json_assert.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cmath>
 #include <cstdint>
@@ -27,18 +28,21 @@ public:
     char*
     makeMemberName(char const* memberName) override
     {
+    TRACE_FUNC();
         return duplicateStringValue(memberName);
     }
 
     void
     releaseMemberName(char* memberName) override
     {
+    TRACE_FUNC();
         releaseStringValue(memberName);
     }
 
     char*
     duplicateStringValue(char const* value, unsigned int length = Unknown) override
     {
+    TRACE_FUNC();
         //@todo investigate this old optimization
         // if ( !value  ||  value[0] == 0 )
         //   return 0;
@@ -56,6 +60,7 @@ public:
     void
     releaseStringValue(char* value) override
     {
+    TRACE_FUNC();
         if (value != nullptr)
             free(value);
     }
@@ -64,6 +69,7 @@ public:
 static ValueAllocator*&
 valueAllocator()
 {
+    TRACE_FUNC();
     static ValueAllocator* kVALUE_ALLOCATOR = new DefaultValueAllocator;  // NOLINT TODO
     return kVALUE_ALLOCATOR;
 }
@@ -72,6 +78,7 @@ static struct DummyValueAllocatorInitializer
 {
     DummyValueAllocatorInitializer()
     {
+    TRACE_FUNC();
         valueAllocator();  // ensure valueAllocator() statics are initialized
                            // before main().
     }
@@ -112,6 +119,7 @@ Value::CZString::CZString(CZString const& other)
 
 Value::CZString::~CZString()
 {
+    TRACE_FUNC();
     if ((cstr_ != nullptr) && index_ == Duplicate)
         valueAllocator()->releaseMemberName(const_cast<char*>(cstr_));
 }
@@ -119,6 +127,7 @@ Value::CZString::~CZString()
 bool
 Value::CZString::operator<(CZString const& other) const
 {
+    TRACE_FUNC();
     if ((cstr_ != nullptr) && (other.cstr_ != nullptr))
         return strcmp(cstr_, other.cstr_) < 0;
 
@@ -128,6 +137,7 @@ Value::CZString::operator<(CZString const& other) const
 bool
 Value::CZString::operator==(CZString const& other) const
 {
+    TRACE_FUNC();
     if ((cstr_ != nullptr) && (other.cstr_ != nullptr))
         return strcmp(cstr_, other.cstr_) == 0;
 
@@ -137,18 +147,21 @@ Value::CZString::operator==(CZString const& other) const
 int
 Value::CZString::index() const
 {
+    TRACE_FUNC();
     return index_;
 }
 
 char const*
 Value::CZString::cStr() const
 {
+    TRACE_FUNC();
     return cstr_;
 }
 
 bool
 Value::CZString::isStaticString() const
 {
+    TRACE_FUNC();
     return index_ == NoDuplication;
 }
 
@@ -166,6 +179,7 @@ Value::CZString::isStaticString() const
  */
 Value::Value(ValueType type) : type_(type)
 {
+    TRACE_FUNC();
     switch (type)
     {
         case NullValue:
@@ -202,48 +216,57 @@ Value::Value(ValueType type) : type_(type)
 
 Value::Value(Int value) : type_(IntValue)
 {
+    TRACE_FUNC();
     value_.intVal = value;
 }
 
 Value::Value(UInt value) : type_(UintValue)
 {
+    TRACE_FUNC();
     value_.uintVal = value;
 }
 
 Value::Value(double value) : type_(RealValue)
 {
+    TRACE_FUNC();
     value_.realVal = value;
 }
 
 Value::Value(char const* value) : type_(StringValue), allocated_(true)
 {
+    TRACE_FUNC();
     value_.stringVal = valueAllocator()->duplicateStringValue(value);
 }
 
 Value::Value(xrpl::Number const& value) : type_(StringValue), allocated_(true)
 {
+    TRACE_FUNC();
     auto const tmp = to_string(value);
     value_.stringVal = valueAllocator()->duplicateStringValue(tmp.c_str(), tmp.length());
 }
 
 Value::Value(std::string const& value) : type_(StringValue), allocated_(true)
 {
+    TRACE_FUNC();
     value_.stringVal =
         valueAllocator()->duplicateStringValue(value.c_str(), (unsigned int)value.length());
 }
 
 Value::Value(StaticString const& value) : type_(StringValue)
 {
+    TRACE_FUNC();
     value_.stringVal = const_cast<char*>(value.cStr());
 }
 
 Value::Value(bool value) : type_(BooleanValue)
 {
+    TRACE_FUNC();
     value_.boolVal = value;
 }
 
 Value::Value(Value const& other) : type_(other.type_)
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case NullValue:
@@ -281,6 +304,7 @@ Value::Value(Value const& other) : type_(other.type_)
 
 Value::~Value()
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case NullValue:
@@ -312,6 +336,7 @@ Value::~Value()
 Value&
 Value::operator=(Value const& other)
 {
+    TRACE_FUNC();
     Value tmp(other);
     swap(tmp);
     return *this;
@@ -320,6 +345,7 @@ Value::operator=(Value const& other)
 Value::Value(Value&& other) noexcept
     : value_(other.value_), type_(other.type_), allocated_(other.allocated_)
 {
+    TRACE_FUNC();
     other.type_ = NullValue;
     other.allocated_ = 0;
 }
@@ -327,6 +353,7 @@ Value::Value(Value&& other) noexcept
 Value&
 Value::operator=(Value&& other)
 {
+    TRACE_FUNC();
     Value tmp(std::move(other));
     swap(tmp);
     return *this;
@@ -335,6 +362,7 @@ Value::operator=(Value&& other)
 void
 Value::swap(Value& other) noexcept
 {
+    TRACE_FUNC();
     std::swap(value_, other.value_);
 
     ValueType const temp = type_;
@@ -349,12 +377,14 @@ Value::swap(Value& other) noexcept
 ValueType
 Value::type() const
 {
+    TRACE_FUNC();
     return type_;
 }
 
 static int
 integerCmp(Int i, UInt ui)
 {
+    TRACE_FUNC();
     // All negative numbers are less than all unsigned numbers.
     if (i < 0)
         return -1;
@@ -368,6 +398,7 @@ integerCmp(Int i, UInt ui)
 bool
 operator<(Value const& x, Value const& y)
 {
+    TRACE_FUNC();
     if (auto signum = x.type_ - y.type_)
     {
         if (x.type_ == IntValue && y.type_ == UintValue)
@@ -423,6 +454,7 @@ operator<(Value const& x, Value const& y)
 bool
 operator==(Value const& x, Value const& y)
 {
+    TRACE_FUNC();
     if (x.type_ != y.type_)
     {
         if (x.type_ == IntValue && y.type_ == UintValue)
@@ -471,6 +503,7 @@ operator==(Value const& x, Value const& y)
 char const*
 Value::asCString() const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(type_ == StringValue, "json::Value::asCString : valid type");
     return value_.stringVal;
 }
@@ -478,6 +511,7 @@ Value::asCString() const
 std::string
 Value::asString() const
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case NullValue:
@@ -514,6 +548,7 @@ Value::asString() const
 Value::Int
 Value::asInt() const
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case NullValue:
@@ -557,6 +592,7 @@ Value::asInt() const
 UInt
 Value::asAbsUInt() const
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case NullValue:
@@ -616,6 +652,7 @@ Value::asAbsUInt() const
 Value::UInt
 Value::asUInt() const
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case NullValue:
@@ -659,6 +696,7 @@ Value::asUInt() const
 double
 Value::asDouble() const
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case NullValue:
@@ -693,6 +731,7 @@ Value::asDouble() const
 bool
 Value::asBool() const
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case NullValue:
@@ -727,6 +766,7 @@ Value::asBool() const
 bool
 Value::isConvertibleTo(ValueType other) const
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case NullValue:
@@ -778,6 +818,7 @@ Value::isConvertibleTo(ValueType other) const
 Value::UInt
 Value::size() const
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case NullValue:
@@ -813,6 +854,7 @@ Value::size() const
 Value::
 operator bool() const
 {
+    TRACE_FUNC();
     if (isNull())
         return false;
 
@@ -828,6 +870,7 @@ operator bool() const
 void
 Value::clear()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         type_ == NullValue || type_ == ArrayValue || type_ == ObjectValue,
         "json::Value::clear : valid type");
@@ -867,6 +910,7 @@ Value::operator[](UInt index)
 Value const&
 Value::operator[](UInt index) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         type_ == NullValue || type_ == ArrayValue,
         "json::Value::operator[](UInt) const : valid type");
@@ -892,6 +936,7 @@ Value::operator[](char const* key)
 Value&
 Value::resolveReference(char const* key, bool isStatic)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         type_ == NullValue || type_ == ObjectValue, "json::Value::resolveReference : valid type");
 
@@ -913,6 +958,7 @@ Value::resolveReference(char const* key, bool isStatic)
 Value
 Value::get(UInt index, Value const& defaultValue) const
 {
+    TRACE_FUNC();
     Value const* value = &((*this)[index]);
     return value == &kNULL ? defaultValue : *value;
 }
@@ -920,12 +966,14 @@ Value::get(UInt index, Value const& defaultValue) const
 bool
 Value::isValidIndex(UInt index) const
 {
+    TRACE_FUNC();
     return index < size();
 }
 
 Value const&
 Value::operator[](char const* key) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         type_ == NullValue || type_ == ObjectValue,
         "json::Value::operator[](const char*) const : valid type");
@@ -951,6 +999,7 @@ Value::operator[](std::string const& key)
 Value const&
 Value::operator[](std::string const& key) const
 {
+    TRACE_FUNC();
     return (*this)[key.c_str()];
 }
 
@@ -963,24 +1012,28 @@ Value::operator[](StaticString const& key)
 Value const&
 Value::operator[](StaticString const& key) const
 {
+    TRACE_FUNC();
     return (*this)[key.cStr()];
 }
 
 Value&
 Value::append(Value const& value)
 {
+    TRACE_FUNC();
     return (*this)[size()] = value;
 }
 
 Value&
 Value::append(Value&& value)
 {
+    TRACE_FUNC();
     return (*this)[size()] = std::move(value);
 }
 
 Value
 Value::get(char const* key, Value const& defaultValue) const
 {
+    TRACE_FUNC();
     Value const* value = &((*this)[key]);
     return value == &kNULL ? defaultValue : *value;
 }
@@ -988,12 +1041,14 @@ Value::get(char const* key, Value const& defaultValue) const
 Value
 Value::get(std::string const& key, Value const& defaultValue) const
 {
+    TRACE_FUNC();
     return get(key.c_str(), defaultValue);
 }
 
 Value
 Value::removeMember(char const* key)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         type_ == NullValue || type_ == ObjectValue, "json::Value::removeMember : valid type");
 
@@ -1014,12 +1069,14 @@ Value::removeMember(char const* key)
 Value
 Value::removeMember(std::string const& key)
 {
+    TRACE_FUNC();
     return removeMember(key.c_str());
 }
 
 bool
 Value::isMember(char const* key) const
 {
+    TRACE_FUNC();
     if (type_ != ObjectValue)
         return false;
 
@@ -1030,18 +1087,21 @@ Value::isMember(char const* key) const
 bool
 Value::isMember(std::string const& key) const
 {
+    TRACE_FUNC();
     return isMember(key.c_str());
 }
 
 bool
 Value::isMember(StaticString const& key) const
 {
+    TRACE_FUNC();
     return isMember(key.cStr());
 }
 
 Value::Members
 Value::getMemberNames() const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         type_ == NullValue || type_ == ObjectValue, "json::Value::getMemberNames : valid type");
 
@@ -1062,78 +1122,91 @@ Value::getMemberNames() const
 bool
 Value::isNull() const
 {
+    TRACE_FUNC();
     return type_ == NullValue;
 }
 
 bool
 Value::isBool() const
 {
+    TRACE_FUNC();
     return type_ == BooleanValue;
 }
 
 bool
 Value::isInt() const
 {
+    TRACE_FUNC();
     return type_ == IntValue;
 }
 
 bool
 Value::isUInt() const
 {
+    TRACE_FUNC();
     return type_ == UintValue;
 }
 
 bool
 Value::isIntegral() const
 {
+    TRACE_FUNC();
     return type_ == IntValue || type_ == UintValue || type_ == BooleanValue;
 }
 
 bool
 Value::isDouble() const
 {
+    TRACE_FUNC();
     return type_ == RealValue;
 }
 
 bool
 Value::isNumeric() const
 {
+    TRACE_FUNC();
     return isIntegral() || isDouble();
 }
 
 bool
 Value::isString() const
 {
+    TRACE_FUNC();
     return type_ == StringValue;
 }
 
 bool
 Value::isArray() const
 {
+    TRACE_FUNC();
     return type_ == ArrayValue;
 }
 
 bool
 Value::isArrayOrNull() const
 {
+    TRACE_FUNC();
     return type_ == NullValue || type_ == ArrayValue;
 }
 
 bool
 Value::isObject() const
 {
+    TRACE_FUNC();
     return type_ == ObjectValue;
 }
 
 bool
 Value::isObjectOrNull() const
 {
+    TRACE_FUNC();
     return type_ == NullValue || type_ == ObjectValue;
 }
 
 std::string
 Value::toStyledString() const
 {
+    TRACE_FUNC();
     StyledWriter writer;
     return writer.write(*this);
 }
@@ -1141,6 +1214,7 @@ Value::toStyledString() const
 Value::const_iterator
 Value::begin() const
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case ArrayValue:
@@ -1159,6 +1233,7 @@ Value::begin() const
 Value::const_iterator
 Value::end() const
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case ArrayValue:
@@ -1177,6 +1252,7 @@ Value::end() const
 Value::iterator
 Value::begin()
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case ArrayValue:
@@ -1194,6 +1270,7 @@ Value::begin()
 Value::iterator
 Value::end()
 {
+    TRACE_FUNC();
     switch (type_)
     {
         case ArrayValue:

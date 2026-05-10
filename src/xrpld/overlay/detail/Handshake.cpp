@@ -21,6 +21,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/ip/address.hpp>
 #include <boost/beast/http/status.hpp>
@@ -50,6 +51,7 @@ namespace xrpl {
 std::optional<std::string>
 getFeatureValue(boost::beast::http::fields const& headers, std::string const& feature)
 {
+    TRACE_FUNC();
     auto const header = headers.find("X-Protocol-Ctl");
     if (header == headers.end())
         return {};
@@ -67,6 +69,7 @@ isFeatureValue(
     std::string const& feature,
     std::string const& value)
 {
+    TRACE_FUNC();
     if (auto const fvalue = getFeatureValue(headers, feature))
         return beast::rfc2616::tokenInList(fvalue.value(), value);
 
@@ -76,6 +79,7 @@ isFeatureValue(
 bool
 featureEnabled(boost::beast::http::fields const& headers, std::string const& feature)
 {
+    TRACE_FUNC();
     return isFeatureValue(headers, feature, "1");
 }
 
@@ -86,6 +90,7 @@ makeFeaturesRequestHeader(
     bool txReduceRelayEnabled,
     bool vpReduceRelayEnabled)
 {
+    TRACE_FUNC();
     std::stringstream str;
     if (comprEnabled)
         str << kFEATURE_COMPR << "=lz4" << kDELIM_FEATURE;
@@ -106,6 +111,7 @@ makeFeaturesResponseHeader(
     bool txReduceRelayEnabled,
     bool vpReduceRelayEnabled)
 {
+    TRACE_FUNC();
     std::stringstream str;
     if (comprEnabled && isFeatureValue(headers, kFEATURE_COMPR, "lz4"))
         str << kFEATURE_COMPR << "=lz4" << kDELIM_FEATURE;
@@ -135,6 +141,7 @@ makeFeaturesResponseHeader(
 static std::optional<BaseUint<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
+    TRACE_FUNC();
     constexpr std::size_t kSSL_MINIMUM_FINISHED_LENGTH = 12;
 
     unsigned char buf[1024];
@@ -153,6 +160,7 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 std::optional<uint256>
 makeSharedValue(stream_type& ssl, beast::Journal journal)
 {
+    TRACE_FUNC();
     auto const cookie1 = hashLastMessage(ssl.native_handle(), SSL_get_finished);
     if (!cookie1)
     {
@@ -189,6 +197,7 @@ buildHandshake(
     beast::IP::Address remoteIp,
     Application& app)
 {
+    TRACE_FUNC();
     if (networkID)
     {
         // The network identifier, if configured, can be used to specify
@@ -234,6 +243,7 @@ verifyHandshake(
     beast::IP::Address remote,
     Application& app)
 {
+    TRACE_FUNC();
     if (auto const iter = headers.find("Server-Domain"); iter != headers.end())
     {
         if (!isProperlyFormedTomlDomain(iter->value()))
@@ -369,6 +379,7 @@ makeRequest(
     bool txReduceRelayEnabled,
     bool vpReduceRelayEnabled) -> request_type
 {
+    TRACE_FUNC();
     request_type m;
     m.method(boost::beast::http::verb::get);
     m.target("/");
@@ -396,6 +407,7 @@ makeResponse(
     ProtocolVersion protocol,
     Application& app)
 {
+    TRACE_FUNC();
     http_response_type resp;
     resp.result(boost::beast::http::status::switching_protocols);
     resp.version(req.version());

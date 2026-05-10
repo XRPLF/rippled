@@ -6,6 +6,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 #include <vector>
@@ -40,6 +41,7 @@ public:
     [[nodiscard]] uint256
     ledgerID() const
     {
+    TRACE_FUNC();
         return val_->getLedgerHash();
     }
 
@@ -47,6 +49,7 @@ public:
     [[nodiscard]] std::uint32_t
     seq() const
     {
+    TRACE_FUNC();
         return val_->getFieldU32(sfLedgerSequence);
     }
 
@@ -54,6 +57,7 @@ public:
     [[nodiscard]] NetClock::time_point
     signTime() const
     {
+    TRACE_FUNC();
         return val_->getSignTime();
     }
 
@@ -61,6 +65,7 @@ public:
     [[nodiscard]] NetClock::time_point
     seenTime() const
     {
+    TRACE_FUNC();
         return val_->getSeenTime();
     }
 
@@ -68,6 +73,7 @@ public:
     [[nodiscard]] PublicKey
     key() const
     {
+    TRACE_FUNC();
         return val_->getSignerPublic();
     }
 
@@ -75,6 +81,7 @@ public:
     [[nodiscard]] NodeID
     nodeID() const
     {
+    TRACE_FUNC();
         return val_->getNodeID();
     }
 
@@ -82,18 +89,21 @@ public:
     [[nodiscard]] bool
     trusted() const
     {
+    TRACE_FUNC();
         return val_->isTrusted();
     }
 
     void
     setTrusted()
     {
+    TRACE_FUNC();
         val_->setTrusted();
     }
 
     void
     setUntrusted()
     {
+    TRACE_FUNC();
         val_->setUntrusted();
     }
 
@@ -101,6 +111,7 @@ public:
     [[nodiscard]] bool
     full() const
     {
+    TRACE_FUNC();
         return val_->isFull();
     }
 
@@ -108,6 +119,7 @@ public:
     [[nodiscard]] std::optional<std::uint32_t>
     loadFee() const
     {
+    TRACE_FUNC();
         return ~(*val_)[~sfLoadFee];
     }
 
@@ -115,6 +127,7 @@ public:
     [[nodiscard]] std::uint64_t
     cookie() const
     {
+    TRACE_FUNC();
         return (*val_)[sfCookie];
     }
 
@@ -122,6 +135,7 @@ public:
     [[nodiscard]] std::shared_ptr<STValidation>
     unwrap() const
     {
+    TRACE_FUNC();
         return val_;
     }
 };
@@ -207,6 +221,7 @@ public:
     [[nodiscard]] beast::Journal
     journal() const
     {
+    TRACE_FUNC();
         return j_;
     }
 

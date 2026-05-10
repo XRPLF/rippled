@@ -4,6 +4,7 @@
 
 #include <xrpl/basics/random.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio.hpp>
 #include <boost/asio/strand.hpp>
@@ -63,6 +64,7 @@ public:
     Impl&
     impl()
     {
+    TRACE_FUNC();
         return *static_cast<Impl*>(this);
     }
 
@@ -124,6 +126,7 @@ WorkBase<Impl>::WorkBase(
 template <class Impl>
 WorkBase<Impl>::~WorkBase()
 {
+    TRACE_FUNC();
     if (cb_)
         cb_(make_error_code(boost::system::errc::not_a_socket), lastEndpoint_, std::move(res_));
     close();
@@ -133,6 +136,7 @@ template <class Impl>
 void
 WorkBase<Impl>::run()
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         return boost::asio::post(
@@ -157,6 +161,7 @@ template <class Impl>
 void
 WorkBase<Impl>::cancel()
 {
+    TRACE_FUNC();
     if (!strand_.running_in_this_thread())
     {
         return boost::asio::post(
@@ -175,6 +180,7 @@ template <class Impl>
 void
 WorkBase<Impl>::fail(error_code const& ec)
 {
+    TRACE_FUNC();
     if (cb_)
     {
         cb_(ec, lastEndpoint_, std::move(res_));
@@ -186,6 +192,7 @@ template <class Impl>
 void
 WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
 {
+    TRACE_FUNC();
     if (ec)
         return fail(ec);
 
@@ -205,6 +212,7 @@ template <class Impl>
 void
 WorkBase<Impl>::onConnect(error_code const& ec, endpoint_type const& endpoint)
 {
+    TRACE_FUNC();
     lastEndpoint_ = endpoint;
 
     if (ec)
@@ -217,6 +225,7 @@ template <class Impl>
 void
 WorkBase<Impl>::onStart()
 {
+    TRACE_FUNC();
     req_.method(boost::beast::http::verb::get);
     req_.target(path_.empty() ? "/" : path_);
     req_.version(11);
@@ -235,6 +244,7 @@ template <class Impl>
 void
 WorkBase<Impl>::onRequest(error_code const& ec)
 {
+    TRACE_FUNC();
     if (ec)
         return fail(ec);
 
@@ -251,6 +261,7 @@ template <class Impl>
 void
 WorkBase<Impl>::onResponse(error_code const& ec)
 {
+    TRACE_FUNC();
     if (ec)
         return fail(ec);
 
@@ -264,6 +275,7 @@ template <class Impl>
 void
 WorkBase<Impl>::close()
 {
+    TRACE_FUNC();
     if (socket_.is_open())
     {
         error_code ec;

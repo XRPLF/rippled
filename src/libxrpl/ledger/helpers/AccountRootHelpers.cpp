@@ -19,6 +19,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -34,6 +35,7 @@ namespace xrpl {
 bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 {
+    TRACE_FUNC();
     if (isXRP(issuer))
         return false;
     if (auto const sle = view.read(keylet::account(issuer)))
@@ -54,6 +56,7 @@ confineOwnerCount(
     std::optional<AccountID> const& id = std::nullopt,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
+    TRACE_FUNC();
     std::uint32_t adjusted{current + adjustment};
     if (adjustment > 0)
     {
@@ -86,6 +89,7 @@ confineOwnerCount(
 XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
 {
+    TRACE_FUNC();
     auto const sle = view.read(keylet::account(id));
     if (sle == nullptr)
         return beast::kZERO;
@@ -116,6 +120,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 Rate
 transferRate(ReadView const& view, AccountID const& issuer)
 {
+    TRACE_FUNC();
     auto const sle = view.read(keylet::account(issuer));
 
     if (sle && sle->isFieldPresent(sfTransferRate))
@@ -131,6 +136,7 @@ adjustOwnerCount(
     std::int32_t amount,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (!sle)
         return;
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
@@ -145,6 +151,7 @@ adjustOwnerCount(
 AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
+    TRACE_FUNC();
     // This number must not be changed without an amendment
     constexpr std::uint16_t kMAX_ACCOUNT_ATTEMPTS = 256;
     for (std::uint16_t i = 0; i < kMAX_ACCOUNT_ATTEMPTS; ++i)
@@ -168,6 +175,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields()
 {
+    TRACE_FUNC();
     static std::vector<SField const*> const kPSEUDO_FIELDS = []() {
         auto const ar = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
         if (!ar)
@@ -196,6 +204,7 @@ isPseudoAccount(
     std::shared_ptr<SLE const> sleAcct,
     std::set<SField const*> const& pseudoFieldFilter)
 {
+    TRACE_FUNC();
     auto const& fields = getPseudoAccountFields();
 
     // Intentionally use defensive coding here because it's cheap and makes the
@@ -211,6 +220,7 @@ isPseudoAccount(
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField)
 {
+    TRACE_FUNC();
     [[maybe_unused]]
     auto const& fields = getPseudoAccountFields();
     XRPL_ASSERT(
@@ -253,6 +263,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
 [[nodiscard]] TER
 checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
 {
+    TRACE_FUNC();
     if (toSle == nullptr)
         return tecNO_DST;
 

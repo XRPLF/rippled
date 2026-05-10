@@ -10,6 +10,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/format/free_funcs.hpp>
 
@@ -120,6 +121,7 @@ STXChainBridge::STXChainBridge(SerialIter& sit, SField const& name)
 void
 STXChainBridge::add(Serializer& s) const
 {
+    TRACE_FUNC();
     lockingChainDoor_.add(s);
     lockingChainIssue_.add(s);
     issuingChainDoor_.add(s);
@@ -129,6 +131,7 @@ STXChainBridge::add(Serializer& s) const
 json::Value
 STXChainBridge::getJson(JsonOptions jo) const
 {
+    TRACE_FUNC();
     json::Value v;
     v[jss::LockingChainDoor] = lockingChainDoor_.getJson(jo);
     v[jss::LockingChainIssue] = lockingChainIssue_.getJson(jo);
@@ -140,6 +143,7 @@ STXChainBridge::getJson(JsonOptions jo) const
 std::string
 STXChainBridge::getText() const
 {
+    TRACE_FUNC();
     return str(
         boost::format("{ %s = %s, %s = %s, %s = %s, %s = %s }") % sfLockingChainDoor.getName() %
         lockingChainDoor_.getText() % sfLockingChainIssue.getName() % lockingChainIssue_.getText() %
@@ -150,6 +154,7 @@ STXChainBridge::getText() const
 STObject
 STXChainBridge::toSTObject() const
 {
+    TRACE_FUNC();
     STObject o{sfXChainBridge};
     o[sfLockingChainDoor] = lockingChainDoor_;
     o[sfLockingChainIssue] = lockingChainIssue_;
@@ -161,12 +166,14 @@ STXChainBridge::toSTObject() const
 SerializedTypeID
 STXChainBridge::getSType() const
 {
+    TRACE_FUNC();
     return STI_XCHAIN_BRIDGE;
 }
 
 bool
 STXChainBridge::isEquivalent(STBase const& t) const
 {
+    TRACE_FUNC();
     STXChainBridge const* v = dynamic_cast<STXChainBridge const*>(&t);
     return (v != nullptr) && (*v == *this);
 }
@@ -174,6 +181,7 @@ STXChainBridge::isEquivalent(STBase const& t) const
 bool
 STXChainBridge::isDefault() const
 {
+    TRACE_FUNC();
     return lockingChainDoor_.isDefault() && lockingChainIssue_.isDefault() &&
         issuingChainDoor_.isDefault() && issuingChainIssue_.isDefault();
 }
@@ -181,18 +189,21 @@ STXChainBridge::isDefault() const
 std::unique_ptr<STXChainBridge>
 STXChainBridge::construct(SerialIter& sit, SField const& name)
 {
+    TRACE_FUNC();
     return std::make_unique<STXChainBridge>(sit, name);
 }
 
 STBase*
 STXChainBridge::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STXChainBridge::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 }  // namespace xrpl

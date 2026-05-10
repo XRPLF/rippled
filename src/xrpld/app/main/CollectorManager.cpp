@@ -8,6 +8,7 @@
 #include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <string>
@@ -25,6 +26,7 @@ public:
 
     CollectorManagerImp(Section const& params, beast::Journal journal) : journal_(journal)
     {
+    TRACE_FUNC();
         std::string const& server = get(params, "server");
 
         if (server == "statsd")
@@ -48,12 +50,14 @@ public:
     beast::insight::Collector::ptr const&
     collector() override
     {
+    TRACE_FUNC();
         return collector_;
     }
 
     beast::insight::Group::ptr const&
     group(std::string const& name) override
     {
+    TRACE_FUNC();
         return groups_->get(name);
     }
 };
@@ -63,6 +67,7 @@ public:
 std::unique_ptr<CollectorManager>
 makeCollectorManager(Section const& params, beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::make_unique<CollectorManagerImp>(params, journal);
 }
 

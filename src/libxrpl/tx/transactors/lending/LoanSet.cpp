@@ -26,6 +26,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -40,18 +41,21 @@ namespace xrpl {
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 std::uint32_t
 LoanSet::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfLoanSetMask;
 }
 
 NotTEC
 LoanSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     using namespace Lending;
 
     auto const& tx = ctx.tx;
@@ -140,6 +144,7 @@ LoanSet::preflight(PreflightContext const& ctx)
 NotTEC
 LoanSet::checkSign(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     if (auto ret = Transactor::checkSign(ctx))
         return ret;
 
@@ -168,6 +173,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
 XRPAmount
 LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
 
     // Compute the additional cost of each signature in the
@@ -195,6 +201,7 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
 std::vector<OptionaledField<STNumber>> const&
 LoanSet::getValueFields()
 {
+    TRACE_FUNC();
     static std::vector<OptionaledField<STNumber>> const kVALUE_FIELDS{
         ~sfPrincipalRequested,
         ~sfLoanOriginationFee,
@@ -210,12 +217,14 @@ LoanSet::getValueFields()
 static std::uint32_t
 getStartDate(ReadView const& view)
 {
+    TRACE_FUNC();
     return view.header().closeTime.time_since_epoch().count();
 }
 
 TER
 LoanSet::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const& tx = ctx.tx;
 
     {
@@ -368,6 +377,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 TER
 LoanSet::doApply()
 {
+    TRACE_FUNC();
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
 
@@ -657,6 +667,7 @@ LoanSet::visitInvariantEntry(
 bool
 LoanSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

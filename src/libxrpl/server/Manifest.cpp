@@ -22,6 +22,7 @@
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Wallet.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/trim.hpp>
 
@@ -44,6 +45,7 @@ namespace xrpl {
 std::string
 to_string(Manifest const& m)
 {
+    TRACE_FUNC();
     auto const mk = toBase58(TokenType::NodePublic, m.masterKey);
 
     if (m.revoked())
@@ -59,6 +61,7 @@ to_string(Manifest const& m)
 std::optional<Manifest>
 deserializeManifest(Slice s, beast::Journal journal)
 {
+    TRACE_FUNC();
     if (s.empty())
         return std::nullopt;
 
@@ -171,6 +174,7 @@ template <class Stream>
 Stream&
 logMftAct(Stream& s, std::string const& action, PublicKey const& pk, std::uint32_t seq)
 {
+    TRACE_FUNC();
     s << "Manifest: " << action << ";Pk: " << toBase58(TokenType::NodePublic, pk) << ";Seq: " << seq
       << ";";
     return s;
@@ -185,6 +189,7 @@ logMftAct(
     std::uint32_t seq,
     std::uint32_t oldSeq)
 {
+    TRACE_FUNC();
     s << "Manifest: " << action << ";Pk: " << toBase58(TokenType::NodePublic, pk) << ";Seq: " << seq
       << ";OldSeq: " << oldSeq << ";";
     return s;
@@ -193,6 +198,7 @@ logMftAct(
 bool
 Manifest::verify() const
 {
+    TRACE_FUNC();
     STObject st(kSF_GENERIC);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
@@ -213,6 +219,7 @@ Manifest::verify() const
 uint256
 Manifest::hash() const
 {
+    TRACE_FUNC();
     STObject st(kSF_GENERIC);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
@@ -222,6 +229,7 @@ Manifest::hash() const
 bool
 Manifest::revoked() const
 {
+    TRACE_FUNC();
     /*
         The maximum possible sequence number means that the master key
         has been revoked.
@@ -232,6 +240,7 @@ Manifest::revoked() const
 bool
 Manifest::revoked(std::uint32_t sequence)
 {
+    TRACE_FUNC();
     // The maximum possible sequence number means that the master key has
     // been revoked.
     return sequence == std::numeric_limits<std::uint32_t>::max();
@@ -240,6 +249,7 @@ Manifest::revoked(std::uint32_t sequence)
 std::optional<Blob>
 Manifest::getSignature() const
 {
+    TRACE_FUNC();
     STObject st(kSF_GENERIC);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
@@ -251,6 +261,7 @@ Manifest::getSignature() const
 Blob
 Manifest::getMasterSignature() const
 {
+    TRACE_FUNC();
     STObject st(kSF_GENERIC);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
@@ -260,6 +271,7 @@ Manifest::getMasterSignature() const
 std::optional<ValidatorToken>
 loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
 {
+    TRACE_FUNC();
     try
     {
         std::string tokenStr;
@@ -308,6 +320,7 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
 std::optional<PublicKey>
 ManifestCache::getSigningKey(PublicKey const& pk) const
 {
+    TRACE_FUNC();
     std::shared_lock const lock{mutex_};
     auto const iter = map_.find(pk);
 
@@ -320,6 +333,7 @@ ManifestCache::getSigningKey(PublicKey const& pk) const
 PublicKey
 ManifestCache::getMasterKey(PublicKey const& pk) const
 {
+    TRACE_FUNC();
     std::shared_lock const lock{mutex_};
 
     if (auto const iter = signingToMasterKeys_.find(pk); iter != signingToMasterKeys_.end())
@@ -331,6 +345,7 @@ ManifestCache::getMasterKey(PublicKey const& pk) const
 std::optional<std::uint32_t>
 ManifestCache::getSequence(PublicKey const& pk) const
 {
+    TRACE_FUNC();
     std::shared_lock const lock{mutex_};
     auto const iter = map_.find(pk);
 
@@ -343,6 +358,7 @@ ManifestCache::getSequence(PublicKey const& pk) const
 std::optional<std::string>
 ManifestCache::getDomain(PublicKey const& pk) const
 {
+    TRACE_FUNC();
     std::shared_lock const lock{mutex_};
     auto const iter = map_.find(pk);
 
@@ -355,6 +371,7 @@ ManifestCache::getDomain(PublicKey const& pk) const
 std::optional<std::string>
 ManifestCache::getManifest(PublicKey const& pk) const
 {
+    TRACE_FUNC();
     std::shared_lock const lock{mutex_};
     auto const iter = map_.find(pk);
 
@@ -367,6 +384,7 @@ ManifestCache::getManifest(PublicKey const& pk) const
 bool
 ManifestCache::revoked(PublicKey const& pk) const
 {
+    TRACE_FUNC();
     std::shared_lock const lock{mutex_};
     auto const iter = map_.find(pk);
 
@@ -379,6 +397,7 @@ ManifestCache::revoked(PublicKey const& pk) const
 ManifestDisposition
 ManifestCache::applyManifest(Manifest m)
 {
+    TRACE_FUNC();
     // Check the manifest against the conditions that do not require a
     // `unique_lock` (write lock) on the `mutex_`. Since the signature can be
     // relatively expensive, the `checkSignature` parameter determines if the
@@ -536,6 +555,7 @@ ManifestCache::applyManifest(Manifest m)
 void
 ManifestCache::load(DatabaseCon& dbCon, std::string const& dbTable)
 {
+    TRACE_FUNC();
     auto db = dbCon.checkoutDb();
     xrpl::getManifests(*db, dbTable, *this, j_);
 }
@@ -547,6 +567,7 @@ ManifestCache::load(
     std::string const& configManifest,
     std::vector<std::string> const& configRevocation)
 {
+    TRACE_FUNC();
     load(dbCon, dbTable);
 
     if (!configManifest.empty())
@@ -601,6 +622,7 @@ ManifestCache::save(
     std::string const& dbTable,
     std::function<bool(PublicKey const&)> const& isTrusted)
 {
+    TRACE_FUNC();
     std::shared_lock const lock{mutex_};
     auto db = dbCon.checkoutDb();
 

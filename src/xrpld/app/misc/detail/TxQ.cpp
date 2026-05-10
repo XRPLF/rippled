@@ -31,6 +31,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/function/function_base.hpp>
 
@@ -56,6 +57,7 @@ namespace xrpl {
 static FeeLevel64
 getFeeLevelPaid(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     auto const [baseFee, effectiveFeePaid] = [&view, &tx]() {
         XRPAmount const baseFee = calculateBaseFee(view, tx);
         XRPAmount const feePaid = tx[sfFee].xrp();
@@ -84,6 +86,7 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
 static std::optional<LedgerIndex>
 getLastLedgerSequence(STTx const& tx)
 {
+    TRACE_FUNC();
     if (!tx.isFieldPresent(sfLastLedgerSequence))
         return std::nullopt;
     return tx.getFieldU32(sfLastLedgerSequence);
@@ -92,6 +95,7 @@ getLastLedgerSequence(STTx const& tx)
 static FeeLevel64
 increase(FeeLevel64 level, std::uint32_t increasePercent)
 {
+    TRACE_FUNC();
     return mulDiv(level, 100 + increasePercent, 100)
         .value_or(static_cast<FeeLevel64>(xrpl::kMULDIV_MAX));
 }
@@ -105,6 +109,7 @@ TxQ::FeeMetrics::update(
     bool timeLeap,
     TxQ::Setup const& setup)
 {
+    TRACE_FUNC();
     std::vector<FeeLevel64> feeLevels;
     auto const txBegin = view.txs.begin();
     auto const txEnd = view.txs.end();
@@ -181,6 +186,7 @@ TxQ::FeeMetrics::update(
 FeeLevel64
 TxQ::FeeMetrics::scaleFeeLevel(Snapshot const& snapshot, OpenView const& view)
 {
+    TRACE_FUNC();
     // Transactions in the open ledger so far
     auto const current = view.txCount();
 
@@ -243,6 +249,7 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
     std::size_t extraCount,
     std::size_t seriesSize)
 {
+    TRACE_FUNC();
     /* Transactions in the open ledger so far.
         AKA Transactions that will be in the open ledger when
         the first tx in the series is attempted.
@@ -303,6 +310,7 @@ TxQ::MaybeTx::MaybeTx(
 ApplyResult
 TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
+    TRACE_FUNC();
     // If the rules or flags change, preflight again
     XRPL_ASSERT(pfResult, "xrpl::TxQ::MaybeTx::apply : preflight result is set");
     NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
@@ -335,6 +343,7 @@ TxQ::TxQAccount::TxQAccount(AccountID const& account) : account(account)
 TxQ::TxQAccount::TxMap::const_iterator
 TxQ::TxQAccount::getPrevTx(SeqProxy seqProx) const
 {
+    TRACE_FUNC();
     // Find the entry that is greater than or equal to the new transaction,
     // then decrement the iterator.
     auto sameOrPrevIter = transactions.lower_bound(seqProx);
@@ -346,6 +355,7 @@ TxQ::TxQAccount::getPrevTx(SeqProxy seqProx) const
 TxQ::MaybeTx&
 TxQ::TxQAccount::add(MaybeTx&& txn)
 {
+    TRACE_FUNC();
     auto const seqProx = txn.seqProxy;
     [[maybe_unused]] auto const* txnPtr = &txn;
 
@@ -359,6 +369,7 @@ TxQ::TxQAccount::add(MaybeTx&& txn)
 bool
 TxQ::TxQAccount::remove(SeqProxy seqProx)
 {
+    TRACE_FUNC();
     return transactions.erase(seqProx) != 0;
 }
 
@@ -371,6 +382,7 @@ TxQ::TxQ(Setup const& setup, beast::Journal j)
 
 TxQ::~TxQ()
 {
+    TRACE_FUNC();
     byFee_.clear();
 }
 
@@ -378,6 +390,7 @@ template <size_t FillPercentage>
 bool
 TxQ::isFull() const
 {
+    TRACE_FUNC();
     static_assert(FillPercentage > 0 && FillPercentage <= 100, "Invalid fill percentage");
     return maxSize_ && byFee_.size() >= (*maxSize_ * FillPercentage / 100);
 }
@@ -392,6 +405,7 @@ TxQ::canBeHeld(
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock)
 {
+    TRACE_FUNC();
     // PreviousTxnID is deprecated and should never be used.
     // AccountTxnID is not supported by the transaction
     // queue yet, but should be added in the future.
@@ -456,6 +470,7 @@ TxQ::canBeHeld(
 auto
 TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter) -> FeeMultiSet::iterator_type
 {
+    TRACE_FUNC();
     auto& txQAccount = byAccount_.at(candidateIter->account);
     auto const seqProx = candidateIter->seqProxy;
     auto const newCandidateIter = byFee_.erase(candidateIter);
@@ -472,6 +487,7 @@ auto
 TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     -> FeeMultiSet::iterator_type
 {
+    TRACE_FUNC();
     auto& txQAccount = byAccount_.at(candidateIter->account);
     auto const accountIter = txQAccount.transactions.find(candidateIter->seqProxy);
     XRPL_ASSERT(
@@ -507,6 +523,7 @@ TxQ::erase(
     TxQ::TxQAccount::TxMap::const_iterator begin,
     TxQ::TxQAccount::TxMap::const_iterator end) -> TxQAccount::TxMap::iterator
 {
+    TRACE_FUNC();
     for (auto it = begin; it != end; ++it)
     {
         byFee_.erase(byFee_.iterator_to(it->second));
@@ -528,6 +545,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     FeeMetrics::Snapshot const& metricsSnapshot,
     beast::Journal j)
 {
+    TRACE_FUNC();
     SeqProxy const tSeqProx{tx.getSeqProxy()};
     XRPL_ASSERT(
         beginTxIter != accountIter->second.transactions.end(),
@@ -730,6 +748,7 @@ TxQ::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
+    TRACE_FUNC();
     NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     // See if the transaction is valid, properly formed,
@@ -1332,6 +1351,7 @@ TxQ::apply(
 void
 TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
 
     feeMetrics_.update(app, view, timeLeap, setup_);
@@ -1403,6 +1423,7 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 bool
 TxQ::accept(Application& app, OpenView& view)
 {
+    TRACE_FUNC();
     /* Move transactions from the queue from largest fee level to smallest.
        As we add more transactions, the required fee level will increase.
        Stop when the transaction fee level gets lower than the required fee
@@ -1575,6 +1596,7 @@ TxQ::accept(Application& app, OpenView& view)
 SeqProxy
 TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     return nextQueuableSeqImpl(sleAccount, lock);
 }
@@ -1590,6 +1612,7 @@ TxQ::nextQueuableSeqImpl(
     std::shared_ptr<SLE const> const& sleAccount,
     std::scoped_lock<std::mutex> const&) const
 {
+    TRACE_FUNC();
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.
     if (!sleAccount || sleAccount->getType() != ltACCOUNT_ROOT)
@@ -1639,6 +1662,7 @@ TxQ::getRequiredFeeLevel(
     FeeMetrics::Snapshot const& metricsSnapshot,
     std::scoped_lock<std::mutex> const& lock)
 {
+    TRACE_FUNC();
     return FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
 }
 
@@ -1650,6 +1674,7 @@ TxQ::tryDirectApply(
     ApplyFlags flags,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const account = (*tx)[sfAccount];
     auto const sleAccount = view.read(keylet::account(account));
 
@@ -1713,6 +1738,7 @@ TxQ::removeFromByFee(
     std::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
     std::shared_ptr<STTx const> const& tx)
 {
+    TRACE_FUNC();
     if (replacedTxIter && tx)
     {
         // If the transaction we're holding replaces a transaction in the
@@ -1737,6 +1763,7 @@ TxQ::removeFromByFee(
 TxQ::Metrics
 TxQ::getMetrics(OpenView const& view) const
 {
+    TRACE_FUNC();
     Metrics result;
 
     std::scoped_lock const lock(mutex_);
@@ -1759,6 +1786,7 @@ TxQ::getMetrics(OpenView const& view) const
 TxQ::FeeAndSeq
 TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> const& tx) const
 {
+    TRACE_FUNC();
     auto const account = (*tx)[sfAccount];
 
     std::scoped_lock const lock(mutex_);
@@ -1781,6 +1809,7 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
 std::vector<TxQ::TxDetails>
 TxQ::getAccountTxs(AccountID const& account) const
 {
+    TRACE_FUNC();
     std::vector<TxDetails> result;
 
     std::scoped_lock const lock(mutex_);
@@ -1801,6 +1830,7 @@ TxQ::getAccountTxs(AccountID const& account) const
 std::vector<TxQ::TxDetails>
 TxQ::getTxs() const
 {
+    TRACE_FUNC();
     std::vector<TxDetails> result;
 
     std::scoped_lock const lock(mutex_);
@@ -1816,6 +1846,7 @@ TxQ::getTxs() const
 json::Value
 TxQ::doRPC(Application& app) const
 {
+    TRACE_FUNC();
     auto const view = app.getOpenLedger().current();
     if (!view)
     {
@@ -1870,6 +1901,7 @@ TxQ::doRPC(Application& app) const
 TxQ::Setup
 setupTxQ(Config const& config)
 {
+    TRACE_FUNC();
     TxQ::Setup setup;
     auto const& section = config.section("transaction_queue");
     set(setup.ledgersInQueue, "ledgers_in_queue", section);

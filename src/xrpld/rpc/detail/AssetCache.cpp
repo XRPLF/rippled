@@ -14,6 +14,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <mutex>
@@ -25,11 +26,13 @@ namespace xrpl {
 AssetCache::AssetCache(std::shared_ptr<ReadView const> const& ledger, beast::Journal j)
     : ledger_(ledger), journal_(j)
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << "created for ledger " << ledger_->header().seq;
 }
 
 AssetCache::~AssetCache()
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << "destroyed for ledger " << ledger_->header().seq << " with "
                            << lines_.size() << " accounts and " << totalLineCount_
                            << " distinct trust lines.";
@@ -38,6 +41,7 @@ AssetCache::~AssetCache()
 std::shared_ptr<std::vector<PathFindTrustLine>>
 AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 {
+    TRACE_FUNC();
     auto const hash = hasher_(accountID);
     AccountKey key(accountID, direction, hash);
     AccountKey otherkey(
@@ -117,6 +121,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 std::shared_ptr<std::vector<PathFindMPT>> const&
 AssetCache::getMPTs(xrpl::AccountID const& account)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
 
     if (auto it = mpts_.find(account); it != mpts_.end())

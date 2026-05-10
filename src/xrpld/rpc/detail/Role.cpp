@@ -8,6 +8,7 @@
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/ip/impl/network_v4.ipp>
 #include <boost/asio/ip/impl/network_v6.ipp>
@@ -26,6 +27,7 @@ namespace xrpl {
 bool
 passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()),
         "xrpl::passwordUnrequiredOrSentCorrect : non-empty admin nets");
@@ -43,6 +45,7 @@ ipAllowed(
     std::vector<boost::asio::ip::network_v4> const& nets4,
     std::vector<boost::asio::ip::network_v6> const& nets6)
 {
+    TRACE_FUNC();
     // To test whether the remoteIP is part of one of the configured
     // subnets, first convert it to a subnet definition. For ipv4,
     // this means appending /32. For ipv6, /128. Then based on protocol
@@ -79,6 +82,7 @@ ipAllowed(
 bool
 isAdmin(Port const& port, json::Value const& params, beast::IP::Address const& remoteIp)
 {
+    TRACE_FUNC();
     return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
         passwordUnrequiredOrSentCorrect(port, params);
 }
@@ -91,6 +95,7 @@ requestRole(
     beast::IP::Endpoint const& remoteIp,
     std::string_view user)
 {
+    TRACE_FUNC();
     if (isAdmin(port, params, remoteIp.address()))
         return Role::ADMIN;
 
@@ -113,6 +118,7 @@ requestRole(
 bool
 isUnlimited(Role const& role)
 {
+    TRACE_FUNC();
     return role == Role::ADMIN || role == Role::IDENTIFIED;
 }
 
@@ -124,6 +130,7 @@ isUnlimited(
     beast::IP::Endpoint const& remoteIp,
     std::string const& user)
 {
+    TRACE_FUNC();
     return isUnlimited(requestRole(required, port, params, remoteIp, user));
 }
 
@@ -135,6 +142,7 @@ requestInboundEndpoint(
     std::string_view user,
     std::string_view forwardedFor)
 {
+    TRACE_FUNC();
     if (isUnlimited(role))
         return manager.newUnlimitedEndpoint(remoteAddress);
 
@@ -144,6 +152,7 @@ requestInboundEndpoint(
 static std::string_view
 extractIpAddrFromField(std::string_view field)
 {
+    TRACE_FUNC();
     // Lambda to trim leading and trailing spaces on the field.
     auto trim = [](std::string_view str) -> std::string_view {
         std::string_view ret = str;
@@ -249,6 +258,7 @@ extractIpAddrFromField(std::string_view field)
 std::string_view
 forwardedFor(http_request_type const& request)
 {
+    TRACE_FUNC();
     // Look for the Forwarded field in the request.
     if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())
     {

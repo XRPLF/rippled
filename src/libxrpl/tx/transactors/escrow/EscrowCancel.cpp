@@ -22,6 +22,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <variant>
@@ -31,6 +32,7 @@ namespace xrpl {
 NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tesSUCCESS;
 }
 
@@ -48,6 +50,7 @@ escrowCancelPreclaimHelper<Issue>(
     AccountID const& account,
     STAmount const& amount)
 {
+    TRACE_FUNC();
     AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
@@ -67,6 +70,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
     AccountID const& account,
     STAmount const& amount)
 {
+    TRACE_FUNC();
     AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
@@ -91,6 +95,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
 TER
 EscrowCancel::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
         auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
@@ -118,6 +123,7 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 TER
 EscrowCancel::doApply()
 {
+    TRACE_FUNC();
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
@@ -235,6 +241,7 @@ EscrowCancel::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 }  // namespace xrpl

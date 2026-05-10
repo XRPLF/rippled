@@ -22,6 +22,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>
@@ -60,6 +61,7 @@ namespace {
 std::optional<boost::asio::ip::tcp::endpoint>
 getEndpoint(std::string const& peer)
 {
+    TRACE_FUNC();
     try
     {
         std::size_t const first = peer.find_first_of(':');
@@ -106,6 +108,7 @@ GRPCServerImpl::CallData<Request, Response>::CallData(
     , loadType_(std::move(loadType))
     , secureGatewayIPs_(secureGatewayIPs)
 {
+    TRACE_FUNC();
     // Bind a listener. When a request is received, "this" will be returned
     // from CompletionQueue::Next
     bindListener_(service_, &ctx_, &request_, &responder_, &cq_, &cq_, this);
@@ -115,6 +118,7 @@ template <class Request, class Response>
 std::shared_ptr<Processor>
 GRPCServerImpl::CallData<Request, Response>::clone()
 {
+    TRACE_FUNC();
     return std::make_shared<CallData<Request, Response>>(
         service_,
         cq_,
@@ -131,6 +135,7 @@ template <class Request, class Response>
 void
 GRPCServerImpl::CallData<Request, Response>::process()
 {
+    TRACE_FUNC();
     // sanity check
     BOOST_ASSERT(!finished_);
 
@@ -162,6 +167,7 @@ template <class Request, class Response>
 void
 GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::Coro> coro)
 {
+    TRACE_FUNC();
     try
     {
         auto usage = getUsage();
@@ -236,6 +242,7 @@ template <class Request, class Response>
 bool
 GRPCServerImpl::CallData<Request, Response>::isFinished()
 {
+    TRACE_FUNC();
     return finished_;
 }
 
@@ -243,6 +250,7 @@ template <class Request, class Response>
 Resource::Charge
 GRPCServerImpl::CallData<Request, Response>::getLoadType()
 {
+    TRACE_FUNC();
     return loadType_;
 }
 
@@ -250,6 +258,7 @@ template <class Request, class Response>
 Role
 GRPCServerImpl::CallData<Request, Response>::getRole(bool isUnlimited)
 {
+    TRACE_FUNC();
     if (isUnlimited)
     {
         return Role::IDENTIFIED;
@@ -262,6 +271,7 @@ template <class Request, class Response>
 std::optional<std::string>
 GRPCServerImpl::CallData<Request, Response>::getUser()
 {
+    TRACE_FUNC();
     if (auto descriptor = Request::GetDescriptor()->FindFieldByName("user"))
     {
         std::string user = Request::GetReflection()->GetString(request_, descriptor);
@@ -277,6 +287,7 @@ template <class Request, class Response>
 std::optional<boost::asio::ip::address>
 GRPCServerImpl::CallData<Request, Response>::getClientIpAddress()
 {
+    TRACE_FUNC();
     auto endpoint = getClientEndpoint();
     if (endpoint)
         return endpoint->address();
@@ -287,6 +298,7 @@ template <class Request, class Response>
 std::optional<boost::asio::ip::tcp::endpoint>
 GRPCServerImpl::CallData<Request, Response>::getClientEndpoint()
 {
+    TRACE_FUNC();
     return xrpl::getEndpoint(ctx_.peer());
 }
 
@@ -294,6 +306,7 @@ template <class Request, class Response>
 bool
 GRPCServerImpl::CallData<Request, Response>::clientIsUnlimited()
 {
+    TRACE_FUNC();
     if (!getUser())
         return false;
     auto clientIp = getClientIpAddress();
@@ -312,6 +325,7 @@ template <class Request, class Response>
 void
 GRPCServerImpl::CallData<Request, Response>::setIsUnlimited(Response& response, bool isUnlimited)
 {
+    TRACE_FUNC();
     if (isUnlimited)
     {
         if (auto descriptor = Response::GetDescriptor()->FindFieldByName("is_unlimited"))
@@ -325,6 +339,7 @@ template <class Request, class Response>
 Resource::Consumer
 GRPCServerImpl::CallData<Request, Response>::getUsage()
 {
+    TRACE_FUNC();
     auto endpoint = getClientEndpoint();
     if (endpoint)
         return app_.getResourceManager().newInboundEndpoint(beast::IP::fromAsio(endpoint.value()));
@@ -334,6 +349,7 @@ GRPCServerImpl::CallData<Request, Response>::getUsage()
 GRPCServerImpl::GRPCServerImpl(Application& app)
     : app_(app), journal_(app_.getJournal("gRPC Server"))
 {
+    TRACE_FUNC();
     // if present, get endpoint from config
     if (app_.config().exists(SECTION_PORT_GRPC))
     {
@@ -437,6 +453,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
 void
 GRPCServerImpl::shutdown()
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << "Shutting down";
 
     // The below call cancels all "listeners" (CallData objects that are waiting
@@ -459,6 +476,7 @@ GRPCServerImpl::shutdown()
 void
 GRPCServerImpl::handleRpcs()
 {
+    TRACE_FUNC();
     // This collection should really be an unordered_set. However, to delete
     // from the unordered_set, we need a shared_ptr, but cq_.Next() (see below
     // while loop) sets the tag to a raw pointer.
@@ -526,6 +544,7 @@ GRPCServerImpl::handleRpcs()
 std::vector<std::shared_ptr<Processor>>
 GRPCServerImpl::setupListeners()
 {
+    TRACE_FUNC();
     std::vector<std::shared_ptr<Processor>> requests;
 
     auto addToRequests = [&requests](auto callData) { requests.push_back(std::move(callData)); };
@@ -603,6 +622,7 @@ GRPCServerImpl::setupListeners()
 std::shared_ptr<grpc::ServerCredentials>
 GRPCServerImpl::createServerCredentials()
 {
+    TRACE_FUNC();
     if (not sslCertPath_.has_value() or not sslKeyPath_.has_value())
     {
         JLOG(journal_.info()) << "Configuring gRPC server without TLS";
@@ -701,6 +721,7 @@ GRPCServerImpl::createServerCredentials()
 bool
 GRPCServerImpl::start()
 {
+    TRACE_FUNC();
     // if config does not specify a grpc server address, don't start
     if (serverAddress_.empty())
         return false;
@@ -768,6 +789,7 @@ GRPCServerImpl::start()
 boost::asio::ip::tcp::endpoint
 GRPCServerImpl::getEndpoint() const
 {
+    TRACE_FUNC();
     std::string const addr = serverAddress_.substr(0, serverAddress_.find_last_of(':'));
     return boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(addr), serverPort_);
 }
@@ -775,6 +797,7 @@ GRPCServerImpl::getEndpoint() const
 bool
 GRPCServer::start()
 {
+    TRACE_FUNC();
     // Start the server and setup listeners
     if (running_ = impl_.start(); running_)
     {
@@ -790,6 +813,7 @@ GRPCServer::start()
 void
 GRPCServer::stop()
 {
+    TRACE_FUNC();
     if (running_)
     {
         impl_.shutdown();
@@ -800,12 +824,14 @@ GRPCServer::stop()
 
 GRPCServer::~GRPCServer()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!running_, "xrpl::GRPCServer::~GRPCServer : is not running");
 }
 
 boost::asio::ip::tcp::endpoint
 GRPCServer::getEndpoint() const
 {
+    TRACE_FUNC();
     return impl_.getEndpoint();
 }
 

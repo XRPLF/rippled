@@ -10,6 +10,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -20,6 +21,7 @@ namespace xrpl {
 json::Value
 doFeature(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (context.params.isMember(jss::feature))
     {
         // ensure that the `feature` param is a string

@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cctype>
@@ -19,6 +20,7 @@ namespace json {
 static std::string
 codePointToUTF8(unsigned int cp)
 {
+    TRACE_FUNC();
     std::string result;
 
     // based on description from http://en.wikipedia.org/wiki/UTF-8
@@ -59,6 +61,7 @@ codePointToUTF8(unsigned int cp)
 bool
 Reader::parse(std::string const& document, Value& root)
 {
+    TRACE_FUNC();
     document_ = document;
     char const* begin = document_.c_str();
     char const* end = begin + document_.length();
@@ -68,6 +71,7 @@ Reader::parse(std::string const& document, Value& root)
 bool
 Reader::parse(std::istream& sin, Value& root)
 {
+    TRACE_FUNC();
     // std::istream_iterator<char> begin(sin);
     // std::istream_iterator<char> end;
     // Those would allow streamed input from a file, if parse() were a
@@ -83,6 +87,7 @@ Reader::parse(std::istream& sin, Value& root)
 bool
 Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
 {
+    TRACE_FUNC();
     begin_ = beginDoc;
     end_ = endDoc;
     current_ = begin_;
@@ -115,6 +120,7 @@ Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
 bool
 Reader::readValue(unsigned depth)
 {
+    TRACE_FUNC();
     Token token{};
     skipCommentTokens(token);
     if (depth > kNEST_LIMIT)
@@ -165,6 +171,7 @@ Reader::readValue(unsigned depth)
 void
 Reader::skipCommentTokens(Token& token)
 {
+    TRACE_FUNC();
     do
     {
         readToken(token);
@@ -174,6 +181,7 @@ Reader::skipCommentTokens(Token& token)
 bool
 Reader::expectToken(TokenType type, Token& token, char const* message)
 {
+    TRACE_FUNC();
     readToken(token);
 
     if (token.type != type)
@@ -185,6 +193,7 @@ Reader::expectToken(TokenType type, Token& token, char const* message)
 bool
 Reader::readToken(Token& token)
 {
+    TRACE_FUNC();
     skipSpaces();
     token.start = current_;
     Char const c = getNextChar();
@@ -274,6 +283,7 @@ Reader::readToken(Token& token)
 void
 Reader::skipSpaces()
 {
+    TRACE_FUNC();
     while (current_ != end_)
     {
         Char const c = *current_;
@@ -292,6 +302,7 @@ Reader::skipSpaces()
 bool
 Reader::match(Location pattern, int patternLength)
 {
+    TRACE_FUNC();
     if (end_ - current_ < patternLength)
         return false;
 
@@ -310,6 +321,7 @@ Reader::match(Location pattern, int patternLength)
 bool
 Reader::readComment()
 {
+    TRACE_FUNC();
     Char const c = getNextChar();
 
     if (c == '*')
@@ -324,6 +336,7 @@ Reader::readComment()
 bool
 Reader::readCStyleComment()
 {
+    TRACE_FUNC();
     while (current_ != end_)
     {
         Char const c = getNextChar();
@@ -338,6 +351,7 @@ Reader::readCStyleComment()
 bool
 Reader::readCppStyleComment()
 {
+    TRACE_FUNC();
     while (current_ != end_)
     {
         Char const c = getNextChar();
@@ -352,6 +366,7 @@ Reader::readCppStyleComment()
 Reader::TokenType
 Reader::readNumber()
 {
+    TRACE_FUNC();
     static char const kEXTENDED_TOKENS[] = {'.', 'e', 'E', '+', '-'};
 
     TokenType type = TokenInteger;
@@ -383,6 +398,7 @@ Reader::readNumber()
 bool
 Reader::readString()
 {
+    TRACE_FUNC();
     Char c = 0;
 
     while (current_ != end_)
@@ -405,6 +421,7 @@ Reader::readString()
 bool
 Reader::readObject(Token& tokenStart, unsigned depth)
 {
+    TRACE_FUNC();
     Token tokenName{};
     std::string name;
     currentValue() = Value(ObjectValue);
@@ -475,6 +492,7 @@ Reader::readObject(Token& tokenStart, unsigned depth)
 bool
 Reader::readArray(Token& tokenStart, unsigned depth)
 {
+    TRACE_FUNC();
     currentValue() = Value(ArrayValue);
     skipSpaces();
 
@@ -525,6 +543,7 @@ Reader::readArray(Token& tokenStart, unsigned depth)
 bool
 Reader::decodeNumber(Token& token)
 {
+    TRACE_FUNC();
     Location current = token.start;
     bool const isNegative = *current == '-';
 
@@ -604,6 +623,7 @@ Reader::decodeNumber(Token& token)
 bool
 Reader::decodeDouble(Token& token)
 {
+    TRACE_FUNC();
     double value = 0;
     int const bufferSize = 32;
     int count = 0;
@@ -640,6 +660,7 @@ Reader::decodeDouble(Token& token)
 bool
 Reader::decodeString(Token& token)
 {
+    TRACE_FUNC();
     std::string decoded;
 
     if (!decodeString(token, decoded))
@@ -652,6 +673,7 @@ Reader::decodeString(Token& token)
 bool
 Reader::decodeString(Token& token, std::string& decoded)
 {
+    TRACE_FUNC();
     decoded.reserve(token.end - token.start - 2);
     Location current = token.start + 1;  // skip '"'
     Location end = token.end - 1;        // do not include '"'
@@ -731,6 +753,7 @@ Reader::decodeString(Token& token, std::string& decoded)
 bool
 Reader::decodeUnicodeCodePoint(Token& token, Location& current, Location end, unsigned int& unicode)
 {
+    TRACE_FUNC();
     if (!decodeUnicodeEscapeSequence(token, current, end, unicode))
         return false;
 
@@ -774,6 +797,7 @@ Reader::decodeUnicodeEscapeSequence(
     Location end,
     unsigned int& unicode)
 {
+    TRACE_FUNC();
     if (end - current < 4)
     {
         return addError(
@@ -815,6 +839,7 @@ Reader::decodeUnicodeEscapeSequence(
 bool
 Reader::addError(std::string const& message, Token& token, Location extra)
 {
+    TRACE_FUNC();
     ErrorInfo info;
     info.token = token;
     info.message = message;
@@ -826,6 +851,7 @@ Reader::addError(std::string const& message, Token& token, Location extra)
 bool
 Reader::recoverFromError(TokenType skipUntilToken)
 {
+    TRACE_FUNC();
     int const errorCount = int(errors_.size());
     Token skip{};
 
@@ -845,6 +871,7 @@ Reader::recoverFromError(TokenType skipUntilToken)
 bool
 Reader::addErrorAndRecover(std::string const& message, Token& token, TokenType skipUntilToken)
 {
+    TRACE_FUNC();
     addError(message, token);
     return recoverFromError(skipUntilToken);
 }
@@ -852,12 +879,14 @@ Reader::addErrorAndRecover(std::string const& message, Token& token, TokenType s
 Value&
 Reader::currentValue()
 {
+    TRACE_FUNC();
     return *(nodes_.top());
 }
 
 Reader::Char
 Reader::getNextChar()
 {
+    TRACE_FUNC();
     if (current_ == end_)
         return 0;
 
@@ -867,6 +896,7 @@ Reader::getNextChar()
 void
 Reader::getLocationLineAndColumn(Location location, int& line, int& column) const
 {
+    TRACE_FUNC();
     Location current = begin_;
     Location lastLineStart = current;
     line = 0;
@@ -898,6 +928,7 @@ Reader::getLocationLineAndColumn(Location location, int& line, int& column) cons
 std::string
 Reader::getLocationLineAndColumn(Location location) const
 {
+    TRACE_FUNC();
     int line = 0, column = 0;
     getLocationLineAndColumn(location, line, column);
     return "Line " + std::to_string(line) + ", Column " + std::to_string(column);
@@ -906,6 +937,7 @@ Reader::getLocationLineAndColumn(Location location) const
 std::string
 Reader::getFormattedErrorMessages() const
 {
+    TRACE_FUNC();
     std::string formattedMessage;
 
     for (Errors::const_iterator itError = errors_.begin(); itError != errors_.end(); ++itError)
@@ -924,6 +956,7 @@ Reader::getFormattedErrorMessages() const
 std::istream&
 operator>>(std::istream& sin, Value& root)
 {
+    TRACE_FUNC();
     json::Reader reader;
     bool const ok = reader.parse(sin, root);
 

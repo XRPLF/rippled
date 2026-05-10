@@ -25,6 +25,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -36,12 +37,14 @@ namespace xrpl {
 std::uint32_t
 AMMClawback::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfAMMClawbackMask;
 }
 
 bool
 AMMClawback::checkExtraFeatures(xrpl::PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ctx.rules.enabled(featureAMMClawback))
         return false;
 
@@ -55,6 +58,7 @@ AMMClawback::checkExtraFeatures(xrpl::PreflightContext const& ctx)
 NotTEC
 AMMClawback::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     AccountID const issuer = ctx.tx[sfAccount];
     AccountID const holder = ctx.tx[sfHolder];
 
@@ -103,6 +107,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
 TER
 AMMClawback::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const asset = ctx.tx[sfAsset];
     auto const asset2 = ctx.tx[sfAsset2];
     auto const sleIssuer = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
@@ -160,6 +165,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
 TER
 AMMClawback::doApply()
 {
+    TRACE_FUNC();
     Sandbox sb(&ctx_.view());
 
     auto const ter = applyGuts(sb);
@@ -172,6 +178,7 @@ AMMClawback::doApply()
 TER
 AMMClawback::applyGuts(Sandbox& sb)
 {
+    TRACE_FUNC();
     std::optional<STAmount> const clawAmount = ctx_.tx[~sfAmount];
     AccountID const issuer = ctx_.tx[sfAccount];
     AccountID const holder = ctx_.tx[sfHolder];
@@ -307,6 +314,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     STAmount const& holdLPtokens,
     STAmount const& amount)
 {
+    TRACE_FUNC();
     auto frac = Number{amount} / amountBalance;
     auto amount2Withdraw = amount2Balance * frac;
 
@@ -398,6 +406,7 @@ AMMClawback::visitInvariantEntry(
 bool
 AMMClawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

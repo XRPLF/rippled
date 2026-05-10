@@ -5,11 +5,13 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 json::Value
 doFee(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto result = context.app.getTxQ().doRPC(context.app);
     if (result.type() == json::ObjectValue)
         return result;

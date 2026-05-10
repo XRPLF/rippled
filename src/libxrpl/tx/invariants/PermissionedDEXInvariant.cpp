@@ -13,6 +13,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -24,6 +25,7 @@ ValidPermissionedDEX::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (after && after->getType() == ltDIR_NODE)
     {
         if (after->isFieldPresent(sfDomainID))
@@ -64,6 +66,7 @@ ValidPermissionedDEX::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     auto const txType = tx.getTxnType();
     if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) || !isTesSuccess(result))
         return true;

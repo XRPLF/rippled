@@ -3,6 +3,7 @@
 #include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -18,6 +19,7 @@ Config::Config() : outPeers(calcOutPeers())
 bool
 operator==(Config const& lhs, Config const& rhs)
 {
+    TRACE_FUNC();
     return lhs.autoConnect == rhs.autoConnect && lhs.peerPrivate == rhs.peerPrivate &&
         lhs.wantIncoming == rhs.wantIncoming && lhs.inPeers == rhs.inPeers &&
         lhs.maxPeers == rhs.maxPeers && lhs.outPeers == rhs.outPeers &&
@@ -28,12 +30,14 @@ operator==(Config const& lhs, Config const& rhs)
 std::size_t
 Config::calcOutPeers() const
 {
+    TRACE_FUNC();
     return std::max((maxPeers * Tuning::OutPercent + 50) / 100, std::size_t(Tuning::MinOutCount));
 }
 
 void
 Config::applyTuning()
 {
+    TRACE_FUNC();
     if (ipLimit == 0)
     {
         // Unless a limit is explicitly set, we allow between
@@ -53,6 +57,7 @@ Config::applyTuning()
 void
 Config::onWrite(beast::PropertyStream::Map& map) const
 {
+    TRACE_FUNC();
     map["max_peers"] = maxPeers;
     map["out_peers"] = outPeers;
     map["want_incoming"] = wantIncoming;
@@ -69,6 +74,7 @@ Config::makeConfig(
     bool validationPublicKey,
     int ipLimit)
 {
+    TRACE_FUNC();
     PeerFinder::Config config;
 
     config.peerPrivate = cfg.PEER_PRIVATE;

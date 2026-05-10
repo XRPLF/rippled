@@ -15,6 +15,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -23,12 +24,14 @@ namespace xrpl {
 NotTEC
 DIDDelete::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tesSUCCESS;
 }
 
 TER
 DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
 {
+    TRACE_FUNC();
     auto const sle = ctx.view().peek(sleKeylet);
     if (!sle)
         return tecNO_ENTRY;
@@ -43,6 +46,7 @@ DIDDelete::deleteSLE(
     AccountID const owner,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Remove object from owner directory
     if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
     {
@@ -67,6 +71,7 @@ DIDDelete::deleteSLE(
 TER
 DIDDelete::doApply()
 {
+    TRACE_FUNC();
     return deleteSLE(ctx_, keylet::did(account_), account_);
 }
 
@@ -81,6 +86,7 @@ DIDDelete::visitInvariantEntry(
 bool
 DIDDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 }  // namespace xrpl

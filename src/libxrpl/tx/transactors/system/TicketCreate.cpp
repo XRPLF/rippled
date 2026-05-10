@@ -15,6 +15,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -24,6 +25,7 @@ namespace xrpl {
 TxConsequences
 TicketCreate::makeTxConsequences(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // Create TxConsequences identifying the number of sequences consumed.
     return TxConsequences{ctx.tx, ctx.tx[sfTicketCount]};
 }
@@ -31,6 +33,7 @@ TicketCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 TicketCreate::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
         count < kMIN_VALID_COUNT || count > kMAX_VALID_COUNT)
         return temINVALID_COUNT;
@@ -41,6 +44,7 @@ TicketCreate::preflight(PreflightContext const& ctx)
 TER
 TicketCreate::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const id = ctx.tx[sfAccount];
     auto const sleAccountRoot = ctx.view.read(keylet::account(id));
     if (!sleAccountRoot)
@@ -67,6 +71,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
 TER
 TicketCreate::doApply()
 {
+    TRACE_FUNC();
     SLE::pointer const sleAccountRoot = view().peek(keylet::account(account_));
     if (!sleAccountRoot)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -150,6 +155,7 @@ TicketCreate::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

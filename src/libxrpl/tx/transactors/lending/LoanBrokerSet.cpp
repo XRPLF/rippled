@@ -19,6 +19,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <vector>
@@ -28,12 +29,14 @@ namespace xrpl {
 bool
 LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
 LoanBrokerSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     using namespace Lending;
 
     auto const& tx = ctx.tx;
@@ -83,6 +86,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 std::vector<OptionaledField<STNumber>> const&
 LoanBrokerSet::getValueFields()
 {
+    TRACE_FUNC();
     static std::vector<OptionaledField<STNumber>> const kVALUE_FIELDS{~sfDebtMaximum};
 
     return kVALUE_FIELDS;
@@ -91,6 +95,7 @@ LoanBrokerSet::getValueFields()
 TER
 LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -172,6 +177,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 TER
 LoanBrokerSet::doApply()
 {
+    TRACE_FUNC();
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
 
@@ -294,6 +300,7 @@ LoanBrokerSet::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

@@ -15,6 +15,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <exception>
@@ -32,6 +33,7 @@ namespace xrpl {
 json::Value
 doChannelAuthorize(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {
         return RPC::makeError(RpcNotSupported, "Signing is not supported by this server.");

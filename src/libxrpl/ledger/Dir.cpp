@@ -6,6 +6,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <iterator>
@@ -18,6 +19,7 @@ using const_iterator = Dir::ConstIterator;
 Dir::Dir(ReadView const& view, Keylet const& key)
     : view_(&view), root_(key), sle_(view_->read(root_))
 {
+    TRACE_FUNC();
     if (sle_ != nullptr)
         indexes_ = &sle_->getFieldV256(sfIndexes);
 }
@@ -25,6 +27,7 @@ Dir::Dir(ReadView const& view, Keylet const& key)
 auto
 Dir::begin() const -> ConstIterator
 {
+    TRACE_FUNC();
     auto it = ConstIterator(*view_, root_, root_);
     if (sle_ != nullptr)
     {
@@ -43,12 +46,14 @@ Dir::begin() const -> ConstIterator
 auto
 Dir::end() const -> ConstIterator
 {
+    TRACE_FUNC();
     return ConstIterator(*view_, root_, root_);
 }
 
 bool
 const_iterator::operator==(ConstIterator const& other) const
 {
+    TRACE_FUNC();
     if (view_ == nullptr || other.view_ == nullptr)
         return false;
 
@@ -61,6 +66,7 @@ const_iterator::operator==(ConstIterator const& other) const
 const_iterator::reference
 const_iterator::operator*() const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(index_ != beast::kZERO, "xrpl::const_iterator::operator* : nonzero index");
     if (!cache_)
         cache_ = view_->read(keylet::child(index_));
@@ -70,6 +76,7 @@ const_iterator::operator*() const
 const_iterator&
 const_iterator::operator++()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(index_ != beast::kZERO, "xrpl::const_iterator::operator++ : nonzero index");
     if (++it_ != std::end(*indexes_))
     {
@@ -84,6 +91,7 @@ const_iterator::operator++()
 const_iterator
 const_iterator::operator++(int)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(index_ != beast::kZERO, "xrpl::const_iterator::operator++(int) : nonzero index");
     ConstIterator tmp(*this);
     ++(*this);
@@ -93,6 +101,7 @@ const_iterator::operator++(int)
 const_iterator&
 const_iterator::nextPage()
 {
+    TRACE_FUNC();
     auto const next = sle_->getFieldU64(sfIndexNext);
     if (next == 0)
     {
@@ -122,6 +131,7 @@ const_iterator::nextPage()
 std::size_t
 const_iterator::pageSize()
 {
+    TRACE_FUNC();
     return indexes_->size();
 }
 

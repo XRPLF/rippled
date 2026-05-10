@@ -11,6 +11,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <iterator>
@@ -23,6 +24,7 @@ namespace xrpl {
 bool
 canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     if (!serializedTx)
         return false;
 
@@ -40,6 +42,7 @@ canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& 
 std::optional<uint256>
 getNFTokenIDFromPage(TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     // The metadata does not make it obvious which NFT was added.  To figure
     // that out we gather up all of the previous NFT IDs and all of the final
     // NFT IDs and compare them to find what changed.
@@ -112,6 +115,7 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
 std::vector<uint256>
 getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     std::vector<uint256> tokenIDResult;
     for (STObject const& node : transactionMeta.getNodes())
     {
@@ -138,6 +142,7 @@ insertNFTokenID(
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     if (!canHaveNFTokenID(transaction, transactionMeta))
         return;
 

@@ -3,6 +3,7 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/hex.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
@@ -22,6 +23,7 @@ namespace xrpl {
 std::string
 sqlBlobLiteral(Blob const& blob)
 {
+    TRACE_FUNC();
     std::string j;
 
     j.reserve((blob.size() * 2) + 3);
@@ -36,6 +38,7 @@ sqlBlobLiteral(Blob const& blob)
 bool
 parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
 {
+    TRACE_FUNC();
     // scheme://username:password@hostname:port/rest
     static boost::regex const kRE_URL(
         "(?i)\\`\\s*"
@@ -96,6 +99,7 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
 std::string
 trimWhitespace(std::string str)
 {
+    TRACE_FUNC();
     boost::trim(str);
     return str;
 }
@@ -103,6 +107,7 @@ trimWhitespace(std::string str)
 std::optional<std::uint64_t>
 toUint64(std::string const& s)
 {
+    TRACE_FUNC();
     std::uint64_t result = 0;
     if (beast::lexicalCastChecked(result, s))
         return result;
@@ -112,6 +117,7 @@ toUint64(std::string const& s)
 bool
 isProperlyFormedTomlDomain(std::string_view domain)
 {
+    TRACE_FUNC();
     // The domain must be between 4 and 128 characters long
     if (domain.size() < 4 || domain.size() > 128)
         return false;

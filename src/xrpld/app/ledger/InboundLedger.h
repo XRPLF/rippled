@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <mutex>
 #include <set>
@@ -46,6 +47,7 @@ public:
     bool
     isComplete() const
     {
+    TRACE_FUNC();
         return complete_;
     }
 
@@ -53,18 +55,21 @@ public:
     bool
     isFailed() const
     {
+    TRACE_FUNC();
         return failed_;
     }
 
     std::shared_ptr<Ledger const>
     getLedger() const
     {
+    TRACE_FUNC();
         return ledger_;
     }
 
     std::uint32_t
     getSeq() const
     {
+    TRACE_FUNC();
         return seq_;
     }
 
@@ -88,12 +93,14 @@ public:
     void
     touch()
     {
+    TRACE_FUNC();
         lastAction_ = clock_.now();
     }
 
     clock_type::time_point
     getLastAction() const
     {
+    TRACE_FUNC();
         return lastAction_;
     }
 

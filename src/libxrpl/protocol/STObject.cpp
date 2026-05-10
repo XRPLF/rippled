@@ -28,6 +28,7 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/detail/STVar.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -53,11 +54,13 @@ STObject::STObject(SField const& name) : STBase(name)
 
 STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
 {
+    TRACE_FUNC();
     set(type);
 }
 
 STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) : STBase(name)
 {
+    TRACE_FUNC();
     v_.reserve(type.size());
     set(sit);
     applyTemplate(type);  // May throw
@@ -65,6 +68,7 @@ STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) 
 
 STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false) : STBase(name)
 {
+    TRACE_FUNC();
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
     set(sit, depth);
@@ -73,6 +77,7 @@ STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(fals
 STObject
 STObject::makeInnerObject(SField const& name)
 {
+    TRACE_FUNC();
     STObject obj{name};
 
     // The if is complicated because inner object templates were added in
@@ -95,36 +100,42 @@ STObject::makeInnerObject(SField const& name)
 STBase*
 STObject::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STObject::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
 SerializedTypeID
 STObject::getSType() const
 {
+    TRACE_FUNC();
     return STI_OBJECT;
 }
 
 bool
 STObject::isDefault() const
 {
+    TRACE_FUNC();
     return v_.empty();
 }
 
 void
 STObject::add(Serializer& s) const
 {
+    TRACE_FUNC();
     add(s, WhichFields::WithAllFields);  // just inner elements
 }
 
 STObject&
 STObject::operator=(STObject&& other)
 {
+    TRACE_FUNC();
     setFName(other.getFName());
     type_ = other.type_;
     v_ = std::move(other.v_);
@@ -134,6 +145,7 @@ STObject::operator=(STObject&& other)
 void
 STObject::set(SOTemplate const& type)
 {
+    TRACE_FUNC();
     v_.clear();
     v_.reserve(type.size());
     type_ = &type;
@@ -154,6 +166,7 @@ STObject::set(SOTemplate const& type)
 void
 STObject::applyTemplate(SOTemplate const& type)
 {
+    TRACE_FUNC();
     auto throwFieldErr = [](std::string const& field, char const* description) {
         std::stringstream ss;
         ss << "Field '" << field << "' " << description;
@@ -203,6 +216,7 @@ STObject::applyTemplate(SOTemplate const& type)
 void
 STObject::applyTemplateFromSField(SField const& sField)
 {
+    TRACE_FUNC();
     SOTemplate const* elements = InnerObjectFormats::getInstance().findSOTemplateBySField(sField);
     if (elements != nullptr)
         applyTemplate(*elements);  // May throw
@@ -212,6 +226,7 @@ STObject::applyTemplateFromSField(SField const& sField)
 bool
 STObject::set(SerialIter& sit, int depth)
 {
+    TRACE_FUNC();
     bool reachedEndOfObject = false;
 
     v_.clear();
@@ -273,6 +288,7 @@ STObject::set(SerialIter& sit, int depth)
 bool
 STObject::hasMatchingEntry(STBase const& t) const
 {
+    TRACE_FUNC();
     STBase const* o = peekAtPField(t.getFName());
 
     if (o == nullptr)
@@ -284,6 +300,7 @@ STObject::hasMatchingEntry(STBase const& t) const
 std::string
 STObject::getFullText() const
 {
+    TRACE_FUNC();
     std::string ret;
     bool first = true;
 

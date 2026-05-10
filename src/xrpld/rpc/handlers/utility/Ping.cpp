@@ -3,6 +3,7 @@
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -13,6 +14,7 @@ struct JsonContext;
 json::Value
 doPing(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     json::Value ret(json::ObjectValue);
     switch (context.role)
     {

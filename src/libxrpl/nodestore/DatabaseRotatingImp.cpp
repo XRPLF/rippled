@@ -12,6 +12,7 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <exception>
@@ -33,7 +34,9 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     : DatabaseRotating(scheduler, readThreads, config, j)
     , writableBackend_(std::move(writableBackend))
     , archiveBackend_(std::move(archiveBackend))
+    , archiveHasData_(!get<bool>(config, "fresh_sync", false))
 {
+    TRACE_FUNC();
     if (writableBackend_)
         fdRequired_ += writableBackend_->fdRequired();
     if (archiveBackend_)
@@ -45,6 +48,7 @@ DatabaseRotatingImp::rotate(
     std::unique_ptr<NodeStore::Backend>&& newBackend,
     std::function<void(std::string const& writableName, std::string const& archiveName)> const& f)
 {
+    TRACE_FUNC();
     // Pass these two names to the callback function
     std::string const newWritableBackendName = newBackend->getName();
     std::string newArchiveBackendName;
@@ -64,12 +68,15 @@ DatabaseRotatingImp::rotate(
         writableBackend_ = std::move(newBackend);
     }
 
+    archiveHasData_.store(true, std::memory_order_relaxed);
+    negCacheClear();
     f(newWritableBackendName, newArchiveBackendName);
 }
 
 std::string
 DatabaseRotatingImp::getName() const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     return writableBackend_->getName();
 }
@@ -77,6 +84,7 @@ DatabaseRotatingImp::getName() const
 std::int32_t
 DatabaseRotatingImp::getWriteLoad() const
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     return writableBackend_->getWriteLoad();
 }
@@ -84,6 +92,7 @@ DatabaseRotatingImp::getWriteLoad() const
 void
 DatabaseRotatingImp::importDatabase(Database& source)
 {
+    TRACE_FUNC();
     auto const backend = [&] {
         std::scoped_lock const lock(mutex_);
         return writableBackend_;
@@ -95,6 +104,7 @@ DatabaseRotatingImp::importDatabase(Database& source)
 void
 DatabaseRotatingImp::sync()
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     writableBackend_->sync();
 }
@@ -102,6 +112,7 @@ DatabaseRotatingImp::sync()
 void
 DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
 {
+    TRACE_FUNC();
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
 
     auto const backend = [&] {
@@ -111,6 +122,7 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
 
     backend->store(nObj);
     storeStats(1, nObj->getData().size());
+    negCacheErase(hash);
 }
 
 std::shared_ptr<NodeObject>
@@ -120,6 +132,7 @@ DatabaseRotatingImp::fetchNodeObject(
     FetchReport& fetchReport,
     bool duplicate)
 {
+    TRACE_FUNC();
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
         Status status = Status::Ok;
         std::shared_ptr<NodeObject> nodeObject;
@@ -159,12 +172,14 @@ DatabaseRotatingImp::fetchNodeObject(
 
     // Try to fetch from the writable backend
     nodeObject = fetch(writable);
-    if (!nodeObject)
+    if (!nodeObject && archiveHasData_.load(std::memory_order_relaxed))
     {
-        // Otherwise try to fetch from the archive backend
+        // Only try archive if it's known to have data
         nodeObject = fetch(archive);
         if (nodeObject)
         {
+            archiveHasData_.store(true, std::memory_order_relaxed);
+
             {
                 // Refresh the writable backend pointer
                 std::scoped_lock const lock(mutex_);
@@ -186,6 +201,7 @@ DatabaseRotatingImp::fetchNodeObject(
 void
 DatabaseRotatingImp::forEach(std::function<void(std::shared_ptr<NodeObject>)> f)
 {
+    TRACE_FUNC();
     auto [writable, archive] = [&] {
         std::scoped_lock const lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);

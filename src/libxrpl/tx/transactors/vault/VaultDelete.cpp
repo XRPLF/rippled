@@ -16,6 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -24,6 +25,7 @@ namespace xrpl {
 NotTEC
 VaultDelete::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx[sfVaultID] == beast::kZERO)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: zero/empty vault ID.";
@@ -36,6 +38,7 @@ VaultDelete::preflight(PreflightContext const& ctx)
 TER
 VaultDelete::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
@@ -89,6 +92,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
 TER
 VaultDelete::doApply()
 {
+    TRACE_FUNC();
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -223,6 +227,7 @@ VaultDelete::visitInvariantEntry(
 bool
 VaultDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

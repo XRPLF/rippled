@@ -4,6 +4,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <string>
 
@@ -46,6 +47,7 @@ public:
     [[nodiscard]] bool
     configInvalid() const
     {
+    TRACE_FUNC();
         return configInvalid_;
     }
 

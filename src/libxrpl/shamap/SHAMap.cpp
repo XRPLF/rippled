@@ -23,6 +23,7 @@
 #include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/SHAMapTxLeafNode.h>
 #include <xrpl/shamap/SHAMapTxPlusMetaLeafNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -43,6 +44,7 @@ namespace xrpl {
 [[nodiscard]] intr_ptr::SharedPtr<SHAMapLeafNode>
 makeTypedLeaf(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t owner)
 {
+    TRACE_FUNC();
     if (type == SHAMapNodeType::TnTransactionNm)
         return intr_ptr::makeShared<SHAMapTxLeafNode>(std::move(item), owner);
 
@@ -60,6 +62,7 @@ makeTypedLeaf(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item, 
 SHAMap::SHAMap(SHAMapType t, Family& f)
     : f_(f), journal_(f.journal()), state_(SHAMapState::Modifying), type_(t)
 {
+    TRACE_FUNC();
     root_ = intr_ptr::makeShared<SHAMapInnerNode>(cowid_);
 }
 
@@ -70,6 +73,7 @@ SHAMap::SHAMap(SHAMapType t, Family& f)
 SHAMap::SHAMap(SHAMapType t, uint256 const& hash, Family& f)
     : f_(f), journal_(f.journal()), state_(SHAMapState::Synching), type_(t)
 {
+    TRACE_FUNC();
     root_ = intr_ptr::makeShared<SHAMapInnerNode>(cowid_);
 }
 
@@ -83,6 +87,7 @@ SHAMap::SHAMap(SHAMap const& other, bool isMutable)
     , type_(other.type_)
     , backed_(other.backed_)
 {
+    TRACE_FUNC();
     // If either map may change, they cannot share nodes
     if ((state_ != SHAMapState::Immutable) || (other.state_ != SHAMapState::Immutable))
     {
@@ -93,6 +98,7 @@ SHAMap::SHAMap(SHAMap const& other, bool isMutable)
 std::shared_ptr<SHAMap>
 SHAMap::snapShot(bool isMutable) const
 {
+    TRACE_FUNC();
     return std::make_shared<SHAMap>(*this, isMutable);
 }
 
@@ -102,6 +108,7 @@ SHAMap::dirtyUp(
     uint256 const& target,
     intr_ptr::SharedPtr<SHAMapTreeNode> child)
 {
+    TRACE_FUNC();
     // walk the tree up from through the inner nodes to the root_
     // update hashes and links
     // stack is a path of inner nodes up to, but not including, child
@@ -132,6 +139,7 @@ SHAMap::dirtyUp(
 SHAMapLeafNode*
 SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         stack == nullptr || stack->empty(), "xrpl::SHAMap::walkTowardsKey : empty stack input");
     auto inNode = root_;
@@ -159,6 +167,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
 SHAMapLeafNode*
 SHAMap::findKey(uint256 const& id) const
 {
+    TRACE_FUNC();
     SHAMapLeafNode* leaf = walkTowardsKey(id);  // NOLINT(misc-const-correctness)
     if ((leaf != nullptr) && leaf->peekItem()->key() != id)
         leaf = nullptr;
@@ -168,6 +177,7 @@ SHAMap::findKey(uint256 const& id) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(backed_, "xrpl::SHAMap::fetchNodeFromDB : is backed");
     auto obj = f_.db().fetchNodeObject(hash.asUint256(), ledgerSeq_);
     return finishFetch(hash, obj);
@@ -176,6 +186,7 @@ SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& object) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(backed_, "xrpl::SHAMap::finishFetch : is backed");
 
     try
@@ -211,6 +222,7 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& o
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
 {
+    TRACE_FUNC();
     if (auto nodeData = filter->getNode(hash))
     {
         try
@@ -237,6 +249,7 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
 {
+    TRACE_FUNC();
     auto node = cacheLookup(hash);
     if (node)
         return node;
@@ -260,6 +273,7 @@ SHAMap::fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::fetchNodeNT(SHAMapHash const& hash) const
 {
+    TRACE_FUNC();
     auto node = cacheLookup(hash);
 
     if (!node && backed_)
@@ -272,6 +286,7 @@ SHAMap::fetchNodeNT(SHAMapHash const& hash) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::fetchNode(SHAMapHash const& hash) const
 {
+    TRACE_FUNC();
     auto node = fetchNodeNT(hash);
 
     if (!node)
@@ -283,6 +298,7 @@ SHAMap::fetchNode(SHAMapHash const& hash) const
 SHAMapTreeNode*
 SHAMap::descendThrow(SHAMapInnerNode* parent, int branch) const
 {
+    TRACE_FUNC();
     SHAMapTreeNode* ret = descend(parent, branch);  // NOLINT(misc-const-correctness)
 
     if ((ret == nullptr) && !parent->isEmptyBranch(branch))
@@ -294,6 +310,7 @@ SHAMap::descendThrow(SHAMapInnerNode* parent, int branch) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::descendThrow(SHAMapInnerNode& parent, int branch) const
 {
+    TRACE_FUNC();
     intr_ptr::SharedPtr<SHAMapTreeNode> ret = descend(parent, branch);
 
     if (!ret && !parent.isEmptyBranch(branch))
@@ -305,6 +322,7 @@ SHAMap::descendThrow(SHAMapInnerNode& parent, int branch) const
 SHAMapTreeNode*
 SHAMap::descend(SHAMapInnerNode* parent, int branch) const
 {
+    TRACE_FUNC();
     SHAMapTreeNode* ret = parent->getChildPointer(branch);  // NOLINT(misc-const-correctness)
     if ((ret != nullptr) || !backed_)
         return ret;
@@ -320,6 +338,7 @@ SHAMap::descend(SHAMapInnerNode* parent, int branch) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::descend(SHAMapInnerNode& parent, int branch) const
 {
+    TRACE_FUNC();
     intr_ptr::SharedPtr<SHAMapTreeNode> node = parent.getChild(branch);
     if (node || !backed_)
         return node;
@@ -337,6 +356,7 @@ SHAMap::descend(SHAMapInnerNode& parent, int branch) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::descendNoStore(SHAMapInnerNode& parent, int branch) const
 {
+    TRACE_FUNC();
     intr_ptr::SharedPtr<SHAMapTreeNode> ret = parent.getChild(branch);
     if (!ret && backed_)
         ret = fetchNode(parent.getChildHash(branch));
@@ -350,6 +370,7 @@ SHAMap::descend(
     int branch,
     SHAMapSyncFilter* filter) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(parent->isInner(), "xrpl::SHAMap::descend : valid parent input");
     XRPL_ASSERT(
         (branch >= 0) && (branch < kBRANCH_FACTOR), "xrpl::SHAMap::descend : valid branch input");
@@ -381,6 +402,7 @@ SHAMap::descendAsync(
     bool& pending,
     descendCallback&& callback) const
 {
+    TRACE_FUNC();
     pending = false;
 
     SHAMapTreeNode* ret = parent->getChildPointer(branch);  // NOLINT(misc-const-correctness)
@@ -419,6 +441,7 @@ template <class Node>
 intr_ptr::SharedPtr<Node>
 SHAMap::unshareNode(intr_ptr::SharedPtr<Node> node, SHAMapNodeID const& nodeID)
 {
+    TRACE_FUNC();
     // make sure the node is suitable for the intended operation (copy on write)
     XRPL_ASSERT(node->cowid() <= cowid_, "xrpl::SHAMap::unshareNode : node valid for cowid");
     if (node->cowid() != cowid_)
@@ -439,6 +462,7 @@ SHAMap::belowHelper(
     int branch,
     std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const& loopParams) const
 {
+    TRACE_FUNC();
     auto& [init, cmp, incr] = loopParams;
     if (node->isLeaf())
     {
@@ -482,6 +506,7 @@ SHAMapLeafNode*
 SHAMap::lastBelow(intr_ptr::SharedPtr<SHAMapTreeNode> node, SharedPtrNodeStack& stack, int branch)
     const
 {
+    TRACE_FUNC();
     auto init = kBRANCH_FACTOR - 1;
     auto cmp = [](int i) { return i >= 0; };
     auto incr = [](int& i) { --i; };
@@ -492,6 +517,7 @@ SHAMapLeafNode*
 SHAMap::firstBelow(intr_ptr::SharedPtr<SHAMapTreeNode> node, SharedPtrNodeStack& stack, int branch)
     const
 {
+    TRACE_FUNC();
     auto init = 0;
     auto cmp = [](int i) { return i <= kBRANCH_FACTOR; };
     auto incr = [](int& i) { ++i; };
@@ -503,6 +529,7 @@ static boost::intrusive_ptr<SHAMapItem const> const kNO_ITEM;
 boost::intrusive_ptr<SHAMapItem const> const&
 SHAMap::onlyBelow(SHAMapTreeNode* node) const
 {
+    TRACE_FUNC();
     // If there is only one item below this node, return it
 
     while (!node->isLeaf())
@@ -542,6 +569,7 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
 SHAMapLeafNode const*
 SHAMap::peekFirstItem(SharedPtrNodeStack& stack) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(stack.empty(), "xrpl::SHAMap::peekFirstItem : empty stack input");
     SHAMapLeafNode const* node = firstBelow(root_, stack);
     if (node == nullptr)
@@ -556,6 +584,7 @@ SHAMap::peekFirstItem(SharedPtrNodeStack& stack) const
 SHAMapLeafNode const*
 SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!stack.empty(), "xrpl::SHAMap::peekNextItem : non-empty stack input");
     XRPL_ASSERT(stack.top().first->isLeaf(), "xrpl::SHAMap::peekNextItem : stack starts with leaf");
     stack.pop();
@@ -585,6 +614,7 @@ SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
 boost::intrusive_ptr<SHAMapItem const> const&
 SHAMap::peekItem(uint256 const& id) const
 {
+    TRACE_FUNC();
     SHAMapLeafNode const* leaf = findKey(id);
 
     if (leaf == nullptr)
@@ -596,6 +626,7 @@ SHAMap::peekItem(uint256 const& id) const
 boost::intrusive_ptr<SHAMapItem const> const&
 SHAMap::peekItem(uint256 const& id, SHAMapHash& hash) const
 {
+    TRACE_FUNC();
     SHAMapLeafNode const* leaf = findKey(id);
 
     if (leaf == nullptr)
@@ -608,6 +639,7 @@ SHAMap::peekItem(uint256 const& id, SHAMapHash& hash) const
 SHAMap::ConstIterator
 SHAMap::upperBound(uint256 const& id) const
 {
+    TRACE_FUNC();
     SharedPtrNodeStack stack;
     walkTowardsKey(id, &stack);
     while (!stack.empty())
@@ -641,6 +673,7 @@ SHAMap::upperBound(uint256 const& id) const
 SHAMap::ConstIterator
 SHAMap::lowerBound(uint256 const& id) const
 {
+    TRACE_FUNC();
     SharedPtrNodeStack stack;
     walkTowardsKey(id, &stack);
     while (!stack.empty())
@@ -676,12 +709,14 @@ SHAMap::lowerBound(uint256 const& id) const
 bool
 SHAMap::hasItem(uint256 const& id) const
 {
+    TRACE_FUNC();
     return (findKey(id) != nullptr);
 }
 
 bool
 SHAMap::delItem(uint256 const& id)
 {
+    TRACE_FUNC();
     // delete the item with this ID
     XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::delItem : not immutable");
 
@@ -767,6 +802,7 @@ SHAMap::delItem(uint256 const& id)
 bool
 SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(state_ != SHAMapState::Immutable, "xrpl::SHAMap::addGiveItem : not immutable");
     XRPL_ASSERT(type != SHAMapNodeType::TnInner, "xrpl::SHAMap::addGiveItem : valid type input");
 
@@ -836,12 +872,14 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
 bool
 SHAMap::addItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item)
 {
+    TRACE_FUNC();
     return addGiveItem(type, std::move(item));
 }
 
 SHAMapHash
 SHAMap::getHash() const
 {
+    TRACE_FUNC();
     auto hash = root_->getHash();
     if (hash.isZero())
     {
@@ -854,6 +892,7 @@ SHAMap::getHash() const
 bool
 SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item)
 {
+    TRACE_FUNC();
     // can't change the tag but can change the hash
     uint256 const tag = item->key();
 
@@ -894,6 +933,7 @@ SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem cons
 bool
 SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter)
 {
+    TRACE_FUNC();
     if (hash == root_->getHash())
         return true;
 
@@ -940,6 +980,7 @@ SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter)
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::writeNode(NodeObjectType t, intr_ptr::SharedPtr<SHAMapTreeNode> node) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(node->cowid() == 0, "xrpl::SHAMap::writeNode : valid input node");
     XRPL_ASSERT(backed_, "xrpl::SHAMap::writeNode : is backed");
 
@@ -958,6 +999,7 @@ template <class Node>
 intr_ptr::SharedPtr<Node>
 SHAMap::preFlushNode(intr_ptr::SharedPtr<Node> node) const
 {
+    TRACE_FUNC();
     // A shared node should never need to be flushed
     // because that would imply someone modified it
     XRPL_ASSERT(node->cowid(), "xrpl::SHAMap::preFlushNode : valid input node");
@@ -974,6 +1016,7 @@ SHAMap::preFlushNode(intr_ptr::SharedPtr<Node> node) const
 int
 SHAMap::unshare()
 {
+    TRACE_FUNC();
     // Don't share nodes with parent map
     return walkSubTree(false, NodeObjectType::Unknown);
 }
@@ -981,6 +1024,7 @@ SHAMap::unshare()
 int
 SHAMap::flushDirty(NodeObjectType t)
 {
+    TRACE_FUNC();
     // We only write back if this map is backed.
     return walkSubTree(backed_, t);
 }
@@ -988,6 +1032,7 @@ SHAMap::flushDirty(NodeObjectType t)
 int
 SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!doWrite || backed_, "xrpl::SHAMap::walkSubTree : valid input");
 
     int flushed = 0;
@@ -1111,6 +1156,7 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
 void
 SHAMap::dump(bool hash) const
 {
+    TRACE_FUNC();
     int leafCount = 0;
     JLOG(journal_.info()) << " MAP Contains";
 
@@ -1158,6 +1204,7 @@ SHAMap::dump(bool hash) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::cacheLookup(SHAMapHash const& hash) const
 {
+    TRACE_FUNC();
     auto ret = f_.getTreeNodeCache()->fetch(hash.asUint256());
     XRPL_ASSERT(!ret || !ret->cowid(), "xrpl::SHAMap::cacheLookup : not found or zero cowid");
     return ret;
@@ -1166,6 +1213,7 @@ SHAMap::cacheLookup(SHAMapHash const& hash) const
 void
 SHAMap::canonicalize(SHAMapHash const& hash, intr_ptr::SharedPtr<SHAMapTreeNode>& node) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(backed_, "xrpl::SHAMap::canonicalize : is backed");
     XRPL_ASSERT(node->cowid() == 0, "xrpl::SHAMap::canonicalize : valid node input");
     XRPL_ASSERT(node->getHash() == hash, "xrpl::SHAMap::canonicalize : node hash do match");
@@ -1176,6 +1224,7 @@ SHAMap::canonicalize(SHAMapHash const& hash, intr_ptr::SharedPtr<SHAMapTreeNode>
 void
 SHAMap::invariants() const
 {
+    TRACE_FUNC();
     (void)getHash();  // update node hashes
     auto node = root_.get();
     XRPL_ASSERT(node, "xrpl::SHAMap::invariants : non-null root node");

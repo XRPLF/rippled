@@ -7,6 +7,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 
@@ -15,6 +16,7 @@ namespace xrpl {
 json::Value
 doPeerReservationsDel(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto const& params = context.params;
 
     // We repeat much of the parameter parsing from `doPeerReservationsAdd`.

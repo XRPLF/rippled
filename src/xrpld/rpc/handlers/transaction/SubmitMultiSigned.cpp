@@ -5,6 +5,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -15,6 +16,7 @@ namespace xrpl {
 json::Value
 doSubmitMultiSigned(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
     auto const failHard = context.params[jss::fail_hard].asBool();
     auto const failType = NetworkOPs::doFailHard(failHard);

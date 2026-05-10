@@ -2,6 +2,7 @@
 
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <set>
 
@@ -21,6 +22,7 @@ struct SendAlways
     void
     operator()(std::shared_ptr<Peer> const& peer) const
     {
+    TRACE_FUNC();
         peer->send(msg);
     }
 };
@@ -43,6 +45,7 @@ struct SendIfPred
     void
     operator()(std::shared_ptr<Peer> const& peer) const
     {
+    TRACE_FUNC();
         if (predicate(peer))
             peer->send(msg);
     }
@@ -53,6 +56,7 @@ template <typename Predicate>
 SendIfPred<Predicate>
 sendIf(std::shared_ptr<Message> const& m, Predicate const& f)
 {
+    TRACE_FUNC();
     return SendIfPred<Predicate>(m, f);
 }
 
@@ -74,6 +78,7 @@ struct SendIfNotPred
     void
     operator()(std::shared_ptr<Peer> const& peer) const
     {
+    TRACE_FUNC();
         if (!predicate(peer))
             peer->send(msg);
     }
@@ -84,6 +89,7 @@ template <typename Predicate>
 SendIfNotPred<Predicate>
 sendIfNot(std::shared_ptr<Message> const& m, Predicate const& f)
 {
+    TRACE_FUNC();
     return SendIfNotPred<Predicate>(m, f);
 }
 
@@ -101,6 +107,7 @@ struct MatchPeer
     bool
     operator()(std::shared_ptr<Peer> const& peer) const
     {
+    TRACE_FUNC();
         return (matchPeer != nullptr) && (peer.get() == matchPeer);
     }
 };
@@ -119,6 +126,7 @@ struct PeerInCluster
     bool
     operator()(std::shared_ptr<Peer> const& peer) const
     {
+    TRACE_FUNC();
         if (skipPeer(peer))
             return false;
 
@@ -143,6 +151,7 @@ struct PeerInSet
     bool
     operator()(std::shared_ptr<Peer> const& peer) const
     {
+    TRACE_FUNC();
         return peerSet.contains(peer->id());
     }
 };

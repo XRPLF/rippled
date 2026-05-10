@@ -13,6 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -21,6 +22,7 @@ namespace xrpl {
 NotTEC
 NFTokenModify::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (auto owner = ctx.tx[~sfOwner]; owner == ctx.tx[sfAccount])
         return temMALFORMED;
 
@@ -36,6 +38,7 @@ NFTokenModify::preflight(PreflightContext const& ctx)
 TER
 NFTokenModify::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     AccountID const account = ctx.tx[sfAccount];
     AccountID const owner = ctx.tx[ctx.tx.isFieldPresent(sfOwner) ? sfOwner : sfAccount];
 
@@ -62,6 +65,7 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenModify::doApply()
 {
+    TRACE_FUNC();
     uint256 const nftokenID = ctx_.tx[sfNFTokenID];
     AccountID const owner = ctx_.tx[ctx_.tx.isFieldPresent(sfOwner) ? sfOwner : sfAccount];
 
@@ -84,6 +88,7 @@ NFTokenModify::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

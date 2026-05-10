@@ -10,6 +10,7 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <cstddef>
@@ -24,6 +25,7 @@ textTime(
     char const* unitName,
     std::chrono::seconds unitVal)
 {
+    TRACE_FUNC();
     auto i = seconds.time_since_epoch() / unitVal;
 
     if (i == 0)
@@ -45,6 +47,7 @@ textTime(
 json::Value
 getCountsJson(Application& app, int minObjectCount)
 {
+    TRACE_FUNC();
     auto objectCounts = CountedObjects::getInstance().getCounts(minObjectCount);
 
     json::Value ret(json::ObjectValue);
@@ -113,6 +116,7 @@ getCountsJson(Application& app, int minObjectCount)
 json::Value
 doGetCounts(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     int minCount = 10;
 
     if (context.params.isMember(jss::min_count))

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <map>
@@ -30,6 +31,7 @@ public:
     [[nodiscard]] std::shared_ptr<Ledger const> const&
     parent() const
     {
+    TRACE_FUNC();
         return parent_;
     }
 
@@ -38,6 +40,7 @@ public:
     [[nodiscard]] std::shared_ptr<Ledger const> const&
     replay() const
     {
+    TRACE_FUNC();
         return replay_;
     }
 
@@ -46,6 +49,7 @@ public:
     [[nodiscard]] std::map<std::uint32_t, std::shared_ptr<STTx const>> const&
     orderedTxns() const
     {
+    TRACE_FUNC();
         return orderedTxns_;
     }
 };

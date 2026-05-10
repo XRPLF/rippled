@@ -13,6 +13,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <exception>
 #include <optional>
@@ -49,6 +50,7 @@ RippleCalc::rippleCalculate(
     ServiceRegistry& registry,
     Input const* const pInputs)
 {
+    TRACE_FUNC();
     Output flowOut;
     PaymentSandbox flowSB(&view);
     auto j = registry.getJournal("Flow");

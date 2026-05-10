@@ -13,6 +13,7 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -39,6 +40,7 @@ LedgerReplayer::LedgerReplayer(
 
 LedgerReplayer::~LedgerReplayer()
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mtx_);
     tasks_.clear();
 }
@@ -49,6 +51,7 @@ LedgerReplayer::replay(
     uint256 const& finishLedgerHash,
     std::uint32_t totalNumLedgers)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         finishLedgerHash.isNonZero() && totalNumLedgers > 0 &&
             totalNumLedgers <= LedgerReplayParameters::kMAX_TASK_SIZE,
@@ -108,6 +111,7 @@ LedgerReplayer::replay(
 void
 LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
 {
+    TRACE_FUNC();
     {
         // TODO for use cases like Consensus (i.e. totalLedgers = 1 or small):
         // check if the last closed or validated ledger l the local node has
@@ -167,6 +171,7 @@ LedgerReplayer::gotSkipList(
     LedgerHeader const& info,
     boost::intrusive_ptr<SHAMapItem const> const& item)
 {
+    TRACE_FUNC();
     std::shared_ptr<SkipListAcquire> skipList = {};
     {
         std::scoped_lock const lock(mtx_);
@@ -190,6 +195,7 @@ LedgerReplayer::gotReplayDelta(
     LedgerHeader const& info,
     std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns)
 {
+    TRACE_FUNC();
     std::shared_ptr<LedgerDeltaAcquire> delta = {};
     {
         std::scoped_lock const lock(mtx_);
@@ -211,6 +217,7 @@ LedgerReplayer::gotReplayDelta(
 void
 LedgerReplayer::sweep()
 {
+    TRACE_FUNC();
     auto const start = std::chrono::steady_clock::now();
     {
         std::scoped_lock const lock(mtx_);
@@ -258,6 +265,7 @@ LedgerReplayer::sweep()
 void
 LedgerReplayer::stop()
 {
+    TRACE_FUNC();
     JLOG(j_.info()) << "Stopping...";
     {
         std::scoped_lock const lock(mtx_);

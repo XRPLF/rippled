@@ -2,11 +2,13 @@
 
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
 InnerObjectFormats::InnerObjectFormats()
 {
+    TRACE_FUNC();
     // inner objects with the default fields have to be
     // constructed with STObject::makeInnerObject()
 
@@ -165,6 +167,7 @@ InnerObjectFormats::InnerObjectFormats()
 InnerObjectFormats const&
 InnerObjectFormats::getInstance()
 {
+    TRACE_FUNC();
     static InnerObjectFormats const kINSTANCE;
     return kINSTANCE;
 }
@@ -172,6 +175,7 @@ InnerObjectFormats::getInstance()
 SOTemplate const*
 InnerObjectFormats::findSOTemplateBySField(SField const& sField) const
 {
+    TRACE_FUNC();
     auto itemPtr = findByType(sField.getCode());
     if (itemPtr != nullptr)
         return &(itemPtr->getSOTemplate());

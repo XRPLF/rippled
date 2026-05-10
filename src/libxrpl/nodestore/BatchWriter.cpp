@@ -4,6 +4,7 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <chrono>
@@ -16,17 +17,20 @@ namespace xrpl::NodeStore {
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
     : callback_(callback), scheduler_(scheduler)
 {
+    TRACE_FUNC();
     writeSet_.reserve(BatchWritePreallocationSize);
 }
 
 BatchWriter::~BatchWriter()
 {
+    TRACE_FUNC();
     waitForWriting();
 }
 
 void
 BatchWriter::store(std::shared_ptr<NodeObject> const& object)
 {
+    TRACE_FUNC();
     std::unique_lock<decltype(writeMutex_)> sl(writeMutex_);
 
     // If the batch has reached its limit, we wait
@@ -47,6 +51,7 @@ BatchWriter::store(std::shared_ptr<NodeObject> const& object)
 int
 BatchWriter::getWriteLoad()
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(writeMutex_);
 
     return std::max(writeLoad_, static_cast<int>(writeSet_.size()));
@@ -55,12 +60,14 @@ BatchWriter::getWriteLoad()
 void
 BatchWriter::performScheduledTask()
 {
+    TRACE_FUNC();
     writeBatch();
 }
 
 void
 BatchWriter::writeBatch()
 {
+    TRACE_FUNC();
     for (;;)
     {
         std::vector<std::shared_ptr<NodeObject>> set;
@@ -101,6 +108,7 @@ BatchWriter::writeBatch()
 void
 BatchWriter::waitForWriting()
 {
+    TRACE_FUNC();
     std::unique_lock<decltype(writeMutex_)> sl(writeMutex_);
 
     while (writePending_)

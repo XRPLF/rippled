@@ -14,6 +14,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <string>
@@ -29,6 +30,7 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     , meta_(txn->getTransactionID(), ledger->seq(), *met)
     , affected_(meta_.getAffectedAccounts())
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!ledger->open(), "xrpl::AcceptedLedgerTx::AcceptedLedgerTx : valid ledger state");
 
     Serializer s;
@@ -73,6 +75,7 @@ AcceptedLedgerTx::AcceptedLedgerTx(
 std::string
 AcceptedLedgerTx::getEscMeta() const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!rawMeta_.empty(), "xrpl::AcceptedLedgerTx::getEscMeta : metadata is set");
     return sqlBlobLiteral(rawMeta_);
 }

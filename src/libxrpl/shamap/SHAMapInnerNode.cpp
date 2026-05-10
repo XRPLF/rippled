@@ -15,6 +15,7 @@
 #include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/detail/TaggedPointer.h>
 #include <xrpl/shamap/detail/TaggedPointer.ipp>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -37,6 +38,7 @@ SHAMapInnerNode::~SHAMapInnerNode() = default;
 void
 SHAMapInnerNode::partialDestructor()
 {
+    TRACE_FUNC();
     intr_ptr::SharedPtr<SHAMapTreeNode>* children = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, std::ignore, children) = hashesAndChildren_.getHashesAndChildren();
@@ -47,6 +49,7 @@ template <class F>
 void
 SHAMapInnerNode::iterChildren(F&& f) const
 {
+    TRACE_FUNC();
     hashesAndChildren_.iterChildren(isBranch_, std::forward<F>(f));
 }
 
@@ -54,24 +57,28 @@ template <class F>
 void
 SHAMapInnerNode::iterNonEmptyChildIndexes(F&& f) const
 {
+    TRACE_FUNC();
     hashesAndChildren_.iterNonEmptyChildIndexes(isBranch_, std::forward<F>(f));
 }
 
 void
 SHAMapInnerNode::resizeChildArrays(std::uint8_t toAllocate)
 {
+    TRACE_FUNC();
     hashesAndChildren_ = TaggedPointer(std::move(hashesAndChildren_), isBranch_, toAllocate);
 }
 
 std::optional<int>
 SHAMapInnerNode::getChildIndex(int i) const
 {
+    TRACE_FUNC();
     return hashesAndChildren_.getChildIndex(isBranch_, i);
 }
 
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::clone(std::uint32_t cowid) const
 {
+    TRACE_FUNC();
     auto const branchCount = getBranchCount();
     auto const thisIsSparse = !hashesAndChildren_.isDense();
     auto p = intr_ptr::makeShared<SHAMapInnerNode>(cowid, branchCount);
@@ -121,6 +128,7 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashValid)
 {
+    TRACE_FUNC();
     // A full inner node is serialized as 16 256-bit hashes, back to back:
     if (data.size() != kBRANCH_FACTOR * uint256::kBYTES)
         Throw<std::runtime_error>("Invalid FI node");
@@ -156,6 +164,7 @@ SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashVali
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::makeCompressedInner(Slice data)
 {
+    TRACE_FUNC();
     // A compressed inner node is serialized as a series of 33 byte chunks,
     // representing a one byte "position" and a 256-bit hash:
     constexpr std::size_t kCHUNK_SIZE = uint256::kBYTES + 1;
@@ -191,6 +200,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 void
 SHAMapInnerNode::updateHash()
 {
+    TRACE_FUNC();
     uint256 nh;
     if (isBranch_ != 0)
     {
@@ -206,6 +216,7 @@ SHAMapInnerNode::updateHash()
 void
 SHAMapInnerNode::updateHashDeep()
 {
+    TRACE_FUNC();
     SHAMapHash* hashes = nullptr;
     intr_ptr::SharedPtr<SHAMapTreeNode>* children = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
@@ -220,6 +231,7 @@ SHAMapInnerNode::updateHashDeep()
 void
 SHAMapInnerNode::serializeForWire(Serializer& s) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!isEmpty(), "xrpl::SHAMapInnerNode::serializeForWire : is non-empty");
 
     // If the node is sparse, then only send non-empty branches:
@@ -243,6 +255,7 @@ SHAMapInnerNode::serializeForWire(Serializer& s) const
 void
 SHAMapInnerNode::serializeWithPrefix(Serializer& s) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!isEmpty(), "xrpl::SHAMapInnerNode::serializeWithPrefix : is non-empty");
 
     s.add32(HashPrefix::InnerNode);
@@ -252,6 +265,7 @@ SHAMapInnerNode::serializeWithPrefix(Serializer& s) const
 std::string
 SHAMapInnerNode::getString(SHAMapNodeID const& id) const
 {
+    TRACE_FUNC();
     std::string ret = SHAMapTreeNode::getString(id);
     auto hashes = hashesAndChildren_.getHashes();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
@@ -267,6 +281,7 @@ SHAMapInnerNode::getString(SHAMapNodeID const& id) const
 void
 SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         (m >= 0) && (m < kBRANCH_FACTOR), "xrpl::SHAMapInnerNode::setChild : valid branch input");
     XRPL_ASSERT(cowid_, "xrpl::SHAMapInnerNode::setChild : nonzero cowid");
@@ -309,6 +324,7 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 void
 SHAMapInnerNode::shareChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> const& child)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         (m >= 0) && (m < kBRANCH_FACTOR), "xrpl::SHAMapInnerNode::shareChild : valid branch input");
     XRPL_ASSERT(cowid_, "xrpl::SHAMapInnerNode::shareChild : nonzero cowid");
@@ -323,6 +339,7 @@ SHAMapInnerNode::shareChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> const& ch
 SHAMapTreeNode*
 SHAMapInnerNode::getChildPointer(int branch)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         branch >= 0 && branch < kBRANCH_FACTOR,
         "xrpl::SHAMapInnerNode::getChildPointer : valid branch input");
@@ -340,6 +357,7 @@ SHAMapInnerNode::getChildPointer(int branch)
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::getChild(int branch)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         branch >= 0 && branch < kBRANCH_FACTOR,
         "xrpl::SHAMapInnerNode::getChild : valid branch input");
@@ -356,6 +374,7 @@ SHAMapInnerNode::getChild(int branch)
 SHAMapHash const&
 SHAMapInnerNode::getChildHash(int m) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         (m >= 0) && (m < kBRANCH_FACTOR),
         "xrpl::SHAMapInnerNode::getChildHash : valid branch input");
@@ -368,6 +387,7 @@ SHAMapInnerNode::getChildHash(int m) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNode> node)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         branch >= 0 && branch < kBRANCH_FACTOR,
         "xrpl::SHAMapInnerNode::canonicalizeChild : valid branch input");
@@ -402,6 +422,7 @@ SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNod
 void
 SHAMapInnerNode::invariants(bool isRoot) const
 {
+    TRACE_FUNC();
     [[maybe_unused]] unsigned count = 0;
     auto [numAllocated, hashes, children] = hashesAndChildren_.getHashesAndChildren();
 

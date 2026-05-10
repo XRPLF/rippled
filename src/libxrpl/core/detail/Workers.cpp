@@ -3,6 +3,7 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/core/LockFreeStack.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <mutex>
 #include <string>
@@ -23,11 +24,13 @@ Workers::Workers(
     , pauseCount_(0)
     , runningTaskCount_(0)
 {
+    TRACE_FUNC();
     setNumberOfThreads(numberOfThreads);
 }
 
 Workers::~Workers()
 {
+    TRACE_FUNC();
     stop();
 
     deleteWorkers(everyone_);
@@ -36,6 +39,7 @@ Workers::~Workers()
 int
 Workers::getNumberOfThreads() const noexcept
 {
+    TRACE_FUNC();
     return numberOfThreads_;
 }
 
@@ -46,6 +50,7 @@ Workers::getNumberOfThreads() const noexcept
 void
 Workers::setNumberOfThreads(int numberOfThreads)
 {
+    TRACE_FUNC();
     static int kINSTANCE{0};
     if (numberOfThreads_ == numberOfThreads)
         return;
@@ -97,6 +102,7 @@ Workers::setNumberOfThreads(int numberOfThreads)
 void
 Workers::stop()
 {
+    TRACE_FUNC();
     setNumberOfThreads(0);
 
     // Wait until all workers have paused AND no tasks are actively running.
@@ -111,18 +117,21 @@ Workers::stop()
 void
 Workers::addTask()
 {
+    TRACE_FUNC();
     semaphore_.notify();
 }
 
 int
 Workers::numberOfCurrentlyRunningTasks() const noexcept
 {
+    TRACE_FUNC();
     return runningTaskCount_.load();
 }
 
 void
 Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 {
+    TRACE_FUNC();
     for (;;)
     {
         Worker const* const worker = stack.popFront();
@@ -145,11 +154,13 @@ Workers::Worker::Worker(Workers& workers, std::string threadName, int const inst
     : workers_{workers}, threadName_{std::move(threadName)}, instance_{instance}
 
 {
+    TRACE_FUNC();
     thread_ = std::thread{&Workers::Worker::run, this};
 }
 
 Workers::Worker::~Worker()
 {
+    TRACE_FUNC();
     {
         std::scoped_lock const lock{mutex_};
         ++wakeCount_;
@@ -163,6 +174,7 @@ Workers::Worker::~Worker()
 void
 Workers::Worker::notify()
 {
+    TRACE_FUNC();
     std::scoped_lock const lock{mutex_};
     ++wakeCount_;
     wakeup_.notify_one();
@@ -171,6 +183,7 @@ Workers::Worker::notify()
 void
 Workers::Worker::run()
 {
+    TRACE_FUNC();
     bool shouldExit = true;
     do
     {

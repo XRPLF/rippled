@@ -8,6 +8,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -23,6 +24,7 @@ TrustLineBase::TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID co
     , flags_(sle->getFieldU32(sfFlags))
     , viewLowest_(lowLimit_.getIssuer() == viewAccount)
 {
+    TRACE_FUNC();
     if (!viewLowest_)
         balance_.negate();
 }
@@ -30,6 +32,7 @@ TrustLineBase::TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID co
 json::Value
 TrustLineBase::getJson(int)
 {
+    TRACE_FUNC();
     json::Value ret(json::ObjectValue);
     ret["low_id"] = to_string(lowLimit_.getIssuer());
     ret["high_id"] = to_string(highLimit_.getIssuer());
@@ -39,6 +42,7 @@ TrustLineBase::getJson(int)
 std::optional<PathFindTrustLine>
 PathFindTrustLine::makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle)
 {
+    TRACE_FUNC();
     if (!sle || sle->getType() != ltRIPPLE_STATE)
         return {};
     return std::optional{PathFindTrustLine{sle, accountID}};
@@ -52,6 +56,7 @@ getTrustLineItems(
     ReadView const& view,
     LineDirection direction = LineDirection::Outgoing)
 {
+    TRACE_FUNC();
     std::vector<T> items;
     forEachItem(
         view,
@@ -75,6 +80,7 @@ PathFindTrustLine::getItems(
     ReadView const& view,
     LineDirection direction)
 {
+    TRACE_FUNC();
     return detail::getTrustLineItems<PathFindTrustLine>(accountID, view, direction);
 }
 
@@ -90,6 +96,7 @@ RPCTrustLine::RPCTrustLine(std::shared_ptr<SLE const> const& sle, AccountID cons
 std::optional<RPCTrustLine>
 RPCTrustLine::makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle)
 {
+    TRACE_FUNC();
     if (!sle || sle->getType() != ltRIPPLE_STATE)
         return {};
     return std::optional{RPCTrustLine{sle, accountID}};
@@ -98,6 +105,7 @@ RPCTrustLine::makeItem(AccountID const& accountID, std::shared_ptr<SLE const> co
 std::vector<RPCTrustLine>
 RPCTrustLine::getItems(AccountID const& accountID, ReadView const& view)
 {
+    TRACE_FUNC();
     return detail::getTrustLineItems<RPCTrustLine>(accountID, view);
 }
 

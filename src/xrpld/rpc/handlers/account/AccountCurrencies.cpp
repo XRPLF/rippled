@@ -11,6 +11,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <set>
@@ -21,6 +22,7 @@ namespace xrpl {
 json::Value
 doAccountCurrencies(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto& params = context.params;
 
     if (!(params.isMember(jss::account) || params.isMember(jss::ident)))

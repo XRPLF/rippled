@@ -13,6 +13,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -25,6 +26,7 @@ namespace xrpl {
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
     : transactionID_(txid), ledgerSeq_(ledger), nodes_(obj.getFieldArray(sfAffectedNodes))
 {
+    TRACE_FUNC();
     result_ = obj.getFieldU8(sfTransactionResult);
     index_ = obj.getFieldU32(sfTransactionIndex);
 
@@ -39,6 +41,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
     : transactionID_(txid), ledgerSeq_(ledger), nodes_(sfAffectedNodes, 32)
 {
+    TRACE_FUNC();
     SerialIter sit(makeSlice(vec));
 
     STObject const obj(sit, sfMetadata);
@@ -56,12 +59,14 @@ TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
     , result_(255)
     , nodes_(sfAffectedNodes)
 {
+    TRACE_FUNC();
     nodes_.reserve(32);
 }
 
 void
 TxMeta::setAffectedNode(uint256 const& node, SField const& type, std::uint16_t nodeType)
 {
+    TRACE_FUNC();
     // make sure the node exists and force its type
     for (auto& n : nodes_)
     {
@@ -84,6 +89,7 @@ TxMeta::setAffectedNode(uint256 const& node, SField const& type, std::uint16_t n
 boost::container::flat_set<AccountID>
 TxMeta::getAffectedAccounts() const
 {
+    TRACE_FUNC();
     boost::container::flat_set<AccountID> list;
     list.reserve(10);
 
@@ -148,6 +154,7 @@ TxMeta::getAffectedAccounts() const
 STObject&
 TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 {
+    TRACE_FUNC();
     uint256 const index = node->key();
     for (auto& n : nodes_)
     {
@@ -168,6 +175,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 STObject&
 TxMeta::getAffectedNode(uint256 const& node)
 {
+    TRACE_FUNC();
     for (auto& n : nodes_)
     {
         if (n.getFieldH256(sfLedgerIndex) == node)
@@ -183,6 +191,7 @@ TxMeta::getAffectedNode(uint256 const& node)
 STObject
 TxMeta::getAsObject() const
 {
+    TRACE_FUNC();
     STObject metaData(sfTransactionMetaData);
     XRPL_ASSERT(result_ != 255, "xrpl::TxMeta::getAsObject : result_ is set");
     metaData.setFieldU8(sfTransactionResult, result_);
@@ -200,6 +209,7 @@ TxMeta::getAsObject() const
 void
 TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
 {
+    TRACE_FUNC();
     result_ = TERtoInt(result);
     index_ = index;
     XRPL_ASSERT(

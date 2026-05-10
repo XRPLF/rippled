@@ -30,6 +30,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/RippleCalc.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -47,11 +48,13 @@ namespace xrpl {
 static std::ostream&
 operator<<(std::ostream& os, Pathfinder::NodeType t)
 {
+    TRACE_FUNC();
     return os << static_cast<int>(t);
 }
 static std::ostream&
 operator<<(std::ostream& os, Pathfinder::PaymentType t)
 {
+    TRACE_FUNC();
     return os << static_cast<int>(t);
 }
 }  // namespace xrpl
@@ -110,6 +113,7 @@ compareAccountCandidate(
     AccountCandidate const& first,
     AccountCandidate const& second)
 {
+    TRACE_FUNC();
     // Primary sort key: priority descending
     if (first.priority != second.priority)
         return first.priority > second.priority;
@@ -147,6 +151,7 @@ PathTable gPathTable;
 std::string
 pathTypeToString(Pathfinder::PathType const& type)
 {
+    TRACE_FUNC();
     std::string ret;
 
     for (auto const& node : type)
@@ -182,6 +187,7 @@ pathTypeToString(Pathfinder::PathType const& type)
 STAmount
 smallestUsefulAmount(STAmount const& amount, int maxPaths)
 {
+    TRACE_FUNC();
     return divide(amount, STAmount(maxPaths + 2), amount.asset());
 }
 
@@ -191,6 +197,7 @@ amountFromPathAsset(
     std::optional<AccountID> const& srcIssuer,
     AccountID const& srcAccount)
 {
+    TRACE_FUNC();
     return pathAsset.visit(
         [&](Currency const& currency) {
             auto const& account = srcIssuer.value_or(isXRP(currency) ? xrpAccount() : srcAccount);
@@ -202,6 +209,7 @@ amountFromPathAsset(
 Asset
 assetFromPathAsset(PathAsset const& pathAsset, AccountID const& account)
 {
+    TRACE_FUNC();
     return pathAsset.visit(
         [&](Currency const& currency) { return Asset{Issue{currency, account}}; },
         [](MPTID const& mpt) { return Asset{mpt}; });
@@ -233,6 +241,7 @@ Pathfinder::Pathfinder(
     , app_(app)
     , j_(app.getJournal("Pathfinder"))
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         !uSrcIssuer || uSrcPathAsset.isXRP() == isXRP(uSrcIssuer.value()),
         "xrpl::Pathfinder::Pathfinder : valid inputs");
@@ -241,6 +250,7 @@ Pathfinder::Pathfinder(
 bool
 Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     JLOG(j_.trace()) << "findPaths start";
     if (dstAmount_ == beast::kZERO)
     {
@@ -451,6 +461,7 @@ Pathfinder::getPathLiquidity(
 void
 Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     remainingAmount_ = convertAmount(dstAmount_, convert_all_);
 
     // Must subtract liquidity in default path from remaining amount.
@@ -492,6 +503,7 @@ Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& cont
 static bool
 isDefaultPath(STPath const& path)
 {
+    TRACE_FUNC();
     // FIXME: default paths can consist of more than just an account:
     //
     // JoelKatz writes:
@@ -511,6 +523,7 @@ isDefaultPath(STPath const& path)
 static STPath
 removeIssuer(STPath const& path)
 {
+    TRACE_FUNC();
     // This path starts with the issuer, which is already implied
     // so remove the head node
     STPath ret;
@@ -530,6 +543,7 @@ Pathfinder::rankPaths(
     std::vector<PathRank>& rankedPaths,
     std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     JLOG(j_.trace()) << "rankPaths with " << paths.size() << " candidates, and " << maxPaths
                      << " maximum";
     rankedPaths.clear();
@@ -605,6 +619,7 @@ Pathfinder::getBestPaths(
     AccountID const& srcIssuer,
     std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     JLOG(j_.debug()) << "findPaths: " << completePaths_.size() << " paths and " << extraPaths.size()
                      << " extras";
 
@@ -737,6 +752,7 @@ Pathfinder::getBestPaths(
 bool
 Pathfinder::issueMatchesOrigin(Asset const& asset)
 {
+    TRACE_FUNC();
     bool const matchingAsset = (asset == srcPathAsset_);
     bool const matchingAccount = isXRP(asset) || (srcIssuer_ && asset.getIssuer() == srcIssuer_) ||
         asset.getIssuer() == srcAccount_;
@@ -753,6 +769,7 @@ Pathfinder::getPathsOut(
     AccountID const& dstAccount,
     std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     Asset const asset = assetFromPathAsset(pathAsset, account);
 
     auto [it, inserted] = pathsOutCountMap_.emplace(asset, 0);
@@ -859,6 +876,7 @@ Pathfinder::addLinks(
     int addFlags,
     std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     JLOG(j_.debug()) << "addLink< on " << currentPaths.size() << " source(s), flags=" << addFlags;
     for (auto const& path : currentPaths)
     {
@@ -873,6 +891,7 @@ Pathfinder::addPathsForType(
     PathType const& pathType,
     std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     JLOG(j_.debug()) << "addPathsForType " << CollectionAndDelimiter(pathType, ", ");
     // See if the set of paths for this type already exists.
     auto it = paths_.find(pathType);
@@ -947,6 +966,7 @@ Pathfinder::isNoRipple(
     AccountID const& toAccount,
     Currency const& currency)
 {
+    TRACE_FUNC();
     auto sleRipple = ledger_->read(keylet::line(toAccount, fromAccount, currency));
 
     auto const flag((toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
@@ -959,6 +979,7 @@ Pathfinder::isNoRipple(
 bool
 Pathfinder::isNoRippleOut(STPath const& currentPath)
 {
+    TRACE_FUNC();
     // Must have at least one link.
     if (currentPath.empty())
         return false;
@@ -980,6 +1001,7 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 void
 addUniquePath(STPathSet& pathSet, STPath const& path)
 {
+    TRACE_FUNC();
     // TODO(tom): building an STPathSet this way is quadratic in the size
     // of the STPathSet!
     for (auto const& p : pathSet)
@@ -997,6 +1019,7 @@ Pathfinder::addLink(
     int addFlags,
     std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     auto const& pathEnd = currentPath.empty() ? source_ : currentPath.back();
     auto const& uEndPathAsset = pathEnd.getPathAsset();
     auto const& uEndIssuer = pathEnd.getIssuerID();
@@ -1326,6 +1349,7 @@ namespace {
 Pathfinder::PathType
 makePath(char const* string)
 {
+    TRACE_FUNC();
     Pathfinder::PathType ret;
 
     while (true)
@@ -1368,6 +1392,7 @@ makePath(char const* string)
 void
 fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 {
+    TRACE_FUNC();
     auto& list = gPathTable[type];
     XRPL_ASSERT(list.empty(), "xrpl::fillPaths : empty paths");
     for (auto& cost : costs)
@@ -1386,6 +1411,7 @@ fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 void
 Pathfinder::initPathTable()
 {
+    TRACE_FUNC();
     // CAUTION: Do not include rules that build default paths
 
     gPathTable.clear();

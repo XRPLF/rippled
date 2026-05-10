@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <cstddef>
@@ -156,6 +157,7 @@ getNeededWeight(
     std::size_t currentRounds,
     std::size_t minimumRounds)
 {
+    TRACE_FUNC();
     // at() can throw, but the map is built by hand to ensure all valid
     // values are available.
     auto const& currentCutoff = p.avalancheCutoffs.at(currentState);

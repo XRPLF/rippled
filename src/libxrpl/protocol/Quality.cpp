@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <limits>
@@ -21,6 +22,7 @@ Quality::Quality(Amounts const& amount) : value_(getRate(amount.out, amount.in))
 Quality&
 Quality::operator++()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(value_ > 0, "xrpl::Quality::operator++() : minimum value");
     --value_;
     return *this;
@@ -29,6 +31,7 @@ Quality::operator++()
 Quality
 Quality::operator++(int)
 {
+    TRACE_FUNC();
     Quality prev(*this);
     ++*this;
     return prev;
@@ -37,6 +40,7 @@ Quality::operator++(int)
 Quality&
 Quality::operator--()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         value_ < std::numeric_limits<value_type>::max(),
         "xrpl::Quality::operator--() : maximum value");
@@ -47,6 +51,7 @@ Quality::operator--()
 Quality
 Quality::operator--(int)
 {
+    TRACE_FUNC();
     Quality prev(*this);
     --*this;
     return prev;
@@ -56,6 +61,7 @@ template <STAmount (*DivRoundFunc)(STAmount const&, STAmount const&, Asset const
 static Amounts
 ceilInImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
+    TRACE_FUNC();
     if (amount.in > limit)
     {
         Amounts result(limit, DivRoundFunc(limit, quality.rate(), amount.out.asset(), roundUp));
@@ -72,12 +78,14 @@ ceilInImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality c
 Amounts
 Quality::ceilIn(Amounts const& amount, STAmount const& limit) const
 {
+    TRACE_FUNC();
     return ceilInImpl<divRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
 Quality::ceilInStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
+    TRACE_FUNC();
     return ceilInImpl<divRoundStrict>(amount, limit, roundUp, *this);
 }
 
@@ -85,6 +93,7 @@ template <STAmount (*MulRoundFunc)(STAmount const&, STAmount const&, Asset const
 static Amounts
 ceilOutImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
+    TRACE_FUNC();
     if (amount.out > limit)
     {
         Amounts result(MulRoundFunc(limit, quality.rate(), amount.in.asset(), roundUp), limit);
@@ -101,18 +110,21 @@ ceilOutImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality 
 Amounts
 Quality::ceilOut(Amounts const& amount, STAmount const& limit) const
 {
+    TRACE_FUNC();
     return ceilOutImpl<mulRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
 Quality::ceilOutStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
+    TRACE_FUNC();
     return ceilOutImpl<mulRoundStrict>(amount, limit, roundUp, *this);
 }
 
 Quality
 composedQuality(Quality const& lhs, Quality const& rhs)
 {
+    TRACE_FUNC();
     STAmount const lhsRate(lhs.rate());
     XRPL_ASSERT(lhsRate != beast::kZERO, "xrpl::composed_quality : nonzero left input");
 
@@ -133,6 +145,7 @@ composedQuality(Quality const& lhs, Quality const& rhs)
 Quality
 Quality::round(int digits) const
 {
+    TRACE_FUNC();
     // Modulus for mantissa
     static std::uint64_t const kMOD[17] = {
         /* 0 */ 10000000000000000,

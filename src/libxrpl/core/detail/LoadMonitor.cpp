@@ -4,6 +4,7 @@
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/LoadEvent.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <mutex>
@@ -46,6 +47,7 @@ LoadMonitor::LoadMonitor(beast::Journal j)
 void
 LoadMonitor::update()
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     auto now = UptimeClock::now();
     if (now == lastUpdate_)  // current
@@ -84,6 +86,7 @@ LoadMonitor::update()
 void
 LoadMonitor::addLoadSample(LoadEvent const& s)
 {
+    TRACE_FUNC();
     using namespace std::chrono;
 
     auto const total = s.runTime() + s.waitTime();
@@ -108,6 +111,7 @@ LoadMonitor::addLoadSample(LoadEvent const& s)
 void
 LoadMonitor::addSamples(int count, std::chrono::milliseconds latency)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(mutex_);
 
     update();
@@ -125,6 +129,7 @@ LoadMonitor::addSamples(int count, std::chrono::milliseconds latency)
 void
 LoadMonitor::setTargetLatency(std::chrono::milliseconds avg, std::chrono::milliseconds pk)
 {
+    TRACE_FUNC();
     targetLatencyAvg_ = avg;
     targetLatencyPk_ = pk;
 }
@@ -132,6 +137,7 @@ LoadMonitor::setTargetLatency(std::chrono::milliseconds avg, std::chrono::millis
 bool
 LoadMonitor::isOverTarget(std::chrono::milliseconds avg, std::chrono::milliseconds peak)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     return (targetLatencyPk_ > 0ms && (peak > targetLatencyPk_)) ||
         (targetLatencyAvg_ > 0ms && (avg > targetLatencyAvg_));
@@ -140,6 +146,7 @@ LoadMonitor::isOverTarget(std::chrono::milliseconds avg, std::chrono::millisecon
 bool
 LoadMonitor::isOver()
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(mutex_);
 
     update();
@@ -154,6 +161,7 @@ LoadMonitor::isOver()
 LoadMonitor::Stats
 LoadMonitor::getStats()
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     Stats stats;
 

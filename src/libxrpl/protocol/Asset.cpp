@@ -9,6 +9,7 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <ostream>
 #include <stdexcept>
@@ -20,36 +21,42 @@ namespace xrpl {
 AccountID const&
 Asset::getIssuer() const
 {
+    TRACE_FUNC();
     return std::visit([&](auto&& issue) -> AccountID const& { return issue.getIssuer(); }, issue_);
 }
 
 std::string
 Asset::getText() const
 {
+    TRACE_FUNC();
     return std::visit([&](auto&& issue) { return issue.getText(); }, issue_);
 }
 
 void
 Asset::setJson(json::Value& jv) const
 {
+    TRACE_FUNC();
     std::visit([&](auto&& issue) { issue.setJson(jv); }, issue_);
 }
 
 STAmount
 Asset::operator()(Number const& number) const
 {
+    TRACE_FUNC();
     return STAmount{*this, number};
 }
 
 std::string
 to_string(Asset const& asset)
 {
+    TRACE_FUNC();
     return std::visit([&](auto const& issue) { return to_string(issue); }, asset.value());
 }
 
 bool
 validJSONAsset(json::Value const& jv)
 {
+    TRACE_FUNC();
     if (jv.isMember(jss::mpt_issuance_id))
         return !(jv.isMember(jss::currency) || jv.isMember(jss::issuer));
     return jv.isMember(jss::currency);
@@ -58,6 +65,7 @@ validJSONAsset(json::Value const& jv)
 Asset
 assetFromJson(json::Value const& v)
 {
+    TRACE_FUNC();
     if (!v.isMember(jss::currency) && !v.isMember(jss::mpt_issuance_id))
         Throw<std::runtime_error>("assetFromJson must contain currency or mpt_issuance_id");
 
@@ -69,6 +77,7 @@ assetFromJson(json::Value const& v)
 std::ostream&
 operator<<(std::ostream& os, Asset const& x)
 {
+    TRACE_FUNC();
     std::visit([&]<ValidIssueType TIss>(TIss const& issue) { os << issue; }, x.value());
     return os;
 }

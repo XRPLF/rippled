@@ -15,6 +15,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -32,6 +33,7 @@ namespace xrpl {
 std::shared_ptr<AssetCache>
 PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
 
     auto assetCache = assetCache_.lock();
@@ -59,6 +61,7 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 void
 PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
+    TRACE_FUNC();
     auto event = app_.getJobQueue().makeLoadEvent(JtPathFind, "PathRequest::updateAll");
 
     std::vector<PathRequest::wptr> requests;
@@ -206,6 +209,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 bool
 PathRequestManager::requestsPending() const
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
     return !requests_.empty();
 }
@@ -213,6 +217,7 @@ PathRequestManager::requestsPending() const
 void
 PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
 
     // Insert after any older unserviced requests but before
@@ -234,6 +239,7 @@ PathRequestManager::makePathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& requestJson)
 {
+    TRACE_FUNC();
     auto req = std::make_shared<PathRequest>(app_, subscriber, ++lastIdentifier_, *this, journal_);
 
     auto [valid, jvRes] = req->doCreate(getAssetCache(inLedger, false), requestJson);
@@ -256,6 +262,7 @@ PathRequestManager::makeLegacyPathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
 {
+    TRACE_FUNC();
     // This assignment must take place before the
     // completion function is called
     req = std::make_shared<PathRequest>(
@@ -287,6 +294,7 @@ PathRequestManager::doLegacyPathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
 {
+    TRACE_FUNC();
     auto cache = std::make_shared<AssetCache>(inLedger, app_.getJournal("AssetCache"));
 
     auto req =

@@ -5,6 +5,7 @@
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <cstdint>
@@ -15,6 +16,7 @@ namespace xrpl {
 HashRouter::Setup
 setupHashRouter(Config const& config)
 {
+    TRACE_FUNC();
     using namespace std::chrono;
 
     HashRouter::Setup setup;

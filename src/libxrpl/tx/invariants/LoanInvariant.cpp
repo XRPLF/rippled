@@ -11,6 +11,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -22,6 +23,7 @@ ValidLoan::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (after && after->getType() == ltLOAN)
     {
         loans_.emplace_back(before, after);
@@ -36,6 +38,7 @@ ValidLoan::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     // Loans will not exist on ledger if the Lending Protocol amendment
     // is not enabled, so there's no need to check it.
 

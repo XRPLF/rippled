@@ -5,6 +5,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/ssl.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
@@ -174,6 +175,7 @@ peerFeatureEnabled(
     std::string value,
     bool config)
 {
+    TRACE_FUNC();
     return config && isFeatureValue(request, feature, value);
 }
 
@@ -182,6 +184,7 @@ template <typename Headers>
 bool
 peerFeatureEnabled(Headers const& request, std::string const& feature, bool config)
 {
+    TRACE_FUNC();
     return config && peerFeatureEnabled(request, feature, "1", config);
 }
 

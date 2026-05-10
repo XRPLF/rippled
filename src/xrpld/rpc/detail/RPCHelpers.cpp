@@ -30,6 +30,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -48,6 +49,7 @@ namespace xrpl::RPC {
 std::uint64_t
 getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
 {
+    TRACE_FUNC();
     if (sle->getType() == ltRIPPLE_STATE)
     {
         if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
@@ -72,6 +74,7 @@ isRelatedToAccount(
     std::shared_ptr<SLE const> const& sle,
     AccountID const& accountID)
 {
+    TRACE_FUNC();
     if (sle->getType() == ltRIPPLE_STATE)
     {
         return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
@@ -106,6 +109,7 @@ isRelatedToAccount(
 hash_set<AccountID>
 parseAccountIds(json::Value const& jvArray)
 {
+    TRACE_FUNC();
     hash_set<AccountID> result;
     for (auto const& jv : jvArray)
     {
@@ -122,6 +126,7 @@ parseAccountIds(json::Value const& jvArray)
 std::optional<json::Value>
 readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext const& context)
 {
+    TRACE_FUNC();
     limit = range.rDefault;
     if (!context.params.isMember(jss::limit) || context.params[jss::limit].isNull())
         return std::nullopt;
@@ -143,6 +148,7 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext
 std::optional<Seed>
 parseXrplLibSeed(json::Value const& value)
 {
+    TRACE_FUNC();
     // XrplLib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While xrpld never encode seeds that way, we
     // try to detect such keys to avoid user confusion.
@@ -161,6 +167,7 @@ parseXrplLibSeed(json::Value const& value)
 std::optional<Seed>
 getSeedFromRPC(json::Value const& params, json::Value& error)
 {
+    TRACE_FUNC();
     using string_to_seed_t = std::function<std::optional<Seed>(std::string const&)>;
     using seed_match_t = std::pair<char const*, string_to_seed_t>;
 
@@ -216,6 +223,7 @@ getSeedFromRPC(json::Value const& params, json::Value& error)
 std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(json::Value const& params, json::Value& error, unsigned int apiVersion)
 {
+    TRACE_FUNC();
     bool const hasKeyType = params.isMember(jss::key_type);
 
     // All of the secret types we allow, but only one at a time.
@@ -348,6 +356,7 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
 std::pair<RPC::Status, LedgerEntryType>
 chooseLedgerEntryType(json::Value const& params)
 {
+    TRACE_FUNC();
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::kOK, ltANY};
     if (params.isMember(jss::type))
     {
@@ -398,6 +407,7 @@ chooseLedgerEntryType(json::Value const& params)
 bool
 isAccountObjectsValidType(LedgerEntryType const& type)
 {
+    TRACE_FUNC();
     switch (type)
     {
         case LedgerEntryType::ltAMENDMENTS:
@@ -418,6 +428,7 @@ parseSubUnsubJson(
     json::StaticString const& name,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const& jv = params[name];
     auto const [issuerError, assetError] = [&]() {
         if (name == jss::taker_pays)

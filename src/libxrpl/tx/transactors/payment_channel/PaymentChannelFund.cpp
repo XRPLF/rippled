@@ -17,6 +17,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -25,12 +26,14 @@ namespace xrpl {
 TxConsequences
 PaymentChannelFund::makeTxConsequences(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
 NotTEC
 PaymentChannelFund::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZERO))
         return temBAD_AMOUNT;
 
@@ -40,6 +43,7 @@ PaymentChannelFund::preflight(PreflightContext const& ctx)
 TER
 PaymentChannelFund::doApply()
 {
+    TRACE_FUNC();
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
@@ -122,6 +126,7 @@ PaymentChannelFund::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 }  // namespace xrpl

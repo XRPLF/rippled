@@ -6,6 +6,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <mutex>
 
@@ -14,6 +15,7 @@ namespace xrpl {
 json::Value
 doLedgerAccept(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     json::Value jvResult;
 
     if (!context.app.config().standalone())

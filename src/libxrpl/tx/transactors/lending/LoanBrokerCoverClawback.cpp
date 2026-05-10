@@ -26,6 +26,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -36,12 +37,14 @@ namespace xrpl {
 bool
 LoanBrokerCoverClawback::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
 LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const brokerID = ctx.tx[~sfLoanBrokerID];
     auto const amount = ctx.tx[~sfAmount];
 
@@ -86,6 +89,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
 Expected<uint256, TER>
 determineBrokerID(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     // If the broker ID was provided in the transaction, that's all we
     // need.
     if (auto const brokerID = tx[~sfLoanBrokerID])
@@ -133,6 +137,7 @@ determineAsset(
     AccountID const& brokerPseudoAccountID,
     STAmount const& amount)
 {
+    TRACE_FUNC();
     if (amount.holds<MPTIssue>())
         return amount.asset();
 
@@ -162,6 +167,7 @@ determineClawAmount(
     Asset const& vaultAsset,
     std::optional<STAmount> const& amount)
 {
+    TRACE_FUNC();
     auto const maxClawAmount = [&]() {
         // Always round the minimum required up
         NumberRoundModeGuard const mg1(Number::RoundingMode::Upward);
@@ -193,6 +199,7 @@ template <>
 TER
 preclaimHelper<Issue>(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount const& clawAmount)
 {
+    TRACE_FUNC();
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
     if (!(sleIssuer.isFlag(lsfAllowTrustLineClawback)) || (sleIssuer.isFlag(lsfNoFreeze)))
@@ -208,6 +215,7 @@ preclaimHelper<MPTIssue>(
     SLE const& sleIssuer,
     STAmount const& clawAmount)
 {
+    TRACE_FUNC();
     auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
@@ -226,6 +234,7 @@ preclaimHelper<MPTIssue>(
 TER
 LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -321,6 +330,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
 TER
 LoanBrokerCoverClawback::doApply()
 {
+    TRACE_FUNC();
     auto const& tx = ctx_.tx;
     auto const account = tx[sfAccount];
     auto const findBrokerID = determineBrokerID(view(), tx);
@@ -375,6 +385,7 @@ LoanBrokerCoverClawback::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

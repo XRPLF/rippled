@@ -9,6 +9,7 @@
 #include <xrpl/server/Server.h>
 #include <xrpl/server/Session.h>
 #include <xrpl/server/WSSession.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
@@ -24,6 +25,7 @@ namespace xrpl {
 inline bool
 operator<(Port const& lhs, Port const& rhs)
 {
+    TRACE_FUNC();
     return lhs.name < rhs.name;
 }
 
@@ -118,12 +120,14 @@ public:
     [[nodiscard]] Setup const&
     setup() const
     {
+    TRACE_FUNC();
         return setup_;
     }
 
     [[nodiscard]] Endpoints const&
     endpoints() const
     {
+    TRACE_FUNC();
         return endpoints_;
     }
 
@@ -150,6 +154,7 @@ public:
         http_request_type&& request,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
         boost::asio::ip::tcp::endpoint const& remoteAddress)
     {
+    TRACE_FUNC();
         return onHandoff(session, {}, std::forward<http_request_type>(request), remoteAddress);
     }
 

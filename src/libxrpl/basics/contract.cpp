@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -12,12 +13,14 @@ namespace xrpl {
 void
 logThrow(std::string const& title)
 {
+    TRACE_FUNC();
     JLOG(debugLog().warn()) << title;
 }
 
 [[noreturn]] void
 logicError(std::string const& s) noexcept
 {
+    TRACE_FUNC();
     // LCOV_EXCL_START
     JLOG(debugLog().fatal()) << s;
     std::cerr << "Logic error: " << s << std::endl;

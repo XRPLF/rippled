@@ -6,6 +6,7 @@
 #include <xrpl/conditions/detail/PreimageSha256.h>
 #include <xrpl/conditions/detail/error.h>
 #include <xrpl/conditions/detail/utils.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <system_error>
@@ -15,6 +16,7 @@ namespace xrpl::cryptoconditions {
 bool
 match(Fulfillment const& f, Condition const& c)
 {
+    TRACE_FUNC();
     // Fast check: the fulfillment's type must match the
     // conditions's type:
     if (f.type() != c.type)
@@ -28,18 +30,21 @@ match(Fulfillment const& f, Condition const& c)
 bool
 validate(Fulfillment const& f, Condition const& c, Slice m)
 {
+    TRACE_FUNC();
     return match(f, c) && f.validate(m);
 }
 
 bool
 validate(Fulfillment const& f, Condition const& c)
 {
+    TRACE_FUNC();
     return validate(f, c, {});
 }
 
 std::unique_ptr<Fulfillment>
 Fulfillment::deserialize(Slice s, std::error_code& ec)
 {
+    TRACE_FUNC();
     // Per the RFC, in a fulfillment we choose a type based
     // on the tag of the item we contain:
     //

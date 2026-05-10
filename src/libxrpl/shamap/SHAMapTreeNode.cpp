@@ -16,6 +16,7 @@
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTxLeafNode.h>
 #include <xrpl/shamap/SHAMapTxPlusMetaLeafNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <stdexcept>
@@ -28,6 +29,7 @@ namespace xrpl {
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid)
 {
+    TRACE_FUNC();
     auto item = makeShamapitem(sha512Half(HashPrefix::TransactionId, data), data);
 
     if (hashValid)
@@ -39,6 +41,7 @@ SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashVal
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid)
 {
+    TRACE_FUNC();
     Serializer s(data.data(), data.size());
 
     uint256 tag;
@@ -63,6 +66,7 @@ SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashValid)
 {
+    TRACE_FUNC();
     Serializer s(data.data(), data.size());
 
     uint256 tag;
@@ -90,6 +94,7 @@ SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashVa
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapTreeNode::makeFromWire(Slice rawNode)
 {
+    TRACE_FUNC();
     if (rawNode.empty())
         return {};
 
@@ -121,6 +126,7 @@ SHAMapTreeNode::makeFromWire(Slice rawNode)
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
 {
+    TRACE_FUNC();
     if (rawNode.size() < 4)
         Throw<std::runtime_error>("prefix: short node");
 
@@ -154,6 +160,7 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
 std::string
 SHAMapTreeNode::getString(SHAMapNodeID const& id) const
 {
+    TRACE_FUNC();
     return to_string(id);
 }
 

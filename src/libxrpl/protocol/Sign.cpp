@@ -9,6 +9,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -20,6 +21,7 @@ sign(
     SecretKey const& sk,
     SF_VL const& sigField)
 {
+    TRACE_FUNC();
     Serializer ss;
     ss.add32(prefix);
     st.addWithoutSigningFields(ss);
@@ -29,6 +31,7 @@ sign(
 bool
 verify(STObject const& st, HashPrefix const& prefix, PublicKey const& pk, SF_VL const& sigField)
 {
+    TRACE_FUNC();
     auto const sig = get(st, sigField);
     if (!sig)
         return false;
@@ -72,6 +75,7 @@ verify(STObject const& st, HashPrefix const& prefix, PublicKey const& pk, SF_VL 
 Serializer
 buildMultiSigningData(STObject const& obj, AccountID const& signingID)
 {
+    TRACE_FUNC();
     Serializer s{startMultiSigningData(obj)};
     finishMultiSigningData(signingID, s);
     return s;
@@ -80,6 +84,7 @@ buildMultiSigningData(STObject const& obj, AccountID const& signingID)
 Serializer
 startMultiSigningData(STObject const& obj)
 {
+    TRACE_FUNC();
     Serializer s;
     s.add32(HashPrefix::TxMultiSign);
     obj.addWithoutSigningFields(s);

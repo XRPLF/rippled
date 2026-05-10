@@ -22,6 +22,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <grpcpp/support/status.h>
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>
@@ -42,6 +43,7 @@ LedgerHandler::LedgerHandler(JsonContext& context) : context_(context)
 Status
 LedgerHandler::check()
 {
+    TRACE_FUNC();
     auto const& params = context_.params;
 
     auto getBool = [&](json::StaticString const& field) -> Expected<bool, Status> {
@@ -125,6 +127,7 @@ LedgerHandler::check()
 void
 LedgerHandler::writeResult(json::Value& value)
 {
+    TRACE_FUNC();
     if (ledger_)
     {
         copyFrom(value, result_);
@@ -164,6 +167,7 @@ LedgerHandler::writeResult(json::Value& value)
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
 doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 {
+    TRACE_FUNC();
     auto begin = std::chrono::system_clock::now();
     org::xrpl::rpc::v1::GetLedgerRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerResponse response;

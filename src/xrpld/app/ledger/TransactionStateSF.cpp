@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <optional>
@@ -21,6 +22,7 @@ TransactionStateSF::gotNode(
     SHAMapNodeType type) const
 
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         type != SHAMapNodeType::TnTransactionNm, "xrpl::TransactionStateSF::gotNode : valid input");
     db_.store(
@@ -30,6 +32,7 @@ TransactionStateSF::gotNode(
 std::optional<Blob>
 TransactionStateSF::getNode(SHAMapHash const& nodeHash) const
 {
+    TRACE_FUNC();
     return fp_.getFetchPack(nodeHash.asUint256());
 }
 

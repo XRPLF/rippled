@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 
@@ -22,6 +23,7 @@ RCLCxPeerPos::RCLCxPeerPos(
     Proposal const& proposal)  // trivially copyable
     : publicKey_(publicKey), suppression_(suppression), proposal_(proposal)
 {
+    TRACE_FUNC();
     // The maximum allowed size of a signature is 72 bytes; we verify
     // this elsewhere, but we want to be extra careful here:
     XRPL_ASSERT(
@@ -35,12 +37,14 @@ RCLCxPeerPos::RCLCxPeerPos(
 bool
 RCLCxPeerPos::checkSign() const
 {
+    TRACE_FUNC();
     return verifyDigest(publicKey(), proposal_.signingHash(), signature(), false);
 }
 
 json::Value
 RCLCxPeerPos::getJson() const
 {
+    TRACE_FUNC();
     auto ret = proposal().getJson();
 
     if (publicKey().size() != 0u)
@@ -58,6 +62,7 @@ proposalUniqueId(
     Slice const& publicKey,
     Slice const& signature)
 {
+    TRACE_FUNC();
     Serializer s(512);
     s.addBitString(proposeHash);
     s.addBitString(previousLedger);

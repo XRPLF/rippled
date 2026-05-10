@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/net/AutoSocket.h>
 #include <xrpl/net/HTTPClientSSLContext.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/completion_condition.hpp>
@@ -42,12 +43,14 @@ HTTPClient::initializeSSLContext(
     bool sslVerify,
     beast::Journal j)
 {
+    TRACE_FUNC();
     gHttpClientSslContext.emplace(sslVerifyDir, sslVerifyFile, sslVerify, j);
 }
 
 void
 HTTPClient::cleanupSSLContext()
 {
+    TRACE_FUNC();
     gHttpClientSslContext.reset();
 }
 
@@ -83,6 +86,7 @@ public:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     makeGet(std::string const& strPath, boost::asio::streambuf& sb, std::string const& strHost)
     {
+    TRACE_FUNC();
         std::ostream osRequest(&sb);
 
         osRequest << "GET " << strPath
@@ -107,6 +111,7 @@ public:
             int iStatus,
             std::string const& strData)> complete)
     {
+    TRACE_FUNC();
         ssl_ = bSSL;
         deqSites_ = deqSites;
         build_ = build;
@@ -128,6 +133,7 @@ public:
             int iStatus,
             std::string const& strData)> complete)
     {
+    TRACE_FUNC();
         complete_ = complete;
         timeout_ = timeout;
 
@@ -149,6 +155,7 @@ public:
     void
     httpsNext()
     {
+    TRACE_FUNC();
         JLOG(j_.trace()) << "Fetch: " << deqSites_[0];
 
         auto query = std::make_shared<Query>(
@@ -193,6 +200,7 @@ public:
     void
     handleDeadline(boost::system::error_code const& ecResult)
     {
+    TRACE_FUNC();
         if (ecResult == boost::asio::error::operation_aborted)
         {
             // Timer canceled because deadline no longer needed.
@@ -229,6 +237,7 @@ public:
     void
     handleShutdown(boost::system::error_code const& ecResult)
     {
+    TRACE_FUNC();
         if (ecResult)
         {
             JLOG(j_.trace()) << "Shutdown error: " << deqSites_[0] << ": " << ecResult.message();
@@ -240,6 +249,7 @@ public:
         boost::system::error_code const& ecResult,
         boost::asio::ip::tcp::resolver::results_type result)
     {
+    TRACE_FUNC();
         if (!shutdown_)
         {
             shutdown_ = ecResult
@@ -270,6 +280,7 @@ public:
     void
     handleConnect(boost::system::error_code const& ecResult)
     {
+    TRACE_FUNC();
         if (!shutdown_)
             shutdown_ = ecResult;
 
@@ -313,6 +324,7 @@ public:
     void
     handleRequest(boost::system::error_code const& ecResult)
     {
+    TRACE_FUNC();
         if (!shutdown_)
             shutdown_ = ecResult;
 
@@ -341,6 +353,7 @@ public:
     void
     handleWrite(boost::system::error_code const& ecResult, std::size_t bytesTransferred)
     {
+    TRACE_FUNC();
         if (!shutdown_)
             shutdown_ = ecResult;
 
@@ -368,6 +381,7 @@ public:
     void
     handleHeader(boost::system::error_code const& ecResult, std::size_t bytesTransferred)
     {
+    TRACE_FUNC();
         std::string strHeader{
             {std::istreambuf_iterator<char>(&header_)}, std::istreambuf_iterator<char>()};
         JLOG(j_.trace()) << "Header: \"" << strHeader << "\"";
@@ -435,6 +449,7 @@ public:
     void
     handleData(boost::system::error_code const& ecResult, std::size_t bytesTransferred)
     {
+    TRACE_FUNC();
         if (!shutdown_)
             shutdown_ = ecResult;
 
@@ -467,6 +482,7 @@ public:
         int iStatus = 0,
         std::string const& strData = "")
     {
+    TRACE_FUNC();
         boost::system::error_code ecCancel;
         try
         {
@@ -554,6 +570,7 @@ HTTPClient::get(
         complete,
     beast::Journal& j)
 {
+    TRACE_FUNC();
     auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
@@ -572,6 +589,7 @@ HTTPClient::get(
         complete,
     beast::Journal& j)
 {
+    TRACE_FUNC();
     std::deque<std::string> const deqSites(1, strSite);
 
     auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
@@ -592,6 +610,7 @@ HTTPClient::request(
         complete,
     beast::Journal& j)
 {
+    TRACE_FUNC();
     std::deque<std::string> const deqSites(1, strSite);
 
     auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);

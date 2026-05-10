@@ -9,6 +9,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -18,6 +19,7 @@ namespace xrpl {
 json::Value
 doTxHistory(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (!context.app.config().useTxTables())
         return rpcError(RpcNotEnabled);
 

@@ -1,6 +1,7 @@
 #include <xrpl/crypto/RFC1751.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
@@ -199,6 +200,7 @@ char const* RFC1751::dictionary[2048] = {
 unsigned long
 RFC1751::extract(char const* s, int start, int length)
 {
+    TRACE_FUNC();
     unsigned char cl = 0;
     unsigned char cc = 0;
     unsigned char cr = 0;
@@ -226,6 +228,7 @@ RFC1751::extract(char const* s, int start, int length)
 void
 RFC1751::btoe(std::string& strHuman, std::string const& strData)
 {
+    TRACE_FUNC();
     char caBuffer[9]; /* add in room for the parity 2 bits*/
     int p = 0, i = 0;
 
@@ -246,6 +249,7 @@ RFC1751::btoe(std::string& strHuman, std::string const& strData)
 void
 RFC1751::insert(char* s, int x, int start, int length)
 {
+    TRACE_FUNC();
     unsigned char cl = 0;
     unsigned char cc = 0;
     unsigned char cr = 0;
@@ -283,6 +287,7 @@ RFC1751::insert(char* s, int x, int start, int length)
 void
 RFC1751::standard(std::string& strWord)
 {
+    TRACE_FUNC();
     for (auto& letter : strWord)
     {
         if (islower(static_cast<unsigned char>(letter)) != 0)
@@ -308,6 +313,7 @@ RFC1751::standard(std::string& strWord)
 int
 RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
 {
+    TRACE_FUNC();
     int iResult = -1;
 
     while (iResult < 0 && iMin != iMax)
@@ -342,6 +348,7 @@ RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
 int
 RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
 {
+    TRACE_FUNC();
     if (6 != vsHuman.size())
         return -1;
 
@@ -389,6 +396,7 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
 int
 RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
 {
+    TRACE_FUNC();
     std::vector<std::string> vWords;
     std::string strFirst, strSecond;
     int rc = 0;
@@ -419,6 +427,7 @@ RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
 void
 RFC1751::getEnglishFromKey(std::string& strHuman, std::string const& strKey)
 {
+    TRACE_FUNC();
     std::string strFirst, strSecond;
 
     btoe(strFirst, strKey.substr(0, 8));
@@ -430,6 +439,7 @@ RFC1751::getEnglishFromKey(std::string& strHuman, std::string const& strKey)
 std::string
 RFC1751::getWordFromBlob(void const* blob, size_t bytes)
 {
+    TRACE_FUNC();
     // This is a simple implementation of the Jenkins one-at-a-time hash
     // algorithm:
     // http://en.wikipedia.org/wiki/Jenkins_hash_function#one-at-a-time

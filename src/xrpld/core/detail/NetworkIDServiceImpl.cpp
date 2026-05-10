@@ -1,4 +1,5 @@
 #include <xrpld/core/NetworkIDServiceImpl.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 
@@ -11,6 +12,7 @@ NetworkIDServiceImpl::NetworkIDServiceImpl(std::uint32_t networkID) : networkID_
 std::uint32_t
 NetworkIDServiceImpl::getNetworkID() const noexcept
 {
+    TRACE_FUNC();
     return networkID_;
 }
 

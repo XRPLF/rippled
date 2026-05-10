@@ -7,6 +7,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SlabAllocator.h>
+#include <xrpl/basics/TraceLog.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -81,6 +82,7 @@ namespace xrpl {
 bool
 adjustDescriptorLimit(int needed, beast::Journal j)
 {
+    TRACE_FUNC();
 #ifdef RLIMIT_NOFILE
     // Get the current limit, then adjust it to what we need.
     struct rlimit rl{};
@@ -129,6 +131,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 void
 printHelp(po::options_description const& desc)
 {
+    TRACE_FUNC();
     std::cerr << systemName() << " [options] <command> <params>\n"
               << desc << std::endl
               << "Commands: \n"
@@ -207,6 +210,7 @@ private:
 public:
     explicit MultiSelector(std::string const& patterns = "")
     {
+    TRACE_FUNC();
         std::vector<std::string> v;
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
         selectors_.reserve(v.size());
@@ -220,6 +224,7 @@ public:
     bool
     operator()(beast::unit_test::SuiteInfo const& s)
     {
+    TRACE_FUNC();
         for (auto& sel : selectors_)
         {
             if (sel(s))
@@ -231,6 +236,7 @@ public:
     [[nodiscard]] std::size_t
     size() const
     {
+    TRACE_FUNC();
         return selectors_.size();
     }
 };
@@ -243,6 +249,7 @@ template <class Runner>
 static bool
 anyMissing(Runner& runner, MultiSelector const& pred)
 {
+    TRACE_FUNC();
     if (runner.tests() == 0)
     {
         runner.addFailures(1);
@@ -272,6 +279,7 @@ runUnitTests(
     int argc,
     char** argv)
 {
+    TRACE_FUNC();
     using namespace beast::unit_test;
     using namespace xrpl::test;
 
@@ -353,6 +361,7 @@ runUnitTests(
 int
 run(int argc, char** argv)
 {
+    TRACE_FUNC();
     using namespace std;
 
     beast::setCurrentThreadName("xrpld-main");
@@ -804,6 +813,17 @@ run(int argc, char** argv)
         if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::severities::KTrace));
 
+        if (config->exists("tracing"))
+        {
+            auto const& sec = config->section("tracing");
+            auto path = sec.get<std::string>("output");
+            double rate = sec.valueOr<double>("sampling_rate", 1.0);
+            auto maxSizeMB = sec.valueOr<std::uint64_t>("max_file_size_mb", 500);
+            auto maxFiles = sec.valueOr<int>("max_files", 10);
+            if (path && !path->empty())
+                tracing::init(path->c_str(), rate, maxSizeMB, maxFiles);
+        }
+
         auto app =
             makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
@@ -821,6 +841,7 @@ run(int argc, char** argv)
         // Block until we get a stop RPC.
         app->run();
 
+        tracing::shutdown();
         return 0;
     }
 
@@ -836,6 +857,7 @@ run(int argc, char** argv)
 int
 main(int argc, char** argv)
 {
+    TRACE_FUNC();
 #if BOOST_OS_WINDOWS
     {
         // Work around for https://svn.boost.org/trac/boost/ticket/10657

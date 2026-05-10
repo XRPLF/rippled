@@ -6,6 +6,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -18,6 +19,7 @@ namespace xrpl {
 json::Value
 doLogLevel(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     // log_level
     if (!context.params.isMember(jss::severity))
     {

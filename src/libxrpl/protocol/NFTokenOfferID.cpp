@@ -10,6 +10,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -21,6 +22,7 @@ canHaveNFTokenOfferID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     if (!serializedTx)
         return false;
 
@@ -39,6 +41,7 @@ canHaveNFTokenOfferID(
 std::optional<uint256>
 getOfferIDFromCreatedOffer(TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     for (STObject const& node : transactionMeta.getNodes())
     {
         if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER ||
@@ -56,6 +59,7 @@ insertNFTokenOfferID(
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     if (!canHaveNFTokenOfferID(transaction, transactionMeta))
         return;
 

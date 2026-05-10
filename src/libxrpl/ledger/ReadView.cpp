@@ -7,6 +7,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 #include <unordered_set>
@@ -20,18 +21,21 @@ ReadView::SlesType::SlesType(ReadView const& view) : ReadViewFwdRange(view)
 auto
 ReadView::SlesType::begin() const -> Iterator
 {
+    TRACE_FUNC();
     return Iterator(view_, view_->slesBegin());
 }
 
 auto
 ReadView::SlesType::end() const -> Iterator
 {
+    TRACE_FUNC();
     return Iterator(view_, view_->slesEnd());
 }
 
 auto
 ReadView::SlesType::upperBound(key_type const& key) const -> Iterator
 {
+    TRACE_FUNC();
     return Iterator(view_, view_->slesUpperBound(key));
 }
 
@@ -42,24 +46,28 @@ ReadView::TxsType::TxsType(ReadView const& view) : ReadViewFwdRange(view)
 bool
 ReadView::TxsType::empty() const
 {
+    TRACE_FUNC();
     return begin() == end();
 }
 
 auto
 ReadView::TxsType::begin() const -> Iterator
 {
+    TRACE_FUNC();
     return Iterator(view_, view_->txsBegin());
 }
 
 auto
 ReadView::TxsType::end() const -> Iterator
 {
+    TRACE_FUNC();
     return Iterator(view_, view_->txsEnd());
 }
 
 Rules
 makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current)
 {
+    TRACE_FUNC();
     return makeRulesGivenLedger(ledger, current.presets());
 }
 
@@ -68,6 +76,7 @@ makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
     std::unordered_set<uint256, beast::Uhash<>> const& presets)
 {
+    TRACE_FUNC();
     Keylet const k = keylet::amendments();
     std::optional const digest = ledger.digest(k.key);
     if (digest)

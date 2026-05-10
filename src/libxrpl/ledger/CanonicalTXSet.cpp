@@ -5,6 +5,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstring>
 #include <memory>
@@ -15,6 +16,7 @@ namespace xrpl {
 bool
 operator<(CanonicalTXSet::Key const& lhs, CanonicalTXSet::Key const& rhs)
 {
+    TRACE_FUNC();
     if (lhs.account_ < rhs.account_)
         return true;
 
@@ -33,6 +35,7 @@ operator<(CanonicalTXSet::Key const& lhs, CanonicalTXSet::Key const& rhs)
 uint256
 CanonicalTXSet::accountKey(AccountID const& account)
 {
+    TRACE_FUNC();
     uint256 ret = beast::kZERO;
     memcpy(ret.begin(), account.begin(), account.size());
     ret ^= salt_;
@@ -42,6 +45,7 @@ CanonicalTXSet::accountKey(AccountID const& account)
 void
 CanonicalTXSet::insert(std::shared_ptr<STTx const> const& txn)
 {
+    TRACE_FUNC();
     map_.insert(
         std::make_pair(
             Key(accountKey(txn->getAccountID(sfAccount)),
@@ -53,6 +57,7 @@ CanonicalTXSet::insert(std::shared_ptr<STTx const> const& txn)
 std::shared_ptr<STTx const>
 CanonicalTXSet::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
 {
+    TRACE_FUNC();
     // Determining the next viable transaction for an account with Tickets:
     //
     //  1. Prioritize transactions with Sequences over transactions with

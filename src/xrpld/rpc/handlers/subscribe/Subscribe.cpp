@@ -18,6 +18,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -29,6 +30,7 @@ namespace xrpl {
 json::Value
 doSubscribe(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     InfoSub::pointer ispSub;
     json::Value jvResult(json::ObjectValue);
 

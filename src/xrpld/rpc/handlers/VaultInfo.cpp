@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -18,6 +19,7 @@ namespace xrpl {
 static std::optional<uint256>
 parseVault(json::Value const& params, json::Value& jvResult)
 {
+    TRACE_FUNC();
     auto const hasVaultId = params.isMember(jss::vault_id);
     auto const hasOwner = params.isMember(jss::owner);
     auto const hasSeq = params.isMember(jss::seq);
@@ -63,6 +65,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
 json::Value
 doVaultInfo(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     std::shared_ptr<ReadView const> lpLedger;
     auto jvResult = RPC::lookupLedger(lpLedger, context);
 

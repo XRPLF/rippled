@@ -28,6 +28,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -50,6 +51,7 @@ namespace xrpl {
 bool
 hasPrivilege(STTx const& tx, Privilege priv)
 {
+    TRACE_FUNC();
     switch (tx.getTxnType())
     {
 #include <xrpl/protocol/detail/transactions.macro>
@@ -69,6 +71,7 @@ TransactionFeeCheck::visitEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    TRACE_FUNC();
     // nothing to do
 }
 
@@ -80,6 +83,7 @@ TransactionFeeCheck::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     // We should never charge a negative fee
     if (fee.drops() < 0)
     {
@@ -115,6 +119,7 @@ XRPNotCreated::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     /* We go through all modified ledger entries, looking only at account roots,
      * escrow payments, and payment channels. We remove from the total any
      * previous XRP values and add to the total any new XRP values. The net
@@ -170,6 +175,7 @@ XRPNotCreated::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
     if (drops_ > 0)
@@ -197,6 +203,7 @@ XRPBalanceChecks::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     auto isBad = [](STAmount const& balance) {
         if (!balance.native())
             return true;
@@ -230,6 +237,7 @@ XRPBalanceChecks::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (bad_)
     {
         JLOG(j.fatal()) << "Invariant failed: incorrect account XRP balance";
@@ -247,6 +255,7 @@ NoBadOffers::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     auto isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
         if (pays < beast::kZERO)
@@ -274,6 +283,7 @@ NoBadOffers::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (bad_)
     {
         JLOG(j.fatal()) << "Invariant failed: offer with a bad amount";
@@ -291,6 +301,7 @@ NoZeroEscrow::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     auto isBad = [](STAmount const& amount) {
         // XRP case
         if (amount.native())
@@ -381,6 +392,7 @@ NoZeroEscrow::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (bad_)
     {
         JLOG(j.fatal()) << "Invariant failed: escrow specifies invalid amount";
@@ -398,6 +410,7 @@ AccountRootsNotDeleted::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const&)
 {
+    TRACE_FUNC();
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
         accountsDeleted_++;
 }
@@ -410,6 +423,7 @@ AccountRootsNotDeleted::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     // AMM account root can be deleted as the result of AMM withdraw/delete
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
@@ -451,6 +465,7 @@ AccountRootsDeletedClean::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
         accountsDeleted_.emplace_back(before, after);
 }
@@ -463,6 +478,7 @@ AccountRootsDeletedClean::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     // Always check for objects in the ledger, but to prevent differing
     // transaction processing results, however unlikely, only fail if the
     // feature is enabled. Enabled, or not, though, a fatal-level message will
@@ -571,6 +587,7 @@ LedgerEntryTypesMatch::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (before && after && before->getType() != after->getType())
         typeMismatch_ = true;
 
@@ -604,6 +621,7 @@ LedgerEntryTypesMatch::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if ((!typeMismatch_) && (!invalidTypeAdded_))
         return true;
 
@@ -628,6 +646,7 @@ NoXRPTrustLines::visitEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
 
     if (after && after->getType() == ltRIPPLE_STATE)
@@ -656,6 +675,7 @@ NoXRPTrustLines::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (!xrpTrustLine_)
         return true;
 
@@ -671,6 +691,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (after && after->getType() == ltRIPPLE_STATE)
     {
         bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
@@ -702,6 +723,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (!deepFreezeWithoutFreeze_)
         return true;
 
@@ -718,6 +740,7 @@ ValidNewAccountRoot::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (!before && after->getType() == ltACCOUNT_ROOT)
     {
         accountsCreated_++;
@@ -735,6 +758,7 @@ ValidNewAccountRoot::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (accountsCreated_ == 0)
         return true;
 
@@ -795,6 +819,7 @@ ValidClawback::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const&)
 {
+    TRACE_FUNC();
     if (before && before->getType() == ltRIPPLE_STATE)
         trustlinesChanged_++;
 
@@ -810,6 +835,7 @@ ValidClawback::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (tx.getTxnType() != ttCLAWBACK)
         return true;
 
@@ -883,6 +909,7 @@ ValidPseudoAccounts::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (isDelete)
     {
         // Deletion is ignored
@@ -949,6 +976,7 @@ ValidPseudoAccounts::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
     XRPL_ASSERT(
         errors_.empty() || enforce,
@@ -974,6 +1002,7 @@ NoModifiedUnmodifiableFields::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (isDelete || !before)
     {
         // Creation and deletion are ignored
@@ -991,6 +1020,7 @@ NoModifiedUnmodifiableFields::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     static auto const kFIELD_CHANGED = [](auto const& before,
                                           auto const& after,
                                           auto const& field) {

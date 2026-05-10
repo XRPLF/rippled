@@ -9,12 +9,14 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
 json::Value
 doPathFind(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (context.app.config().PATH_SEARCH_MAX == 0)
         return rpcError(RpcNotSupported);
 

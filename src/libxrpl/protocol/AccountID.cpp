@@ -7,6 +7,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 #include <cstdint>
@@ -43,6 +44,7 @@ private:
 public:
     AccountIdCache(std::size_t count) : cache_(count)
     {
+    TRACE_FUNC();
         // This is non-binding, but we try to avoid wasting memory that
         // is caused by overallocation.
         cache_.shrink_to_fit();
@@ -51,6 +53,7 @@ public:
     std::string
     toBase58(AccountID const& id)
     {
+    TRACE_FUNC();
         auto const index = hasher_(id) % cache_.size();
 
         PackedSpinlock sl(locks_, index % 64);
@@ -85,6 +88,7 @@ static std::unique_ptr<detail::AccountIdCache> gAccountIdCache;
 void
 initAccountIdCache(std::size_t count)
 {
+    TRACE_FUNC();
     if (!gAccountIdCache && count != 0)
         gAccountIdCache = std::make_unique<detail::AccountIdCache>(count);
 }
@@ -92,6 +96,7 @@ initAccountIdCache(std::size_t count)
 std::string
 toBase58(AccountID const& v)
 {
+    TRACE_FUNC();
     if (gAccountIdCache)
         return gAccountIdCache->toBase58(v);
 
@@ -102,6 +107,7 @@ template <>
 std::optional<AccountID>
 parseBase58(std::string const& s)
 {
+    TRACE_FUNC();
     auto const result = decodeBase58Token(s, TokenType::AccountID);
     if (result.size() != AccountID::kBYTES)
         return std::nullopt;
@@ -146,6 +152,7 @@ parseBase58(std::string const& s)
 AccountID
 calcAccountID(PublicKey const& pk)
 {
+    TRACE_FUNC();
     static_assert(AccountID::kBYTES == sizeof(RipeshaHasher::result_type));
 
     RipeshaHasher rsh;
@@ -156,6 +163,7 @@ calcAccountID(PublicKey const& pk)
 AccountID const&
 xrpAccount()
 {
+    TRACE_FUNC();
     static AccountID const kACCOUNT(beast::kZERO);
     return kACCOUNT;
 }
@@ -163,6 +171,7 @@ xrpAccount()
 AccountID const&
 noAccount()
 {
+    TRACE_FUNC();
     static AccountID const kACCOUNT(1);
     return kACCOUNT;
 }
@@ -170,6 +179,7 @@ noAccount()
 bool
 toIssuer(AccountID& issuer, std::string const& s)
 {
+    TRACE_FUNC();
     if (issuer.parseHex(s))
         return true;
     auto const account = parseBase58<AccountID>(s);

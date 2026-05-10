@@ -25,6 +25,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <soci/sqlite3/soci-sqlite3.h>  // IWYU pragma: keep
 
@@ -39,6 +40,7 @@ namespace detail {
 std::string
 getSociSqliteInit(std::string const& name, std::string const& dir, std::string const& ext)
 {
+    TRACE_FUNC();
     if (name.empty())
     {
         Throw<std::runtime_error>(
@@ -53,6 +55,7 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
 std::string
 getSociInit(BasicConfig const& config, std::string const& dbName)
 {
+    TRACE_FUNC();
     auto const& section = config.section("sqdb");
     auto const backendName = get(section, "backend", "sqlite");
 
@@ -78,24 +81,28 @@ DBConfig::DBConfig(BasicConfig const& config, std::string const& dbName)
 std::string
 DBConfig::connectionString() const
 {
+    TRACE_FUNC();
     return connectionString_;
 }
 
 void
 DBConfig::open(soci::session& s) const
 {
+    TRACE_FUNC();
     s.open(soci::sqlite3, connectionString());
 }
 
 void
 open(soci::session& s, BasicConfig const& config, std::string const& dbName)
 {
+    TRACE_FUNC();
     DBConfig(config, dbName).open(s);
 }
 
 void
 open(soci::session& s, std::string const& beName, std::string const& connectionString)
 {
+    TRACE_FUNC();
     if (beName == "sqlite")
     {
         s.open(soci::sqlite3, connectionString);
@@ -109,6 +116,7 @@ open(soci::session& s, std::string const& beName, std::string const& connectionS
 static sqlite_api::sqlite3*
 getConnection(soci::session& s)
 {
+    TRACE_FUNC();
     sqlite_api::sqlite3* result = nullptr;  // NOLINT(misc-const-correctness)
     auto be = s.get_backend();
     if (auto b = dynamic_cast<soci::sqlite3_session_backend*>(be))
@@ -123,6 +131,7 @@ getConnection(soci::session& s)
 std::uint32_t
 getKBUsedAll(soci::session& s)
 {
+    TRACE_FUNC();
     if (getConnection(s) == nullptr)
         Throw<std::logic_error>("No connection found.");
     return static_cast<size_t>(sqlite_api::sqlite3_memory_used() / kilobytes(1));
@@ -131,6 +140,7 @@ getKBUsedAll(soci::session& s)
 std::uint32_t
 getKBUsedDB(soci::session& s)
 {
+    TRACE_FUNC();
     // This function will have to be customized when other backends are added
     if (auto conn = getConnection(s))
     {
@@ -145,6 +155,7 @@ getKBUsedDB(soci::session& s)
 void
 convert(soci::blob& from, std::vector<std::uint8_t>& to)
 {
+    TRACE_FUNC();
     to.resize(from.get_len());
     if (to.empty())
         return;
@@ -154,6 +165,7 @@ convert(soci::blob& from, std::vector<std::uint8_t>& to)
 void
 convert(soci::blob& from, std::string& to)
 {
+    TRACE_FUNC();
     std::vector<std::uint8_t> tmp;
     convert(from, tmp);
     to.assign(tmp.begin(), tmp.end());
@@ -162,6 +174,7 @@ convert(soci::blob& from, std::string& to)
 void
 convert(std::vector<std::uint8_t> const& from, soci::blob& to)
 {
+    TRACE_FUNC();
     if (!from.empty())
     {
         to.write(0, reinterpret_cast<char const*>(&from[0]), from.size());
@@ -175,6 +188,7 @@ convert(std::vector<std::uint8_t> const& from, soci::blob& to)
 void
 convert(std::string const& from, soci::blob& to)
 {
+    TRACE_FUNC();
     if (!from.empty())
     {
         to.write(0, from.data(), from.size());
@@ -209,6 +223,7 @@ public:
         , jobQueue_(q)
         , j_(registry.getJournal("WALCheckpointer"))
     {
+    TRACE_FUNC();
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
             (void)keepAlive;
@@ -219,6 +234,7 @@ public:
     std::pair<sqlite_api::sqlite3*, std::shared_ptr<soci::session>>
     getConnection() const
     {
+    TRACE_FUNC();
         if (auto p = session_.lock())
         {
             return {xrpl::getConnection(*p), p};
@@ -229,6 +245,7 @@ public:
     std::uintptr_t
     id() const override
     {
+    TRACE_FUNC();
         return id_;
     }
 
@@ -237,6 +254,7 @@ public:
     void
     schedule() override
     {
+    TRACE_FUNC();
         {
             std::scoped_lock const lock(mutex_);
             if (running_)
@@ -266,6 +284,7 @@ public:
     void
     checkpoint() override
     {
+    TRACE_FUNC();
         auto [conn, keepAlive] = getConnection();
         (void)keepAlive;
         if (conn == nullptr)
@@ -305,6 +324,7 @@ protected:
     static int
     sqliteWALHook(void* cpId, sqlite_api::sqlite3* conn, char const* dbName, int walSize)
     {
+    TRACE_FUNC();
         if (walSize >= gCheckpointPageCount)
         {
             if (auto checkpointer = checkpointerFromId(reinterpret_cast<std::uintptr_t>(cpId)))
@@ -329,6 +349,7 @@ makeCheckpointer(
     JobQueue& queue,
     ServiceRegistry& registry)
 {
+    TRACE_FUNC();
     return std::make_shared<WALCheckpointer>(id, std::move(session), queue, registry);
 }
 

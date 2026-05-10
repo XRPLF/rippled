@@ -26,6 +26,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -40,6 +41,7 @@ namespace xrpl {
 static bool
 isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
 {
+    TRACE_FUNC();
     if (!ledgerMaster.haveLedger(seq))
         return false;
 
@@ -71,6 +73,7 @@ struct TxArgs
 std::pair<TxResult, RPC::Status>
 doTxHelp(RPC::Context& context, TxArgs args)
 {
+    TRACE_FUNC();
     TxResult result;
 
     ClosedInterval<uint32_t> range;
@@ -182,6 +185,7 @@ populateJsonResponse(
     TxArgs const& args,
     RPC::JsonContext const& context)
 {
+    TRACE_FUNC();
     json::Value response;
     RPC::Status const& error = res.second;
     TxResult const& result = res.first;
@@ -268,6 +272,7 @@ populateJsonResponse(
 json::Value
 doTxJson(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     if (!context.app.config().useTxTables())
         return rpcError(RpcNotEnabled);
 

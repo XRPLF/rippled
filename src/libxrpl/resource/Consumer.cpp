@@ -8,6 +8,7 @@
 #include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Logic.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <ostream>
 #include <string>
@@ -24,6 +25,7 @@ Consumer::Consumer() : logic_(nullptr), entry_(nullptr)
 
 Consumer::Consumer(Consumer const& other) : logic_(other.logic_), entry_(nullptr)
 {
+    TRACE_FUNC();
     if ((logic_ != nullptr) && (other.entry_ != nullptr))
     {
         entry_ = other.entry_;
@@ -33,6 +35,7 @@ Consumer::Consumer(Consumer const& other) : logic_(other.logic_), entry_(nullptr
 
 Consumer::~Consumer()
 {
+    TRACE_FUNC();
     if ((logic_ != nullptr) && (entry_ != nullptr))
         logic_->release(*entry_);
 }
@@ -40,6 +43,7 @@ Consumer::~Consumer()
 Consumer&
 Consumer::operator=(Consumer const& other)
 {
+    TRACE_FUNC();
     if (this == &other)
         return *this;
 
@@ -60,6 +64,7 @@ Consumer::operator=(Consumer const& other)
 std::string
 Consumer::toString() const
 {
+    TRACE_FUNC();
     if (logic_ == nullptr)
         return "(none)";
 
@@ -69,6 +74,7 @@ Consumer::toString() const
 bool
 Consumer::isUnlimited() const
 {
+    TRACE_FUNC();
     if (entry_ != nullptr)
         return entry_->isUnlimited();
 
@@ -78,6 +84,7 @@ Consumer::isUnlimited() const
 Disposition
 Consumer::disposition() const
 {
+    TRACE_FUNC();
     Disposition d = Disposition::Ok;
     if ((logic_ != nullptr) && (entry_ != nullptr))
         d = logic_->charge(*entry_, Charge(0));
@@ -88,6 +95,7 @@ Consumer::disposition() const
 Disposition
 Consumer::charge(Charge const& what, std::string const& context)
 {
+    TRACE_FUNC();
     Disposition d = Disposition::Ok;
 
     if ((logic_ != nullptr) && (entry_ != nullptr) && !entry_->isUnlimited())
@@ -99,6 +107,7 @@ Consumer::charge(Charge const& what, std::string const& context)
 bool
 Consumer::warn()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::warn : non-null entry");
     return logic_->warn(*entry_);
 }
@@ -106,6 +115,7 @@ Consumer::warn()
 bool
 Consumer::disconnect(beast::Journal const& j)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::disconnect : non-null entry");
     bool const d = logic_->disconnect(*entry_);
     if (d)
@@ -118,6 +128,7 @@ Consumer::disconnect(beast::Journal const& j)
 int
 Consumer::balance()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::balance : non-null entry");
     return logic_->balance(*entry_);
 }
@@ -125,6 +136,7 @@ Consumer::balance()
 Entry&
 Consumer::entry()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::entry : non-null entry");
     return *entry_;
 }
@@ -132,12 +144,14 @@ Consumer::entry()
 void
 Consumer::setPublicKey(PublicKey const& publicKey)
 {
+    TRACE_FUNC();
     entry_->publicKey = publicKey;
 }
 
 std::ostream&
 operator<<(std::ostream& os, Consumer const& v)
 {
+    TRACE_FUNC();
     os << v.toString();
     return os;
 }

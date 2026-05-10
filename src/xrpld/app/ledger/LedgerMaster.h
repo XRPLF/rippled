@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/messages.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <mutex>
 #include <optional>
@@ -59,6 +60,7 @@ public:
     std::shared_ptr<Ledger const>
     getClosedLedger()
     {
+    TRACE_FUNC();
         return closedLedger_.get();
     }
 
@@ -242,6 +244,7 @@ public:
     bool
     haveValidated()
     {
+    TRACE_FUNC();
         return !validLedger_.empty();
     }
 
@@ -387,6 +390,7 @@ private:
     void
     collectMetrics()
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(mutex_);
         stats_.validatedLedgerAge.set(getValidatedLedgerAge().count());
         stats_.publishedLedgerAge.set(getPublishedLedgerAge().count());

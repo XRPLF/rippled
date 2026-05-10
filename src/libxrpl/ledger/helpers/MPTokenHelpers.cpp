@@ -28,6 +28,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <initializer_list>
@@ -41,6 +42,7 @@ namespace xrpl {
 bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 {
+    TRACE_FUNC();
     if (auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID())))
         return sle->isFlag(lsfMPTLocked);
     return false;
@@ -49,6 +51,7 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
 {
+    TRACE_FUNC();
     if (auto const sle = view.read(keylet::mptoken(mptIssue.getMptID(), account)))
         return sle->isFlag(lsfMPTLocked);
     return false;
@@ -57,6 +60,7 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue cons
 bool
 isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
 {
+    TRACE_FUNC();
     return isGlobalFrozen(view, mptIssue) || isIndividualFrozen(view, account, mptIssue) ||
         isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
 }
@@ -68,6 +72,7 @@ isAnyFrozen(
     MPTIssue const& mptIssue,
     int depth)
 {
+    TRACE_FUNC();
     if (isGlobalFrozen(view, mptIssue))
         return true;
 
@@ -89,6 +94,7 @@ isAnyFrozen(
 Rate
 transferRate(ReadView const& view, MPTID const& issuanceID)
 {
+    TRACE_FUNC();
     // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
     // For example, if transfer fee is 50% then 10,000 * 50,000 = 500,000
     // which represents 50% of 1,000,000,000
@@ -106,6 +112,7 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 {
+    TRACE_FUNC();
     auto mptID = mptIssue.getMptID();
     auto issuance = view.read(keylet::mptIssuance(mptID));
     if (!issuance)
@@ -128,6 +135,7 @@ addEmptyHolding(
     MPTIssue const& mptIssue,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     auto const& mptID = mptIssue.getMptID();
     auto const mpt = view.peek(keylet::mptIssuance(mptID));
     if (!mpt)
@@ -152,6 +160,7 @@ authorizeMPToken(
     std::uint32_t flags,
     std::optional<AccountID> holderID)
 {
+    TRACE_FUNC();
     auto const sleAcct = view.peek(keylet::account(account));
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -271,6 +280,7 @@ removeEmptyHolding(
     MPTIssue const& mptIssue,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     // If the account is the issuer, then no token should exist. MPTs do not
     // have the legacy ability to create such a situation, but check anyway. If
     // a token does exist, it will get deleted. If not, return success.
@@ -305,6 +315,7 @@ requireAuth(
     AuthType authType,
     int depth)
 {
+    TRACE_FUNC();
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
     if (!sleIssuance)
@@ -397,6 +408,7 @@ enforceMPTokenAuthorization(
     XRPAmount const& priorBalance,  // for MPToken authorization
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const sleIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -496,6 +508,7 @@ canTransfer(
     AccountID const& from,
     AccountID const& to)
 {
+    TRACE_FUNC();
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
     if (!sleIssuance)
@@ -512,6 +525,7 @@ canTransfer(
 TER
 canTrade(ReadView const& view, Asset const& asset)
 {
+    TRACE_FUNC();
     return asset.visit(
         [&](Issue const&) -> TER { return tesSUCCESS; },
         [&](MPTIssue const& mptIssue) -> TER {
@@ -527,6 +541,7 @@ canTrade(ReadView const& view, Asset const& asset)
 TER
 lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, beast::Journal j)
 {
+    TRACE_FUNC();
     auto const mptIssue = amount.get<MPTIssue>();
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
@@ -626,6 +641,7 @@ unlockEscrowMPT(
     STAmount const& grossAmount,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (!view.rules().enabled(fixTokenEscrowV1))
     {
         XRPL_ASSERT(netAmount == grossAmount, "xrpl::unlockEscrowMPT : netAmount == grossAmount");
@@ -788,6 +804,7 @@ createMPToken(
     AccountID const& account,
     std::uint32_t const flags)
 {
+    TRACE_FUNC();
     auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
 
     auto const ownerNode =
@@ -814,6 +831,7 @@ checkCreateMPT(
     xrpl::AccountID const& holder,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (mptIssue.getIssuer() == holder)
         return tesSUCCESS;
 
@@ -839,12 +857,14 @@ checkCreateMPT(
 std::int64_t
 maxMPTAmount(SLE const& sleIssuance)
 {
+    TRACE_FUNC();
     return sleIssuance[~sfMaximumAmount].value_or(kMAX_MP_TOKEN_AMOUNT);
 }
 
 std::int64_t
 availableMPTAmount(SLE const& sleIssuance)
 {
+    TRACE_FUNC();
     auto const max = maxMPTAmount(sleIssuance);
     auto const outstanding = sleIssuance[sfOutstandingAmount];
     return max - outstanding;
@@ -853,6 +873,7 @@ availableMPTAmount(SLE const& sleIssuance)
 std::int64_t
 availableMPTAmount(ReadView const& view, MPTID const& mptID)
 {
+    TRACE_FUNC();
     auto const sle = view.read(keylet::mptIssuance(mptID));
     if (!sle)
         Throw<std::runtime_error>(transHuman(tecINTERNAL));
@@ -866,6 +887,7 @@ isMPTOverflow(
     std::int64_t maximumAmount,
     AllowMPTOverflow allowOverflow)
 {
+    TRACE_FUNC();
     std::uint64_t const limit = (allowOverflow == AllowMPTOverflow::Yes)
         ? std::numeric_limits<std::uint64_t>::max()
         : maximumAmount;
@@ -875,6 +897,7 @@ isMPTOverflow(
 STAmount
 issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue)
 {
+    TRACE_FUNC();
     STAmount amount{issue};
 
     auto const sle = view.read(keylet::mptIssuance(issue));
@@ -887,6 +910,7 @@ issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue)
 void
 issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount)
 {
+    TRACE_FUNC();
     auto const available = availableMPTAmount(view, issue);
     view.issuerSelfDebitHookMPT(issue, amount, available);
 }
@@ -894,6 +918,7 @@ issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amo
 static TER
 checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, AccountID const& accountID)
 {
+    TRACE_FUNC();
     if (!asset.holds<MPTIssue>())
         return tesSUCCESS;
 
@@ -947,6 +972,7 @@ checkMPTTxAllowed(
     Asset const& asset,
     AccountID const& accountID)
 {
+    TRACE_FUNC();
     // use isDEXAllowed for payment/offer crossing
     XRPL_ASSERT(txType != ttPAYMENT, "xrpl::checkMPTTxAllowed : not payment");
     return checkMPTAllowed(view, txType, asset, accountID);

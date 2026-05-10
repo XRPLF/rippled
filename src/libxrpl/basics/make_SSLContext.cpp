@@ -1,6 +1,7 @@
 #include <xrpl/basics/make_SSLContext.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
@@ -89,6 +90,7 @@ std::string const kDEFAULT_CIPHER_LIST = "TLSv1.2:!CBC:!DSS:!PSK:!eNULL:!aNULL";
 static void
 initAnonymous(boost::asio::ssl::context& context)
 {
+    TRACE_FUNC();
     using namespace openssl;
 
     static auto kDEFAULT_RSA = []() {
@@ -229,6 +231,7 @@ initAuthenticated(
     std::string const& certFile,
     std::string const& chainFile)
 {
+    TRACE_FUNC();
     auto fmtError = [](boost::system::error_code ec) -> std::string {
         return " [" + std::to_string(ec.value()) + ": " + ec.message() + "]";
     };
@@ -321,6 +324,7 @@ initAuthenticated(
 std::shared_ptr<boost::asio::ssl::context>
 getContext(std::string cipherList)
 {
+    TRACE_FUNC();
     auto c = std::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);
 
     c->set_options(
@@ -352,6 +356,7 @@ getContext(std::string cipherList)
 std::shared_ptr<boost::asio::ssl::context>
 makeSslContext(std::string const& cipherList)
 {
+    TRACE_FUNC();
     auto context = openssl::detail::getContext(cipherList);
     openssl::detail::initAnonymous(*context);
     // VFALCO NOTE, It seems the WebSocket context never has
@@ -367,6 +372,7 @@ makeSslContextAuthed(
     std::string const& chainFile,
     std::string const& cipherList)
 {
+    TRACE_FUNC();
     auto context = openssl::detail::getContext(cipherList);
     openssl::detail::initAuthenticated(*context, keyFile, certFile, chainFile);
     return context;

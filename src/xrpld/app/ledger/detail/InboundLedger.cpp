@@ -30,6 +30,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
@@ -107,6 +108,7 @@ InboundLedger::InboundLedger(
     , reason_(reason)
     , peerSet_(std::move(peerSet))
 {
+    TRACE_FUNC();
     JLOG(journal_.trace()) << "Acquiring ledger " << hash_;
     touch();
 }
@@ -114,6 +116,7 @@ InboundLedger::InboundLedger(
 void
 InboundLedger::init(ScopedLockType& collectionLock)
 {
+    TRACE_FUNC();
     ScopedLockType sl(mtx_);
     collectionLock.unlock();
 
@@ -148,6 +151,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
 std::size_t
 InboundLedger::getPeerCount() const
 {
+    TRACE_FUNC();
     auto const& peerIds = peerSet_->getPeerIds();
     return std::count_if(peerIds.begin(), peerIds.end(), [this](auto id) {
         return (app_.getOverlay().findPeerByShortID(id) != nullptr);
@@ -157,6 +161,7 @@ InboundLedger::getPeerCount() const
 void
 InboundLedger::update(std::uint32_t seq)
 {
+    TRACE_FUNC();
     ScopedLockType const sl(mtx_);
 
     // If we didn't know the sequence number, but now do, save it
@@ -170,6 +175,7 @@ InboundLedger::update(std::uint32_t seq)
 bool
 InboundLedger::checkLocal()
 {
+    TRACE_FUNC();
     ScopedLockType const sl(mtx_);
     if (!isDone())
     {
@@ -192,6 +198,7 @@ InboundLedger::checkLocal()
 
 InboundLedger::~InboundLedger()
 {
+    TRACE_FUNC();
     // Save any received AS data not processed. It could be useful
     // for populating a different ledger
     for (auto& entry : receivedData_)
@@ -212,6 +219,7 @@ InboundLedger::~InboundLedger()
 static std::vector<uint256>
 neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter* filter)
 {
+    TRACE_FUNC();
     std::vector<uint256> ret;
 
     if (!root.isZero())
@@ -235,12 +243,14 @@ neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter* filter
 std::vector<uint256>
 InboundLedger::neededTxHashes(int max, SHAMapSyncFilter* filter) const
 {
+    TRACE_FUNC();
     return neededHashes(ledger_->header().txHash, ledger_->txMap(), max, filter);
 }
 
 std::vector<uint256>
 InboundLedger::neededStateHashes(int max, SHAMapSyncFilter* filter) const
 {
+    TRACE_FUNC();
     return neededHashes(ledger_->header().accountHash, ledger_->stateMap(), max, filter);
 }
 
@@ -249,6 +259,7 @@ InboundLedger::neededStateHashes(int max, SHAMapSyncFilter* filter) const
 void
 InboundLedger::tryDB(NodeStore::Database& srcDB)
 {
+    TRACE_FUNC();
     if (!haveHeader_)
     {
         auto makeLedger = [&, this](Blob const& data) {
@@ -364,6 +375,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
 void
 InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 {
+    TRACE_FUNC();
     recentNodes_.clear();
 
     if (isDone())
@@ -412,6 +424,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 void
 InboundLedger::addPeers()
 {
+    TRACE_FUNC();
     peerSet_->addPeers(
         (getPeerCount() == 0) ? PeerCountStart : PeerCountAdd,
         [this](auto peer) { return peer->hasLedger(hash_, seq_); },
@@ -426,12 +439,14 @@ InboundLedger::addPeers()
 std::weak_ptr<TimeoutCounter>
 InboundLedger::pmDowncast()
 {
+    TRACE_FUNC();
     return shared_from_this();
 }
 
 void
 InboundLedger::done()
 {
+    TRACE_FUNC();
     if (signaled_)
         return;
 
@@ -482,6 +497,7 @@ InboundLedger::done()
 void
 InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 {
+    TRACE_FUNC();
     ScopedLockType sl(mtx_);
 
     if (isDone())
@@ -758,6 +774,7 @@ InboundLedger::filterNodes(
     std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
     TriggerReason reason)
 {
+    TRACE_FUNC();
     // Sort nodes so that the ones we haven't recently
     // requested come before the ones we have.
     auto dup = std::ranges::stable_partition(
@@ -799,6 +816,7 @@ InboundLedger::filterNodes(
 bool
 InboundLedger::takeHeader(std::string const& data)
 {
+    TRACE_FUNC();
     // Return value: true=normal, false=bad data
     JLOG(journal_.trace()) << "got header acquiring ledger " << hash_;
 
@@ -844,6 +862,7 @@ InboundLedger::takeHeader(std::string const& data)
 void
 InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
 {
+    TRACE_FUNC();
     if (!haveHeader_)
     {
         JLOG(journal_.warn()) << "Missing ledger header";
@@ -940,6 +959,7 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
 bool
 InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
 {
+    TRACE_FUNC();
     if (failed_ || haveState_)
     {
         san.incDuplicate();
@@ -966,6 +986,7 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
 bool
 InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
 {
+    TRACE_FUNC();
     if (failed_ || haveTransactions_)
     {
         san.incDuplicate();
@@ -988,6 +1009,7 @@ InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
 std::vector<InboundLedger::neededHash_t>
 InboundLedger::getNeededHashes()
 {
+    TRACE_FUNC();
     std::vector<neededHash_t> ret;
 
     if (!haveHeader_)
@@ -1025,6 +1047,7 @@ InboundLedger::gotData(
     std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> const& data)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(receivedDataLock_);
 
     if (isDone())
@@ -1050,6 +1073,7 @@ InboundLedger::gotData(
 int
 InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& packet)
 {
+    TRACE_FUNC();
     if (packet.type() == protocol::liBASE)
     {
         if (packet.nodes().empty())
@@ -1156,6 +1180,7 @@ struct PeerDataCounts
     void
     update(std::shared_ptr<Peer>&& peer, int dataCount)
     {
+    TRACE_FUNC();
         if (dataCount <= 0)
             return;
         maxCount = std::max(maxCount, dataCount);
@@ -1172,6 +1197,7 @@ struct PeerDataCounts
     void
     prune()
     {
+    TRACE_FUNC();
         // Remove all the peers that didn't return at least half as much data as
         // the best peer
         auto const thresh = maxCount / 2;
@@ -1195,6 +1221,7 @@ struct PeerDataCounts
     void
     sampleN(std::size_t n, F&& f)
     {
+    TRACE_FUNC();
         if (counts.empty())
             return;
 
@@ -1222,6 +1249,7 @@ struct PeerDataCounts
 void
 InboundLedger::runData()
 {
+    TRACE_FUNC();
     // Maximum number of peers to request data from
     constexpr std::size_t kMAX_USEFUL_PEERS = 6;
 
@@ -1269,6 +1297,7 @@ InboundLedger::runData()
 json::Value
 InboundLedger::getJson(int)
 {
+    TRACE_FUNC();
     json::Value ret(json::ObjectValue);
 
     ScopedLockType const sl(mtx_);

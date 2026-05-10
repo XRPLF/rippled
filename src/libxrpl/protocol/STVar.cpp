@@ -18,6 +18,7 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <stdexcept>
 #include <tuple>
@@ -32,17 +33,20 @@ NonPresentObjectT gNonPresentObject;
 
 STVar::~STVar()
 {
+    TRACE_FUNC();
     destroy();
 }
 
 STVar::STVar(STVar const& other)
 {
+    TRACE_FUNC();
     if (other.p_ != nullptr)
         p_ = other.p_->copy(kMAX_SIZE, &d_);
 }
 
 STVar::STVar(STVar&& other)
 {
+    TRACE_FUNC();
     if (other.onHeap())
     {
         p_ = other.p_;
@@ -57,6 +61,7 @@ STVar::STVar(STVar&& other)
 STVar&
 STVar::operator=(STVar const& rhs)
 {
+    TRACE_FUNC();
     if (&rhs != this)
     {
         destroy();
@@ -76,6 +81,7 @@ STVar::operator=(STVar const& rhs)
 STVar&
 STVar::operator=(STVar&& rhs)
 {
+    TRACE_FUNC();
     if (&rhs != this)
     {
         destroy();
@@ -103,6 +109,7 @@ STVar::STVar(NonPresentObjectT, SField const& name) : STVar(STI_NOTPRESENT, name
 
 STVar::STVar(SerialIter& sit, SField const& name, int depth)
 {
+    TRACE_FUNC();
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STVar exceeded");
     constructST(name.fieldType, depth, sit, name);
@@ -110,6 +117,7 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
 
 STVar::STVar(SerializedTypeID id, SField const& name)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         (id == STI_NOTPRESENT) || (id == name.fieldType),
         "xrpl::detail::STVar::STVar(SerializedTypeID) : valid type input");
@@ -119,6 +127,7 @@ STVar::STVar(SerializedTypeID id, SField const& name)
 void
 STVar::destroy()
 {
+    TRACE_FUNC();
     if (onHeap())
     {
         delete p_;
@@ -136,6 +145,7 @@ template <typename... Args>
 void
 STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
 {
+    TRACE_FUNC();
     auto constructWithDepth = [&]<typename T>() {
         if constexpr (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SField>>)
         {

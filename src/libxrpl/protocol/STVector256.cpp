@@ -7,6 +7,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <stdexcept>
@@ -17,6 +18,7 @@ namespace xrpl {
 
 STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 {
+    TRACE_FUNC();
     auto const slice = sit.getSlice(sit.getVLDataLength());
 
     if (slice.size() % uint256::size() != 0)
@@ -36,30 +38,35 @@ STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 STBase*
 STVector256::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STVector256::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
 SerializedTypeID
 STVector256::getSType() const
 {
+    TRACE_FUNC();
     return STI_VECTOR256;
 }
 
 bool
 STVector256::isDefault() const
 {
+    TRACE_FUNC();
     return value_.empty();
 }
 
 void
 STVector256::add(Serializer& s) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(getFName().isBinary(), "xrpl::STVector256::add : field is binary");
     XRPL_ASSERT(getFName().fieldType == STI_VECTOR256, "xrpl::STVector256::add : valid field type");
     s.addVL(value_.begin(), value_.end(), value_.size() * (256 / 8));
@@ -68,6 +75,7 @@ STVector256::add(Serializer& s) const
 bool
 STVector256::isEquivalent(STBase const& t) const
 {
+    TRACE_FUNC();
     STVector256 const* v = dynamic_cast<STVector256 const*>(&t);
     return (v != nullptr) && (value_ == v->value_);
 }
@@ -75,6 +83,7 @@ STVector256::isEquivalent(STBase const& t) const
 json::Value
 STVector256::getJson(JsonOptions) const
 {
+    TRACE_FUNC();
     json::Value ret(json::ArrayValue);
 
     for (auto const& vEntry : value_)

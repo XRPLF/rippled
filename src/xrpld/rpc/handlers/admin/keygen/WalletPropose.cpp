@@ -14,6 +14,7 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cmath>
 #include <map>
@@ -25,6 +26,7 @@ namespace xrpl {
 double
 estimateEntropy(std::string const& input)
 {
+    TRACE_FUNC();
     // First, we calculate the Shannon entropy. This gives
     // the average number of bits per symbol that we would
     // need to encode the input.
@@ -54,12 +56,14 @@ estimateEntropy(std::string const& input)
 json::Value
 doWalletPropose(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     return walletPropose(context.params);
 }
 
 json::Value
 walletPropose(json::Value const& params)
 {
+    TRACE_FUNC();
     std::optional<KeyType> keyType;
     std::optional<Seed> seed;
     bool libSeed = false;

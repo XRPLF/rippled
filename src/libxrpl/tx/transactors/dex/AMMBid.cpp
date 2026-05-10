@@ -23,6 +23,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <chrono>
@@ -37,6 +38,7 @@ namespace xrpl {
 bool
 AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ammEnabled(ctx.rules))
         return false;
 
@@ -50,6 +52,7 @@ AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 AMMBid::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
     {
         JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
@@ -105,6 +108,7 @@ AMMBid::preflight(PreflightContext const& ctx)
 TER
 AMMBid::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
@@ -179,6 +183,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
 static std::pair<TER, bool>
 applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
@@ -367,6 +372,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
 TER
 AMMBid::doApply()
 {
+    TRACE_FUNC();
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
@@ -389,6 +395,7 @@ AMMBid::visitInvariantEntry(
 bool
 AMMBid::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

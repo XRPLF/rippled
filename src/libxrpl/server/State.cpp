@@ -4,6 +4,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/rdb/SociDB.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/optional/optional.hpp>
 
@@ -20,6 +21,7 @@ namespace xrpl {
 void
 initStateDB(soci::session& session, BasicConfig const& config, std::string const& dbName)
 {
+    TRACE_FUNC();
     open(session, config, dbName);
 
     session << "PRAGMA synchronous=FULL;";
@@ -69,6 +71,7 @@ initStateDB(soci::session& session, BasicConfig const& config, std::string const
 LedgerIndex
 getCanDelete(soci::session& session)
 {
+    TRACE_FUNC();
     LedgerIndex seq = 0;
     session << "SELECT CanDeleteSeq FROM CanDelete WHERE Key = 1;", soci::into(seq);
     ;
@@ -78,6 +81,7 @@ getCanDelete(soci::session& session)
 LedgerIndex
 setCanDelete(soci::session& session, LedgerIndex canDelete)
 {
+    TRACE_FUNC();
     session << "UPDATE CanDelete SET CanDeleteSeq = :canDelete WHERE Key = 1;",
         soci::use(canDelete);
     return canDelete;
@@ -86,6 +90,7 @@ setCanDelete(soci::session& session, LedgerIndex canDelete)
 SavedState
 getSavedState(soci::session& session)
 {
+    TRACE_FUNC();
     SavedState state;
     session << "SELECT WritableDb, ArchiveDb, LastRotatedLedger"
                " FROM DbState WHERE Key = 1;",
@@ -97,6 +102,7 @@ getSavedState(soci::session& session)
 void
 setSavedState(soci::session& session, SavedState const& state)
 {
+    TRACE_FUNC();
     session << "UPDATE DbState"
                " SET WritableDb = :writableDb,"
                " ArchiveDb = :archiveDb,"
@@ -108,6 +114,7 @@ setSavedState(soci::session& session, SavedState const& state)
 void
 setLastRotated(soci::session& session, LedgerIndex seq)
 {
+    TRACE_FUNC();
     session << "UPDATE DbState SET LastRotatedLedger = :seq"
                " WHERE Key = 1;",
         soci::use(seq);

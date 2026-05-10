@@ -14,6 +14,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <xrpl.pb.h>
 
@@ -48,10 +49,12 @@ public:
     InboundTransactionSet(std::uint32_t seq, std::shared_ptr<SHAMap> const& set)
         : seq(seq), set(set)
     {
+    TRACE_FUNC();
         ;
     }
     InboundTransactionSet() : seq(0)
     {
+    TRACE_FUNC();
         ;
     }
 };
@@ -70,6 +73,7 @@ public:
         , peerSetBuilder_(std::move(peerSetBuilder))
         , j_(app_.getJournal("InboundTransactions"))
     {
+    TRACE_FUNC();
         zeroSet_.set =
             std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
         zeroSet_.set->setUnbacked();
@@ -78,6 +82,7 @@ public:
     TransactionAcquire::pointer
     getAcquire(uint256 const& hash)
     {
+    TRACE_FUNC();
         {
             std::scoped_lock const sl(lock_);
 
@@ -92,6 +97,7 @@ public:
     std::shared_ptr<SHAMap>
     getSet(uint256 const& hash, bool acquire) override
     {
+    TRACE_FUNC();
         TransactionAcquire::pointer ta;
 
         {
@@ -133,6 +139,7 @@ public:
         std::shared_ptr<Peer> peer,
         std::shared_ptr<protocol::TMLedgerData> packetPtr) override
     {
+    TRACE_FUNC();
         protocol::TMLedgerData const& packet = *packetPtr;
 
         JLOG(j_.trace()) << "Got data (" << packet.nodes().size()
@@ -175,6 +182,7 @@ public:
     void
     giveSet(uint256 const& hash, std::shared_ptr<SHAMap> const& set, bool fromAcquire) override
     {
+    TRACE_FUNC();
         bool isNew = true;
 
         {
@@ -203,6 +211,7 @@ public:
     void
     newRound(std::uint32_t seq) override
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(lock_);
 
         // Protect zero set from expiration
@@ -234,6 +243,7 @@ public:
     void
     stop() override
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(lock_);
         stopping_ = true;
         map_.clear();
@@ -270,6 +280,7 @@ makeInboundTransactions(
     beast::insight::Collector::ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
 {
+    TRACE_FUNC();
     return std::make_unique<InboundTransactionsImp>(
         app, collector, std::move(gotSet), makePeerSetBuilder(app));
 }

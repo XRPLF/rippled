@@ -6,6 +6,7 @@
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/ip/tcp.hpp>
 
@@ -110,6 +111,7 @@ struct Endpoint
 inline bool
 operator<(Endpoint const& lhs, Endpoint const& rhs)
 {
+    TRACE_FUNC();
     return lhs.address < rhs.address;
 }
 
@@ -138,6 +140,7 @@ enum class Result { InboundDisabled, DuplicatePeer, IpLimitExceeded, Full, Succe
 inline std::string_view
 to_string(Result result) noexcept
 {
+    TRACE_FUNC();
     switch (result)
     {
         case Result::InboundDisabled:

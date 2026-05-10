@@ -14,6 +14,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <memory>
@@ -23,6 +24,7 @@ namespace xrpl {
 NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (auto const& ids = ctx.tx[sfNFTokenOffers];
         ids.empty() || (ids.size() > kMAX_TOKEN_OFFER_CANCEL_COUNT))
         return temMALFORMED;
@@ -40,6 +42,7 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 TER
 NFTokenCancelOffer::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const account = ctx.tx[sfAccount];
 
     auto const& ids = ctx.tx[sfNFTokenOffers];
@@ -81,6 +84,7 @@ NFTokenCancelOffer::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenCancelOffer::doApply()
 {
+    TRACE_FUNC();
     for (auto const& id : ctx_.tx[sfNFTokenOffers])
     {
         if (auto offer = view().peek(keylet::nftoffer(id));
@@ -113,6 +117,7 @@ NFTokenCancelOffer::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/beast/core/string_type.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
@@ -60,12 +61,14 @@ static_assert(
 std::string
 to_string(ProtocolVersion const& p)
 {
+    TRACE_FUNC();
     return "XRPL/" + std::to_string(p.first) + "." + std::to_string(p.second);
 }
 
 std::vector<ProtocolVersion>
 parseProtocolVersions(boost::beast::string_view const& value)
 {
+    TRACE_FUNC();
     static boost::regex const kRE(
         "^"                        // start of line
         "XRPL/"                    // The string "XRPL/"
@@ -114,6 +117,7 @@ parseProtocolVersions(boost::beast::string_view const& value)
 std::optional<ProtocolVersion>
 negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
 {
+    TRACE_FUNC();
     std::optional<ProtocolVersion> result;
 
     // The protocol version we want to negotiate is the largest item in the
@@ -133,6 +137,7 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
 std::optional<ProtocolVersion>
 negotiateProtocolVersion(boost::beast::string_view const& versions)
 {
+    TRACE_FUNC();
     auto const them = parseProtocolVersions(versions);
 
     return negotiateProtocolVersion(them);
@@ -141,6 +146,7 @@ negotiateProtocolVersion(boost::beast::string_view const& versions)
 std::string const&
 supportedProtocolVersions()
 {
+    TRACE_FUNC();
     static std::string const kSUPPORTED = []() {
         std::string ret;
         for (auto const& v : kSUPPORTED_PROTOCOL_LIST)
@@ -159,6 +165,7 @@ supportedProtocolVersions()
 bool
 isProtocolSupported(ProtocolVersion const& v)
 {
+    TRACE_FUNC();
     return std::end(kSUPPORTED_PROTOCOL_LIST) != std::ranges::find(kSUPPORTED_PROTOCOL_LIST, v);
 }
 

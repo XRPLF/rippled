@@ -18,6 +18,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <map>
 #include <memory>
@@ -51,6 +52,7 @@ namespace xrpl {
 json::Value
 doGatewayBalances(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto& params = context.params;
 
     // Get the current ledger

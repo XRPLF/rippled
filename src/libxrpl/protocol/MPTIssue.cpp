@@ -8,6 +8,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <ostream>
@@ -28,6 +29,7 @@ MPTIssue::MPTIssue(std::uint32_t sequence, AccountID const& account)
 AccountID const&
 MPTIssue::getIssuer() const
 {
+    TRACE_FUNC();
     // MPTID is concatenation of sequence + account
     static_assert(sizeof(MPTID) == (sizeof(std::uint32_t) + sizeof(AccountID)));
     // copy from id skipping the sequence
@@ -40,18 +42,21 @@ MPTIssue::getIssuer() const
 std::string
 MPTIssue::getText() const
 {
+    TRACE_FUNC();
     return to_string(mptID_);
 }
 
 void
 MPTIssue::setJson(json::Value& jv) const
 {
+    TRACE_FUNC();
     jv[jss::mpt_issuance_id] = to_string(mptID_);
 }
 
 json::Value
 toJson(MPTIssue const& mptIssue)
 {
+    TRACE_FUNC();
     json::Value jv;
     mptIssue.setJson(jv);
     return jv;
@@ -60,12 +65,14 @@ toJson(MPTIssue const& mptIssue)
 std::string
 to_string(MPTIssue const& mptIssue)
 {
+    TRACE_FUNC();
     return to_string(mptIssue.getMptID());
 }
 
 MPTIssue
 mptIssueFromJson(json::Value const& v)
 {
+    TRACE_FUNC();
     if (!v.isObject())
     {
         Throw<std::runtime_error>(
@@ -97,6 +104,7 @@ mptIssueFromJson(json::Value const& v)
 std::ostream&
 operator<<(std::ostream& os, MPTIssue const& x)
 {
+    TRACE_FUNC();
     os << to_string(x);
     return os;
 }

@@ -15,6 +15,7 @@
 #include <xrpl/protocol/TxSearched.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -45,6 +46,7 @@ TransactionMaster::inLedger(
     std::optional<uint32_t> tseq,
     std::optional<uint32_t> netID)
 {
+    TRACE_FUNC();
     auto txn = cache_.fetch(hash);
 
     if (!txn)
@@ -57,12 +59,14 @@ TransactionMaster::inLedger(
 std::shared_ptr<Transaction>
 TransactionMaster::fetchFromCache(uint256 const& txnID)
 {
+    TRACE_FUNC();
     return cache_.fetch(txnID);
 }
 
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 TransactionMaster::fetch(uint256 const& txnID, ErrorCodeI& ec)
 {
+    TRACE_FUNC();
     using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     if (auto txn = fetchFromCache(txnID); txn && !txn->isValidated())
@@ -87,6 +91,7 @@ TransactionMaster::fetch(
     ClosedInterval<uint32_t> const& range,
     ErrorCodeI& ec)
 {
+    TRACE_FUNC();
     using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     if (auto txn = fetchFromCache(txnID); txn && !txn->isValidated())
@@ -111,6 +116,7 @@ TransactionMaster::fetch(
     SHAMapNodeType type,
     std::uint32_t uCommitLedger)
 {
+    TRACE_FUNC();
     std::shared_ptr<STTx const> txn;
     auto iTx = fetchFromCache(item->key());
 
@@ -141,6 +147,7 @@ TransactionMaster::fetch(
 void
 TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
 {
+    TRACE_FUNC();
     uint256 const tid = (*pTransaction)->getID();
     if (tid != beast::kZERO)
     {
@@ -154,12 +161,14 @@ TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
 void
 TransactionMaster::sweep(void)
 {
+    TRACE_FUNC();
     cache_.sweep();
 }
 
 TaggedCache<uint256, Transaction>&
 TransactionMaster::getCache()
 {
+    TRACE_FUNC();
     return cache_;
 }
 

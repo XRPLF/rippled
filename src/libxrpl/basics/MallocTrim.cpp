@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/predef.h>
 
@@ -31,6 +32,7 @@ namespace {
 bool
 getRusageThread(struct rusage& ru)
 {
+    TRACE_FUNC();
     return ::getrusage(RUSAGE_THREAD, &ru) == 0;  // LCOV_EXCL_LINE
 }
 
@@ -48,12 +50,14 @@ namespace detail {
 inline int
 mallocTrimWithPad(std::size_t padBytes)
 {
+    TRACE_FUNC();
     return ::malloc_trim(padBytes);
 }
 
 long
 parseStatmRSSkB(std::string const& statm)
 {
+    TRACE_FUNC();
     // /proc/self/statm format: size resident shared text lib data dt
     // We want the second field (resident) which is in pages
     std::istringstream iss(statm);
@@ -76,6 +80,7 @@ parseStatmRSSkB(std::string const& statm)
 MallocTrimReport
 mallocTrim(std::string_view tag, beast::Journal journal)
 {
+    TRACE_FUNC();
     // LCOV_EXCL_START
 
     MallocTrimReport report;

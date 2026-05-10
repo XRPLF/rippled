@@ -35,6 +35,7 @@
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/paths/RippleCalc.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <chrono>
@@ -67,6 +68,7 @@ PathRequest::PathRequest(
     , iIdentifier_(id)
     , created_(std::chrono::steady_clock::now())
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << iIdentifier_ << " created";
 }
 
@@ -90,11 +92,13 @@ PathRequest::PathRequest(
     , iIdentifier_(id)
     , created_(std::chrono::steady_clock::now())
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << iIdentifier_ << " created";
 }
 
 PathRequest::~PathRequest()
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     auto stream = journal_.info();
     if (!stream)
@@ -121,6 +125,7 @@ PathRequest::~PathRequest()
 bool
 PathRequest::isNew()
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(indexLock_);
 
     // does this path request still need its first full path
@@ -130,6 +135,7 @@ PathRequest::isNew()
 bool
 PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(indexLock_);
 
     if (inProgress_)
@@ -156,12 +162,14 @@ PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
 bool
 PathRequest::hasCompletion()
 {
+    TRACE_FUNC();
     return bool(fCompletion_);
 }
 
 void
 PathRequest::updateComplete()
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(indexLock_);
 
     XRPL_ASSERT(inProgress_, "xrpl::PathRequest::updateComplete : in progress");
@@ -177,6 +185,7 @@ PathRequest::updateComplete()
 bool
 PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 {
+    TRACE_FUNC();
     if (!raSrcAccount_ || !raDstAccount_)
         return false;
 
@@ -246,6 +255,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 std::pair<bool, json::Value>
 PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value const& value)
 {
+    TRACE_FUNC();
     bool valid = false;
 
     if (parseJson(value) != PFR_PJ_INVALID)
@@ -274,6 +284,7 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value cons
 int
 PathRequest::parseJson(json::Value const& jvParams)
 {
+    TRACE_FUNC();
     if (!jvParams.isMember(jss::source_account))
     {
         jvStatus_ = rpcError(RpcSrcActMissing);
@@ -477,6 +488,7 @@ PathRequest::parseJson(json::Value const& jvParams)
 json::Value
 PathRequest::doClose()
 {
+    TRACE_FUNC();
     JLOG(journal_.debug()) << iIdentifier_ << " closed";
     std::scoped_lock const sl(lock_);
     jvStatus_[jss::closed] = true;
@@ -486,6 +498,7 @@ PathRequest::doClose()
 json::Value
 PathRequest::doStatus(json::Value const&)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
     jvStatus_[jss::status] = jss::success;
     return jvStatus_;
@@ -494,6 +507,7 @@ PathRequest::doStatus(json::Value const&)
 void
 PathRequest::doAborting() const
 {
+    TRACE_FUNC();
     JLOG(journal_.info()) << iIdentifier_ << " aborting early";
 }
 
@@ -506,6 +520,7 @@ PathRequest::getPathFinder(
     int const level,
     std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     auto i = currencyMap.find(currency);
     if (i != currencyMap.end())
         return i->second;
@@ -539,6 +554,7 @@ PathRequest::findPaths(
     json::Value& jvArray,
     std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     auto sourceAssets = sciSourceAssets_;
     if (sourceAssets.empty() && saSendMax_)
     {
@@ -712,6 +728,7 @@ PathRequest::doUpdate(
     bool fast,
     std::function<bool(void)> const& continueCallback)
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
 
@@ -818,6 +835,7 @@ PathRequest::doUpdate(
 InfoSub::pointer
 PathRequest::getSubscriber() const
 {
+    TRACE_FUNC();
     return wpSubscriber_.lock();
 }
 

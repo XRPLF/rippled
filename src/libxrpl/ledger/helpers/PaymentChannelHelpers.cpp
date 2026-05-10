@@ -11,6 +11,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -23,6 +24,7 @@ closeChannel(
     uint256 const& key,
     beast::Journal j)
 {
+    TRACE_FUNC();
     AccountID const src = (*slep)[sfAccount];
     // Remove PayChan from owner directory
     {

@@ -10,6 +10,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -26,48 +27,56 @@ Bootcache::Bootcache(Store& store, clock_type& clock, beast::Journal journal)
 
 Bootcache::~Bootcache()
 {
+    TRACE_FUNC();
     update();
 }
 
 bool
 Bootcache::empty() const
 {
+    TRACE_FUNC();
     return map_.empty();
 }
 
 Bootcache::map_type::size_type
 Bootcache::size() const
 {
+    TRACE_FUNC();
     return map_.size();
 }
 
 Bootcache::const_iterator
 Bootcache::begin() const
 {
+    TRACE_FUNC();
     return const_iterator(map_.right.begin());
 }
 
 Bootcache::const_iterator
 Bootcache::cbegin() const
 {
+    TRACE_FUNC();
     return const_iterator(map_.right.begin());
 }
 
 Bootcache::const_iterator
 Bootcache::end() const
 {
+    TRACE_FUNC();
     return const_iterator(map_.right.end());
 }
 
 Bootcache::const_iterator
 Bootcache::cend() const
 {
+    TRACE_FUNC();
     return const_iterator(map_.right.end());
 }
 
 void
 Bootcache::clear()
 {
+    TRACE_FUNC();
     map_.clear();
     needsUpdate_ = true;
 }
@@ -77,6 +86,7 @@ Bootcache::clear()
 void
 Bootcache::load()
 {
+    TRACE_FUNC();
     clear();
     auto const n(store_.load([this](beast::IP::Endpoint const& endpoint, int valence) {
         auto const result(this->map_.insert(value_type(endpoint, valence)));
@@ -97,6 +107,7 @@ Bootcache::load()
 bool
 Bootcache::insert(beast::IP::Endpoint const& endpoint)
 {
+    TRACE_FUNC();
     auto const result(map_.insert(value_type(endpoint, 0)));
     if (result.second)
     {
@@ -110,6 +121,7 @@ Bootcache::insert(beast::IP::Endpoint const& endpoint)
 bool
 Bootcache::insertStatic(beast::IP::Endpoint const& endpoint)
 {
+    TRACE_FUNC();
     auto result(map_.insert(value_type(endpoint, kSTATIC_VALENCE)));
 
     if (!result.second && (result.first->right.valence() < kSTATIC_VALENCE))
@@ -131,6 +143,7 @@ Bootcache::insertStatic(beast::IP::Endpoint const& endpoint)
 void
 Bootcache::onSuccess(beast::IP::Endpoint const& endpoint)
 {
+    TRACE_FUNC();
     auto result(map_.insert(value_type(endpoint, 1)));
     if (result.second)
     {
@@ -154,6 +167,7 @@ Bootcache::onSuccess(beast::IP::Endpoint const& endpoint)
 void
 Bootcache::onFailure(beast::IP::Endpoint const& endpoint)
 {
+    TRACE_FUNC();
     auto result(map_.insert(value_type(endpoint, -1)));
     if (result.second)
     {
@@ -178,6 +192,7 @@ Bootcache::onFailure(beast::IP::Endpoint const& endpoint)
 void
 Bootcache::periodicActivity()
 {
+    TRACE_FUNC();
     checkUpdate();
 }
 
@@ -186,6 +201,7 @@ Bootcache::periodicActivity()
 void
 Bootcache::onWrite(beast::PropertyStream::Map& map)
 {
+    TRACE_FUNC();
     beast::PropertyStream::Set entries("entries", map);
     for (auto iter = map_.right.begin(); iter != map_.right.end(); ++iter)
     {
@@ -199,6 +215,7 @@ Bootcache::onWrite(beast::PropertyStream::Map& map)
 void
 Bootcache::prune()
 {
+    TRACE_FUNC();
     if (size() <= Tuning::BootcacheSize)
         return;
 
@@ -226,6 +243,7 @@ Bootcache::prune()
 void
 Bootcache::update()
 {
+    TRACE_FUNC();
     if (!needsUpdate_)
         return;
     std::vector<Store::Entry> list;
@@ -247,6 +265,7 @@ Bootcache::update()
 void
 Bootcache::checkUpdate()
 {
+    TRACE_FUNC();
     if (needsUpdate_ && whenUpdate_ < clock_.now())
         update();
 }
@@ -255,6 +274,7 @@ Bootcache::checkUpdate()
 void
 Bootcache::flagForUpdate()
 {
+    TRACE_FUNC();
     needsUpdate_ = true;
     checkUpdate();
 }

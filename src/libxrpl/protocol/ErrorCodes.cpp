@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <array>
 #include <stdexcept>
@@ -164,6 +165,7 @@ constexpr ErrorInfo kUNKNOWN_ERROR;
 void
 injectError(ErrorCodeI code, json::Value& json)
 {
+    TRACE_FUNC();
     ErrorInfo const& info(getErrorInfo(code));
     json[jss::error] = info.token;
     json[jss::error_code] = info.code;
@@ -173,6 +175,7 @@ injectError(ErrorCodeI code, json::Value& json)
 void
 injectError(ErrorCodeI code, std::string const& message, json::Value& json)
 {
+    TRACE_FUNC();
     ErrorInfo const& info(getErrorInfo(code));
     json[jss::error] = info.token;
     json[jss::error_code] = info.code;
@@ -182,6 +185,7 @@ injectError(ErrorCodeI code, std::string const& message, json::Value& json)
 ErrorInfo const&
 getErrorInfo(ErrorCodeI code)
 {
+    TRACE_FUNC();
     if (code <= RpcSuccess || code > RpcLast)
         return detail::kUNKNOWN_ERROR;
     return detail::kSORTED_ERROR_INFOS[code - 1];
@@ -190,6 +194,7 @@ getErrorInfo(ErrorCodeI code)
 json::Value
 makeError(ErrorCodeI code)
 {
+    TRACE_FUNC();
     json::Value json;
     injectError(code, json);
     return json;
@@ -198,6 +203,7 @@ makeError(ErrorCodeI code)
 json::Value
 makeError(ErrorCodeI code, std::string const& message)
 {
+    TRACE_FUNC();
     json::Value json;
     injectError(code, message, json);
     return json;
@@ -206,12 +212,14 @@ makeError(ErrorCodeI code, std::string const& message)
 bool
 containsError(json::Value const& json)
 {
+    TRACE_FUNC();
     return json.isObject() && json.isMember(jss::error);
 }
 
 int
 errorCodeHttpStatus(ErrorCodeI code)
 {
+    TRACE_FUNC();
     return getErrorInfo(code).http_status;
 }
 
@@ -220,6 +228,7 @@ errorCodeHttpStatus(ErrorCodeI code)
 std::string
 rpcErrorString(json::Value const& jv)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(RPC::containsError(jv), "xrpl::RPC::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();
 }

@@ -18,6 +18,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <exception>
 #include <string>
@@ -37,6 +38,7 @@ constexpr HashRouterFlags kSF_LOCALGOOD = HashRouterFlags::PRIVATE4;  // Local c
 std::pair<Validity, std::string>
 checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
 {
+    TRACE_FUNC();
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
 
@@ -112,6 +114,7 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
 void
 forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
 {
+    TRACE_FUNC();
     HashRouterFlags flags = HashRouterFlags::UNDEFINED;
     switch (validity)
     {
@@ -133,6 +136,7 @@ template <typename PreflightChecks>
 ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChecks)
 {
+    TRACE_FUNC();
     NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
     return doApply(preclaim(preflightChecks(), registry, view), registry, view);
 }
@@ -140,6 +144,7 @@ apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChec
 ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
+    TRACE_FUNC();
     return apply(
         registry, view, [&]() mutable { return preflight(registry, view.rules(), tx, flags, j); });
 }
@@ -153,6 +158,7 @@ apply(
     ApplyFlags flags,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return apply(registry, view, [&]() mutable {
         return preflight(registry, view.rules(), parentBatchId, tx, flags, j);
     });
@@ -165,6 +171,7 @@ applyBatchTransactions(
     STTx const& batchTxn,
     beast::Journal j)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         batchTxn.getTxnType() == ttBATCH && !batchTxn.getFieldArray(sfRawTransactions).empty(),
         "Batch transaction missing sfRawTransactions");
@@ -229,6 +236,7 @@ applyTransaction(
     ApplyFlags flags,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Returns false if the transaction has need not be retried.
     if (retryAssured)
         flags = flags | TapRetry;

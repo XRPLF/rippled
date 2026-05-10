@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/overlay/detail/OverlayImpl.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 
@@ -232,6 +233,7 @@ private:
     static std::string
     stepToString(ConnectionStep step)
     {
+    TRACE_FUNC();
         switch (step)
         {
             case ConnectionStep::Init:
@@ -256,6 +258,7 @@ private:
     static boost::asio::ip::tcp::endpoint
     parseEndpoint(std::string const& s, boost::system::error_code& ec)
     {
+    TRACE_FUNC();
         beast::IP::Endpoint bep;
         std::istringstream is(s);
         is >> bep;

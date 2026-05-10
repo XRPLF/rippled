@@ -7,6 +7,7 @@
 
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace json {
 class Object;
@@ -46,6 +47,7 @@ template <class Value>
 json::Value
 makeObjectValue(Value const& value, json::StaticString const& field = jss::message)
 {
+    TRACE_FUNC();
     json::Value result(json::ObjectValue);
     result[field] = value;
     return result;
@@ -59,6 +61,7 @@ template <class T>
 ErrorCodeI
 conditionMet(Condition conditionRequired, T& context)
 {
+    TRACE_FUNC();
     if (context.app.getOPs().isAmendmentBlocked() && (conditionRequired != NoCondition))
     {
         return RpcAmendmentBlocked;

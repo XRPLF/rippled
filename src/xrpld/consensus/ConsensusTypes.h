@@ -4,6 +4,7 @@
 #include <xrpld/consensus/DisputedTx.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <map>
@@ -51,6 +52,7 @@ enum class ConsensusMode {
 inline std::string
 to_string(ConsensusMode m)
 {
+    TRACE_FUNC();
     switch (m)
     {
         case ConsensusMode::Proposing:
@@ -98,6 +100,7 @@ enum class ConsensusPhase {
 inline std::string
 to_string(ConsensusPhase p)
 {
+    TRACE_FUNC();
     switch (p)
     {
         case ConsensusPhase::Open:
@@ -123,18 +126,21 @@ public:
     [[nodiscard]] std::chrono::milliseconds
     read() const
     {
+    TRACE_FUNC();
         return dur_;
     }
 
     void
     tick(std::chrono::milliseconds fixed)
     {
+    TRACE_FUNC();
         dur_ += fixed;
     }
 
     void
     reset(time_point tp)
     {
+    TRACE_FUNC();
         start_ = tp;
         dur_ = std::chrono::milliseconds{0};
     }
@@ -142,6 +148,7 @@ public:
     void
     tick(time_point tp)
     {
+    TRACE_FUNC();
         using namespace std::chrono;
         dur_ = duration_cast<milliseconds>(tp - start_);
     }

@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 
@@ -43,6 +44,7 @@ public:
     [[nodiscard]] time_point
     now() const override
     {
+    TRACE_FUNC();
         return adjust(std::chrono::system_clock::now());
     }
 
@@ -55,6 +57,7 @@ public:
     [[nodiscard]] time_point
     closeTime() const
     {
+    TRACE_FUNC();
         return now() + closeOffset_.load();
     }
 
@@ -62,6 +65,7 @@ public:
     [[nodiscard]] std::chrono::seconds
     closeOffset() const
     {
+    TRACE_FUNC();
         return closeOffset_.load();
     }
 
@@ -69,6 +73,7 @@ public:
     std::chrono::seconds
     adjustCloseTime(std::chrono::seconds by)
     {
+    TRACE_FUNC();
         using namespace std::chrono_literals;
 
         auto offset = closeOffset_.load();

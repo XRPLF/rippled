@@ -6,6 +6,7 @@
 #include <xrpl/json/json_writer.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/WSSession.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <string>
@@ -21,6 +22,7 @@ class WSInfoSub : public InfoSub
 public:
     WSInfoSub(Source& source, std::shared_ptr<WSSession> const& ws) : InfoSub(source), ws_(ws)
     {
+    TRACE_FUNC();
         auto const& h = ws->request();
         if (ipAllowed(
                 beast::IPAddressConversion::fromAsio(ws->remoteEndpoint()).address(),
@@ -37,18 +39,21 @@ public:
     [[nodiscard]] std::string_view
     user() const
     {
+    TRACE_FUNC();
         return user_;
     }
 
     [[nodiscard]] std::string_view
     forwardedFor() const
     {
+    TRACE_FUNC();
         return fwdfor_;
     }
 
     void
     send(json::Value const& jv, bool) override
     {
+    TRACE_FUNC();
         auto sp = ws_.lock();
         if (!sp)
             return;

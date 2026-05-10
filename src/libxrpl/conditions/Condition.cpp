@@ -5,6 +5,7 @@
 #include <xrpl/conditions/detail/PreimageSha256.h>
 #include <xrpl/conditions/detail/error.h>
 #include <xrpl/conditions/detail/utils.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -57,6 +58,7 @@ constexpr std::size_t kFINGERPRINT_SIZE = 32;
 std::unique_ptr<Condition>
 loadSimpleSha256(Type type, Slice s, std::error_code& ec)
 {
+    TRACE_FUNC();
     using namespace der;
 
     auto p = parsePreamble(s, ec);
@@ -137,6 +139,7 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
 std::unique_ptr<Condition>
 Condition::deserialize(Slice s, std::error_code& ec)
 {
+    TRACE_FUNC();
     // Per the RFC, in a condition we choose a type based
     // on the tag of the item we contain:
     //

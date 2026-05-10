@@ -20,6 +20,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -33,6 +34,7 @@ namespace xrpl {
 ValidVault::Vault
 ValidVault::Vault::make(SLE const& from)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(from.getType() == ltVAULT, "ValidVault::Vault::make : from Vault object");
 
     ValidVault::Vault self;
@@ -51,6 +53,7 @@ ValidVault::Vault::make(SLE const& from)
 ValidVault::Shares
 ValidVault::Shares::make(SLE const& from)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         from.getType() == ltMPTOKEN_ISSUANCE,
         "ValidVault::Shares::make : from MPTokenIssuance object");
@@ -68,6 +71,7 @@ ValidVault::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     // If `before` is empty, this means an object is being created, in which
     // case `isDelete` must be false. Otherwise `before` and `after` are set and
     // `isDelete` indicates whether an object is being deleted or modified.
@@ -194,6 +198,7 @@ ValidVault::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
 
     if (!isTesSuccess(ret))
@@ -1052,6 +1057,7 @@ ValidVault::finalize(
 [[nodiscard]] ValidVault::DeltaInfo
 ValidVault::DeltaInfo::makeDelta(Number const& before, Number const& after, Asset const& asset)
 {
+    TRACE_FUNC();
     return {
         .delta = after - before,
         .scale = std::max(xrpl::scale(after, asset), xrpl::scale(before, asset))};
@@ -1060,6 +1066,7 @@ ValidVault::DeltaInfo::makeDelta(Number const& before, Number const& after, Asse
 [[nodiscard]] std::int32_t
 ValidVault::computeCoarsestScale(std::vector<DeltaInfo> const& numbers)
 {
+    TRACE_FUNC();
     if (numbers.empty())
         return 0;
 

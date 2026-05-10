@@ -5,6 +5,7 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <optional>
@@ -50,6 +51,7 @@ public:
     [[nodiscard]] uint256 const&
     key() const
     {
+    TRACE_FUNC();
         return key_;
     }
 
@@ -58,12 +60,14 @@ public:
     [[nodiscard]] AccountID const&
     getAccountID() const
     {
+    TRACE_FUNC();
         return viewLowest_ ? lowLimit_.getIssuer() : highLimit_.getIssuer();
     }
 
     [[nodiscard]] AccountID const&
     getAccountIDPeer() const
     {
+    TRACE_FUNC();
         return !viewLowest_ ? lowLimit_.getIssuer() : highLimit_.getIssuer();
     }
 
@@ -71,36 +75,42 @@ public:
     [[nodiscard]] bool
     getAuth() const
     {
+    TRACE_FUNC();
         return (flags_ & (viewLowest_ ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
     [[nodiscard]] bool
     getAuthPeer() const
     {
+    TRACE_FUNC();
         return (flags_ & (!viewLowest_ ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
     [[nodiscard]] bool
     getNoRipple() const
     {
+    TRACE_FUNC();
         return (flags_ & (viewLowest_ ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
     [[nodiscard]] bool
     getNoRipplePeer() const
     {
+    TRACE_FUNC();
         return (flags_ & (!viewLowest_ ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
     [[nodiscard]] LineDirection
     getDirection() const
     {
+    TRACE_FUNC();
         return getNoRipple() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
     [[nodiscard]] LineDirection
     getDirectionPeer() const
     {
+    TRACE_FUNC();
         return getNoRipplePeer() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
@@ -108,6 +118,7 @@ public:
     [[nodiscard]] bool
     getFreeze() const
     {
+    TRACE_FUNC();
         return (flags_ & (viewLowest_ ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
@@ -115,6 +126,7 @@ public:
     [[nodiscard]] bool
     getDeepFreeze() const
     {
+    TRACE_FUNC();
         return (flags_ & (viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
@@ -122,6 +134,7 @@ public:
     [[nodiscard]] bool
     getFreezePeer() const
     {
+    TRACE_FUNC();
         return (flags_ & (!viewLowest_ ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
@@ -129,24 +142,28 @@ public:
     [[nodiscard]] bool
     getDeepFreezePeer() const
     {
+    TRACE_FUNC();
         return (flags_ & (!viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
     [[nodiscard]] STAmount const&
     getBalance() const
     {
+    TRACE_FUNC();
         return balance_;
     }
 
     [[nodiscard]] STAmount const&
     getLimit() const
     {
+    TRACE_FUNC();
         return viewLowest_ ? lowLimit_ : highLimit_;
     }
 
     [[nodiscard]] STAmount const&
     getLimitPeer() const
     {
+    TRACE_FUNC();
         return !viewLowest_ ? lowLimit_ : highLimit_;
     }
 
@@ -195,12 +212,14 @@ public:
     [[nodiscard]] Rate const&
     getQualityIn() const
     {
+    TRACE_FUNC();
         return viewLowest_ ? lowQualityIn_ : highQualityIn_;
     }
 
     [[nodiscard]] Rate const&
     getQualityOut() const
     {
+    TRACE_FUNC();
         return viewLowest_ ? lowQualityOut_ : highQualityOut_;
     }
 

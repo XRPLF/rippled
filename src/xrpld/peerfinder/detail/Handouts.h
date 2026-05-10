@@ -5,6 +5,7 @@
 
 #include <xrpl/beast/container/aged_set.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <utility>
 
@@ -23,6 +24,7 @@ template <class Target, class HopContainer>
 std::size_t
 handoutOne(Target& t, HopContainer& h)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(!t.full(), "xrpl::PeerFinder::detail::handout_one : target is not full");
     for (auto it = h.begin(); it != h.end(); ++it)
     {
@@ -46,6 +48,7 @@ template <class TargetFwdIter, class SeqFwdIter>
 void
 handout(TargetFwdIter first, TargetFwdIter last, SeqFwdIter seqFirst, SeqFwdIter seqLast)
 {
+    TRACE_FUNC();
     for (;;)
     {
         std::size_t n(0);
@@ -88,24 +91,28 @@ public:
     [[nodiscard]] bool
     full() const
     {
+    TRACE_FUNC();
         return list_.size() >= Tuning::kREDIRECT_ENDPOINT_COUNT;
     }
 
     [[nodiscard]] SlotImp::ptr const&
     slot() const
     {
+    TRACE_FUNC();
         return slot_;
     }
 
     std::vector<Endpoint>&
     list()
     {
+    TRACE_FUNC();
         return list_;
     }
 
     [[nodiscard]] std::vector<Endpoint> const&
     list() const
     {
+    TRACE_FUNC();
         return list_;
     }
 
@@ -117,6 +124,7 @@ private:
 template <class>
 RedirectHandouts::RedirectHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
+    TRACE_FUNC();
     list_.reserve(Tuning::kREDIRECT_ENDPOINT_COUNT);
 }
 
@@ -124,6 +132,7 @@ template <class>
 bool
 RedirectHandouts::tryInsert(Endpoint const& ep)
 {
+    TRACE_FUNC();
     if (full())
         return false;
 
@@ -172,24 +181,28 @@ public:
     [[nodiscard]] bool
     full() const
     {
+    TRACE_FUNC();
         return list_.size() >= Tuning::kNUMBER_OF_ENDPOINTS;
     }
 
     void
     insert(Endpoint const& ep)
     {
+    TRACE_FUNC();
         list_.push_back(ep);
     }
 
     [[nodiscard]] SlotImp::ptr const&
     slot() const
     {
+    TRACE_FUNC();
         return slot_;
     }
 
     [[nodiscard]] std::vector<Endpoint> const&
     list() const
     {
+    TRACE_FUNC();
         return list_;
     }
 
@@ -201,6 +214,7 @@ private:
 template <class>
 SlotHandouts::SlotHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
+    TRACE_FUNC();
     list_.reserve(Tuning::kNUMBER_OF_ENDPOINTS);
 }
 
@@ -208,6 +222,7 @@ template <class>
 bool
 SlotHandouts::tryInsert(Endpoint const& ep)
 {
+    TRACE_FUNC();
     if (full())
         return false;
 
@@ -268,30 +283,35 @@ public:
     [[nodiscard]] bool
     empty() const
     {
+    TRACE_FUNC();
         return list_.empty();
     }
 
     [[nodiscard]] bool
     full() const
     {
+    TRACE_FUNC();
         return list_.size() >= needed_;
     }
 
     bool
     tryInsert(Endpoint const& endpoint)
     {
+    TRACE_FUNC();
         return tryInsert(endpoint.address);
     }
 
     list_type&
     list()
     {
+    TRACE_FUNC();
         return list_;
     }
 
     [[nodiscard]] list_type const&
     list() const
     {
+    TRACE_FUNC();
         return list_;
     }
 };
@@ -300,6 +320,7 @@ template <class>
 ConnectHandouts::ConnectHandouts(std::size_t needed, Squelches& squelches)
     : needed_(needed), squelches_(squelches)
 {
+    TRACE_FUNC();
     list_.reserve(needed);
 }
 
@@ -307,6 +328,7 @@ template <class>
 bool
 ConnectHandouts::tryInsert(beast::IP::Endpoint const& endpoint)
 {
+    TRACE_FUNC();
     if (full())
         return false;
 

@@ -1,5 +1,6 @@
 
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 #include <chrono>
@@ -13,6 +14,7 @@ std::atomic<bool> UptimeClock::kSTOP{false};         // stop update thread
 // On xrpld shutdown, cancel and wait for the update thread
 UptimeClock::UpdateThread::~UpdateThread()
 {
+    TRACE_FUNC();
     if (joinable())
     {
         kSTOP = true;
@@ -26,6 +28,7 @@ UptimeClock::UpdateThread::~UpdateThread()
 UptimeClock::UpdateThread
 UptimeClock::startClock()
 {
+    TRACE_FUNC();
     return UpdateThread{[] {
         using namespace std;
         using namespace std::chrono;
@@ -48,6 +51,7 @@ UptimeClock::startClock()
 UptimeClock::time_point
 UptimeClock::now()
 {
+    TRACE_FUNC();
     // start the update thread on first use
     static auto const kINIT = startClock();
 

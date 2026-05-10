@@ -11,6 +11,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <charconv>
 #include <cstdint>
@@ -30,6 +31,7 @@ template <>
 SerializedTypeID
 STUInt8::getSType() const
 {
+    TRACE_FUNC();
     return STI_UINT8;
 }
 
@@ -37,6 +39,7 @@ template <>
 std::string
 STUInt8::getText() const
 {
+    TRACE_FUNC();
     if (getFName() == sfTransactionResult)
     {
         std::string token, human;
@@ -56,6 +59,7 @@ template <>
 json::Value
 STUInt8::getJson(JsonOptions) const
 {
+    TRACE_FUNC();
     if (getFName() == sfTransactionResult)
     {
         std::string token, human;
@@ -83,6 +87,7 @@ template <>
 SerializedTypeID
 STUInt16::getSType() const
 {
+    TRACE_FUNC();
     return STI_UINT16;
 }
 
@@ -90,6 +95,7 @@ template <>
 std::string
 STUInt16::getText() const
 {
+    TRACE_FUNC();
     if (getFName() == sfLedgerEntryType)
     {
         auto item = LedgerFormats::getInstance().findByType(safeCast<LedgerEntryType>(value_));
@@ -113,6 +119,7 @@ template <>
 json::Value
 STUInt16::getJson(JsonOptions) const
 {
+    TRACE_FUNC();
     if (getFName() == sfLedgerEntryType)
     {
         auto item = LedgerFormats::getInstance().findByType(safeCast<LedgerEntryType>(value_));
@@ -144,6 +151,7 @@ template <>
 SerializedTypeID
 STUInt32::getSType() const
 {
+    TRACE_FUNC();
     return STI_UINT32;
 }
 
@@ -151,6 +159,7 @@ template <>
 std::string
 STUInt32::getText() const
 {
+    TRACE_FUNC();
     if (getFName() == sfPermissionValue)
     {
         auto const permissionName = Permission::getInstance().getPermissionName(value_);
@@ -164,6 +173,7 @@ template <>
 json::Value
 STUInt32::getJson(JsonOptions) const
 {
+    TRACE_FUNC();
     if (getFName() == sfPermissionValue)
     {
         auto const permissionName = Permission::getInstance().getPermissionName(value_);
@@ -186,6 +196,7 @@ template <>
 SerializedTypeID
 STUInt64::getSType() const
 {
+    TRACE_FUNC();
     return STI_UINT64;
 }
 
@@ -193,6 +204,7 @@ template <>
 std::string
 STUInt64::getText() const
 {
+    TRACE_FUNC();
     return std::to_string(value_);
 }
 
@@ -200,6 +212,7 @@ template <>
 json::Value
 STUInt64::getJson(JsonOptions) const
 {
+    TRACE_FUNC();
     auto convertToString = [](uint64_t const value, int const base) {
         XRPL_ASSERT(base == 10 || base == 16, "xrpl::STUInt64::getJson : base 10 or 16");
         std::string str(base == 10 ? 20 : 16, 0);  // Allocate space depending on base
@@ -229,6 +242,7 @@ template <>
 SerializedTypeID
 STInt32::getSType() const
 {
+    TRACE_FUNC();
     return STI_INT32;
 }
 
@@ -236,6 +250,7 @@ template <>
 std::string
 STInt32::getText() const
 {
+    TRACE_FUNC();
     return std::to_string(value_);
 }
 
@@ -243,6 +258,7 @@ template <>
 json::Value
 STInt32::getJson(JsonOptions) const
 {
+    TRACE_FUNC();
     return value_;
 }
 

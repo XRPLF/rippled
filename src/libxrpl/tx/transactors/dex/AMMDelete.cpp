@@ -14,6 +14,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -22,6 +23,7 @@ namespace xrpl {
 bool
 AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ammEnabled(ctx.rules))
         return false;
 
@@ -32,12 +34,14 @@ AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 AMMDelete::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tesSUCCESS;
 }
 
 TER
 AMMDelete::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
@@ -55,6 +59,7 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
 TER
 AMMDelete::doApply()
 {
+    TRACE_FUNC();
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
@@ -77,6 +82,7 @@ AMMDelete::visitInvariantEntry(
 bool
 AMMDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

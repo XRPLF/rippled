@@ -2,6 +2,7 @@
 
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <map>
@@ -15,6 +16,7 @@ LedgerReplay::LedgerReplay(
     std::shared_ptr<Ledger const> replay)
     : parent_{std::move(parent)}, replay_{std::move(replay)}
 {
+    TRACE_FUNC();
     for (auto const& item : replay_->txMap())
     {
         auto txPair = replay_->txRead(item.key());  // non-const so can be moved

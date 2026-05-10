@@ -25,6 +25,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <memory>
@@ -36,6 +37,7 @@ namespace {
 bool
 checkIssuers(ReadView const& view, Book const& book)
 {
+    TRACE_FUNC();
     auto issuerExists = [](ReadView const& view, Asset const& asset) -> bool {
         auto const& issuer = asset.getIssuer();
         return isXRP(issuer) || view.exists(keylet::account(issuer));
@@ -61,6 +63,7 @@ TOfferStreamBase<TIn, TOut>::TOfferStreamBase(
     , tip_(view, book_)
     , counter_(counter)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(validBook_, "xrpl::TOfferStreamBase::TOfferStreamBase : valid book");
 }
 
@@ -70,6 +73,7 @@ template <StepAmount TIn, StepAmount TOut>
 void
 TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
 {
+    TRACE_FUNC();
     // NIKB NOTE This should be using ApplyView::dirRemove, which would
     //           correctly remove the directory if its the last entry.
     //           Unfortunately this is a protocol breaking change.
@@ -110,6 +114,7 @@ accountFundsHelper(
     AuthHandling authHandling,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if constexpr (std::is_same_v<T, IOUAmount>)
     {
         if (id == asset.getIssuer())
@@ -135,6 +140,7 @@ template <class TTakerPays, class TTakerGets>
 [[nodiscard]] bool
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
+    TRACE_FUNC();
     // Consider removing the offer if:
     //  o `TakerPays` is XRP (because of XRP drops granularity) or
     //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
@@ -191,6 +197,7 @@ template <StepAmount TIn, StepAmount TOut>
 bool
 TOfferStreamBase<TIn, TOut>::step()
 {
+    TRACE_FUNC();
     // Modifying the order or logic of these
     // operations causes a protocol breaking change.
 
@@ -336,6 +343,7 @@ template <StepAmount TIn, StepAmount TOut>
 void
 FlowOfferStream<TIn, TOut>::permRmOffer(uint256 const& offerIndex)
 {
+    TRACE_FUNC();
     permToRemove_.insert(offerIndex);
 }
 

@@ -4,12 +4,14 @@
 #include <xrpl/json/JsonPropertyStream.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
 json::Value
 doPrint(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     JsonPropertyStream stream;
     if (context.params.isObject() && context.params[jss::params].isArray() &&
         context.params[jss::params][0u].isString())

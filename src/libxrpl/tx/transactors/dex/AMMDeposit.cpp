@@ -24,6 +24,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <bit>
 #include <cstdint>
@@ -37,6 +38,7 @@ namespace xrpl {
 bool
 AMMDeposit::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ammEnabled(ctx.rules))
         return false;
 
@@ -51,12 +53,14 @@ AMMDeposit::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 AMMDeposit::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfAMMDepositMask;
 }
 
 NotTEC
 AMMDeposit::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const flags = ctx.tx.getFlags();
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
@@ -178,6 +182,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 TER
 AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const accountID = ctx.tx[sfAccount];
 
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
@@ -381,6 +386,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 std::pair<TER, bool>
 AMMDeposit::applyGuts(Sandbox& sb)
 {
+    TRACE_FUNC();
     auto const amount = ctx_.tx[~sfAmount];
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
@@ -485,6 +491,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
 TER
 AMMDeposit::doApply()
 {
+    TRACE_FUNC();
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
@@ -510,6 +517,7 @@ AMMDeposit::deposit(
     std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
     auto checkBalance = [&](auto const& depositAmount) -> TER {
@@ -619,6 +627,7 @@ adjustLPTokensOut(
     STAmount const& lptAMMBalance,
     STAmount const& lpTokensDeposit)
 {
+    TRACE_FUNC();
     if (!rules.enabled(fixAMMv1_3))
         return lpTokensDeposit;
     return adjustLPTokens(lptAMMBalance, lpTokensDeposit, IsDeposit::Yes);
@@ -639,6 +648,7 @@ AMMDeposit::equalDepositTokens(
     std::optional<STAmount> const& deposit2Min,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     try
     {
         auto const tokensAdj = adjustLPTokensOut(view.rules(), lptAMMBalance, lpTokensDeposit);
@@ -712,6 +722,7 @@ AMMDeposit::equalDepositLimit(
     std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     auto frac = Number{amount} / amountBalance;
     auto tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
     if (tokensAdj == beast::kZERO)
@@ -791,6 +802,7 @@ AMMDeposit::singleDeposit(
     std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     auto const tokens = adjustLPTokensOut(
         view.rules(), lptAMMBalance, lpTokensOut(amountBalance, amount, lptAMMBalance, tfee));
     if (tokens == beast::kZERO)
@@ -838,6 +850,7 @@ AMMDeposit::singleDepositTokens(
     STAmount const& lpTokensDeposit,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     auto const tokensAdj = adjustLPTokensOut(view.rules(), lptAMMBalance, lpTokensDeposit);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
         return {tecAMM_INVALID_TOKENS, STAmount{}};
@@ -894,6 +907,7 @@ AMMDeposit::singleDepositEPrice(
     STAmount const& ePrice,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     if (amount != beast::kZERO)
     {
         auto const tokens = adjustLPTokensOut(
@@ -993,6 +1007,7 @@ AMMDeposit::equalDepositInEmptyState(
     Asset const& lptIssue,
     std::uint16_t tfee)
 {
+    TRACE_FUNC();
     return deposit(
         view,
         ammAccount,
@@ -1018,6 +1033,7 @@ AMMDeposit::visitInvariantEntry(
 bool
 AMMDeposit::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

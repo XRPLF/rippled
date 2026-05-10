@@ -26,6 +26,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <exception>
 #include <memory>
@@ -38,24 +39,28 @@ namespace {
 bool
 isFull(LedgerFill const& fill)
 {
+    TRACE_FUNC();
     return (fill.options & LedgerFill::Full) != 0;
 }
 
 bool
 isExpanded(LedgerFill const& fill)
 {
+    TRACE_FUNC();
     return isFull(fill) || ((fill.options & LedgerFill::Expand) != 0);
 }
 
 bool
 isBinary(LedgerFill const& fill)
 {
+    TRACE_FUNC();
     return (fill.options & LedgerFill::Binary) != 0;
 }
 
 void
 fillJson(json::Value& json, bool closed, LedgerHeader const& info, bool bFull, unsigned apiVersion)
 {
+    TRACE_FUNC();
     json[jss::parent_hash] = to_string(info.parentHash);
     json[jss::ledger_index] =
         (apiVersion > 1) ? json::Value(info.seq) : json::Value(std::to_string(info.seq));
@@ -94,6 +99,7 @@ fillJson(json::Value& json, bool closed, LedgerHeader const& info, bool bFull, u
 void
 fillJsonBinary(json::Value& json, bool closed, LedgerHeader const& info)
 {
+    TRACE_FUNC();
     if (!closed)
     {
         json[jss::closed] = false;
@@ -116,6 +122,7 @@ fillJsonTx(
     std::shared_ptr<STTx const> const& txn,
     std::shared_ptr<STObject const> const& stMeta)
 {
+    TRACE_FUNC();
     if (!bExpanded)
         return to_string(txn->getTransactionID());
 
@@ -218,6 +225,7 @@ fillJsonTx(
 void
 fillJsonTx(json::Value& json, LedgerFill const& fill)
 {
+    TRACE_FUNC();
     auto& txns = json[jss::transactions] = json::ArrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
@@ -246,6 +254,7 @@ fillJsonTx(json::Value& json, LedgerFill const& fill)
 void
 fillJsonState(json::Value& json, LedgerFill const& fill)
 {
+    TRACE_FUNC();
     auto& ledger = fill.ledger;
     auto& array = json[jss::accountState] = json::ArrayValue;
     auto expanded = isExpanded(fill);
@@ -273,6 +282,7 @@ fillJsonState(json::Value& json, LedgerFill const& fill)
 void
 fillJsonQueue(json::Value& json, LedgerFill const& fill)
 {
+    TRACE_FUNC();
     auto& queueData = json[jss::queue_data] = json::ArrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
@@ -310,6 +320,7 @@ fillJsonQueue(json::Value& json, LedgerFill const& fill)
 void
 fillJson(json::Value& json, LedgerFill const& fill)
 {
+    TRACE_FUNC();
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?
     auto bFull = isFull(fill);
@@ -340,6 +351,7 @@ fillJson(json::Value& json, LedgerFill const& fill)
 void
 addJson(json::Value& json, LedgerFill const& fill)
 {
+    TRACE_FUNC();
     auto& object = json[jss::ledger] = json::ObjectValue;
     fillJson(object, fill);
 
@@ -350,6 +362,7 @@ addJson(json::Value& json, LedgerFill const& fill)
 json::Value
 getJson(LedgerFill const& fill)
 {
+    TRACE_FUNC();
     json::Value json;
     fillJson(json, fill);
     return json;
@@ -358,6 +371,7 @@ getJson(LedgerFill const& fill)
 void
 copyFrom(json::Value& to, json::Value const& from)
 {
+    TRACE_FUNC();
     if (!to)
     {  // Short circuit this very common case.
         to = from;

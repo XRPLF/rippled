@@ -6,6 +6,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -18,6 +19,7 @@ namespace xrpl {
 SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)
     : SHAMapTreeNode(cowid), item_(std::move(item))
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         item_->size() >= 12,
         "xrpl::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
@@ -30,6 +32,7 @@ SHAMapLeafNode::SHAMapLeafNode(
     SHAMapHash const& hash)
     : SHAMapTreeNode(cowid, hash), item_(std::move(item))
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         item_->size() >= 12,
         "xrpl::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
@@ -40,12 +43,14 @@ SHAMapLeafNode::SHAMapLeafNode(
 boost::intrusive_ptr<SHAMapItem const> const&
 SHAMapLeafNode::peekItem() const
 {
+    TRACE_FUNC();
     return item_;
 }
 
 bool
 SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(cowid_, "xrpl::SHAMapLeafNode::setItem : nonzero cowid");
     item_ = std::move(item);
 
@@ -59,6 +64,7 @@ SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)
 std::string
 SHAMapLeafNode::getString(SHAMapNodeID const& id) const
 {
+    TRACE_FUNC();
     std::string ret = SHAMapTreeNode::getString(id);
 
     auto const type = getType();
@@ -92,6 +98,7 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
 void
 SHAMapLeafNode::invariants(bool) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(hash_.isNonZero(), "xrpl::SHAMapLeafNode::invariants : nonzero hash");
     XRPL_ASSERT(item_, "xrpl::SHAMapLeafNode::invariants : non-null item");
 }

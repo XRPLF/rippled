@@ -1,4 +1,5 @@
 #include <xrpl/protocol/TER.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/iterator_range_core.hpp>
@@ -13,6 +14,7 @@ namespace xrpl {
 std::unordered_map<TERUnderlyingType, std::pair<char const* const, char const* const>> const&
 transResults()
 {
+    TRACE_FUNC();
     // clang-format off
 
     // Macros are generally ugly, but they can help make code readable to
@@ -229,6 +231,7 @@ transResults()
 bool
 transResultInfo(TER code, std::string& token, std::string& text)
 {
+    TRACE_FUNC();
     auto& results = transResults();
 
     auto const r = results.find(TERtoInt(code));
@@ -244,6 +247,7 @@ transResultInfo(TER code, std::string& token, std::string& text)
 std::string
 transToken(TER code)
 {
+    TRACE_FUNC();
     std::string token;
     std::string text;
 
@@ -253,6 +257,7 @@ transToken(TER code)
 std::string
 transHuman(TER code)
 {
+    TRACE_FUNC();
     std::string token;
     std::string text;
 
@@ -262,6 +267,7 @@ transHuman(TER code)
 std::optional<TER>
 transCode(std::string const& token)
 {
+    TRACE_FUNC();
     static auto const kRESULTS = [] {
         auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());

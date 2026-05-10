@@ -21,6 +21,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
@@ -38,6 +39,7 @@ namespace xrpl {
 void
 addChannel(json::Value& jsonLines, SLE const& line)
 {
+    TRACE_FUNC();
     json::Value& jDst(jsonLines.append(json::ObjectValue));
     jDst[jss::channel_id] = to_string(line.key());
     jDst[jss::account] = to_string(line[sfAccount]);
@@ -71,6 +73,7 @@ addChannel(json::Value& jsonLines, SLE const& line)
 json::Value
 doAccountChannels(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto const& params(context.params);
     if (!params.isMember(jss::account))
         return RPC::missingFieldError(jss::account);

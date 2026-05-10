@@ -21,6 +21,7 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <grpcpp/support/status.h>
 #include <org/xrpl/rpc/v1/get_ledger_entry.pb.h>
@@ -52,6 +53,7 @@ parseFixed(
 static FunctionType
 fixed(Keylet const& keylet)
 {
+    TRACE_FUNC();
     return [keylet](
                json::Value const& params,
                json::StaticString const fieldName,
@@ -66,6 +68,7 @@ parseObjectID(
     json::StaticString const fieldName,
     std::string const& expectedType = "hex string or object")
 {
+    TRACE_FUNC();
     if (auto const uNodeIndex = LedgerEntryHelpers::parse<uint256>(params))
     {
         return *uNodeIndex;
@@ -76,6 +79,7 @@ parseObjectID(
 static Expected<uint256, json::Value>
 parseIndex(json::Value const& params, json::StaticString const fieldName, unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (apiVersion > 2u && params.isString())
     {
         std::string const index = params.asString();
@@ -101,6 +105,7 @@ parseAccountRoot(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (auto const account = LedgerEntryHelpers::parse<AccountID>(params))
     {
         return keylet::account(*account).key;
@@ -117,6 +122,7 @@ parseAMM(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
@@ -145,6 +151,7 @@ parseBridge(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isMember(jss::bridge))
     {
         return Unexpected(LedgerEntryHelpers::missingFieldError(jss::bridge));
@@ -178,6 +185,7 @@ parseCheck(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     return parseObjectID(params, fieldName, "hex string");
 }
 
@@ -187,6 +195,7 @@ parseCredential(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!cred.isObject())
     {
         return parseObjectID(cred, fieldName);
@@ -216,6 +225,7 @@ parseDelegate(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
@@ -237,6 +247,7 @@ parseDelegate(
 static Expected<STArray, json::Value>
 parseAuthorizeCredentials(json::Value const& jv)
 {
+    TRACE_FUNC();
     if (!jv.isArray())
     {
         return LedgerEntryHelpers::invalidFieldError(
@@ -305,6 +316,7 @@ parseDepositPreauth(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!dp.isObject())
     {
         return parseObjectID(dp, fieldName);
@@ -356,6 +368,7 @@ parseDID(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     auto const account = LedgerEntryHelpers::parse<AccountID>(params);
     if (!account)
     {
@@ -371,6 +384,7 @@ parseDirectoryNode(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
@@ -422,6 +436,7 @@ parseEscrow(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
@@ -446,6 +461,7 @@ parseFixed(
     json::StaticString const& fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isBool())
     {
         return parseObjectID(params, fieldName, "hex string");
@@ -464,6 +480,7 @@ parseLedgerHashes(
     json::StaticString const fieldName,
     unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (params.isUInt() || params.isInt())
     {
         // If the index doesn't parse as a UInt, throw
@@ -484,6 +501,7 @@ parseLoanBroker(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName, "hex string");
@@ -505,6 +523,7 @@ parseLoan(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName, "hex string");
@@ -527,6 +546,7 @@ parseMPToken(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
@@ -551,6 +571,7 @@ parseMPTokenIssuance(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     auto const mptIssuanceID = LedgerEntryHelpers::parse<uint192>(params);
     if (!mptIssuanceID)
     {
@@ -567,6 +588,7 @@ parseNFTokenOffer(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     return parseObjectID(params, fieldName, "hex string");
 }
 
@@ -576,6 +598,7 @@ parseNFTokenPage(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     return parseObjectID(params, fieldName, "hex string");
 }
 
@@ -587,6 +610,7 @@ parseOffer(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
@@ -609,6 +633,7 @@ parseOracle(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
@@ -632,6 +657,7 @@ parsePayChannel(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     return parseObjectID(params, fieldName, "hex string");
 }
 
@@ -641,6 +667,7 @@ parsePermissionedDomain(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (pd.isString())
     {
         return parseObjectID(pd, fieldName);
@@ -670,6 +697,7 @@ parseRippleState(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     Currency uCurrency;
 
     if (!jvRippleState.isObject())
@@ -719,6 +747,7 @@ parseSignerList(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     return parseObjectID(params, fieldName, "hex string");
 }
 
@@ -728,6 +757,7 @@ parseTicket(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
@@ -751,6 +781,7 @@ parseVault(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!params.isObject())
     {
         return parseObjectID(params, fieldName);
@@ -773,6 +804,7 @@ parseXChainOwnedClaimID(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!claimId.isObject())
     {
         return parseObjectID(claimId, fieldName);
@@ -799,6 +831,7 @@ parseXChainOwnedCreateAccountClaimID(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
+    TRACE_FUNC();
     if (!claimId.isObject())
     {
         return parseObjectID(claimId, fieldName);
@@ -836,6 +869,7 @@ struct LedgerEntry
 json::Value
 doLedgerEntry(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     static auto kLEDGER_ENTRY_PARSERS = std::to_array<LedgerEntry>({
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
@@ -979,6 +1013,7 @@ doLedgerEntry(RPC::JsonContext& context)
 std::pair<org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status>
 doLedgerEntryGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context)
 {
+    TRACE_FUNC();
     org::xrpl::rpc::v1::GetLedgerEntryRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerEntryResponse response;
     grpc::Status const status = grpc::Status::OK;

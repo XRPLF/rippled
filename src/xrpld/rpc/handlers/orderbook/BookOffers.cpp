@@ -21,6 +21,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -30,6 +31,7 @@ namespace xrpl {
 std::optional<json::Value>
 validateTakerJSON(json::Value const& taker, json::StaticString const& name)
 {
+    TRACE_FUNC();
     if (!taker.isMember(jss::currency) && !taker.isMember(jss::mpt_issuance_id))
     {
         return RPC::missingFieldError((boost::format("%s.currency") % name.cStr()).str());
@@ -58,6 +60,7 @@ parseTakerAssetJSON(
     json::StaticString const& name,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const assetError = [&]() {
         if (name == jss::taker_pays)
             return RpcSrcCurMalformed;
@@ -99,6 +102,7 @@ parseTakerIssuerJSON(
     json::StaticString const& name,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const issuerError = [&]() {
         if (name == jss::taker_pays)
             return RpcSrcIsrMalformed;
@@ -164,6 +168,7 @@ parseTakerIssuerJSON(
 json::Value
 doBookOffers(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     // VFALCO TODO Here is a terrible place for this kind of business
     //             logic. It needs to be moved elsewhere and documented,
     //             and encapsulated into a function.

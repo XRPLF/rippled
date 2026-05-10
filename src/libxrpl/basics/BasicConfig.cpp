@@ -1,6 +1,7 @@
 #include <xrpl/basics/BasicConfig.h>
 
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>
@@ -21,12 +22,14 @@ Section::Section(std::string name) : name_(std::move(name))
 void
 Section::set(std::string const& key, std::string const& value)
 {
+    TRACE_FUNC();
     lookup_.insert_or_assign(key, value);
 }
 
 void
 Section::append(std::vector<std::string> const& lines)
 {
+    TRACE_FUNC();
     // <key> '=' <value>
     static boost::regex const kRE1(
         "^"                        // start of line
@@ -98,12 +101,14 @@ Section::append(std::vector<std::string> const& lines)
 bool
 Section::exists(std::string const& name) const
 {
+    TRACE_FUNC();
     return lookup_.contains(name);
 }
 
 std::ostream&
 operator<<(std::ostream& os, Section const& section)
 {
+    TRACE_FUNC();
     for (auto const& [k, v] : section.lookup_)
         os << k << "=" << v << "\n";
     return os;
@@ -114,18 +119,21 @@ operator<<(std::ostream& os, Section const& section)
 bool
 BasicConfig::exists(std::string const& name) const
 {
+    TRACE_FUNC();
     return map_.contains(name);
 }
 
 Section&
 BasicConfig::section(std::string const& name)
 {
+    TRACE_FUNC();
     return map_.emplace(name, name).first->second;
 }
 
 Section const&
 BasicConfig::section(std::string const& name) const
 {
+    TRACE_FUNC();
     static Section const kNONE("");
     auto const iter = map_.find(name);
     if (iter == map_.end())
@@ -136,6 +144,7 @@ BasicConfig::section(std::string const& name) const
 void
 BasicConfig::overwrite(std::string const& section, std::string const& key, std::string const& value)
 {
+    TRACE_FUNC();
     auto const result =
         map_.emplace(std::piecewise_construct, std::make_tuple(section), std::make_tuple(section));
     result.first->second.set(key, value);
@@ -144,6 +153,7 @@ BasicConfig::overwrite(std::string const& section, std::string const& key, std::
 void
 BasicConfig::deprecatedClearSection(std::string const& section)
 {
+    TRACE_FUNC();
     auto i = map_.find(section);
     if (i != map_.end())
         i->second = Section(section);
@@ -152,18 +162,21 @@ BasicConfig::deprecatedClearSection(std::string const& section)
 void
 BasicConfig::legacy(std::string const& section, std::string value)
 {
+    TRACE_FUNC();
     map_.emplace(section, section).first->second.legacy(std::move(value));
 }
 
 std::string
 BasicConfig::legacy(std::string const& sectionName) const
 {
+    TRACE_FUNC();
     return section(sectionName).legacy();
 }
 
 void
 BasicConfig::build(IniFileSections const& ifs)
 {
+    TRACE_FUNC();
     for (auto const& entry : ifs)
     {
         auto const result = map_.emplace(
@@ -175,6 +188,7 @@ BasicConfig::build(IniFileSections const& ifs)
 std::ostream&
 operator<<(std::ostream& ss, BasicConfig const& c)
 {
+    TRACE_FUNC();
     for (auto const& [k, v] : c.map_)
         ss << "[" << k << "]\n" << v;
     return ss;

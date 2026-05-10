@@ -6,6 +6,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <mutex>
@@ -23,6 +24,7 @@ public:
     [[nodiscard]] std::shared_ptr<ReadView const> const&
     getLedger() const
     {
+    TRACE_FUNC();
         return ledger_;
     }
 
@@ -71,6 +73,7 @@ private:
         bool
         operator==(AccountKey const& lhs) const
         {
+    TRACE_FUNC();
             return hash_value == lhs.hash_value && account == lhs.account &&
                 direction == lhs.direction;
         }
@@ -78,6 +81,7 @@ private:
         [[nodiscard]] std::size_t
         getHash() const
         {
+    TRACE_FUNC();
             return hash_value;
         }
 
@@ -88,6 +92,7 @@ private:
             std::size_t
             operator()(AccountKey const& key) const noexcept
             {
+    TRACE_FUNC();
                 return key.getHash();
             }
         };

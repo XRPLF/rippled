@@ -1,6 +1,7 @@
 #include <xrpl/crypto/csprng.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <openssl/opensslv.h>
 #include <openssl/rand.h>
@@ -15,6 +16,7 @@ namespace xrpl {
 
 CsprngEngine::CsprngEngine()
 {
+    TRACE_FUNC();
     // This is not strictly necessary
     if (RAND_poll() != 1)
         Throw<std::runtime_error>("CSPRNG: Initial polling failed");
@@ -22,6 +24,7 @@ CsprngEngine::CsprngEngine()
 
 CsprngEngine::~CsprngEngine()
 {
+    TRACE_FUNC();
     // This cleanup function is not needed in newer versions of OpenSSL
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
     RAND_cleanup();
@@ -31,6 +34,7 @@ CsprngEngine::~CsprngEngine()
 void
 CsprngEngine::mixEntropy(void* buffer, std::size_t count)
 {
+    TRACE_FUNC();
     std::array<std::random_device::result_type, 128> entropy{};
 
     {
@@ -56,6 +60,7 @@ CsprngEngine::mixEntropy(void* buffer, std::size_t count)
 void
 CsprngEngine::operator()(void* ptr, std::size_t count)
 {
+    TRACE_FUNC();
     // RAND_bytes is thread-safe on OpenSSL 1.1.0 and later when compiled
     // with thread support, so we don't need to grab a mutex.
     // https://mta.openssl.org/pipermail/openssl-users/2020-November/013146.html
@@ -72,6 +77,7 @@ CsprngEngine::operator()(void* ptr, std::size_t count)
 CsprngEngine::result_type
 CsprngEngine::operator()()
 {
+    TRACE_FUNC();
     result_type ret = 0;
     (*this)(&ret, sizeof(result_type));
     return ret;
@@ -80,6 +86,7 @@ CsprngEngine::operator()()
 CsprngEngine&
 cryptoPrng()
 {
+    TRACE_FUNC();
     static CsprngEngine kENGINE;
     return kENGINE;
 }

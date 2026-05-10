@@ -5,6 +5,7 @@
 #include <optional>
 #include <regex>
 #include <sstream>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl::RPC {
 
@@ -30,6 +31,7 @@ namespace xrpl::RPC {
 inline std::optional<std::string>
 encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
 {
+    TRACE_FUNC();
     constexpr uint32_t kMAX_LEDGER_SEQ = 0x0FFF'FFFF;
     constexpr uint32_t kMAX_TXN_INDEX = 0xFFFF;
     constexpr uint32_t kMAX_NETWORK_ID = 0xFFFF;
@@ -57,6 +59,7 @@ template <typename T>
 inline std::optional<std::tuple<uint32_t, uint16_t, uint16_t>>
 decodeCTID(T const ctid) noexcept
 {
+    TRACE_FUNC();
     uint64_t ctidValue = 0;
 
     if constexpr (

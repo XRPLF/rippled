@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdio>
 #include <cstring>
@@ -18,12 +19,14 @@ namespace json {
 static bool
 isControlCharacter(char ch)
 {
+    TRACE_FUNC();
     return ch > 0 && ch <= 0x1F;
 }
 
 static bool
 containsControlCharacter(char const* str)
 {
+    TRACE_FUNC();
     while (*str != 0)
     {
         if (isControlCharacter(*(str++)))
@@ -35,6 +38,7 @@ containsControlCharacter(char const* str)
 static void
 uintToString(unsigned int value, char*& current)
 {
+    TRACE_FUNC();
     *--current = 0;
 
     do
@@ -47,6 +51,7 @@ uintToString(unsigned int value, char*& current)
 std::string
 valueToString(Int value)
 {
+    TRACE_FUNC();
     char buffer[32];
     char* current = buffer + sizeof(buffer);  // NOLINT(misc-const-correctness)
     bool const isNegative = value < 0;
@@ -66,6 +71,7 @@ valueToString(Int value)
 std::string
 valueToString(UInt value)
 {
+    TRACE_FUNC();
     char buffer[32];
     char* current = buffer + sizeof(buffer);  // NOLINT(misc-const-correctness)
     uintToString(value, current);
@@ -76,6 +82,7 @@ valueToString(UInt value)
 std::string
 valueToString(double value)
 {
+    TRACE_FUNC();
     // Allocate a buffer that is more than large enough to store the 16 digits
     // of precision requested below.
     char buffer[32];
@@ -94,12 +101,14 @@ valueToString(double value)
 std::string
 valueToString(bool value)
 {
+    TRACE_FUNC();
     return value ? "true" : "false";
 }
 
 std::string
 valueToQuotedString(char const* value)
 {
+    TRACE_FUNC();
     // Not sure how to handle unicode...
     if (strpbrk(value, "\"\\\b\f\n\r\t") == nullptr && !containsControlCharacter(value))
         return std::string("\"") + value + "\"";
@@ -178,6 +187,7 @@ valueToQuotedString(char const* value)
 std::string
 FastWriter::write(Value const& root)
 {
+    TRACE_FUNC();
     document_ = "";
     writeValue(root);
     return std::move(document_);
@@ -186,6 +196,7 @@ FastWriter::write(Value const& root)
 void
 FastWriter::writeValue(Value const& value)
 {
+    TRACE_FUNC();
     switch (value.type())
     {
         case NullValue:
@@ -258,6 +269,7 @@ StyledWriter::StyledWriter() = default;
 std::string
 StyledWriter::write(Value const& root)
 {
+    TRACE_FUNC();
     document_ = "";
     addChildValues_ = false;
     indentString_ = "";
@@ -269,6 +281,7 @@ StyledWriter::write(Value const& root)
 void
 StyledWriter::writeValue(Value const& value)
 {
+    TRACE_FUNC();
     switch (value.type())
     {
         case NullValue:
@@ -337,6 +350,7 @@ StyledWriter::writeValue(Value const& value)
 void
 StyledWriter::writeArrayValue(Value const& value)
 {
+    TRACE_FUNC();
     unsigned const size = value.size();
 
     if (size == 0)
@@ -400,6 +414,7 @@ StyledWriter::writeArrayValue(Value const& value)
 bool
 StyledWriter::isMultilineArray(Value const& value)
 {
+    TRACE_FUNC();
     int const size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;
     childValues_.clear();
@@ -433,6 +448,7 @@ StyledWriter::isMultilineArray(Value const& value)
 void
 StyledWriter::pushValue(std::string const& value)
 {
+    TRACE_FUNC();
     if (addChildValues_)
     {
         childValues_.push_back(value);
@@ -446,6 +462,7 @@ StyledWriter::pushValue(std::string const& value)
 void
 StyledWriter::writeIndent()
 {
+    TRACE_FUNC();
     if (!document_.empty())
     {
         char const last = document_[document_.length() - 1];
@@ -463,6 +480,7 @@ StyledWriter::writeIndent()
 void
 StyledWriter::writeWithIndent(std::string const& value)
 {
+    TRACE_FUNC();
     writeIndent();
     document_ += value;
 }
@@ -470,12 +488,14 @@ StyledWriter::writeWithIndent(std::string const& value)
 void
 StyledWriter::indent()
 {
+    TRACE_FUNC();
     indentString_ += std::string(indentSize_, ' ');
 }
 
 void
 StyledWriter::unindent()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         int(indentString_.size()) >= indentSize_,
         "json::StyledWriter::unindent : maximum indent size");
@@ -493,6 +513,7 @@ StyledStreamWriter::StyledStreamWriter(std::string indentation)
 void
 StyledStreamWriter::write(std::ostream& out, Value const& root)
 {
+    TRACE_FUNC();
     document_ = &out;
     addChildValues_ = false;
     indentString_ = "";
@@ -504,6 +525,7 @@ StyledStreamWriter::write(std::ostream& out, Value const& root)
 void
 StyledStreamWriter::writeValue(Value const& value)
 {
+    TRACE_FUNC();
     switch (value.type())
     {
         case NullValue:
@@ -572,6 +594,7 @@ StyledStreamWriter::writeValue(Value const& value)
 void
 StyledStreamWriter::writeArrayValue(Value const& value)
 {
+    TRACE_FUNC();
     unsigned const size = value.size();
 
     if (size == 0)
@@ -635,6 +658,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
 bool
 StyledStreamWriter::isMultilineArray(Value const& value)
 {
+    TRACE_FUNC();
     int const size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;
     childValues_.clear();
@@ -668,6 +692,7 @@ StyledStreamWriter::isMultilineArray(Value const& value)
 void
 StyledStreamWriter::pushValue(std::string const& value)
 {
+    TRACE_FUNC();
     if (addChildValues_)
     {
         childValues_.push_back(value);
@@ -681,6 +706,7 @@ StyledStreamWriter::pushValue(std::string const& value)
 void
 StyledStreamWriter::writeIndent()
 {
+    TRACE_FUNC();
     /*
       Some comments in this method would have been nice. ;-)
 
@@ -699,6 +725,7 @@ StyledStreamWriter::writeIndent()
 void
 StyledStreamWriter::writeWithIndent(std::string const& value)
 {
+    TRACE_FUNC();
     writeIndent();
     *document_ << value;
 }
@@ -706,12 +733,14 @@ StyledStreamWriter::writeWithIndent(std::string const& value)
 void
 StyledStreamWriter::indent()
 {
+    TRACE_FUNC();
     indentString_ += indentation_;
 }
 
 void
 StyledStreamWriter::unindent()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         indentString_.size() >= indentation_.size(),
         "json::StyledStreamWriter::unindent : maximum indent size");
@@ -721,6 +750,7 @@ StyledStreamWriter::unindent()
 std::ostream&
 operator<<(std::ostream& sout, Value const& root)
 {
+    TRACE_FUNC();
     json::StyledStreamWriter writer;
     writer.write(sout, root);
     return sout;

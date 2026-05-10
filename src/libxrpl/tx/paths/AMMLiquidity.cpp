@@ -20,6 +20,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMOffer.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <exception>
@@ -51,6 +52,7 @@ template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
 AMMLiquidity<TIn, TOut>::fetchBalances(ReadView const& view) const
 {
+    TRACE_FUNC();
     auto const amountIn = ammAccountHolds(view, ammAccountID_, assetIn_);
     auto const amountOut = ammAccountHolds(view, ammAccountID_, assetOut_);
     // This should not happen.
@@ -64,6 +66,7 @@ template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
 AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const
 {
+    TRACE_FUNC();
     TAmounts<TIn, TOut> cur{};
 
     cur.in = toAmount<TIn>(
@@ -126,6 +129,7 @@ template <typename T>
 T
 maxOut(T const& out, Asset const& asset)
 {
+    TRACE_FUNC();
     Number const res = out * Number{99, -2};
     return toAmount<T>(asset, res, Number::RoundingMode::Downward);
 }
@@ -135,6 +139,7 @@ template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
 AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const
 {
+    TRACE_FUNC();
     if (!rules.enabled(fixAMMOverflowOffer))
     {
         return AMMOffer<TIn, TOut>(
@@ -156,6 +161,7 @@ std::optional<AMMOffer<TIn, TOut>>
 AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> const& clobQuality)
     const
 {
+    TRACE_FUNC();
     // Can't generate more offers if multi-path.
     if (ammContext_.maxItersReached())
         return std::nullopt;

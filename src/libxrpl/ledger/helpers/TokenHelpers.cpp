@@ -25,6 +25,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <initializer_list>
@@ -50,6 +51,7 @@ isLPTokenFrozen(
 bool
 isGlobalFrozen(ReadView const& view, Asset const& asset)
 {
+    TRACE_FUNC();
     return asset.visit(
         [&](Issue const& issue) { return isGlobalFrozen(view, issue.getIssuer()); },
         [&](MPTIssue const& issue) { return isGlobalFrozen(view, issue); });
@@ -58,6 +60,7 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
 bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
+    TRACE_FUNC();
     return std::visit(
         [&](auto const& issue) { return isIndividualFrozen(view, account, issue); }, asset.value());
 }
@@ -65,6 +68,7 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& 
 bool
 isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth)
 {
+    TRACE_FUNC();
     return std::visit(
         [&](auto const& issue) { return isFrozen(view, account, issue, depth); }, asset.value());
 }
@@ -72,18 +76,21 @@ isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int
 TER
 checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 {
+    TRACE_FUNC();
     return isFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
 }
 
 TER
 checkFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
 {
+    TRACE_FUNC();
     return isFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
 }
 
 TER
 checkFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
+    TRACE_FUNC();
     return std::visit(
         [&](auto const& issue) { return checkFrozen(view, account, issue); }, asset.value());
 }
@@ -94,6 +101,7 @@ isAnyFrozen(
     std::initializer_list<AccountID> const& accounts,
     Issue const& issue)
 {
+    TRACE_FUNC();
     for (auto const& account : accounts)
     {
         if (isFrozen(view, account, issue.currency, issue.account))
@@ -109,6 +117,7 @@ isAnyFrozen(
     Asset const& asset,
     int depth)
 {
+    TRACE_FUNC();
     return asset.visit(
         [&](Issue const& issue) { return isAnyFrozen(view, accounts, issue); },
         [&](MPTIssue const& issue) { return isAnyFrozen(view, accounts, issue, depth); });
@@ -117,6 +126,7 @@ isAnyFrozen(
 bool
 isDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
 {
+    TRACE_FUNC();
     // Unlike IOUs, frozen / locked MPTs are not allowed to send or receive
     // funds, so checking "deep frozen" is the same as checking "frozen".
     return isFrozen(view, account, mptIssue, depth);
@@ -125,6 +135,7 @@ isDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mpt
 bool
 isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth)
 {
+    TRACE_FUNC();
     return std::visit(
         [&](auto const& issue) { return isDeepFrozen(view, account, issue, depth); },
         asset.value());
@@ -133,12 +144,14 @@ isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset,
 TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
 {
+    TRACE_FUNC();
     return isDeepFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
 }
 
 TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
+    TRACE_FUNC();
     return std::visit(
         [&](auto const& issue) { return checkDeepFrozen(view, account, issue); }, asset.value());
 }
@@ -158,6 +171,7 @@ getLineIfUsable(
     FreezeHandling zeroIfFrozen,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto sle = view.read(keylet::line(account, issuer, currency));
 
     if (!sle)
@@ -208,6 +222,7 @@ getTrustLineBalance(
     bool includeOppositeLimit,
     beast::Journal j)
 {
+    TRACE_FUNC();
     STAmount amount;
     if (sle)
     {
@@ -246,6 +261,7 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
+    TRACE_FUNC();
     STAmount const amount;
     if (isXRP(currency))
     {
@@ -276,6 +292,7 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
+    TRACE_FUNC();
     return accountHolds(
         view, account, issue.currency, issue.account, zeroIfFrozen, j, includeFullBalance);
 }
@@ -290,6 +307,7 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
+    TRACE_FUNC();
     bool const returnSpendable = (includeFullBalance == SpendableHandling::FullBalance);
     STAmount amount{mptIssue};
     auto const& issuer = mptIssue.getIssuer();
@@ -361,6 +379,7 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
+    TRACE_FUNC();
     return asset.visit(
         [&](Issue const& issue) {
             return accountHolds(view, account, issue, zeroIfFrozen, j, includeFullBalance);
@@ -379,6 +398,7 @@ accountFunds(
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(saDefault.holds<Issue>(), "xrpl::accountFunds: saDefault holds Issue");
 
     if (!saDefault.native() && saDefault.getIssuer() == id)
@@ -397,6 +417,7 @@ accountFunds(
     AuthHandling authHandling,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return saDefault.asset().visit(
         [&](Issue const&) { return accountFunds(view, id, saDefault, freezeHandling, j); },
         [&](MPTIssue const&) {
@@ -414,6 +435,7 @@ accountFunds(
 Rate
 transferRate(ReadView const& view, STAmount const& amount)
 {
+    TRACE_FUNC();
     return amount.asset().visit(
         [&](Issue const& issue) { return transferRate(view, issue.getIssuer()); },
         [&](MPTIssue const& issue) { return transferRate(view, issue.getMptID()); });
@@ -428,6 +450,7 @@ transferRate(ReadView const& view, STAmount const& amount)
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, Issue const& issue)
 {
+    TRACE_FUNC();
     if (issue.native())
     {
         return tesSUCCESS;  // No special checks for XRP
@@ -449,6 +472,7 @@ canAddHolding(ReadView const& view, Issue const& issue)
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, Asset const& asset)
 {
+    TRACE_FUNC();
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER { return canAddHolding(view, issue); },
         asset.value());
@@ -462,6 +486,7 @@ addEmptyHolding(
     Asset const& asset,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
             return addEmptyHolding(view, accountID, priorBalance, issue, journal);
@@ -476,6 +501,7 @@ removeEmptyHolding(
     Asset const& asset,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
             return removeEmptyHolding(view, accountID, issue, journal);
@@ -492,6 +518,7 @@ removeEmptyHolding(
 TER
 requireAuth(ReadView const& view, Asset const& asset, AccountID const& account, AuthType authType)
 {
+    TRACE_FUNC();
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             return requireAuth(view, issue, account, authType);
@@ -502,6 +529,7 @@ requireAuth(ReadView const& view, Asset const& asset, AccountID const& account, 
 TER
 canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, AccountID const& to)
 {
+    TRACE_FUNC();
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
             return canTransfer(view, issue, from, to);
@@ -528,6 +556,7 @@ directSendNoFeeIOU(
     bool bCheckIssuer,
     beast::Journal j)
 {
+    TRACE_FUNC();
     AccountID const& issuer = saAmount.getIssuer();
     Currency const& currency = saAmount.get<Issue>().currency;
 
@@ -673,6 +702,7 @@ directSendNoLimitIOU(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
+    TRACE_FUNC();
     auto const& issuer = saAmount.getIssuer();
 
     XRPL_ASSERT(
@@ -722,6 +752,7 @@ directSendNoLimitMultiIOU(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
+    TRACE_FUNC();
     auto const& issuer = issue.getIssuer();
 
     XRPL_ASSERT(!isXRP(senderID), "xrpl::directSendNoLimitMultiIOU : sender is not XRP");
@@ -793,6 +824,7 @@ accountSendIOU(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
+    TRACE_FUNC();
     if (view.rules().enabled(fixAMMv1_1))
     {
         if (saAmount < beast::kZERO || saAmount.holds<MPTIssue>())
@@ -910,6 +942,7 @@ accountSendMultiIOU(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
+    TRACE_FUNC();
     XRPL_ASSERT_PARTS(
         receivers.size() > 1, "xrpl::accountSendMultiIOU", "multiple recipients provided");
 
@@ -1036,6 +1069,7 @@ directSendNoFeeMPT(
     STAmount const& saAmount,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Do not check MPT authorization here - it must have been checked earlier
     auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
     auto const& issuer = saAmount.getIssuer();
@@ -1117,6 +1151,7 @@ directSendNoLimitMPT(
     WaiveTransferFee waiveFee,
     AllowMPTOverflow allowOverflow)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::directSendNoLimitMPT : sender is not receiver");
 
     // Safe to get MPT since directSendNoLimitMPT is only called by accountSendMPT
@@ -1177,6 +1212,7 @@ directSendNoLimitMultiMPT(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
+    TRACE_FUNC();
     auto const& issuer = mptIssue.getIssuer();
 
     auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID()));
@@ -1297,6 +1333,7 @@ accountSendMPT(
     WaiveTransferFee waiveFee,
     AllowMPTOverflow allowOverflow)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         saAmount >= beast::kZERO && saAmount.holds<MPTIssue>(),
         "xrpl::accountSendMPT : minimum amount and MPT");
@@ -1322,6 +1359,7 @@ accountSendMultiMPT(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
+    TRACE_FUNC();
     STAmount actual;
 
     return directSendNoLimitMultiMPT(view, senderID, mptIssue, receivers, actual, j, waiveFee);
@@ -1342,6 +1380,7 @@ directSendNoFee(
     bool bCheckIssuer,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return saAmount.asset().visit(
         [&](Issue const&) {
             return directSendNoFeeIOU(view, uSenderID, uReceiverID, saAmount, bCheckIssuer, j);
@@ -1362,6 +1401,7 @@ accountSend(
     WaiveTransferFee waiveFee,
     AllowMPTOverflow allowOverflow)
 {
+    TRACE_FUNC();
     return saAmount.asset().visit(
         [&](Issue const&) {
             return accountSendIOU(view, uSenderID, uReceiverID, saAmount, j, waiveFee);
@@ -1381,6 +1421,7 @@ accountSendMulti(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
+    TRACE_FUNC();
     XRPL_ASSERT_PARTS(
         receivers.size() > 1, "xrpl::accountSendMulti", "multiple recipients provided");
     return asset.visit(
@@ -1400,6 +1441,7 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(from != beast::kZERO, "xrpl::transferXRP : nonzero from account");
     XRPL_ASSERT(to != beast::kZERO, "xrpl::transferXRP : nonzero to account");
     XRPL_ASSERT(from != to, "xrpl::transferXRP : sender is not receiver");

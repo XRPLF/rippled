@@ -13,6 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <optional>
@@ -29,6 +30,7 @@ namespace xrpl {
 json::Value
 doChannelVerify(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto const& params(context.params);
     for (auto const& p : {jss::public_key, jss::channel_id, jss::amount, jss::signature})
     {

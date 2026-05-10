@@ -18,6 +18,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <exception>
@@ -43,6 +44,7 @@ buildLedgerImpl(
     beast::Journal j,
     ApplyTxs&& applyTxs)
 {
+    TRACE_FUNC();
     auto built = std::make_shared<Ledger>(*parent, closeTime);
 
     if (built->isFlagLedger())
@@ -99,6 +101,7 @@ applyTransactions(
     OpenView& view,
     beast::Journal j)
 {
+    TRACE_FUNC();
     bool certainRetry = true;
     std::size_t count = 0;
 
@@ -180,6 +183,7 @@ buildLedger(
     std::set<TxID>& failedTxns,
     beast::Journal j)
 {
+    TRACE_FUNC();
     JLOG(j.debug()) << "Report: Transaction Set = " << txns.key() << ", close "
                     << closeTime.time_since_epoch().count()
                     << (closeTimeCorrect ? "" : " (incorrect)");
@@ -218,6 +222,7 @@ buildLedger(
     Application& app,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const& replayLedger = replayData.replay();
 
     JLOG(j.debug()) << "Report: Replay Ledger " << replayLedger->header().hash;

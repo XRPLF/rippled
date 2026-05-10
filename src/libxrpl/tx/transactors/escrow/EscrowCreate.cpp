@@ -31,6 +31,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <system_error>
@@ -77,6 +78,7 @@ namespace xrpl {
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const amount = ctx.tx[sfAmount];
     return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::kZERO};
 }
@@ -89,6 +91,7 @@ template <>
 NotTEC
 escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     STAmount const amount = ctx.tx[sfAmount];
     if (amount.native() || amount <= beast::kZERO)
         return temBAD_AMOUNT;
@@ -103,6 +106,7 @@ template <>
 NotTEC
 escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
@@ -116,6 +120,7 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     STAmount const amount{ctx.tx[sfAmount]};
     if (!isXRP(amount))
     {
@@ -184,6 +189,7 @@ escrowCreatePreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
+    TRACE_FUNC();
     Issue const& issue = amount.get<Issue>();
     AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
@@ -255,6 +261,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
     AccountID const& dest,
     STAmount const& amount)
 {
+    TRACE_FUNC();
     AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
@@ -327,6 +334,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
 TER
 EscrowCreate::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     STAmount const amount{ctx.tx[sfAmount]};
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dest{ctx.tx[sfDestination]};
@@ -376,6 +384,7 @@ escrowLockApplyHelper<Issue>(
     STAmount const& amount,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     // Defensive: Issuer cannot create an escrow
     if (issuer == sender)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -396,6 +405,7 @@ escrowLockApplyHelper<MPTIssue>(
     STAmount const& amount,
     beast::Journal journal)
 {
+    TRACE_FUNC();
     // Defensive: Issuer cannot create an escrow
     if (issuer == sender)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -409,6 +419,7 @@ escrowLockApplyHelper<MPTIssue>(
 TER
 EscrowCreate::doApply()
 {
+    TRACE_FUNC();
     auto const closeTime = ctx_.view().header().parentCloseTime;
 
     if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
@@ -546,6 +557,7 @@ EscrowCreate::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 }  // namespace xrpl

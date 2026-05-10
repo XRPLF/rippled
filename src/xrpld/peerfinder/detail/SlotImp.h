@@ -4,6 +4,7 @@
 #include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/beast/container/aged_unordered_map.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 #include <optional>
@@ -28,54 +29,63 @@ public:
     bool
     inbound() const override
     {
+    TRACE_FUNC();
         return inbound_;
     }
 
     bool
     fixed() const override
     {
+    TRACE_FUNC();
         return fixed_;
     }
 
     bool
     reserved() const override
     {
+    TRACE_FUNC();
         return reserved_;
     }
 
     State
     state() const override
     {
+    TRACE_FUNC();
         return state_;
     }
 
     beast::IP::Endpoint const&
     remoteEndpoint() const override
     {
+    TRACE_FUNC();
         return remote_endpoint_;
     }
 
     std::optional<beast::IP::Endpoint> const&
     localEndpoint() const override
     {
+    TRACE_FUNC();
         return local_endpoint_;
     }
 
     std::optional<PublicKey> const&
     publicKey() const override
     {
+    TRACE_FUNC();
         return public_key_;
     }
 
     std::string
     prefix() const
     {
+    TRACE_FUNC();
         return "[" + getFingerprint(remoteEndpoint(), publicKey()) + "] ";
     }
 
     std::optional<std::uint16_t>
     listeningPort() const override
     {
+    TRACE_FUNC();
         std::uint32_t const value = listening_port_;
         if (value == kUNKNOWN_PORT)
             return std::nullopt;
@@ -85,30 +95,35 @@ public:
     void
     setListeningPort(std::uint16_t port)
     {
+    TRACE_FUNC();
         listening_port_ = port;
     }
 
     void
     localEndpoint(beast::IP::Endpoint const& endpoint)
     {
+    TRACE_FUNC();
         local_endpoint_ = endpoint;
     }
 
     void
     remoteEndpoint(beast::IP::Endpoint const& endpoint)
     {
+    TRACE_FUNC();
         remote_endpoint_ = endpoint;
     }
 
     void
     publicKey(PublicKey const& key)
     {
+    TRACE_FUNC();
         public_key_ = key;
     }
 
     void
     reserved(bool reserved)
     {
+    TRACE_FUNC();
         reserved_ = reserved;
     }
 
@@ -152,6 +167,7 @@ public:
     void
     expire()
     {
+    TRACE_FUNC();
         recent.expire();
     }
 

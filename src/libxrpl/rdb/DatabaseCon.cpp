@@ -3,6 +3,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/rdb/SociDB.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <cstdint>
@@ -30,6 +31,7 @@ public:
     std::shared_ptr<Checkpointer>
     fromId(std::uintptr_t id)
     {
+    TRACE_FUNC();
         std::scoped_lock const l{mutex_};
         auto it = checkpointers_.find(id);
         if (it != checkpointers_.end())
@@ -40,6 +42,7 @@ public:
     void
     erase(std::uintptr_t id)
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         checkpointers_.erase(id);
     }
@@ -50,6 +53,7 @@ public:
         JobQueue& jobQueue,
         ServiceRegistry& registry)
     {
+    TRACE_FUNC();
         std::scoped_lock const lock{mutex_};
         auto const id = nextId_++;
         auto const r = makeCheckpointer(id, session, jobQueue, registry);
@@ -63,11 +67,13 @@ CheckpointersCollection gCheckpointers;
 std::shared_ptr<Checkpointer>
 checkpointerFromId(std::uintptr_t id)
 {
+    TRACE_FUNC();
     return gCheckpointers.fromId(id);
 }
 
 DatabaseCon::~DatabaseCon()
 {
+    TRACE_FUNC();
     if (checkpointer_)
     {
         gCheckpointers.erase(checkpointer_->id());
@@ -92,6 +98,7 @@ std::unique_ptr<std::vector<std::string> const> DatabaseCon::Setup::globalPragma
 void
 DatabaseCon::setupCheckpointing(JobQueue* q, ServiceRegistry& registry)
 {
+    TRACE_FUNC();
     if (q == nullptr)
         Throw<std::logic_error>("No JobQueue");
     checkpointer_ = gCheckpointers.create(session_, *q, registry);

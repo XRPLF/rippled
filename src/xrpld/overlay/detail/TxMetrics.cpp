@@ -2,6 +2,7 @@
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <xrpl.pb.h>
 
@@ -16,6 +17,7 @@ namespace xrpl::metrics {
 void
 TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 {
+    TRACE_FUNC();
     auto add = [&](auto& m, std::uint32_t val) {
         std::scoped_lock const lock(mutex);
         m.addMetrics(val);
@@ -46,6 +48,7 @@ TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 void
 TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notenabled)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex);
     selectedPeers.addMetrics(selected);
     suppressedPeers.addMetrics(suppressed);
@@ -55,6 +58,7 @@ TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uin
 void
 TxMetrics::addMetrics(std::uint32_t missing)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex);
     missingTx.addMetrics(missing);
 }
@@ -62,12 +66,14 @@ TxMetrics::addMetrics(std::uint32_t missing)
 void
 MultipleMetrics::addMetrics(std::uint32_t val2)
 {
+    TRACE_FUNC();
     addMetrics(1, val2);
 }
 
 void
 MultipleMetrics::addMetrics(std::uint32_t val1, std::uint32_t val2)
 {
+    TRACE_FUNC();
     m1.addMetrics(val1);
     m2.addMetrics(val2);
 }
@@ -75,6 +81,7 @@ MultipleMetrics::addMetrics(std::uint32_t val1, std::uint32_t val2)
 void
 SingleMetrics::addMetrics(std::uint32_t val)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     accum += val;
     N++;
@@ -99,6 +106,7 @@ SingleMetrics::addMetrics(std::uint32_t val)
 json::Value
 TxMetrics::json() const
 {
+    TRACE_FUNC();
     std::scoped_lock const l(mutex);
 
     json::Value ret(json::ObjectValue);

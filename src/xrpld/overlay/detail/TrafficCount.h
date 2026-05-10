@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/messages.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 #include <cstdint>
@@ -56,6 +57,7 @@ public:
 
         operator bool() const
         {
+    TRACE_FUNC();
             return (messagesIn != 0u) || (messagesOut != 0u);
         }
     };
@@ -192,6 +194,7 @@ public:
     void
     addCount(Category cat, bool inbound, int bytes)
     {
+    TRACE_FUNC();
         XRPL_ASSERT(
             cat <= Category::Unknown, "xrpl::TrafficCount::addCount : valid category input");
 
@@ -220,12 +223,14 @@ public:
     [[nodiscard]] auto const&
     getCounts() const
     {
+    TRACE_FUNC();
         return counts_;
     }
 
     static std::string
     toString(Category cat)
     {
+    TRACE_FUNC();
         static std::unordered_map<Category, std::string> const kCATEGORY_MAP = {
             {Category::Base, "overhead"},
             {Category::Cluster, "overhead_cluster"},

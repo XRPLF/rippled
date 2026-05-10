@@ -2,6 +2,7 @@
 
 #include <xrpl/ledger/AcceptedLedgerTx.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <memory>
@@ -10,6 +11,7 @@ namespace xrpl {
 
 AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> const& ledger) : ledger_(ledger)
 {
+    TRACE_FUNC();
     transactions_.reserve(256);
 
     auto insertAll = [&](auto const& txns) {

@@ -12,6 +12,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 
@@ -20,6 +21,7 @@ namespace xrpl {
 XRPAmount
 SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    TRACE_FUNC();
     auto const id = tx.getAccountID(sfAccount);
     auto const spk = tx.getSigningPubKey();
 
@@ -43,6 +45,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 SetRegularKey::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (ctx.tx.isFieldPresent(sfRegularKey) &&
         (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
     {
@@ -55,6 +58,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
 TER
 SetRegularKey::doApply()
 {
+    TRACE_FUNC();
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -96,6 +100,7 @@ SetRegularKey::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

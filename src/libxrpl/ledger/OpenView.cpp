@@ -12,6 +12,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 
@@ -39,12 +40,14 @@ public:
     [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
+    TRACE_FUNC();
         return std::make_unique<TxsIterImpl>(metadata_, iter_);
     }
 
     [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
+    TRACE_FUNC();
         if (auto const p = dynamic_cast<TxsIterImpl const*>(&impl))
             return iter_ == p->iter_;
         return false;
@@ -53,14 +56,17 @@ public:
     void
     increment() override
     {
+    TRACE_FUNC();
         ++iter_;
     }
 
     [[nodiscard]] value_type
     dereference() const override
     {
+    TRACE_FUNC();
         value_type result;
         {
+    TRACE_FUNC();
             SerialIter sit(iter_->second.txn->slice());
             result.first = std::make_shared<STTx const>(sit);
         }
@@ -97,6 +103,7 @@ OpenView::OpenView(OpenLedgerT, ReadView const* base, Rules rules, std::shared_p
     , base_(base)
     , hold_(std::move(hold))
 {
+    TRACE_FUNC();
     header_.validated = false;
     header_.accepted = false;
     header_.seq = base_->header().seq + 1;
@@ -119,12 +126,14 @@ OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
 std::size_t
 OpenView::txCount() const
 {
+    TRACE_FUNC();
     return baseTxCount_ + txs_.size();
 }
 
 void
 OpenView::apply(TxsRawView& to) const
 {
+    TRACE_FUNC();
     items_.apply(to);
     for (auto const& item : txs_)
         to.rawTxInsert(item.first, item.second.txn, item.second.meta);
@@ -135,24 +144,28 @@ OpenView::apply(TxsRawView& to) const
 LedgerHeader const&
 OpenView::header() const
 {
+    TRACE_FUNC();
     return header_;
 }
 
 Fees const&
 OpenView::fees() const
 {
+    TRACE_FUNC();
     return base_->fees();
 }
 
 Rules const&
 OpenView::rules() const
 {
+    TRACE_FUNC();
     return rules_;
 }
 
 bool
 OpenView::exists(Keylet const& k) const
 {
+    TRACE_FUNC();
     return items_.exists(*base_, k);
 }
 
@@ -160,54 +173,63 @@ auto
 OpenView::succ(key_type const& key, std::optional<key_type> const& last) const
     -> std::optional<key_type>
 {
+    TRACE_FUNC();
     return items_.succ(*base_, key, last);
 }
 
 std::shared_ptr<SLE const>
 OpenView::read(Keylet const& k) const
 {
+    TRACE_FUNC();
     return items_.read(*base_, k);
 }
 
 auto
 OpenView::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
 {
+    TRACE_FUNC();
     return items_.slesBegin(*base_);
 }
 
 auto
 OpenView::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
 {
+    TRACE_FUNC();
     return items_.slesEnd(*base_);
 }
 
 auto
 OpenView::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
 {
+    TRACE_FUNC();
     return items_.slesUpperBound(*base_, key);
 }
 
 auto
 OpenView::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
 {
+    TRACE_FUNC();
     return std::make_unique<TxsIterImpl>(!open(), txs_.cbegin());
 }
 
 auto
 OpenView::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
 {
+    TRACE_FUNC();
     return std::make_unique<TxsIterImpl>(!open(), txs_.cend());
 }
 
 bool
 OpenView::txExists(key_type const& key) const
 {
+    TRACE_FUNC();
     return txs_.contains(key);
 }
 
 auto
 OpenView::txRead(key_type const& key) const -> tx_type
 {
+    TRACE_FUNC();
     auto const iter = txs_.find(key);
     if (iter == txs_.end())
         return base_->txRead(key);
@@ -230,24 +252,28 @@ OpenView::txRead(key_type const& key) const -> tx_type
 void
 OpenView::rawErase(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     items_.erase(sle);
 }
 
 void
 OpenView::rawInsert(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     items_.insert(sle);
 }
 
 void
 OpenView::rawReplace(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     items_.replace(sle);
 }
 
 void
 OpenView::rawDestroyXRP(XRPAmount const& fee)
 {
+    TRACE_FUNC();
     items_.destroyXRP(fee);
     // VFALCO Deduct from header_.totalDrops ?
     //        What about child views?
@@ -261,6 +287,7 @@ OpenView::rawTxInsert(
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {
+    TRACE_FUNC();
     auto const result = txs_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
     if (!result.second)

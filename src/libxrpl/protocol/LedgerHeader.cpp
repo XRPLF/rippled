@@ -5,6 +5,7 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 
@@ -13,6 +14,7 @@ namespace xrpl {
 void
 addRaw(LedgerHeader const& info, Serializer& s, bool includeHash)
 {
+    TRACE_FUNC();
     s.add32(info.seq);
     s.add64(info.drops.drops());
     s.addBitString(info.parentHash);
@@ -30,6 +32,7 @@ addRaw(LedgerHeader const& info, Serializer& s, bool includeHash)
 LedgerHeader
 deserializeHeader(Slice data, bool hasHash)
 {
+    TRACE_FUNC();
     SerialIter sit(data.data(), data.size());
 
     LedgerHeader header;
@@ -53,12 +56,14 @@ deserializeHeader(Slice data, bool hasHash)
 LedgerHeader
 deserializePrefixedHeader(Slice data, bool hasHash)
 {
+    TRACE_FUNC();
     return deserializeHeader(data + 4, hasHash);
 }
 
 uint256
 calculateLedgerHash(LedgerHeader const& info)
 {
+    TRACE_FUNC();
     // VFALCO This has to match addRaw in View.h.
     return sha512Half(
         HashPrefix::LedgerMaster,

@@ -32,6 +32,7 @@
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/container/flat_set.hpp>
 #include <boost/format/free_funcs.hpp>
@@ -55,6 +56,7 @@ namespace xrpl {
 static auto
 getTxFormat(TxType type)
 {
+    TRACE_FUNC();
     auto format = TxFormats::getInstance().findByType(type);
 
     if (format == nullptr)
@@ -69,6 +71,7 @@ getTxFormat(TxType type)
 
 STTx::STTx(STObject&& object) : STObject(std::move(object))
 {
+    TRACE_FUNC();
     tx_type_ = safeCast<TxType>(getFieldU16(sfTransactionType));
     applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  //  may throw
     tid_ = getHash(HashPrefix::TransactionId);
@@ -76,6 +79,7 @@ STTx::STTx(STObject&& object) : STObject(std::move(object))
 
 STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 {
+    TRACE_FUNC();
     int const length = sit.getBytesLeft();
 
     if ((length < kTX_MIN_SIZE_BYTES) || (length > kTX_MAX_SIZE_BYTES))
@@ -92,6 +96,7 @@ STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 
 STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfTransaction)
 {
+    TRACE_FUNC();
     auto format = getTxFormat(type);
 
     set(format->getSOTemplate());
@@ -110,12 +115,14 @@ STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfT
 STBase*
 STTx::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STTx::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
@@ -123,12 +130,14 @@ STTx::move(std::size_t n, void* buf)
 SerializedTypeID
 STTx::getSType() const
 {
+    TRACE_FUNC();
     return STI_TRANSACTION;
 }
 
 std::string
 STTx::getFullText() const
 {
+    TRACE_FUNC();
     std::string ret = "\"";
     ret += to_string(getTransactionID());
     ret += "\" = {";
@@ -140,6 +149,7 @@ STTx::getFullText() const
 boost::container::flat_set<AccountID>
 STTx::getMentionedAccounts() const
 {
+    TRACE_FUNC();
     boost::container::flat_set<AccountID> list;
 
     for (auto const& it : *this)
@@ -164,6 +174,7 @@ STTx::getMentionedAccounts() const
 static Blob
 getSigningData(STTx const& that)
 {
+    TRACE_FUNC();
     Serializer s;
     s.add32(HashPrefix::TxSign);
     that.addWithoutSigningFields(s);
@@ -173,12 +184,14 @@ getSigningData(STTx const& that)
 uint256
 STTx::getSigningHash() const
 {
+    TRACE_FUNC();
     return STObject::getSigningHash(HashPrefix::TxSign);
 }
 
 Blob
 STTx::getSignature(STObject const& sigObject)
 {
+    TRACE_FUNC();
     try
     {
         return sigObject.getFieldVL(sfTxnSignature);
@@ -192,6 +205,7 @@ STTx::getSignature(STObject const& sigObject)
 SeqProxy
 STTx::getSeqProxy() const
 {
+    TRACE_FUNC();
     std::uint32_t const seq{getFieldU32(sfSequence)};
     if (seq != 0)
         return SeqProxy::sequence(seq);
@@ -209,12 +223,14 @@ STTx::getSeqProxy() const
 std::uint32_t
 STTx::getSeqValue() const
 {
+    TRACE_FUNC();
     return getSeqProxy().value();
 }
 
 AccountID
 STTx::getFeePayer() const
 {
+    TRACE_FUNC();
     // If sfDelegate is present, the delegate account is the payer
     // note: if a delegate is specified, its authorization to act on behalf of the account is
     // enforced in `Transactor::checkPermission`
@@ -232,6 +248,7 @@ STTx::sign(
     SecretKey const& secretKey,
     std::optional<std::reference_wrapper<SField const>> signatureTarget)
 {
+    TRACE_FUNC();
     auto const data = getSigningData(*this);
 
     auto const sig = xrpl::sign(publicKey, secretKey, makeSlice(data));
@@ -251,6 +268,7 @@ STTx::sign(
 Expected<void, std::string>
 STTx::checkSign(Rules const& rules, STObject const& sigObject) const
 {
+    TRACE_FUNC();
     try
     {
         // Determine whether we're single- or multi-signing by looking
@@ -270,6 +288,7 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject) const
 Expected<void, std::string>
 STTx::checkSign(Rules const& rules) const
 {
+    TRACE_FUNC();
     if (auto const ret = checkSign(rules, *this); !ret)
         return ret;
 
@@ -285,6 +304,7 @@ STTx::checkSign(Rules const& rules) const
 Expected<void, std::string>
 STTx::checkBatchSign(Rules const& rules) const
 {
+    TRACE_FUNC();
     try
     {
         XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSign : not a batch transaction");
@@ -315,6 +335,7 @@ STTx::checkBatchSign(Rules const& rules) const
 json::Value
 STTx::getJson(JsonOptions options) const
 {
+    TRACE_FUNC();
     json::Value ret = STObject::getJson(JsonOptions::KNone);
     if (!(options & JsonOptions::KDisableApiPriorV2))
         ret[jss::hash] = to_string(getTransactionID());
@@ -324,6 +345,7 @@ STTx::getJson(JsonOptions options) const
 json::Value
 STTx::getJson(JsonOptions options, bool binary) const
 {
+    TRACE_FUNC();
     bool const v1 = !(options & JsonOptions::KDisableApiPriorV2);
 
     if (binary)
@@ -352,6 +374,7 @@ STTx::getJson(JsonOptions options, bool binary) const
 std::string const&
 STTx::getMetaSQLInsertReplaceHeader()
 {
+    TRACE_FUNC();
     static std::string const kSQL =
         "INSERT OR REPLACE INTO Transactions "
         "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, "
@@ -364,6 +387,7 @@ STTx::getMetaSQLInsertReplaceHeader()
 std::string
 STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) const
 {
+    TRACE_FUNC();
     Serializer s;
     add(s);
     return getMetaSQL(s, inLedger, TxnSql::Validated, escapedMetaData);
@@ -377,6 +401,7 @@ STTx::getMetaSQL(
     TxnSql status,
     std::string const& escapedMetaData) const
 {
+    TRACE_FUNC();
     static boost::format const kBF_TRANS("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
@@ -392,6 +417,7 @@ STTx::getMetaSQL(
 static Expected<void, std::string>
 singleSignHelper(STObject const& sigObject, Slice const& data)
 {
+    TRACE_FUNC();
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
     // fields are present the signature is invalid.
@@ -422,6 +448,7 @@ singleSignHelper(STObject const& sigObject, Slice const& data)
 Expected<void, std::string>
 STTx::checkSingleSign(STObject const& sigObject) const
 {
+    TRACE_FUNC();
     auto const data = getSigningData(*this);
     return singleSignHelper(sigObject, makeSlice(data));
 }
@@ -429,6 +456,7 @@ STTx::checkSingleSign(STObject const& sigObject) const
 Expected<void, std::string>
 STTx::checkBatchSingleSign(STObject const& batchSigner) const
 {
+    TRACE_FUNC();
     Serializer msg;
     serializeBatch(msg, getFlags(), getBatchTransactionIDs());
     return singleSignHelper(batchSigner, msg.slice());
@@ -441,6 +469,7 @@ multiSignHelper(
     std::function<Serializer(AccountID const&)> makeMsg,
     Rules const& rules)
 {
+    TRACE_FUNC();
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad SigningPubKey.
     if (!sigObject.isFieldPresent(sfSigners))
@@ -514,6 +543,7 @@ multiSignHelper(
 Expected<void, std::string>
 STTx::checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const
 {
+    TRACE_FUNC();
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
@@ -533,6 +563,7 @@ STTx::checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const
 Expected<void, std::string>
 STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 {
+    TRACE_FUNC();
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
     auto const txnAccountID =
@@ -571,6 +602,7 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 std::vector<uint256> const&
 STTx::getBatchTransactionIDs() const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : not a batch transaction");
     XRPL_ASSERT(
         !getFieldArray(sfRawTransactions).empty(),
@@ -596,6 +628,7 @@ STTx::getBatchTransactionIDs() const
 static bool
 isMemoOkay(STObject const& st, std::string& reason)
 {
+    TRACE_FUNC();
     if (!st.isFieldPresent(sfMemos))
         return true;
 
@@ -687,6 +720,7 @@ isMemoOkay(STObject const& st, std::string& reason)
 static bool
 isAccountFieldOkay(STObject const& st)
 {
+    TRACE_FUNC();
     for (int i = 0; i < st.getCount(); ++i)
     {
         auto t = dynamic_cast<STAccount const*>(st.peekAtPIndex(i));
@@ -700,6 +734,7 @@ isAccountFieldOkay(STObject const& st)
 static bool
 invalidMPTAmountInTx(STObject const& tx)
 {
+    TRACE_FUNC();
     auto const txType = tx[~sfTransactionType];
     if (!txType)
         return false;
@@ -727,6 +762,7 @@ invalidMPTAmountInTx(STObject const& tx)
 static bool
 isRawTransactionOkay(STObject const& st, std::string& reason)
 {
+    TRACE_FUNC();
     if (!st.isFieldPresent(sfRawTransactions))
         return true;
 
@@ -768,6 +804,7 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
 bool
 passesLocalChecks(STObject const& st, std::string& reason)
 {
+    TRACE_FUNC();
     if (!isMemoOkay(st, reason))
         return false;
 
@@ -798,6 +835,7 @@ passesLocalChecks(STObject const& st, std::string& reason)
 std::shared_ptr<STTx const>
 sterilize(STTx const& stx)
 {
+    TRACE_FUNC();
     Serializer s;
     stx.add(s);
     SerialIter sit(s.slice());
@@ -807,6 +845,7 @@ sterilize(STTx const& stx)
 bool
 isPseudoTx(STObject const& tx)
 {
+    TRACE_FUNC();
     auto const t = tx[~sfTransactionType];
 
     if (!t)

@@ -13,6 +13,7 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <array>
 #include <cstddef>
@@ -43,6 +44,7 @@ ApplyContext::ApplyContext(
     , flags_(flags)
     , parentBatchId_(parentBatchId)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         parentBatchId.has_value() == ((flags_ & TapBatch) == TapBatch),
         "Parent Batch ID should be set if batch apply flag is set");
@@ -52,12 +54,14 @@ ApplyContext::ApplyContext(
 void
 ApplyContext::discard()
 {
+    TRACE_FUNC();
     view_.emplace(&base_, flags_);
 }
 
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
+    TRACE_FUNC();
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }
@@ -65,6 +69,7 @@ ApplyContext::apply(TER ter)
 std::size_t
 ApplyContext::size()
 {
+    TRACE_FUNC();
     return view_->size();  // NOLINT(bugprone-unchecked-optional-access)
 }
 
@@ -76,12 +81,14 @@ ApplyContext::visit(
         std::shared_ptr<SLE const> const&,
         std::shared_ptr<SLE const> const&)> const& func)
 {
+    TRACE_FUNC();
     view_->visit(base_, func);  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TER
 ApplyContext::failInvariantCheck(TER const result)
 {
+    TRACE_FUNC();
     // If we already failed invariant checks before and we are now attempting to
     // only charge a fee, and even that fails the invariant checks something is
     // very wrong. We switch to tefINVARIANT_FAILED, which does NOT get included
@@ -99,6 +106,7 @@ ApplyContext::checkInvariantsHelper(
     XRPAmount const fee,
     std::index_sequence<Is...>)
 {
+    TRACE_FUNC();
     try
     {
         auto checkers = getInvariantChecks();
@@ -144,6 +152,7 @@ ApplyContext::checkInvariantsHelper(
 TER
 ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         isTesSuccess(result) || isTecClaim(result),
         "xrpl::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");

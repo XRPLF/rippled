@@ -12,6 +12,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/system/detail/error_code.hpp>
@@ -33,6 +34,7 @@ namespace xrpl::perf {
 
 PerfLogImp::Counters::Counters(std::set<char const*> const& labels, JobTypes const& jobTypes)
 {
+    TRACE_FUNC();
     {
         // populateRpc
         rpc.reserve(labels.size());
@@ -72,6 +74,7 @@ PerfLogImp::Counters::Counters(std::set<char const*> const& labels, JobTypes con
 json::Value
 PerfLogImp::Counters::countersJson() const
 {
+    TRACE_FUNC();
     json::Value rpcobj(json::ObjectValue);
     // totalRpc represents all rpc methods. All that started, finished, etc.
     Rpc totalRpc;
@@ -162,6 +165,7 @@ PerfLogImp::Counters::countersJson() const
 json::Value
 PerfLogImp::Counters::currentJson() const
 {
+    TRACE_FUNC();
     auto const present = steady_clock::now();
 
     json::Value jobsArray(json::ArrayValue);
@@ -209,6 +213,7 @@ PerfLogImp::Counters::currentJson() const
 void
 PerfLogImp::openLog()
 {
+    TRACE_FUNC();
     if (setup_.perfLog.empty())
         return;
 
@@ -242,6 +247,7 @@ PerfLogImp::openLog()
 void
 PerfLogImp::run()
 {
+    TRACE_FUNC();
     beast::setCurrentThreadName("perflog");
     lastLog_ = system_clock::now();
 
@@ -266,6 +272,7 @@ PerfLogImp::run()
 void
 PerfLogImp::report()
 {
+    TRACE_FUNC();
     if (!logFile_)
     {
         // If logFile_ is not writable do no further work.
@@ -300,17 +307,20 @@ PerfLogImp::PerfLogImp(
     std::function<void()>&& signalStop)
     : setup_(std::move(setup)), app_(app), j_(journal), signalStop_(std::move(signalStop))
 {
+    TRACE_FUNC();
     openLog();
 }
 
 PerfLogImp::~PerfLogImp()
 {
+    TRACE_FUNC();
     stop();
 }
 
 void
 PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
 {
+    TRACE_FUNC();
     auto counter = counters_.rpc.find(method);
     if (counter == counters_.rpc.end())
     {
@@ -331,6 +341,7 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
 void
 PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, bool finish)
 {
+    TRACE_FUNC();
     auto counter = counters_.rpc.find(method);
     if (counter == counters_.rpc.end())
     {
@@ -371,6 +382,7 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
 void
 PerfLogImp::jobQueue(JobType const type)
 {
+    TRACE_FUNC();
     auto counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
     {
@@ -390,6 +402,7 @@ PerfLogImp::jobStart(
     steady_time_point startTime,
     int instance)
 {
+    TRACE_FUNC();
     auto counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
     {
@@ -412,6 +425,7 @@ PerfLogImp::jobStart(
 void
 PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
 {
+    TRACE_FUNC();
     auto counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
     {
@@ -434,6 +448,7 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
 void
 PerfLogImp::resizeJobs(int const resize)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(counters_.jobsMutex);
     if (resize > counters_.jobs.size())
         counters_.jobs.resize(resize, {JtInvalid, steady_time_point()});
@@ -442,6 +457,7 @@ PerfLogImp::resizeJobs(int const resize)
 void
 PerfLogImp::rotate()
 {
+    TRACE_FUNC();
     if (setup_.perfLog.empty())
         return;
 
@@ -453,6 +469,7 @@ PerfLogImp::rotate()
 void
 PerfLogImp::start()
 {
+    TRACE_FUNC();
     if (!setup_.perfLog.empty())
         thread_ = std::thread(&PerfLogImp::run, this);
 }
@@ -460,6 +477,7 @@ PerfLogImp::start()
 void
 PerfLogImp::stop()
 {
+    TRACE_FUNC();
     if (thread_.joinable())
     {
         {
@@ -476,6 +494,7 @@ PerfLogImp::stop()
 PerfLog::Setup
 setupPerfLog(Section const& section, boost::filesystem::path const& configDir)
 {
+    TRACE_FUNC();
     PerfLog::Setup setup;
     std::string perfLog;
     set(perfLog, "perf_log", section);
@@ -501,6 +520,7 @@ makePerfLog(
     beast::Journal journal,
     std::function<void()>&& signalStop)
 {
+    TRACE_FUNC();
     return std::make_unique<PerfLogImp>(setup, app, journal, std::move(signalStop));
 }
 

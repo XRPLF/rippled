@@ -16,6 +16,7 @@
 #include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -35,6 +36,7 @@ namespace xrpl {
 json::Value
 doAccountNFTs(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto const& params = context.params;
     if (!params.isMember(jss::account))
         return RPC::missingFieldError(jss::account);

@@ -18,6 +18,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <memory>
@@ -31,6 +32,7 @@ ValidNFTokenPage::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     static constexpr uint256 const& kPAGE_BITS = nft::kPAGE_MASK;
     static constexpr uint256 const kACCOUNT_BITS = ~kPAGE_BITS;
 
@@ -137,6 +139,7 @@ ValidNFTokenPage::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (badLink_)
     {
         JLOG(j.fatal()) << "Invariant failed: NFT page is improperly linked.";
@@ -192,6 +195,7 @@ NFTokenCountTracking::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (before && before->getType() == ltACCOUNT_ROOT)
     {
         beforeMintedTotal_ += (*before)[~sfMintedNFTokens].value_or(0);
@@ -213,6 +217,7 @@ NFTokenCountTracking::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     if (!hasPrivilege(tx, ChangeNftCounts))
     {
         if (beforeMintedTotal_ != afterMintedTotal_)

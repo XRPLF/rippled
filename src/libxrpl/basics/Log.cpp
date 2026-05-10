@@ -3,6 +3,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/path.hpp>
@@ -28,6 +29,7 @@ Logs::Sink::Sink(std::string partition, beast::severities::Severity thresh, Logs
 void
 Logs::Sink::write(beast::severities::Severity level, std::string const& text)
 {
+    TRACE_FUNC();
     if (level < threshold())
         return;
 
@@ -37,6 +39,7 @@ Logs::Sink::write(beast::severities::Severity level, std::string const& text)
 void
 Logs::Sink::writeAlways(beast::severities::Severity level, std::string const& text)
 {
+    TRACE_FUNC();
     logs_.write(level, partition_, text, console());
 }
 
@@ -49,12 +52,14 @@ Logs::File::File() : stream_(nullptr)
 bool
 Logs::File::isOpen() const noexcept
 {
+    TRACE_FUNC();
     return stream_ != nullptr;
 }
 
 bool
 Logs::File::open(boost::filesystem::path const& path)
 {
+    TRACE_FUNC();
     close();
 
     bool wasOpened = false;
@@ -77,6 +82,7 @@ Logs::File::open(boost::filesystem::path const& path)
 bool
 Logs::File::closeAndReopen()
 {
+    TRACE_FUNC();
     close();
 
     return open(path_);
@@ -85,12 +91,14 @@ Logs::File::closeAndReopen()
 void
 Logs::File::close()
 {
+    TRACE_FUNC();
     stream_ = nullptr;
 }
 
 void
 Logs::File::write(char const* text)
 {
+    TRACE_FUNC();
     if (stream_ != nullptr)
         (*stream_) << text;
 }
@@ -98,6 +106,7 @@ Logs::File::write(char const* text)
 void
 Logs::File::writeln(char const* text)
 {
+    TRACE_FUNC();
     if (stream_ != nullptr)
     {
         (*stream_) << text;
@@ -114,12 +123,14 @@ Logs::Logs(beast::severities::Severity thresh) : thresh_(thresh)  // default sev
 bool
 Logs::open(boost::filesystem::path const& pathToLogFile)
 {
+    TRACE_FUNC();
     return file_.open(pathToLogFile);
 }
 
 beast::Journal::Sink&
 Logs::get(std::string const& name)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     auto const result = sinks_.emplace(name, makeSink(name, thresh_));
     return *result.first->second;
@@ -134,18 +145,21 @@ Logs::operator[](std::string const& name)
 beast::Journal
 Logs::journal(std::string const& name)
 {
+    TRACE_FUNC();
     return beast::Journal(get(name));
 }
 
 beast::severities::Severity
 Logs::threshold() const
 {
+    TRACE_FUNC();
     return thresh_;
 }
 
 void
 Logs::threshold(beast::severities::Severity thresh)
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     thresh_ = thresh;
     for (auto& sink : sinks_)
@@ -155,6 +169,7 @@ Logs::threshold(beast::severities::Severity thresh)
 std::vector<std::pair<std::string, std::string>>
 Logs::partitionSeverities() const
 {
+    TRACE_FUNC();
     std::vector<std::pair<std::string, std::string>> list;
     std::scoped_lock const lock(mutex_);
     list.reserve(sinks_.size());
@@ -170,6 +185,7 @@ Logs::write(
     std::string const& text,
     bool console)
 {
+    TRACE_FUNC();
     std::string s;
     format(s, text, level, partition);
     std::scoped_lock const lock(mutex_);
@@ -184,6 +200,7 @@ Logs::write(
 std::string
 Logs::rotate()
 {
+    TRACE_FUNC();
     std::scoped_lock const lock(mutex_);
     bool const wasOpened = file_.closeAndReopen();
     if (wasOpened)
@@ -194,12 +211,14 @@ Logs::rotate()
 std::unique_ptr<beast::Journal::Sink>
 Logs::makeSink(std::string const& name, beast::severities::Severity threshold)
 {
+    TRACE_FUNC();
     return std::make_unique<Sink>(name, threshold, *this);
 }
 
 LogSeverity
 Logs::fromSeverity(beast::severities::Severity level)
 {
+    TRACE_FUNC();
     using namespace beast::severities;
     switch (level)
     {
@@ -229,6 +248,7 @@ Logs::fromSeverity(beast::severities::Severity level)
 beast::severities::Severity
 Logs::toSeverity(LogSeverity level)
 {
+    TRACE_FUNC();
     using namespace beast::severities;
     switch (level)
     {
@@ -257,6 +277,7 @@ Logs::toSeverity(LogSeverity level)
 std::string
 Logs::toString(LogSeverity s)
 {
+    TRACE_FUNC();
     switch (s)
     {
         case LSTrace:
@@ -282,6 +303,7 @@ Logs::toString(LogSeverity s)
 LogSeverity
 Logs::fromString(std::string const& s)
 {
+    TRACE_FUNC();
     if (boost::iequals(s, "trace"))
         return LSTrace;
 
@@ -310,6 +332,7 @@ Logs::format(
     beast::severities::Severity severity,
     std::string const& partition)
 {
+    TRACE_FUNC();
     output.reserve(message.size() + partition.size() + 100);
 
     output = xrpl::to_string(std::chrono::system_clock::now());
@@ -412,6 +435,7 @@ public:
     std::unique_ptr<beast::Journal::Sink>
     set(std::unique_ptr<beast::Journal::Sink> sink)
     {
+    TRACE_FUNC();
         std::scoped_lock const _(mtx_);
 
         using std::swap;
@@ -432,6 +456,7 @@ public:
     beast::Journal::Sink&
     get()
     {
+    TRACE_FUNC();
         std::scoped_lock const _(mtx_);
         return sink_.get();
     }
@@ -440,6 +465,7 @@ public:
 static DebugSink&
 debugSink()
 {
+    TRACE_FUNC();
     static DebugSink kINST;
     return kINST;
 }
@@ -447,12 +473,14 @@ debugSink()
 std::unique_ptr<beast::Journal::Sink>
 setDebugLogSink(std::unique_ptr<beast::Journal::Sink> sink)
 {
+    TRACE_FUNC();
     return debugSink().set(std::move(sink));
 }
 
 beast::Journal
 debugLog()
 {
+    TRACE_FUNC();
     return beast::Journal(debugSink().get());
 }
 

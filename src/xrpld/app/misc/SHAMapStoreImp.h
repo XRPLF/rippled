@@ -7,6 +7,7 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/State.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <atomic>
 #include <chrono>
@@ -102,6 +103,7 @@ public:
     std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const override
     {
+    TRACE_FUNC();
         return (deleteInterval_ != 0u) ? std::min(fetchDepth, deleteInterval_) : fetchDepth;
     }
 
@@ -111,6 +113,7 @@ public:
     LedgerIndex
     setCanDelete(LedgerIndex seq) override
     {
+    TRACE_FUNC();
         if (advisoryDelete_)
             canDelete_ = seq;
         return state_db_.setCanDelete(seq);
@@ -119,6 +122,7 @@ public:
     bool
     advisoryDelete() const override
     {
+    TRACE_FUNC();
         return advisoryDelete_;
     }
 
@@ -127,6 +131,7 @@ public:
     LedgerIndex
     getLastRotated() override
     {
+    TRACE_FUNC();
         return state_db_.getState().lastRotated;
     }
 
@@ -135,6 +140,7 @@ public:
     LedgerIndex
     getCanDelete() override
     {
+    TRACE_FUNC();
         return canDelete_;
     }
 
@@ -165,6 +171,7 @@ private:
     bool
     freshenCache(CacheInstance& cache)
     {
+    TRACE_FUNC();
         std::uint64_t check = 0;
 
         for (auto const& key : cache.getKeys())
@@ -209,6 +216,7 @@ public:
     void
     start() override
     {
+    TRACE_FUNC();
         if (deleteInterval_ != 0u)
             thread_ = std::thread(&SHAMapStoreImp::run, this);
     }

@@ -23,6 +23,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <memory>
@@ -33,6 +34,7 @@ template <>
 NotTEC
 Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // 0 means "Allow any flags"
     // The check for tfEnableAmendmentMask is gated by LendingProtocol because
     // that feature introduced this parameter, and it's not worth adding another
@@ -75,6 +77,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 TER
 Change::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     // If tapOPEN_LEDGER is resurrected into ApplyFlags,
     // this block can be moved to preflight.
     if (ctx.view.open())
@@ -135,6 +138,7 @@ Change::preclaim(PreclaimContext const& ctx)
 TER
 Change::doApply()
 {
+    TRACE_FUNC();
     switch (ctx_.tx.getTxnType())
     {
         case ttAMENDMENT:
@@ -154,12 +158,14 @@ Change::doApply()
 void
 Change::preCompute()
 {
+    TRACE_FUNC();
     XRPL_ASSERT(account_ == beast::kZERO, "xrpl::Change::preCompute : zero account");
 }
 
 TER
 Change::applyAmendment()
 {
+    TRACE_FUNC();
     uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
@@ -256,6 +262,7 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
+    TRACE_FUNC();
     auto const k = keylet::fees();
 
     SLE::pointer feeObject = view().peek(k);
@@ -296,6 +303,7 @@ Change::applyFee()
 TER
 Change::applyUNLModify()
 {
+    TRACE_FUNC();
     if (!isFlagLedger(view().seq()))
     {
         JLOG(j_.warn()) << "N-UNL: applyUNLModify, not a flag ledger, seq=" << view().seq();
@@ -421,6 +429,7 @@ Change::visitInvariantEntry(
 bool
 Change::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

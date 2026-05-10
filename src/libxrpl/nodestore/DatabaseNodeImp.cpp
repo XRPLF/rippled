@@ -10,6 +10,7 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <cstddef>
@@ -25,10 +26,12 @@ namespace xrpl::NodeStore {
 void
 DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
 {
+    TRACE_FUNC();
     storeStats(1, data.size());
 
     auto obj = NodeObject::createObject(type, std::move(data), hash);
     backend_->store(obj);
+    negCacheErase(hash);
 }
 
 void
@@ -37,6 +40,7 @@ DatabaseNodeImp::asyncFetch(
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& callback)
 {
+    TRACE_FUNC();
     Database::asyncFetch(hash, ledgerSeq, std::move(callback));
 }
 
@@ -47,6 +51,7 @@ DatabaseNodeImp::fetchNodeObject(
     FetchReport& fetchReport,
     bool duplicate)
 {
+    TRACE_FUNC();
     std::shared_ptr<NodeObject> nodeObject = nullptr;
     Status status = Status::Ok;
 
@@ -84,6 +89,7 @@ DatabaseNodeImp::fetchNodeObject(
 std::vector<std::shared_ptr<NodeObject>>
 DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     auto const before = steady_clock::now();
 

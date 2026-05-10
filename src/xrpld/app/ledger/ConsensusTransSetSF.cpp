@@ -14,6 +14,7 @@
 #include <xrpl/protocol/digest.h>  // IWYU pragma: keep
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <exception>
@@ -36,6 +37,7 @@ ConsensusTransSetSF::gotNode(
     Blob&& nodeData,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     SHAMapNodeType type) const
 {
+    TRACE_FUNC();
     if (fromFilter)
         return;
 
@@ -71,6 +73,7 @@ ConsensusTransSetSF::gotNode(
 std::optional<Blob>
 ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
 {
+    TRACE_FUNC();
     Blob nodeData;
     if (nodeCache_.retrieve(nodeHash, nodeData))
         return nodeData;

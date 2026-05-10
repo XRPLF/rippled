@@ -35,6 +35,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -69,12 +70,14 @@ public:
     [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
+    TRACE_FUNC();
         return std::make_unique<SlesIterImpl>(*this);
     }
 
     [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
+    TRACE_FUNC();
         if (auto const p = dynamic_cast<SlesIterImpl const*>(&impl))
             return iter_ == p->iter_;
         return false;
@@ -83,12 +86,14 @@ public:
     void
     increment() override
     {
+    TRACE_FUNC();
         ++iter_;
     }
 
     [[nodiscard]] SlesType::value_type
     dereference() const override
     {
+    TRACE_FUNC();
         SerialIter sit(iter_->slice());
         return std::make_shared<SLE const>(sit, iter_->key());
     }
@@ -116,12 +121,14 @@ public:
     [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
+    TRACE_FUNC();
         return std::make_unique<TxsIterImpl>(*this);
     }
 
     [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
+    TRACE_FUNC();
         if (auto const p = dynamic_cast<TxsIterImpl const*>(&impl))
             return iter_ == p->iter_;
         return false;
@@ -130,12 +137,14 @@ public:
     void
     increment() override
     {
+    TRACE_FUNC();
         ++iter_;
     }
 
     [[nodiscard]] TxsType::value_type
     dereference() const override
     {
+    TRACE_FUNC();
         auto const& item = *iter_;
         if (metadata_)
             return Ledger::deserializeTxPlusMeta(item);
@@ -158,6 +167,7 @@ Ledger::Ledger(
     , rules_(std::move(rules))
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
+    TRACE_FUNC();
     header_.seq = 1;
     header_.drops = kINITIAL_XRP;
     header_.closeTimeResolution = kLEDGER_GENESIS_TIME_RESOLUTION;
@@ -221,6 +231,7 @@ Ledger::Ledger(
     , header_(info)
     , j_(j)
 {
+    TRACE_FUNC();
     loaded = true;
 
     if (header_.txHash.isNonZero() && !txMap_.fetchRoot(SHAMapHash{header_.txHash}, nullptr))
@@ -259,6 +270,7 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     , rules_(prevLedger.rules_)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
+    TRACE_FUNC();
     header_.seq = prevLedger.header_.seq + 1;
     header_.parentCloseTime = prevLedger.header_.closeTime;
     header_.hash = prevLedger.header().hash + uint256(1);
@@ -286,6 +298,7 @@ Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
     , header_(info)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
+    TRACE_FUNC();
     header_.hash = calculateLedgerHash(header_);
 }
 
@@ -302,6 +315,7 @@ Ledger::Ledger(
     , rules_(std::move(rules))
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
+    TRACE_FUNC();
     header_.seq = ledgerSeq;
     header_.closeTime = closeTime;
     header_.closeTimeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
@@ -311,6 +325,7 @@ Ledger::Ledger(
 void
 Ledger::setImmutable(bool rehash)
 {
+    TRACE_FUNC();
     // Force update, since this is the only
     // place the hash transitions to valid
     if (!immutable_ && rehash)
@@ -334,6 +349,7 @@ Ledger::setAccepted(
     NetClock::duration closeResolution,
     bool correctCloseTime)
 {
+    TRACE_FUNC();
     // Used when we witnessed the consensus.
     XRPL_ASSERT(!open(), "xrpl::Ledger::setAccepted : valid ledger state");
 
@@ -346,6 +362,7 @@ Ledger::setAccepted(
 bool
 Ledger::addSLE(SLE const& sle)
 {
+    TRACE_FUNC();
     auto const s = sle.getSerializer();
     return stateMap_.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(sle.key(), s.slice()));
 }
@@ -355,6 +372,7 @@ Ledger::addSLE(SLE const& sle)
 std::shared_ptr<STTx const>
 Ledger::deserializeTx(SHAMapItem const& item)
 {
+    TRACE_FUNC();
     SerialIter sit(item.slice());
     return std::make_shared<STTx const>(sit);
 }
@@ -362,6 +380,7 @@ Ledger::deserializeTx(SHAMapItem const& item)
 std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
 Ledger::deserializeTxPlusMeta(SHAMapItem const& item)
 {
+    TRACE_FUNC();
     std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> result;
     SerialIter sit(item.slice());
     {
@@ -380,6 +399,7 @@ Ledger::deserializeTxPlusMeta(SHAMapItem const& item)
 bool
 Ledger::exists(Keylet const& k) const
 {
+    TRACE_FUNC();
     // VFALCO NOTE Perhaps check the type for debug builds?
     return stateMap_.hasItem(k.key);
 }
@@ -387,12 +407,14 @@ Ledger::exists(Keylet const& k) const
 bool
 Ledger::exists(uint256 const& key) const
 {
+    TRACE_FUNC();
     return stateMap_.hasItem(key);
 }
 
 std::optional<uint256>
 Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
 {
+    TRACE_FUNC();
     auto item = stateMap_.upperBound(key);
     if (item == stateMap_.end())
         return std::nullopt;
@@ -404,6 +426,7 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
 std::shared_ptr<SLE const>
 Ledger::read(Keylet const& k) const
 {
+    TRACE_FUNC();
     if (k.key == beast::kZERO)
     {
         // LCOV_EXCL_START
@@ -425,42 +448,49 @@ Ledger::read(Keylet const& k) const
 auto
 Ledger::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
 {
+    TRACE_FUNC();
     return std::make_unique<SlesIterImpl>(stateMap_.begin());
 }
 
 auto
 Ledger::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
 {
+    TRACE_FUNC();
     return std::make_unique<SlesIterImpl>(stateMap_.end());
 }
 
 auto
 Ledger::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
 {
+    TRACE_FUNC();
     return std::make_unique<SlesIterImpl>(stateMap_.upperBound(key));
 }
 
 auto
 Ledger::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
 {
+    TRACE_FUNC();
     return std::make_unique<TxsIterImpl>(!open(), txMap_.begin());
 }
 
 auto
 Ledger::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
 {
+    TRACE_FUNC();
     return std::make_unique<TxsIterImpl>(!open(), txMap_.end());
 }
 
 bool
 Ledger::txExists(uint256 const& key) const
 {
+    TRACE_FUNC();
     return txMap_.hasItem(key);
 }
 
 auto
 Ledger::txRead(key_type const& key) const -> tx_type
 {
+    TRACE_FUNC();
     auto const& item = txMap_.peekItem(key);
     if (!item)
         return {};
@@ -475,6 +505,7 @@ Ledger::txRead(key_type const& key) const -> tx_type
 auto
 Ledger::digest(key_type const& key) const -> std::optional<digest_type>
 {
+    TRACE_FUNC();
     SHAMapHash digest;
     // VFALCO Unfortunately this loads the item
     //        from the NodeStore needlessly.
@@ -488,6 +519,7 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
 void
 Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     if (!stateMap_.delItem(sle->key()))
         logicError("Ledger::rawErase: key not found");
 }
@@ -495,6 +527,7 @@ Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 void
 Ledger::rawErase(uint256 const& key)
 {
+    TRACE_FUNC();
     if (!stateMap_.delItem(key))
         logicError("Ledger::rawErase: key not found");
 }
@@ -502,6 +535,7 @@ Ledger::rawErase(uint256 const& key)
 void
 Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     Serializer ss;
     sle->add(ss);
     if (!stateMap_.addGiveItem(
@@ -514,6 +548,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
 void
 Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     Serializer ss;
     sle->add(ss);
     if (!stateMap_.updateGiveItem(
@@ -529,6 +564,7 @@ Ledger::rawTxInsert(
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(metaData, "xrpl::Ledger::rawTxInsert : non-null metadata input");
 
     // low-level - just add to table
@@ -542,6 +578,7 @@ Ledger::rawTxInsert(
 bool
 Ledger::setup()
 {
+    TRACE_FUNC();
     bool ret = true;
 
     try
@@ -626,6 +663,7 @@ Ledger::setup()
 std::shared_ptr<SLE>
 Ledger::peek(Keylet const& k) const
 {
+    TRACE_FUNC();
     auto const& value = stateMap_.peekItem(k.key);
     if (!value)
         return nullptr;
@@ -638,6 +676,7 @@ Ledger::peek(Keylet const& k) const
 hash_set<PublicKey>
 Ledger::negativeUNL() const
 {
+    TRACE_FUNC();
     hash_set<PublicKey> negUnl;
     if (auto sle = read(keylet::negativeUNL()); sle && sle->isFieldPresent(sfDisabledValidators))
     {
@@ -663,6 +702,7 @@ Ledger::negativeUNL() const
 std::optional<PublicKey>
 Ledger::validatorToDisable() const
 {
+    TRACE_FUNC();
     if (auto sle = read(keylet::negativeUNL()); sle && sle->isFieldPresent(sfValidatorToDisable))
     {
         auto d = sle->getFieldVL(sfValidatorToDisable);
@@ -677,6 +717,7 @@ Ledger::validatorToDisable() const
 std::optional<PublicKey>
 Ledger::validatorToReEnable() const
 {
+    TRACE_FUNC();
     if (auto sle = read(keylet::negativeUNL()); sle && sle->isFieldPresent(sfValidatorToReEnable))
     {
         auto d = sle->getFieldVL(sfValidatorToReEnable);
@@ -691,6 +732,7 @@ Ledger::validatorToReEnable() const
 void
 Ledger::updateNegativeUNL()
 {
+    TRACE_FUNC();
     auto sle = peek(keylet::negativeUNL());
     if (!sle)
         return;
@@ -740,6 +782,7 @@ Ledger::updateNegativeUNL()
 bool
 Ledger::walkLedger(beast::Journal j, bool parallel) const
 {
+    TRACE_FUNC();
     std::vector<SHAMapMissingNode> missingNodes1;
     std::vector<SHAMapMissingNode> missingNodes2;
 
@@ -791,6 +834,7 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
 bool
 Ledger::isSensible() const
 {
+    TRACE_FUNC();
     if (header_.hash.isZero())
         return false;
     if (header_.accountHash.isZero())
@@ -807,6 +851,7 @@ Ledger::isSensible() const
 void
 Ledger::updateSkipList()
 {
+    TRACE_FUNC();
     if (header_.seq == 0)  // genesis ledger has no previous ledger
         return;
 
@@ -880,17 +925,20 @@ Ledger::updateSkipList()
 bool
 Ledger::isFlagLedger() const
 {
+    TRACE_FUNC();
     return ::xrpl::isFlagLedger(header_.seq);
 }
 bool
 Ledger::isVotingLedger() const
 {
+    TRACE_FUNC();
     return ::xrpl::isVotingLedger(header_.seq + 1);
 }
 
 void
 Ledger::unshare() const
 {
+    TRACE_FUNC();
     stateMap_.unshare();
     txMap_.unshare();
 }
@@ -898,6 +946,7 @@ Ledger::unshare() const
 void
 Ledger::invariants() const
 {
+    TRACE_FUNC();
     stateMap_.invariants();
     txMap_.invariants();
 }

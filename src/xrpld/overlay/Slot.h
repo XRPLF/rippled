@@ -11,6 +11,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/messages.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <optional>
@@ -40,6 +41,7 @@ template <typename Unit, typename TP>
 Unit
 epoch(TP const& t)
 {
+    TRACE_FUNC();
     return std::chrono::duration_cast<Unit>(t.time_since_epoch());
 }
 
@@ -144,6 +146,7 @@ private:
     [[nodiscard]] time_point const&
     getLastSelected() const
     {
+    TRACE_FUNC();
         return lastSelected_;
     }
 
@@ -159,6 +162,7 @@ private:
     [[nodiscard]] SlotState
     getState() const
     {
+    TRACE_FUNC();
         return state_;
     }
 
@@ -232,6 +236,7 @@ template <typename ClockType>
 void
 Slot<ClockType>::deleteIdlePeer(PublicKey const& validator)
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     auto now = ClockType::now();
     for (auto it = peers_.begin(); it != peers_.end();)
@@ -258,6 +263,7 @@ Slot<ClockType>::update(
     protocol::MessageType type,
     ignored_squelch_callback callback)
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     auto now = ClockType::now();
     auto it = peers_.find(id);
@@ -388,6 +394,7 @@ template <typename ClockType>
 std::chrono::seconds
 Slot<ClockType>::getSquelchDuration(std::size_t npeers)
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     auto m = std::max(kMAX_UNSQUELCH_EXPIRE_DEFAULT, seconds{kSQUELCH_PER_PEER * npeers});
     if (m > kMAX_UNSQUELCH_EXPIRE_PEERS)
@@ -402,6 +409,7 @@ template <typename ClockType>
 void
 Slot<ClockType>::deletePeer(PublicKey const& validator, id_t id, bool erase)
 {
+    TRACE_FUNC();
     auto it = peers_.find(id);
     if (it != peers_.end())
     {
@@ -449,6 +457,7 @@ template <typename ClockType>
 void
 Slot<ClockType>::resetCounts()
 {
+    TRACE_FUNC();
     for (auto& [_, peer] : peers_)
     {
         (void)_;
@@ -460,6 +469,7 @@ template <typename ClockType>
 void
 Slot<ClockType>::initCounting()
 {
+    TRACE_FUNC();
     state_ = SlotState::Counting;
     considered_.clear();
     reachedThreshold_ = 0;
@@ -470,6 +480,7 @@ template <typename ClockType>
 std::uint16_t
 Slot<ClockType>::inState(PeerState state) const
 {
+    TRACE_FUNC();
     return std::count_if(
         peers_.begin(), peers_.end(), [&](auto const& it) { return (it.second.state == state); });
 }
@@ -478,6 +489,7 @@ template <typename ClockType>
 std::uint16_t
 Slot<ClockType>::notInState(PeerState state) const
 {
+    TRACE_FUNC();
     return std::count_if(
         peers_.begin(), peers_.end(), [&](auto const& it) { return (it.second.state != state); });
 }
@@ -486,6 +498,7 @@ template <typename ClockType>
 std::set<typename Peer::id_t>
 Slot<ClockType>::getSelected() const
 {
+    TRACE_FUNC();
     std::set<id_t> r;
     for (auto const& [id, info] : peers_)
     {
@@ -499,6 +512,7 @@ template <typename ClockType>
 std::unordered_map<typename Peer::id_t, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
 Slot<ClockType>::getPeers() const
 {
+    TRACE_FUNC();
     using namespace std::chrono;
     auto r = std::
         unordered_map<id_t, std::tuple<PeerState, std::uint16_t, std::uint32_t, std::uint32_t>>();
@@ -554,6 +568,7 @@ public:
     bool
     baseSquelchReady()
     {
+    TRACE_FUNC();
         return baseSquelchEnabled_ && reduceRelayReady();
     }
 
@@ -561,6 +576,7 @@ public:
     bool
     reduceRelayReady()
     {
+    TRACE_FUNC();
         if (!reduceRelayReady_)
         {
             reduceRelayReady_ = reduce_relay::epoch<std::chrono::minutes>(ClockType::now()) >
@@ -584,6 +600,7 @@ public:
         id_t id,
         protocol::MessageType type)
     {
+    TRACE_FUNC();
         updateSlotAndSquelch(key, validator, id, type, []() {});
     }
 
@@ -612,6 +629,7 @@ public:
     [[nodiscard]] std::optional<std::uint16_t>
     inState(PublicKey const& validator, PeerState state) const
     {
+    TRACE_FUNC();
         auto const& it = slots_.find(validator);
         if (it != slots_.end())
             return it->second.inState(state);
@@ -622,6 +640,7 @@ public:
     [[nodiscard]] std::optional<std::uint16_t>
     notInState(PublicKey const& validator, PeerState state) const
     {
+    TRACE_FUNC();
         auto const& it = slots_.find(validator);
         if (it != slots_.end())
             return it->second.notInState(state);
@@ -632,6 +651,7 @@ public:
     [[nodiscard]] bool
     inState(PublicKey const& validator, SlotState state) const
     {
+    TRACE_FUNC();
         auto const& it = slots_.find(validator);
         if (it != slots_.end())
             return it->second.state_ == state;
@@ -642,6 +662,7 @@ public:
     std::set<id_t>
     getSelected(PublicKey const& validator)
     {
+    TRACE_FUNC();
         auto const& it = slots_.find(validator);
         if (it != slots_.end())
             return it->second.getSelected();
@@ -655,6 +676,7 @@ public:
         unordered_map<typename Peer::id_t, std::tuple<PeerState, uint16_t, uint32_t, std::uint32_t>>
         getPeers(PublicKey const& validator)
     {
+    TRACE_FUNC();
         auto const& it = slots_.find(validator);
         if (it != slots_.end())
             return it->second.getPeers();
@@ -665,6 +687,7 @@ public:
     std::optional<SlotState>
     getState(PublicKey const& validator)
     {
+    TRACE_FUNC();
         auto const& it = slots_.find(validator);
         if (it != slots_.end())
             return it->second.getState();
@@ -708,6 +731,7 @@ template <typename ClockType>
 bool
 Slots<ClockType>::addPeerMessage(uint256 const& key, id_t id)
 {
+    TRACE_FUNC();
     beast::expire(peersWithMessage, reduce_relay::kIDLED);
 
     if (key.isNonZero())
@@ -744,6 +768,7 @@ Slots<ClockType>::updateSlotAndSquelch(
     protocol::MessageType type,
     typename Slot<ClockType>::ignored_squelch_callback callback)
 {
+    TRACE_FUNC();
     if (!addPeerMessage(key, id))
         return;
 
@@ -769,6 +794,7 @@ template <typename ClockType>
 void
 Slots<ClockType>::deletePeer(id_t id, bool erase)
 {
+    TRACE_FUNC();
     for (auto& [validator, slot] : slots_)
         slot.deletePeer(validator, id, erase);
 }
@@ -777,6 +803,7 @@ template <typename ClockType>
 void
 Slots<ClockType>::deleteIdlePeers()
 {
+    TRACE_FUNC();
     auto now = ClockType::now();
 
     for (auto it = slots_.begin(); it != slots_.end();)

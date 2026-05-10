@@ -17,6 +17,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -30,6 +31,7 @@ ValidMPTIssuance::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
@@ -66,6 +68,7 @@ ValidMPTIssuance::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
+    TRACE_FUNC();
     auto const& rules = view.rules();
     bool const mptV2Enabled = rules.enabled(featureMPTokensV2);
     if (isTesSuccess(result) || (mptV2Enabled && result == tecINCOMPLETE))
@@ -285,6 +288,7 @@ ValidMPTPayment::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    TRACE_FUNC();
     if (overflow_)
         return;
 
@@ -352,6 +356,7 @@ ValidMPTPayment::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    TRACE_FUNC();
     if (isTesSuccess(result))
     {
         bool const enforce = view.rules().enabled(featureMPTokensV2);

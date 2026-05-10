@@ -16,6 +16,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -45,6 +46,7 @@ getAccountObjects(
     std::uint32_t const limit,
     json::Value& jvResult)
 {
+    TRACE_FUNC();
     // check if dirIndex is valid
     if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))
         return false;
@@ -229,6 +231,7 @@ getAccountObjects(
 json::Value
 doAccountObjects(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto const& params = context.params;
     if (!params.isMember(jss::account))
         return RPC::missingFieldError(jss::account);

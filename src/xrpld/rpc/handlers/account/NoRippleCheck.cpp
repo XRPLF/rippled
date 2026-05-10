@@ -18,6 +18,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -32,6 +33,7 @@ fillTransaction(
     std::uint32_t& sequence,
     ReadView const& ledger)
 {
+    TRACE_FUNC();
     txArray["Sequence"] = json::UInt(sequence++);
     txArray["Account"] = toBase58(accountID);
     auto& fees = ledger.fees();
@@ -51,6 +53,7 @@ fillTransaction(
 json::Value
 doNoRippleCheck(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto const& params(context.params);
     if (!params.isMember(jss::account))
         return RPC::missingFieldError("account");

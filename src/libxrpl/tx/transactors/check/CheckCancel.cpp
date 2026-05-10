@@ -12,6 +12,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -21,12 +22,14 @@ namespace xrpl {
 NotTEC
 CheckCancel::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tesSUCCESS;
 }
 
 TER
 CheckCancel::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
     if (!sleCheck)
     {
@@ -56,6 +59,7 @@ CheckCancel::preclaim(PreclaimContext const& ctx)
 TER
 CheckCancel::doApply()
 {
+    TRACE_FUNC();
     auto const sleCheck = view().peek(keylet::check(ctx_.tx[sfCheckID]));
     if (!sleCheck)
     {
@@ -112,6 +116,7 @@ CheckCancel::visitInvariantEntry(
 bool
 CheckCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

@@ -28,6 +28,7 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -39,6 +40,7 @@ namespace xrpl {
 bool
 CheckCash::checkExtraFeatures(xrpl::PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const optAmount = ctx.tx[~sfAmount];
     auto const optDeliverMin = ctx.tx[~sfDeliverMin];
 
@@ -50,6 +52,7 @@ CheckCash::checkExtraFeatures(xrpl::PreflightContext const& ctx)
 NotTEC
 CheckCash::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // Exactly one of Amount or DeliverMin must be present.
     auto const optAmount = ctx.tx[~sfAmount];
     auto const optDeliverMin = ctx.tx[~sfDeliverMin];
@@ -81,6 +84,7 @@ CheckCash::preflight(PreflightContext const& ctx)
 TER
 CheckCash::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
     if (!sleCheck)
     {
@@ -281,6 +285,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 TER
 CheckCash::doApply()
 {
+    TRACE_FUNC();
     // Flow requires that we operate on a PaymentSandbox, rather than
     // directly on a View.
     PaymentSandbox psb(&ctx_.view());
@@ -599,6 +604,7 @@ CheckCash::visitInvariantEntry(
 bool
 CheckCash::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

@@ -36,6 +36,7 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/format/free_funcs.hpp>
@@ -75,6 +76,7 @@ namespace xrpl::detail {
 static std::string
 toString(TableType type)
 {
+    TRACE_FUNC();
     static_assert(kTABLE_TYPE_COUNT == 3, "Need to modify switch statement if enum is modified");
 
     switch (type)
@@ -100,6 +102,7 @@ makeLedgerDBs(
     DatabaseCon::CheckpointerSetup const& checkpointerSetup,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // ledger database
     auto lgr{std::make_unique<DatabaseCon>(
         setup, kLGR_DB_NAME, setup.lgrPragma, kLGR_DB_INIT, checkpointerSetup, j)};
@@ -152,6 +155,7 @@ makeLedgerDBs(
 std::optional<LedgerIndex>
 getMinLedgerSeq(soci::session& session, TableType type)
 {
+    TRACE_FUNC();
     std::string const query = "SELECT MIN(LedgerSeq) FROM " + toString(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
@@ -162,6 +166,7 @@ getMinLedgerSeq(soci::session& session, TableType type)
 std::optional<LedgerIndex>
 getMaxLedgerSeq(soci::session& session, TableType type)
 {
+    TRACE_FUNC();
     std::string const query = "SELECT MAX(LedgerSeq) FROM " + toString(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
@@ -172,18 +177,21 @@ getMaxLedgerSeq(soci::session& session, TableType type)
 void
 deleteByLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq)
 {
+    TRACE_FUNC();
     session << "DELETE FROM " << toString(type) << " WHERE LedgerSeq == " << ledgerSeq << ";";
 }
 
 void
 deleteBeforeLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq)
 {
+    TRACE_FUNC();
     session << "DELETE FROM " << toString(type) << " WHERE LedgerSeq < " << ledgerSeq << ";";
 }
 
 std::size_t
 getRows(soci::session& session, TableType type)
 {
+    TRACE_FUNC();
     std::size_t rows = 0;
     session << "SELECT COUNT(*) AS rows "
                "FROM "
@@ -196,6 +204,7 @@ getRows(soci::session& session, TableType type)
 RelationalDatabase::CountMinMax
 getRowsMinMax(soci::session& session, TableType type)
 {
+    TRACE_FUNC();
     RelationalDatabase::CountMinMax res{};
     session << "SELECT COUNT(*) AS rows, "
                "MIN(LedgerSeq) AS first, "
@@ -216,6 +225,7 @@ saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
+    TRACE_FUNC();
     auto j = app.getJournal("Ledger");
     auto seq = ledger->header().seq;
 
@@ -424,6 +434,7 @@ saveValidatedLedger(
 static std::optional<LedgerHeader>
 getLedgerInfo(soci::session& session, std::string const& sqlSuffix, beast::Journal j)
 {
+    TRACE_FUNC();
     // SOCI requires boost::optional (not std::optional) as parameters.
     boost::optional<std::string> hash, parentHash, accountHash, txHash;
     boost::optional<std::uint64_t> seq, drops, closeTime, parentCloseTime, closeTimeResolution,
@@ -489,6 +500,7 @@ getLedgerInfo(soci::session& session, std::string const& sqlSuffix, beast::Journ
 std::optional<LedgerHeader>
 getLedgerInfoByIndex(soci::session& session, LedgerIndex ledgerSeq, beast::Journal j)
 {
+    TRACE_FUNC();
     std::ostringstream s;
     s << "WHERE LedgerSeq = " << ledgerSeq;
     return getLedgerInfo(session, s.str(), j);
@@ -497,6 +509,7 @@ getLedgerInfoByIndex(soci::session& session, LedgerIndex ledgerSeq, beast::Journ
 std::optional<LedgerHeader>
 getNewestLedgerInfo(soci::session& session, beast::Journal j)
 {
+    TRACE_FUNC();
     std::ostringstream s;
     s << "ORDER BY LedgerSeq DESC LIMIT 1";
     return getLedgerInfo(session, s.str(), j);
@@ -505,6 +518,7 @@ getNewestLedgerInfo(soci::session& session, beast::Journal j)
 std::optional<LedgerHeader>
 getLimitedOldestLedgerInfo(soci::session& session, LedgerIndex ledgerFirstIndex, beast::Journal j)
 {
+    TRACE_FUNC();
     std::ostringstream s;
     s << "WHERE LedgerSeq >= " + std::to_string(ledgerFirstIndex) +
             " ORDER BY LedgerSeq ASC LIMIT 1";
@@ -514,6 +528,7 @@ getLimitedOldestLedgerInfo(soci::session& session, LedgerIndex ledgerFirstIndex,
 std::optional<LedgerHeader>
 getLimitedNewestLedgerInfo(soci::session& session, LedgerIndex ledgerFirstIndex, beast::Journal j)
 {
+    TRACE_FUNC();
     std::ostringstream s;
     s << "WHERE LedgerSeq >= " + std::to_string(ledgerFirstIndex) +
             " ORDER BY LedgerSeq DESC LIMIT 1";
@@ -523,6 +538,7 @@ getLimitedNewestLedgerInfo(soci::session& session, LedgerIndex ledgerFirstIndex,
 std::optional<LedgerHeader>
 getLedgerInfoByHash(soci::session& session, uint256 const& ledgerHash, beast::Journal j)
 {
+    TRACE_FUNC();
     std::ostringstream s;
     s << "WHERE LedgerHash = '" << ledgerHash << "'";
     return getLedgerInfo(session, s.str(), j);
@@ -531,6 +547,7 @@ getLedgerInfoByHash(soci::session& session, uint256 const& ledgerHash, beast::Jo
 uint256
 getHashByIndex(soci::session& session, LedgerIndex ledgerIndex)
 {
+    TRACE_FUNC();
     uint256 ret;
 
     std::string sql = "SELECT LedgerHash FROM Ledgers INDEXED BY SeqLedger WHERE LedgerSeq='";
@@ -560,6 +577,7 @@ getHashByIndex(soci::session& session, LedgerIndex ledgerIndex)
 std::optional<LedgerHashPair>
 getHashesByIndex(soci::session& session, LedgerIndex ledgerIndex, beast::Journal j)
 {
+    TRACE_FUNC();
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<std::string> lhO, phO;
 
@@ -588,6 +606,7 @@ getHashesByIndex(soci::session& session, LedgerIndex ledgerIndex, beast::Journal
 std::map<LedgerIndex, LedgerHashPair>
 getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq, beast::Journal j)
 {
+    TRACE_FUNC();
     std::string sql = "SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq >= ";
     sql.append(std::to_string(minSeq));
     sql.append(" AND LedgerSeq <= ");
@@ -624,6 +643,7 @@ getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq,
 std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, int quantity)
 {
+    TRACE_FUNC();
     std::string const sql = boost::str(
         boost::format(
             "SELECT LedgerSeq, Status, RawTxn "
@@ -697,6 +717,7 @@ transactionsSQL(
     bool count,
     beast::Journal j)
 {
+    TRACE_FUNC();
     constexpr std::uint32_t kNONBINARY_PAGE_LENGTH = 200;
     constexpr std::uint32_t kBINARY_PAGE_LENGTH = 500;
 
@@ -795,6 +816,7 @@ getAccountTxs(
     bool descending,
     beast::Journal j)
 {
+    TRACE_FUNC();
     RelationalDatabase::AccountTxs ret;
 
     std::string const sql = transactionsSQL(
@@ -877,6 +899,7 @@ getOldestAccountTxs(
     RelationalDatabase::AccountTxOptions const& options,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return getAccountTxs(session, app, ledgerMaster, options, false, j);
 }
 
@@ -888,6 +911,7 @@ getNewestAccountTxs(
     RelationalDatabase::AccountTxOptions const& options,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return getAccountTxs(session, app, ledgerMaster, options, true, j);
 }
 
@@ -919,6 +943,7 @@ getAccountTxsB(
     bool descending,
     beast::Journal j)
 {
+    TRACE_FUNC();
     std::vector<RelationalDatabase::txnMetaLedgerType> ret;
 
     std::string const sql = transactionsSQL(
@@ -975,6 +1000,7 @@ getOldestAccountTxsB(
     RelationalDatabase::AccountTxOptions const& options,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return getAccountTxsB(session, app, options, false, j);
 }
 
@@ -985,6 +1011,7 @@ getNewestAccountTxsB(
     RelationalDatabase::AccountTxOptions const& options,
     beast::Journal j)
 {
+    TRACE_FUNC();
     return getAccountTxsB(session, app, options, true, j);
 }
 
@@ -1016,6 +1043,7 @@ accountTxPage(
     std::uint32_t pageLength,
     bool forward)
 {
+    TRACE_FUNC();
     int total = 0;
 
     bool lookingForMarker = options.marker.has_value();
@@ -1198,6 +1226,7 @@ oldestAccountTxPage(
     RelationalDatabase::AccountTxPageOptions const& options,
     std::uint32_t pageLength)
 {
+    TRACE_FUNC();
     return accountTxPage(session, onUnsavedLedger, onTransaction, options, pageLength, true);
 }
 
@@ -1209,6 +1238,7 @@ newestAccountTxPage(
     RelationalDatabase::AccountTxPageOptions const& options,
     std::uint32_t pageLength)
 {
+    TRACE_FUNC();
     return accountTxPage(session, onUnsavedLedger, onTransaction, options, pageLength, false);
 }
 
@@ -1220,6 +1250,7 @@ getTransaction(
     std::optional<ClosedInterval<uint32_t>> const& range,
     ErrorCodeI& ec)
 {
+    TRACE_FUNC();
     std::string sql =
         "SELECT LedgerSeq,Status,RawTxn,TxnMeta "
         "FROM Transactions WHERE TransID='";
@@ -1291,6 +1322,7 @@ getTransaction(
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 {
+    TRACE_FUNC();
     boost::filesystem::space_info const space =
         boost::filesystem::space(config.legacy("database_path"));
 

@@ -18,6 +18,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <cstddef>
@@ -32,6 +33,7 @@ namespace xrpl {
 static inline std::pair<Currency, Currency>
 tokenPairKey(STObject const& pair)
 {
+    TRACE_FUNC();
     return std::make_pair(
         pair.getFieldCurrency(sfBaseAsset).currency(),
         pair.getFieldCurrency(sfQuoteAsset).currency());
@@ -40,6 +42,7 @@ tokenPairKey(STObject const& pair)
 NotTEC
 OracleSet::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())
         return temARRAY_EMPTY;
@@ -62,6 +65,7 @@ OracleSet::preflight(PreflightContext const& ctx)
 TER
 OracleSet::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const sleSetter = ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
     if (!sleSetter)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
@@ -182,6 +186,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 static bool
 adjustOwnerCount(ApplyContext& ctx, int count)
 {
+    TRACE_FUNC();
     if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
         adjustOwnerCount(ctx.view(), sleAccount, count, ctx.journal);
@@ -194,6 +199,7 @@ adjustOwnerCount(ApplyContext& ctx, int count)
 static void
 setPriceDataInnerObjTemplate(STObject& obj)
 {
+    TRACE_FUNC();
     if (SOTemplate const* elements =
             InnerObjectFormats::getInstance().findSOTemplateBySField(sfPriceData))
         obj.set(*elements);
@@ -202,6 +208,7 @@ setPriceDataInnerObjTemplate(STObject& obj)
 TER
 OracleSet::doApply()
 {
+    TRACE_FUNC();
     auto const oracleID = keylet::oracle(account_, ctx_.tx[sfOracleDocumentID]);
 
     auto populatePriceData = [](STObject& priceData, STObject const& entry) {
@@ -339,6 +346,7 @@ OracleSet::visitInvariantEntry(
 bool
 OracleSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

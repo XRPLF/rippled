@@ -15,6 +15,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
@@ -66,12 +67,14 @@ public:
 
     ~ManagerImp() override
     {
+    TRACE_FUNC();
         stop();
     }
 
     void
     stop() override
     {
+    TRACE_FUNC();
         if (work_)
         {
             work_.reset();
@@ -89,12 +92,14 @@ public:
     void
     setConfig(Config const& config) override
     {
+    TRACE_FUNC();
         logic_.config(config);
     }
 
     Config
     config() override
     {
+    TRACE_FUNC();
         return logic_.config();
     }
 
@@ -102,18 +107,21 @@ public:
     addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses)
         override
     {
+    TRACE_FUNC();
         logic_.addFixedPeer(name, addresses);
     }
 
     void
     addFallbackStrings(std::string const& name, std::vector<std::string> const& strings) override
     {
+    TRACE_FUNC();
         logic_.addStaticSource(SourceStrings::make(name, strings));
     }
 
     void
     addFallbackURL(std::string const& name, std::string const& url)
     {
+    TRACE_FUNC();
         // VFALCO TODO This needs to be implemented
     }
 
@@ -124,18 +132,21 @@ public:
         beast::IP::Endpoint const& localEndpoint,
         beast::IP::Endpoint const& remoteEndpoint) override
     {
+    TRACE_FUNC();
         return logic_.newInboundSlot(localEndpoint, remoteEndpoint);
     }
 
     std::pair<std::shared_ptr<Slot>, Result>
     newOutboundSlot(beast::IP::Endpoint const& remoteEndpoint) override
     {
+    TRACE_FUNC();
         return logic_.newOutboundSlot(remoteEndpoint);
     }
 
     void
     onEndpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) override
     {
+    TRACE_FUNC();
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         logic_.onEndpoints(impl, endpoints);
     }
@@ -143,6 +154,7 @@ public:
     void
     onClosed(std::shared_ptr<Slot> const& slot) override
     {
+    TRACE_FUNC();
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         logic_.onClosed(impl);
     }
@@ -150,6 +162,7 @@ public:
     void
     onFailure(std::shared_ptr<Slot> const& slot) override
     {
+    TRACE_FUNC();
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         logic_.onFailure(impl);
     }
@@ -159,6 +172,7 @@ public:
         boost::asio::ip::tcp::endpoint const& remoteAddress,
         std::vector<boost::asio::ip::tcp::endpoint> const& eps) override
     {
+    TRACE_FUNC();
         logic_.onRedirects(eps.begin(), eps.end(), remoteAddress);
     }
 
@@ -168,6 +182,7 @@ public:
     onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& localEndpoint)
         override
     {
+    TRACE_FUNC();
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return logic_.onConnected(impl, localEndpoint);
     }
@@ -175,6 +190,7 @@ public:
     Result
     activate(std::shared_ptr<Slot> const& slot, PublicKey const& key, bool reserved) override
     {
+    TRACE_FUNC();
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return logic_.activate(impl, key, reserved);
     }
@@ -182,6 +198,7 @@ public:
     std::vector<Endpoint>
     redirect(std::shared_ptr<Slot> const& slot) override
     {
+    TRACE_FUNC();
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return logic_.redirect(impl);
     }
@@ -189,24 +206,28 @@ public:
     std::vector<beast::IP::Endpoint>
     autoconnect() override
     {
+    TRACE_FUNC();
         return logic_.autoconnect();
     }
 
     void
     oncePerSecond() override
     {
+    TRACE_FUNC();
         logic_.oncePerSecond();
     }
 
     std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
     buildEndpointsForPeers() override
     {
+    TRACE_FUNC();
         return logic_.buildEndpointsForPeers();
     }
 
     void
     start() override
     {
+    TRACE_FUNC();
         store_.open(config_);
         logic_.load();
     }
@@ -220,6 +241,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map) override
     {
+    TRACE_FUNC();
         logic_.onWrite(map);
     }
 
@@ -245,6 +267,7 @@ private:
     void
     collectMetrics()
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(statsMutex_);
         stats_.activeInboundPeers = logic_.counts().inboundActive();
         stats_.activeOutboundPeers = logic_.counts().outActive();
@@ -265,6 +288,7 @@ makeManager(
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
 {
+    TRACE_FUNC();
     return std::make_unique<ManagerImp>(ioContext, clock, journal, config, collector);
 }
 

@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/resource/Consumer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -32,6 +33,7 @@ InfoSub::InfoSub(Source& source, Consumer consumer)
 
 InfoSub::~InfoSub()
 {
+    TRACE_FUNC();
     source_.unsubTransactions(seq_);
     source_.unsubRTTransactions(seq_);
     source_.unsubLedger(seq_);
@@ -56,12 +58,14 @@ InfoSub::~InfoSub()
 Resource::Consumer&
 InfoSub::getConsumer()
 {
+    TRACE_FUNC();
     return consumer_;
 }
 
 std::uint64_t
 InfoSub::getSeq() const
 {
+    TRACE_FUNC();
     return seq_;
 }
 
@@ -73,6 +77,7 @@ InfoSub::onSendEmpty()
 void
 InfoSub::insertSubAccountInfo(AccountID const& account, bool rt)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
 
     if (rt)
@@ -88,6 +93,7 @@ InfoSub::insertSubAccountInfo(AccountID const& account, bool rt)
 void
 InfoSub::deleteSubAccountInfo(AccountID const& account, bool rt)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
 
     if (rt)
@@ -103,6 +109,7 @@ InfoSub::deleteSubAccountInfo(AccountID const& account, bool rt)
 bool
 InfoSub::insertSubAccountHistory(AccountID const& account)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
     return accountHistorySubscriptions_.insert(account).second;
 }
@@ -110,6 +117,7 @@ InfoSub::insertSubAccountHistory(AccountID const& account)
 void
 InfoSub::deleteSubAccountHistory(AccountID const& account)
 {
+    TRACE_FUNC();
     std::scoped_lock const sl(lock_);
     accountHistorySubscriptions_.erase(account);
 }
@@ -117,30 +125,35 @@ InfoSub::deleteSubAccountHistory(AccountID const& account)
 void
 InfoSub::clearRequest()
 {
+    TRACE_FUNC();
     request_.reset();
 }
 
 void
 InfoSub::setRequest(std::shared_ptr<InfoSubRequest> const& req)
 {
+    TRACE_FUNC();
     request_ = req;
 }
 
 std::shared_ptr<InfoSubRequest> const&
 InfoSub::getRequest()
 {
+    TRACE_FUNC();
     return request_;
 }
 
 void
 InfoSub::setApiVersion(unsigned int apiVersion)
 {
+    TRACE_FUNC();
     apiVersion_ = apiVersion;
 }
 
 unsigned int
 InfoSub::getApiVersion() const noexcept
 {
+    TRACE_FUNC();
     XRPL_ASSERT(apiVersion_ > 0, "xrpl::InfoSub::getApiVersion : valid API version");
     return apiVersion_;
 }

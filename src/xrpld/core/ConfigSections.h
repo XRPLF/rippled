@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -12,11 +13,13 @@ struct ConfigSection
     static std::string
     nodeDatabase()
     {
+    TRACE_FUNC();
         return "node_db";
     }
     static std::string
     importNodeDatabase()
     {
+    TRACE_FUNC();
         return "import_db";
     }
 };

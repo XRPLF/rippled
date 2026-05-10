@@ -21,6 +21,7 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <memory>
@@ -56,6 +57,7 @@ LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Ap
 bool
 LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validated)
 {
+    TRACE_FUNC();
     if (!ledger->isImmutable())
         logicError("mutable Ledger in insert");
 
@@ -75,6 +77,7 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
 LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
+    TRACE_FUNC();
     std::unique_lock const sl(ledgers_by_hash_.peekMutex());
     if (auto it = ledgersByIndex_.find(index); it != ledgersByIndex_.end())
         return it->second;
@@ -84,6 +87,7 @@ LedgerHistory::getLedgerHash(LedgerIndex index)
 std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
+    TRACE_FUNC();
     {
         std::unique_lock sl(ledgers_by_hash_.peekMutex());
         auto it = ledgersByIndex_.find(index);
@@ -121,6 +125,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 {
+    TRACE_FUNC();
     auto ret = ledgers_by_hash_.fetch(hash);
 
     if (ret)
@@ -158,6 +163,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 static void
 logOne(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journal& j)
 {
+    TRACE_FUNC();
     auto metaData = ledger.txRead(tx).second;
 
     if (metaData != nullptr)
@@ -180,6 +186,7 @@ logMetadataDifference(
     uint256 const& tx,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto getMeta = [](ReadView const& ledger, uint256 const& txID) {
         std::optional<TxMeta> ret;
         if (auto meta = ledger.txRead(txID).second)
@@ -302,6 +309,7 @@ logMetadataDifference(
 static std::vector<SHAMapItem const*>
 leaves(SHAMap const& sm)
 {
+    TRACE_FUNC();
     std::vector<SHAMapItem const*> v;
     for (auto const& item : sm)
         v.push_back(&item);
@@ -318,6 +326,7 @@ LedgerHistory::handleMismatch(
     std::optional<uint256> const& validatedConsensusHash,
     json::Value const& consensus)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(built != valid, "xrpl::LedgerHistory::handleMismatch : unequal hashes");
     ++mismatch_counter_;
 
@@ -426,6 +435,7 @@ LedgerHistory::builtLedger(
     uint256 const& consensusHash,
     json::Value consensus)
 {
+    TRACE_FUNC();
     LedgerIndex const index = ledger->header().seq;
     LedgerHash const hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::builtLedger : nonzero hash");
@@ -465,6 +475,7 @@ LedgerHistory::validatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     std::optional<uint256> const& consensusHash)
 {
+    TRACE_FUNC();
     LedgerIndex const index = ledger->header().seq;
     LedgerHash const hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::validatedLedger : nonzero hash");
@@ -504,6 +515,7 @@ LedgerHistory::validatedLedger(
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
+    TRACE_FUNC();
     std::unique_lock const sl(ledgers_by_hash_.peekMutex());
     auto it = ledgersByIndex_.find(ledgerIndex);
 
@@ -518,6 +530,7 @@ LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 void
 LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
 {
+    TRACE_FUNC();
     for (LedgerHash const it : ledgers_by_hash_.getKeys())
     {
         auto const ledger = getLedgerByHash(it);

@@ -20,6 +20,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/format/free_funcs.hpp>
@@ -49,6 +50,7 @@ namespace xrpl {
 void
 injectSLE(json::Value& jv, SLE const& sle)
 {
+    TRACE_FUNC();
     jv = sle.getJson(JsonOptions::KNone);
     if (sle.getType() == ltACCOUNT_ROOT)
     {
@@ -86,6 +88,7 @@ injectSLE(json::Value& jv, SLE const& sle)
 json::Value
 doAccountInfo(RPC::JsonContext& context)
 {
+    TRACE_FUNC();
     auto& params = context.params;
 
     std::string strIdent;

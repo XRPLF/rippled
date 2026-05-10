@@ -1,6 +1,7 @@
 #include <xrpl/conditions/detail/error.h>
 
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <string>
 #include <system_error>
@@ -17,12 +18,14 @@ public:
     [[nodiscard]] char const*
     name() const noexcept override
     {
+    TRACE_FUNC();
         return "cryptoconditions";
     }
 
     [[nodiscard]] std::string
     message(int ev) const override
     {
+    TRACE_FUNC();
         switch (safeCast<Error>(ev))
         {
             case Error::UnsupportedType:
@@ -82,18 +85,21 @@ public:
     [[nodiscard]] std::error_condition
     default_error_condition(int ev) const noexcept override
     {
+    TRACE_FUNC();
         return std::error_condition{ev, *this};
     }
 
     [[nodiscard]] bool
     equivalent(int ev, std::error_condition const& condition) const noexcept override
     {
+    TRACE_FUNC();
         return &condition.category() == this && condition.value() == ev;
     }
 
     [[nodiscard]] bool
     equivalent(std::error_code const& error, int ev) const noexcept override
     {
+    TRACE_FUNC();
         return &error.category() == this && error.value() == ev;
     }
 };
@@ -101,6 +107,7 @@ public:
 inline std::error_category const&
 getCryptoconditionsErrorCategory()
 {
+    TRACE_FUNC();
     static CryptoconditionsErrorCategory const kCAT{};
     return kCAT;
 }
@@ -110,6 +117,7 @@ getCryptoconditionsErrorCategory()
 std::error_code
 make_error_code(Error ev)
 {
+    TRACE_FUNC();
     return std::error_code{
         safeCast<std::underlying_type_t<Error>>(ev), detail::getCryptoconditionsErrorCategory()};
 }

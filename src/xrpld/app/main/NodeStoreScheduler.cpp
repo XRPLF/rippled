@@ -4,6 +4,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Task.h>
+#include <xrpl/basics/TraceLog.h>
 
 namespace xrpl {
 
@@ -14,6 +15,7 @@ NodeStoreScheduler::NodeStoreScheduler(JobQueue& jobQueue) : jobQueue_(jobQueue)
 void
 NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
 {
+    TRACE_FUNC();
     if (jobQueue_.isStopped())
         return;
 
@@ -28,6 +30,7 @@ NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
 void
 NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
 {
+    TRACE_FUNC();
     if (jobQueue_.isStopped())
         return;
 
@@ -40,6 +43,7 @@ NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
 void
 NodeStoreScheduler::onBatchWrite(NodeStore::BatchWriteReport const& report)
 {
+    TRACE_FUNC();
     if (jobQueue_.isStopped())
         return;
 

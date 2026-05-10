@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <optional>
@@ -16,6 +17,7 @@ namespace xrpl {
 static uint256 const&
 depthMask(unsigned int depth)
 {
+    TRACE_FUNC();
     // Need to be named before converting
     // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { MaskSize = 65 };
@@ -45,6 +47,7 @@ depthMask(unsigned int depth)
 // canonicalize the hash to a node ID for this depth
 SHAMapNodeID::SHAMapNodeID(unsigned int depth, uint256 const& hash) : id_(hash), depth_(depth)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         depth <= SHAMap::kLEAF_DEPTH, "xrpl::SHAMapNodeID::SHAMapNodeID : maximum depth input");
     XRPL_ASSERT(
@@ -55,6 +58,7 @@ SHAMapNodeID::SHAMapNodeID(unsigned int depth, uint256 const& hash) : id_(hash),
 std::string
 SHAMapNodeID::getRawString() const
 {
+    TRACE_FUNC();
     Serializer s(33);
     s.addBitString(id_);
     s.add8(depth_);
@@ -64,6 +68,7 @@ SHAMapNodeID::getRawString() const
 SHAMapNodeID
 SHAMapNodeID::getChildNodeID(unsigned int m) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(
         m < SHAMap::kBRANCH_FACTOR, "xrpl::SHAMapNodeID::getChildNodeID : valid branch input");
 
@@ -92,6 +97,7 @@ SHAMapNodeID::getChildNodeID(unsigned int m) const
 [[nodiscard]] std::optional<SHAMapNodeID>
 deserializeSHAMapNodeID(void const* data, std::size_t size)
 {
+    TRACE_FUNC();
     std::optional<SHAMapNodeID> ret;
 
     if (size == 33)
@@ -112,6 +118,7 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
 [[nodiscard]] unsigned int
 selectBranch(SHAMapNodeID const& id, uint256 const& hash)
 {
+    TRACE_FUNC();
     auto const depth = id.getDepth();
     auto branch = static_cast<unsigned int>(*(hash.begin() + (depth / 2)));
 
@@ -131,6 +138,7 @@ selectBranch(SHAMapNodeID const& id, uint256 const& hash)
 SHAMapNodeID
 SHAMapNodeID::createID(int depth, uint256 const& key)
 {
+    TRACE_FUNC();
     XRPL_ASSERT((depth >= 0) && (depth < 65), "xrpl::SHAMapNodeID::createID : valid branch input");
     return SHAMapNodeID(depth, key & depthMask(depth));
 }

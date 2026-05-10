@@ -17,6 +17,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/format/free_funcs.hpp>
 
@@ -32,6 +33,7 @@ namespace xrpl {
 
 STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.key), type_(k.type)
 {
+    TRACE_FUNC();
     auto const format = LedgerFormats::getInstance().findByType(type_);
 
     if (format == nullptr)
@@ -49,6 +51,7 @@ STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.
 STLedgerEntry::STLedgerEntry(SerialIter& sit, uint256 const& index)
     : STObject(sfLedgerEntry), key_(index), type_(ltANY)
 {
+    TRACE_FUNC();
     set(sit);
     setSLEType();
 }
@@ -56,12 +59,14 @@ STLedgerEntry::STLedgerEntry(SerialIter& sit, uint256 const& index)
 STLedgerEntry::STLedgerEntry(STObject const& object, uint256 const& index)
     : STObject(object), key_(index), type_(ltANY)
 {
+    TRACE_FUNC();
     setSLEType();
 }
 
 void
 STLedgerEntry::setSLEType()
 {
+    TRACE_FUNC();
     auto format = LedgerFormats::getInstance().findByType(
         safeCast<LedgerEntryType>(getFieldU16(sfLedgerEntryType)));
 
@@ -75,6 +80,7 @@ STLedgerEntry::setSLEType()
 std::string
 STLedgerEntry::getFullText() const
 {
+    TRACE_FUNC();
     auto const format = LedgerFormats::getInstance().findByType(type_);
 
     if (format == nullptr)
@@ -93,30 +99,35 @@ STLedgerEntry::getFullText() const
 STBase*
 STLedgerEntry::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STLedgerEntry::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
 SerializedTypeID
 STLedgerEntry::getSType() const
 {
+    TRACE_FUNC();
     return STI_LEDGERENTRY;
 }
 
 std::string
 STLedgerEntry::getText() const
 {
+    TRACE_FUNC();
     return str(boost::format("{ %s, %s }") % to_string(key_) % STObject::getText());
 }
 
 json::Value
 STLedgerEntry::getJson(JsonOptions options) const
 {
+    TRACE_FUNC();
     json::Value ret(STObject::getJson(options));
 
     ret[jss::index] = to_string(key_);
@@ -133,6 +144,7 @@ STLedgerEntry::getJson(JsonOptions options) const
 bool
 STLedgerEntry::isThreadedType(Rules const& rules) const
 {
+    TRACE_FUNC();
     static constexpr std::array<LedgerEntryType, 5> kNEW_PREVIOUS_TXN_ID_TYPES = {
         ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM};
     // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
@@ -150,6 +162,7 @@ STLedgerEntry::thread(
     uint256& prevTxID,
     std::uint32_t& prevLedgerID)
 {
+    TRACE_FUNC();
     uint256 const oldPrevTxID = getFieldH256(sfPreviousTxnID);
 
     JLOG(debugLog().info()) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;

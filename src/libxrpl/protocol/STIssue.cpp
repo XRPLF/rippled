@@ -10,6 +10,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -69,18 +70,21 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
 SerializedTypeID
 STIssue::getSType() const
 {
+    TRACE_FUNC();
     return STI_ISSUE;
 }
 
 std::string
 STIssue::getText() const
 {
+    TRACE_FUNC();
     return asset_.getText();
 }
 
 json::Value
 STIssue::getJson(JsonOptions) const
 {
+    TRACE_FUNC();
     json::Value jv;
     asset_.setJson(jv);
     return jv;
@@ -89,6 +93,7 @@ STIssue::getJson(JsonOptions) const
 void
 STIssue::add(Serializer& s) const
 {
+    TRACE_FUNC();
     asset_.visit(
         [&](Issue const& issue) {
             s.addBitString(issue.currency);
@@ -107,6 +112,7 @@ STIssue::add(Serializer& s) const
 bool
 STIssue::isEquivalent(STBase const& t) const
 {
+    TRACE_FUNC();
     STIssue const* v = dynamic_cast<STIssue const*>(&t);
     return (v != nullptr) && (*v == *this);
 }
@@ -114,6 +120,7 @@ STIssue::isEquivalent(STBase const& t) const
 bool
 STIssue::isDefault() const
 {
+    TRACE_FUNC();
     return asset_.visit(
         [](Issue const& issue) { return issue == xrpIssue(); },
         [](MPTIssue const&) { return false; });
@@ -122,18 +129,21 @@ STIssue::isDefault() const
 STBase*
 STIssue::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STIssue::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
 STIssue
 issueFromJson(SField const& name, json::Value const& v)
 {
+    TRACE_FUNC();
     return STIssue{name, assetFromJson(v)};
 }
 

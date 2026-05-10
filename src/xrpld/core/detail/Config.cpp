@@ -16,6 +16,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -59,6 +60,7 @@ namespace xrpl::detail {
 [[nodiscard]] std::uint64_t
 getMemorySize()
 {
+    TRACE_FUNC();
     if (MEMORYSTATUSEX msx{sizeof(MEMORYSTATUSEX)}; GlobalMemoryStatusEx(&msx))
         return static_cast<std::uint64_t>(msx.ullTotalPhys);
 
@@ -77,6 +79,7 @@ namespace xrpl::detail {
 [[nodiscard]] std::uint64_t
 getMemorySize()
 {
+    TRACE_FUNC();
     if (struct sysinfo si{}; sysinfo(&si) == 0)
         return static_cast<std::uint64_t>(si.totalram) * si.mem_unit;
 
@@ -95,6 +98,7 @@ namespace xrpl::detail {
 [[nodiscard]] std::uint64_t
 getMemorySize()
 {
+    TRACE_FUNC();
     int mib[] = {CTL_HW, HW_MEMSIZE};
     std::int64_t ram = 0;
     size_t size = sizeof(ram);
@@ -164,6 +168,7 @@ static_assert(
 IniFileSections
 parseIniFile(std::string const& strInput, bool const bTrim)
 {
+    TRACE_FUNC();
     std::string strData(strInput);
     std::vector<std::string> vLines;
     IniFileSections secResult;
@@ -212,6 +217,7 @@ parseIniFile(std::string const& strInput, bool const bTrim)
 IniFileSections::mapped_type*
 getIniFileSection(IniFileSections& secSource, std::string const& strSection)
 {
+    TRACE_FUNC();
     if (auto it = secSource.find(strSection); it != secSource.end())
         return &(it->second);
 
@@ -225,6 +231,7 @@ getSingleSection(
     std::string& strValue,
     beast::Journal j)
 {
+    TRACE_FUNC();
     auto const pmtEntries = getIniFileSection(secSource, strSection);
 
     if ((pmtEntries != nullptr) && pmtEntries->size() == 1)
@@ -256,6 +263,7 @@ char const* const Config::kVALIDATORS_FILE_NAME = "validators.txt";
 [[nodiscard]] static std::string
 getEnvVar(char const* name)
 {
+    TRACE_FUNC();
     std::string value;
 
     if (auto const v = std::getenv(name); v != nullptr)
@@ -272,6 +280,7 @@ Config::Config()
 void
 Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 {
+    TRACE_FUNC();
     XRPL_ASSERT(NODE_SIZE == 0, "xrpl::Config::setupControl : node size not set");
 
     QUIET_ = bQuiet || bSilent;
@@ -307,6 +316,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 void
 Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStandalone)
 {
+    TRACE_FUNC();
     setupControl(bQuiet, bSilent, bStandalone);
 
     // Determine the config and data directories.
@@ -425,6 +435,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
 static void
 checkZeroPorts(Config const& config)
 {
+    TRACE_FUNC();
     if (!config.exists("server"))
         return;
 
@@ -451,6 +462,7 @@ checkZeroPorts(Config const& config)
 void
 Config::load()
 {
+    TRACE_FUNC();
     // NOTE: this writes to cerr because we want cout to be reserved
     // for the writing of the json response (so that stdout can be part of a
     // pipeline, for instance)
@@ -474,6 +486,7 @@ Config::load()
 void
 Config::loadFromString(std::string const& fileContents)
 {
+    TRACE_FUNC();
     IniFileSections secConfig = parseIniFile(fileContents, true);
 
     build(secConfig);
@@ -1138,6 +1151,7 @@ Config::loadFromString(std::string const& fileContents)
 boost::filesystem::path
 Config::getDebugLogFile() const
 {
+    TRACE_FUNC();
     auto logFile = DEBUG_LOGFILE_;
 
     if (!logFile.empty() && !logFile.is_absolute())
@@ -1172,6 +1186,7 @@ Config::getDebugLogFile() const
 int
 Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
 {
+    TRACE_FUNC();
     auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
     XRPL_ASSERT(index < kSIZED_ITEMS.size(), "xrpl::Config::getValueFor : valid index input");
     XRPL_ASSERT(!node || *node <= 4, "xrpl::Config::getValueFor : unset or valid node");
@@ -1181,6 +1196,7 @@ Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
 FeeSetup
 setupFeeVote(Section const& section)
 {
+    TRACE_FUNC();
     FeeSetup setup;
     {
         std::uint64_t temp = 0;
@@ -1201,6 +1217,7 @@ setupFeeVote(Section const& section)
 DatabaseCon::Setup
 setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
 {
+    TRACE_FUNC();
     DatabaseCon::Setup setup;
 
     setup.startUp = c.START_UP;

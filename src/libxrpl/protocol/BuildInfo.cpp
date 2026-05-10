@@ -5,6 +5,7 @@
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/git/Git.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/preprocessor/stringize.hpp>  // IWYU pragma: keep
 
@@ -34,6 +35,7 @@ char const* const versionString = "3.2.0-b0"
 std::string
 buildVersionString()
 {
+    TRACE_FUNC();
     std::string version = versionString;
 
 #if defined(DEBUG) || defined(SANITIZERS)
@@ -67,6 +69,7 @@ buildVersionString()
 std::string const&
 getVersionString()
 {
+    TRACE_FUNC();
     static std::string const kVALUE = [] {
         std::string const s = buildVersionString();
 
@@ -81,6 +84,7 @@ getVersionString()
 std::string const&
 getFullVersionString()
 {
+    TRACE_FUNC();
     static std::string const kVALUE = systemName() + "-" + getVersionString();
     return kVALUE;
 }
@@ -91,6 +95,7 @@ static constexpr std::uint64_t kIMPLEMENTATION_VERSION_IDENTIFIER_MASK = 0xFFFF'
 std::uint64_t
 encodeSoftwareVersion(std::string_view versionStr)
 {
+    TRACE_FUNC();
     std::uint64_t c = kIMPLEMENTATION_VERSION_IDENTIFIER;
 
     beast::SemanticVersion v;
@@ -155,6 +160,7 @@ encodeSoftwareVersion(std::string_view versionStr)
 std::uint64_t
 getEncodedVersion()
 {
+    TRACE_FUNC();
     static std::uint64_t const kCOOKIE = {encodeSoftwareVersion(getVersionString())};
     return kCOOKIE;
 }
@@ -162,6 +168,7 @@ getEncodedVersion()
 bool
 isXrpldVersion(std::uint64_t version)
 {
+    TRACE_FUNC();
     return (version & kIMPLEMENTATION_VERSION_IDENTIFIER_MASK) ==
         kIMPLEMENTATION_VERSION_IDENTIFIER;
 }
@@ -169,6 +176,7 @@ isXrpldVersion(std::uint64_t version)
 bool
 isNewerVersion(std::uint64_t version)
 {
+    TRACE_FUNC();
     if (isXrpldVersion(version))
         return version > getEncodedVersion();
     return false;

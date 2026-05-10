@@ -6,6 +6,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <ostream>
 #include <stdexcept>
@@ -16,6 +17,7 @@ namespace xrpl {
 std::string
 Issue::getText() const
 {
+    TRACE_FUNC();
     std::string ret;
 
     ret.reserve(64);
@@ -45,6 +47,7 @@ Issue::getText() const
 void
 Issue::setJson(json::Value& jv) const
 {
+    TRACE_FUNC();
     jv[jss::currency] = to_string(currency);
     if (!isXRP(currency))
         jv[jss::issuer] = toBase58(account);
@@ -53,24 +56,28 @@ Issue::setJson(json::Value& jv) const
 bool
 Issue::native() const
 {
+    TRACE_FUNC();
     return *this == xrpIssue();
 }
 
 bool
 Issue::integral() const
 {
+    TRACE_FUNC();
     return native();
 }
 
 bool
 isConsistent(Issue const& ac)
 {
+    TRACE_FUNC();
     return isXRP(ac.currency) == isXRP(ac.account);
 }
 
 std::string
 to_string(Issue const& ac)
 {
+    TRACE_FUNC();
     if (isXRP(ac.account))
         return to_string(ac.currency);
 
@@ -80,6 +87,7 @@ to_string(Issue const& ac)
 json::Value
 toJson(Issue const& is)
 {
+    TRACE_FUNC();
     json::Value jv;
     is.setJson(jv);
     return jv;
@@ -88,6 +96,7 @@ toJson(Issue const& is)
 Issue
 issueFromJson(json::Value const& v)
 {
+    TRACE_FUNC();
     if (!v.isObject())
     {
         Throw<std::runtime_error>(
@@ -139,6 +148,7 @@ issueFromJson(json::Value const& v)
 std::ostream&
 operator<<(std::ostream& os, Issue const& x)
 {
+    TRACE_FUNC();
     os << to_string(x);
     return os;
 }

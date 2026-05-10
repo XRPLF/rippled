@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -23,6 +24,7 @@ SOTemplate::SOTemplate(
 SOTemplate::SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields)
     : indices_(SField::getNumFields() + 1, -1)  // Unmapped indices == -1
 {
+    TRACE_FUNC();
     // Add all SOElements.
     //
     elements_ = std::move(uniqueFields);
@@ -53,6 +55,7 @@ SOTemplate::SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElemen
 int
 SOTemplate::getIndex(SField const& sField) const
 {
+    TRACE_FUNC();
     // The mapping table should be large enough for any possible field
     //
     if (sField.getNum() <= 0 || sField.getNum() >= indices_.size())

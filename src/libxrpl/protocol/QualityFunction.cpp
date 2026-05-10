@@ -4,6 +4,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <optional>
 #include <stdexcept>
@@ -13,6 +14,7 @@ namespace xrpl {
 QualityFunction::QualityFunction(Quality const& quality, QualityFunction::CLOBLikeTag)
     : m_(0), b_(0), quality_(quality)
 {
+    TRACE_FUNC();
     if (quality.rate() <= beast::kZERO)
         Throw<std::runtime_error>("QualityFunction quality rate is 0.");
     b_ = 1 / quality.rate();
@@ -21,6 +23,7 @@ QualityFunction::QualityFunction(Quality const& quality, QualityFunction::CLOBLi
 void
 QualityFunction::combine(QualityFunction const& qf)
 {
+    TRACE_FUNC();
     m_ += b_ * qf.m_;
     b_ *= qf.b_;
     if (m_ != 0)
@@ -30,6 +33,7 @@ QualityFunction::combine(QualityFunction const& qf)
 std::optional<Number>
 QualityFunction::outFromAvgQ(Quality const& quality)
 {
+    TRACE_FUNC();
     if (m_ != 0 && quality.rate() != beast::kZERO)
     {
         SaveNumberRoundMode const rm(Number::setround(Number::RoundingMode::Upward));

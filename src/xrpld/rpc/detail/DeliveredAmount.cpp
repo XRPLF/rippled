@@ -11,6 +11,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <chrono>
 #include <memory>
@@ -36,6 +37,7 @@ getDeliveredAmount(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     if (!serializedTx)
         return {};
 
@@ -73,6 +75,7 @@ canHaveDeliveredAmount(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     if (!serializedTx)
         return false;
 
@@ -90,6 +93,7 @@ insertDeliveredAmount(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     auto const info = ledger.header();
 
     if (canHaveDeliveredAmount(serializedTx, transactionMeta))
@@ -119,6 +123,7 @@ getDeliveredAmount(
     TxMeta const& transactionMeta,
     GetLedgerIndex const& getLedgerIndex)
 {
+    TRACE_FUNC();
     if (canHaveDeliveredAmount(serializedTx, transactionMeta))
     {
         auto const getCloseTime = [&context,
@@ -138,6 +143,7 @@ getDeliveredAmount(
     TxMeta const& transactionMeta,
     LedgerIndex const& ledgerIndex)
 {
+    TRACE_FUNC();
     return getDeliveredAmount(
         context, serializedTx, transactionMeta, [&ledgerIndex]() { return ledgerIndex; });
 }
@@ -149,6 +155,7 @@ insertDeliveredAmount(
     std::shared_ptr<Transaction> const& transaction,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     insertDeliveredAmount(meta, context, transaction->getSTransaction(), transactionMeta);
 }
 
@@ -159,6 +166,7 @@ insertDeliveredAmount(
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
+    TRACE_FUNC();
     if (canHaveDeliveredAmount(transaction, transactionMeta))
     {
         auto amt = getDeliveredAmount(context, transaction, transactionMeta, [&transactionMeta]() {

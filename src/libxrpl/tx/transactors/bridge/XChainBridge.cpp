@@ -38,6 +38,7 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <limits>
@@ -117,6 +118,7 @@ checkAttestationPublicKey(
     PublicKey const& pk,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (!signersList.contains(attestationSignerAccount))
     {
         return tecNO_PERMISSION;
@@ -196,6 +198,7 @@ claimHelper(
     std::unordered_map<AccountID, std::uint32_t> const& signersList,
     beast::Journal j)
 {
+    TRACE_FUNC();
     // Remove attestations that are not valid signers. They may be no longer
     // part of the signers list, or their master key may have been disabled,
     // or their regular key may have changed
@@ -286,6 +289,7 @@ onNewAttestations(
     std::unordered_map<AccountID, std::uint32_t> const& signersList,
     beast::Journal j)
 {
+    TRACE_FUNC();
     bool changed = false;
     for (auto att = attBegin; att != attEnd; ++att)
     {
@@ -347,6 +351,7 @@ onClaim(
     std::unordered_map<AccountID, std::uint32_t> const& signersList,
     beast::Journal j)
 {
+    TRACE_FUNC();
     XChainClaimAttestation::MatchFields const toMatch{
         sendingAmount, wasLockingChainSend, std::nullopt};
     return claimHelper(attestations, view, toMatch, CheckDst::Ignore, quorum, signersList, j);
@@ -400,6 +405,7 @@ transferHelper(
     std::optional<TransferHelperSubmittingAccountInfo> const& submittingAccountInfo,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (dst == src)
         return tesSUCCESS;
 
@@ -532,6 +538,7 @@ struct FinalizeClaimHelperResult
     [[nodiscard]] bool
     isTesSuccess() const
     {
+    TRACE_FUNC();
         return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
             (!rewardTer || xrpl::isTesSuccess(*rewardTer)) &&
             (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
@@ -540,6 +547,7 @@ struct FinalizeClaimHelperResult
     [[nodiscard]] TER
     ter() const
     {
+    TRACE_FUNC();
         if (isTesSuccess())
             return tesSUCCESS;
 
@@ -609,6 +617,7 @@ finalizeClaimHelper(
     DepositAuthPolicy depositAuthPolicy,
     beast::Journal j)
 {
+    TRACE_FUNC();
     FinalizeClaimHelperResult result;
 
     STXChainBridge::ChainType const dstChain = STXChainBridge::otherChain(srcChain);
@@ -748,6 +757,7 @@ finalizeClaimHelper(
 std::tuple<std::unordered_map<AccountID, std::uint32_t>, std::uint32_t, TER>
 getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journal j)
 {
+    TRACE_FUNC();
     std::unordered_map<AccountID, std::uint32_t> r;
     std::uint32_t q = std::numeric_limits<std::uint32_t>::max();
 
@@ -785,6 +795,7 @@ template <class R, class F>
 std::shared_ptr<R>
 readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
 {
+    TRACE_FUNC();
     auto tryGet = [&](STXChainBridge::ChainType ct) -> std::shared_ptr<R> {
         if (auto r = getter(bridgeSpec, ct))
         {
@@ -801,6 +812,7 @@ readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
 std::shared_ptr<SLE>
 peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
 {
+    TRACE_FUNC();
     return readOrpeekBridge<SLE>(
         [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE> {
             return v.peek(keylet::bridge(b, ct));
@@ -811,6 +823,7 @@ peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
 std::shared_ptr<SLE const>
 readBridge(ReadView const& v, STXChainBridge const& bridgeSpec)
 {
+    TRACE_FUNC();
     return readOrpeekBridge<SLE const>(
         [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE const> {
             return v.read(keylet::bridge(b, ct));
@@ -833,6 +846,7 @@ applyClaimAttestations(
     std::uint32_t quorum,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (attBegin == attEnd)
         return tesSUCCESS;
 
@@ -959,6 +973,7 @@ applyCreateAccountAttestations(
     std::uint32_t quorum,
     beast::Journal j)
 {
+    TRACE_FUNC();
     if (attBegin == attEnd)
         return tesSUCCESS;
 
@@ -1152,6 +1167,7 @@ template <class TAttestation>
 std::optional<TAttestation>
 toClaim(STTx const& tx)
 {
+    TRACE_FUNC();
     static_assert(
         std::is_same_v<TAttestation, Attestations::AttestationClaim> ||
         std::is_same_v<TAttestation, Attestations::AttestationCreateAccount>);
@@ -1172,6 +1188,7 @@ template <class TAttestation>
 NotTEC
 attestationPreflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!publicKeyType(ctx.tx[sfPublicKey]))
         return temMALFORMED;
 
@@ -1198,6 +1215,7 @@ template <class TAttestation>
 TER
 attestationPreclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const att = toClaim<TAttestation>(ctx.tx);
     // checked in preflight
     if (!att)
@@ -1226,6 +1244,7 @@ template <class TAttestation>
 TER
 attestationDoApply(ApplyContext& ctx)
 {
+    TRACE_FUNC();
     auto const att = toClaim<TAttestation>(ctx.tx);
     if (!att)
     {
@@ -1330,6 +1349,7 @@ attestationDoApply(ApplyContext& ctx)
 NotTEC
 XChainCreateBridge::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const account = ctx.tx[sfAccount];
     auto const reward = ctx.tx[sfSignatureReward];
     auto const minAccountCreate = ctx.tx[~sfMinAccountCreateAmount];
@@ -1399,6 +1419,7 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
 TER
 XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const account = ctx.tx[sfAccount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
     STXChainBridge::ChainType const chainType =
@@ -1448,6 +1469,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 TER
 XChainCreateBridge::doApply()
 {
+    TRACE_FUNC();
     auto const account = ctx_.tx[sfAccount];
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[sfSignatureReward];
@@ -1494,12 +1516,14 @@ XChainCreateBridge::doApply()
 std::uint32_t
 BridgeModify::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return tfXChainModifyBridgeMask;
 }
 
 NotTEC
 BridgeModify::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const account = ctx.tx[sfAccount];
     auto const reward = ctx.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx.tx[~sfMinAccountCreateAmount];
@@ -1541,6 +1565,7 @@ BridgeModify::preflight(PreflightContext const& ctx)
 TER
 BridgeModify::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const account = ctx.tx[sfAccount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
 
@@ -1558,6 +1583,7 @@ BridgeModify::preclaim(PreclaimContext const& ctx)
 TER
 BridgeModify::doApply()
 {
+    TRACE_FUNC();
     auto const account = ctx_.tx[sfAccount];
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[~sfSignatureReward];
@@ -1595,6 +1621,7 @@ BridgeModify::doApply()
 NotTEC
 XChainClaim::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
     auto const amount = ctx.tx[sfAmount];
 
@@ -1611,6 +1638,7 @@ XChainClaim::preflight(PreflightContext const& ctx)
 TER
 XChainClaim::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     AccountID const account = ctx.tx[sfAccount];
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
     STAmount const& thisChainAmount = ctx.tx[sfAmount];
@@ -1703,6 +1731,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
 TER
 XChainClaim::doApply()
 {
+    TRACE_FUNC();
     PaymentSandbox psb(&ctx_.view());
 
     AccountID const account = ctx_.tx[sfAccount];
@@ -1822,6 +1851,7 @@ XChainClaim::doApply()
 TxConsequences
 XChainCommit::makeTxConsequences(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const maxSpend = [&] {
         auto const amount = ctx.tx[sfAmount];
         if (amount.native() && amount.signum() > 0)
@@ -1835,6 +1865,7 @@ XChainCommit::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 XChainCommit::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const amount = ctx.tx[sfAmount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
 
@@ -1851,6 +1882,7 @@ XChainCommit::preflight(PreflightContext const& ctx)
 TER
 XChainCommit::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
     auto const amount = ctx.tx[sfAmount];
 
@@ -1902,6 +1934,7 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
 TER
 XChainCommit::doApply()
 {
+    TRACE_FUNC();
     PaymentSandbox psb(&ctx_.view());
 
     auto const account = ctx_.tx[sfAccount];
@@ -1949,6 +1982,7 @@ XChainCommit::doApply()
 NotTEC
 XChainCreateClaimID::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const reward = ctx.tx[sfSignatureReward];
 
     if (!isXRP(reward) || reward.signum() < 0 || !isLegalNet(reward))
@@ -1960,6 +1994,7 @@ XChainCreateClaimID::preflight(PreflightContext const& ctx)
 TER
 XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     auto const account = ctx.tx[sfAccount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
     auto const sleBridge = readBridge(ctx.view, bridgeSpec);
@@ -1996,6 +2031,7 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
 TER
 XChainCreateClaimID::doApply()
 {
+    TRACE_FUNC();
     auto const account = ctx_.tx[sfAccount];
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[sfSignatureReward];
@@ -2057,18 +2093,21 @@ XChainCreateClaimID::doApply()
 NotTEC
 XChainAddClaimAttestation::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return attestationPreflight<Attestations::AttestationClaim>(ctx);
 }
 
 TER
 XChainAddClaimAttestation::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     return attestationPreclaim<Attestations::AttestationClaim>(ctx);
 }
 
 TER
 XChainAddClaimAttestation::doApply()
 {
+    TRACE_FUNC();
     return attestationDoApply<Attestations::AttestationClaim>(ctx_);
 }
 
@@ -2077,18 +2116,21 @@ XChainAddClaimAttestation::doApply()
 NotTEC
 XChainAddAccountCreateAttestation::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return attestationPreflight<Attestations::AttestationCreateAccount>(ctx);
 }
 
 TER
 XChainAddAccountCreateAttestation::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     return attestationPreclaim<Attestations::AttestationCreateAccount>(ctx);
 }
 
 TER
 XChainAddAccountCreateAttestation::doApply()
 {
+    TRACE_FUNC();
     return attestationDoApply<Attestations::AttestationCreateAccount>(ctx_);
 }
 
@@ -2097,6 +2139,7 @@ XChainAddAccountCreateAttestation::doApply()
 NotTEC
 XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const amount = ctx.tx[sfAmount];
 
     if (amount.signum() <= 0 || !amount.native())
@@ -2115,6 +2158,7 @@ XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
 TER
 XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
     STAmount const amount = ctx.tx[sfAmount];
     STAmount const reward = ctx.tx[sfSignatureReward];
@@ -2178,6 +2222,7 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
 TER
 XChainCreateAccountCommit::doApply()
 {
+    TRACE_FUNC();
     PaymentSandbox psb(&ctx_.view());
 
     AccountID const account = ctx_.tx[sfAccount];
@@ -2238,6 +2283,7 @@ XChainCreateBridge::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 
@@ -2257,6 +2303,7 @@ BridgeModify::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 
@@ -2271,6 +2318,7 @@ XChainClaim::visitInvariantEntry(
 bool
 XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 
@@ -2290,6 +2338,7 @@ XChainCommit::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 
@@ -2309,6 +2358,7 @@ XChainCreateClaimID::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 
@@ -2328,6 +2378,7 @@ XChainAddClaimAttestation::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 
@@ -2347,6 +2398,7 @@ XChainAddAccountCreateAttestation::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 
@@ -2366,6 +2418,7 @@ XChainCreateAccountCommit::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 

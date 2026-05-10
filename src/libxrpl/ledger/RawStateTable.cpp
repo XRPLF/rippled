@@ -8,6 +8,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <memory>
 #include <optional>
@@ -37,6 +38,7 @@ public:
         ReadView::SlesType::Iterator end0)
         : iter0_(std::move(iter0)), end0_(std::move(end0)), iter1_(iter1), end1_(end1)
     {
+    TRACE_FUNC();
         if (iter0_ != end0_)
             sle0_ = *iter0_;
         if (iter1_ != end1)
@@ -49,12 +51,14 @@ public:
     std::unique_ptr<base_type>
     copy() const override
     {
+    TRACE_FUNC();
         return std::make_unique<SlesIterImpl>(*this);
     }
 
     bool
     equal(base_type const& impl) const override
     {
+    TRACE_FUNC();
         if (auto const p = dynamic_cast<SlesIterImpl const*>(&impl))
         {
             XRPL_ASSERT(
@@ -70,6 +74,7 @@ public:
     void
     increment() override
     {
+    TRACE_FUNC();
         XRPL_ASSERT(
             sle1_ || sle0_,
             "xrpl::detail::RawStateTable::increment : either SLE is "
@@ -106,6 +111,7 @@ public:
     value_type
     dereference() const override
     {
+    TRACE_FUNC();
         if (!sle1_)
         {
             return sle0_;
@@ -123,6 +129,7 @@ private:
     void
     inc0()
     {
+    TRACE_FUNC();
         ++iter0_;
         if (iter0_ == end0_)
         {
@@ -137,6 +144,7 @@ private:
     void
     inc1()
     {
+    TRACE_FUNC();
         ++iter1_;
         if (iter1_ == end1_)
         {
@@ -151,6 +159,7 @@ private:
     void
     skip()
     {
+    TRACE_FUNC();
         while (iter1_ != end1_ && iter1_->second.action == Action::Erase &&
                sle0_->key() == sle1_->key())
         {
@@ -169,6 +178,7 @@ private:
 void
 RawStateTable::apply(RawView& to) const
 {
+    TRACE_FUNC();
     to.rawDestroyXRP(dropsDestroyed_);
     for (auto const& elem : items_)
     {
@@ -191,6 +201,7 @@ RawStateTable::apply(RawView& to) const
 bool
 RawStateTable::exists(ReadView const& base, Keylet const& k) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(k.key.isNonZero(), "xrpl::detail::RawStateTable::exists : nonzero key");
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
@@ -211,6 +222,7 @@ auto
 RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last)
     const -> std::optional<key_type>
 {
+    TRACE_FUNC();
     std::optional<key_type> next = key;
     items_t::const_iterator iter;
     // Find base successor that is
@@ -243,6 +255,7 @@ RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key
 void
 RawStateTable::erase(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     // The base invariant is checked during apply
     auto const result = items_.emplace(
         std::piecewise_construct,
@@ -269,6 +282,7 @@ RawStateTable::erase(std::shared_ptr<SLE> const& sle)
 void
 RawStateTable::insert(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     auto const result = items_.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(sle->key()),
@@ -294,6 +308,7 @@ RawStateTable::insert(std::shared_ptr<SLE> const& sle)
 void
 RawStateTable::replace(std::shared_ptr<SLE> const& sle)
 {
+    TRACE_FUNC();
     auto const result = items_.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(sle->key()),
@@ -316,6 +331,7 @@ RawStateTable::replace(std::shared_ptr<SLE> const& sle)
 std::shared_ptr<SLE const>
 RawStateTable::read(ReadView const& base, Keylet const& k) const
 {
+    TRACE_FUNC();
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.read(k);
@@ -332,12 +348,14 @@ RawStateTable::read(ReadView const& base, Keylet const& k) const
 void
 RawStateTable::destroyXRP(XRPAmount const& fee)
 {
+    TRACE_FUNC();
     dropsDestroyed_ += fee;
 }
 
 std::unique_ptr<ReadView::SlesType::iter_base>
 RawStateTable::slesBegin(ReadView const& base) const
 {
+    TRACE_FUNC();
     return std::make_unique<SlesIterImpl>(
         items_.begin(), items_.end(), base.sles.begin(), base.sles.end());
 }
@@ -345,6 +363,7 @@ RawStateTable::slesBegin(ReadView const& base) const
 std::unique_ptr<ReadView::SlesType::iter_base>
 RawStateTable::slesEnd(ReadView const& base) const
 {
+    TRACE_FUNC();
     return std::make_unique<SlesIterImpl>(
         items_.end(), items_.end(), base.sles.end(), base.sles.end());
 }
@@ -352,6 +371,7 @@ RawStateTable::slesEnd(ReadView const& base) const
 std::unique_ptr<ReadView::SlesType::iter_base>
 RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
 {
+    TRACE_FUNC();
     return std::make_unique<SlesIterImpl>(
         items_.upper_bound(key), items_.end(), base.sles.upperBound(key), base.sles.end());
 }

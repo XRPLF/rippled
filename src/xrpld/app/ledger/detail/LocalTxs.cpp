@@ -8,6 +8,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -53,6 +54,7 @@ public:
         , account_(txn->getAccountID(sfAccount))
         , seqProxy_(txn->getSeqProxy())
     {
+    TRACE_FUNC();
         if (txn->isFieldPresent(sfLastLedgerSequence))
             expire_ = std::min(expire_, txn->getFieldU32(sfLastLedgerSequence) + 1);
     }
@@ -60,30 +62,35 @@ public:
     [[nodiscard]] uint256 const&
     getID() const
     {
+    TRACE_FUNC();
         return id_;
     }
 
     [[nodiscard]] SeqProxy
     getSeqProxy() const
     {
+    TRACE_FUNC();
         return seqProxy_;
     }
 
     [[nodiscard]] bool
     isExpired(LedgerIndex i) const
     {
+    TRACE_FUNC();
         return i > expire_;
     }
 
     [[nodiscard]] std::shared_ptr<STTx const> const&
     getTX() const
     {
+    TRACE_FUNC();
         return txn_;
     }
 
     [[nodiscard]] AccountID const&
     getAccount() const
     {
+    TRACE_FUNC();
         return account_;
     }
 
@@ -106,6 +113,7 @@ public:
     void
     pushBack(LedgerIndex index, std::shared_ptr<STTx const> const& txn) override
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(lock_);
 
         txns_.emplace_back(index, txn);
@@ -114,6 +122,7 @@ public:
     CanonicalTXSet
     getTxSet() override
     {
+    TRACE_FUNC();
         CanonicalTXSet tset(uint256{});
 
         // Get the set of local transactions as a canonical
@@ -133,6 +142,7 @@ public:
     void
     sweep(ReadView const& view) override
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(lock_);
 
         txns_.remove_if([&view](auto const& txn) {
@@ -170,6 +180,7 @@ public:
     std::size_t
     size() override
     {
+    TRACE_FUNC();
         std::scoped_lock const lock(lock_);
 
         return txns_.size();
@@ -183,6 +194,7 @@ private:
 std::unique_ptr<LocalTxs>
 makeLocalTxs()
 {
+    TRACE_FUNC();
     return std::make_unique<LocalTxsImp>();
 }
 

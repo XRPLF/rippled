@@ -9,6 +9,7 @@
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/multiprecision/number.hpp>
 
@@ -27,6 +28,7 @@ namespace xrpl {
 std::ostream&
 operator<<(std::ostream& os, PublicKey const& pk)
 {
+    TRACE_FUNC();
     os << strHex(pk);
     return os;
 }
@@ -35,6 +37,7 @@ template <>
 std::optional<PublicKey>
 parseBase58(TokenType type, std::string const& s)
 {
+    TRACE_FUNC();
     auto const result = decodeBase58Token(s, type);
     auto const pks = makeSlice(result);
     if (!publicKeyType(pks))
@@ -49,6 +52,7 @@ parseBase58(TokenType type, std::string const& s)
 static std::optional<Slice>
 sigPart(Slice& buf)
 {
+    TRACE_FUNC();
     if (buf.size() < 3 || buf[0] != 0x02)
         return std::nullopt;
     auto const len = buf[1];
@@ -75,6 +79,7 @@ sigPart(Slice& buf)
 static std::string
 sliceToHex(Slice const& slice)
 {
+    TRACE_FUNC();
     std::string s;
     if ((slice[0] & 0x80) != 0)
     {
@@ -110,6 +115,7 @@ sliceToHex(Slice const& slice)
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {
+    TRACE_FUNC();
     using uint264 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
         264,
         264,
@@ -151,6 +157,7 @@ ecdsaCanonicality(Slice const& sig)
 static bool
 ed25519Canonical(Slice const& sig)
 {
+    TRACE_FUNC();
     if (sig.size() != 64)
         return false;
     // Big-endian Order, the Ed25519 subgroup order
@@ -173,6 +180,7 @@ ed25519Canonical(Slice const& sig)
 
 PublicKey::PublicKey(Slice const& slice)
 {
+    TRACE_FUNC();
     if (slice.size() < kSIZE)
     {
         logicError(
@@ -187,12 +195,14 @@ PublicKey::PublicKey(Slice const& slice)
 
 PublicKey::PublicKey(PublicKey const& other)
 {
+    TRACE_FUNC();
     std::memcpy(buf_, other.buf_, kSIZE);
 }
 
 PublicKey&
 PublicKey::operator=(PublicKey const& other)
 {
+    TRACE_FUNC();
     if (this != &other)
     {
         std::memcpy(buf_, other.buf_, kSIZE);
@@ -206,6 +216,7 @@ PublicKey::operator=(PublicKey const& other)
 std::optional<KeyType>
 publicKeyType(Slice const& slice)
 {
+    TRACE_FUNC();
     if (slice.size() == 33)
     {
         if (slice[0] == 0xED)
@@ -225,6 +236,7 @@ verifyDigest(
     Slice const& sig,
     bool mustBeFullyCanonical) noexcept
 {
+    TRACE_FUNC();
     if (publicKeyType(publicKey) != KeyType::Secp256k1)
         logicError("sign: secp256k1 required for digest signing");
     auto const canonicality = ecdsaCanonicality(sig);
@@ -269,6 +281,7 @@ verifyDigest(
 bool
 verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 {
+    TRACE_FUNC();
     if (auto const type = publicKeyType(publicKey))
     {
         if (*type == KeyType::Secp256k1)
@@ -293,6 +306,7 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 NodeID
 calcNodeID(PublicKey const& pk)
 {
+    TRACE_FUNC();
     static_assert(NodeID::kBYTES == sizeof(RipeshaHasher::result_type));
 
     RipeshaHasher h;

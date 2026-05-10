@@ -32,6 +32,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/STVar.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <charconv>
 #include <cstdint>
@@ -71,6 +72,7 @@ toUnsigned(U2 value)
 static inline std::string
 makeName(std::string const& object, std::string const& field)
 {
+    TRACE_FUNC();
     if (field.empty())
         return object;
 
@@ -80,6 +82,7 @@ makeName(std::string const& object, std::string const& field)
 static inline json::Value
 notAnObject(std::string const& object, std::string const& field)
 {
+    TRACE_FUNC();
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' is not a JSON object.");
 }
@@ -87,24 +90,28 @@ notAnObject(std::string const& object, std::string const& field)
 static inline json::Value
 notAnObject(std::string const& object)
 {
+    TRACE_FUNC();
     return notAnObject(object, "");
 }
 
 static inline json::Value
 notAnArray(std::string const& object)
 {
+    TRACE_FUNC();
     return RPC::makeError(RpcInvalidParams, "Field '" + object + "' is not a JSON array.");
 }
 
 static inline json::Value
 unknownField(std::string const& object, std::string const& field)
 {
+    TRACE_FUNC();
     return RPC::makeError(RpcInvalidParams, "Field '" + makeName(object, field) + "' is unknown.");
 }
 
 static inline json::Value
 outOfRange(std::string const& object, std::string const& field)
 {
+    TRACE_FUNC();
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' is out of range.");
 }
@@ -112,6 +119,7 @@ outOfRange(std::string const& object, std::string const& field)
 static inline json::Value
 badType(std::string const& object, std::string const& field)
 {
+    TRACE_FUNC();
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' has bad type.");
 }
@@ -119,6 +127,7 @@ badType(std::string const& object, std::string const& field)
 static inline json::Value
 invalidData(std::string const& object, std::string const& field)
 {
+    TRACE_FUNC();
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' has invalid data.");
 }
@@ -126,12 +135,14 @@ invalidData(std::string const& object, std::string const& field)
 static inline json::Value
 invalidData(std::string const& object)
 {
+    TRACE_FUNC();
     return invalidData(object, "");
 }
 
 static inline json::Value
 arrayExpected(std::string const& object, std::string const& field)
 {
+    TRACE_FUNC();
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a JSON array.");
 }
@@ -139,6 +150,7 @@ arrayExpected(std::string const& object, std::string const& field)
 static inline json::Value
 stringExpected(std::string const& object, std::string const& field)
 {
+    TRACE_FUNC();
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a string.");
 }
@@ -146,12 +158,14 @@ stringExpected(std::string const& object, std::string const& field)
 static inline json::Value
 tooDeep(std::string const& object)
 {
+    TRACE_FUNC();
     return RPC::makeError(RpcInvalidParams, "Field '" + object + "' exceeds nesting depth limit.");
 }
 
 static inline json::Value
 singletonExpected(std::string const& object, unsigned int index)
 {
+    TRACE_FUNC();
     return RPC::makeError(
         RpcInvalidParams,
         "Field '" + object + "[" + std::to_string(index) +
@@ -161,6 +175,7 @@ singletonExpected(std::string const& object, unsigned int index)
 static inline json::Value
 templateMismatch(SField const& sField)
 {
+    TRACE_FUNC();
     return RPC::makeError(
         RpcInvalidParams,
         "Object '" + sField.getName() + "' contents did not meet requirements for that type.");
@@ -169,6 +184,7 @@ templateMismatch(SField const& sField)
 static inline json::Value
 nonObjectInArray(std::string const& item, json::UInt index)
 {
+    TRACE_FUNC();
     return RPC::makeError(
         RpcInvalidParams,
         "Item '" + item + "' at index " + std::to_string(index) +
@@ -186,6 +202,7 @@ parseUnsigned(
     json::Value const& value,
     json::Value& error)
 {
+    TRACE_FUNC();
     std::optional<detail::STVar> ret;
 
     try
@@ -232,6 +249,7 @@ parseUint16(
     json::Value const& value,
     json::Value& error)
 {
+    TRACE_FUNC();
     std::optional<detail::STVar> ret;
 
     try
@@ -293,6 +311,7 @@ parseUint32(
     json::Value const& value,
     json::Value& error)
 {
+    TRACE_FUNC();
     std::optional<detail::STVar> ret;
 
     try
@@ -347,6 +366,7 @@ parseLeaf(
     json::Value const& value,
     json::Value& error)
 {
+    TRACE_FUNC();
     std::optional<detail::STVar> ret;
 
     auto const& field = SField::getField(fieldName);
@@ -965,6 +985,7 @@ parseObject(
     int depth,
     json::Value& error)
 {
+    TRACE_FUNC();
     if (!json.isObjectOrNull())
     {
         error = notAnObject(jsonName);
@@ -1079,6 +1100,7 @@ parseArray(
     int depth,
     json::Value& error)
 {
+    TRACE_FUNC();
     if (!json.isArrayOrNull())
     {
         error = notAnArray(jsonName);
@@ -1158,6 +1180,7 @@ parseArray(
 
 STParsedJSONObject::STParsedJSONObject(std::string const& name, json::Value const& json)
 {
+    TRACE_FUNC();
     using namespace STParsedJSONDetail;
     object = parseObject(name, json, kSF_GENERIC, 0, error);
 }

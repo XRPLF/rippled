@@ -18,6 +18,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -29,6 +30,7 @@ using namespace credentials;
 std::uint32_t
 CredentialAccept::getFlagsMask(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     // 0 means "Allow any flags"
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
@@ -36,6 +38,7 @@ CredentialAccept::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 CredentialAccept::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ctx.tx[sfIssuer])
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: Issuer field zeroed.";
@@ -55,6 +58,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
 TER
 CredentialAccept::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     AccountID const subject = ctx.tx[sfAccount];
     AccountID const issuer = ctx.tx[sfIssuer];
     auto const credType(ctx.tx[sfCredentialType]);
@@ -86,6 +90,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
 TER
 CredentialAccept::doApply()
 {
+    TRACE_FUNC();
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
@@ -139,6 +144,7 @@ CredentialAccept::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 }  // namespace xrpl

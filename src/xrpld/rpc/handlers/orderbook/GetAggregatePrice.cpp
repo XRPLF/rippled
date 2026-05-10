@@ -20,6 +20,7 @@
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/bimap.hpp>
 #include <boost/bimap/bimap.hpp>
@@ -51,6 +52,7 @@ iteratePriceData(
     std::shared_ptr<SLE const> const& sle,
     std::function<bool(STObject const&)> const& f)
 {
+    TRACE_FUNC();
     using Meta = std::shared_ptr<STObject const>;
     constexpr std::uint8_t kMAX_HISTORY = 3;
     bool isNew = false;
@@ -122,6 +124,7 @@ iteratePriceData(
 static std::tuple<STAmount, Number, std::uint16_t>
 getStats(Prices::right_const_iterator const& begin, Prices::right_const_iterator const& end)
 {
+    TRACE_FUNC();
     STAmount avg{noIssue(), 0, 0};
     Number sd{0};
     std::uint16_t const size = std::distance(begin, end);

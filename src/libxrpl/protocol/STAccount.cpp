@@ -9,6 +9,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstring>
 #include <stdexcept>
@@ -27,6 +28,7 @@ STAccount::STAccount(SField const& n) : STBase(n), value_(beast::kZERO), default
 
 STAccount::STAccount(SField const& n, Buffer const& v) : STAccount(n)
 {
+    TRACE_FUNC();
     if (v.empty())
         return;  // Zero is a valid size for a defaulted STAccount.
 
@@ -53,24 +55,28 @@ STAccount::STAccount(SField const& n, AccountID const& v) : STBase(n), value_(v)
 STBase*
 STAccount::copy(std::size_t n, void* buf) const
 {
+    TRACE_FUNC();
     return emplace(n, buf, *this);
 }
 
 STBase*
 STAccount::move(std::size_t n, void* buf)
 {
+    TRACE_FUNC();
     return emplace(n, buf, std::move(*this));
 }
 
 SerializedTypeID
 STAccount::getSType() const
 {
+    TRACE_FUNC();
     return STI_ACCOUNT;
 }
 
 void
 STAccount::add(Serializer& s) const
 {
+    TRACE_FUNC();
     XRPL_ASSERT(getFName().isBinary(), "xrpl::STAccount::add : field is binary");
     XRPL_ASSERT(getFName().fieldType == STI_ACCOUNT, "xrpl::STAccount::add : valid field type");
 
@@ -84,6 +90,7 @@ STAccount::add(Serializer& s) const
 bool
 STAccount::isEquivalent(STBase const& t) const
 {
+    TRACE_FUNC();
     auto const* const tPtr = dynamic_cast<STAccount const*>(&t);
     return (tPtr != nullptr) && (default_ == tPtr->default_) && (value_ == tPtr->value_);
 }
@@ -91,12 +98,14 @@ STAccount::isEquivalent(STBase const& t) const
 bool
 STAccount::isDefault() const
 {
+    TRACE_FUNC();
     return default_;
 }
 
 std::string
 STAccount::getText() const
 {
+    TRACE_FUNC();
     if (isDefault())
         return "";
     return toBase58(value());

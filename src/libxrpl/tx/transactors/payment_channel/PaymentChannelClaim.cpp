@@ -21,6 +21,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <cstdint>
 #include <memory>
@@ -31,18 +32,21 @@ namespace xrpl {
 bool
 PaymentChannelClaim::checkExtraFeatures(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
 std::uint32_t
 PaymentChannelClaim::getFlagsMask(PreflightContext const&)
 {
+    TRACE_FUNC();
     return tfPaymentChannelClaimMask;
 }
 
 NotTEC
 PaymentChannelClaim::preflight(PreflightContext const& ctx)
 {
+    TRACE_FUNC();
     auto const bal = ctx.tx[~sfBalance];
     if (bal && (!isXRP(*bal) || *bal <= beast::kZERO))
         return temBAD_AMOUNT;
@@ -96,6 +100,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
 TER
 PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
 {
+    TRACE_FUNC();
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
 
@@ -109,6 +114,7 @@ PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
 TER
 PaymentChannelClaim::doApply()
 {
+    TRACE_FUNC();
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
@@ -217,6 +223,7 @@ PaymentChannelClaim::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    TRACE_FUNC();
     return true;
 }
 }  // namespace xrpl

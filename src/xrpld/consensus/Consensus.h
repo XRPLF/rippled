@@ -10,6 +10,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/LedgerTiming.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <algorithm>
 #include <chrono>
@@ -298,12 +299,14 @@ class Consensus
         [[nodiscard]] ConsensusMode
         get() const
         {
+    TRACE_FUNC();
             return mode_;
         }
 
         void
         set(ConsensusMode mode, Adaptor& a)
         {
+    TRACE_FUNC();
             a.onModeChange(mode_, mode);
             mode_ = mode;
         }
@@ -405,12 +408,14 @@ public:
     typename Ledger_t::ID
     prevLedgerID() const
     {
+    TRACE_FUNC();
         return prevLedgerID_;
     }
 
     [[nodiscard]] ConsensusPhase
     phase() const
     {
+    TRACE_FUNC();
         return phase_;
     }
 
@@ -609,6 +614,7 @@ template <class Adaptor>
 Consensus<Adaptor>::Consensus(clock_type const& clock, Adaptor& adaptor, beast::Journal journal)
     : adaptor_(adaptor), clock_(clock), j_{journal}
 {
+    TRACE_FUNC();
     JLOG(j_.debug()) << "Creating consensus object";
 }
 
@@ -622,6 +628,7 @@ Consensus<Adaptor>::startRound(
     bool proposing,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     if (firstRound_)
     {
         // take our initial view of closeTime_ from the seed ledger
@@ -666,6 +673,7 @@ Consensus<Adaptor>::startRoundInternal(
     ConsensusMode mode,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     phase_ = ConsensusPhase::Open;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::Open ";
     CLOG(clog) << "startRoundInternal transitioned to ConsensusPhase::Open, "
@@ -707,6 +715,7 @@ template <class Adaptor>
 bool
 Consensus<Adaptor>::peerProposal(NetClock::time_point const& now, PeerPosition_t const& newPeerPos)
 {
+    TRACE_FUNC();
     JLOG(j_.debug()) << "PROPOSAL " << newPeerPos.render();
     auto const& peerID = newPeerPos.proposal().nodeID();
 
@@ -728,6 +737,7 @@ Consensus<Adaptor>::peerProposalInternal(
     NetClock::time_point const& now,
     PeerPosition_t const& newPeerPos)
 {
+    TRACE_FUNC();
     // Nothing to do for now if we are currently working on a ledger
     if (phase_ == ConsensusPhase::Accepted)
         return false;
@@ -828,6 +838,7 @@ Consensus<Adaptor>::timerEntry(
     NetClock::time_point const& now,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     CLOG(clog) << "Consensus<Adaptor>::timerEntry. ";
     // Nothing to do if we are currently working on a ledger
     if (phase_ == ConsensusPhase::Accepted)
@@ -863,6 +874,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::gotTxSet(NetClock::time_point const& now, TxSet_t const& txSet)
 {
+    TRACE_FUNC();
     // Nothing to do if we've finished work on a ledger
     if (phase_ == ConsensusPhase::Accepted)
         return;
@@ -910,6 +922,7 @@ Consensus<Adaptor>::simulate(
     NetClock::time_point const& now,
     std::optional<std::chrono::milliseconds> consensusDelay)
 {
+    TRACE_FUNC();
     using namespace std::chrono_literals;
     JLOG(j_.info()) << "Simulating consensus";
     now_ = now;
@@ -929,6 +942,7 @@ template <class Adaptor>
 json::Value
 Consensus<Adaptor>::getJson(bool full) const
 {
+    TRACE_FUNC();
     using std::to_string;
     using Int = json::Value::Int;
 
@@ -1028,6 +1042,7 @@ Consensus<Adaptor>::handleWrongLedger(
     typename Ledger_t::ID const& lgrId,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     CLOG(clog) << "handleWrongLedger. ";
     XRPL_ASSERT(
         lgrId != prevLedgerID_ || previousLedger_.id() != lgrId,
@@ -1080,6 +1095,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::checkLedger(std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     CLOG(clog) << "checkLedger. ";
 
     auto netLgr = adaptor_.getPrevLedger(prevLedgerID_, previousLedger_, mode_.get());
@@ -1109,6 +1125,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::playbackProposals()
 {
+    TRACE_FUNC();
     for (auto const& it : recentPeerPositions_)
     {
         for (auto const& pos : it.second)
@@ -1126,6 +1143,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     CLOG(clog) << "phaseOpen. ";
     using namespace std::chrono;
 
@@ -1198,6 +1216,7 @@ template <class Adaptor>
 bool
 Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) const
 {
+    TRACE_FUNC();
     CLOG(clog) << "shouldPause? ";
     auto const& parms = adaptor_.parms();
     std::uint32_t const ahead(
@@ -1322,6 +1341,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     CLOG(clog) << "phaseEstablish. ";
     // can only establish consensus if we already took a stance
     XRPL_ASSERT(result_, "xrpl::Consensus::phaseEstablish : result is set");
@@ -1388,6 +1408,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     // We should not be closing if we already have a position
     XRPL_ASSERT(!result_, "xrpl::Consensus::closeLedger : result is not set");
 
@@ -1435,6 +1456,7 @@ this.
 inline int
 participantsNeeded(int participants, int percent)
 {
+    TRACE_FUNC();
     int const result = ((participants * percent) + (percent / 2)) / 100;
 
     return (result == 0) ? 1 : result;
@@ -1444,6 +1466,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     // We must have a position if we are updating it
     XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
@@ -1626,6 +1649,7 @@ template <class Adaptor>
 bool
 Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     // Must have a stance if we are checking for consensus
     XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
@@ -1737,6 +1761,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::leaveConsensus(std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     if (mode_.get() == ConsensusMode::Proposing)
     {
         if (result_ && !result_->position.isBowOut())
@@ -1755,6 +1780,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::createDisputes(TxSet_t const& o, std::unique_ptr<std::stringstream> const& clog)
 {
+    TRACE_FUNC();
     // Cannot create disputes without our stance
     XRPL_ASSERT(result_, "xrpl::Consensus::createDisputes : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
@@ -1824,6 +1850,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
 {
+    TRACE_FUNC();
     // Cannot updateDisputes without our stance
     XRPL_ASSERT(result_, "xrpl::Consensus::updateDisputes : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
@@ -1846,6 +1873,7 @@ template <class Adaptor>
 NetClock::time_point
 Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 {
+    TRACE_FUNC();
     return roundCloseTime(raw, closeResolution_);
 }
 

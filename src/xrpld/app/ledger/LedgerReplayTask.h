@@ -3,6 +3,7 @@
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <vector>
 
@@ -97,6 +98,7 @@ public:
     TaskParameter const&
     getTaskParameter() const
     {
+    TRACE_FUNC();
         return parameter_;
     }
 

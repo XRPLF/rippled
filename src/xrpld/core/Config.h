@@ -8,6 +8,7 @@
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
 #include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/basics/TraceLog.h>
 
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 
@@ -63,6 +64,7 @@ struct FeeSetup
     [[nodiscard]] Fees
     toFees() const
     {
+    TRACE_FUNC();
         return Fees{reference_fee, account_reserve, owner_reserve};
     }
 };
@@ -305,28 +307,33 @@ public:
     [[nodiscard]] bool
     quiet() const
     {
+    TRACE_FUNC();
         return QUIET_;
     }
     [[nodiscard]] bool
     silent() const
     {
+    TRACE_FUNC();
         return SILENT_;
     }
     [[nodiscard]] bool
     standalone() const
     {
+    TRACE_FUNC();
         return RUN_STANDALONE_;
     }
 
     [[nodiscard]] bool
     useTxTables() const
     {
+    TRACE_FUNC();
         return USE_TX_TABLES_;
     }
 
     [[nodiscard]] bool
     canSign() const
     {
+    TRACE_FUNC();
         return signingEnabled_;
     }
 
@@ -353,6 +360,7 @@ public:
     [[nodiscard]] beast::Journal
     journal() const
     {
+    TRACE_FUNC();
         return j_;
     }
 };
