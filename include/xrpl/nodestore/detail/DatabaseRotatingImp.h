@@ -2,7 +2,6 @@
 
 #include <xrpl/nodestore/DatabaseRotating.h>
 
-#include <atomic>
 #include <mutex>
 
 namespace xrpl::NodeStore {
@@ -60,7 +59,6 @@ private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
     mutable std::mutex mutex_;
-    std::atomic<bool> archiveHasData_{true};
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)

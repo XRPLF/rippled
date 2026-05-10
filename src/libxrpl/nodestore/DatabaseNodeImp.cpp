@@ -31,7 +31,6 @@ DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, st
 
     auto obj = NodeObject::createObject(type, std::move(data), hash);
     backend_->store(obj);
-    negCacheErase(hash);
 }
 
 void

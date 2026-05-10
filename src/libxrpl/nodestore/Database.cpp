@@ -242,15 +242,6 @@ Database::fetchNodeObject(
 {
     TRACE_FUNC();
 
-    {
-        std::scoped_lock const lock(negCacheMutex_);
-        if (negCache_.count(hash))
-        {
-            ++fetchTotalCount_;
-            return nullptr;
-        }
-    }
-
     FetchReport fetchReport(fetchType);
 
     using namespace std::chrono;
@@ -264,31 +255,11 @@ Database::fetchNodeObject(
         ++fetchHitCount_;
         fetchSz_ += nodeObject->getData().size();
     }
-    else
-    {
-        std::scoped_lock const lock(negCacheMutex_);
-        if (negCache_.size() < kNegCacheMax)
-            negCache_.insert(hash);
-    }
     ++fetchTotalCount_;
 
     fetchReport.elapsed = duration_cast<milliseconds>(dur);
     scheduler_.onFetch(fetchReport);
     return nodeObject;
-}
-
-void
-Database::negCacheErase(uint256 const& hash)
-{
-    std::scoped_lock const lock(negCacheMutex_);
-    negCache_.erase(hash);
-}
-
-void
-Database::negCacheClear()
-{
-    std::scoped_lock const lock(negCacheMutex_);
-    negCache_.clear();
 }
 
 void

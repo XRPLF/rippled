@@ -34,7 +34,6 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     : DatabaseRotating(scheduler, readThreads, config, j)
     , writableBackend_(std::move(writableBackend))
     , archiveBackend_(std::move(archiveBackend))
-    , archiveHasData_(!get<bool>(config, "fresh_sync", false))
 {
     TRACE_FUNC();
     if (writableBackend_)
@@ -68,8 +67,6 @@ DatabaseRotatingImp::rotate(
         writableBackend_ = std::move(newBackend);
     }
 
-    archiveHasData_.store(true, std::memory_order_relaxed);
-    negCacheClear();
     f(newWritableBackendName, newArchiveBackendName);
 }
 
@@ -122,7 +119,6 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
 
     backend->store(nObj);
     storeStats(1, nObj->getData().size());
-    negCacheErase(hash);
 }
 
 std::shared_ptr<NodeObject>
@@ -172,14 +168,11 @@ DatabaseRotatingImp::fetchNodeObject(
 
     // Try to fetch from the writable backend
     nodeObject = fetch(writable);
-    if (!nodeObject && archiveHasData_.load(std::memory_order_relaxed))
+    if (!nodeObject)
     {
-        // Only try archive if it's known to have data
         nodeObject = fetch(archive);
         if (nodeObject)
         {
-            archiveHasData_.store(true, std::memory_order_relaxed);
-
             {
                 // Refresh the writable backend pointer
                 std::scoped_lock const lock(mutex_);
