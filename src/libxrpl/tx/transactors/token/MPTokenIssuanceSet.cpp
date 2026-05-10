@@ -166,6 +166,12 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             // in the same transaction is not allowed.
             if ((transferFee.value_or(0) != 0u) && ((*mutableFlags & tmfMPTClearCanTransfer) != 0u))
                 return temMALFORMED;
+
+            // Enabling confidential transfer and setting a non-zero TransferFee
+            // in the same transaction is not allowed.
+            if ((transferFee.value_or(0) > 0u) &&
+                ((*mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u))
+                return temMALFORMED;
         }
     }
 
@@ -309,6 +315,12 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             // the lsfMPTCanConfidentialAmount flag
             if (confidentialOA > 0)
                 return tecNO_PERMISSION;
+
+            // Cannot enable confidential transfer on an issuance that has a
+            // non-zero transfer fee
+            if (((*mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u) &&
+                (*sleMptIssuance)[~sfTransferFee].value_or(0) > 0)
+                return tecNO_PERMISSION;
         }
     }
 
@@ -322,6 +334,11 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         // it by tmfMPTSetCanTransfer in the current transaction does not meet
         // this requirement.
         if (fee > 0u && !sleMptIssuance->isFlag(lsfMPTCanTransfer))
+            return tecNO_PERMISSION;
+
+        // Cannot set a non-zero TransferFee on an issuance that has confidential
+        // transfer enabled
+        if (fee > 0u && sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount))
             return tecNO_PERMISSION;
 
         if (!isMutableFlag(lsmfMPTCanMutateTransferFee))

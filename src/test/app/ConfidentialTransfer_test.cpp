@@ -1164,6 +1164,95 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
     }
 
     void
+    testTransferFee(FeatureBitset features)
+    {
+        testcase("test transfer fee");
+        using namespace test::jtx;
+
+        // MPTokenIssuanceCreate: cannot create with both TransferFee > 0 and
+        // tfMPTCanConfidentialAmount
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            MPTTester mptAlice(env, alice, {.holders = {}});
+
+            mptAlice.create({
+                .transferFee = 100,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .err = temMALFORMED,
+            });
+
+            // transferFee being 0 is allowed, even with tfMPTCanConfidentialAmount
+            mptAlice.create({
+                .transferFee = 0,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+            });
+        }
+
+        // MPTokenIssuanceSet (preflight): cannot enable confidential amounts and
+        // set TransferFee > 0 in the same transaction
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            MPTTester mptAlice(env, alice, {.holders = {}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock,
+                .mutableFlags = tmfMPTCanMutateTransferFee,
+            });
+
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .transferFee = 100,
+                .err = temMALFORMED,
+            });
+        }
+
+        // MPTokenIssuanceSet (preclaim): cannot enable confidential amounts on
+        // an issuance that already has a non-zero TransferFee
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            MPTTester mptAlice(env, alice, {.holders = {}});
+
+            mptAlice.create({
+                .transferFee = 100,
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock,
+                .mutableFlags = tmfMPTCanMutateTransferFee,
+            });
+
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // MPTokenIssuanceSet (preclaim): cannot set TransferFee > 0 on an
+        // issuance that already has lsfMPTCanConfidentialAmount
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            MPTTester mptAlice(env, alice, {.holders = {}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .mutableFlags = tmfMPTCanMutateTransferFee,
+            });
+
+            mptAlice.set({
+                .account = alice,
+                .transferFee = 100,
+                .err = tecNO_PERMISSION,
+            });
+        }
+    }
+
+    void
     testConvertPreclaim(FeatureBitset features)
     {
         testcase("Convert preclaim");
@@ -10030,8 +10119,11 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         // Crafted-proof Tests
         testSendSharedRandomnessViolation(features);
 
-        // Fee Tests
+        // Transaction Fee Tests
         testConfidentialMPTBaseFee(features);
+
+        // TransferFee (transfer rate) Tests
+        testTransferFee(features);
 
         // Ticket Tests
         testWithTickets(features);

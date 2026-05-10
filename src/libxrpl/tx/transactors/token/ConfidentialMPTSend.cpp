@@ -177,6 +177,12 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
         return tecNO_PERMISSION;
 
+    // Sanity check: transfer rate must be 0 for confidential MPTs.
+    // This is unreachable since it is already enforced during MPTokenIssuanceCreate and
+    // MPTokenIssuanceSet.
+    if ((*sleIssuance)[~sfTransferFee].value_or(0) > 0)
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+
     // Check if issuance has issuer ElGamal public key
     if (!sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
