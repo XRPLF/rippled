@@ -6741,6 +6741,193 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
+    // Post-state edge-cross deposit. Both fields start at scale 0 below
+    // the 10^16 boundary; a small deposit pushes sfAssetsTotal across
+    // while sfAssetsAvailable stays below → ΔTotal=3, ΔAvail=5
+    // (unequal). canApplyToVault can't catch this in preclaim (same
+    // pre-state scales); the helper-level equalAtAssetScale check in
+    // depositToVault is the catch site. Pre-fix: VaultInvariant fires
+    // at finalize (tecINVARIANT_FAILED). Post-fix: helper rejects
+    // (tecPRECISION_LOSS).
+    void
+    testBugVaultDepositEdgeCrossing()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const borrower{"borrower"};
+            Account const charlie{"charlie"};
+
+            env.fund(XRP(100'000), issuer, alice, borrower, charlie);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), 2, 16};
+            // 3 below the 16-digit edge.
+            STAmount const aliceFund{usd.raw(), Number{9'999'999'999'999'997LL}};
+
+            env(trust(alice, trustLimit));
+            env(trust(borrower, trustLimit));
+            env(trust(charlie, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env(pay(issuer, charlie, usd(100)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            {
+                using namespace loanBroker;
+                env(set(alice, vaultKeylet.key),
+                    kDEBT_MAXIMUM(Number{9, 15}),
+                    Fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            // Disburse a 9e15 loan so sfAssetsAvailable drops to a much lower
+            // magnitude than sfAssetsTotal. 0% interest keeps sfAssetsTotal
+            // exactly at aliceFund.
+            {
+                using namespace loan;
+                env(set(borrower, brokerKeylet.key, Number{9, 15}),
+                    Sig(sfCounterpartySignature, alice),
+                    kPAYMENT_TOTAL(2),
+                    kPAYMENT_INTERVAL(600),
+                    kINTEREST_RATE(percentageToTenthBips(0)),
+                    Fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            BEAST_EXPECT(vaultSle->at(sfAssetsTotal) > vaultSle->at(sfAssetsAvailable));
+
+            env(vault.deposit({.depositor = charlie, .id = vaultKeylet.key, .amount = usd(5)}),
+                Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultDeposit SLE-asymmetric rounding fires invariant "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit SLE-asymmetric rounding caught by helper "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tecPRECISION_LOSS);
+        }
+    }
+
+    // Vault at 10^16 (both fields at scale 1, ULP=10), sub-10-USD
+    // Withdraw / Clawback. Pre-fix: pseudo TL absorbs the change,
+    // sfAssetsAvailable decrements in STNumber → VaultInvariant fires
+    // (tecINVARIANT_FAILED). Post-fix: canApplyToVault rejects upfront
+    // (tecPRECISION_LOSS).
+    void
+    testBugVaultSubUlpAtEdge()
+    {
+        using namespace test::jtx;
+
+        enum class Op { Withdraw, Clawback };
+
+        auto runScenario = [this](Op op, FeatureBitset features, TER expected) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), 2, 16};
+            // Exactly at the 16-digit edge; canonicalizes to scale 1.
+            STAmount const aliceFund{usd.raw(), Number{1, 16}};
+
+            env(trust(alice, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            // 5 USD request: scale 0 against vault accounting fields at
+            // scale 1 (ULP=10) → rounds to 0 at the rail's scale.
+            switch (op)
+            {
+                case Op::Withdraw:
+                    env(vault.withdraw(
+                            {.depositor = alice, .id = vaultKeylet.key, .amount = usd(5)}),
+                        Ter(expected));
+                    break;
+                case Op::Clawback:
+                    env(vault.clawback(
+                            {.issuer = issuer,
+                             .id = vaultKeylet.key,
+                             .holder = alice,
+                             .amount = usd(5)}),
+                        Ter(expected));
+                    break;
+            }
+            env.close();
+        };
+
+        struct Case
+        {
+            Op op;
+            std::string_view label;
+        };
+        auto const cases = std::array<Case, 2>{
+            Case{.op = Op::Withdraw, .label = "VaultWithdraw"},
+            Case{.op = Op::Clawback, .label = "VaultClawback"},
+        };
+        for (auto const& c : cases)
+        {
+            {
+                testcase(
+                    std::string(c.label) +
+                    " sub-ULP amount at IOU edge fires invariant "
+                    "(pre-fixCleanup3_2_0)");
+                runScenario(c.op, testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+            }
+            {
+                testcase(
+                    std::string(c.label) +
+                    " sub-ULP amount at IOU edge rejected by preclaim "
+                    "guard (post-fixCleanup3_2_0)");
+                runScenario(c.op, testableAmendments(), tecPRECISION_LOSS);
+            }
+        }
+    }
+
     // accountSendExact's carve-out paths: native (XRP/MPT integer-exact),
     // and issuer-as-source/destination (mint/destroy, no counterparty
     // trust line). Each path falls through to plain accountSend without
@@ -6873,18 +7060,385 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
+    // VaultClawback destroy-shape: destination is the issuer, no
+    // receiver TL. Vault at 1.5e16 (no loans, both fields at scale 1),
+    // 15-unit clawback canonicalizes to a 20-unit drop on both pseudo
+    // and sfAssetsAvailable — silent over-clawback by 5, no rail
+    // divergence. Identical pre/post fixCleanup3_2_0 (the coarser-scale
+    // leg short-circuits when both fields share a scale).
+    void
+    testVaultClawbackConvergenceAtIouEdge()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), 2, 16};
+            // 1.5e16: mantissa=1500000000000000, exp=1 → ULP=10 at this band.
+            STAmount const aliceFund{usd.raw(), Number{15, 15}};
+
+            env(trust(alice, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            // 15-unit clawback: 1.5e16 - 15 → half-even canonicalizes to
+            // 1499999999999998 mantissa × 10^1 = 14999999999999980 on
+            // both pseudo and sfAssetsAvailable.
+            env(vault.clawback(
+                {.issuer = issuer, .id = vaultKeylet.key, .holder = alice, .amount = usd(15)}));
+            env.close();
+
+            auto const vaultSleAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return;
+            Account const vaultPseudo{"vault", vaultSleAfter->at(sfAccount)};
+            STAmount const pseudoBalance = env.balance(vaultPseudo, usd);
+            Number const available = vaultSleAfter->at(sfAssetsAvailable);
+            Number const total = vaultSleAfter->at(sfAssetsTotal);
+
+            BEAST_EXPECTS(
+                available == Number{pseudoBalance},
+                "available=" + to_string(available) +
+                    " pseudo=" + to_string(Number{pseudoBalance}));
+            BEAST_EXPECT(available == Number{14'999'999'999'999'980LL});
+            // No outstanding loans → sfAssetsTotal mirrors sfAssetsAvailable.
+            BEAST_EXPECT(total == available);
+        };
+
+        {
+            testcase(
+                "VaultClawback: pseudo TL and sfAssetsAvailable converge "
+                "at the IOU edge (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0);
+        }
+        {
+            testcase(
+                "VaultClawback: pseudo TL and sfAssetsAvailable converge "
+                "at the IOU edge (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments());
+        }
+    }
+
+    // Loan-trapped state used by the SLE asymmetric-rounding tests:
+    // alice deposits 1.5e16, then a 1e16 loan disburses to borrower.
+    // Post-setup: sfAssetsTotal = 1.5e16 (scale 1, ULP=10),
+    // sfAssetsAvailable = 5e15 (scale 0, ULP=1), outstanding loan = 1e16.
+    struct LoanTrappedVault
+    {
+        test::jtx::Account issuer;
+        test::jtx::Account alice;
+        test::jtx::Account borrower;
+        Keylet vaultKeylet;
+        Keylet brokerKeylet;
+    };
+
+    static LoanTrappedVault
+    setupLoanTrappedVault(test::jtx::Env& env)
+    {
+        using namespace test::jtx;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, alice, borrower);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const usd{issuer["USD"]};
+        STAmount const trustLimit{usd.raw(), 2, 16};
+        STAmount const aliceFund{usd.raw(), Number{15, 15}};
+
+        env(trust(alice, trustLimit));
+        env(trust(borrower, trustLimit));
+        env.close();
+        env(pay(issuer, alice, aliceFund));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+        vaultTx[sfScale] = 0;
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        {
+            using namespace loanBroker;
+            env(set(alice, vaultKeylet.key),
+                kDEBT_MAXIMUM(Number{1, 16}),
+                Fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        {
+            using namespace loan;
+            env(set(borrower, brokerKeylet.key, Number{1, 16}),
+                Sig(sfCounterpartySignature, alice),
+                kPAYMENT_TOTAL(2),
+                kPAYMENT_INTERVAL(600),
+                kINTEREST_RATE(percentageToTenthBips(0)),
+                Fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        return {
+            .issuer = issuer,
+            .alice = alice,
+            .borrower = borrower,
+            .vaultKeylet = vaultKeylet,
+            .brokerKeylet = brokerKeylet};
+    }
+
+    // Loan-trapped asymmetric-rounding bug class, exercised on all four
+    // vault operation paths (Deposit, Withdraw asset, Withdraw shares,
+    // Clawback). A 7-unit request (or NAV=1 share equivalent) is
+    // supra-ULP at sfAssetsAvailable's scale (0) but doesn't round
+    // losslessly at sfAssetsTotal's coarser scale (1).
+    //   Pre-fix: tesSUCCESS, ΔTotal=±10 (one coarser-ULP), ΔAvail=±7.
+    //   Post-fix: canApplyToVault rejects, state unchanged.
+    void
+    testBugVaultLoanTrappedAsymmetricRounding()
+    {
+        using namespace test::jtx;
+
+        enum class Op { Deposit, Withdraw, WithdrawShares, Clawback };
+
+        auto runScenario = [this](Op op, FeatureBitset features, TER expected) {
+            Env env(*this, features);
+            auto const trapped = setupLoanTrappedVault(env);
+            PrettyAsset const usd{trapped.issuer["USD"]};
+            Vault const vault{env};
+
+            // Deposit case needs a separate low-magnitude depositor.
+            Account const charlie{"charlie"};
+            if (op == Op::Deposit)
+            {
+                env.fund(XRP(10'000), charlie);
+                env.close();
+                STAmount const trustLimit{usd.raw(), 2, 16};
+                env(trust(charlie, trustLimit));
+                env.close();
+                env(pay(trapped.issuer, charlie, usd(100)));
+                env.close();
+            }
+
+            auto const vaultSleBefore = env.le(trapped.vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleBefore))
+                return;
+            BEAST_EXPECT((vaultSleBefore->at(sfAssetsTotal) == Number{15, 15}));
+            BEAST_EXPECT((vaultSleBefore->at(sfAssetsAvailable) == Number{5, 15}));
+            Number const beforeTotal = vaultSleBefore->at(sfAssetsTotal);
+            Number const beforeAvailable = vaultSleBefore->at(sfAssetsAvailable);
+
+            switch (op)
+            {
+                case Op::Deposit:
+                    env(vault.deposit(
+                            {.depositor = charlie,
+                             .id = trapped.vaultKeylet.key,
+                             .amount = usd(7)}),
+                        Ter(expected));
+                    break;
+                case Op::Withdraw:
+                    env(vault.withdraw(
+                            {.depositor = trapped.alice,
+                             .id = trapped.vaultKeylet.key,
+                             .amount = usd(7)}),
+                        Ter(expected));
+                    break;
+                case Op::WithdrawShares: {
+                    MPTIssue const shares{vaultSleBefore->at(sfShareMPTID)};
+                    PrettyAsset const share{shares};
+                    env(vault.withdraw(
+                            {.depositor = trapped.alice,
+                             .id = trapped.vaultKeylet.key,
+                             .amount = STAmount(share, 7)}),
+                        Ter(expected));
+                    break;
+                }
+                case Op::Clawback:
+                    env(vault.clawback(
+                            {.issuer = trapped.issuer,
+                             .id = trapped.vaultKeylet.key,
+                             .holder = trapped.alice,
+                             .amount = usd(7)}),
+                        Ter(expected));
+                    break;
+            }
+            env.close();
+
+            auto const vaultSleAfter = env.le(trapped.vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return;
+            Number const total = vaultSleAfter->at(sfAssetsTotal);
+            Number const available = vaultSleAfter->at(sfAssetsAvailable);
+
+            if (expected == tesSUCCESS)
+            {
+                // Pre-fix: asymmetric SLE dust commits.
+                // Deposit increments; the others decrement.
+                Number const sign = (op == Op::Deposit) ? Number{1} : Number{-1};
+                Number const expectedTotalDelta = sign * Number{10};
+                Number const expectedAvailDelta = sign * Number{7};
+                BEAST_EXPECTS(
+                    total - beforeTotal == expectedTotalDelta,
+                    "ΔTotal=" + to_string(total - beforeTotal));
+                BEAST_EXPECTS(
+                    available - beforeAvailable == expectedAvailDelta,
+                    "ΔAvail=" + to_string(available - beforeAvailable));
+            }
+            else
+            {
+                // Post-fix: rejected, state unchanged.
+                BEAST_EXPECT(total == beforeTotal);
+                BEAST_EXPECT(available == beforeAvailable);
+            }
+        };
+
+        struct Case
+        {
+            Op op;
+            std::string_view label;
+        };
+        auto const cases = std::array<Case, 4>{
+            Case{.op = Op::Deposit, .label = "VaultDeposit"},
+            Case{.op = Op::Withdraw, .label = "VaultWithdraw asset-denom"},
+            Case{.op = Op::WithdrawShares, .label = "VaultWithdraw share-denom"},
+            Case{.op = Op::Clawback, .label = "VaultClawback"},
+        };
+        for (auto const& c : cases)
+        {
+            {
+                testcase(
+                    std::string("bug: ") + std::string(c.label) +
+                    " loan-trapped asymmetric SLE rounding commits dust "
+                    "(pre-fixCleanup3_2_0)");
+                runScenario(c.op, testableAmendments() - fixCleanup3_2_0, tesSUCCESS);
+            }
+            {
+                testcase(
+                    std::string(c.label) +
+                    "::preclaim catches loan-trapped asymmetric SLE "
+                    "rounding (post-fixCleanup3_2_0)");
+                runScenario(c.op, testableAmendments(), tecPRECISION_LOSS);
+            }
+        }
+    }
+
+    // VaultClawback amount=0 ("all available") in the loan-trapped
+    // state. Regression for canApplyToVault's effective-amount
+    // substitution: sfAssetsAvailable is a clean ULP multiple by
+    // construction, predicate accepts, clawback drains. The misaligned-
+    // sfAssetsAvailable branch of the predicate is forward-defense and
+    // unreachable through canonical operations today.
+    void
+    testVaultClawbackAllAvailable()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features) {
+            Env env(*this, features);
+            auto const trapped = setupLoanTrappedVault(env);
+            PrettyAsset const usd{trapped.issuer["USD"]};
+            Vault const vault{env};
+
+            auto const vaultSleBefore = env.le(trapped.vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleBefore))
+                return;
+            BEAST_EXPECT((vaultSleBefore->at(sfAssetsTotal) == Number{15, 15}));
+            BEAST_EXPECT((vaultSleBefore->at(sfAssetsAvailable) == Number{5, 15}));
+
+            // amount = 0 → "all available" sentinel. Effective amount =
+            // sfAssetsAvailable = 5e15. roundToAsset(5e15, scale=1) =
+            // 5e15 (clean multiple of ULP=10). Predicate accepts.
+            env(vault.clawback(
+                {.issuer = trapped.issuer,
+                 .id = trapped.vaultKeylet.key,
+                 .holder = trapped.alice,
+                 .amount = usd(0)}));
+            env.close();
+
+            auto const vaultSleAfter = env.le(trapped.vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return;
+            // After "all" clawback: sfAssetsAvailable drained, sfAssetsTotal
+            // reflects the remaining outstanding loan principal (1e16).
+            BEAST_EXPECT((vaultSleAfter->at(sfAssetsAvailable) == Number{0}));
+            BEAST_EXPECT((vaultSleAfter->at(sfAssetsTotal) == Number{1, 16}));
+        };
+
+        {
+            testcase(
+                "VaultClawback amount=0 in loan-trapped vault succeeds "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0);
+        }
+        {
+            testcase(
+                "VaultClawback amount=0 in loan-trapped vault succeeds "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testableAmendments());
+        }
+    }
+
 public:
     void
     run() override
     {
-        testBugStuckVaultReceiverAtEdge();
-        testBugAssociateAssetRoundingDeposit();
-        testBugAssociateAssetRoundingWithdraw();
-        testVaultClawbackEdge();
-        testBugSleDeltaCheckTotalEdgeWithLoan();
-        testBugSubUlpVaultWithdraw();
-        testBugIssuerVaultDepositAtEdge();
+        // -- Precision-loss bug class (fixCleanup3_2_0) -------------------
+        // Cross-transactor
+        testBugVaultSubUlpAtEdge();
+        testBugVaultLoanTrappedAsymmetricRounding();
         testAccountSendExactCarveOuts();
+        // Deposit
+        testBugVaultDepositEdgeCrossing();
+        testBugSleDeltaCheckTotalEdgeWithLoan();
+        testBugIssuerVaultDepositAtEdge();
+        testBugAssociateAssetRoundingDeposit();
+        // Withdraw
+        testBugSubUlpVaultWithdraw();
+        testBugAssociateAssetRoundingWithdraw();
+        testBugStuckVaultReceiverAtEdge();
+        // Clawback
+        testVaultClawbackConvergenceAtIouEdge();
+        testVaultClawbackAllAvailable();
+        testVaultClawbackEdge();
+
+        // -- Vault operations --------------------------------------------
+        testVaultClawbackBurnShares();
+        testVaultClawbackAssets();
+        testVaultEscrowedMPT();
+        testAssetsMaximum();
+        testBug6LimitBypassWithShares();
+        testRemoveEmptyHoldingLockedAmount();
+
+        // -- Lifecycle / general ----------------------------------------
         testSequences();
         testPreflight();
         testCreateFailXRP();
@@ -6898,12 +7452,6 @@ public:
         testFailedPseudoAccount();
         testScaleIOU();
         testRPC();
-        testVaultClawbackBurnShares();
-        testVaultClawbackAssets();
-        testVaultEscrowedMPT();
-        testAssetsMaximum();
-        testBug6LimitBypassWithShares();
-        testRemoveEmptyHoldingLockedAmount();
     }
 };
 
