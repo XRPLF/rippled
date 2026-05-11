@@ -3118,41 +3118,7 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetRequireAuth});
         }
 
-        // Cannot set a DomainID and mutable flags in the same transaction.
-        {
-            Account const alice{"alice"};
-            Account const bob{"bob"};
-            Account const credIssuer{"credIssuer"};
-            pdomain::Credentials const credentials{
-                {.issuer = credIssuer, .credType = "credential"}};
-
-            Env env{*this, features};
-            env.fund(XRP(1000), credIssuer);
-            env.close();
-
-            env(pdomain::setTx(credIssuer, credentials));
-            env.close();
-            auto const domainId = pdomain::getNewDomain(env.meta());
-
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTRequireAuth,
-                .mutableFlags = tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanLock,
-            });
-
-            for (auto const mutableFlags : {tmfMPTClearRequireAuth, tmfMPTSetCanLock})
-            {
-                mptAlice.set({
-                    .account = alice,
-                    .mutableFlags = mutableFlags,
-                    .domainID = domainId,
-                    .err = temMALFORMED,
-                });
-            }
-        }
-
-        // Cannot clear DomainID and set mutable flags in the same transaction.
+        // domainID and mutable flags can not exist in a single transaction.
         {
             Account const alice{"alice"};
             Account const bob{"bob"};
@@ -3176,14 +3142,17 @@ class MPToken_test : public beast::unit_test::Suite
                 .domainID = domainId,
             });
 
-            for (auto const mutableFlags : {tmfMPTClearRequireAuth, tmfMPTSetCanLock})
+            for (auto const& domain : {domainId, uint256{}})
             {
-                mptAlice.set({
-                    .account = alice,
-                    .mutableFlags = mutableFlags,
-                    .domainID = uint256{},
-                    .err = temMALFORMED,
-                });
+                for (auto const mutableFlags : {tmfMPTClearRequireAuth, tmfMPTSetCanLock})
+                {
+                    mptAlice.set({
+                        .account = alice,
+                        .mutableFlags = mutableFlags,
+                        .domainID = domain,
+                        .err = temMALFORMED,
+                    });
+                }
             }
         }
     }
