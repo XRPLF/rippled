@@ -7285,7 +7285,7 @@ protected:
     }
 
     // Verify that LoanPay's minimum cover check uses vault scale (not loan
-    // scale) when the featureLendingProtocolV1_1 amendment is enabled.
+    // scale) when the fixCleanup3_2_0 amendment is enabled.
     // Before the amendment, different loans could produce different fee
     // routing decisions for the same broker-level cover/debt state.
     void
@@ -7303,7 +7303,6 @@ protected:
         {
             auto const features = withAmendment ? all_ : all_ - fixCleanup3_2_0;
             Env env(*this, features);
-            auto log = env.journal.trace();
 
             Account const issuer{"issuer"};
             Account const lender{"lender"};
@@ -7423,9 +7422,20 @@ protected:
             if (!BEAST_EXPECT(brokerSle))
                 return;
 
-            log << "withAmendment=" << withAmendment << " vaultScale=" << vaultScale
-                << " bigLoanScale=" << bigLoanScale << " tinyLoanScale=" << tinyLoanScale
-                << " coverAfterClaw=" << to_string(brokerSle->at(sfCoverAvailable)) << std::endl;
+            BEAST_EXPECT(vaultScale == -11);
+            BEAST_EXPECT(tinyLoanScale == -12);
+            BEAST_EXPECT(bigLoanScale == -11);
+
+            if (withAmendment)
+            {
+                auto expectedValue = Number{1330651855688460000, -15};
+                BEAST_EXPECT(brokerSle->at(sfCoverAvailable) == expectedValue);
+            }
+            else
+            {
+                auto expectedValue = Number{1330651855688458000, -15};
+                BEAST_EXPECT(brokerSle->at(sfCoverAvailable) == expectedValue);
+            }
 
             // Pay each loan independently and observe the fee routing.
             auto feeGoesToPseudo = [&](Keylet const& loanKeylet) {
@@ -7446,24 +7456,13 @@ protected:
                 return pseudoAfter.number() > pseudoBefore.number();
             };
 
-            // Pay the big loan first (it uses the larger loanScale).
-            auto const bigResult = feeGoesToPseudo(bigLoanKeylet);
-            // Pay the tiny loan second (it uses the smaller loanScale).
-            auto const tinyResult = feeGoesToPseudo(tinyLoanKeylet);
-
-            log << "bigResult(feeWentToPseudo)=" << bigResult
-                << " tinyResult(feeWentToPseudo)=" << tinyResult << std::endl;
-
             if (withAmendment)
             {
                 // With the fix, both LoanPay and clawback use the same
                 // vaultScale minimum.  Cover == minAtVaultScale, so both
                 // loans pass the check => fee to owner for both.
-                BEAST_EXPECTS(
-                    bigResult == tinyResult,
-                    "With amendment: fee routing should be consistent. "
-                    "big=>pseudo=" +
-                        std::to_string(bigResult) + " tiny=>pseudo=" + std::to_string(tinyResult));
+                BEAST_EXPECT(feeGoesToPseudo(bigLoanKeylet));
+                BEAST_EXPECT(feeGoesToPseudo(tinyLoanKeylet));
             }
             else
             {
@@ -7474,11 +7473,8 @@ protected:
                 //    rounds up => a larger minimum => cover < min => pseudo.
                 //  - Paying the tiny loan: LoanPay uses tinyLoanScale=-12,
                 //    rounds up at -12 (no-op) => min == cover => owner.
-                BEAST_EXPECTS(
-                    bigResult != tinyResult,
-                    "Without amendment: expected inconsistent fee routing to "
-                    "demonstrate the bug. big=>pseudo=" +
-                        std::to_string(bigResult) + " tiny=>pseudo=" + std::to_string(tinyResult));
+                BEAST_EXPECT(feeGoesToPseudo(bigLoanKeylet));
+                BEAST_EXPECT(!feeGoesToPseudo(tinyLoanKeylet));
             }
         }
     }
