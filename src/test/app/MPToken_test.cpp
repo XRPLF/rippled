@@ -2168,62 +2168,42 @@ class MPToken_test : public beast::unit_test::Suite
             malformedHolderToHolder.ter = tecPATH_PARTIAL;
             env.submit(malformedHolderToHolder);
             env.close();
-            BEAST_EXPECT(
-                (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT(
-                (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT(
-                (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
+            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
 
             env.enableFeature(fixCleanup3_2_0);
             env.close();
             env(env.jt(pay(bob, alice, STAmount{issue, std::uint64_t{1}})), Ter{tesSUCCESS});
             env.close();
-            BEAST_EXPECT(
-                (env.balance(alice, issue).value() == STAmount{MPTAmount{10'001}, issue}));
-            BEAST_EXPECT(
-                (env.balance(bob, issue).value() == STAmount{MPTAmount{9'999}, issue}));
-            BEAST_EXPECT(
-                (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
+            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'001}, issue}));
+            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{9'999}, issue}));
+            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
         }
         {
-            Env env{
-                *this,
-                envconfig(),
-                withoutFixAndV2,
-                nullptr,
-                beast::Severity::Disabled};
+            Env env{*this, envconfig(), withoutFixAndV2, nullptr, beast::Severity::Disabled};
             env.fund(XRP(100'000), alice, bob, gw);
             env.close();
             auto const issue = makeIssue(env);
 
             auto const badAmount = nonCanonicalMPTAmount(issue);
             auto malformedIssuerToHolder = withNonCanonicalMPTAmount(
-                env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})),
-                sfAmount,
-                badAmount,
-                gw);
+                env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})), sfAmount, badAmount, gw);
             expectRoundTripNonCanonicalMPT(malformedIssuerToHolder, sfAmount);
             malformedIssuerToHolder.ter = tecINVARIANT_FAILED;
             env.submit(malformedIssuerToHolder);
             env.close();
-            BEAST_EXPECT(
-                (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT(
-                (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT(
-                (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
+            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
 
             env.enableFeature(fixCleanup3_2_0);
             env.close();
             env(env.jt(pay(alice, gw, STAmount{issue, std::uint64_t{1}})), Ter{tesSUCCESS});
             env.close();
-            BEAST_EXPECT(
-                (env.balance(alice, issue).value() == STAmount{MPTAmount{9'999}, issue}));
-            BEAST_EXPECT(
-                (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT(
-                (env.balance(gw, issue).value() == STAmount{MPTAmount{-19'999}, issue}));
+            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{9'999}, issue}));
+            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-19'999}, issue}));
         }
         {
             Env env{*this, withoutFixAndV2};
@@ -2241,23 +2221,17 @@ class MPToken_test : public beast::unit_test::Suite
             malformedHolderToIssuer.ter = tecPATH_PARTIAL;
             env.submit(malformedHolderToIssuer);
             env.close();
-            BEAST_EXPECT(
-                (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT(
-                (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT(
-                (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
+            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
 
             env.enableFeature(fixCleanup3_2_0);
             env.close();
             env(env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})), Ter{tesSUCCESS});
             env.close();
-            BEAST_EXPECT(
-                (env.balance(alice, issue).value() == STAmount{MPTAmount{10'001}, issue}));
-            BEAST_EXPECT(
-                (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT(
-                (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'001}, issue}));
+            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'001}, issue}));
+            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'001}, issue}));
         }
         {
             Env env{*this, withFixAndWithoutV2};
@@ -2282,10 +2256,7 @@ class MPToken_test : public beast::unit_test::Suite
 
             auto const badAmount = nonCanonicalMPTAmount(issue);
             auto tx = withNonCanonicalMPTAmount(
-                env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})),
-                sfAmount,
-                badAmount,
-                gw);
+                env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})), sfAmount, badAmount, gw);
             tx.ter = temBAD_AMOUNT;
             env.submit(tx);
         }
@@ -2387,12 +2358,9 @@ class MPToken_test : public beast::unit_test::Suite
             env.submit(tx);
             env.close();
             BEAST_EXPECT(env.le(keylet::check(alice.id(), checkSeq)) != nullptr);
-            BEAST_EXPECT(
-                (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT(
-                (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT(
-                (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
+            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
         }
         {
             Env env{*this, withFix};
