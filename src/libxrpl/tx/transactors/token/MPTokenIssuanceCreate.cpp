@@ -71,6 +71,10 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         // must also be set.
         if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
             return temMALFORMED;
+
+        // Confidential amounts are encrypted so transfer rate is disallowed.
+        if (fee > 0u && ctx.tx.isFlag(tfMPTCanConfidentialAmount))
+            return temMALFORMED;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])
