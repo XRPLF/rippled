@@ -69,7 +69,10 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == *mptHolder)
         return temMALFORMED;
 
-    if (clawAmount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT} || clawAmount <= beast::kZERO)
+    bool const invalidMPTAmount = ctx.rules.enabled(fixCleanup3_2_0)
+        ? !isLegalMPTAmount(ctx.rules, clawAmount)
+        : clawAmount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT};
+    if (invalidMPTAmount || clawAmount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

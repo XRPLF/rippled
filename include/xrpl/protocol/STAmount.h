@@ -5,9 +5,12 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
@@ -579,6 +582,23 @@ inline bool
 isLegalNet(STAmount const& value)
 {
     return !value.native() || (value.mantissa() <= STAmount::kMAX_NATIVE_N);
+}
+
+inline bool
+isLegalMPTAmount(Rules const& rules, STAmount const& value)
+{
+    if (!rules.enabled(fixCleanup3_2_0))
+        return true;
+
+    return !value.holds<MPTIssue>() ||
+        (value.exponent() == 0 && value.mantissa() <= kMAX_MP_TOKEN_AMOUNT &&
+         (value.mantissa() != 0 || !value.negative()));
+}
+
+inline bool
+isLegalNet(Rules const& rules, STAmount const& value)
+{
+    return isLegalNet(value) && isLegalMPTAmount(rules, value);
 }
 
 //------------------------------------------------------------------------------

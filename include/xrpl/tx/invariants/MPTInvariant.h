@@ -6,6 +6,8 @@
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 
@@ -19,6 +21,21 @@ class ValidMPTIssuance
     // non-MPT transactions may attempt to create
     // MPToken by an issuer
     bool mptCreatedByIssuer_ = false;
+
+public:
+    void
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+};
+
+/** Verify that MPT STAmounts are canonical in the applied transaction and in
+ *  any ledger entries left after the transaction applies.
+ */
+class ValidMPTAmounts
+{
+    std::vector<std::shared_ptr<SLE const>> afterEntries_;
 
 public:
     void

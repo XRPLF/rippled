@@ -122,7 +122,7 @@ OfferCreate::preflight(PreflightContext const& ctx)
     STAmount const saTakerPays = tx[sfTakerPays];
     STAmount const saTakerGets = tx[sfTakerGets];
 
-    if (!isLegalNet(saTakerPays) || !isLegalNet(saTakerGets))
+    if (!isLegalNet(ctx.rules, saTakerPays) || !isLegalNet(ctx.rules, saTakerGets))
         return temBAD_AMOUNT;
 
     if (saTakerPays.native() && saTakerGets.native())

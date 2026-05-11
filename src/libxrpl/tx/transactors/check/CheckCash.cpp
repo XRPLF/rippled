@@ -63,7 +63,7 @@ CheckCash::preflight(PreflightContext const& ctx)
 
     // Make sure the amount is valid.
     STAmount const value{optAmount ? *optAmount : *optDeliverMin};
-    if (!isLegalNet(value) || value.signum() <= 0)
+    if (!isLegalNet(ctx.rules, value) || value.signum() <= 0)
     {
         JLOG(ctx.j.warn()) << "Malformed transaction: bad amount: " << value.getFullText();
         return temBAD_AMOUNT;
@@ -140,6 +140,9 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         }(ctx.tx)};
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
+        if (!isLegalMPTAmount(ctx.view.rules(), sendMax))
+            return temBAD_AMOUNT;
+
         if (!equalTokens(value.asset(), sendMax.asset()))
         {
             JLOG(ctx.j.warn()) << "Check cash does not match check currency.";

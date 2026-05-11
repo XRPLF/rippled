@@ -107,7 +107,10 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
         return temDISABLED;
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT} || amount <= beast::kZERO)
+    bool const invalidMPTAmount = ctx.rules.enabled(fixCleanup3_2_0)
+        ? !isLegalMPTAmount(ctx.rules, amount)
+        : amount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT};
+    if (amount.native() || invalidMPTAmount || amount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

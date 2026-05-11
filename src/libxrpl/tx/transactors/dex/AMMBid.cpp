@@ -58,7 +58,7 @@ AMMBid::preflight(PreflightContext const& ctx)
 
     if (auto const bidMin = ctx.tx[~sfBidMin])
     {
-        if (auto const res = invalidAMMAmount(*bidMin))
+        if (auto const res = invalidAMMAmount(ctx.rules, *bidMin))
         {
             JLOG(ctx.j.debug()) << "AMM Bid: invalid min slot price.";
             return res;
@@ -67,7 +67,7 @@ AMMBid::preflight(PreflightContext const& ctx)
 
     if (auto const bidMax = ctx.tx[~sfBidMax])
     {
-        if (auto const res = invalidAMMAmount(*bidMax))
+        if (auto const res = invalidAMMAmount(ctx.rules, *bidMax))
         {
             JLOG(ctx.j.debug()) << "AMM Bid: invalid max slot price.";
             return res;

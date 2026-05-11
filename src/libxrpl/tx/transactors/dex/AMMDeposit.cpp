@@ -133,7 +133,10 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     if (amount)
     {
         if (auto const res = invalidAMMAmount(
-                *amount, std::make_optional(std::make_pair(asset, asset2)), ePrice.has_value()))
+                ctx.rules,
+                *amount,
+                std::make_optional(std::make_pair(asset, asset2)),
+                ePrice.has_value()))
         {
             JLOG(ctx.j.debug()) << "AMM Deposit: invalid amount";
             return res;
@@ -142,8 +145,8 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 
     if (amount2)
     {
-        if (auto const res =
-                invalidAMMAmount(*amount2, std::make_optional(std::make_pair(asset, asset2))))
+        if (auto const res = invalidAMMAmount(
+                ctx.rules, *amount2, std::make_optional(std::make_pair(asset, asset2))))
         {
             JLOG(ctx.j.debug()) << "AMM Deposit: invalid amount2";
             return res;
@@ -159,7 +162,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
             // must be amount issue
             return std::make_optional(std::make_pair(amount->asset(), amount->asset()));
         }();
-        if (auto const res = invalidAMMAmount(*ePrice, assets))
+        if (auto const res = invalidAMMAmount(ctx.rules, *ePrice, assets))
         {
             JLOG(ctx.j.debug()) << "AMM Deposit: invalid EPrice";
             return res;
