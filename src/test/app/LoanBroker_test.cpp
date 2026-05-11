@@ -1924,6 +1924,27 @@ class LoanBroker_test : public beast::unit_test::Suite
             Ter{tecBAD_CREDENTIALS});
         env.close();
 
+        // Malformed credential array (duplicates) is rejected by checkFields
+        env(coverWithdrawToDest(),
+            loanBroker::kDESTINATION(dest),
+            credentials::Ids({credIdx, credIdx}),
+            Ter{temMALFORMED});
+        env.close();
+
+        // Valid credential not authorized by dest hits authorizedDepositPreauth error path
+        char const credType2[] = "fghij";
+        env(credentials::create(broker, credIssuer, credType2));
+        env(credentials::accept(broker, credIssuer, credType2));
+        env.close();
+        auto const credIdx2 =
+            credentials::ledgerEntry(env, broker, credIssuer, credType2)[jss::result][jss::index]
+                .asString();
+        env(coverWithdrawToDest(),
+            loanBroker::kDESTINATION(dest),
+            credentials::Ids({credIdx2}),
+            Ter{tecNO_PERMISSION});
+        env.close();
+
         // Advance time past expiration: credentials yield tecEXPIRED and are deleted
         env.close(150s);
         BEAST_EXPECT(env.le(credKeylet));

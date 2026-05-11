@@ -6224,6 +6224,21 @@ class Vault_test : public beast::unit_test::Suite
         env(withdrawToDest(), credentials::Ids({invalidIdx}), Ter{tecBAD_CREDENTIALS});
         env.close();
 
+        // Malformed credential array (duplicates) is rejected by checkFields
+        env(withdrawToDest(), credentials::Ids({credIdx, credIdx}), Ter{temMALFORMED});
+        env.close();
+
+        // Valid credential not authorized by dest hits authorizedDepositPreauth error path
+        char const credType2[] = "fghij";
+        env(credentials::create(depositor, credIssuer, credType2));
+        env(credentials::accept(depositor, credIssuer, credType2));
+        env.close();
+        auto const credIdx2 =
+            credentials::ledgerEntry(env, depositor, credIssuer, credType2)[jss::result][jss::index]
+                .asString();
+        env(withdrawToDest(), credentials::Ids({credIdx2}), Ter{tecNO_PERMISSION});
+        env.close();
+
         // Advance time past expiration: credentials yield tecEXPIRED and are deleted
         env.close(150s);
         BEAST_EXPECT(env.le(credKeylet));
