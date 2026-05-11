@@ -6148,6 +6148,7 @@ class Vault_test : public beast::unit_test::Suite
             "withdraw with credential-based deposit preauth " +
             std::string{features[fixCleanup3_2_0] ? "post-fix" : "pre-fix"});
         using namespace test::jtx;
+        using namespace std::chrono_literals;
 
         bool const fixEnabled = features[fixCleanup3_2_0];
 
@@ -6183,11 +6184,16 @@ class Vault_test : public beast::unit_test::Suite
         env(withdrawToDest(), Ter{tecNO_PERMISSION});
         env.close();
 
-        // Issue and accept a credential for the depositor
-        env(credentials::create(depositor, credIssuer, credType));
+        // Issue and accept a credential for the depositor (with expiration)
+        auto jv = credentials::create(depositor, credIssuer, credType);
+        std::uint32_t const expiration =
+            env.current()->header().parentCloseTime.time_since_epoch().count() + 100;
+        jv[sfExpiration.jsonName] = expiration;
+        env(jv);
         env(credentials::accept(depositor, credIssuer, credType));
         env.close();
 
+        auto const credKeylet = credentials::keylet(depositor, credIssuer, credType);
         auto const credIdx =
             credentials::ledgerEntry(env, depositor, credIssuer, credType)[jss::result][jss::index]
                 .asString();
@@ -6217,6 +6223,13 @@ class Vault_test : public beast::unit_test::Suite
             "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E01E034";
         env(withdrawToDest(), credentials::Ids({invalidIdx}), Ter{tecBAD_CREDENTIALS});
         env.close();
+
+        // Advance time past expiration: credentials yield tecEXPIRED and are deleted
+        env.close(150s);
+        BEAST_EXPECT(env.le(credKeylet));
+        env(withdrawToDest(), credentials::Ids({credIdx}), Ter{tecEXPIRED});
+        env.close();
+        BEAST_EXPECT(!env.le(credKeylet));
     }
 
 public:
