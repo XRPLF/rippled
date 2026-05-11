@@ -16,7 +16,7 @@ namespace xrpl {
 class OracleDelete : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
 
     explicit OracleDelete(ApplyContext& ctx) : Transactor(ctx)
     {

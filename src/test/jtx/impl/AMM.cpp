@@ -212,7 +212,7 @@ AMM::ammRpcInfo(
             jv[jss::amm_account] = to_string(*ammAccount);
     }
     auto jr =
-        (apiVersion == RPC::kAPI_INVALID_VERSION
+        (apiVersion == RPC::kApiInvalidVersion
              ? env_.rpc("json", "amm_info", to_string(jv))
              : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
     if (jr.isObject() && jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))

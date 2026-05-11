@@ -72,7 +72,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     }
 
     // Enforce valid withdrawal policy
-    if (vault->at(sfWithdrawalPolicy) != kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE)
+    if (vault->at(sfWithdrawalPolicy) != kVaultStrategyFirstComeFirstServe)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultWithdraw: invalid withdrawal policy.";

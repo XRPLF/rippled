@@ -38,7 +38,7 @@ Database::Database(
     beast::Journal journal)
     : j_(journal)
     , scheduler_(scheduler)
-    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", kXRP_LEDGER_EARLIEST_SEQ))
+    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", kXrpLedgerEarliestSeq))
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , readThreads_(std::max(1, readThreads))
 {

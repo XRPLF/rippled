@@ -256,10 +256,10 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
 
     std::array<std::uint8_t, varint_traits<std::size_t>::kMAX> vi{};
 
-    constexpr std::size_t kCODEC_TYPE = 1;
-    auto const vn = writeVarint(vi.data(), kCODEC_TYPE);
+    constexpr std::size_t kCodecType = 1;
+    auto const vn = writeVarint(vi.data(), kCodecType);
     std::pair<void const*, std::size_t> result;
-    switch (kCODEC_TYPE)
+    switch (kCodecType)
     {
         // case 0 was uncompressed data; we always compress now.
         case 1:  // lz4
@@ -275,7 +275,7 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
             break;
         }
         default:
-            Throw<std::logic_error>("nodeobject codec: unknown=" + std::to_string(kCODEC_TYPE));
+            Throw<std::logic_error>("nodeobject codec: unknown=" + std::to_string(kCodecType));
     };
     return result;
 }

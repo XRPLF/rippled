@@ -142,7 +142,7 @@ public:
 
         if (ta == nullptr)
         {
-            peer->charge(Resource::kFEE_USELESS_DATA, "ledger_data");
+            peer->charge(Resource::kFeeUselessData, "ledger_data");
             return;
         }
 
@@ -153,7 +153,7 @@ public:
         {
             if (!node.has_nodeid() || !node.has_nodedata())
             {
-                peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data");
+                peer->charge(Resource::kFeeMalformedRequest, "ledger_data");
                 return;
             }
 
@@ -161,7 +161,7 @@ public:
 
             if (!id)
             {
-                peer->charge(Resource::kFEE_INVALID_DATA, "ledger_data");
+                peer->charge(Resource::kFeeInvalidData, "ledger_data");
                 return;
             }
 
@@ -169,7 +169,7 @@ public:
         }
 
         if (!ta->takeNodes(data, peer).isUseful())
-            peer->charge(Resource::kFEE_USELESS_DATA, "ledger_data not useful");
+            peer->charge(Resource::kFeeUselessData, "ledger_data not useful");
     }
 
     void

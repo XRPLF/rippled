@@ -301,7 +301,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             }
         };
 
-        for (auto i = 0; i < xrpl::RPC::Tuning::kNO_RIPPLE_CHECK.rmax + 5; ++i)
+        for (auto i = 0; i < xrpl::RPC::Tuning::kNoRippleCheck.rmax + 5; ++i)
         {
             if (!admin)
                 checkBalance();

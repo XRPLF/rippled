@@ -137,8 +137,8 @@ struct Directory_test : public beast::unit_test::Suite
 
                 // Ensure that the page contains the correct orders by
                 // calculating which sequence numbers belong here.
-                std::uint32_t const minSeq = firstOfferSeq + (page * kDIR_NODE_MAX_ENTRIES);
-                std::uint32_t const maxSeq = minSeq + kDIR_NODE_MAX_ENTRIES;
+                std::uint32_t const minSeq = firstOfferSeq + (page * kDirNodeMaxEntries);
+                std::uint32_t const maxSeq = minSeq + kDirNodeMaxEntries;
 
                 for (auto const& e : v)
                 {
@@ -196,7 +196,7 @@ struct Directory_test : public beast::unit_test::Suite
         std::vector<IOU> const currencies = [this, &gw]() {
             std::vector<IOU> c;
 
-            c.reserve((2 * kDIR_NODE_MAX_ENTRIES) + 3);
+            c.reserve((2 * kDirNodeMaxEntries) + 3);
 
             while (c.size() != c.capacity())
                 c.push_back(gw[currcode(c.size())]);
@@ -295,7 +295,7 @@ struct Directory_test : public beast::unit_test::Suite
         // Fill up three pages of offers
         for (int i = 0; i < 3; ++i)
         {
-            for (int j = 0; j < kDIR_NODE_MAX_ENTRIES; ++j)
+            for (int j = 0; j < kDirNodeMaxEntries; ++j)
                 env(offer(alice, XRP(1), usd(1)));
         }
         env.close();
@@ -303,9 +303,9 @@ struct Directory_test : public beast::unit_test::Suite
         // remove all the offers. Remove the middle page last
         for (auto page : {0, 2, 1})
         {
-            for (int i = 0; i < kDIR_NODE_MAX_ENTRIES; ++i)
+            for (int i = 0; i < kDirNodeMaxEntries; ++i)
             {
-                env(offerCancel(alice, firstOfferSeq + (page * kDIR_NODE_MAX_ENTRIES) + i));
+                env(offerCancel(alice, firstOfferSeq + (page * kDirNodeMaxEntries) + i));
                 env.close();
             }
         }
@@ -569,13 +569,13 @@ struct Directory_test : public beast::unit_test::Suite
             testableAmendments() - fixDirectoryLimit,
             [this](Env&) -> std::tuple<std::uint64_t, bool> {
                 testcase("directory full without fixDirectoryLimit");
-                return {kDIR_NODE_MAX_PAGES - 1, true};
+                return {kDirNodeMaxPages - 1, true};
             });
         testCase(
             testableAmendments(),  //
             [this](Env&) -> std::tuple<std::uint64_t, bool> {
                 testcase("directory not full with fixDirectoryLimit");
-                return {kDIR_NODE_MAX_PAGES - 1, false};
+                return {kDirNodeMaxPages - 1, false};
             });
         testCase(
             testableAmendments(),  //

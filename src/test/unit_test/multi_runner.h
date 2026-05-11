@@ -133,10 +133,10 @@ class MultiRunnerBase
         printResults(S& s);
     };
 
-    static constexpr char const* kSHARED_MEM_NAME = "XrpldUnitTestSharedMem";
+    static constexpr char const* kSharedMemName = "XrpldUnitTestSharedMem";
     // name of the message queue a multi_runner_child will use to communicate
     // with multi_runner_parent
-    static constexpr char const* kMESSAGE_QUEUE_NAME = "XrpldUnitTestMessageQueue";
+    static constexpr char const* kMessageQueueName = "XrpldUnitTestMessageQueue";
 
     // `inner_` will be created in shared memory
     Inner* inner_;

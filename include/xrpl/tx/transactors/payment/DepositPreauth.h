@@ -7,7 +7,7 @@ namespace xrpl {
 class DepositPreauth : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
 
     explicit DepositPreauth(ApplyContext& ctx) : Transactor(ctx)
     {

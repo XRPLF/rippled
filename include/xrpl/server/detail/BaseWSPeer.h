@@ -369,11 +369,11 @@ BaseWSPeer<Handler, Impl>::startTimer()
 {
     // Max seconds without completing a message
     static constexpr std::chrono::seconds kTIMEOUT{30};
-    static constexpr std::chrono::seconds kTIMEOUT_LOCAL{3};
+    static constexpr std::chrono::seconds kTimeoutLocal{3};
 
     try
     {
-        timer_.expires_after(remoteEndpoint().address().is_loopback() ? kTIMEOUT_LOCAL : kTIMEOUT);
+        timer_.expires_after(remoteEndpoint().address().is_loopback() ? kTimeoutLocal : kTIMEOUT);
     }
     catch (boost::system::system_error const& e)
     {

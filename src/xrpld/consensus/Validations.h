@@ -702,12 +702,12 @@ public:
             {
                 // We only need to refresh the keep range when it's just about
                 // to expire. Track the next time we need to refresh.
-                static std::chrono::steady_clock::time_point kREFRESH_TIME;
-                if (auto const now = byLedger_.clock().now(); kREFRESH_TIME <= now)
+                static std::chrono::steady_clock::time_point kRefreshTime;
+                if (auto const now = byLedger_.clock().now(); kRefreshTime <= now)
                 {
                     // The next refresh time is shortly before the expiration
                     // time from now.
-                    kREFRESH_TIME = now + parms_.validationSET_EXPIRES - parms_.validationFRESHNESS;
+                    kRefreshTime = now + parms_.validationSET_EXPIRES - parms_.validationFRESHNESS;
 
                     for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
                     {

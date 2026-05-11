@@ -218,8 +218,8 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
         if (IsParent)
         {
             // cleanup any leftover state for any previous failed runs
-            boost::interprocess::shared_memory_object::remove(kSHARED_MEM_NAME);
-            boost::interprocess::message_queue::remove(kMESSAGE_QUEUE_NAME);
+            boost::interprocess::shared_memory_object::remove(kSharedMemName);
+            boost::interprocess::message_queue::remove(kMessageQueueName);
         }
 
         shared_mem_ = boost::interprocess::shared_memory_object{
@@ -227,7 +227,7 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
                 IsParent,
                 boost::interprocess::create_only_t,
                 boost::interprocess::open_only_t>{},
-            kSHARED_MEM_NAME,
+            kSharedMemName,
             boost::interprocess::read_write};
 
         if (IsParent)
@@ -235,14 +235,14 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
             shared_mem_.truncate(sizeof(Inner));
             message_queue_ = std::make_unique<boost::interprocess::message_queue>(
                 boost::interprocess::create_only,
-                kMESSAGE_QUEUE_NAME,
+                kMessageQueueName,
                 /*max messages*/ 16,
                 /*max message size*/ 1 << 20);
         }
         else
         {
             message_queue_ = std::make_unique<boost::interprocess::message_queue>(
-                boost::interprocess::open_only, kMESSAGE_QUEUE_NAME);
+                boost::interprocess::open_only, kMessageQueueName);
         }
 
         region_ = boost::interprocess::mapped_region{shared_mem_, boost::interprocess::read_write};
@@ -259,8 +259,8 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
     {
         if (IsParent)
         {
-            boost::interprocess::shared_memory_object::remove(kSHARED_MEM_NAME);
-            boost::interprocess::message_queue::remove(kMESSAGE_QUEUE_NAME);
+            boost::interprocess::shared_memory_object::remove(kSharedMemName);
+            boost::interprocess::message_queue::remove(kMessageQueueName);
         }
         throw;
     }
@@ -272,8 +272,8 @@ MultiRunnerBase<IsParent>::~MultiRunnerBase()
     if (IsParent)
     {
         inner_->~Inner();
-        boost::interprocess::shared_memory_object::remove(kSHARED_MEM_NAME);
-        boost::interprocess::message_queue::remove(kMESSAGE_QUEUE_NAME);
+        boost::interprocess::shared_memory_object::remove(kSharedMemName);
+        boost::interprocess::message_queue::remove(kMessageQueueName);
     }
 }
 

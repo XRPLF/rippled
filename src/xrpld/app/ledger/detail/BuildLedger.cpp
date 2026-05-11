@@ -73,7 +73,7 @@ buildLedgerImpl(
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < kXRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()),
+        built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::fees()),
         "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
@@ -225,7 +225,7 @@ buildLedger(
     return buildLedgerImpl(
         replayData.parent(),
         replayLedger->header().closeTime,
-        ((replayLedger->header().closeFlags & kS_LCF_NO_CONSENSUS_TIME) == 0),
+        ((replayLedger->header().closeFlags & kSLcfNoConsensusTime) == 0),
         replayLedger->header().closeTimeResolution,
         app,
         j,

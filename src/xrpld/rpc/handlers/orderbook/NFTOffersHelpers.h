@@ -48,7 +48,7 @@ inline json::Value
 enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const& directory)
 {
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kNFT_OFFERS, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kNftOffers, context))
         return *err;
 
     std::shared_ptr<ReadView const> ledger;
@@ -125,7 +125,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     for (auto const& offer : offers)
         appendNftOfferJson(context.app, offer, jsonOffers);
 
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     return result;
 }
 

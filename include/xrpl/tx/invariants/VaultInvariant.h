@@ -64,7 +64,7 @@ class ValidVault
 public:
     struct DeltaInfo final
     {
-        Number delta = kNUM_ZERO;
+        Number delta = kNumZero;
         std::optional<int> scale;
 
         // Compute the delta between two Numbers, taking the coarsest scale

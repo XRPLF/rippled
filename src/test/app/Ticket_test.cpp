@@ -673,12 +673,12 @@ class Ticket_test : public beast::unit_test::Suite
 
         // Successfully create several tickets (using a sequence).
         std::uint32_t ticketSeq{env.seq(alice)};
-        static constexpr std::uint32_t kTICKET_COUNT{10};
-        env(ticket::create(alice, kTICKET_COUNT));
+        static constexpr std::uint32_t kTicketCount{10};
+        env(ticket::create(alice, kTicketCount));
         uint256 const txHash1{getTxID()};
 
         // Just for grins use the tickets in reverse from largest to smallest.
-        ticketSeq += kTICKET_COUNT;
+        ticketSeq += kTicketCount;
         env(noop(alice), ticket::Use(--ticketSeq));
         uint256 const txHash2{getTxID()};
 

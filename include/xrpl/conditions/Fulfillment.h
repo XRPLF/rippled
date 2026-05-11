@@ -16,7 +16,7 @@ public:
               that were previously considered valid to no longer
               be allowed.
     */
-    static constexpr std::size_t kMAX_SERIALIZED_FULFILLMENT = 256;
+    static constexpr std::size_t kMaxSerializedFulfillment = 256;
 
     /** Load a fulfillment from its binary form
 

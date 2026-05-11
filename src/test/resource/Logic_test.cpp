@@ -179,7 +179,7 @@ public:
             using namespace std::chrono_literals;
             // Give Consumer time to become readmitted.  Should never
             // exceed expiration time.
-            auto n = kSECONDS_UNTIL_EXPIRATION + 1s;
+            auto n = kSecondsUntilExpiration + 1s;
             while (--n > 0s)
             {
                 ++logic.clock();

@@ -7,7 +7,7 @@ namespace xrpl {
 class VaultSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
 
     explicit VaultSet(ApplyContext& ctx) : Transactor(ctx)
     {

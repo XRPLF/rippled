@@ -197,7 +197,7 @@ doSubscribe(RPC::JsonContext& context)
         if (!context.app.config().useTxTables())
             return rpcError(RpcNotEnabled);
 
-        context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+        context.loadType = Resource::kFeeMediumBurdenRpc;
         auto const& req = context.params[jss::account_history_tx_stream];
         if (!req.isMember(jss::account) || !req[jss::account].isString())
             return rpcError(RpcInvalidParams);
@@ -285,7 +285,7 @@ doSubscribe(RPC::JsonContext& context)
             if ((j.isMember(jss::snapshot) && j[jss::snapshot].asBool()) ||
                 (j.isMember(jss::state_now) && j[jss::state_now].asBool()))
             {
-                context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+                context.loadType = Resource::kFeeMediumBurdenRpc;
                 std::shared_ptr<ReadView const> lpLedger =
                     context.app.getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
@@ -299,7 +299,7 @@ doSubscribe(RPC::JsonContext& context)
                             field == jss::asks ? reversed(book) : book,
                             takerID ? *takerID : noAccount(),
                             false,
-                            RPC::Tuning::kBOOK_OFFERS.rDefault,
+                            RPC::Tuning::kBookOffers.rDefault,
                             jvMarker,
                             jvOffers);
 

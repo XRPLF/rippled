@@ -9,7 +9,7 @@ namespace xrpl::detail {
 
 /* Need to change TableTypeCount if TableType is modified. */
 enum class TableType { Ledgers, Transactions, AccountTransactions };
-constexpr int kTABLE_TYPE_COUNT = 3;
+constexpr int kTableTypeCount = 3;
 
 struct DatabasePairValid
 {

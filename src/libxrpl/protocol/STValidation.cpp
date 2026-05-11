@@ -108,7 +108,7 @@ STValidation::isValid() const noexcept
             getSignerPublic(),
             getSigningHash(),
             makeSlice(getFieldVL(sfSignature)),
-            (getFlags() & kVF_FULLY_CANONICAL_SIG) != 0u);
+            (getFlags() & kVfFullyCanonicalSig) != 0u);
     }
 
     return valid_.value();
@@ -117,7 +117,7 @@ STValidation::isValid() const noexcept
 bool
 STValidation::isFull() const noexcept
 {
-    return (getFlags() & kVF_FULL_VALIDATION) != 0;
+    return (getFlags() & kVfFullValidation) != 0;
 }
 
 Blob

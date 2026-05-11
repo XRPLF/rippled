@@ -42,24 +42,24 @@ private:
 public:
     using value_type = STAmount;
 
-    constexpr static int kMIN_OFFSET = -96;
-    constexpr static int kMAX_OFFSET = 80;
+    constexpr static int kMinOffset = -96;
+    constexpr static int kMaxOffset = 80;
 
     // Maximum native value supported by the code
-    constexpr static std::uint64_t kMIN_VALUE = 1'000'000'000'000'000ull;
-    static_assert(isPowerOfTen(kMIN_VALUE));
-    constexpr static std::uint64_t kMAX_VALUE = (kMIN_VALUE * 10) - 1;
-    static_assert(kMAX_VALUE == 9'999'999'999'999'999ull);
-    constexpr static std::uint64_t kMAX_NATIVE = 9'000'000'000'000'000'000ull;
+    constexpr static std::uint64_t kMinValue = 1'000'000'000'000'000ull;
+    static_assert(isPowerOfTen(kMinValue));
+    constexpr static std::uint64_t kMaxValue = (kMinValue * 10) - 1;
+    static_assert(kMaxValue == 9'999'999'999'999'999ull);
+    constexpr static std::uint64_t kMaxNative = 9'000'000'000'000'000'000ull;
 
     // Max native value on network.
-    constexpr static std::uint64_t kMAX_NATIVE_N = 100'000'000'000'000'000ull;
-    constexpr static std::uint64_t kISSUED_CURRENCY = 0x8'000'000'000'000'000ull;
-    constexpr static std::uint64_t kPOSITIVE = 0x4'000'000'000'000'000ull;
-    constexpr static std::uint64_t kMP_TOKEN = 0x2'000'000'000'000'000ull;
-    constexpr static std::uint64_t kVALUE_MASK = ~(kPOSITIVE | kMP_TOKEN);
+    constexpr static std::uint64_t kMaxNativeN = 100'000'000'000'000'000ull;
+    constexpr static std::uint64_t kIssuedCurrency = 0x8'000'000'000'000'000ull;
+    constexpr static std::uint64_t kPositive = 0x4'000'000'000'000'000ull;
+    constexpr static std::uint64_t kMpToken = 0x2'000'000'000'000'000ull;
+    constexpr static std::uint64_t kValueMask = ~(kPositive | kMpToken);
 
-    static std::uint64_t const kU_RATE_ONE;
+    static std::uint64_t const kURateOne;
 
     //--------------------------------------------------------------------------
     STAmount(SerialIter& sit, SField const& name);
@@ -540,7 +540,7 @@ STAmount::fromNumber(A const& a, Number const& number)
         return STAmount{asset, intValue, 0, negative};
     }
 
-    auto const [mantissa, exponent] = working.normalizeToRange(kMIN_VALUE, kMAX_VALUE);
+    auto const [mantissa, exponent] = working.normalizeToRange(kMinValue, kMaxValue);
 
     return STAmount{asset, mantissa, exponent, negative};
 }
@@ -578,7 +578,7 @@ STAmount::value() const noexcept
 inline bool
 isLegalNet(STAmount const& value)
 {
-    return !value.native() || (value.mantissa() <= STAmount::kMAX_NATIVE_N);
+    return !value.native() || (value.mantissa() <= STAmount::kMaxNativeN);
 }
 
 //------------------------------------------------------------------------------

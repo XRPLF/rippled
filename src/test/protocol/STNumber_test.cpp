@@ -55,7 +55,7 @@ struct STNumber_test : public beast::unit_test::Suite
             testCombo(Number{mantissa});
 
         std::initializer_list<std::int32_t> const exponents = {
-            Number::kMIN_EXPONENT, -1, 0, 1, Number::kMAX_EXPONENT - 1};
+            Number::kMinExponent, -1, 0, 1, Number::kMaxExponent - 1};
         for (std::int32_t const exponent : exponents)
             testCombo(Number{123, exponent});
 

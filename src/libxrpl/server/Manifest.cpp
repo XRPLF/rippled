@@ -62,7 +62,7 @@ deserializeManifest(Slice s, beast::Journal journal)
     if (s.empty())
         return std::nullopt;
 
-    static SOTemplate const kMANIFEST_FORMAT{
+    static SOTemplate const kManifestFormat{
         // A manifest must include:
         // - the master public key
         {sfPublicKey, SoeRequired},
@@ -90,9 +90,9 @@ deserializeManifest(Slice s, beast::Journal journal)
     try
     {
         SerialIter sit{s};
-        STObject st{sit, kSF_GENERIC};
+        STObject st{sit, kSfGeneric};
 
-        st.applyTemplate(kMANIFEST_FORMAT);
+        st.applyTemplate(kManifestFormat);
 
         // We only understand "version 0" manifests at this time:
         if (st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0)
@@ -193,7 +193,7 @@ logMftAct(
 bool
 Manifest::verify() const
 {
-    STObject st(kSF_GENERIC);
+    STObject st(kSfGeneric);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
 
@@ -213,7 +213,7 @@ Manifest::verify() const
 uint256
 Manifest::hash() const
 {
-    STObject st(kSF_GENERIC);
+    STObject st(kSfGeneric);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     return st.getHash(HashPrefix::Manifest);
@@ -240,7 +240,7 @@ Manifest::revoked(std::uint32_t sequence)
 std::optional<Blob>
 Manifest::getSignature() const
 {
-    STObject st(kSF_GENERIC);
+    STObject st(kSfGeneric);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     if (!get(st, sfSignature))
@@ -251,7 +251,7 @@ Manifest::getSignature() const
 Blob
 Manifest::getMasterSignature() const
 {
-    STObject st(kSF_GENERIC);
+    STObject st(kSfGeneric);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     return st.getFieldVL(sfMasterSignature);

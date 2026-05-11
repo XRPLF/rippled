@@ -759,16 +759,16 @@ class AccountTx_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
             // The first two transactions listed in sanity haven't happened yet.
-            constexpr unsigned int kBECKY_DELETED_OFFSET = 2;
+            constexpr unsigned int kBeckyDeletedOffset = 2;
             BEAST_EXPECT(
                 std::size(kSANITY) ==
-                result[jss::result][jss::transactions].size() + kBECKY_DELETED_OFFSET);
+                result[jss::result][jss::transactions].size() + kBeckyDeletedOffset);
 
             json::Value const& txs{result[jss::result][jss::transactions]};
 
-            for (unsigned int index = kBECKY_DELETED_OFFSET; index < std::size(kSANITY); ++index)
+            for (unsigned int index = kBeckyDeletedOffset; index < std::size(kSANITY); ++index)
             {
-                checkSanity(txs[index - kBECKY_DELETED_OFFSET], kSANITY[index]);
+                checkSanity(txs[index - kBeckyDeletedOffset], kSANITY[index]);
             }
         }
 

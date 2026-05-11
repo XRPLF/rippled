@@ -406,7 +406,7 @@ RCLConsensus::Adaptor::onClose(
         std::move(initialSet),
         RCLCxPeerPos::Proposal{
             initialLedger->header().parentHash,
-            RCLCxPeerPos::Proposal::kSEQ_JOIN,
+            RCLCxPeerPos::Proposal::kSeqJoin,
             setHash,
             closeTime,
             app_.getTimeKeeper().closeTime(),
@@ -557,7 +557,7 @@ RCLConsensus::Adaptor::doAccept(
 
                 auto const wait = curr - seq;
 
-                if (wait && (wait % kCENSORSHIP_WARN_INTERNAL == 0))
+                if (wait && (wait % kCensorshipWarnInternal == 0))
                 {
                     std::ostringstream ss;
                     ss << "Potential Censorship: Eligible tx " << id
@@ -831,7 +831,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
             v.setFieldU32(sfLedgerSequence, ledger.seq());
 
             if (proposing)
-                v.setFlag(kVF_FULL_VALIDATION);
+                v.setFlag(kVfFullValidation);
 
             // Attest to the hash of what we consider to be the last fully
             // validated ledger. This may be the hash of the ledger we are

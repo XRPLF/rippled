@@ -143,7 +143,7 @@ AccountSet::preflight(PreflightContext const& ctx)
     {
         auto uTickSize = tx[sfTickSize];
         if ((uTickSize != 0u) &&
-            ((uTickSize < Quality::kMIN_TICK_SIZE) || (uTickSize > Quality::kMAX_TICK_SIZE)))
+            ((uTickSize < Quality::kMinTickSize) || (uTickSize > Quality::kMaxTickSize)))
         {
             JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
             return temBAD_TICK_SIZE;
@@ -159,7 +159,7 @@ AccountSet::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const domain = tx[~sfDomain]; domain && domain->size() > kMAX_DOMAIN_LENGTH)
+    if (auto const domain = tx[~sfDomain]; domain && domain->size() > kMaxDomainLength)
     {
         JLOG(j.trace()) << "domain too long";
         return telBAD_DOMAIN;
@@ -574,7 +574,7 @@ AccountSet::doApply()
     if (tx.isFieldPresent(sfTickSize))
     {
         auto uTickSize = tx[sfTickSize];
-        if ((uTickSize == 0) || (uTickSize == Quality::kMAX_TICK_SIZE))
+        if ((uTickSize == 0) || (uTickSize == Quality::kMaxTickSize))
         {
             JLOG(j_.trace()) << "unset tick size";
             sle->makeFieldAbsent(sfTickSize);

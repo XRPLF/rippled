@@ -178,7 +178,7 @@ public:
         std::optional<Asset> asset2 = std::nullopt,
         std::optional<AccountID> const& ammAccount = std::nullopt,
         bool ignoreParams = false,
-        unsigned apiVersion = RPC::kAPI_INVALID_VERSION) const;
+        unsigned apiVersion = RPC::kApiInvalidVersion) const;
 
     /** Verify the AMM balances.
      */

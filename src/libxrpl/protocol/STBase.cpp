@@ -12,7 +12,7 @@
 
 namespace xrpl {
 
-STBase::STBase() : fName_(&kSF_GENERIC)
+STBase::STBase() : fName_(&kSfGeneric)
 {
 }
 

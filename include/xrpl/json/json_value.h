@@ -141,9 +141,9 @@ public:
     using ArrayIndex = UInt;
 
     static Value const kNULL;
-    static constexpr Int kMIN_INT = std::numeric_limits<Int>::min();
-    static constexpr Int kMAX_INT = std::numeric_limits<Int>::max();
-    static constexpr UInt kMAX_U_INT = std::numeric_limits<UInt>::max();
+    static constexpr Int kMinInt = std::numeric_limits<Int>::min();
+    static constexpr Int kMaxInt = std::numeric_limits<Int>::max();
+    static constexpr UInt kMaxUInt = std::numeric_limits<UInt>::max();
 
 private:
     class CZString

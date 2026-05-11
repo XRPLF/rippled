@@ -204,7 +204,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                  role,
                  coro,
                  InfoSub::pointer(),
-                 kAPI_VERSION},
+                 kApiVersion},
                 request_};
 
             // Make sure we can currently handle the rpc
@@ -543,7 +543,7 @@ GRPCServerImpl::setupListeners()
                 doLedgerGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
                 RPC::NoCondition,
-                Resource::kFEE_MEDIUM_BURDEN_RPC,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     {
@@ -560,7 +560,7 @@ GRPCServerImpl::setupListeners()
                 doLedgerDataGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
                 RPC::NoCondition,
-                Resource::kFEE_MEDIUM_BURDEN_RPC,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     {
@@ -577,7 +577,7 @@ GRPCServerImpl::setupListeners()
                 doLedgerDiffGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
                 RPC::NoCondition,
-                Resource::kFEE_MEDIUM_BURDEN_RPC,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     {
@@ -594,7 +594,7 @@ GRPCServerImpl::setupListeners()
                 doLedgerEntryGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
                 RPC::NoCondition,
-                Resource::kFEE_MEDIUM_BURDEN_RPC,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     return requests;

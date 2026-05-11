@@ -87,7 +87,7 @@ enum {
 };
 
 // millisecond for each ledger timeout
-auto constexpr kLEDGER_ACQUIRE_TIMEOUT = 3000ms;
+auto constexpr kLedgerAcquireTimeout = 3000ms;
 
 InboundLedger::InboundLedger(
     Application& app,
@@ -99,7 +99,7 @@ InboundLedger::InboundLedger(
     : TimeoutCounter(
           app,
           hash,
-          kLEDGER_ACQUIRE_TIMEOUT,
+          kLedgerAcquireTimeout,
           {.jobType = JtLedgerData, .jobName = "InboundLedger", .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , clock_(clock)
@@ -131,7 +131,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
     XRPL_ASSERT(
-        ledger_->header().seq < kXRP_LEDGER_EARLIEST_FEES || ledger_->read(keylet::fees()),
+        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
 
@@ -353,7 +353,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
         XRPL_ASSERT(
-            ledger_->header().seq < kXRP_LEDGER_EARLIEST_FEES || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
         ledger_->setImmutable();
     }
@@ -449,7 +449,7 @@ InboundLedger::done()
     if (complete_ && !failed_ && ledger_)
     {
         XRPL_ASSERT(
-            ledger_->header().seq < kXRP_LEDGER_EARLIEST_FEES || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
             "xrpl::InboundLedger::done : valid ledger fees");
         ledger_->setImmutable();
         switch (reason_)
@@ -1055,7 +1055,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
         if (packet.nodes().empty())
         {
             JLOG(journal_.warn()) << peer->id() << ": empty header data";
-            peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data empty header");
+            peer->charge(Resource::kFeeMalformedRequest, "ledger_data empty header");
             return -1;
         }
 
@@ -1070,7 +1070,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
                 if (!takeHeader(packet.nodes(0).nodedata()))
                 {
                     JLOG(journal_.warn()) << "Got invalid header data";
-                    peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data invalid header");
+                    peer->charge(Resource::kFeeMalformedRequest, "ledger_data invalid header");
                     return -1;
                 }
 
@@ -1093,7 +1093,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
         {
             JLOG(journal_.warn()) << "Included AS/TX root invalid: " << ex.what();
             using namespace std::string_literals;
-            peer->charge(Resource::kFEE_INVALID_DATA, "ledger_data "s + ex.what());
+            peer->charge(Resource::kFeeInvalidData, "ledger_data "s + ex.what());
             return -1;
         }
 
@@ -1109,7 +1109,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
         if (packet.nodes().empty())
         {
             JLOG(journal_.info()) << peer->id() << ": response with no nodes";
-            peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data no nodes");
+            peer->charge(Resource::kFeeMalformedRequest, "ledger_data no nodes");
             return -1;
         }
 
@@ -1121,7 +1121,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
             if (!node.has_nodeid() || !node.has_nodedata())
             {
                 JLOG(journal_.warn()) << "Got bad node";
-                peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data bad node");
+                peer->charge(Resource::kFeeMalformedRequest, "ledger_data bad node");
                 return -1;
             }
         }
@@ -1223,7 +1223,7 @@ void
 InboundLedger::runData()
 {
     // Maximum number of peers to request data from
-    constexpr std::size_t kMAX_USEFUL_PEERS = 6;
+    constexpr std::size_t kMaxUsefulPeers = 6;
 
     decltype(receivedData_) data;
 
@@ -1261,7 +1261,7 @@ InboundLedger::runData()
     // Select a random sample of the peers that gives us the most nodes that are
     // useful
     dataCounts.prune();
-    dataCounts.sampleN(kMAX_USEFUL_PEERS, [&](std::shared_ptr<Peer> const& peer) {
+    dataCounts.sampleN(kMaxUsefulPeers, [&](std::shared_ptr<Peer> const& peer) {
         trigger(peer, TriggerReason::Reply);
     });
 }

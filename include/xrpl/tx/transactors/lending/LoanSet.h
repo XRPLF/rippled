@@ -8,7 +8,7 @@ namespace xrpl {
 class LoanSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
 
     explicit LoanSet(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -53,16 +53,16 @@ public:
         beast::Journal const& j) override;
 
 public:
-    static std::uint32_t constexpr kMIN_PAYMENT_TOTAL = 1;
-    static std::uint32_t constexpr kDEFAULT_PAYMENT_TOTAL = 1;
-    static_assert(kDEFAULT_PAYMENT_TOTAL >= kMIN_PAYMENT_TOTAL);
+    static std::uint32_t constexpr kMinPaymentTotal = 1;
+    static std::uint32_t constexpr kDefaultPaymentTotal = 1;
+    static_assert(kDefaultPaymentTotal >= kMinPaymentTotal);
 
-    static std::uint32_t constexpr kMIN_PAYMENT_INTERVAL = 60;
-    static std::uint32_t constexpr kDEFAULT_PAYMENT_INTERVAL = 60;
-    static_assert(kDEFAULT_PAYMENT_INTERVAL >= kMIN_PAYMENT_INTERVAL);
+    static std::uint32_t constexpr kMinPaymentInterval = 60;
+    static std::uint32_t constexpr kDefaultPaymentInterval = 60;
+    static_assert(kDefaultPaymentInterval >= kMinPaymentInterval);
 
-    static std::uint32_t constexpr kDEFAULT_GRACE_PERIOD = 60;
-    static_assert(kDEFAULT_GRACE_PERIOD >= kMIN_PAYMENT_INTERVAL);
+    static std::uint32_t constexpr kDefaultGracePeriod = 60;
+    static_assert(kDefaultGracePeriod >= kMinPaymentInterval);
 };
 
 //------------------------------------------------------------------------------

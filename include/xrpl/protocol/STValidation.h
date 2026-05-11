@@ -16,10 +16,10 @@ namespace xrpl {
 // Validation flags
 
 // This is a full (as opposed to a partial) validation
-constexpr std::uint32_t kVF_FULL_VALIDATION = 0x00000001;
+constexpr std::uint32_t kVfFullValidation = 0x00000001;
 
 // The signature is fully canonical
-constexpr std::uint32_t kVF_FULLY_CANONICAL_SIG = 0x80000000;
+constexpr std::uint32_t kVfFullyCanonicalSig = 0x80000000;
 
 class STValidation final : public STObject, public CountedObject<STValidation>
 {
@@ -204,7 +204,7 @@ STValidation::STValidation(
     f(*this);
 
     // Finally, sign the validation and mark it as trusted:
-    setFlag(kVF_FULLY_CANONICAL_SIG);
+    setFlag(kVfFullyCanonicalSig);
     setFieldVL(sfSignature, signDigest(pk, sk, getSigningHash()));
     setTrusted();
 

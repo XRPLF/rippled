@@ -166,7 +166,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (tradingFee > kTRADING_FEE_THRESHOLD)
+    if (tradingFee > kTradingFeeThreshold)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid trading fee.";
         return temBAD_FEE;

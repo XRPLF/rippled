@@ -19,7 +19,6 @@
 
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <utility>
 #pragma push_macro("TRANSACTION")
@@ -106,7 +105,7 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 }
 }  // namespace
 
-// Templates so preflight does the right thing with T::kCONSEQUENCES_FACTORY.
+// Templates so preflight does the right thing with T::kConsequencesFactory.
 //
 // This could be done more easily using if constexpr, but Visual Studio
 // 2017 doesn't handle if constexpr correctly.  So once we're no longer
@@ -117,7 +116,7 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 //
 
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Normal)
+    requires(T::kConsequencesFactory == Transactor::Normal)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
@@ -126,7 +125,7 @@ consequencesHelper(PreflightContext const& ctx)
 
 // For Transactor::Blocker
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Blocker)
+    requires(T::kConsequencesFactory == Transactor::Blocker)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
@@ -135,7 +134,7 @@ consequencesHelper(PreflightContext const& ctx)
 
 // For Transactor::Custom
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Custom)
+    requires(T::kConsequencesFactory == Transactor::Custom)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {

@@ -474,7 +474,7 @@ public:
                 if (jv[jss::ledger_index] != std::to_string(env.closed()->header().seq))
                     return false;
 
-                if (jv[jss::flags] != (kVF_FULLY_CANONICAL_SIG | kVF_FULL_VALIDATION))
+                if (jv[jss::flags] != (kVfFullyCanonicalSig | kVfFullValidation))
                     return false;
 
                 if (jv[jss::full] != true)

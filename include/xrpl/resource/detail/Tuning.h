@@ -26,9 +26,9 @@ enum {
 };
 
 // The number of seconds until an inactive table item is removed
-std::chrono::seconds constexpr kSECONDS_UNTIL_EXPIRATION{300};
+std::chrono::seconds constexpr kSecondsUntilExpiration{300};
 
 // Number of seconds until imported gossip expires
-std::chrono::seconds constexpr kGOSSIP_EXPIRATION_SECONDS{30};
+std::chrono::seconds constexpr kGossipExpirationSeconds{30};
 
 }  // namespace xrpl::Resource

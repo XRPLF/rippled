@@ -36,7 +36,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 
     if (auto const data = ctx.tx[~sfData])
     {
-        if (data->empty() || data->length() > kMAX_DATA_PAYLOAD_LENGTH)
+        if (data->empty() || data->length() > kMaxDataPayloadLength)
         {
             JLOG(ctx.j.debug()) << "VaultSet: invalid data payload size.";
             return temMALFORMED;

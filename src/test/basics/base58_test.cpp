@@ -38,12 +38,12 @@ randEngine() -> std::mt19937&
     return kR;
 }
 
-constexpr int kNUM_TOKEN_TYPE_INDEXES = 9;
+constexpr int kNumTokenTypeIndexes = 9;
 
 [[nodiscard]] inline auto
 tokenTypeAndSize(int i) -> std::tuple<xrpl::TokenType, std::size_t>
 {
-    assert(i < kNUM_TOKEN_TYPE_INDEXES);
+    assert(i < kNumTokenTypeIndexes);
 
     switch (i)
     {
@@ -403,7 +403,7 @@ class base58_test : public beast::unit_test::Suite
 
         // test every token type with data where every byte is the same and the
         // bytes range from 0-255
-        for (int i = 0; i < kNUM_TOKEN_TYPE_INDEXES; ++i)
+        for (int i = 0; i < kNumTokenTypeIndexes; ++i)
         {
             std::array<std::uint8_t, 128> b256DataBuf{};
             auto const [tokType, tokSize] = tokenTypeAndSize(i);

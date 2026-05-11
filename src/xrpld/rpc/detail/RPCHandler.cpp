@@ -114,7 +114,7 @@ fillHandler(JsonContext& context, Handler const*& result)
     {
         // Count all jobs at jtCLIENT priority or higher.
         int const jobCount = context.app.getJobQueue().getJobCountGE(JtClient);
-        if (jobCount > Tuning::kMAX_JOB_QUEUE_CLIENTS)
+        if (jobCount > Tuning::kMaxJobQueueClients)
         {
             JLOG(context.j.debug()) << "Too busy for command: " << jobCount;
             return RpcTooBusy;
@@ -157,9 +157,9 @@ template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
-    static std::atomic<std::uint64_t> kREQUEST_ID{0};
+    static std::atomic<std::uint64_t> kRequestId{0};
     auto& perfLog = context.app.getPerfLog();
-    std::uint64_t const curId = ++kREQUEST_ID;
+    std::uint64_t const curId = ++kRequestId;
     try
     {
         perfLog.rpcStart(name, curId);
@@ -179,8 +179,8 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         perfLog.rpcError(name, curId);
         JLOG(context.j.info()) << "Caught throw: " << e.what();
 
-        if (context.loadType == Resource::kFEE_REFERENCE_RPC)
-            context.loadType = Resource::kFEE_EXCEPTION_RPC;
+        if (context.loadType == Resource::kFeeReferenceRpc)
+            context.loadType = Resource::kFeeExceptionRpc;
 
         injectError(RpcInternal, result);
         return RpcInternal;

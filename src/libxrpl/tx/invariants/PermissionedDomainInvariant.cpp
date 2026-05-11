@@ -77,7 +77,7 @@ ValidPermissionedDomain::finalize(
             return false;
         }
 
-        if (sleStatus.credentialsSize > kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE)
+        if (sleStatus.credentialsSize > kMaxPermissionedDomainCredentialsArraySize)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain bad "
                                "credentials size "

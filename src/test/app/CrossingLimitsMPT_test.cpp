@@ -198,13 +198,13 @@ public:
                      .token = "USD",
                      .issuer = gw,
                      .holders = {alice, carol},
-                     .limit = kMAX_MP_TOKEN_AMOUNT});
+                     .limit = kMaxMpTokenAmount});
                 auto const eur = issue2(
                     {.env = env,
                      .token = "EUR",
                      .issuer = gw,
                      .holders = {bob},
-                     .limit = kMAX_MP_TOKEN_AMOUNT});
+                     .limit = kMaxMpTokenAmount});
 
                 env(pay(gw, alice, usd(4'000)));
                 env(pay(gw, carol, usd(3)));
@@ -289,13 +289,13 @@ public:
                      .token = "USD",
                      .issuer = gw,
                      .holders = {alice, carol},
-                     .limit = kMAX_MP_TOKEN_AMOUNT});
+                     .limit = kMaxMpTokenAmount});
                 auto const eur = issue2(
                     {.env = env,
                      .token = "EUR",
                      .issuer = gw,
                      .holders = {bob},
-                     .limit = kMAX_MP_TOKEN_AMOUNT});
+                     .limit = kMaxMpTokenAmount});
 
                 env(pay(gw, alice, usd(4'000)));
                 env(pay(gw, carol, usd(3)));

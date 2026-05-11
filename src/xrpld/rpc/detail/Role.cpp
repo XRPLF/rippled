@@ -257,18 +257,18 @@ forwardedFor(http_request_type const& request)
         };
 
         // Look for the first (case insensitive) "for="
-        static std::string const kFOR_STR{"for="};
+        static std::string const kForStr{"for="};
         char const* found = std::search(
             it->value().begin(),
             it->value().end(),
-            kFOR_STR.begin(),
-            kFOR_STR.end(),
+            kForStr.begin(),
+            kForStr.end(),
             [&asciiTolower](char c1, char c2) { return asciiTolower(c1) == asciiTolower(c2); });
 
         if (found == it->value().end())
             return {};
 
-        found += kFOR_STR.size();
+        found += kForStr.size();
 
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {

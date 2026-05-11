@@ -271,7 +271,7 @@ class FeeVote_test : public beast::unit_test::Suite
         {
             jtx::Env env(*this, jtx::testableAmendments() - featureXRPFees);
             auto ledger = std::make_shared<Ledger>(
-                kCREATE_GENESIS,
+                kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().FEES.toFees(),
                 std::vector<uint256>{},
@@ -301,7 +301,7 @@ class FeeVote_test : public beast::unit_test::Suite
         {
             jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
             auto ledger = std::make_shared<Ledger>(
-                kCREATE_GENESIS,
+                kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().FEES.toFees(),
                 std::vector<uint256>{},
@@ -334,7 +334,7 @@ class FeeVote_test : public beast::unit_test::Suite
         {
             jtx::Env env(*this, jtx::testableAmendments() - featureXRPFees);
             auto ledger = std::make_shared<Ledger>(
-                kCREATE_GENESIS,
+                kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().FEES.toFees(),
                 std::vector<uint256>{},
@@ -356,7 +356,7 @@ class FeeVote_test : public beast::unit_test::Suite
         {
             jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
             auto ledger = std::make_shared<Ledger>(
-                kCREATE_GENESIS,
+                kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().FEES.toFees(),
                 std::vector<uint256>{},
@@ -383,7 +383,7 @@ class FeeVote_test : public beast::unit_test::Suite
 
         jtx::Env env(*this, jtx::testableAmendments());
         auto ledger = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().FEES.toFees(),
             std::vector<uint256>{},
@@ -422,7 +422,7 @@ class FeeVote_test : public beast::unit_test::Suite
 
         jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
         auto ledger = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().FEES.toFees(),
             std::vector<uint256>{},
@@ -470,7 +470,7 @@ class FeeVote_test : public beast::unit_test::Suite
 
         jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
         auto ledger = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().FEES.toFees(),
             std::vector<uint256>{},
@@ -501,7 +501,7 @@ class FeeVote_test : public beast::unit_test::Suite
 
         jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
         auto ledger = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().FEES.toFees(),
             std::vector<uint256>{},
@@ -547,7 +547,7 @@ class FeeVote_test : public beast::unit_test::Suite
 
         jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
         auto ledger = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().FEES.toFees(),
             std::vector<uint256>{},
@@ -588,7 +588,7 @@ class FeeVote_test : public beast::unit_test::Suite
             auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
 
             auto ledger = std::make_shared<Ledger>(
-                kCREATE_GENESIS,
+                kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().FEES.toFees(),
                 std::vector<uint256>{},
@@ -618,7 +618,7 @@ class FeeVote_test : public beast::unit_test::Suite
             auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
 
             auto ledger = std::make_shared<Ledger>(
-                kCREATE_GENESIS,
+                kCreateGenesis,
                 Rules{env.app().config().features},
                 env.app().config().FEES.toFees(),
                 std::vector<uint256>{},
@@ -663,7 +663,7 @@ class FeeVote_test : public beast::unit_test::Suite
 
         auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
         auto ledger = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().FEES.toFees(),
             std::vector<uint256>{},

@@ -325,7 +325,7 @@ fillJson(json::Value& json, LedgerFill const& fill)
             fill.ledger.header(),
             bFull,
             ((fill.context != nullptr) ? fill.context->apiVersion
-                                       : RPC::kAPI_MAXIMUM_SUPPORTED_VERSION));
+                                       : RPC::kApiMaximumSupportedVersion));
     }
 
     if (bFull || ((fill.options & LedgerFill::DumpTxrp) != 0))

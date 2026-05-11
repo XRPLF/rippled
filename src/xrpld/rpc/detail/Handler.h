@@ -34,8 +34,8 @@ struct Handler
     Role role;
     RPC::Condition condition;
 
-    unsigned minApiVer = kAPI_MINIMUM_SUPPORTED_VERSION;
-    unsigned maxApiVer = kAPI_MAXIMUM_VALID_VERSION;
+    unsigned minApiVer = kApiMinimumSupportedVersion;
+    unsigned maxApiVer = kApiMaximumValidVersion;
 };
 
 Handler const*
@@ -82,7 +82,7 @@ conditionMet(Condition conditionRequired, T& context)
 
     if (!context.app.config().standalone() && conditionRequired != NoCondition)
     {
-        if (context.ledgerMaster.getValidatedLedgerAge() > Tuning::kMAX_VALIDATED_LEDGER_AGE)
+        if (context.ledgerMaster.getValidatedLedgerAge() > Tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return RpcNoCurrent;

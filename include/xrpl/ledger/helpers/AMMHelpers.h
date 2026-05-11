@@ -25,11 +25,11 @@ namespace detail {
 Number
 reduceOffer(auto const& amount)
 {
-    static Number const kREDUCED_OFFER_PCT(9999, -4);
+    static Number const kReducedOfferPct(9999, -4);
 
     // Make sure the result is always less than amount or zero.
     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
-    return amount * kREDUCED_OFFER_PCT;
+    return amount * kReducedOfferPct;
 }
 
 }  // namespace detail

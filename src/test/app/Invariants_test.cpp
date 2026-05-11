@@ -342,7 +342,7 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{},
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
-        for (auto const& keyletInfo : kDIRECT_ACCOUNT_KEYLETS)
+        for (auto const& keyletInfo : kDirectAccountKeylets)
         {
             // TODO: Use structured binding once LLVM 16 is the minimum
             // supported version. See also:
@@ -763,7 +763,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
-                sle->setFieldAmount(sfBalance, kINITIAL_XRP + drops(1));
+                sle->setFieldAmount(sfBalance, kInitialXrp + drops(1));
                 BEAST_EXPECT(!sle->getFieldAmount(sfBalance).negative());
                 ac.view().update(sle);
                 return true;
@@ -797,10 +797,10 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{-1});
 
         doInvariantCheck(
-            {{"fee paid exceeds system limit: "s + to_string(kINITIAL_XRP)},
-             {"XRP net change of 0 doesn't match fee "s + to_string(kINITIAL_XRP)}},
+            {{"fee paid exceeds system limit: "s + to_string(kInitialXrp)},
+             {"XRP net change of 0 doesn't match fee "s + to_string(kInitialXrp)}},
             [](Account const&, Account const&, ApplyContext&) { return true; },
-            XRPAmount{kINITIAL_XRP});
+            XRPAmount{kInitialXrp});
 
         doInvariantCheck(
             {{"fee paid is 20 exceeds fee specified in transaction."},
@@ -892,7 +892,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(a1, (*sle)[sfSequence] + 2));
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
-                sleNew->setFieldAmount(sfAmount, kINITIAL_XRP + drops(1));
+                sleNew->setFieldAmount(sfAmount, kInitialXrp + drops(1));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -1332,12 +1332,12 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDomain 2";
 
-        auto constexpr kTOO_BIG = kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE + 1;
+        auto constexpr kTooBig = kMaxPermissionedDomainCredentialsArraySize + 1;
         doInvariantCheck(
             Env(*this, features),
-            {{"permissioned domain bad credentials size " + std::to_string(kTOO_BIG)}},
+            {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                return !!createPermissionedDomain(ac, a1, a2, kTOO_BIG);
+                return !!createPermissionedDomain(ac, a1, a2, kTooBig);
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
@@ -1414,16 +1414,16 @@ class Invariants_test : public beast::unit_test::Suite
         testcase << "PermissionedDomain Set 2";
         doInvariantCheck(
             Env(*this, features),
-            {{"permissioned domain bad credentials size " + std::to_string(kTOO_BIG)}},
+            {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
                 auto slePd = createPermissionedDomain(ac, a1, a2);
 
                 // update PD
                 {
-                    STArray credentials(sfAcceptedCredentials, kTOO_BIG);
+                    STArray credentials(sfAcceptedCredentials, kTooBig);
 
-                    for (std::size_t n = 0; n < kTOO_BIG; ++n)
+                    for (std::size_t n = 0; n < kTooBig; ++n)
                     {
                         auto cred = STObject::makeInnerObject(sfCredential);
                         cred.setAccountID(sfIssuer, a2);
@@ -2163,7 +2163,7 @@ class Invariants_test : public beast::unit_test::Suite
                         return iouAsset;
                     }
                     case Asset::MPT: {
-                        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+                        MPTTester mptt{env, issuer, kMptInitNoFund};
                         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                         PrettyAsset const mptAsset = mptt.issuanceID();
                         mptt.authorize({.account = alice});
@@ -2919,8 +2919,8 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sleA4);
 
                 return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {
-                                   sample.assetsAvailable = (kDROPS_PER_XRP * -100).value();
-                                   sample.assetsTotal = (kDROPS_PER_XRP * -200).value();
+                                   sample.assetsAvailable = (kDropsPerXrp * -100).value();
+                                   sample.assetsTotal = (kDropsPerXrp * -200).value();
                                    sample.sharesTotal = -1;
                                }));
             },
@@ -3095,7 +3095,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
-                (*sleShares)[sfOutstandingAmount] = kMAX_MP_TOKEN_AMOUNT + 1;
+                (*sleShares)[sfOutstandingAmount] = kMaxMpTokenAmount + 1;
                 ac.view().update(sleShares);
                 return true;
             },
@@ -3312,7 +3312,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+                sleVault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3372,7 +3372,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+                sleVault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3413,7 +3413,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+                sleVault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -4230,7 +4230,7 @@ class Invariants_test : public beast::unit_test::Suite
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 // outstanding exceeds kMAX_MP_TOKEN_AMOUNT -> checkAmount sets bad_
-                sleNew->setFieldU64(sfOutstandingAmount, kMAX_MP_TOKEN_AMOUNT + 1);
+                sleNew->setFieldU64(sfOutstandingAmount, kMaxMpTokenAmount + 1);
                 // locked is valid and <= outstanding -> must NOT clear bad_
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);

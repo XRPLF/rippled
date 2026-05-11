@@ -72,7 +72,7 @@ doGatewayBalances(RPC::JsonContext& context)
     if (!id)
         return rpcError(RpcActMalformed);
     auto const accountID{id.value()};
-    context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
+    context.loadType = Resource::kFeeHeavyBurdenRpc;
 
     result[jss::account] = toBase58(accountID);
 
@@ -170,8 +170,7 @@ doGatewayBalances(RPC::JsonContext& context)
                         // On overflow return the largest valid STAmount.
                         // Very large sums of STAmount are approximations
                         // anyway.
-                        bal =
-                            STAmount(bal.get<Issue>(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+                        bal = STAmount(bal.get<Issue>(), STAmount::kMaxValue, STAmount::kMaxOffset);
                     }
                 }
             }
@@ -227,7 +226,7 @@ doGatewayBalances(RPC::JsonContext& context)
                         // On overflow return the largest valid STAmount.
                         // Very large sums of STAmount are approximations
                         // anyway.
-                        bal = STAmount(bal.asset(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+                        bal = STAmount(bal.asset(), STAmount::kMaxValue, STAmount::kMaxOffset);
                     }
                 }
             }

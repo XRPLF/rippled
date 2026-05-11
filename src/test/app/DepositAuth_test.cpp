@@ -1232,7 +1232,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env.close();
 
             auto const seq = env.seq(alice);
-            env(escrow::create(alice, bob, XRP(1000)), escrow::kFINISH_TIME(env.now() + 1s));
+            env(escrow::create(alice, bob, XRP(1000)), escrow::kFinishTime(env.now() + 1s));
             env.close();
 
             // zelda can't finish escrow with invalid credentials

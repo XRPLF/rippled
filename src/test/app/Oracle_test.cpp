@@ -286,7 +286,7 @@ private:
                     .err = Ter(tecINVALID_UPDATE_TIME)});
             oracle.set(UpdateArg{.series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
             BEAST_EXPECT(oracle.expectLastUpdateTime(
-                static_cast<std::uint32_t>(kTEST_START_TIME.count() + 450)));
+                static_cast<std::uint32_t>(kTestStartTime.count() + 450)));
             // Less than the previous lastUpdateTime
             oracle.set(
                 UpdateArg{
@@ -298,7 +298,7 @@ private:
             oracle.set(
                 UpdateArg{
                     .series = {{"XRP", "USD", 740, 1}},
-                    .lastUpdateTime = static_cast<int>(kEPOCH_OFFSET.count() - 1),
+                    .lastUpdateTime = static_cast<int>(kEpochOffset.count() - 1),
                     .fee = baseFee,
                     .err = Ter(tecINVALID_UPDATE_TIME)});
         }
@@ -344,7 +344,7 @@ private:
             Oracle const oracle(
                 env,
                 {.owner = owner,
-                 .series = {{"USD", "BTC", 740, kMAX_PRICE_SCALE + 1}},
+                 .series = {{"USD", "BTC", 740, kMaxPriceScale + 1}},
                  .fee = baseFee,
                  .err = Ter(temMALFORMED)});
         }

@@ -73,7 +73,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
 
     // Create a genesis ledger as the base
     closedLedger_ = std::make_shared<Ledger>(
-        kCREATE_GENESIS,
+        kCreateGenesis,
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         *rules_,
         fees,
@@ -85,7 +85,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
 
     // Create an open view on top of the genesis ledger
     openLedger_ =
-        std::make_shared<OpenView>(kOPEN_LEDGER, closedLedger_.get(), *rules_, closedLedger_);
+        std::make_shared<OpenView>(kOpenLedger, closedLedger_.get(), *rules_, closedLedger_);
 }
 
 bool
@@ -213,7 +213,7 @@ TxTest::close()
 
     openLedger_ =
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        std::make_shared<OpenView>(kOPEN_LEDGER, closedLedger_.get(), *rules_, closedLedger_);
+        std::make_shared<OpenView>(kOpenLedger, closedLedger_.get(), *rules_, closedLedger_);
 }
 
 void

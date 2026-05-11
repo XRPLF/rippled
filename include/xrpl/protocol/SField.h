@@ -148,7 +148,7 @@ public:
     };
 
     enum class IsSigning : unsigned char { No, Yes };
-    static IsSigning const kNOT_SIGNING = IsSigning::No;
+    static IsSigning const kNotSigning = IsSigning::No;
 
     int const fieldCodeMem;            // (type<<16)|index // TODO: rename, clashes with function
     SerializedTypeID const fieldType;  // STI_*
@@ -368,8 +368,8 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SField const sfName;
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SF_##stiSuffix const sfName;
 
-extern SField const kSF_INVALID;
-extern SField const kSF_GENERIC;
+extern SField const kSfInvalid;
+extern SField const kSfGeneric;
 
 #include <xrpl/protocol/detail/sfields.macro>
 

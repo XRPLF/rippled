@@ -29,7 +29,7 @@ namespace xrpl {
 using namespace std::chrono_literals;
 
 // Timeout interval in milliseconds
-auto constexpr kTX_ACQUIRE_TIMEOUT = 250ms;
+auto constexpr kTxAcquireTimeout = 250ms;
 
 // Need to be named before converting
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
@@ -45,7 +45,7 @@ TransactionAcquire::TransactionAcquire(
     : TimeoutCounter(
           app,
           hash,
-          kTX_ACQUIRE_TIMEOUT,
+          kTxAcquireTimeout,
           {.jobType = JtTxnData, .jobName = "TxAcq", .jobLimit = {}},
           app.getJournal("TransactionAcquire"))
     , peerSet_(std::move(peerSet))

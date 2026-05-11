@@ -328,7 +328,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, bob},
-                 .flags = kMPT_DEX_FLAGS | tfMPTCanLock,
+                 .flags = kMptDexFlags | tfMPTCanLock,
                  .maxAmt = 1'000});
             MPT const usd = usdm;
             env(pay(gw, alice, usd(100)));
@@ -361,7 +361,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
             auto usdm = MPTTester(
                 {.env = env,
                  .issuer = gw,
-                 .flags = kMPT_DEX_FLAGS | tfMPTRequireAuth,
+                 .flags = kMptDexFlags | tfMPTRequireAuth,
                  .maxAmt = 1'000});
             MPT const usd = usdm;
 

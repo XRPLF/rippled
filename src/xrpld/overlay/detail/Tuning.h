@@ -42,6 +42,6 @@ enum {
 };
 
 /** Size of buffer used to read from the socket. */
-std::size_t constexpr kREAD_BUFFER_BYTES = 16384;
+std::size_t constexpr kReadBufferBytes = 16384;
 
 }  // namespace xrpl::Tuning

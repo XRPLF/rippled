@@ -547,7 +547,7 @@ OverlayImpl::start()
             {
                 if (addr.port() == 0)
                 {
-                    ips.push_back(to_string(addr.atPort(kDEFAULT_PEER_PORT)));
+                    ips.push_back(to_string(addr.atPort(kDefaultPeerPort)));
                 }
                 else
                 {
@@ -573,7 +573,7 @@ OverlayImpl::start()
                 {
                     if (addr.port() == 0)
                     {
-                        ips.emplace_back(addr.address(), kDEFAULT_PEER_PORT);
+                        ips.emplace_back(addr.address(), kDefaultPeerPort);
                     }
                     else
                     {

@@ -45,7 +45,7 @@ doConnect(RPC::JsonContext& context)
     }
     else
     {
-        iPort = kDEFAULT_PEER_PORT;
+        iPort = kDefaultPeerPort;
     }
 
     auto const ipStr = context.params[jss::ip].asString();

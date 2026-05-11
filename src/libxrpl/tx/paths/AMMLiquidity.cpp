@@ -68,7 +68,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
 
     cur.in = toAmount<TIn>(
         getAsset(balances.in),
-        kINITIAL_FIB_SEQ_PCT * initialBalances_.in,
+        kInitialFibSeqPct * initialBalances_.in,
         Number::RoundingMode::Upward);
     cur.out = swapAssetIn(initialBalances_, cur.in, tradingFee_);
 
@@ -76,7 +76,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
         return cur;
 
     // clang-format off
-    constexpr std::uint32_t kFIB[AMMContext::kMAX_ITERATIONS] = {
+    constexpr std::uint32_t kFIB[AMMContext::kMaxIterations] = {
         1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987,
         1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393,
         196418, 317811, 514229, 832040, 1346269};
@@ -106,19 +106,19 @@ maxAmount()
 {
     if constexpr (std::is_same_v<T, XRPAmount>)
     {
-        return XRPAmount(STAmount::kMAX_NATIVE);
+        return XRPAmount(STAmount::kMaxNative);
     }
     else if constexpr (std::is_same_v<T, IOUAmount>)
     {
-        return IOUAmount(STAmount::kMAX_VALUE / 2, STAmount::kMAX_OFFSET);
+        return IOUAmount(STAmount::kMaxValue / 2, STAmount::kMaxOffset);
     }
     else if constexpr (std::is_same_v<T, STAmount>)
     {
-        return STAmount(STAmount::kMAX_VALUE / 2, STAmount::kMAX_OFFSET);
+        return STAmount(STAmount::kMaxValue / 2, STAmount::kMaxOffset);
     }
     else if constexpr (std::is_same_v<T, MPTAmount>)
     {
-        return MPTAmount(kMAX_MP_TOKEN_AMOUNT);
+        return MPTAmount(kMaxMpTokenAmount);
     }
 }
 

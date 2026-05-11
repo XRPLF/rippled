@@ -7,7 +7,7 @@ namespace xrpl {
 class VaultClawback : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
 
     explicit VaultClawback(ApplyContext& ctx) : Transactor(ctx)
     {

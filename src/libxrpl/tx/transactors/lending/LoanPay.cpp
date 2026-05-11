@@ -96,7 +96,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         return normalCost;
     }
 
-    if (loanSle->at(sfPaymentRemaining) <= kLOAN_PAYMENTS_PER_FEE_INCREMENT)
+    if (loanSle->at(sfPaymentRemaining) <= kLoanPaymentsPerFeeIncrement)
     {
         // If there are fewer than loanPaymentsPerFeeIncrement payments left to
         // pay, we can skip the computations.
@@ -148,7 +148,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     Number::setround(Number::RoundingMode::Upward);
     auto const feeIncrements = std::max(
         std::int64_t(1),
-        static_cast<std::int64_t>(numPaymentEstimate / kLOAN_PAYMENTS_PER_FEE_INCREMENT));
+        static_cast<std::int64_t>(numPaymentEstimate / kLoanPaymentsPerFeeIncrement));
 
     return feeIncrements * normalCost;
 }

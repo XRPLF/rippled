@@ -37,7 +37,7 @@ bool
 parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
-    static boost::regex const kRE_URL(
+    static boost::regex const kReUrl(
         "(?i)\\`\\s*"
         // required scheme
         "([[:alpha:]][-+.[:alpha:][:digit:]]*?):"
@@ -58,7 +58,7 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
     // Bail if there is no match.
     try
     {
-        if (!boost::regex_match(strUrl, smMatch, kRE_URL))
+        if (!boost::regex_match(strUrl, smMatch, kReUrl))
             return false;
     }
     catch (...)

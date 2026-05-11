@@ -83,7 +83,7 @@ doAccountOffers(RPC::JsonContext& context)
         return rpcError(RpcActNotFound);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_OFFERS, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kAccountOffers, context))
         return *err;
 
     json::Value& jsonOffers(result[jss::offers] = json::ArrayValue);
@@ -177,7 +177,7 @@ doAccountOffers(RPC::JsonContext& context)
     for (auto const& offer : offers)
         appendOfferJson(offer, jsonOffers);
 
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     return result;
 }
 

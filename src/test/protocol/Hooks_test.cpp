@@ -73,7 +73,7 @@ class Hooks_test : public beast::unit_test::Suite
         {
             SField const& f = rf.get();
 
-            STObject dummy{kSF_GENERIC};
+            STObject dummy{kSfGeneric};
 
             BEAST_EXPECT(!dummy.isFieldPresent(f));
 
@@ -161,8 +161,8 @@ class Hooks_test : public beast::unit_test::Suite
 
                 case STI_ARRAY: {
                     STArray dummy2{f, 2};
-                    dummy2.pushBack(STObject{kSF_GENERIC});
-                    dummy2.pushBack(STObject{kSF_GENERIC});
+                    dummy2.pushBack(STObject{kSfGeneric});
+                    dummy2.pushBack(STObject{kSfGeneric});
                     dummy.setFieldArray(f, dummy2);
                     BEAST_EXPECT(dummy.getFieldArray(f) == dummy2);
                     BEAST_EXPECT(dummy.isFieldPresent(f));

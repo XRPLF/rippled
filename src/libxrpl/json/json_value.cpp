@@ -524,12 +524,12 @@ Value::asInt() const
 
         case UintValue:
             JSON_ASSERT_MESSAGE(
-                value_.uintVal < (unsigned)kMAX_INT, "integer out of signed integer range");
+                value_.uintVal < (unsigned)kMaxInt, "integer out of signed integer range");
             return value_.uintVal;
 
         case RealValue:
             JSON_ASSERT_MESSAGE(
-                (value_.realVal >= kMIN_INT && value_.realVal <= kMAX_INT),
+                (value_.realVal >= kMinInt && value_.realVal <= kMaxInt),
                 "Real out of signed integer range");
             return Int(value_.realVal);
 
@@ -577,10 +577,10 @@ Value::asAbsUInt() const
             if (value_.realVal < 0)
             {
                 JSON_ASSERT_MESSAGE(
-                    -1 * value_.realVal <= kMAX_U_INT, "Real out of unsigned integer range");
+                    -1 * value_.realVal <= kMaxUInt, "Real out of unsigned integer range");
                 return UInt(-1 * value_.realVal);
             }
-            JSON_ASSERT_MESSAGE(value_.realVal <= kMAX_U_INT, "Real out of unsigned integer range");
+            JSON_ASSERT_MESSAGE(value_.realVal <= kMaxUInt, "Real out of unsigned integer range");
             return UInt(value_.realVal);
         }
 
@@ -592,11 +592,10 @@ Value::asAbsUInt() const
             auto const temp = beast::lexicalCastThrow<std::int64_t>(str);
             if (temp < 0)
             {
-                JSON_ASSERT_MESSAGE(
-                    -1 * temp <= kMAX_U_INT, "String out of unsigned integer range");
+                JSON_ASSERT_MESSAGE(-1 * temp <= kMaxUInt, "String out of unsigned integer range");
                 return -1 * temp;
             }
-            JSON_ASSERT_MESSAGE(temp <= kMAX_U_INT, "String out of unsigned integer range");
+            JSON_ASSERT_MESSAGE(temp <= kMaxUInt, "String out of unsigned integer range");
             return temp;
         }
 
@@ -631,7 +630,7 @@ Value::asUInt() const
 
         case RealValue:
             JSON_ASSERT_MESSAGE(
-                (value_.realVal >= 0 && value_.realVal <= kMAX_U_INT),
+                (value_.realVal >= 0 && value_.realVal <= kMaxUInt),
                 "Real out of unsigned integer range");
             return UInt(value_.realVal);
 
@@ -739,13 +738,13 @@ Value::isConvertibleTo(ValueType other) const
 
         case UintValue:
             return (other == NullValue && value_.uintVal == 0) ||
-                (other == IntValue && value_.uintVal <= (unsigned)kMAX_INT) || other == UintValue ||
+                (other == IntValue && value_.uintVal <= (unsigned)kMaxInt) || other == UintValue ||
                 other == RealValue || other == StringValue || other == BooleanValue;
 
         case RealValue:
             return (other == NullValue && value_.realVal == 0.0) ||
-                (other == IntValue && value_.realVal >= kMIN_INT && value_.realVal <= kMAX_INT) ||
-                (other == UintValue && value_.realVal >= 0 && value_.realVal <= kMAX_U_INT &&
+                (other == IntValue && value_.realVal >= kMinInt && value_.realVal <= kMaxInt) ||
+                (other == UintValue && value_.realVal >= 0 && value_.realVal <= kMaxUInt &&
                  std::fabs(round(value_.realVal) - value_.realVal) <
                      std::numeric_limits<double>::epsilon()) ||
                 other == RealValue || other == StringValue || other == BooleanValue;

@@ -128,11 +128,11 @@ private:
         // optionally followed by a forward slash and some other characters
         // (the issuer).
         // https://www.boost.org/doc/libs/1_82_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
-        static boost::regex const kRE_CUR_ISS("\\`([][:alnum:]<>(){}[|?!@#$%^&*]{3})(?:/(.+))?\\'");
+        static boost::regex const kReCurIss("\\`([][:alnum:]<>(){}[|?!@#$%^&*]{3})(?:/(.+))?\\'");
 
         boost::smatch smMatch;
 
-        if (boost::regex_match(strCurrencyIssuer, smMatch, kRE_CUR_ISS))
+        if (boost::regex_match(strCurrencyIssuer, smMatch, kReCurIss))
         {
             json::Value jvResult(json::ObjectValue);
             std::string const strCurrency = smMatch[1];
@@ -1818,7 +1818,7 @@ namespace RPCCall {
 int
 fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs)
 {
-    auto const result = rpcClient(vCmd, config, logs, RPC::kAPI_COMMAND_LINE_VERSION);
+    auto const result = rpcClient(vCmd, config, logs, RPC::kApiCommandLineVersion);
 
     std::cout << result.second.toStyledString();
 
@@ -1860,10 +1860,10 @@ fromNetwork(
 
     // Number of bytes to try to receive if no
     // Content-Length header received
-    constexpr auto kRPC_REPLY_MAX_BYTES = megabytes(256);
+    constexpr auto kRpcReplyMaxBytes = megabytes(256);
 
     using namespace std::chrono_literals;
-    auto constexpr kRPC_WEBHOOK_TIMEOUT = 30s;
+    auto constexpr kRpcWebhookTimeout = 30s;
 
     HTTPClient::request(
         bSSL,
@@ -1879,8 +1879,8 @@ fromNetwork(
             std::placeholders::_1,
             std::placeholders::_2,
             j),
-        kRPC_REPLY_MAX_BYTES,
-        kRPC_WEBHOOK_TIMEOUT,
+        kRpcReplyMaxBytes,
+        kRpcWebhookTimeout,
         std::bind(
             &RPCCallImp::onResponse,
             callbackFuncP,

@@ -111,7 +111,7 @@ escrowUnlockApplyHelper<Issue>(
     // whereas in a normal payment, the transfer fee is taken on top of the
     // sending amount.
     auto finalAmt = amount;
-    if ((!senderIssuer && !receiverIssuer) && lockedRate != kPARITY_RATE)
+    if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
         // compute transfer fee, if any
         auto const xferFee =
@@ -211,7 +211,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     // whereas in a normal payment, the transfer fee is taken on top of the
     // sending amount.
     auto finalAmt = amount;
-    if ((!senderIssuer && !receiverIssuer) && lockedRate != kPARITY_RATE)
+    if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
         // compute transfer fee, if any
         auto const xferFee = amount.value() - divideRound(amount, lockedRate, amount.asset(), true);

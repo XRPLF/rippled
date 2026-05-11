@@ -378,10 +378,10 @@ XChainBridgeObjects::XChainBridgeObjects()
     , jvub(bridge(mcuDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
     , features(testableAmendments() | FeatureBitset{featureXChainBridge})
     , signers([] {
-        constexpr int kNUM_SIGNERS = kUT_XCHAIN_DEFAULT_NUM_SIGNERS;
+        constexpr int kNumSigners = kUtXchainDefaultNumSigners;
         std::vector<Signer> result;
-        result.reserve(kNUM_SIGNERS);
-        for (int i = 0; i < kNUM_SIGNERS; ++i)
+        result.reserve(kNumSigners);
+        for (int i = 0; i < kNumSigners; ++i)
         {
             using namespace std::literals;
             auto const a = Account(
@@ -391,10 +391,10 @@ XChainBridgeObjects::XChainBridgeObjects()
         return result;
     }())
     , alt_signers([] {
-        constexpr int kNUM_SIGNERS = kUT_XCHAIN_DEFAULT_NUM_SIGNERS;
+        constexpr int kNumSigners = kUtXchainDefaultNumSigners;
         std::vector<Signer> result;
-        result.reserve(kNUM_SIGNERS);
-        for (int i = 0; i < kNUM_SIGNERS; ++i)
+        result.reserve(kNumSigners);
+        for (int i = 0; i < kNumSigners; ++i)
         {
             using namespace std::literals;
             auto const a = Account(
@@ -425,18 +425,15 @@ XChainBridgeObjects::XChainBridgeObjects()
         return r;
     }())
     , reward(XRP(1))
-    , split_reward_quorum(divide(reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), reward.get<Issue>()))
+    , split_reward_quorum(divide(reward, STAmount(kUtXchainDefaultQuorum), reward.get<Issue>()))
     , split_reward_everyone(
-          divide(reward, STAmount(kUT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.get<Issue>()))
+          divide(reward, STAmount(kUtXchainDefaultNumSigners), reward.get<Issue>()))
     , tiny_reward(drops(37))
     , tiny_reward_split(
-          (divide(tiny_reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.get<Issue>())))
+          (divide(tiny_reward, STAmount(kUtXchainDefaultQuorum), tiny_reward.get<Issue>())))
     , tiny_reward_remainder(
           tiny_reward -
-          multiply(
-              tiny_reward_split,
-              STAmount(kUT_XCHAIN_DEFAULT_QUORUM),
-              tiny_reward.get<Issue>()))
+          multiply(tiny_reward_split, STAmount(kUtXchainDefaultQuorum), tiny_reward.get<Issue>()))
     , one_xrp(XRP(1))
     , xrp_dust(divide(one_xrp, STAmount(10000), one_xrp.get<Issue>()))
 {

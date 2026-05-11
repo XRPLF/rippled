@@ -50,7 +50,7 @@ public:
     {
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
-        s.add8(kWIRE_TYPE_ACCOUNT_STATE);
+        s.add8(kWireTypeAccountState);
     }
 
     void

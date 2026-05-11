@@ -242,7 +242,7 @@ doBookOffers(RPC::JsonContext& context)
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kBOOK_OFFERS, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kBookOffers, context))
         return *err;
 
     bool const bProof(context.params.isMember(jss::proof));
@@ -260,7 +260,7 @@ doBookOffers(RPC::JsonContext& context)
         jvMarker,
         jvResult);
 
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
 
     return jvResult;
 }

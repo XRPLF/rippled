@@ -36,7 +36,7 @@ namespace detail {
 std::string
 configContents(std::string const& dbPath, std::string const& validatorsFile)
 {
-    static boost::format kCONFIG_CONTENTS_TEMPLATE(R"xrpldConfig(
+    static boost::format kConfigContentsTemplate(R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -120,7 +120,7 @@ backend=sqlite
     std::string dbPathSection = dbPath.empty() ? "" : "[database_path]\n" + dbPath;
     std::string valFileSection =
         validatorsFile.empty() ? "" : "[validators_file]\n" + validatorsFile;
-    return boost::str(kCONFIG_CONTENTS_TEMPLATE % dbPathSection % valFileSection);
+    return boost::str(kConfigContentsTemplate % dbPathSection % valFileSection);
 }
 
 /**
@@ -154,7 +154,7 @@ public:
         , dataDir_(dbPath)
     {
         if (dbPath.empty())
-            dataDir_ = subdir() / path(Config::kDATABASE_DIR_NAME);
+            dataDir_ = subdir() / path(Config::kDatabaseDirName);
 
         rmDataDir_ = !exists(dataDir_);
         config_.setup(
@@ -248,7 +248,7 @@ public:
         : FileDirGuard(
               test,
               std::move(subDir),
-              path(validatorsFileName.empty() ? Config::kVALIDATORS_FILE_NAME : validatorsFileName),
+              path(validatorsFileName.empty() ? Config::kValidatorsFileName : validatorsFileName),
               valFileContents(),
               useCounter)
     {
@@ -313,8 +313,7 @@ port_wss_admin
         auto const cwd = current_path();
 
         // Test both config file names.
-        std::string_view const configFiles[] = {
-            Config::kCONFIG_FILE_NAME, Config::kCONFIG_LEGACY_NAME};
+        std::string_view const configFiles[] = {Config::kConfigFileName, Config::kConfigLegacyName};
 
         // Config file in current directory.
         for (auto const& configFile : configFiles)
@@ -461,7 +460,7 @@ port_wss_admin
             path const dataDirRel("test_data_dir");
             path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
             detail::FileCfgGuard const g(
-                *this, g0.subdir(), dataDirAbs, Config::kCONFIG_FILE_NAME, "", false);
+                *this, g0.subdir(), dataDirAbs, Config::kConfigFileName, "", false);
             auto const& c(g.config());
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
@@ -470,7 +469,7 @@ port_wss_admin
         {
             // read from file relative path
             std::string const dbPath("my_db");
-            detail::FileCfgGuard const g(*this, "test_db", dbPath, Config::kCONFIG_FILE_NAME, "");
+            detail::FileCfgGuard const g(*this, "test_db", dbPath, Config::kConfigFileName, "");
             auto const& c(g.config());
             std::string const nativeDbPath = absolute(path(dbPath)).string();
             BEAST_EXPECT(g.dataDirExists());
@@ -479,10 +478,10 @@ port_wss_admin
         }
         {
             // read from file no path
-            detail::FileCfgGuard const g(*this, "test_db", "", Config::kCONFIG_FILE_NAME, "");
+            detail::FileCfgGuard const g(*this, "test_db", "", Config::kConfigFileName, "");
             auto const& c(g.config());
             std::string const nativeDbPath =
-                absolute(g.subdir() / path(Config::kDATABASE_DIR_NAME)).string();
+                absolute(g.subdir() / path(Config::kDatabaseDirName)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
             BEAST_EXPECT(c.legacy("database_path") == nativeDbPath);
@@ -509,7 +508,7 @@ port_wss_admin
 
         {
             Config c;
-            static boost::format kCONFIG_TEMPLATE(R"xrpldConfig(
+            static boost::format kConfigTemplate(R"xrpldConfig(
 [validation_seed]
 %1%
 
@@ -522,7 +521,7 @@ port_wss_admin
                 "and [validator_token] config sections";
             try
             {
-                c.loadFromString(boost::str(kCONFIG_TEMPLATE % validationSeed % token));
+                c.loadFromString(boost::str(kConfigTemplate % validationSeed % token));
             }
             catch (std::runtime_error const& e)
             {
@@ -845,7 +844,7 @@ trust-these-validators.gov
             std::string const valFileName = "validators.txt";
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", valFileName);
             detail::FileCfgGuard const rcg(
-                *this, vtg.subdir(), "", Config::kCONFIG_FILE_NAME, valFileName, false);
+                *this, vtg.subdir(), "", Config::kConfigFileName, valFileName, false);
             BEAST_EXPECT(vtg.validatorsFileExists());
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
@@ -862,7 +861,7 @@ trust-these-validators.gov
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.txt");
             auto const valFilePath = ".." / vtg.subdir() / "validators.txt";
             detail::FileCfgGuard const rcg(
-                *this, vtg.subdir(), "", Config::kCONFIG_FILE_NAME, valFilePath, false);
+                *this, vtg.subdir(), "", Config::kConfigFileName, valFilePath, false);
             BEAST_EXPECT(vtg.validatorsFileExists());
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
@@ -877,7 +876,7 @@ trust-these-validators.gov
             // load from validators file in default location
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.txt");
             detail::FileCfgGuard const rcg(
-                *this, vtg.subdir(), "", Config::kCONFIG_FILE_NAME, "", false);
+                *this, vtg.subdir(), "", Config::kConfigFileName, "", false);
             BEAST_EXPECT(vtg.validatorsFileExists());
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
@@ -897,7 +896,7 @@ trust-these-validators.gov
                 *this, vtg.subdir(), "validators.txt", false);
             BEAST_EXPECT(vtgDefault.validatorsFileExists());
             detail::FileCfgGuard const rcg(
-                *this, vtg.subdir(), "", Config::kCONFIG_FILE_NAME, vtg.validatorsFile(), false);
+                *this, vtg.subdir(), "", Config::kConfigFileName, vtg.validatorsFile(), false);
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
             BEAST_EXPECT(c.legacy("validators_file") == vtg.validatorsFile());
@@ -1003,7 +1002,7 @@ trust-these-validators.gov
     testSetup(bool explicitPath)
     {
         detail::FileCfgGuard const cfg(
-            *this, "testSetup", explicitPath ? "test_db" : "", Config::kCONFIG_FILE_NAME, "");
+            *this, "testSetup", explicitPath ? "test_db" : "", Config::kConfigFileName, "");
         /* FileCfgGuard has a Config object that gets loaded on
             construction, but Config::setup is not reentrant, so we
             need a fresh config for every test case, so ignore it.
@@ -1117,7 +1116,7 @@ trust-these-validators.gov
     void
     testPort()
     {
-        detail::FileCfgGuard const cfg(*this, "testPort", "", Config::kCONFIG_FILE_NAME, "");
+        detail::FileCfgGuard const cfg(*this, "testPort", "", Config::kConfigFileName, "");
         auto const& conf = cfg.config();
         if (!BEAST_EXPECT(conf.exists("port_rpc")))
             return;
@@ -1142,7 +1141,7 @@ trust-these-validators.gov
         try
         {
             detail::FileCfgGuard const cfg(
-                *this, "testPort", "", Config::kCONFIG_FILE_NAME, "", true, contents);
+                *this, "testPort", "", Config::kConfigFileName, "", true, contents);
             BEAST_EXPECT(false);
         }
         catch (std::exception const& ex)

@@ -202,7 +202,7 @@ public:
 
 FeatureCollections::FeatureCollections()
 {
-    features_.reserve(xrpl::detail::kNUM_FEATURES);
+    features_.reserve(xrpl::detail::kNumFeatures);
 }
 
 std::optional<uint256>
@@ -233,7 +233,7 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
     Feature const* i = getByName(name);
     if (i == nullptr)
     {
-        check(features_.size() < detail::kNUM_FEATURES, "More features defined than allocated.");
+        check(features_.size() < detail::kNumFeatures, "More features defined than allocated.");
 
         auto const f = sha512Half(Slice(name.data(), name.size()));
 
@@ -446,6 +446,6 @@ enforceValidFeatureName(auto fn) -> char const*
 // are initialized from top to bottom.
 //
 // Use initialization of one final static variable to set featureCollections::readOnly_.
-[[maybe_unused]] static bool const kREAD_ONLY_SET = gFeatureCollections.registrationIsDone();
+[[maybe_unused]] static bool const kReadOnlySet = gFeatureCollections.registrationIsDone();
 
 }  // namespace xrpl

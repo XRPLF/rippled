@@ -1061,8 +1061,8 @@ public:
         Account const bob{"bob"};
         env.fund(XRP(10000), bob);
 
-        static constexpr unsigned kNFTS_SIZE = 10;
-        for (unsigned i = 0; i < kNFTS_SIZE; i++)
+        static constexpr unsigned kNftsSize = 10;
+        for (unsigned i = 0; i < kNftsSize; i++)
         {
             env(token::mint(bob, 0));
         }

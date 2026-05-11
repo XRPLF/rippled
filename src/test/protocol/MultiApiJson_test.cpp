@@ -62,40 +62,35 @@ struct MultiApiJson_test : beast::unit_test::Suite
             // Some static data for test inputs
             static int const kPRIMES[] = {2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37, 41,
                                           43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97};
-            static_assert(std::size(kPRIMES) > RPC::kAPI_MAXIMUM_VALID_VERSION);
+            static_assert(std::size(kPRIMES) > RPC::kApiMaximumValidVersion);
 
             MultiApiJson<1, 3> s1{};
             static_assert(
-                s1.kSIZE ==
-                RPC::kAPI_MAXIMUM_VALID_VERSION + 1 - RPC::kAPI_MINIMUM_SUPPORTED_VERSION);
+                s1.kSIZE == RPC::kApiMaximumValidVersion + 1 - RPC::kApiMinimumSupportedVersion);
 
             int productAllVersions = 1;
-            for (unsigned i = RPC::kAPI_MINIMUM_SUPPORTED_VERSION;
-                 i <= RPC::kAPI_MAXIMUM_VALID_VERSION;
+            for (unsigned i = RPC::kApiMinimumSupportedVersion; i <= RPC::kApiMaximumValidVersion;
                  ++i)
             {
-                auto const index = i - RPC::kAPI_MINIMUM_SUPPORTED_VERSION;
+                auto const index = i - RPC::kApiMinimumSupportedVersion;
                 BEAST_EXPECT(index == s1.index(i));
                 BEAST_EXPECT(s1.valid(i));
                 s1.val[index] = makeJson("value", kPRIMES[i]);
                 productAllVersions *= kPRIMES[i];
             }
             BEAST_EXPECT(!s1.valid(0));
-            BEAST_EXPECT(!s1.valid(RPC::kAPI_MAXIMUM_VALID_VERSION + 1));
+            BEAST_EXPECT(!s1.valid(RPC::kApiMaximumValidVersion + 1));
             BEAST_EXPECT(!s1.valid(
-                std::numeric_limits<decltype(RPC::kAPI_MAXIMUM_VALID_VERSION.value)>::max()));
+                std::numeric_limits<decltype(RPC::kApiMaximumValidVersion.value)>::max()));
 
             int result = 1;
-            static_assert(
-                RPC::kAPI_MINIMUM_SUPPORTED_VERSION + 1 <= RPC::kAPI_MAXIMUM_VALID_VERSION);
-            forApiVersions<
-                RPC::kAPI_MINIMUM_SUPPORTED_VERSION,
-                RPC::kAPI_MINIMUM_SUPPORTED_VERSION + 1>(
+            static_assert(RPC::kApiMinimumSupportedVersion + 1 <= RPC::kApiMaximumValidVersion);
+            forApiVersions<RPC::kApiMinimumSupportedVersion, RPC::kApiMinimumSupportedVersion + 1>(
                 std::as_const(s1).visit(),
                 [this](json::Value const& json, unsigned int version, int* result) {
                     BEAST_EXPECT(
-                        version >= RPC::kAPI_MINIMUM_SUPPORTED_VERSION &&
-                        version <= RPC::kAPI_MINIMUM_SUPPORTED_VERSION + 1);
+                        version >= RPC::kApiMinimumSupportedVersion &&
+                        version <= RPC::kApiMinimumSupportedVersion + 1);
                     if (BEAST_EXPECT(json.isMember("value")))
                     {
                         *result *= json["value"].asInt();
@@ -104,8 +99,8 @@ struct MultiApiJson_test : beast::unit_test::Suite
                 &result);
             BEAST_EXPECT(
                 result ==
-                kPRIMES[RPC::kAPI_MINIMUM_SUPPORTED_VERSION] *
-                    kPRIMES[RPC::kAPI_MINIMUM_SUPPORTED_VERSION + 1]);
+                kPRIMES[RPC::kApiMinimumSupportedVersion] *
+                    kPRIMES[RPC::kApiMinimumSupportedVersion + 1]);
 
             // Check all the values with mutable data
             forAllApiVersions(s1.visit(), [&s1, this](json::Value& json, auto version) {
@@ -121,8 +116,8 @@ struct MultiApiJson_test : beast::unit_test::Suite
                 std::as_const(s1).visit(),
                 [this](json::Value const& json, unsigned int version, int* result) {
                     BEAST_EXPECT(
-                        version >= RPC::kAPI_MINIMUM_SUPPORTED_VERSION &&
-                        version <= RPC::kAPI_MAXIMUM_VALID_VERSION);
+                        version >= RPC::kApiMinimumSupportedVersion &&
+                        version <= RPC::kApiMaximumValidVersion);
                     if (BEAST_EXPECT(json.isMember("value")))
                     {
                         *result *= json["value"].asInt();

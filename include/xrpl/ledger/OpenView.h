@@ -23,7 +23,7 @@ namespace xrpl {
 inline constexpr struct OpenLedgerT
 {
     explicit constexpr OpenLedgerT() = default;
-} kOPEN_LEDGER{};
+} kOpenLedger{};
 
 /** Batch view construction tag.
 
@@ -33,7 +33,7 @@ inline constexpr struct OpenLedgerT
 inline constexpr struct BatchViewT
 {
     explicit constexpr BatchViewT() = default;
-} kBATCH_VIEW{};
+} kBatchView{};
 
 //------------------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ private:
     // Initial size for the monotonic_buffer_resource used for allocations
     // The size was chosen from the old `qalloc` code (which this replaces).
     // It is unclear how the size initially chosen in qalloc.
-    static constexpr size_t kINITIAL_BUFFER_SIZE = kilobytes(256);
+    static constexpr size_t kInitialBufferSize = kilobytes(256);
 
     class TxsIterImpl;
 
@@ -139,7 +139,7 @@ public:
         std::shared_ptr<void const> hold = nullptr);
 
     OpenView(OpenLedgerT, Rules const& rules, std::shared_ptr<ReadView const> const& base)
-        : OpenView(kOPEN_LEDGER, &*base, rules, base)
+        : OpenView(kOpenLedger, &*base, rules, base)
     {
     }
 

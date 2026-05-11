@@ -4580,25 +4580,25 @@ public:
             env.close();
 
             auto txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMIN_TICK_SIZE - 1;
+            txn[sfTickSize.fieldName] = Quality::kMinTickSize - 1;
             env(txn, Ter(temBAD_TICK_SIZE));
 
-            txn[sfTickSize.fieldName] = Quality::kMIN_TICK_SIZE;
+            txn[sfTickSize.fieldName] = Quality::kMinTickSize;
             env(txn);
-            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMIN_TICK_SIZE);
+            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMinTickSize);
 
             txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMAX_TICK_SIZE;
+            txn[sfTickSize.fieldName] = Quality::kMaxTickSize;
             env(txn);
             BEAST_EXPECT(!env.le(gw)->isFieldPresent(sfTickSize));
 
             txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMAX_TICK_SIZE - 1;
+            txn[sfTickSize.fieldName] = Quality::kMaxTickSize - 1;
             env(txn);
-            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMAX_TICK_SIZE - 1);
+            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMaxTickSize - 1);
 
             txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMAX_TICK_SIZE + 1;
+            txn[sfTickSize.fieldName] = Quality::kMaxTickSize + 1;
             env(txn, Ter(temBAD_TICK_SIZE));
 
             txn[sfTickSize.fieldName] = 0;

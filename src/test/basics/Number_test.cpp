@@ -178,8 +178,8 @@ public:
                 {Number{true, 9'999'999'999'999'999'999ULL, -37, Number::Normalized{}},
                  Number{1'000'000'000'000'000'000, -18},
                  Number{false, 9'999'999'999'999'999'990ULL, -19, Number::Normalized{}}},
-                {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP / 10, 1}},
-                {Number{Number::kMAX_REP - 1}, Number{1, 0}, Number{Number::kMAX_REP}},
+                {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep / 10, 1}},
+                {Number{Number::kMaxRep - 1}, Number{1, 0}, Number{Number::kMaxRep}},
                 // Test extremes
                 {
                     // Each Number operand rounds up, so the actual mantissa is
@@ -286,14 +286,14 @@ public:
                 {Number{1'000'000'000'000'000'001, -18},
                  Number{1'000'000'000'000'000'000, -18},
                  Number{1'000'000'000'000'000'000, -36}},
-                {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP - 1}},
-                {Number{false, Number::kMAX_REP + 1, 0, Number::Normalized{}},
+                {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep - 1}},
+                {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
                  Number{1, 0},
-                 Number{(Number::kMAX_REP / 10) + 1, 1}},
-                {Number{false, Number::kMAX_REP + 1, 0, Number::Normalized{}},
+                 Number{(Number::kMaxRep / 10) + 1, 1}},
+                {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
                  Number{3, 0},
-                 Number{Number::kMAX_REP}},
-                {power(2, 63), Number{3, 0}, Number{Number::kMAX_REP}},
+                 Number{Number::kMaxRep}},
+                {power(2, 63), Number{3, 0}, Number{Number::kMaxRep}},
             });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
@@ -402,8 +402,8 @@ public:
                  Number{false, maxMantissa, 0, Number::Normalized{}},
                  Number{1, 38}},
                 // Maximum int64 range
-                {Number{Number::kMAX_REP, 0},
-                 Number{Number::kMAX_REP, 0},
+                {Number{Number::kMaxRep, 0},
+                 Number{Number::kMaxRep, 0},
                  Number{85'070'591'730'234'615'85, 19}},
             });
             tests(cSmall, cLarge);
@@ -469,8 +469,8 @@ public:
                      Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kMAX_REP, 0},
-                     Number{Number::kMAX_REP, 0},
+                    {Number{Number::kMaxRep, 0},
+                     Number{Number::kMaxRep, 0},
                      Number{85'070'591'730'234'615'84, 19}},
                 });
             tests(cSmall, cLarge);
@@ -536,8 +536,8 @@ public:
                      Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kMAX_REP, 0},
-                     Number{Number::kMAX_REP, 0},
+                    {Number{Number::kMaxRep, 0},
+                     Number{Number::kMaxRep, 0},
                      Number{85'070'591'730'234'615'84, 19}},
                 });
             tests(cSmall, cLarge);
@@ -603,8 +603,8 @@ public:
                      Number{1, 38}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kMAX_REP, 0},
-                     Number{Number::kMAX_REP, 0},
+                    {Number{Number::kMaxRep, 0},
+                     Number{Number::kMaxRep, 0},
                      Number{85'070'591'730'234'615'85, 19}},
                 });
             tests(cSmall, cLarge);
@@ -857,10 +857,10 @@ public:
             {Number{false, Number::maxMantissa() - 9, 0, Number::Normalized{}},
              2,
              Number{false, 3'162'277'660'168'379'330, -9, Number::Normalized{}}},
-            {Number{Number::kMAX_REP},
+            {Number{Number::kMaxRep},
              2,
              Number{false, 3'037'000'499'976049692, -9, Number::Normalized{}}},
-            {Number{Number::kMAX_REP},
+            {Number{Number::kMaxRep},
              4,
              Number{false, 55'108'98747006743627, -14, Number::Normalized{}}},
         });
@@ -918,7 +918,7 @@ public:
             Number{5, -1},
             Number{0},
             Number{5625, -4},
-            Number{Number::kMAX_REP},
+            Number{Number::kMaxRep},
         });
         test(cSmall);
         bool caught = false;
@@ -1511,12 +1511,12 @@ public:
 
         if (scale == MantissaRange::MantissaScale::Small)
         {
-            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kINITIAL_XRP.drops());
-            BEAST_EXPECT(Number::maxMantissa() < kINITIAL_XRP.drops());
-            Number const initalXrp{kINITIAL_XRP};
+            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kInitialXrp.drops());
+            BEAST_EXPECT(Number::maxMantissa() < kInitialXrp.drops());
+            Number const initalXrp{kInitialXrp};
             BEAST_EXPECT(initalXrp.exponent() > 0);
 
-            Number const maxInt64{Number::kMAX_REP};
+            Number const maxInt64{Number::kMaxRep};
             BEAST_EXPECT(maxInt64.exponent() > 0);
             // 85'070'591'730'234'615'865'843'651'857'942'052'864 - 38 digits
             BEAST_EXPECT((power(maxInt64, 2) == Number{85'070'591'730'234'62, 22}));
@@ -1528,12 +1528,12 @@ public:
         }
         else
         {
-            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kINITIAL_XRP.drops());
-            BEAST_EXPECT(Number::maxMantissa() > kINITIAL_XRP.drops());
-            Number const initalXrp{kINITIAL_XRP};
+            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kInitialXrp.drops());
+            BEAST_EXPECT(Number::maxMantissa() > kInitialXrp.drops());
+            Number const initalXrp{kInitialXrp};
             BEAST_EXPECT(initalXrp.exponent() <= 0);
 
-            Number const maxInt64{Number::kMAX_REP};
+            Number const maxInt64{Number::kMaxRep};
             BEAST_EXPECT(maxInt64.exponent() <= 0);
             // 85'070'591'730'234'615'847'396'907'784'232'501'249 - 38 digits
             BEAST_EXPECT((power(maxInt64, 2) == Number{85'070'591'730'234'615'85, 19}));

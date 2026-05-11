@@ -151,7 +151,7 @@ public:
         using namespace jtx;
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
+        Resource::Charge loadType = Resource::kFeeReferenceRpc;
         Resource::Consumer c;
 
         RPC::JsonContext context{
@@ -164,7 +164,7 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kAPI_VERSION_IF_UNSPECIFIED},
+             .apiVersion = RPC::kApiVersionIfUnspecified},
             {},
             {}};
 
@@ -216,7 +216,7 @@ public:
 
         STAmount da;
         if (result.isMember(jss::destination_amount))
-            da = amountFromJson(kSF_GENERIC, result[jss::destination_amount]);
+            da = amountFromJson(kSfGeneric, result[jss::destination_amount]);
 
         STAmount sa;
         STPathSet paths;
@@ -228,10 +228,10 @@ public:
                 auto const& path = alts[0u];
 
                 if (path.isMember(jss::source_amount))
-                    sa = amountFromJson(kSF_GENERIC, path[jss::source_amount]);
+                    sa = amountFromJson(kSfGeneric, path[jss::source_amount]);
 
                 if (path.isMember(jss::destination_amount))
-                    da = amountFromJson(kSF_GENERIC, path[jss::destination_amount]);
+                    da = amountFromJson(kSfGeneric, path[jss::destination_amount]);
 
                 if (path.isMember(jss::paths_computed))
                 {
@@ -262,7 +262,7 @@ public:
         env.close();
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
+        Resource::Charge loadType = Resource::kFeeReferenceRpc;
         Resource::Consumer c;
 
         RPC::JsonContext context{
@@ -275,14 +275,14 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kAPI_VERSION_IF_UNSPECIFIED},
+             .apiVersion = RPC::kApiVersionIfUnspecified},
             {},
             {}};
         json::Value result;
         Gate g;
         // Test RPC::Tuning::max_src_cur source currencies.
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::kMAX_SRC_CUR);
+            context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::kMaxSrcCur);
             context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
@@ -292,7 +292,7 @@ public:
 
         // Test more than RPC::Tuning::max_src_cur source currencies.
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::kMAX_SRC_CUR + 1);
+            context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::kMaxSrcCur + 1);
             context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
@@ -301,7 +301,7 @@ public:
         BEAST_EXPECT(result.isMember(jss::error));
 
         // Test RPC::Tuning::max_auto_src_cur source currencies.
-        for (auto i = 0; i < (RPC::Tuning::kMAX_AUTO_SRC_CUR - 1); ++i)
+        for (auto i = 0; i < (RPC::Tuning::kMaxAutoSrcCur - 1); ++i)
             env.trust(Account("alice")[std::to_string(i + 100)](100), "bob");
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = rpf(Account("alice"), Account("bob"), 0);

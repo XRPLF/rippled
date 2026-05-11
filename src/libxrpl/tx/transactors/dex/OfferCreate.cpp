@@ -413,7 +413,7 @@ OfferCreate::flowCross(
                 [&](Issue const& issue) {
                     if (issue.native())
                     {
-                        deliver = STAmount{STAmount::kMAX_NATIVE};
+                        deliver = STAmount{STAmount::kMaxNative};
                     }
                     // We can't use the maximum possible currency here because
                     // there might be a gateway transfer rate to account for.
@@ -422,12 +422,10 @@ OfferCreate::flowCross(
                     else
                     {
                         deliver =
-                            STAmount{deliverAsset, STAmount::kMAX_VALUE / 2, STAmount::kMAX_OFFSET};
+                            STAmount{deliverAsset, STAmount::kMaxValue / 2, STAmount::kMaxOffset};
                     }
                 },
-                [&](MPTIssue const&) {
-                    deliver = STAmount{deliverAsset, kMAX_MP_TOKEN_AMOUNT / 2};
-                });
+                [&](MPTIssue const&) { deliver = STAmount{deliverAsset, kMaxMpTokenAmount / 2}; });
         }
 
         // Call the payment engine's flow() to do the actual work.
@@ -656,7 +654,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         auto const& uPaysIssuerID = saTakerPays.getIssuer();
         auto const& uGetsIssuerID = saTakerGets.getIssuer();
 
-        std::uint8_t uTickSize = Quality::kMAX_TICK_SIZE;
+        std::uint8_t uTickSize = Quality::kMaxTickSize;
         // Not XRP or MPT
         if (!saTakerPays.integral())
         {
@@ -671,7 +669,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             if (sle && sle->isFieldPresent(sfTickSize))
                 uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
         }
-        if (uTickSize < Quality::kMAX_TICK_SIZE)
+        if (uTickSize < Quality::kMaxTickSize)
         {
             auto const rate = Quality{saTakerGets, saTakerPays}.round(uTickSize).rate();
 

@@ -32,7 +32,7 @@ NotTEC
 TicketCreate::preflight(PreflightContext const& ctx)
 {
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
-        count < kMIN_VALID_COUNT || count > kMAX_VALID_COUNT)
+        count < kMinValidCount || count > kMaxValidCount)
         return temINVALID_COUNT;
 
     return tesSUCCESS;
@@ -58,7 +58,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
     //  o consumedTickets  <= 1
     // So in the worst case addedTickets == consumedTickets and the
     // computation yields curTicketCount.
-    if (curTicketCount + addedTickets - consumedTickets > kMAX_TICKET_THRESHOLD)
+    if (curTicketCount + addedTickets - consumedTickets > kMaxTicketThreshold)
         return tecDIR_FULL;
 
     return tesSUCCESS;

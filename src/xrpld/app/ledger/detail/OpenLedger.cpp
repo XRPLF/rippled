@@ -164,7 +164,7 @@ std::shared_ptr<OpenView>
 OpenLedger::create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger)
 {
     return std::make_shared<OpenView>(
-        kOPEN_LEDGER, rules, std::make_shared<CachedLedger const>(ledger, cache_));
+        kOpenLedger, rules, std::make_shared<CachedLedger const>(ledger, cache_));
 }
 
 auto

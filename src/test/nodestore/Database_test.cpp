@@ -536,7 +536,7 @@ public:
         srcParams.set("path", nodeDb.path());
 
         // Create a batch
-        auto batch = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue);
+        auto batch = createPredictableBatch(kNumObjectsToTest, seedValue);
 
         // Write to source db
         {
@@ -647,7 +647,7 @@ public:
             {
                 std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
-                BEAST_EXPECT(db->earliestLedgerSeq() == kXRP_LEDGER_EARLIEST_SEQ);
+                BEAST_EXPECT(db->earliestLedgerSeq() == kXrpLedgerEarliestSeq);
             }
 
             // Set an invalid earliest ledger sequence
@@ -676,7 +676,7 @@ public:
             try
             {
                 // Set to default earliest ledger sequence
-                nodeParams.set("earliest_seq", std::to_string(kXRP_LEDGER_EARLIEST_SEQ));
+                nodeParams.set("earliest_seq", std::to_string(kXrpLedgerEarliestSeq));
                 std::unique_ptr<Database> const db2 = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }

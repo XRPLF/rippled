@@ -58,7 +58,7 @@ ValidVault::Shares::make(SLE const& from)
     ValidVault::Shares self;
     self.share = MPTIssue(makeMptID(from.getFieldU32(sfSequence), from.getAccountID(sfIssuer)));
     self.sharesTotal = from.at(sfOutstandingAmount);
-    self.sharesMaximum = from[~sfMaximumAmount].value_or(kMAX_MP_TOKEN_AMOUNT);
+    self.sharesMaximum = from[~sfMaximumAmount].value_or(kMaxMpTokenAmount);
     return self;
 }
 
@@ -81,7 +81,7 @@ ValidVault::visitEntry(
     // validation. It is used to validate that the change in account
     // balances matches the change in vault balances, stored to deltas_ at the
     // end of this function.
-    DeltaInfo balanceDelta{.delta = kNUM_ZERO, .scale = std::nullopt};
+    DeltaInfo balanceDelta{.delta = kNumZero, .scale = std::nullopt};
 
     std::int8_t sign = 0;
     if (before)
@@ -1067,7 +1067,7 @@ ValidVault::computeCoarsestScale(std::vector<DeltaInfo> const& numbers)
         numbers, [](auto const& a, auto const& b) -> bool { return a.scale < b.scale; });
     XRPL_ASSERT_PARTS(
         max->scale, "xrpl::ValidVault::computeCoarsestScale", "scale set for destinationDelta");
-    return max->scale.value_or(STAmount::kMAX_OFFSET);
+    return max->scale.value_or(STAmount::kMaxOffset);
 }
 
 }  // namespace xrpl

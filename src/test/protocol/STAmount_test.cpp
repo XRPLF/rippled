@@ -37,7 +37,7 @@ public:
         s.add(ser);
 
         SerialIter sit(ser.slice());
-        return STAmount(sit, kSF_GENERIC);
+        return STAmount(sit, kSfGeneric);
     }
 
     //--------------------------------------------------------------------------
@@ -54,7 +54,7 @@ public:
         {
             mantissa--;
 
-            if (mantissa < STAmount::kMIN_VALUE)
+            if (mantissa < STAmount::kMinValue)
                 return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
@@ -69,7 +69,7 @@ public:
         {
             mantissa++;
 
-            if (mantissa > STAmount::kMAX_VALUE)
+            if (mantissa > STAmount::kMaxValue)
                 return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
@@ -494,15 +494,11 @@ public:
     {
         testcase("underflow");
 
-        STAmount const bigNative(STAmount::kMAX_NATIVE / 2);
+        STAmount const bigNative(STAmount::kMaxNative / 2);
         STAmount const bigValue(
-            noIssue(),
-            (STAmount::kMIN_VALUE + STAmount::kMAX_VALUE) / 2,
-            STAmount::kMAX_OFFSET - 1);
+            noIssue(), (STAmount::kMinValue + STAmount::kMaxValue) / 2, STAmount::kMaxOffset - 1);
         STAmount const smallValue(
-            noIssue(),
-            (STAmount::kMIN_VALUE + STAmount::kMAX_VALUE) / 2,
-            STAmount::kMIN_OFFSET + 1);
+            noIssue(), (STAmount::kMinValue + STAmount::kMaxValue) / 2, STAmount::kMinOffset + 1);
         STAmount const zeroSt(noIssue(), 0);
 
         STAmount const smallXSmall = multiply(smallValue, smallValue, noIssue());

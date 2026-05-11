@@ -253,7 +253,7 @@ template <class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
 XRPEndpointStep<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
-    return {Quality{STAmount::kU_RATE_ONE}, this->debtDirection(v, StrandDirection::Forward)};
+    return {Quality{STAmount::kURateOne}, this->debtDirection(v, StrandDirection::Forward)};
 }
 
 template <class TDerived>

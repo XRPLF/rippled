@@ -53,12 +53,12 @@ struct LedgerHeader
 };
 
 // ledger close flags
-static std::uint32_t const kS_LCF_NO_CONSENSUS_TIME = 0x01;
+static std::uint32_t const kSLcfNoConsensusTime = 0x01;
 
 inline bool
 getCloseAgree(LedgerHeader const& info)
 {
-    return (info.closeFlags & kS_LCF_NO_CONSENSUS_TIME) == 0;
+    return (info.closeFlags & kSLcfNoConsensusTime) == 0;
 }
 
 void

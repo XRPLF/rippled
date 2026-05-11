@@ -82,7 +82,7 @@ Fulfillment::deserialize(Slice s, std::error_code& ec)
         return {};
     }
 
-    if (p.length > kMAX_SERIALIZED_FULFILLMENT)
+    if (p.length > kMaxSerializedFulfillment)
     {
         ec = Error::LargeSize;
         return {};

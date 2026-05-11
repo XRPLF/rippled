@@ -257,7 +257,7 @@ accountHolds(
     {
         // If the account is the issuer, then their limit is effectively
         // infinite
-        return STAmount{Issue{currency, issuer}, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET};
+        return STAmount{Issue{currency, issuer}, STAmount::kMaxValue, STAmount::kMaxOffset};
     }
 
     // IOU: Return balance on trust line modulo freeze
@@ -1191,7 +1191,7 @@ directSendNoLimitMultiMPT(
     // small-scale mantissa (~16 digits) can lose precision for values near
     // maxMPTokenAmount (19 digits).
     std::uint64_t totalSendAmount{0};
-    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(kMAX_MP_TOKEN_AMOUNT);
+    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(kMaxMpTokenAmount);
     std::uint64_t const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
 
     // actual accumulates the total cost to the sender (includes transfer

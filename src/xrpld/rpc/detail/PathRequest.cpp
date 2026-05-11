@@ -344,7 +344,7 @@ PathRequest::parseJson(json::Value const& jvParams)
     {
         json::Value const& jvSrcCurrencies = jvParams[jss::source_currencies];
         if (!jvSrcCurrencies.isArray() || jvSrcCurrencies.size() == 0 ||
-            jvSrcCurrencies.size() > RPC::Tuning::kMAX_SRC_CUR)
+            jvSrcCurrencies.size() > RPC::Tuning::kMaxSrcCur)
         {
             jvStatus_ = rpcError(RpcSrcCurMalformed);
             return PFR_PJ_INVALID;
@@ -523,7 +523,7 @@ PathRequest::getPathFinder(
     // NOLINTEND(bugprone-unchecked-optional-access)
     if (pathfinder->findPaths(level, continueCallback))
     {
-        pathfinder->computePathRanks(kMAX_PATHS, continueCallback);
+        pathfinder->computePathRanks(kMaxPaths, continueCallback);
     }
     else
     {
@@ -556,7 +556,7 @@ PathRequest::findPaths(
                     [&]<typename TAsset>(TAsset const& a) {
                         if (!sameAccount || a != saDstAmount_.asset())
                         {
-                            if (sourceAssets.size() >= RPC::Tuning::kMAX_AUTO_SRC_CUR)
+                            if (sourceAssets.size() >= RPC::Tuning::kMaxAutoSrcCur)
                                 return false;
                             if constexpr (std::is_same_v<TAsset, Currency>)
                             {
@@ -596,7 +596,7 @@ PathRequest::findPaths(
 
         STPath fullLiquidityPath;
         auto ps = pathfinder->getBestPaths(
-            kMAX_PATHS, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
+            kMaxPaths, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
         context_[asset] = ps;
 
         auto const& sourceAccount = [&] {

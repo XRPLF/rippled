@@ -8,7 +8,7 @@ namespace xrpl {
 class AccountSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Custom};
+    static constexpr ConsequencesFactoryType kConsequencesFactory{Custom};
 
     explicit AccountSet(ApplyContext& ctx) : Transactor(ctx)
     {

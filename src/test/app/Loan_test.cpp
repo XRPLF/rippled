@@ -153,7 +153,7 @@ protected:
         maxCoveredLoanValue(Number const& currentDebt) const
         {
             NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
-            auto debtLimit = coverDeposit * kTENTH_BIPS_PER_UNITY.value() / coverRateMin.value();
+            auto debtLimit = coverDeposit * kTenthBipsPerUnity.value() / coverRateMin.value();
 
             return debtLimit - currentDebt;
         }
@@ -255,29 +255,29 @@ protected:
             if (counterpartyExplicit)
                 kCOUNTERPARTY(counter)(env, jt);
             if (originationFee)
-                kLOAN_ORIGINATION_FEE(broker.asset(*originationFee).number())(env, jt);
+                kLoanOriginationFee(broker.asset(*originationFee).number())(env, jt);
             if (serviceFee)
-                kLOAN_SERVICE_FEE(broker.asset(*serviceFee).number())(env, jt);
+                kLoanServiceFee(broker.asset(*serviceFee).number())(env, jt);
             if (lateFee)
-                kLATE_PAYMENT_FEE(broker.asset(*lateFee).number())(env, jt);
+                kLatePaymentFee(broker.asset(*lateFee).number())(env, jt);
             if (closeFee)
-                kCLOSE_PAYMENT_FEE(broker.asset(*closeFee).number())(env, jt);
+                kClosePaymentFee(broker.asset(*closeFee).number())(env, jt);
             if (overFee)
-                kOVERPAYMENT_FEE (*overFee)(env, jt);
+                kOverpaymentFee (*overFee)(env, jt);
             if (interest)
-                kINTEREST_RATE (*interest)(env, jt);
+                kInterestRate (*interest)(env, jt);
             if (lateInterest)
-                kLATE_INTEREST_RATE (*lateInterest)(env, jt);
+                kLateInterestRate (*lateInterest)(env, jt);
             if (closeInterest)
-                kCLOSE_INTEREST_RATE (*closeInterest)(env, jt);
+                kCloseInterestRate (*closeInterest)(env, jt);
             if (overpaymentInterest)
-                kOVERPAYMENT_INTEREST_RATE (*overpaymentInterest)(env, jt);
+                kOverpaymentInterestRate (*overpaymentInterest)(env, jt);
             if (payTotal)
-                kPAYMENT_TOTAL (*payTotal)(env, jt);
+                kPaymentTotal (*payTotal)(env, jt);
             if (payInterval)
-                kPAYMENT_INTERVAL (*payInterval)(env, jt);
+                kPaymentInterval (*payInterval)(env, jt);
             if (gracePd)
-                kGRACE_PERIOD (*gracePd)(env, jt);
+                kGracePeriod (*gracePd)(env, jt);
 
             return env.jt(jt, fN...);
         }
@@ -522,10 +522,10 @@ protected:
         using namespace loanBroker;
         env(set(lender, vaultKeylet.key, params.flags),
             kDATA(params.data),
-            kMANAGEMENT_FEE_RATE(params.managementFeeRate),
-            kDEBT_MAXIMUM(debtMaximumValue),
-            kCOVER_RATE_MINIMUM(coverRateMinValue),
-            kCOVER_RATE_LIQUIDATION(TenthBips32(params.coverRateLiquidation)));
+            kManagementFeeRate(params.managementFeeRate),
+            kDebtMaximum(debtMaximumValue),
+            kCoverRateMinimum(coverRateMinValue),
+            kCoverRateLiquidation(TenthBips32(params.coverRateLiquidation)));
 
         if (coverDepositValue != beast::kZERO)
             env(coverDeposit(lender, keylet.key, coverDepositValue));
@@ -673,7 +673,7 @@ protected:
                 if (!env.le(keylet::account(borrower)))
                     env.fund(env.current()->fees().accountReserve(10) * 10, noripple(borrower));
 
-                MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+                MPTTester mptt{env, issuer, kMptInitNoFund};
                 mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                 // Scale the MPT asset so interest is interesting
                 PrettyAsset const asset{mptt.issuanceID(), 10'000};
@@ -709,8 +709,8 @@ protected:
         auto const asset = createAsset(env, assetType, brokerParams, issuer, lender, borrower);
         auto const principal = asset(loanParams.principalRequest).number();
         auto const interest = loanParams.interest.value_or(TenthBips32{});
-        auto const interval = loanParams.payInterval.value_or(LoanSet::kDEFAULT_PAYMENT_INTERVAL);
-        auto const total = loanParams.payTotal.value_or(LoanSet::kDEFAULT_PAYMENT_TOTAL);
+        auto const interval = loanParams.payInterval.value_or(LoanSet::kDefaultPaymentInterval);
+        auto const total = loanParams.payTotal.value_or(LoanSet::kDefaultPaymentTotal);
         auto const feeRate = brokerParams.managementFeeRate;
         auto const props = computeLoanProperties(
             asset,
@@ -737,7 +737,7 @@ protected:
             asset,
             asset(loanParams.principalRequest).number(),
             loanParams.interest.value_or(TenthBips32{}) != beast::kZERO,
-            loanParams.payTotal.value_or(LoanSet::kDEFAULT_PAYMENT_TOTAL),
+            loanParams.payTotal.value_or(LoanSet::kDefaultPaymentTotal),
             props,
             env.journal));
     }
@@ -971,7 +971,7 @@ protected:
                 return;
             auto const totalSpent =
                 (totalPaid.trackedValueDelta + totalFeesPaid +
-                 (broker.asset.native() ? Number(baseFee) * totalPaymentsMade : kNUM_ZERO));
+                 (broker.asset.native() ? Number(baseFee) * totalPaymentsMade : kNumZero));
             BEAST_EXPECT(
                 env.balance(borrower, broker.asset).number() ==
                 borrowerInitialBalance - totalSpent);
@@ -1506,8 +1506,8 @@ protected:
         // Delete the loan
         // Either the borrower or the lender can delete the loan. Alternate
         // between who does it across tests.
-        static unsigned kDELETE_COUNTER = 0;
-        auto const deleter = ((++kDELETE_COUNTER % 2) != 0u) ? lender : borrower;
+        static unsigned kDeleteCounter = 0;
+        auto const deleter = ((++kDeleteCounter % 2) != 0u) ? lender : borrower;
         env(del(deleter, keylet.key));
         env.close();
 
@@ -1626,13 +1626,13 @@ protected:
         // sfData: good length, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kDATA(std::string(kMAX_DATA_PAYLOAD_LENGTH, 'X')),
+            kDATA(std::string(kMaxDataPayloadLength, 'X')),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfData: too long
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kDATA(std::string(kMAX_DATA_PAYLOAD_LENGTH + 1, 'Y')),
+            kDATA(std::string(kMaxDataPayloadLength + 1, 'Y')),
             loanSetFee,
             Ter(temINVALID));
 
@@ -1640,148 +1640,148 @@ protected:
         // sfOverpaymentFee: good value, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kOVERPAYMENT_FEE(kMAX_OVERPAYMENT_FEE),
+            kOverpaymentFee(kMaxOverpaymentFee),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfOverpaymentFee: too big
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kOVERPAYMENT_FEE(kMAX_OVERPAYMENT_FEE + 1),
+            kOverpaymentFee(kMaxOverpaymentFee + 1),
             loanSetFee,
             Ter(temINVALID));
 
         // sfInterestRate: good value, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kINTEREST_RATE(kMAX_INTEREST_RATE),
+            kInterestRate(kMaxInterestRate),
             loanSetFee,
             Ter(tefBAD_AUTH));
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kINTEREST_RATE(TenthBips32(0)),
+            kInterestRate(TenthBips32(0)),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfInterestRate: too big
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kINTEREST_RATE(kMAX_INTEREST_RATE + 1),
+            kInterestRate(kMaxInterestRate + 1),
             loanSetFee,
             Ter(temINVALID));
         // sfInterestRate: too small
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kINTEREST_RATE(TenthBips32(-1)),
+            kInterestRate(TenthBips32(-1)),
             loanSetFee,
             Ter(temINVALID));
 
         // sfLateInterestRate: good value, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kLATE_INTEREST_RATE(kMAX_LATE_INTEREST_RATE),
+            kLateInterestRate(kMaxLateInterestRate),
             loanSetFee,
             Ter(tefBAD_AUTH));
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kLATE_INTEREST_RATE(TenthBips32(0)),
+            kLateInterestRate(TenthBips32(0)),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfLateInterestRate: too big
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kLATE_INTEREST_RATE(kMAX_LATE_INTEREST_RATE + 1),
+            kLateInterestRate(kMaxLateInterestRate + 1),
             loanSetFee,
             Ter(temINVALID));
         // sfLateInterestRate: too small
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kLATE_INTEREST_RATE(TenthBips32(-1)),
+            kLateInterestRate(TenthBips32(-1)),
             loanSetFee,
             Ter(temINVALID));
 
         // sfCloseInterestRate: good value, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kCLOSE_INTEREST_RATE(kMAX_CLOSE_INTEREST_RATE),
+            kCloseInterestRate(kMaxCloseInterestRate),
             loanSetFee,
             Ter(tefBAD_AUTH));
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kCLOSE_INTEREST_RATE(TenthBips32(0)),
+            kCloseInterestRate(TenthBips32(0)),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfCloseInterestRate: too big
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kCLOSE_INTEREST_RATE(kMAX_CLOSE_INTEREST_RATE + 1),
+            kCloseInterestRate(kMaxCloseInterestRate + 1),
             loanSetFee,
             Ter(temINVALID));
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kCLOSE_INTEREST_RATE(TenthBips32(-1)),
+            kCloseInterestRate(TenthBips32(-1)),
             loanSetFee,
             Ter(temINVALID));
 
         // sfOverpaymentInterestRate: good value, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kOVERPAYMENT_INTEREST_RATE(kMAX_OVERPAYMENT_INTEREST_RATE),
+            kOverpaymentInterestRate(kMaxOverpaymentInterestRate),
             loanSetFee,
             Ter(tefBAD_AUTH));
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kOVERPAYMENT_INTEREST_RATE(TenthBips32(0)),
+            kOverpaymentInterestRate(TenthBips32(0)),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfOverpaymentInterestRate: too big
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kOVERPAYMENT_INTEREST_RATE(kMAX_OVERPAYMENT_INTEREST_RATE + 1),
+            kOverpaymentInterestRate(kMaxOverpaymentInterestRate + 1),
             loanSetFee,
             Ter(temINVALID));
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kOVERPAYMENT_INTEREST_RATE(TenthBips32(-1)),
+            kOverpaymentInterestRate(TenthBips32(-1)),
             loanSetFee,
             Ter(temINVALID));
 
         // sfPaymentTotal: good value, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kPAYMENT_TOTAL(LoanSet::kMIN_PAYMENT_TOTAL),
+            kPaymentTotal(LoanSet::kMinPaymentTotal),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfPaymentTotal: too small (there is no max)
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kPAYMENT_TOTAL(LoanSet::kMIN_PAYMENT_TOTAL - 1),
+            kPaymentTotal(LoanSet::kMinPaymentTotal - 1),
             loanSetFee,
             Ter(temINVALID));
 
         // sfPaymentInterval: good value, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kPAYMENT_INTERVAL(LoanSet::kMIN_PAYMENT_INTERVAL),
+            kPaymentInterval(LoanSet::kMinPaymentInterval),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfPaymentInterval: too small (there is no max)
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kPAYMENT_INTERVAL(LoanSet::kMIN_PAYMENT_INTERVAL - 1),
+            kPaymentInterval(LoanSet::kMinPaymentInterval - 1),
             loanSetFee,
             Ter(temINVALID));
 
         // sfGracePeriod: good value, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kPAYMENT_INTERVAL(LoanSet::kMIN_PAYMENT_INTERVAL * 2),
-            kGRACE_PERIOD(LoanSet::kMIN_PAYMENT_INTERVAL * 2),
+            kPaymentInterval(LoanSet::kMinPaymentInterval * 2),
+            kGracePeriod(LoanSet::kMinPaymentInterval * 2),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfGracePeriod: larger than paymentInterval
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kPAYMENT_INTERVAL(LoanSet::kMIN_PAYMENT_INTERVAL * 2),
-            kGRACE_PERIOD(LoanSet::kMIN_PAYMENT_INTERVAL * 3),
+            kPaymentInterval(LoanSet::kMinPaymentInterval * 2),
+            kGracePeriod(LoanSet::kMinPaymentInterval * 3),
             loanSetFee,
             Ter(temINVALID));
 
@@ -2138,8 +2138,7 @@ protected:
                         loanKeylet.key,
                         STAmount{broker.asset, state.periodicPayment * Number{15, -1}},
                         tfLoanOverpayment),
-                    Fee(XRPAmount{
-                        baseFee * (Number{15, -1} / kLOAN_PAYMENTS_PER_FEE_INCREMENT + 1)}),
+                    Fee(XRPAmount{baseFee * (Number{15, -1} / kLoanPaymentsPerFeeIncrement + 1)}),
                     Ter(tecNO_PERMISSION));
 
                 {
@@ -2149,7 +2148,7 @@ protected:
                             STAmount{broker.asset, state.periodicPayment * Number{15, -1}},
                             tfLoanOverpayment),
                         Fee(XRPAmount{
-                            baseFee * (Number{15, -1} / kLOAN_PAYMENTS_PER_FEE_INCREMENT + 1)}),
+                            baseFee * (Number{15, -1} / kLoanPaymentsPerFeeIncrement + 1)}),
                         Ter(temINVALID_FLAG));
                     env.enableFeature(fixSecurity3_1_3);
                 }
@@ -2202,7 +2201,7 @@ protected:
             XRPAmount const badFee{
                 baseFee *
                 (borrowerBalanceBeforePayment.number() * 2 / state.periodicPayment /
-                     kLOAN_PAYMENTS_PER_FEE_INCREMENT +
+                     kLoanPaymentsPerFeeIncrement +
                  1)};
             env(pay(borrower,
                     loanKeylet.key,
@@ -2211,7 +2210,7 @@ protected:
                 Fee(badFee),
                 Ter(tecINSUFFICIENT_FUNDS));
 
-            XRPAmount const goodFee{baseFee * (numPayments / kLOAN_PAYMENTS_PER_FEE_INCREMENT + 1)};
+            XRPAmount const goodFee{baseFee * (numPayments / kLoanPaymentsPerFeeIncrement + 1)};
             env(pay(borrower, loanKeylet.key, transactionAmount, txFlags), Fee(goodFee));
 
             env.close();
@@ -2261,7 +2260,7 @@ protected:
                 // to verify they're working correctly The numbers in
                 // the below BEAST_EXPECTs may not hold across assets.
                 Number const interval = state.paymentInterval;
-                auto const periodicRate = interval * Number(12, -2) / kSECONDS_IN_YEAR;
+                auto const periodicRate = interval * Number(12, -2) / kSecondsInYear;
                 BEAST_EXPECT(
                     periodicRate == Number(2283105022831050228ULL, -24, Number::Normalized{}));
                 STAmount const principalOutstanding{broker.asset, state.principalOutstanding};
@@ -2501,7 +2500,7 @@ protected:
                 // to verify they're working correctly The numbers in
                 // the below BEAST_EXPECTs may not hold across assets.
                 Number const interval = state.paymentInterval;
-                auto const periodicRate = interval * Number(12, -2) / kSECONDS_IN_YEAR;
+                auto const periodicRate = interval * Number(12, -2) / kSecondsInYear;
                 BEAST_EXPECT(
                     periodicRate == Number(2283105022831050228, -24, Number::Normalized{}));
                 STAmount const roundedPeriodicPayment{
@@ -2919,7 +2918,7 @@ protected:
 
             // We need two different asset types, MPT and IOU. Prepare MPT
             // first
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
 
             auto const kNONE = LedgerSpecificFlags(0);
             mptt.create(
@@ -3055,8 +3054,8 @@ protected:
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
-                env.current()->fees().accountReserve(0).drops() / kDROPS_PER_XRP.drops(),
-                env.current()->fees().increment.drops() / kDROPS_PER_XRP.drops()};
+                env.current()->fees().accountReserve(0).drops() / kDropsPerXrp.drops(),
+                env.current()->fees().increment.drops() / kDropsPerXrp.drops()};
         }();
 
         testCase(
@@ -3173,7 +3172,7 @@ protected:
 
                 // Cannot create loan, not enough reserve to create MPToken
                 env(set(borrower, broker.brokerID, principalRequest),
-                    kLOAN_ORIGINATION_FEE(broker.asset(1).value()),
+                    kLoanOriginationFee(broker.asset(1).value()),
                     kCOUNTERPARTY(lender),
                     Sig(sfCounterpartySignature, lender),
                     Fee(env.current()->fees().base * 5),
@@ -3184,7 +3183,7 @@ protected:
                 env(pay(issuer, lender, XRP(incReserve)));
                 env.close();
                 env(set(borrower, broker.brokerID, principalRequest),
-                    kLOAN_ORIGINATION_FEE(broker.asset(1).value()),
+                    kLoanOriginationFee(broker.asset(1).value()),
                     kCOUNTERPARTY(lender),
                     Sig(sfCounterpartySignature, lender),
                     Fee(env.current()->fees().base * 5));
@@ -3224,7 +3223,7 @@ protected:
 
                 // Cannot create loan, not enough reserve to create trust line
                 env(set(borrower, broker.brokerID, principalRequest),
-                    kLOAN_ORIGINATION_FEE(broker.asset(1).value()),
+                    kLoanOriginationFee(broker.asset(1).value()),
                     kCOUNTERPARTY(lender),
                     Sig(sfCounterpartySignature, lender),
                     Fee(env.current()->fees().base * 5),
@@ -3235,7 +3234,7 @@ protected:
                 env(pay(issuer, lender, XRP(incReserve)));
                 env.close();
                 env(set(borrower, broker.brokerID, principalRequest),
-                    kLOAN_ORIGINATION_FEE(broker.asset(1).value()),
+                    kLoanOriginationFee(broker.asset(1).value()),
                     kCOUNTERPARTY(lender),
                     Sig(sfCounterpartySignature, lender),
                     Fee(env.current()->fees().base * 5));
@@ -3267,7 +3266,7 @@ protected:
 
                 // Cannot create loan, lender not authorized to receive fee
                 env(set(borrower, broker.brokerID, principalRequest),
-                    kLOAN_ORIGINATION_FEE(broker.asset(1).value()),
+                    kLoanOriginationFee(broker.asset(1).value()),
                     kCOUNTERPARTY(lender),
                     Sig(sfCounterpartySignature, lender),
                     Fee(env.current()->fees().base * 5),
@@ -3414,7 +3413,7 @@ protected:
                 testcase("Vault at maximum value");
                 env(set(issuer, broker.brokerID, principalRequest),
                     kCOUNTERPARTY(lender),
-                    kINTEREST_RATE(TenthBips32(10'000)),
+                    kInterestRate(TenthBips32(10'000)),
                     Sig(sfCounterpartySignature, lender),
                     Fee(env.current()->fees().base * 5),
                     Ter(tecLIMIT_EXCEEDED));
@@ -3435,11 +3434,11 @@ protected:
                 testcase("Vault maximum value exceeded");
                 env(set(issuer, broker.brokerID, principalRequest),
                     kCOUNTERPARTY(lender),
-                    kINTEREST_RATE(TenthBips32(100'000)),
+                    kInterestRate(TenthBips32(100'000)),
                     Sig(sfCounterpartySignature, lender),
                     Fee(env.current()->fees().base * 5),
-                    kPAYMENT_TOTAL(2),
-                    kPAYMENT_INTERVAL(3600 * 24),
+                    kPaymentTotal(2),
+                    kPaymentInterval(3600 * 24),
                     Ter(tecLIMIT_EXCEEDED));
             },
             nullptr);
@@ -3483,7 +3482,7 @@ protected:
         env(pay(issuer, borrower, iouAsset(10'000)));
         env.close();
 
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
         // Scale the MPT asset a little bit so we can get some interest
         PrettyAsset const mptAsset{mptt.issuanceID(), 100};
@@ -3681,7 +3680,7 @@ protected:
         testcase << "Batch Bypass Counterparty";
 
         bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDISABLED_TX_TYPES,
+            Batch::kDisabledTxTypes,
             [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
 
         using namespace jtx;
@@ -3820,8 +3819,8 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            kLOAN_SERVICE_FEE(serviceFee),
-            kPAYMENT_TOTAL(numPayments),
+            kLoanServiceFee(serviceFee),
+            kPaymentTotal(numPayments),
             Json(sfCounterpartySignature, json::ObjectValue));
 
         createJson["CloseInterestRate"] = 55374;
@@ -4206,8 +4205,8 @@ protected:
 
             env(set(borrower, brokerInfo.brokerID, 10'000),
                 Sig(sfCounterpartySignature, broker),
-                kLOAN_SERVICE_FEE(iou(100).value()),
-                kPAYMENT_INTERVAL(100),
+                kLoanServiceFee(iou(100).value()),
+                kPaymentInterval(100),
                 Fee(XRP(100)));
             env.close();
 
@@ -4258,9 +4257,9 @@ protected:
 
         env.fund(XRP(1'000), issuer, lender);
 
-        std::int64_t constexpr kISSUER_BALANCE = 10'000'000;
+        std::int64_t constexpr kIssuerBalance = 10'000'000;
         MPTTester const asset(
-            {.env = env, .issuer = issuer, .holders = {lender}, .pay = kISSUER_BALANCE});
+            {.env = env, .issuer = issuer, .holders = {lender}, .pay = kIssuerBalance});
 
         BrokerParameters const brokerParams{
             .debtMax = 200,
@@ -4273,13 +4272,13 @@ protected:
         // Issuer should not create MPToken
         BEAST_EXPECT(!env.le(keylet::mptoken(asset.issuanceID(), issuer)));
         // Issuer "borrowed" 200, OutstandingAmount decreased by 200
-        BEAST_EXPECT(env.balance(issuer, asset) == asset(-kISSUER_BALANCE + 200));
+        BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance + 200));
         // Pay Loan
         auto const loanKeylet = keylet::loan(broker.brokerID, 1);
         env(pay(borrower, loanKeylet.key, asset(200)));
         env.close();
         // Issuer "re-payed" 200, OutstandingAmount increased by 200
-        BEAST_EXPECT(env.balance(issuer, asset) == asset(-kISSUER_BALANCE));
+        BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance));
     }
 
     void
@@ -4428,22 +4427,22 @@ protected:
                 // zero grace period
                 env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                     Sig(sfCounterpartySignature, lender),
-                    kGRACE_PERIOD(0),
+                    kGracePeriod(0),
                     loanSetFee,
                     Ter(temINVALID));
 
                 // grace period less than default minimum
                 env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                     Sig(sfCounterpartySignature, lender),
-                    kGRACE_PERIOD(LoanSet::kDEFAULT_GRACE_PERIOD - 1),
+                    kGracePeriod(LoanSet::kDefaultGracePeriod - 1),
                     loanSetFee,
                     Ter(temINVALID));
 
                 // grace period greater than payment interval
                 env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                     Sig(sfCounterpartySignature, lender),
-                    kPAYMENT_INTERVAL(120),
-                    kGRACE_PERIOD(121),
+                    kPaymentInterval(120),
+                    kGracePeriod(121),
                     loanSetFee,
                     Ter(temINVALID));
             }
@@ -4552,7 +4551,7 @@ protected:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
         PrettyAsset const mptAsset = mptt.issuanceID();
         mptt.authorize({.account = lender});
@@ -4671,7 +4670,7 @@ protected:
         Number const payment{3'269'349'176'470'588, -12};
         XRPAmount const payFee{
             baseFee *
-            ((payment / originalState.periodicPayment) / kLOAN_PAYMENTS_PER_FEE_INCREMENT + 1)};
+            ((payment / originalState.periodicPayment) / kLoanPaymentsPerFeeIncrement + 1)};
         auto loanPayTx =
             env.json(pay(borrower, keylet.key, STAmount{broker.asset, payment}), Fee(payFee));
         BEAST_EXPECT(to_string(payment) == "3269.349176470588");
@@ -4812,22 +4811,21 @@ protected:
 
         auto const stateBefore = getCurrentState(env, broker, keylet);
         BEAST_EXPECT(stateBefore.paymentRemaining == 3239184);
-        BEAST_EXPECT(stateBefore.paymentRemaining > kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION);
+        BEAST_EXPECT(stateBefore.paymentRemaining > kLoanMaximumPaymentsPerTransaction);
 
         auto loanPayTx = env.json(pay(borrower, keylet.key, STAmount{broker.asset, Number{}}));
         Number const amount{395937, -2};
         loanPayTx["Amount"]["value"] = to_string(amount);
         XRPAmount const payFee{
             baseFee *
-            std::int64_t(
-                amount / stateBefore.periodicPayment / kLOAN_PAYMENTS_PER_FEE_INCREMENT + 1)};
+            std::int64_t(amount / stateBefore.periodicPayment / kLoanPaymentsPerFeeIncrement + 1)};
         env(loanPayTx, Ter(tesSUCCESS), Fee(payFee));
         env.close();
 
         auto const stateAfter = getCurrentState(env, broker, keylet);
         BEAST_EXPECT(
             stateAfter.paymentRemaining ==
-            stateBefore.paymentRemaining - kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION);
+            stateBefore.paymentRemaining - kLoanMaximumPaymentsPerTransaction);
     }
 
     void
@@ -4900,7 +4898,7 @@ protected:
             BEAST_EXPECT(to_string(amount) == "3074.745058823529");
             XRPAmount const payFee{
                 baseFee *
-                (amount / stateBefore.periodicPayment / kLOAN_PAYMENTS_PER_FEE_INCREMENT + 1)};
+                (amount / stateBefore.periodicPayment / kLoanPaymentsPerFeeIncrement + 1)};
             loanPayTx["Amount"]["value"] = to_string(amount);
             env(loanPayTx, Fee(payFee), Ter(tesSUCCESS));
             env.close();
@@ -4912,7 +4910,7 @@ protected:
             BEAST_EXPECT(to_string(amount) == "6732.118170944051");
             XRPAmount const payFee{
                 baseFee *
-                (amount / stateBefore.periodicPayment / kLOAN_PAYMENTS_PER_FEE_INCREMENT + 1)};
+                (amount / stateBefore.periodicPayment / kLoanPaymentsPerFeeIncrement + 1)};
             loanPayTx["Amount"]["value"] = to_string(amount);
             env(loanPayTx, Fee(payFee), Ter(tesSUCCESS));
             env.close();
@@ -5000,14 +4998,13 @@ protected:
 
         auto const stateBefore = getCurrentState(env, broker, keylet);
         BEAST_EXPECT(stateBefore.paymentRemaining == 5678);
-        BEAST_EXPECT(stateBefore.paymentRemaining > kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION);
+        BEAST_EXPECT(stateBefore.paymentRemaining > kLoanMaximumPaymentsPerTransaction);
 
         auto loanPayTx = env.json(pay(borrower, keylet.key, STAmount{broker.asset, Number{}}));
         Number const amount{9924'81, -2};
         BEAST_EXPECT(to_string(amount) == "9924.81");
         XRPAmount const payFee{
-            baseFee *
-            (amount / stateBefore.periodicPayment / kLOAN_PAYMENTS_PER_FEE_INCREMENT + 1)};
+            baseFee * (amount / stateBefore.periodicPayment / kLoanPaymentsPerFeeIncrement + 1)};
         loanPayTx["Amount"]["value"] = to_string(amount);
         env(loanPayTx, Fee(payFee), Ter(tesSUCCESS));
         env.close();
@@ -5015,7 +5012,7 @@ protected:
         auto const stateAfter = getCurrentState(env, broker, keylet);
         BEAST_EXPECT(
             stateAfter.paymentRemaining ==
-            stateBefore.paymentRemaining - kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION);
+            stateBefore.paymentRemaining - kLoanMaximumPaymentsPerTransaction);
     }
 
     void
@@ -5056,19 +5053,19 @@ protected:
 
         using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
         static_assert(std::is_same_v<timeType, std::uint32_t>);
-        timeType constexpr kMAX_TIME = std::numeric_limits<timeType>::max();
-        static_assert(kMAX_TIME == 4'294'967'295);
+        timeType constexpr kMaxTime = std::numeric_limits<timeType>::max();
+        static_assert(kMaxTime == 4'294'967'295);
 
         auto const baseJson = [&]() {
             auto createJson = env.json(
                 set(borrower, broker.brokerID, Number{55524'81, -2}),
                 Fee(loanSetFee),
-                kCLOSE_PAYMENT_FEE(0),
-                kGRACE_PERIOD(LoanSet::kDEFAULT_GRACE_PERIOD),
-                kINTEREST_RATE(TenthBips32(12833)),
-                kLATE_INTEREST_RATE(TenthBips32(77048)),
-                kLATE_PAYMENT_FEE(0),
-                kLOAN_ORIGINATION_FEE(218),
+                kClosePaymentFee(0),
+                kGracePeriod(LoanSet::kDefaultGracePeriod),
+                kInterestRate(TenthBips32(12833)),
+                kLateInterestRate(TenthBips32(77048)),
+                kLatePaymentFee(0),
+                kLoanOriginationFee(218),
                 Json(sfCounterpartySignature, json::ObjectValue));
 
             createJson.removeMember(sfSequence.getJsonName());
@@ -5086,15 +5083,14 @@ protected:
 
             BEAST_EXPECT(startDate >= 50);
 
-            return kMAX_TIME - startDate;
+            return kMaxTime - startDate;
         };
 
         {
             // straight-up overflow: interval
             auto const interval = maxLoanTime() + 1;
             auto const total = 1;
-            auto createJson =
-                env.json(baseJson, kPAYMENT_INTERVAL(interval), kPAYMENT_TOTAL(total));
+            auto createJson = env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
             env.close();
@@ -5104,8 +5100,7 @@ protected:
             // min interval is 60
             auto const interval = 60;
             auto const total = maxLoanTime() + 1;
-            auto createJson =
-                env.json(baseJson, kPAYMENT_INTERVAL(interval), kPAYMENT_TOTAL(total));
+            auto createJson = env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
             env.close();
@@ -5117,7 +5112,7 @@ protected:
             auto const total = 1;
             auto const grace = interval;
             auto createJson = env.json(
-                baseJson, kPAYMENT_INTERVAL(interval), kPAYMENT_TOTAL(total), kGRACE_PERIOD(grace));
+                baseJson, kPaymentInterval(interval), kPaymentTotal(total), kGracePeriod(grace));
 
             // The grace period can't be larger than the interval.
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
@@ -5127,8 +5122,7 @@ protected:
             // Overflow with multiplication of a few large intervals
             auto const interval = 1'000'000'000;
             auto const total = 10;
-            auto createJson =
-                env.json(baseJson, kPAYMENT_INTERVAL(interval), kPAYMENT_TOTAL(total));
+            auto createJson = env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
             env.close();
@@ -5138,8 +5132,7 @@ protected:
             // min interval is 60
             auto const interval = 60;
             auto const total = 1'000'000'000;
-            auto createJson =
-                env.json(baseJson, kPAYMENT_INTERVAL(interval), kPAYMENT_TOTAL(total));
+            auto createJson = env.json(baseJson, kPaymentInterval(interval), kPaymentTotal(total));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
             env.close();
@@ -5151,7 +5144,7 @@ protected:
             auto const interval = (maxLoanTime() - total) / total;
             auto const grace = interval;
             auto createJson = env.json(
-                baseJson, kPAYMENT_INTERVAL(interval), kPAYMENT_TOTAL(total), kGRACE_PERIOD(grace));
+                baseJson, kPaymentInterval(interval), kPaymentTotal(total), kGracePeriod(grace));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tecKILLED));
             env.close();
@@ -5166,7 +5159,7 @@ protected:
             auto const interval = maxLoanTime() - grace;
             auto const total = 1;
             auto createJson = env.json(
-                baseJson, kPAYMENT_INTERVAL(interval), kPAYMENT_TOTAL(total), kGRACE_PERIOD(grace));
+                baseJson, kPaymentInterval(interval), kPaymentTotal(total), kGracePeriod(grace));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tesSUCCESS));
             env.close();
@@ -5191,10 +5184,10 @@ protected:
 
             auto const closeStartDate = (parentCloseTime() / 10 + 1) * 10;
             auto const grace = 5'000;
-            auto const interval = kMAX_TIME - closeStartDate - grace;
+            auto const interval = kMaxTime - closeStartDate - grace;
             auto const total = 1;
             auto createJson = env.json(
-                baseJson, kPAYMENT_INTERVAL(interval), kPAYMENT_TOTAL(total), kGRACE_PERIOD(grace));
+                baseJson, kPaymentInterval(interval), kPaymentTotal(total), kGracePeriod(grace));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tesSUCCESS));
             env.close();
@@ -5208,7 +5201,7 @@ protected:
 
             // This loan exists
             auto const afterState = getCurrentState(env, broker, keylet);
-            BEAST_EXPECT(afterState.nextPaymentDate == kMAX_TIME - grace);
+            BEAST_EXPECT(afterState.nextPaymentDate == kMaxTime - grace);
             BEAST_EXPECT(afterState.previousPaymentDate == 0);
             BEAST_EXPECT(afterState.paymentRemaining == 1);
         }
@@ -5220,7 +5213,7 @@ protected:
             // Start date when the ledger is closed will be larger
             auto const closeStartDate = (parentCloseTime() / 10 + 1) * 10;
             auto const grace = 5'000;
-            auto const maxLoanTime = kMAX_TIME - closeStartDate - grace;
+            auto const maxLoanTime = kMaxTime - closeStartDate - grace;
             auto const total = [&]() {
                 if (maxLoanTime % 5 == 0)
                     return 5;
@@ -5240,7 +5233,7 @@ protected:
 
             auto const interval = maxLoanTime / total;
             auto createJson = env.json(
-                baseJson, kPAYMENT_INTERVAL(interval), kPAYMENT_TOTAL(total), kGRACE_PERIOD(grace));
+                baseJson, kPaymentInterval(interval), kPaymentTotal(total), kGracePeriod(grace));
 
             env(createJson, Sig(sfCounterpartySignature, lender), Ter(tesSUCCESS));
             env.close();
@@ -5256,8 +5249,7 @@ protected:
             {
                 NumberRoundModeGuard const mg{Number::RoundingMode::Upward};
                 Number const payment = beforeState.periodicPayment * (total - 1);
-                XRPAmount const payFee{
-                    baseFee * ((total - 1) / kLOAN_PAYMENTS_PER_FEE_INCREMENT + 1)};
+                XRPAmount const payFee{baseFee * ((total - 1) / kLoanPaymentsPerFeeIncrement + 1)};
                 STAmount const paymentAmount =
                     roundToScale(STAmount{broker.asset, payment}, beforeState.loanScale);
                 auto loanPayTx = env.json(pay(borrower, keylet.key, paymentAmount), Fee(payFee));
@@ -5268,8 +5260,8 @@ protected:
             // The loan is on the last payment
             auto const afterState = getCurrentState(env, broker, keylet);
             BEAST_EXPECT(afterState.paymentRemaining == 1);
-            BEAST_EXPECT(afterState.nextPaymentDate == kMAX_TIME - grace);
-            BEAST_EXPECT(afterState.previousPaymentDate == kMAX_TIME - grace - interval);
+            BEAST_EXPECT(afterState.nextPaymentDate == kMaxTime - grace);
+            BEAST_EXPECT(afterState.previousPaymentDate == kMaxTime - grace - interval);
         }
     }
 
@@ -5291,7 +5283,7 @@ protected:
             .env = env,
             .issuer = issuer,
             .holders = {lender, borrower},
-            .flags = kMPT_DEX_FLAGS | tfMPTRequireAuth | tfMPTCanClawback | tfMPTCanLock,
+            .flags = kMptDexFlags | tfMPTRequireAuth | tfMPTCanClawback | tfMPTCanLock,
             .authHolder = true,
         });
 
@@ -5320,8 +5312,8 @@ protected:
                 err);
         });
 
-        std::uint32_t constexpr kLOAN_SEQUENCE = 1;
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, kLOAN_SEQUENCE);
+        std::uint32_t constexpr kLoanSequence = 1;
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, kLoanSequence);
 
         // Can't loan pay if the borrower is not authorized
         forUnauthAuth([&](bool authorized) {
@@ -5345,7 +5337,7 @@ protected:
         env.fund(XRP(100'000), issuer, alice);
         env.close();
 
-        MPTTester mpt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mpt{env, issuer, kMptInitNoFund};
 
         mpt.create({.flags = tfMPTCanTransfer, .mutableFlags = tmfMPTCanMutateCanTransfer});
 
@@ -5719,18 +5711,18 @@ protected:
         auto createJtx = env.jt(
             set(borrower, broker.brokerID, principalRequest, 0),
             Sig(sfCounterpartySignature, lender),
-            kLOAN_ORIGINATION_FEE(originationFee),
-            kLOAN_SERVICE_FEE(serviceFee),
-            kLATE_PAYMENT_FEE(lateFee),
-            kCLOSE_PAYMENT_FEE(closeFee),
-            kOVERPAYMENT_FEE(percentageToTenthBips(5) / 10),
-            kINTEREST_RATE(interest),
-            kLATE_INTEREST_RATE(lateInterest),
-            kCLOSE_INTEREST_RATE(closeInterest),
-            kOVERPAYMENT_INTEREST_RATE(overpaymentInterest),
-            kPAYMENT_TOTAL(total),
-            kPAYMENT_INTERVAL(interval),
-            kGRACE_PERIOD(grace),
+            kLoanOriginationFee(originationFee),
+            kLoanServiceFee(serviceFee),
+            kLatePaymentFee(lateFee),
+            kClosePaymentFee(closeFee),
+            kOverpaymentFee(percentageToTenthBips(5) / 10),
+            kInterestRate(interest),
+            kLateInterestRate(lateInterest),
+            kCloseInterestRate(closeInterest),
+            kOverpaymentInterestRate(overpaymentInterest),
+            kPaymentTotal(total),
+            kPaymentInterval(interval),
+            kGracePeriod(grace),
             Fee(loanSetFee));
 
         auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
@@ -6202,9 +6194,9 @@ protected:
 
         env(set(borrower, brokerKeyLet.key, debtMaximumRequest),
             Sig(sfCounterpartySignature, lender),
-            kINTEREST_RATE(TenthBips32(50'000)),
-            kPAYMENT_TOTAL(2),
-            kPAYMENT_INTERVAL(150),
+            kInterestRate(TenthBips32(50'000)),
+            kPaymentTotal(2),
+            kPaymentInterval(150),
             Txflags(tfLoanOverpayment),
             txFee);
         env.close();
@@ -6258,7 +6250,7 @@ protected:
         // Create a loan with principal 804 XRP and 0% interest (so
         // DebtTotal increases by exactly 804)
         env(loan::set(borrower, brokerInfo.brokerID, xrpAsset(804).value()),
-            loan::kINTEREST_RATE(TenthBips32(0)),
+            loan::kInterestRate(TenthBips32(0)),
             Sig(sfCounterpartySignature, lender),
             Fee(env.current()->fees().base * 2));
         BEAST_EXPECT(env.ter() == tesSUCCESS);
@@ -6406,8 +6398,8 @@ protected:
             env(set(broker, brokerKeylet.key, debtMaximumRequest),
                 kCOUNTERPARTY(borrower),
                 Sig(sfCounterpartySignature, borrower),
-                kLOAN_SERVICE_FEE(serviceFee),
-                kPAYMENT_TOTAL(10),
+                kLoanServiceFee(serviceFee),
+                kPaymentTotal(10),
                 txFee);
             env.close();
 
@@ -6621,9 +6613,9 @@ protected:
         env(loan::set(
                 borrower, result.brokerKeylet().key, asset(10'000).value(), tfLoanOverpayment),
             Sig(sfCounterpartySignature, lender),
-            loan::kPAYMENT_INTERVAL(86400 * 30),
-            loan::kPAYMENT_TOTAL(3),
-            loan::kOVERPAYMENT_INTEREST_RATE(TenthBips32(percentageToTenthBips(20))),
+            loan::kPaymentInterval(86400 * 30),
+            loan::kPaymentTotal(3),
+            loan::kOverpaymentInterestRate(TenthBips32(percentageToTenthBips(20))),
             loanSetFee);
 
         // From calculator
@@ -6666,8 +6658,8 @@ protected:
         auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
-            kLOAN_SERVICE_FEE(iou(100).value()),
-            kPAYMENT_INTERVAL(100),
+            kLoanServiceFee(iou(100).value()),
+            kPaymentInterval(100),
             Fee(XRP(100)));
         env.close();
         // Ensure broker has sufficient cover so brokerPayee == brokerOwner
@@ -6724,7 +6716,7 @@ protected:
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
 
         PrettyAsset const mpt{mptt.issuanceID()};
@@ -6746,8 +6738,8 @@ protected:
         auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
-            kLOAN_SERVICE_FEE(mpt(100).value()),
-            kPAYMENT_INTERVAL(100),
+            kLoanServiceFee(mpt(100).value()),
+            kPaymentInterval(100),
             Fee(XRP(100)));
         env.close();
         // Ensure broker has sufficient cover so brokerPayee == brokerOwner
@@ -6821,7 +6813,7 @@ protected:
         env(credentials::accept(borrower, issuer, credType));
         env.close();
 
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({
             .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer | tfMPTCanLock,
             .domainID = domainID,
@@ -6846,8 +6838,8 @@ protected:
         auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
-            kLOAN_SERVICE_FEE(mpt(100).value()),
-            kPAYMENT_INTERVAL(100),
+            kLoanServiceFee(mpt(100).value()),
+            kPaymentInterval(100),
             Fee(XRP(100)));
         env.close();
         // Ensure broker has sufficient cover so brokerPayee == brokerOwner
@@ -6925,7 +6917,7 @@ protected:
         env(credentials::accept(borrower, issuer, credType));
         env.close();
 
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({
             .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer | tfMPTCanLock,
             .domainID = domainID,
@@ -6958,8 +6950,8 @@ protected:
         // Create a loan, this should fail for tecNO_AUTH
         env(set(borrower, brokerInfo.brokerID, 10'000),
             Sig(sfCounterpartySignature, broker),
-            kLOAN_SERVICE_FEE(mpt(100).value()),
-            kPAYMENT_INTERVAL(100),
+            kLoanServiceFee(mpt(100).value()),
+            kPaymentInterval(100),
             Fee(XRP(100)),
             Ter(tecNO_AUTH));
         env.close();
@@ -7015,10 +7007,10 @@ protected:
         auto loanATx = env.jt(
             set(borrowerA, brokerKeylet.key, principalAmount),
             Sig(sfCounterpartySignature, lender),
-            kINTEREST_RATE(TenthBips32(500)),  // 5%
-            kPAYMENT_TOTAL(12),
-            loan::kPAYMENT_INTERVAL(loanPaymentInterval),
-            loan::kGRACE_PERIOD(loanGracePeriod),
+            kInterestRate(TenthBips32(500)),  // 5%
+            kPaymentTotal(12),
+            loan::kPaymentInterval(loanPaymentInterval),
+            loan::kGracePeriod(loanGracePeriod),
             Fee(XRP(10)));  // Sufficient fee for multi-sig transaction
         env(loanATx);
         env.close();
@@ -7029,10 +7021,10 @@ protected:
         auto loanBTx = env.jt(
             set(borrowerB, brokerKeylet.key, principalAmount),
             Sig(sfCounterpartySignature, lender),
-            kINTEREST_RATE(TenthBips32(500)),  // 5%
-            kPAYMENT_TOTAL(12),
-            loan::kPAYMENT_INTERVAL(loanPaymentInterval),
-            loan::kGRACE_PERIOD(loanGracePeriod),
+            kInterestRate(TenthBips32(500)),  // 5%
+            kPaymentTotal(12),
+            loan::kPaymentInterval(loanPaymentInterval),
+            loan::kGracePeriod(loanGracePeriod),
             Fee(XRP(10)));  // Sufficient fee for multi-sig transaction
         env(loanBTx);
         env.close();
@@ -7097,15 +7089,15 @@ protected:
         testcase("Vault withdraw reflects sfLossUnrealized");
 
         // Test constants
-        static constexpr std::int64_t kINITIAL_FUNDING = 1'000'000;
-        static constexpr std::int64_t kLENDER_INITIAL_IOU = 5'000'000;
-        static constexpr std::int64_t kDEPOSITOR_INITIAL_IOU = 1'000'000;
-        static constexpr std::int64_t kBORROWER_INITIAL_IOU = 100'000;
-        static constexpr std::int64_t kDEPOSIT_AMOUNT = 5'000;
-        static constexpr std::int64_t kPRINCIPAL_AMOUNT = 99;
-        static constexpr std::uint64_t kEXPECTED_SHARES_PER_DEPOSITOR = 5'000'000'000;
-        static constexpr std::uint32_t kLOCAL_PAYMENT_INTERVAL = 600;
-        static constexpr std::uint32_t kLOCAL_PAYMENT_TOTAL = 2;
+        static constexpr std::int64_t kInitialFunding = 1'000'000;
+        static constexpr std::int64_t kLenderInitialIou = 5'000'000;
+        static constexpr std::int64_t kDepositorInitialIou = 1'000'000;
+        static constexpr std::int64_t kBorrowerInitialIou = 100'000;
+        static constexpr std::int64_t kDepositAmount = 5'000;
+        static constexpr std::int64_t kPrincipalAmount = 99;
+        static constexpr std::uint64_t kExpectedSharesPerDepositor = 5'000'000'000;
+        static constexpr std::uint32_t kLocalPaymentInterval = 600;
+        static constexpr std::uint32_t kLocalPaymentTotal = 2;
 
         Env env(*this, all_);
 
@@ -7116,7 +7108,7 @@ protected:
         Account const depositorB{"lpB"};
         Account const borrower{"borrowerA"};
 
-        env.fund(XRP(kINITIAL_FUNDING), issuer, lender, depositorA, depositorB, borrower);
+        env.fund(XRP(kInitialFunding), issuer, lender, depositorA, depositorB, borrower);
         env.close();
 
         // Setup trust lines
@@ -7128,10 +7120,10 @@ protected:
         env.close();
 
         // Fund accounts with IOUs
-        env(pay(issuer, lender, iouAsset(kLENDER_INITIAL_IOU)));
-        env(pay(issuer, depositorA, iouAsset(kDEPOSITOR_INITIAL_IOU)));
-        env(pay(issuer, depositorB, iouAsset(kDEPOSITOR_INITIAL_IOU)));
-        env(pay(issuer, borrower, iouAsset(kBORROWER_INITIAL_IOU)));
+        env(pay(issuer, lender, iouAsset(kLenderInitialIou)));
+        env(pay(issuer, depositorA, iouAsset(kDepositorInitialIou)));
+        env(pay(issuer, depositorB, iouAsset(kDepositorInitialIou)));
+        env(pay(issuer, borrower, iouAsset(kBorrowerInitialIou)));
         env.close();
 
         // Create vault and broker, then add deposits from two depositors
@@ -7141,13 +7133,13 @@ protected:
         env(v.deposit({
                 .depositor = depositorA,
                 .id = broker.vaultKeylet().key,
-                .amount = iouAsset(kDEPOSIT_AMOUNT),
+                .amount = iouAsset(kDepositAmount),
             }),
             Ter(tesSUCCESS));
         env(v.deposit({
                 .depositor = depositorB,
                 .id = broker.vaultKeylet().key,
-                .amount = iouAsset(kDEPOSIT_AMOUNT),
+                .amount = iouAsset(kDepositAmount),
             }),
             Ter(tesSUCCESS));
         env.close();
@@ -7159,10 +7151,10 @@ protected:
 
         auto const loanKeylet = keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
 
-        env(set(borrower, broker.brokerID, kPRINCIPAL_AMOUNT),
+        env(set(borrower, broker.brokerID, kPrincipalAmount),
             Sig(sfCounterpartySignature, lender),
-            kPAYMENT_TOTAL(kLOCAL_PAYMENT_TOTAL),
-            kPAYMENT_INTERVAL(kLOCAL_PAYMENT_INTERVAL),
+            kPaymentTotal(kLocalPaymentTotal),
+            kPaymentInterval(kLocalPaymentInterval),
             Fee(env.current()->fees().base * 2),
             Ter(tesSUCCESS));
         env.close();
@@ -7177,7 +7169,7 @@ protected:
             return;
 
         BEAST_EXPECT(
-            vaultAfterImpair->at(sfLossUnrealized) == broker.asset(kPRINCIPAL_AMOUNT).value());
+            vaultAfterImpair->at(sfLossUnrealized) == broker.asset(kPrincipalAmount).value());
 
         // Helper to get share balance for a depositor
         auto const shareAsset = vaultAfterImpair->at(sfShareMPTID);
@@ -7189,8 +7181,8 @@ protected:
         // Verify both depositors have equal shares
         auto const sharesLpA = getShareBalance(depositorA);
         auto const sharesLpB = getShareBalance(depositorB);
-        BEAST_EXPECT(sharesLpA == kEXPECTED_SHARES_PER_DEPOSITOR);
-        BEAST_EXPECT(sharesLpB == kEXPECTED_SHARES_PER_DEPOSITOR);
+        BEAST_EXPECT(sharesLpA == kExpectedSharesPerDepositor);
+        BEAST_EXPECT(sharesLpB == kExpectedSharesPerDepositor);
         BEAST_EXPECT(sharesLpA == sharesLpB);
 
         // Helper to attempt withdrawal

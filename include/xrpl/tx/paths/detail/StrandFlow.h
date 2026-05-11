@@ -325,7 +325,7 @@ struct FlowResult
 inline std::optional<Quality>
 qualityUpperBound(ReadView const& v, Strand const& strand)
 {
-    Quality q{STAmount::kU_RATE_ONE};
+    Quality q{STAmount::kURateOne};
     std::optional<Quality> stepQ;
     DebtDirection dir = DebtDirection::Issues;
     for (auto const& step : strand)

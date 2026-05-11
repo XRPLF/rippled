@@ -16,7 +16,7 @@ namespace xrpl {
 class OracleSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
 
     explicit OracleSet(ApplyContext& ctx) : Transactor(ctx)
     {

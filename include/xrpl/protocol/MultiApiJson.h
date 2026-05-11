@@ -15,14 +15,14 @@ namespace xrpl {
 
 namespace detail {
 template <typename T>
-constexpr bool kIS_INTEGRAL_CONSTANT = false;
+constexpr bool kIsIntegralConstant = false;
 template <typename I, auto A>
-constexpr bool kIS_INTEGRAL_CONSTANT<std::integral_constant<I, A>&> = true;
+constexpr bool kIsIntegralConstant<std::integral_constant<I, A>&> = true;
 template <typename I, auto A>
-constexpr bool kIS_INTEGRAL_CONSTANT<std::integral_constant<I, A> const&> = true;
+constexpr bool kIsIntegralConstant<std::integral_constant<I, A> const&> = true;
 
 template <typename T>
-concept some_integral_constant = detail::kIS_INTEGRAL_CONSTANT<T&>;
+concept some_integral_constant = detail::kIsIntegralConstant<T&>;
 
 // This class is designed to wrap a collection of _almost_ identical json::Value
 // objects, indexed by version (i.e. there is some mapping of version to object
@@ -188,6 +188,6 @@ struct MultiApiJson
 
 // Wrapper for Json for all supported API versions.
 using MultiApiJson =
-    detail::MultiApiJson<RPC::kAPI_MINIMUM_SUPPORTED_VERSION, RPC::kAPI_MAXIMUM_VALID_VERSION>;
+    detail::MultiApiJson<RPC::kApiMinimumSupportedVersion, RPC::kApiMaximumValidVersion>;
 
 }  // namespace xrpl

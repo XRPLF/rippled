@@ -991,7 +991,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
 
             scEnv
@@ -1041,7 +1041,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
 
             scEnv
@@ -1094,7 +1094,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
 
             // submit claim using outdated signers - should fail
@@ -1442,7 +1442,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                     claimID,
                     dst,
                     signers,
-                    kUT_XCHAIN_DEFAULT_QUORUM))
+                    kUtXchainDefaultQuorum))
                 .close();
             scEnv
                 .tx(claimAttestation(
@@ -1450,11 +1450,11 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                     jvb,
                     mcAlice,
                     amt,
-                    payees[kUT_XCHAIN_DEFAULT_QUORUM],
+                    payees[kUtXchainDefaultQuorum],
                     true,
                     claimID,
                     dst,
-                    signers[kUT_XCHAIN_DEFAULT_QUORUM]))
+                    signers[kUtXchainDefaultQuorum]))
                 .close();
 
             if (withClaim)
@@ -1483,12 +1483,12 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<Signer> const signers = [] {
-                constexpr int kNUM_SIGNERS = 4;
+                constexpr int kNumSigners = 4;
                 std::uint32_t const weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
-                result.reserve(kNUM_SIGNERS);
-                for (int i = 0; i < kNUM_SIGNERS; ++i)
+                result.reserve(kNumSigners);
+                for (int i = 0; i < kNumSigners; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -1541,12 +1541,12 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<Signer> const signers = [] {
-                constexpr int kNUM_SIGNERS = 4;
+                constexpr int kNumSigners = 4;
                 std::uint32_t const weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
-                result.reserve(kNUM_SIGNERS);
-                for (int i = 0; i < kNUM_SIGNERS; ++i)
+                result.reserve(kNumSigners);
+                for (int i = 0; i < kNumSigners; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -1600,12 +1600,12 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<Signer> const signers = [] {
-                constexpr int kNUM_SIGNERS = 4;
+                constexpr int kNumSigners = 4;
                 std::uint32_t const weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
-                result.reserve(kNUM_SIGNERS);
-                for (int i = 0; i < kNUM_SIGNERS; ++i)
+                result.reserve(kNumSigners);
+                for (int i = 0; i < kNumSigners; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -1659,12 +1659,12 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<Signer> const signers = [] {
-                constexpr int kNUM_SIGNERS = 4;
+                constexpr int kNumSigners = 4;
                 std::uint32_t const weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
-                result.reserve(kNUM_SIGNERS);
-                for (int i = 0; i < kNUM_SIGNERS; ++i)
+                result.reserve(kNumSigners);
+                for (int i = 0; i < kNumSigners; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -2207,7 +2207,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
 
-            for (auto i = 0; i < kUT_XCHAIN_DEFAULT_NUM_SIGNERS - 2; ++i)
+            for (auto i = 0; i < kUtXchainDefaultNumSigners - 2; ++i)
                 scEnv.fund(amt, alt_signers[i].account);
 
             mcEnv.tx(createBridge(mcDoor, jvb)).close();
@@ -2241,14 +2241,14 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             {
                 // B3: public key and non-exist (unfunded) account mismatch
                 // G3: public key and non-exist (unfunded) account match
-                auto const unfundedSigner1 = alt_signers[kUT_XCHAIN_DEFAULT_NUM_SIGNERS - 1];
-                auto const unfundedSigner2 = alt_signers[kUT_XCHAIN_DEFAULT_NUM_SIGNERS - 2];
+                auto const unfundedSigner1 = alt_signers[kUtXchainDefaultNumSigners - 1];
+                auto const unfundedSigner2 = alt_signers[kUtXchainDefaultNumSigners - 2];
                 auto att = claimAttestation(
                     scAttester,
                     jvb,
                     mcAlice,
                     amt,
-                    payees[kUT_XCHAIN_DEFAULT_NUM_SIGNERS - 1],
+                    payees[kUtXchainDefaultNumSigners - 1],
                     true,
                     claimID,
                     dst,
@@ -2416,7 +2416,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
 
             scEnv
@@ -2622,7 +2622,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
 
             scEnv
@@ -2793,7 +2793,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
 
             scEnv
@@ -2839,7 +2839,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
 
             scEnv
@@ -2886,7 +2886,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
 
             if (withClaim)
@@ -2905,7 +2905,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             {
                 auto txns = claimAttestations(
                     scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers);
-                for (int i = 0; i < kUT_XCHAIN_DEFAULT_QUORUM - 1; ++i)
+                for (int i = 0; i < kUtXchainDefaultQuorum - 1; ++i)
                 {
                     scEnv.tx(txns[i]).close();
                 }
@@ -2993,11 +2993,11 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
             auto txns = claimAttestations(
                 scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers);
-            for (int i = 0; i < kUT_XCHAIN_DEFAULT_QUORUM - 1; ++i)
+            for (int i = 0; i < kUtXchainDefaultQuorum - 1; ++i)
             {
                 scEnv.tx(txns[i]).close();
             }
@@ -3063,11 +3063,11 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
             auto txns = claimAttestations(
                 scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers);
-            for (int i = 0; i < kUT_XCHAIN_DEFAULT_QUORUM - 1; ++i)
+            for (int i = 0; i < kUtXchainDefaultQuorum - 1; ++i)
             {
                 scEnv.tx(txns[i]).close();
             }
@@ -3170,7 +3170,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
             scEnv.multiTx(claimAttestations(
                 scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers));
@@ -3215,7 +3215,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
             test::Balance const scAliceBal(scEnv, scAlice);
             scEnv.multiTx(claimAttestations(
@@ -3263,7 +3263,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM,
+                kUtXchainDefaultQuorum,
                 withClaim);
             test::Balance const scAliceBal(scEnv, scAlice);
             scEnv.multiTx(claimAttestations(
@@ -3315,7 +3315,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM - 1,
+                kUtXchainDefaultQuorum - 1,
                 withClaim);
             scEnv.multiTx(claimAttestations(
                 scAttester, jvb, mcAlice, amt, altPayees, true, claimID, dst, signers));
@@ -3340,7 +3340,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             XEnv scEnv(*this, true);
 
             mcEnv.tx(createBridge(mcDoor, jvb)).close();
-            auto& unpaid = payees[kUT_XCHAIN_DEFAULT_QUORUM - 1];
+            auto& unpaid = payees[kUtXchainDefaultQuorum - 1];
             scEnv.tx(createBridge(Account::kMASTER, jvb))
                 .tx(jtx::signers(Account::kMASTER, quorum, signers))
                 .tx(fset(unpaid, asfDepositAuth))
@@ -3365,7 +3365,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 scBob,
                 scAlice,
                 &payees[0],
-                kUT_XCHAIN_DEFAULT_QUORUM - 1,
+                kUtXchainDefaultQuorum - 1,
                 withClaim);
             scEnv.multiTx(claimAttestations(
                 scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers));
@@ -3675,11 +3675,11 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 jvb,
                 mcAlice,
                 amt,
-                payees[kUT_XCHAIN_DEFAULT_QUORUM],
+                payees[kUtXchainDefaultQuorum],
                 true,
                 claimID,
                 dst,
-                signers[kUT_XCHAIN_DEFAULT_QUORUM]);
+                signers[kUtXchainDefaultQuorum]);
             {
                 // Change to an invalid keytype
                 auto k = jvAtt["PublicKey"].asString();
@@ -3705,11 +3705,11 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 mcAlice,
                 amt,
                 rewardAmt,
-                payees[kUT_XCHAIN_DEFAULT_QUORUM],
+                payees[kUtXchainDefaultQuorum],
                 true,
                 createCount,
                 dst,
-                signers[kUT_XCHAIN_DEFAULT_QUORUM]);
+                signers[kUtXchainDefaultQuorum]);
             {
                 // Change to an invalid keytype
                 auto k = jvAtt["PublicKey"].asString();
@@ -3746,7 +3746,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 struct XChainSim_test : public beast::unit_test::Suite, public jtx::XChainBridgeObjects
 {
 private:
-    static constexpr size_t kNUM_SIGNERS = 5;
+    static constexpr size_t kNumSigners = 5;
 
     // --------------------------------------------------
     enum class WithClaim { No, Yes };
@@ -3759,7 +3759,7 @@ private:
         bool a2b;  // direction of transfer
         WithClaim with_claim{WithClaim::No};
         uint32_t claim_id{0};
-        std::array<bool, kNUM_SIGNERS> attested{};
+        std::array<bool, kNumSigners> attested{};
     };
 
     struct AccountCreate
@@ -3770,7 +3770,7 @@ private:
         STAmount reward;
         bool a2b;
         uint32_t claim_id{0};
-        std::array<bool, kNUM_SIGNERS> attested{};
+        std::array<bool, kNumSigners> attested{};
     };
 
     using ENV = XEnv<XChainSim_test>;
@@ -3961,7 +3961,7 @@ private:
         };
 
         using SignerAttns = std::unordered_map<BridgeID, Claims>;
-        using SignersAttns = std::array<SignerAttns, kNUM_SIGNERS>;
+        using SignersAttns = std::array<SignerAttns, kNumSigners>;
 
         ENV& env;
         std::map<jtx::Account, AccountStateTrack> accounts;
@@ -4096,9 +4096,9 @@ private:
 
             // check all signers, but start at a random one
             size_t i = 0;
-            for (i = 0; i < kNUM_SIGNERS; ++i)
+            for (i = 0; i < kNumSigners; ++i)
             {
-                size_t const signerIdx = (rnd + i) % kNUM_SIGNERS;
+                size_t const signerIdx = (rnd + i) % kNumSigners;
 
                 if (!(cr_.attested[signerIdx]))
                 {
@@ -4122,7 +4122,7 @@ private:
                 }
             }
 
-            if (i == kNUM_SIGNERS)
+            if (i == kNumSigners)
                 return;  // did not attest
 
             auto& counters = st.counters[&bridge_];
@@ -4240,7 +4240,7 @@ private:
             auto r = bridge_.reward;
             auto reward = divide(r, STAmount(bridge_.quorum), r.asset());
 
-            for (size_t i = 0; i < kNUM_SIGNERS; ++i)
+            for (size_t i = 0; i < kNumSigners; ++i)
             {
                 if (xfer_.attested[i])
                     st.receive(bridge_.signers[i].account, reward);
@@ -4254,9 +4254,9 @@ private:
             ChainStateTrack& st = destState();
 
             // check all signers, but start at a random one
-            for (size_t i = 0; i < kNUM_SIGNERS; ++i)
+            for (size_t i = 0; i < kNumSigners; ++i)
             {
-                size_t const signerIdx = (rnd + i) % kNUM_SIGNERS;
+                size_t const signerIdx = (rnd + i) % kNumSigners;
                 if (!(xfer_.attested[signerIdx]))
                 {
                     // enqueue one attestation for this signer
@@ -4431,12 +4431,12 @@ public:
         Account doorXRPLocking("doorXRPLocking"), doorUSDLocking("doorUSDLocking"),
             doorUSDIssuing("doorUSDIssuing");
 
-        constexpr size_t kNUM_ACCT = 10;
+        constexpr size_t kNumAcct = 10;
         auto a = [&doorXRPLocking, &doorUSDLocking, &doorUSDIssuing]() {
             using namespace std::literals;
             std::vector<Account> result;
-            result.reserve(kNUM_ACCT);
-            for (int i = 0; i < kNUM_ACCT; ++i)
+            result.reserve(kNumAcct);
+            for (int i = 0; i < kNumAcct; ++i)
             {
                 result.emplace_back(
                     "a"s + std::to_string(i), (i % 2) ? KeyType::Ed25519 : KeyType::Secp256k1);
@@ -4470,7 +4470,7 @@ public:
         for (int i = 0; i < a.size(); ++i)
         {
             auto& acct{a[i]};
-            if (i < kNUM_ACCT)
+            if (i < kNumAcct)
             {
                 mcEnv.tx(trust(acct, usdLocking(100000)));
                 scEnv.tx(trust(acct, usdIssuing(100000)));
@@ -4483,12 +4483,12 @@ public:
         st->b.init(Account::kMASTER);
 
         // also create some unfunded accounts
-        constexpr size_t kNUM_UA = 20;
+        constexpr size_t kNumUa = 20;
         auto ua = []() {
             using namespace std::literals;
             std::vector<Account> result;
-            result.reserve(kNUM_UA);
-            for (int i = 0; i < kNUM_UA; ++i)
+            result.reserve(kNumUa);
+            for (int i = 0; i < kNumUa; ++i)
             {
                 result.emplace_back(
                     "ua"s + std::to_string(i), (i % 2) ? KeyType::Ed25519 : KeyType::Secp256k1);

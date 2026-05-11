@@ -83,7 +83,7 @@ Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 {
     // Need floating point math, since we're dividing by a large number
-    return tenthBipsOfValue(Number(paymentInterval), interestRate) / kSECONDS_IN_YEAR;
+    return tenthBipsOfValue(Number(paymentInterval), interestRate) / kSecondsInYear;
 }
 
 /* Checks if a value is already rounded to the specified scale.
@@ -103,11 +103,11 @@ void
 LoanStateDeltas::nonNegative()
 {
     if (principal < beast::kZERO)
-        principal = kNUM_ZERO;
+        principal = kNumZero;
     if (interest < beast::kZERO)
-        interest = kNUM_ZERO;
+        interest = kNumZero;
     if (managementFee < beast::kZERO)
-        managementFee = kNUM_ZERO;
+        managementFee = kNumZero;
 }
 
 /* Computes (1 + periodicRate)^paymentsRemaining for amortization calculations.
@@ -129,7 +129,7 @@ Number
 computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining)
 {
     if (paymentsRemaining == 0)
-        return kNUM_ZERO;
+        return kNumZero;
 
     // For zero interest, payment factor is simply 1/paymentsRemaining
     if (periodicRate == beast::kZERO)
@@ -173,7 +173,7 @@ loanPrincipalFromPeriodicPayment(
     std::uint32_t paymentsRemaining)
 {
     if (paymentsRemaining == 0)
-        return kNUM_ZERO;
+        return kNumZero;
 
     if (periodicRate == 0)
         return periodicPayment * paymentsRemaining;
@@ -211,10 +211,10 @@ loanLatePaymentInterest(
     std::uint32_t nextPaymentDueDate)
 {
     if (principalOutstanding == beast::kZERO)
-        return kNUM_ZERO;
+        return kNumZero;
 
     if (lateInterestRate == TenthBips32{0})
-        return kNUM_ZERO;
+        return kNumZero;
 
     auto const now = parentCloseTime.time_since_epoch().count();
 
@@ -246,10 +246,10 @@ loanAccruedInterest(
     std::uint32_t paymentInterval)
 {
     if (periodicRate == beast::kZERO)
-        return kNUM_ZERO;
+        return kNumZero;
 
     if (paymentInterval == 0)
-        return kNUM_ZERO;
+        return kNumZero;
 
     auto const lastPaymentDate = std::max(prevPaymentDate, startDate);
     auto const now = parentCloseTime.time_since_epoch().count();
@@ -257,7 +257,7 @@ loanAccruedInterest(
     // If the loan has been paid ahead, then "lastPaymentDate" is in the future,
     // and no interest has accrued.
     if (now <= lastPaymentDate)
-        return kNUM_ZERO;
+        return kNumZero;
 
     // Equation (4) from XLS-66 spec, Section A-2 Equation Glossary
     auto const secondsSinceLastPayment = now - lastPaymentDate;
@@ -463,7 +463,7 @@ tryOverpayment(
             newTheoreticalState.principalOutstanding,
             loanScale,
             Number::RoundingMode::Upward),
-        kNUM_ZERO,
+        kNumZero,
         roundedOldState.principalOutstanding);
     auto const totalValueOutstanding = std::clamp(
         roundToAsset(
@@ -471,11 +471,11 @@ tryOverpayment(
             principalOutstanding + newTheoreticalState.interestOutstanding(),
             loanScale,
             Number::RoundingMode::Upward),
-        kNUM_ZERO,
+        kNumZero,
         roundedOldState.valueOutstanding);
     auto const managementFeeOutstanding = std::clamp(
         roundToAsset(asset, newTheoreticalState.managementFeeDue, loanScale),
-        kNUM_ZERO,
+        kNumZero,
         roundedOldState.managementFeeDue);
 
     auto const roundedNewState =
@@ -1006,7 +1006,7 @@ computePaymentComponents(
     // periodic payment after principal is paid
     deltas.interest = std::min(
         {deltas.interest,
-         std::max(kNUM_ZERO, roundedPeriodicPayment - deltas.principal),
+         std::max(kNumZero, roundedPeriodicPayment - deltas.principal),
          currentLedgerState.interestDue});
 
     XRPL_ASSERT_PARTS(
@@ -1114,11 +1114,11 @@ computePaymentComponents(
     // Final safety clamp to ensure no value exceeds its outstanding balance
     return PaymentComponents{
         .trackedValueDelta =
-            std::clamp(deltas.total(), kNUM_ZERO, currentLedgerState.valueOutstanding),
+            std::clamp(deltas.total(), kNumZero, currentLedgerState.valueOutstanding),
         .trackedPrincipalDelta =
-            std::clamp(deltas.principal, kNUM_ZERO, currentLedgerState.principalOutstanding),
+            std::clamp(deltas.principal, kNumZero, currentLedgerState.principalOutstanding),
         .trackedManagementFeeDelta =
-            std::clamp(deltas.managementFee, kNUM_ZERO, currentLedgerState.managementFeeDue),
+            std::clamp(deltas.managementFee, kNumZero, currentLedgerState.managementFeeDue),
     };
 }
 
@@ -1809,7 +1809,7 @@ loanMakePayment(
     std::size_t numPayments = 0;
 
     while ((amount >= (totalPaid + periodic.totalDue)) && paymentRemainingProxy > 0 &&
-           numPayments < kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION)
+           numPayments < kLoanMaximumPaymentsPerTransaction)
     {
         // Try to make more payments
         XRPL_ASSERT_PARTS(
@@ -1870,7 +1870,7 @@ loanMakePayment(
     // overpayment handling
     if (paymentType == LoanPaymentType::Overpayment && loan->isFlag(lsfLoanOverpayment) &&
         paymentRemainingProxy > 0 && totalPaid < amount &&
-        numPayments < kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION)
+        numPayments < kLoanMaximumPaymentsPerTransaction)
     {
         TenthBips32 const overpaymentInterestRate{loan->at(sfOverpaymentInterestRate)};
         TenthBips32 const overpaymentFeeRate{loan->at(sfOverpaymentFee)};

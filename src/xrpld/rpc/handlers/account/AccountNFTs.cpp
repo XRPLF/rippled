@@ -58,7 +58,7 @@ doAccountNFTs(RPC::JsonContext& context)
         return rpcError(RpcActNotFound);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_NF_TOKENS, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kAccountNfTokens, context))
         return *err;
 
     uint256 marker;
@@ -86,7 +86,7 @@ doAccountNFTs(RPC::JsonContext& context)
     // Continue iteration from the current page:
     bool pastMarker = marker.isZero();
     bool markerFound = false;
-    uint256 const maskedMarker = marker & nft::kPAGE_MASK;
+    uint256 const maskedMarker = marker & nft::kPageMask;
     while (cp)
     {
         auto arr = cp->getFieldArray(sfNFTokens);
@@ -105,7 +105,7 @@ doAccountNFTs(RPC::JsonContext& context)
             //     in that case then we need to compare against the full
             //     256 bits.
             uint256 const nftokenID = o[sfNFTokenID];
-            uint256 const maskedNftokenID = nftokenID & nft::kPAGE_MASK;
+            uint256 const maskedNftokenID = nftokenID & nft::kPageMask;
 
             if (!pastMarker)
             {
@@ -161,7 +161,7 @@ doAccountNFTs(RPC::JsonContext& context)
         return RPC::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     return result;
 }
 

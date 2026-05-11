@@ -195,7 +195,7 @@ AttestationClaim::message(
     std::uint64_t claimID,
     std::optional<AccountID> const& dst)
 {
-    STObject o{kSF_GENERIC};
+    STObject o{kSfGeneric};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainClaimID] = claimID;
     o[sfAmount] = sendingAmount;
@@ -332,7 +332,7 @@ AttestationCreateAccount::message(
     std::uint64_t createCount,
     AccountID const& dst)
 {
-    STObject o{kSF_GENERIC};
+    STObject o{kSfGeneric};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainAccountCreateCount] = createCount;
     o[sfAmount] = sendingAmount;
@@ -668,7 +668,7 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(json::Value const& 
     attestations_ = [&] {
         auto const jAtts = v[jss::attestations];
 
-        if (jAtts.size() > kMAX_ATTESTATIONS)
+        if (jAtts.size() > kMaxAttestations)
             Throw<std::runtime_error>("XChainAttestationsBase exceeded max number of attestations");
 
         std::vector<TAttestation> r;
@@ -682,7 +682,7 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(json::Value const& 
 template <class TAttestation>
 XChainAttestationsBase<TAttestation>::XChainAttestationsBase(STArray const& arr)
 {
-    if (arr.size() > kMAX_ATTESTATIONS)
+    if (arr.size() > kMaxAttestations)
         Throw<std::runtime_error>("XChainAttestationsBase exceeded max number of attestations");
 
     attestations_.reserve(arr.size());

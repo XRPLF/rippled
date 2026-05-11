@@ -32,26 +32,26 @@ public:
      * An unreliable validator is a candidate to be disabled by the NegativeUNL
      * protocol.
      */
-    static constexpr size_t kNEGATIVE_UNL_LOW_WATER_MARK = kFLAG_LEDGER_INTERVAL * 50 / 100;
+    static constexpr size_t kNegativeUnlLowWaterMark = kFlagLedgerInterval * 50 / 100;
     /**
      * An unreliable validator must have more than negativeUNLHighWaterMark
      * validations in the last flag ledger period to be re-enabled.
      */
-    static constexpr size_t kNEGATIVE_UNL_HIGH_WATER_MARK = kFLAG_LEDGER_INTERVAL * 80 / 100;
+    static constexpr size_t kNegativeUnlHighWaterMark = kFlagLedgerInterval * 80 / 100;
     /**
      * The minimum number of validations of the local node for it to
      * participate in the voting.
      */
-    static constexpr size_t kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE = kFLAG_LEDGER_INTERVAL * 90 / 100;
+    static constexpr size_t kNegativeUnlMinLocalValsToVote = kFlagLedgerInterval * 90 / 100;
     /**
      * We don't want to disable new validators immediately after adding them.
      * So we skip voting for disabling them for 2 flag ledgers.
      */
-    static constexpr size_t kNEW_VALIDATOR_DISABLE_SKIP = kFLAG_LEDGER_INTERVAL * 2;
+    static constexpr size_t kNewValidatorDisableSkip = kFlagLedgerInterval * 2;
     /**
      * We only want to put 25% of the UNL on the NegativeUNL.
      */
-    static constexpr float kNEGATIVE_UNL_MAX_LISTED = 0.25;
+    static constexpr float kNegativeUnlMaxListed = 0.25;
 
     /**
      * A flag indicating whether a UNLModify Tx is to disable or to re-enable

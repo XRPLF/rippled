@@ -55,7 +55,7 @@ enum {
 //
 //------------------------------------------------------------------------------
 
-static std::array<int, 10> const kCONNECTION_BACKOFF{{1, 1, 2, 3, 5, 8, 13, 21, 34, 55}};
+static std::array<int, 10> const kConnectionBackoff{{1, 1, 2, 3, 5, 8, 13, 21, 34, 55}};
 
 //------------------------------------------------------------------------------
 //
@@ -78,7 +78,7 @@ enum {
 // Ideally this should be larger than the time it takes a full
 // peer to send us a set of addresses and then disconnect.
 //
-static std::chrono::seconds const kBOOTCACHE_COOLDOWN_TIME(60);
+static std::chrono::seconds const kBootcacheCooldownTime(60);
 
 //------------------------------------------------------------------------------
 //
@@ -87,29 +87,29 @@ static std::chrono::seconds const kBOOTCACHE_COOLDOWN_TIME(60);
 //------------------------------------------------------------------------------
 
 // Drop incoming messages with hops greater than this number
-std::uint32_t constexpr kMAX_HOPS = 6;
+std::uint32_t constexpr kMaxHops = 6;
 
 // How many Endpoint to send in each mtENDPOINTS
-std::uint32_t constexpr kNUMBER_OF_ENDPOINTS = 2 * kMAX_HOPS;
+std::uint32_t constexpr kNumberOfEndpoints = 2 * kMaxHops;
 
 // The most Endpoint we will accept in mtENDPOINTS
-std::uint32_t constexpr kNUMBER_OF_ENDPOINTS_MAX =
-    std::max<decltype(kNUMBER_OF_ENDPOINTS)>(kNUMBER_OF_ENDPOINTS * 2, 64);
+std::uint32_t constexpr kNumberOfEndpointsMax =
+    std::max<decltype(kNumberOfEndpoints)>(kNumberOfEndpoints * 2, 64);
 
 // Number of addresses we provide when redirecting.
-std::uint32_t constexpr kREDIRECT_ENDPOINT_COUNT = 10;
+std::uint32_t constexpr kRedirectEndpointCount = 10;
 
 // How often we send or accept mtENDPOINTS messages per peer
 // (we use a prime number of purpose)
-std::chrono::seconds constexpr kSECONDS_PER_MESSAGE(151);
+std::chrono::seconds constexpr kSecondsPerMessage(151);
 
 // How long an Endpoint will stay in the cache
 // This should be a small multiple of the broadcast frequency
-std::chrono::seconds constexpr kLIVE_CACHE_SECONDS_TO_LIVE(30);
+std::chrono::seconds constexpr kLiveCacheSecondsToLive(30);
 
 // How much time to wait before trying an outgoing address again.
 // Note that we ignore the port for purposes of comparison.
-std::chrono::seconds constexpr kRECENT_ATTEMPT_DURATION(60);
+std::chrono::seconds constexpr kRecentAttemptDuration(60);
 
 }  // namespace xrpl::PeerFinder::Tuning
 /** @} */

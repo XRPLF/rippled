@@ -141,7 +141,7 @@ SHAMapStoreImp::SHAMapStoreImp(
         getIfExists(section, "advisory_delete", advisoryDelete_);
 
         auto const minInterval =
-            config.standalone() ? kMINIMUM_DELETION_INTERVAL_SA : kMINIMUM_DELETION_INTERVAL;
+            config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
         if (deleteInterval_ < minInterval)
         {
             Throw<std::runtime_error>(
@@ -187,7 +187,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             std::move(writableBackend),
             std::move(archiveBackend),
             nscfg,
-            app_.getJournal(kNODE_STORE_NAME));
+            app_.getJournal(kNodeStoreName));
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
         db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
@@ -199,7 +199,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             scheduler_,
             readThreads,
             nscfg,
-            app_.getJournal(kNODE_STORE_NAME));
+            app_.getJournal(kNodeStoreName));
         fdRequired_ += db->fdRequired();
     }
     return db;
@@ -482,7 +482,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
         section,
         megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
         scheduler_,
-        app_.getJournal(kNODE_STORE_NAME))};
+        app_.getJournal(kNodeStoreName))};
     backend->open();
     return backend;
 }

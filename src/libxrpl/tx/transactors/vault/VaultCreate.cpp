@@ -52,13 +52,13 @@ VaultCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
-    if (!validDataLength(ctx.tx[~sfData], kMAX_DATA_PAYLOAD_LENGTH))
+    if (!validDataLength(ctx.tx[~sfData], kMaxDataPayloadLength))
         return temMALFORMED;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
         // Enforce valid withdrawal policy
-        if (*withdrawalPolicy != kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE)
+        if (*withdrawalPolicy != kVaultStrategyFirstComeFirstServe)
             return temMALFORMED;
     }
 
@@ -82,7 +82,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->empty() || metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
+        if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -92,7 +92,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        if (scale > kVAULT_MAXIMUM_IOU_SCALE)
+        if (scale > kVaultMaximumIouScale)
             return temMALFORMED;
     }
 
@@ -171,7 +171,7 @@ VaultCreate::doApply()
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
         ? 0
-        : ctx_.tx[~sfScale].value_or(kVAULT_DEFAULT_IOU_SCALE);
+        : ctx_.tx[~sfScale].value_or(kVaultDefaultIouScale);
 
     auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
@@ -223,7 +223,7 @@ VaultCreate::doApply()
     }
     else
     {
-        vault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+        vault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;

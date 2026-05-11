@@ -13,7 +13,7 @@ namespace xrpl::test::jtx {
 
 class MPTTester;
 
-auto const kMPT_DEX_FLAGS = tfMPTCanTrade | tfMPTCanTransfer;
+auto const kMptDexFlags = tfMPTCanTrade | tfMPTCanTransfer;
 
 // Check flags settings on MPT create
 class MptFlags
@@ -103,7 +103,7 @@ struct MPTInit
     // create MPTIssuanceID if seated and follow rules for MPTCreate args
     std::optional<MPTCreate> create = std::nullopt;
 };
-static MPTInit const kMPT_INIT_NO_FUND{.fund = false};
+static MPTInit const kMptInitNoFund{.fund = false};
 
 struct MPTInitDef
 {
@@ -112,7 +112,7 @@ struct MPTInitDef
     Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
-    std::uint32_t flags = kMPT_DEX_FLAGS;
+    std::uint32_t flags = kMptDexFlags;
     std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;

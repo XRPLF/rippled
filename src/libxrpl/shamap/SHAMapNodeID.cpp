@@ -46,7 +46,7 @@ depthMask(unsigned int depth)
 SHAMapNodeID::SHAMapNodeID(unsigned int depth, uint256 const& hash) : id_(hash), depth_(depth)
 {
     XRPL_ASSERT(
-        depth <= SHAMap::kLEAF_DEPTH, "xrpl::SHAMapNodeID::SHAMapNodeID : maximum depth input");
+        depth <= SHAMap::kLeafDepth, "xrpl::SHAMapNodeID::SHAMapNodeID : maximum depth input");
     XRPL_ASSERT(
         id_ == (id_ & depthMask(depth)),
         "xrpl::SHAMapNodeID::SHAMapNodeID : hash and depth inputs do match");
@@ -65,7 +65,7 @@ SHAMapNodeID
 SHAMapNodeID::getChildNodeID(unsigned int m) const
 {
     XRPL_ASSERT(
-        m < SHAMap::kBRANCH_FACTOR, "xrpl::SHAMapNodeID::getChildNodeID : valid branch input");
+        m < SHAMap::kBranchFactor, "xrpl::SHAMapNodeID::getChildNodeID : valid branch input");
 
     // A SHAMap has exactly 65 levels, so nodes must not exceed that
     // depth; if they do, this breaks the invariant of never allowing
@@ -76,9 +76,9 @@ SHAMapNodeID::getChildNodeID(unsigned int m) const
     // entries at that depth are leaf nodes and have no children and even
     // constructing a child node from them would break the above invariant.
     XRPL_ASSERT(
-        depth_ <= SHAMap::kLEAF_DEPTH, "xrpl::SHAMapNodeID::getChildNodeID : maximum leaf depth");
+        depth_ <= SHAMap::kLeafDepth, "xrpl::SHAMapNodeID::getChildNodeID : maximum leaf depth");
 
-    if (depth_ >= SHAMap::kLEAF_DEPTH)
+    if (depth_ >= SHAMap::kLeafDepth)
         Throw<std::logic_error>("Request for child node ID of " + to_string(*this));
 
     if (id_ != (id_ & depthMask(depth_)))
@@ -97,7 +97,7 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
     if (size == 33)
     {
         unsigned int const depth = *(static_cast<unsigned char const*>(data) + 32);
-        if (depth <= SHAMap::kLEAF_DEPTH)
+        if (depth <= SHAMap::kLeafDepth)
         {
             auto const id = uint256::fromVoid(data);
 
@@ -124,7 +124,7 @@ selectBranch(SHAMapNodeID const& id, uint256 const& hash)
         branch >>= 4;
     }
 
-    XRPL_ASSERT(branch < SHAMap::kBRANCH_FACTOR, "xrpl::selectBranch : maximum result");
+    XRPL_ASSERT(branch < SHAMap::kBranchFactor, "xrpl::selectBranch : maximum result");
     return branch;
 }
 

@@ -31,7 +31,7 @@ template <typename TIn, typename TOut>
 class AMMLiquidity
 {
 private:
-    inline static Number const kINITIAL_FIB_SEQ_PCT = Number(5) / 20000;
+    inline static Number const kInitialFibSeqPct = Number(5) / 20000;
     AMMContext& ammContext_;
     AccountID const ammAccountID_;
     std::uint32_t const tradingFee_;

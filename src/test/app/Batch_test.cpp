@@ -2658,7 +2658,7 @@ class Batch_test : public beast::unit_test::Suite
         testcase("loan");
 
         bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDISABLED_TX_TYPES,
+            Batch::kDisabledTxTypes,
             [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
 
         using namespace test::jtx;
@@ -2699,10 +2699,10 @@ class Batch_test : public beast::unit_test::Suite
         {
             using namespace loanBroker;
             env(set(lender, vaultKeylet.key),
-                kMANAGEMENT_FEE_RATE(TenthBips16(100)),
-                kDEBT_MAXIMUM(debtMaximumValue),
-                kCOVER_RATE_MINIMUM(TenthBips32(percentageToTenthBips(10))),
-                kCOVER_RATE_LIQUIDATION(TenthBips32(percentageToTenthBips(25))));
+                kManagementFeeRate(TenthBips16(100)),
+                kDebtMaximum(debtMaximumValue),
+                kCoverRateMinimum(TenthBips32(percentageToTenthBips(10))),
+                kCoverRateLiquidation(TenthBips32(percentageToTenthBips(25))));
 
             env(coverDeposit(lender, brokerKeylet.key, coverDepositValue));
 
@@ -4321,7 +4321,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(batch::outer(alice, seq, batchFee, tfAllOrNothing), seq),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 2));
             XRPAmount const txBaseFee = getBaseFee(jtx);
-            BEAST_EXPECT(txBaseFee == XRPAmount(kINITIAL_XRP));
+            BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
         }
 
         // bad: Raw Transactions array exceeds max entries.
@@ -4342,7 +4342,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 9));
 
             XRPAmount const txBaseFee = getBaseFee(jtx);
-            BEAST_EXPECT(txBaseFee == XRPAmount(kINITIAL_XRP));
+            BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
         }
 
         // bad: Signers array exceeds max entries.
@@ -4356,7 +4356,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(5)), seq + 2),
                 batch::Sig(bob, carol, alice, bob, carol, alice, bob, carol, alice, alice));
             XRPAmount const txBaseFee = getBaseFee(jtx);
-            BEAST_EXPECT(txBaseFee == XRPAmount(kINITIAL_XRP));
+            BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
         }
 
         // good:

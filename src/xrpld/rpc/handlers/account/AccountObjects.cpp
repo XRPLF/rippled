@@ -69,7 +69,7 @@ getAccountObjects(
         // if it is we will try to iterate the pages up to the limit
         // and then change over to the owner directory
 
-        if (firstNFTPage.key != (entryIndex & ~nft::kPAGE_MASK))
+        if (firstNFTPage.key != (entryIndex & ~nft::kPageMask))
             iterateNFTPages = false;
     }
 
@@ -261,7 +261,7 @@ doAccountObjects(RPC::JsonContext& context)
         {
             json::StaticString name;
             LedgerEntryType type;
-        } static constexpr kDELETION_BLOCKERS[] = {
+        } static constexpr kDeletionBlockers[] = {
             {.name = jss::check, .type = ltCHECK},
             {.name = jss::escrow, .type = ltESCROW},
             {.name = jss::nft_page, .type = ltNFTOKEN_PAGE},
@@ -278,9 +278,9 @@ doAccountObjects(RPC::JsonContext& context)
         };
 
         typeFilter.emplace();
-        typeFilter->reserve(std::size(kDELETION_BLOCKERS));
+        typeFilter->reserve(std::size(kDeletionBlockers));
 
-        for (auto [name, type] : kDELETION_BLOCKERS)
+        for (auto [name, type] : kDeletionBlockers)
         {
             if (params.isMember(jss::type) && name != params[jss::type])
             {
@@ -310,7 +310,7 @@ doAccountObjects(RPC::JsonContext& context)
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_OBJECTS, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kAccountObjects, context))
         return *err;
 
     uint256 dirIndex;
@@ -337,7 +337,7 @@ doAccountObjects(RPC::JsonContext& context)
         return RPC::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     return result;
 }
 

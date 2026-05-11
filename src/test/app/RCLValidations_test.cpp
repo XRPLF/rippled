@@ -69,7 +69,7 @@ class RCLValidations_test : public beast::unit_test::Suite
         jtx::Env env(*this);
         Config const config;
         auto prev = std::make_shared<Ledger const>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{config.features},
             config.FEES.toFees(),
             std::vector<uint256>{},
@@ -235,7 +235,7 @@ class RCLValidations_test : public beast::unit_test::Suite
         auto& j = env.journal;
         Config const config;
         auto prev = std::make_shared<Ledger const>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{config.features},
             config.FEES.toFees(),
             std::vector<uint256>{},

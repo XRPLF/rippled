@@ -43,7 +43,7 @@ OracleSet::preflight(PreflightContext const& ctx)
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())
         return temARRAY_EMPTY;
-    if (dataSeries.size() > kMAX_ORACLE_DATA_SERIES)
+    if (dataSeries.size() > kMaxOracleDataSeries)
         return temARRAY_TOO_LARGE;
 
     auto isInvalidLength = [&](auto const& sField, std::size_t length) {
@@ -51,9 +51,8 @@ OracleSet::preflight(PreflightContext const& ctx)
             (ctx.tx[sField].length() == 0 || ctx.tx[sField].length() > length);
     };
 
-    if (isInvalidLength(sfProvider, kMAX_ORACLE_PROVIDER) ||
-        isInvalidLength(sfURI, kMAX_ORACLE_URI) ||
-        isInvalidLength(sfAssetClass, kMAX_ORACLE_SYMBOL_CLASS))
+    if (isInvalidLength(sfProvider, kMaxOracleProvider) || isInvalidLength(sfURI, kMaxOracleUri) ||
+        isInvalidLength(sfAssetClass, kMaxOracleSymbolClass))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -72,13 +71,13 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     std::size_t const closeTime =
         duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch()).count();
     std::size_t const lastUpdateTime = ctx.tx[sfLastUpdateTime];
-    if (lastUpdateTime < kEPOCH_OFFSET.count())
+    if (lastUpdateTime < kEpochOffset.count())
         return tecINVALID_UPDATE_TIME;
-    std::size_t const lastUpdateTimeEpoch = lastUpdateTime - kEPOCH_OFFSET.count();
-    if (closeTime < kMAX_LAST_UPDATE_TIME_DELTA)
+    std::size_t const lastUpdateTimeEpoch = lastUpdateTime - kEpochOffset.count();
+    if (closeTime < kMaxLastUpdateTimeDelta)
         return tecINTERNAL;  // LCOV_EXCL_LINE
-    if (lastUpdateTimeEpoch < (closeTime - kMAX_LAST_UPDATE_TIME_DELTA) ||
-        lastUpdateTimeEpoch > (closeTime + kMAX_LAST_UPDATE_TIME_DELTA))
+    if (lastUpdateTimeEpoch < (closeTime - kMaxLastUpdateTimeDelta) ||
+        lastUpdateTimeEpoch > (closeTime + kMaxLastUpdateTimeDelta))
         return tecINVALID_UPDATE_TIME;
 
     auto const sle =
@@ -96,7 +95,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         auto const key = tokenPairKey(entry);
         if (pairs.contains(key) || pairsDel.contains(key))
             return temMALFORMED;
-        if (entry[~sfScale] > kMAX_PRICE_SCALE)
+        if (entry[~sfScale] > kMaxPriceScale)
             return temMALFORMED;
         if (entry.isFieldPresent(sfAssetPrice))
         {
@@ -166,7 +165,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 
     if (pairs.empty())
         return tecARRAY_EMPTY;
-    if (pairs.size() > kMAX_ORACLE_DATA_SERIES)
+    if (pairs.size() > kMaxOracleDataSeries)
         return tecARRAY_TOO_LARGE;
 
     auto const reserve =

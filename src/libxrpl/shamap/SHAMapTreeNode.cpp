@@ -100,19 +100,19 @@ SHAMapTreeNode::makeFromWire(Slice rawNode)
     bool const hashValid = false;
     SHAMapHash const hash;
 
-    if (type == kWIRE_TYPE_TRANSACTION)
+    if (type == kWireTypeTransaction)
         return makeTransaction(rawNode, hash, hashValid);
 
-    if (type == kWIRE_TYPE_ACCOUNT_STATE)
+    if (type == kWireTypeAccountState)
         return makeAccountState(rawNode, hash, hashValid);
 
-    if (type == kWIRE_TYPE_INNER)
+    if (type == kWireTypeInner)
         return SHAMapInnerNode::makeFullInner(rawNode, hash, hashValid);
 
-    if (type == kWIRE_TYPE_COMPRESSED_INNER)
+    if (type == kWireTypeCompressedInner)
         return SHAMapInnerNode::makeCompressedInner(rawNode);
 
-    if (type == kWIRE_TYPE_TRANSACTION_WITH_META)
+    if (type == kWireTypeTransactionWithMeta)
         return makeTransactionWithMeta(rawNode, hash, hashValid);
 
     Throw<std::runtime_error>("wire: Unknown type (" + std::to_string(type) + ")");

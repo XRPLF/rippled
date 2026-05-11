@@ -340,8 +340,8 @@ public:
         using namespace std::chrono_literals;
         std::uint32_t const escrowSeq{env.seq(alice)};
         env(escrow::create(alice, becky, XRP(333)),
-            escrow::kFINISH_TIME(env.now() + 3s),
-            escrow::kCANCEL_TIME(env.now() + 4s));
+            escrow::kFinishTime(env.now() + 3s),
+            escrow::kCancelTime(env.now() + 4s));
         env.close();
 
         // alice and becky should be unable to delete their accounts because
@@ -369,8 +369,8 @@ public:
 
             std::uint32_t const escrowSeq{env.seq(carol)};
             env(escrow::create(carol, becky, usd(1)),
-                escrow::kFINISH_TIME(env.now() + 3s),
-                escrow::kCANCEL_TIME(env.now() + 4s));
+                escrow::kFinishTime(env.now() + 3s),
+                escrow::kCancelTime(env.now() + 4s));
             env.close();
 
             incLgrSeqForAccDel(env, gw1);
@@ -460,8 +460,8 @@ public:
         // Alice creates 1001 offers.  This is one greater than the number of
         // directory entries an AccountDelete will remove.
         std::uint32_t const offerSeq0{env.seq(alice)};
-        constexpr int kOFFER_COUNT{1001};
-        for (int i{0}; i < kOFFER_COUNT; ++i)
+        constexpr int kOfferCount{1001};
+        for (int i{0}; i < kOfferCount; ++i)
         {
             env(offer(alice, gw[currency](1), XRP(1)));
             env.close();
@@ -497,11 +497,11 @@ public:
             BEAST_EXPECT(closed->exists(aliceOwnerDirKey));
 
             // alice's directory nodes.
-            for (std::uint32_t i{0}; i < ((kOFFER_COUNT / 32) + 1); ++i)
+            for (std::uint32_t i{0}; i < ((kOfferCount / 32) + 1); ++i)
                 BEAST_EXPECT(closed->exists(keylet::page(aliceOwnerDirKey, i)));
 
             // alice's offers.
-            for (std::uint32_t i{0}; i < kOFFER_COUNT; ++i)
+            for (std::uint32_t i{0}; i < kOfferCount; ++i)
                 BEAST_EXPECT(closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
         }
 
@@ -512,10 +512,10 @@ public:
         env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tefTOO_BIG));
 
         // Cancel one of alice's offers.  Then the account delete can succeed.
-        env.require(offers(alice, kOFFER_COUNT));
+        env.require(offers(alice, kOfferCount));
         env(offerCancel(alice, offerSeq0));
         env.close();
-        env.require(offers(alice, kOFFER_COUNT - 1));
+        env.require(offers(alice, kOfferCount - 1));
 
         // alice successfully deletes her account.
         auto const alicePreDelBal{env.balance(alice)};
@@ -531,11 +531,11 @@ public:
             BEAST_EXPECT(!closed->exists(aliceOwnerDirKey));
 
             // alice's former directory nodes.
-            for (std::uint32_t i{0}; i < ((kOFFER_COUNT / 32) + 1); ++i)
+            for (std::uint32_t i{0}; i < ((kOfferCount / 32) + 1); ++i)
                 BEAST_EXPECT(!closed->exists(keylet::page(aliceOwnerDirKey, i)));
 
             // alice's former offers.
-            for (std::uint32_t i{0}; i < kOFFER_COUNT; ++i)
+            for (std::uint32_t i{0}; i < kOfferCount; ++i)
                 BEAST_EXPECT(!closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
         }
     }

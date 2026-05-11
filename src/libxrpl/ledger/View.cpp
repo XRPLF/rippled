@@ -62,7 +62,7 @@ isVaultPseudoAccountFrozen(
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
 
-    if (depth >= kMAX_ASSET_CHECK_DEPTH)
+    if (depth >= kMaxAssetCheckDepth)
         return true;  // LCOV_EXCL_LINE
 
     auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));

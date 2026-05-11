@@ -445,8 +445,8 @@ struct TestPeerSet : public PeerSet
     [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> const kEMPTY_PEERS;
-        return kEMPTY_PEERS;
+        static std::set<Peer::id_t> const kEmptyPeers;
+        return kEmptyPeers;
     }
 
     LedgerReplayMsgHandler& local;
@@ -1098,8 +1098,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             http_request_type httpRequest;
             httpRequest.version(request.version());
             httpRequest.base() = request.base();
-            bool const serverResult =
-                peerFeatureEnabled(httpRequest, kFEATURE_LEDGER_REPLAY, server);
+            bool const serverResult = peerFeatureEnabled(httpRequest, kFeatureLedgerReplay, server);
             if (serverResult != expecting)
                 return false;
 
@@ -1108,7 +1107,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             serverEnv.app().config().LEDGER_REPLAY = server;
             auto httpResp = xrpl::makeResponse(
                 true, httpRequest, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
-            auto const clientResult = peerFeatureEnabled(httpResp, kFEATURE_LEDGER_REPLAY, client);
+            auto const clientResult = peerFeatureEnabled(httpResp, kFeatureLedgerReplay, client);
             return clientResult == expecting;
         };
 

@@ -47,7 +47,7 @@ AMMVote::preflight(PreflightContext const& ctx)
         return res;
     }
 
-    if (ctx.tx[sfTradingFee] > kTRADING_FEE_THRESHOLD)
+    if (ctx.tx[sfTradingFee] > kTradingFeeThreshold)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid trading fee.";
         return temBAD_FEE;
@@ -128,8 +128,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
             newEntry.setFieldU16(sfTradingFee, feeVal);
         newEntry.setFieldU32(
             sfVoteWeight,
-            static_cast<std::int64_t>(
-                Number(lpTokens) * kVOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
+            static_cast<std::int64_t>(Number(lpTokens) * kVoteWeightScaleFactor / lptAMMBalance));
 
         // Find an entry with the least tokens/fee. Make the order deterministic
         // if the tokens/fees are equal.
@@ -156,7 +155,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
             newEntry.setFieldU32(
                 sfVoteWeight,
                 static_cast<std::int64_t>(
-                    Number(lpTokensNew) * kVOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
+                    Number(lpTokensNew) * kVoteWeightScaleFactor / lptAMMBalance));
             newEntry.setAccountID(sfAccount, account);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
@@ -171,7 +170,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         };
         // Add new entry if the number of the vote entries
         // is less than Max.
-        if (updatedVoteSlots.size() < kVOTE_MAX_SLOTS)
+        if (updatedVoteSlots.size() < kVoteMaxSlots)
         {
             update();
             // Add the entry if the account has more tokens than
@@ -209,7 +208,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         if (ammSle->isFieldPresent(sfAuctionSlot))
         {
             auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-            if (auto const discountedFee = fee / kAUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+            if (auto const discountedFee = fee / kAuctionSlotDiscountedFeeFraction)
             {
                 auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
             }

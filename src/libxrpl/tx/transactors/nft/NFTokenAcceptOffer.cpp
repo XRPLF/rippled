@@ -306,7 +306,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // give the NFToken issuer an undesired trust line.
         // Issuer doesn't need a trust line to accept their own currency.
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline) &&
-            (nft::getFlags(tokenID) & nft::kFLAG_CREATE_TRUST_LINES) == 0 &&
+            (nft::getFlags(tokenID) & nft::kFlagCreateTrustLines) == 0 &&
             nftMinter != amount.getIssuer() &&
             !ctx.view.read(keylet::line(nftMinter, amount.get<Issue>())))
             return tecNO_LINE;

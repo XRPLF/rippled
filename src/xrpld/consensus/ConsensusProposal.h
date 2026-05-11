@@ -42,10 +42,10 @@ public:
     using NodeID = NodeId;
 
     //< Sequence value when a peer initially joins consensus
-    static std::uint32_t const kSEQ_JOIN = 0;
+    static std::uint32_t const kSeqJoin = 0;
 
     //< Sequence number when  a peer wants to bow out and leave consensus
-    static std::uint32_t const kSEQ_LEAVE = 0xffffffff;
+    static std::uint32_t const kSeqLeave = 0xffffffff;
 
     /** Constructor
 
@@ -126,14 +126,14 @@ public:
     bool
     isInitial() const
     {
-        return proposeSeq_ == kSEQ_JOIN;
+        return proposeSeq_ == kSeqJoin;
     }
 
     //! Get whether this node left the consensus process
     bool
     isBowOut() const
     {
-        return proposeSeq_ == kSEQ_LEAVE;
+        return proposeSeq_ == kSeqLeave;
     }
 
     //! Get whether this position is stale relative to the provided cutoff
@@ -160,7 +160,7 @@ public:
         position_ = newPosition;
         closeTime_ = newCloseTime;
         time_ = now;
-        if (proposeSeq_ != kSEQ_LEAVE)
+        if (proposeSeq_ != kSeqLeave)
             ++proposeSeq_;
     }
 
@@ -175,7 +175,7 @@ public:
     {
         signingHash_.reset();
         time_ = now;
-        proposeSeq_ = kSEQ_LEAVE;
+        proposeSeq_ = kSeqLeave;
     }
 
     std::string

@@ -17,33 +17,33 @@ class LedgerReplayClient;
 
 namespace LedgerReplayParameters {
 // timeout value for LedgerReplayTask
-auto constexpr kTASK_TIMEOUT = std::chrono::milliseconds{500};
+auto constexpr kTaskTimeout = std::chrono::milliseconds{500};
 
 // for LedgerReplayTask to calculate max allowed timeouts
 // = max( kTASK_MAX_TIMEOUTS_MINIMUM,
 //        (# of ledger to replay) * kTASK_MAX_TIMEOUTS_MULTIPLIER)
-std::uint32_t constexpr kTASK_MAX_TIMEOUTS_MULTIPLIER = 2;
-std::uint32_t constexpr kTASK_MAX_TIMEOUTS_MINIMUM = 10;
+std::uint32_t constexpr kTaskMaxTimeoutsMultiplier = 2;
+std::uint32_t constexpr kTaskMaxTimeoutsMinimum = 10;
 
 // timeout value for subtasks: LedgerDeltaAcquire and SkipListAcquire
-auto constexpr kSUB_TASK_TIMEOUT = std::chrono::milliseconds{250};
+auto constexpr kSubTaskTimeout = std::chrono::milliseconds{250};
 // max of allowed subtask timeouts
-std::uint32_t constexpr kSUB_TASK_MAX_TIMEOUTS = 10;
+std::uint32_t constexpr kSubTaskMaxTimeouts = 10;
 
 // max number of peers that do not support the ledger replay feature
 // returned by the PeerSet before switch to fallback
-auto constexpr kMAX_NO_FEATURE_PEER_COUNT = 2;
+auto constexpr kMaxNoFeaturePeerCount = 2;
 // subtask timeout value after fallback
-auto constexpr kSUB_TASK_FALLBACK_TIMEOUT = std::chrono::milliseconds{1000};
+auto constexpr kSubTaskFallbackTimeout = std::chrono::milliseconds{1000};
 
 // for LedgerReplayer to limit the number of LedgerReplayTask
-std::uint32_t constexpr kMAX_TASKS = 10;
+std::uint32_t constexpr kMaxTasks = 10;
 
 // for LedgerReplayer to limit the number of ledgers to replay in one task
-std::uint32_t constexpr kMAX_TASK_SIZE = 256;
+std::uint32_t constexpr kMaxTaskSize = 256;
 
 // to limit the number of LedgerReplay related jobs in JobQueue
-std::uint32_t constexpr kMAX_QUEUED_TASKS = 100;
+std::uint32_t constexpr kMaxQueuedTasks = 100;
 }  // namespace LedgerReplayParameters
 
 /**

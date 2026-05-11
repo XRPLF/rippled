@@ -7,7 +7,7 @@ namespace xrpl {
 class LoanDelete : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
 
     explicit LoanDelete(ApplyContext& ctx) : Transactor(ctx)
     {

@@ -57,16 +57,15 @@ struct base_uint_test : beast::unit_test::Suite
     testComparisons()
     {
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6>
-                kTEST_ARGS{
-                    {{"0000000000000000", "0000000000000001"},
-                     {"0000000000000000", "ffffffffffffffff"},
-                     {"1234567812345678", "2345678923456789"},
-                     {"8000000000000000", "8000000000000001"},
-                     {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
-                     {"fffffffffffffffe", "ffffffffffffffff"}}};
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> kTestArgs{
+                {{"0000000000000000", "0000000000000001"},
+                 {"0000000000000000", "ffffffffffffffff"},
+                 {"1234567812345678", "2345678923456789"},
+                 {"8000000000000000", "8000000000000001"},
+                 {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
+                 {"fffffffffffffffe", "ffffffffffffffff"}}};
 
-            for (auto const& arg : kTEST_ARGS)
+            for (auto const& arg : kTestArgs)
             {
                 xrpl::BaseUint<64> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
@@ -87,8 +86,8 @@ struct base_uint_test : beast::unit_test::Suite
         }
 
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6>
-                kTEST_ARGS{{
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> kTestArgs{
+                {
                     {"000000000000000000000000", "000000000000000000000001"},
                     {"000000000000000000000000", "ffffffffffffffffffffffff"},
                     {"0123456789ab0123456789ab", "123456789abc123456789abc"},
@@ -97,7 +96,7 @@ struct base_uint_test : beast::unit_test::Suite
                     {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
                 }};
 
-            for (auto const& arg : kTEST_ARGS)
+            for (auto const& arg : kTestArgs)
             {
                 xrpl::BaseUint<96> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
@@ -336,7 +335,7 @@ struct base_uint_test : beast::unit_test::Suite
                 {
                 }
             };
-            constexpr StrBaseUint kTEST_CASES[] = {
+            constexpr StrBaseUint kTestCases[] = {
                 "000000000000000000000000",
                 "000000000000000000000001",
                 "fedcba9876543210ABCDEF91",
@@ -344,7 +343,7 @@ struct base_uint_test : beast::unit_test::Suite
                 "800000000000000000000000",
                 "fFfFfFfFfFfFfFfFfFfFfFfF"};
 
-            for (StrBaseUint const& t : kTEST_CASES)
+            for (StrBaseUint const& t : kTestCases)
             {
                 test96 t96;
                 BEAST_EXPECT(t96.parseHex(t.str));

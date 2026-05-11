@@ -52,7 +52,7 @@ private:
     /// transactions
     bool isBlocker_;
     /// Transaction fee
-    XRPAmount fee_;
+    XRPAmount fee_{};
     /// Does NOT include the fee.
     XRPAmount potentialSpend_;
     /// SeqProxy of transaction.

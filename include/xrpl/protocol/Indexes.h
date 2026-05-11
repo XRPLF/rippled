@@ -373,7 +373,7 @@ struct KeyletDesc
 
 // This list should include all of the keylet functions that take a single
 // AccountID parameter.
-std::array<KeyletDesc<AccountID const&>, 6> const kDIRECT_ACCOUNT_KEYLETS{
+std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
     {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
      {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
      {.function = &keylet::signers, .expectedLEName = jss::SignerList, .includeInTests = true},

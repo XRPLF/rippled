@@ -121,7 +121,7 @@ transferRate(ReadView const& view, AccountID const& issuer)
     if (sle && sle->isFieldPresent(sfTransferRate))
         return Rate{sle->getFieldU32(sfTransferRate)};
 
-    return kPARITY_RATE;
+    return kParityRate;
 }
 
 void
@@ -146,8 +146,8 @@ AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
     // This number must not be changed without an amendment
-    constexpr std::uint16_t kMAX_ACCOUNT_ATTEMPTS = 256;
-    for (std::uint16_t i = 0; i < kMAX_ACCOUNT_ATTEMPTS; ++i)
+    constexpr std::uint16_t kMaxAccountAttempts = 256;
+    for (std::uint16_t i = 0; i < kMaxAccountAttempts; ++i)
     {
         RipeshaHasher rsh;
         auto const hash = sha512Half(i, view.header().parentHash, pseudoOwnerKey);
@@ -168,7 +168,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields()
 {
-    static std::vector<SField const*> const kPSEUDO_FIELDS = []() {
+    static std::vector<SField const*> const kPseudoFields = []() {
         auto const ar = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
         if (!ar)
         {
@@ -188,7 +188,7 @@ getPseudoAccountFields()
         }
         return pseudoFields;
     }();
-    return kPSEUDO_FIELDS;
+    return kPseudoFields;
 }
 
 [[nodiscard]] bool

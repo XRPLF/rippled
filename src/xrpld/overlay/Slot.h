@@ -297,12 +297,12 @@ Slot<ClockType>::update(
     if (state_ != SlotState::Counting || peer.state == PeerState::Squelched)
         return;
 
-    if (++peer.count > kMIN_MESSAGE_THRESHOLD)
+    if (++peer.count > kMinMessageThreshold)
         considered_.insert(id);
-    if (peer.count == (kMAX_MESSAGE_THRESHOLD + 1))
+    if (peer.count == (kMaxMessageThreshold + 1))
         ++reachedThreshold_;
 
-    if (now - lastSelected_ > 2 * kMAX_UNSQUELCH_EXPIRE_DEFAULT)
+    if (now - lastSelected_ > 2 * kMaxUnsquelchExpireDefault)
     {
         JLOG(journal_.trace()) << "update: resetting due to inactivity " << Slice(validator) << " "
                                << id << " " << duration_cast<seconds>(now - lastSelected_).count();
@@ -389,13 +389,13 @@ std::chrono::seconds
 Slot<ClockType>::getSquelchDuration(std::size_t npeers)
 {
     using namespace std::chrono;
-    auto m = std::max(kMAX_UNSQUELCH_EXPIRE_DEFAULT, seconds{kSQUELCH_PER_PEER * npeers});
-    if (m > kMAX_UNSQUELCH_EXPIRE_PEERS)
+    auto m = std::max(kMaxUnsquelchExpireDefault, seconds{kSquelchPerPeer * npeers});
+    if (m > kMaxUnsquelchExpirePeers)
     {
-        m = kMAX_UNSQUELCH_EXPIRE_PEERS;
+        m = kMaxUnsquelchExpirePeers;
         JLOG(journal_.warn()) << "getSquelchDuration: unexpected squelch duration " << npeers;
     }
-    return seconds{xrpl::randInt(kMIN_UNSQUELCH_EXPIRE / 1s, m / 1s)};
+    return seconds{xrpl::randInt(kMinUnsquelchExpire / 1s, m / 1s)};
 }
 
 template <typename ClockType>
@@ -428,7 +428,7 @@ Slot<ClockType>::deletePeer(PublicKey const& validator, id_t id, bool erase)
         }
         else if (considered_.contains(id))
         {
-            if (it->second.count > kMAX_MESSAGE_THRESHOLD)
+            if (it->second.count > kMaxMessageThreshold)
                 --reachedThreshold_;
             considered_.erase(id);
         }
@@ -564,7 +564,7 @@ public:
         if (!reduceRelayReady_)
         {
             reduceRelayReady_ = reduce_relay::epoch<std::chrono::minutes>(ClockType::now()) >
-                reduce_relay::kWAIT_ON_BOOTUP;
+                reduce_relay::kWaitOnBootup;
         }
 
         return reduceRelayReady_;
@@ -782,7 +782,7 @@ Slots<ClockType>::deleteIdlePeers()
     for (auto it = slots_.begin(); it != slots_.end();)
     {
         it->second.deleteIdlePeer(it->first);
-        if (now - it->second.getLastSelected() > kMAX_UNSQUELCH_EXPIRE_DEFAULT)
+        if (now - it->second.getLastSelected() > kMaxUnsquelchExpireDefault)
         {
             JLOG(journal_.trace()) << "deleteIdlePeers: deleting idle slot " << Slice(it->first);
             it = slots_.erase(it);

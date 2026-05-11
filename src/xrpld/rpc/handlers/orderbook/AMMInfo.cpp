@@ -57,7 +57,7 @@ toIso8601(NetClock::time_point tp)
     return date::format(
         "%Y-%Om-%dT%H:%M:%OS%z",
         date::sys_time<system_clock::duration>(
-            system_clock::time_point{tp.time_since_epoch() + kEPOCH_OFFSET}));
+            system_clock::time_point{tp.time_since_epoch() + kEpochOffset}));
 }
 
 json::Value
@@ -219,7 +219,7 @@ doAMMInfo(RPC::JsonContext& context)
             json::Value auction;
             auto const timeSlot = ammAuctionTimeSlot(
                 ledger->header().parentCloseTime.time_since_epoch().count(), auctionSlot);
-            auction[jss::time_interval] = timeSlot ? *timeSlot : kAUCTION_SLOT_TIME_INTERVALS;
+            auction[jss::time_interval] = timeSlot ? *timeSlot : kAuctionSlotTimeIntervals;
             auctionSlot[sfPrice].setJson(auction[jss::price]);
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] = to_string(auctionSlot.getAccountID(sfAccount));

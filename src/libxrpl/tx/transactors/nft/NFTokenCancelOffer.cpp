@@ -24,7 +24,7 @@ NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
     if (auto const& ids = ctx.tx[sfNFTokenOffers];
-        ids.empty() || (ids.size() > kMAX_TOKEN_OFFER_CANCEL_COUNT))
+        ids.empty() || (ids.size() > kMaxTokenOfferCancelCount))
         return temMALFORMED;
 
     // In order to prevent unnecessarily overlarge transactions, we

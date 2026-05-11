@@ -979,7 +979,7 @@ removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast:
         {
             // offer is unfunded
             offerDelete(view, sleOffer, viewJ);
-            if (++removed == kUNFUNDED_OFFER_REMOVE_LIMIT)
+            if (++removed == kUnfundedOfferRemoveLimit)
                 return;
         }
     }
@@ -998,7 +998,7 @@ removeExpiredNFTokenOffers(
         if (auto const offer = view.peek(keylet::nftoffer(index)))
         {
             nft::deleteTokenOffer(view, offer);
-            if (++removed == kEXPIRED_OFFER_REMOVE_LIMIT)
+            if (++removed == kExpiredOfferRemoveLimit)
                 return;
         }
     }
@@ -1020,7 +1020,7 @@ removeDeletedTrustLines(
     std::vector<uint256> const& trustLines,
     beast::Journal viewJ)
 {
-    if (trustLines.size() > kMAX_DELETABLE_AMM_TRUST_LINES)
+    if (trustLines.size() > kMaxDeletableAmmTrustLines)
     {
         JLOG(viewJ.error()) << "removeDeletedTrustLines: deleted trustlines exceed max "
                             << trustLines.size();
@@ -1226,7 +1226,7 @@ Transactor::operator()()
     bool applied = isTesSuccess(result);
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
 
-    if (ctx_.size() > kOVERSIZE_META_DATA_CAP)
+    if (ctx_.size() > kOversizeMetaDataCap)
         result = tecOVERSIZE;
 
     if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))

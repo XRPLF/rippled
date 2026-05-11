@@ -57,7 +57,7 @@ class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 protected:
     enum class OfferType { Amm, Clob };
 
-    static constexpr uint32_t kMAX_OFFERS_TO_CONSUME{1000};
+    static constexpr uint32_t kMaxOffersToConsume{1000};
     Book book_;
     AccountID strandSrc_;
     AccountID strandDst_;
@@ -350,12 +350,12 @@ public:
         // Calculate amount that goes to the taker and the amount charged the
         // offer owner
         auto const trIn =
-            redeems(prevStepDir) ? this->rate(v, this->book_.in, this->strandDst_) : kPARITY_RATE;
+            redeems(prevStepDir) ? this->rate(v, this->book_.in, this->strandDst_) : kParityRate;
         // Always charge the transfer fee, even if the owner is the issuer,
         // unless the fee is waived
         auto const trOut = (this->ownerPaysTransferFee_ && waiveFee == WaiveTransferFee::No)
             ? this->rate(v, this->book_.out, this->strandDst_)
-            : kPARITY_RATE;
+            : kParityRate;
 
         Quality const q1{getRate(STAmount(trOut.value), STAmount(trIn.value))};
         return composedQuality(q1, ofrQ);
@@ -537,9 +537,9 @@ public:
         }
 
         auto const trIn =
-            redeems(prevStepDir) ? this->rate(v, this->book_.in, this->strandDst_) : kPARITY_RATE;
+            redeems(prevStepDir) ? this->rate(v, this->book_.in, this->strandDst_) : kParityRate;
         // AMM doesn't pay the transfer fee on the out amount
-        auto const trOut = kPARITY_RATE;
+        auto const trOut = kParityRate;
 
         Quality const q1{getRate(STAmount(trOut.value), STAmount(trIn.value))};
         return composedQuality(q1, ofrQ);
@@ -598,10 +598,10 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
     // AMM
     if (!res->isConst())
     {
-        auto static const kQ_ONE = Quality{STAmount::kU_RATE_ONE};
+        auto static const kQOne = Quality{STAmount::kURateOne};
         auto const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-            v, kQ_ONE, prevStepDir, WaiveTransferFee::Yes, OfferType::Amm, v.rules());
-        if (q == kQ_ONE)
+            v, kQOne, prevStepDir, WaiveTransferFee::Yes, OfferType::Amm, v.rules());
+        if (q == kQOne)
             return {res, dir};
         QualityFunction qf{q, QualityFunction::CLOBLikeTag{}};
         qf.combine(*res);
@@ -700,7 +700,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     std::uint32_t const trOut =
         ownerPaysTransferFee_ ? rate(sb, book_.out, this->strandDst_).value : QUALITY_ONE;
 
-    typename FlowOfferStream<TIn, TOut>::StepCounter counter(kMAX_OFFERS_TO_CONSUME, j_);
+    typename FlowOfferStream<TIn, TOut>::StepCounter counter(kMaxOffersToConsume, j_);
 
     FlowOfferStream<TIn, TOut> offers(sb, afView, book_, sb.parentCloseTime(), counter, j_);
 
@@ -1076,7 +1076,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
         setUnion(ofrsToRm, toRm);
 
         // Too many iterations, mark this strand as inactive
-        if (offersConsumed >= kMAX_OFFERS_TO_CONSUME)
+        if (offersConsumed >= kMaxOffersToConsume)
         {
             inactive_ = true;
         }
@@ -1238,7 +1238,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         setUnion(ofrsToRm, toRm);
 
         // Too many iterations, mark this strand as inactive (dry)
-        if (offersConsumed >= kMAX_OFFERS_TO_CONSUME)
+        if (offersConsumed >= kMaxOffersToConsume)
         {
             inactive_ = true;
         }
@@ -1387,7 +1387,7 @@ BookStep<TIn, TOut, TDerived>::rate(
 {
     auto const& issuer = asset.getIssuer();
     if (isXRP(issuer) || issuer == dstAccount)
-        return kPARITY_RATE;
+        return kParityRate;
     return asset.visit(
         [&](Issue const&) { return transferRate(view, issuer); },
         [&](MPTIssue const& issue) { return transferRate(view, issue.getMptID()); });

@@ -46,7 +46,7 @@ template <std::integral T>
 constexpr XRPAmount
 XRP(T xrp)
 {
-    return XRPAmount{static_cast<std::int64_t>(xrp) * kDROPS_PER_XRP.drops()};
+    return XRPAmount{static_cast<std::int64_t>(xrp) * kDropsPerXrp.drops()};
 }
 
 /**
@@ -58,7 +58,7 @@ template <std::floating_point T>
 XRPAmount
 XRP(T xrp)
 {
-    return XRPAmount{static_cast<std::int64_t>(std::round(xrp * kDROPS_PER_XRP.drops()))};
+    return XRPAmount{static_cast<std::int64_t>(std::round(xrp * kDropsPerXrp.drops()))};
 }
 
 /**
@@ -69,7 +69,7 @@ XRP(T xrp)
 inline XRPAmount
 XRP(Number const& xrp)
 {
-    return XRPAmount{static_cast<std::int64_t>(xrp * kDROPS_PER_XRP.drops())};
+    return XRPAmount{static_cast<std::int64_t>(xrp * kDropsPerXrp.drops())};
 }
 
 //------------------------------------------------------------------------------

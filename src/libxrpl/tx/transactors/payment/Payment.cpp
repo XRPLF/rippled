@@ -102,9 +102,9 @@ Payment::getFlagsMask(PreflightContext const& ctx)
     bool const isDstMPT = dstAmount.holds<MPTIssue>();
     bool const mpTokensV2 = ctx.rules.enabled(featureMPTokensV2);
 
-    constexpr std::uint32_t kTF_MPT_PAYMENT_MASK_V1 = ~(tfUniversal | tfPartialPayment);
+    constexpr std::uint32_t kTfMptPaymentMaskV1 = ~(tfUniversal | tfPartialPayment);
     std::uint32_t const paymentMask =
-        (isDstMPT && !mpTokensV2) ? kTF_MPT_PAYMENT_MASK_V1 : tfPaymentMask;
+        (isDstMPT && !mpTokensV2) ? kTfMptPaymentMaskV1 : tfPaymentMask;
 
     return paymentMask;
 }
@@ -376,8 +376,8 @@ Payment::preclaim(PreclaimContext const& ctx)
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
-        if (paths.size() > kMAX_PATH_SIZE || std::ranges::any_of(paths, [](STPath const& path) {
-                return path.size() > kMAX_PATH_LENGTH;
+        if (paths.size() > kMaxPathSize || std::ranges::any_of(paths, [](STPath const& path) {
+                return path.size() > kMaxPathLength;
             }))
         {
             return telBAD_PATH_COUNT;

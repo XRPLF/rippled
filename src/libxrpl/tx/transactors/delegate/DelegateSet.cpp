@@ -25,7 +25,7 @@ NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
-    if (permissions.size() > kPERMISSION_MAX_SIZE)
+    if (permissions.size() > kPermissionMaxSize)
         return temARRAY_TOO_LARGE;
 
     // can not authorize self

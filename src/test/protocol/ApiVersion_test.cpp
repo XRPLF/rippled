@@ -10,11 +10,10 @@ struct ApiVersion_test : beast::unit_test::Suite
         {
             testcase("API versions invariants");
 
-            static_assert(
-                RPC::kAPI_MINIMUM_SUPPORTED_VERSION <= RPC::kAPI_MAXIMUM_SUPPORTED_VERSION);
-            static_assert(RPC::kAPI_MINIMUM_SUPPORTED_VERSION <= RPC::kAPI_MAXIMUM_VALID_VERSION);
-            static_assert(RPC::kAPI_MAXIMUM_SUPPORTED_VERSION <= RPC::kAPI_MAXIMUM_VALID_VERSION);
-            static_assert(RPC::kAPI_BETA_VERSION <= RPC::kAPI_MAXIMUM_VALID_VERSION);
+            static_assert(RPC::kApiMinimumSupportedVersion <= RPC::kApiMaximumSupportedVersion);
+            static_assert(RPC::kApiMinimumSupportedVersion <= RPC::kApiMaximumValidVersion);
+            static_assert(RPC::kApiMaximumSupportedVersion <= RPC::kApiMaximumValidVersion);
+            static_assert(RPC::kApiBetaVersion <= RPC::kApiMaximumValidVersion);
 
             BEAST_EXPECT(true);
         }
@@ -23,14 +22,14 @@ struct ApiVersion_test : beast::unit_test::Suite
             // Update when we change versions
             testcase("API versions");
 
-            static_assert(RPC::kAPI_MINIMUM_SUPPORTED_VERSION >= 1);
-            static_assert(RPC::kAPI_MINIMUM_SUPPORTED_VERSION < 2);
-            static_assert(RPC::kAPI_MAXIMUM_SUPPORTED_VERSION >= 2);
-            static_assert(RPC::kAPI_MAXIMUM_SUPPORTED_VERSION < 3);
-            static_assert(RPC::kAPI_MAXIMUM_VALID_VERSION >= 3);
-            static_assert(RPC::kAPI_MAXIMUM_VALID_VERSION < 4);
-            static_assert(RPC::kAPI_BETA_VERSION >= 3);
-            static_assert(RPC::kAPI_BETA_VERSION < 4);
+            static_assert(RPC::kApiMinimumSupportedVersion >= 1);
+            static_assert(RPC::kApiMinimumSupportedVersion < 2);
+            static_assert(RPC::kApiMaximumSupportedVersion >= 2);
+            static_assert(RPC::kApiMaximumSupportedVersion < 3);
+            static_assert(RPC::kApiMaximumValidVersion >= 3);
+            static_assert(RPC::kApiMaximumValidVersion < 4);
+            static_assert(RPC::kApiBetaVersion >= 3);
+            static_assert(RPC::kApiBetaVersion < 4);
 
             BEAST_EXPECT(true);
         }

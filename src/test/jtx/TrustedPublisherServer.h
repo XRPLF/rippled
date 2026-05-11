@@ -101,7 +101,7 @@ public:
         SecretKey const& ssk,
         int seq)
     {
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = seq;
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = spk;
@@ -545,11 +545,11 @@ private:
                     else
                     {
                         int refresh = 5;
-                        constexpr char const* kREFRESH_PREFIX = "/validators2/refresh/";
-                        if (boost::starts_with(path, kREFRESH_PREFIX))
+                        constexpr char const* kRefreshPrefix = "/validators2/refresh/";
+                        if (boost::starts_with(path, kRefreshPrefix))
                         {
                             refresh = boost::lexical_cast<unsigned int>(
-                                path.substr(strlen(kREFRESH_PREFIX)));
+                                path.substr(strlen(kRefreshPrefix)));
                         }
                         res.body() = getList2_(refresh);
                     }
@@ -569,11 +569,11 @@ private:
                     else
                     {
                         int refresh = 5;
-                        constexpr char const* kREFRESH_PREFIX = "/validators/refresh/";
-                        if (boost::starts_with(path, kREFRESH_PREFIX))
+                        constexpr char const* kRefreshPrefix = "/validators/refresh/";
+                        if (boost::starts_with(path, kRefreshPrefix))
                         {
                             refresh = boost::lexical_cast<unsigned int>(
-                                path.substr(strlen(kREFRESH_PREFIX)));
+                                path.substr(strlen(kRefreshPrefix)));
                         }
                         res.body() = getList_(refresh);
                     }

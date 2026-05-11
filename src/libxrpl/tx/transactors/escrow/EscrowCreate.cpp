@@ -107,7 +107,7 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
         return temDISABLED;
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT} || amount <= beast::kZERO)
+    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -467,7 +467,7 @@ EscrowCreate::doApply()
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
     {
         auto const xferRate = transferRate(ctx_.view(), amount);
-        if (xferRate != kPARITY_RATE)
+        if (xferRate != kParityRate)
             (*slep)[sfTransferRate] = xferRate.value;
     }
 

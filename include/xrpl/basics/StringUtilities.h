@@ -30,7 +30,7 @@ template <class Iterator>
 std::optional<Blob>
 strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 {
-    static constexpr std::array<int, 256> const kDIGIT_LOOKUP_TABLE = []() {
+    static constexpr std::array<int, 256> const kDigitLookupTable = []() {
         std::array<int, 256> t{};
 
         for (auto& x : t)
@@ -56,7 +56,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     if (strSize & 1)
     {
-        int c = kDIGIT_LOOKUP_TABLE[*iter++];
+        int c = kDigitLookupTable[*iter++];
 
         if (c < 0)
             return {};
@@ -66,12 +66,12 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     while (iter != end)
     {
-        int const cHigh = kDIGIT_LOOKUP_TABLE[*iter++];
+        int const cHigh = kDigitLookupTable[*iter++];
 
         if (cHigh < 0)
             return {};
 
-        int const cLow = kDIGIT_LOOKUP_TABLE[*iter++];
+        int const cLow = kDigitLookupTable[*iter++];
 
         if (cLow < 0)
             return {};

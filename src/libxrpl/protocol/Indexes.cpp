@@ -143,9 +143,9 @@ getBookBase(Book const& book)
 uint256
 getQualityNext(uint256 const& uBase)
 {
-    static constexpr uint256 kNEXT_QUALITY(
+    static constexpr uint256 kNextQuality(
         "0000000000000000000000000000000000000000000000010000000000000000");
-    return uBase + kNEXT_QUALITY;
+    return uBase + kNextQuality;
 }
 
 std::uint64_t
@@ -391,7 +391,7 @@ nftpageMin(AccountID const& owner)
 Keylet
 nftpageMax(AccountID const& owner)
 {
-    uint256 id = nft::kPAGE_MASK;
+    uint256 id = nft::kPageMask;
     std::memcpy(id.data(), owner.data(), owner.size());
     return {ltNFTOKEN_PAGE, id};
 }
@@ -400,7 +400,7 @@ Keylet
 nftpage(Keylet const& k, uint256 const& token)
 {
     XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftpage : valid input type");
-    return {ltNFTOKEN_PAGE, (k.key & ~nft::kPAGE_MASK) + (token & nft::kPAGE_MASK)};
+    return {ltNFTOKEN_PAGE, (k.key & ~nft::kPageMask) + (token & nft::kPageMask)};
 }
 
 Keylet

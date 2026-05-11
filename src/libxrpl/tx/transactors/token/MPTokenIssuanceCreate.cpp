@@ -57,7 +57,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const fee = ctx.tx[~sfTransferFee])
     {
-        if (fee > kMAX_TRANSFER_FEE)
+        if (fee > kMaxTransferFee)
             return temBAD_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
@@ -78,7 +78,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->empty() || metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
+        if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -88,7 +88,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         if (maxAmt == 0)
             return temMALFORMED;
 
-        if (maxAmt > kMAX_MP_TOKEN_AMOUNT)
+        if (maxAmt > kMaxMpTokenAmount)
             return temMALFORMED;
     }
     return tesSUCCESS;

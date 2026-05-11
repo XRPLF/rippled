@@ -23,9 +23,9 @@ namespace xrpl {
 TEST(json_value, limits)
 {
     using namespace json;
-    static_assert(Value::kMIN_INT == Int(~(UInt(-1) / 2)));
-    static_assert(Value::kMAX_INT == Int(UInt(-1) / 2));
-    static_assert(Value::kMAX_U_INT == UInt(-1));
+    static_assert(Value::kMinInt == Int(~(UInt(-1) / 2)));
+    static_assert(Value::kMaxInt == Int(UInt(-1) / 2));
+    static_assert(Value::kMaxUInt == UInt(-1));
 }
 
 TEST(json_value, construct_and_compare_Json_StaticString)
@@ -54,7 +54,7 @@ TEST(json_value, construct_and_compare_Json_StaticString)
 TEST(json_value, different_types)
 {
     // Exercise ValueType constructor
-    static constexpr json::StaticString kSTATIC_STR{"staticStr"};
+    static constexpr json::StaticString kStaticStr{"staticStr"};
 
     auto testCopy = [](json::ValueType typ) {
         json::Value val{typ};
@@ -139,7 +139,7 @@ TEST(json_value, different_types)
         EXPECT_FALSE(stringV.isObjectOrNull());
     }
     {
-        json::Value const staticStrV{kSTATIC_STR};
+        json::Value const staticStrV{kStaticStr};
         {
             json::Value const cpy{staticStrV};
             EXPECT_EQ(staticStrV.type(), json::StringValue);
@@ -1126,23 +1126,23 @@ TEST(json_value, access_members)
     val = json::Value(json::ObjectValue);
     EXPECT_EQ(val.type(), json::ObjectValue);
     EXPECT_EQ(val.size(), 0);
-    static json::StaticString const kSTATIC_THREE("three");
-    val[kSTATIC_THREE] = 3;
+    static json::StaticString const kStaticThree("three");
+    val[kStaticThree] = 3;
     val["two"] = 2;
     EXPECT_EQ(val.size(), 2);
     EXPECT_TRUE(val.isValidIndex(1));
     EXPECT_FALSE(val.isValidIndex(2));
-    EXPECT_EQ(val[kSTATIC_THREE], 3);
+    EXPECT_EQ(val[kStaticThree], 3);
     EXPECT_TRUE(val.isMember("two"));
-    EXPECT_TRUE(val.isMember(kSTATIC_THREE));
+    EXPECT_TRUE(val.isMember(kStaticThree));
     EXPECT_FALSE(val.isMember("key"));
     {
         json::Value const constVal = val;
         EXPECT_EQ(constVal["two"], 2);
         EXPECT_EQ(constVal["four"].type(), json::NullValue);
-        EXPECT_EQ(constVal[kSTATIC_THREE], 3);
+        EXPECT_EQ(constVal[kStaticThree], 3);
         EXPECT_TRUE(constVal.isMember("two"));
-        EXPECT_TRUE(constVal.isMember(kSTATIC_THREE));
+        EXPECT_TRUE(constVal.isMember(kStaticThree));
         EXPECT_FALSE(constVal.isMember("key"));
         EXPECT_EQ(val.get(std::string("two"), "backup"), 2);
         EXPECT_EQ(val.get("missing", "default2"), "default2");
@@ -1174,18 +1174,18 @@ TEST(json_value, remove_members)
     EXPECT_EQ(val.removeMember(std::string("member")).type(), json::NullValue);
 
     val = json::Value(json::ObjectValue);
-    static json::StaticString const kSTATIC_THREE("three");
-    val[kSTATIC_THREE] = 3;
+    static json::StaticString const kStaticThree("three");
+    val[kStaticThree] = 3;
     val["two"] = 2;
     EXPECT_EQ(val.size(), 2);
 
     EXPECT_EQ(val.removeMember(std::string("six")).type(), json::NullValue);
     EXPECT_EQ(val.size(), 2);
 
-    EXPECT_EQ(val.removeMember(kSTATIC_THREE), 3);
+    EXPECT_EQ(val.removeMember(kStaticThree), 3);
     EXPECT_EQ(val.size(), 1);
 
-    EXPECT_EQ(val.removeMember(kSTATIC_THREE).type(), json::NullValue);
+    EXPECT_EQ(val.removeMember(kStaticThree).type(), json::NullValue);
     EXPECT_EQ(val.size(), 1);
 
     EXPECT_EQ(val.removeMember(std::string("two")), 2);
@@ -1297,14 +1297,14 @@ TEST(json_value, nest_limits)
 
         {
             // Within object nest limit
-            auto json{nest(std::min(10u, json::Reader::kNEST_LIMIT))};
+            auto json{nest(std::min(10u, json::Reader::kNestLimit))};
             json::Value j;
             EXPECT_TRUE(r.parse(json, j));
         }
 
         {
             // Exceed object nest limit
-            auto json{nest(json::Reader::kNEST_LIMIT + 1)};
+            auto json{nest(json::Reader::kNestLimit + 1)};
             json::Value j;
             EXPECT_FALSE(r.parse(json, j));
         }
@@ -1321,7 +1321,7 @@ TEST(json_value, nest_limits)
     };
     {
         // Exceed array nest limit
-        auto json{nest(json::Reader::kNEST_LIMIT + 1)};
+        auto json{nest(json::Reader::kNestLimit + 1)};
         json::Value j;
         EXPECT_FALSE(r.parse(json, j));
     }

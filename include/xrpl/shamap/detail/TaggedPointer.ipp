@@ -14,32 +14,32 @@ namespace {
 // Given n children, an array of size `*std::lower_bound(boundaries.begin(),
 // boundaries.end(), n);` is used to store the children. Note that the last
 // element must be the number of children in a dense array.
-constexpr std::array<std::uint8_t, 4> kBOUNDARIES{2, 4, 6, SHAMapInnerNode::kBRANCH_FACTOR};
+constexpr std::array<std::uint8_t, 4> kBOUNDARIES{2, 4, 6, SHAMapInnerNode::kBranchFactor};
 static_assert(
     kBOUNDARIES.size() <= 4,
     "The hashesAndChildren member uses a tagged array format with two bits "
     "reserved for the tag. This supports at most 4 values.");
 static_assert(
-    kBOUNDARIES.back() == SHAMapInnerNode::kBRANCH_FACTOR,
+    kBOUNDARIES.back() == SHAMapInnerNode::kBranchFactor,
     "Last element of boundaries must be number of children in a dense array");
 
 // Terminology: A chunk is the memory being allocated from a block. A block
 // contains multiple chunks. This is the terminology the boost documentation
 // uses. Pools use "Simple Segregated Storage" as their storage format.
-constexpr size_t kELEMENT_SIZE_BYTES =
+constexpr size_t kElementSizeBytes =
     (sizeof(SHAMapHash) + sizeof(intr_ptr::SharedPtr<SHAMapTreeNode>));
 
-constexpr size_t kBLOCK_SIZE_BYTES = kilobytes(512);
+constexpr size_t kBlockSizeBytes = kilobytes(512);
 
 template <std::size_t... I>
 constexpr std::array<size_t, kBOUNDARIES.size()>
 initArrayChunkSizeBytes(std::index_sequence<I...>)
 {
     return std::array<size_t, kBOUNDARIES.size()>{
-        kBOUNDARIES[I] * kELEMENT_SIZE_BYTES...,
+        kBOUNDARIES[I] * kElementSizeBytes...,
     };
 }
-constexpr auto kARRAY_CHUNK_SIZE_BYTES =
+constexpr auto kArrayChunkSizeBytes =
     initArrayChunkSizeBytes(std::make_index_sequence<kBOUNDARIES.size()>{});
 
 template <std::size_t... I>
@@ -47,16 +47,16 @@ constexpr std::array<size_t, kBOUNDARIES.size()>
 initArrayChunksPerBlock(std::index_sequence<I...>)
 {
     return std::array<size_t, kBOUNDARIES.size()>{
-        kBLOCK_SIZE_BYTES / kARRAY_CHUNK_SIZE_BYTES[I]...,
+        kBlockSizeBytes / kArrayChunkSizeBytes[I]...,
     };
 }
-constexpr auto kCHUNKS_PER_BLOCK =
+constexpr auto kChunksPerBlock =
     initArrayChunksPerBlock(std::make_index_sequence<kBOUNDARIES.size()>{});
 
 [[nodiscard]] inline std::uint8_t
 numAllocatedChildren(std::uint8_t n)
 {
-    XRPL_ASSERT(n <= SHAMapInnerNode::kBRANCH_FACTOR, "xrpl::numAllocatedChildren : valid input");
+    XRPL_ASSERT(n <= SHAMapInnerNode::kBranchFactor, "xrpl::numAllocatedChildren : valid input");
     return *std::ranges::lower_bound(kBOUNDARIES, n);
 }
 
@@ -64,7 +64,7 @@ numAllocatedChildren(std::uint8_t n)
 boundariesIndex(std::uint8_t numChildren)
 {
     XRPL_ASSERT(
-        numChildren <= SHAMapInnerNode::kBRANCH_FACTOR, "xrpl::boundariesIndex : valid input");
+        numChildren <= SHAMapInnerNode::kBranchFactor, "xrpl::boundariesIndex : valid input");
     return std::distance(kBOUNDARIES.begin(), std::ranges::lower_bound(kBOUNDARIES, numChildren));
 }
 
@@ -75,14 +75,14 @@ initAllocateArrayFuns(std::index_sequence<I...>)
     return std::array<std::function<void*()>, kBOUNDARIES.size()>{
         boost::singleton_pool<
             boost::fast_pool_allocator_tag,
-            kARRAY_CHUNK_SIZE_BYTES[I],
+            kArrayChunkSizeBytes[I],
             boost::default_user_allocator_new_delete,
             std::mutex,
-            kCHUNKS_PER_BLOCK[I],
-            kCHUNKS_PER_BLOCK[I]>::malloc...,
+            kChunksPerBlock[I],
+            kChunksPerBlock[I]>::malloc...,
     };
 }
-std::array<std::function<void*()>, kBOUNDARIES.size()> const kALLOCATE_ARRAY_FUNS =
+std::array<std::function<void*()>, kBOUNDARIES.size()> const kAllocateArrayFuns =
     initAllocateArrayFuns(std::make_index_sequence<kBOUNDARIES.size()>{});
 
 template <std::size_t... I>
@@ -92,14 +92,14 @@ initFreeArrayFuns(std::index_sequence<I...>)
     return std::array<std::function<void(void*)>, kBOUNDARIES.size()>{
         static_cast<void (*)(void*)>(boost::singleton_pool<
                                      boost::fast_pool_allocator_tag,
-                                     kARRAY_CHUNK_SIZE_BYTES[I],
+                                     kArrayChunkSizeBytes[I],
                                      boost::default_user_allocator_new_delete,
                                      std::mutex,
-                                     kCHUNKS_PER_BLOCK[I],
-                                     kCHUNKS_PER_BLOCK[I]>::free)...,
+                                     kChunksPerBlock[I],
+                                     kChunksPerBlock[I]>::free)...,
     };
 }
-std::array<std::function<void(void*)>, kBOUNDARIES.size()> const kFREE_ARRAY_FUNS =
+std::array<std::function<void(void*)>, kBOUNDARIES.size()> const kFreeArrayFuns =
     initFreeArrayFuns(std::make_index_sequence<kBOUNDARIES.size()>{});
 
 template <std::size_t... I>
@@ -109,14 +109,14 @@ initIsFromArrayFuns(std::index_sequence<I...>)
     return std::array<std::function<bool(void*)>, kBOUNDARIES.size()>{
         boost::singleton_pool<
             boost::fast_pool_allocator_tag,
-            kARRAY_CHUNK_SIZE_BYTES[I],
+            kArrayChunkSizeBytes[I],
             boost::default_user_allocator_new_delete,
             std::mutex,
-            kCHUNKS_PER_BLOCK[I],
-            kCHUNKS_PER_BLOCK[I]>::is_from...,
+            kChunksPerBlock[I],
+            kChunksPerBlock[I]>::is_from...,
     };
 }
-std::array<std::function<bool(void*)>, kBOUNDARIES.size()> const kIS_FROM_ARRAY_FUNS =
+std::array<std::function<bool(void*)>, kBOUNDARIES.size()> const kIsFromArrayFuns =
     initIsFromArrayFuns(std::make_index_sequence<kBOUNDARIES.size()>{});
 
 // This function returns an untagged pointer
@@ -124,20 +124,20 @@ std::array<std::function<bool(void*)>, kBOUNDARIES.size()> const kIS_FROM_ARRAY_
 allocateArrays(std::uint8_t numChildren)
 {
     auto const i = boundariesIndex(numChildren);
-    return {i, kALLOCATE_ARRAY_FUNS[i]()};
+    return {i, kAllocateArrayFuns[i]()};
 }
 
 // This function takes an untagged pointer
 inline void
 deallocateArrays(std::uint8_t boundaryIndex, void* p)
 {
-    XRPL_ASSERT(kIS_FROM_ARRAY_FUNS[boundaryIndex](p), "xrpl::deallocateArrays : valid inputs");
-    kFREE_ARRAY_FUNS[boundaryIndex](p);
+    XRPL_ASSERT(kIsFromArrayFuns[boundaryIndex](p), "xrpl::deallocateArrays : valid inputs");
+    kFreeArrayFuns[boundaryIndex](p);
 }
 
 // Used in `iterChildren` and elsewhere as the hash value for sparse arrays when
 // the hash isn't actually stored in the array.
-SHAMapHash const kZERO_SHA_MAP_HASH;
+SHAMapHash const kZeroShaMapHash;
 
 }  // namespace
 
@@ -146,17 +146,17 @@ void
 TaggedPointer::iterChildren(std::uint16_t isBranch, F&& f) const
 {
     auto [numAllocated, hashes, _] = getHashesAndChildren();
-    if (numAllocated == SHAMapInnerNode::kBRANCH_FACTOR)
+    if (numAllocated == SHAMapInnerNode::kBranchFactor)
     {
         // dense case
-        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
             f(hashes[i]);
     }
     else
     {
         // sparse case
         int curHashI = 0;
-        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
             if ((1 << i) & isBranch)
             {
@@ -164,7 +164,7 @@ TaggedPointer::iterChildren(std::uint16_t isBranch, F&& f) const
             }
             else
             {
-                f(kZERO_SHA_MAP_HASH);
+                f(kZeroShaMapHash);
             }
         }
     }
@@ -174,10 +174,10 @@ template <class F>
 void
 TaggedPointer::iterNonEmptyChildIndexes(std::uint16_t isBranch, F&& f) const
 {
-    if (capacity() == SHAMapInnerNode::kBRANCH_FACTOR)
+    if (capacity() == SHAMapInnerNode::kBranchFactor)
     {
         // dense case
-        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
             if ((1 << i) & isBranch)
             {
@@ -189,7 +189,7 @@ TaggedPointer::iterNonEmptyChildIndexes(std::uint16_t isBranch, F&& f) const
     {
         // sparse case
         int curHashI = 0;
-        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
             if ((1 << i) & isBranch)
             {
@@ -251,7 +251,7 @@ inline TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t numChildren)
         "xrpl::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
         "maximum tag");
     XRPL_ASSERT(
-        (reinterpret_cast<std::uintptr_t>(p) & kPTR_MASK) == reinterpret_cast<std::uintptr_t>(p),
+        (reinterpret_cast<std::uintptr_t>(p) & kPtrMask) == reinterpret_cast<std::uintptr_t>(p),
         "xrpl::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
         "valid pointer");
     tp_ = reinterpret_cast<std::uintptr_t>(p) + tag;
@@ -275,7 +275,7 @@ inline TaggedPointer::TaggedPointer(
         auto [srcDstNumAllocated, srcDstHashes, srcDstChildren] = getHashesAndChildren();
         bool const srcDstIsDense = isDense();
         int srcDstIndex = 0;
-        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
             auto const mask = (1 << i);
             bool const inSrc = (srcBranches & mask) != 0;
@@ -354,7 +354,7 @@ inline TaggedPointer::TaggedPointer(
         bool const srcIsDense = src.isDense();
         bool const dstIsDense = dst.isDense();
         int srcIndex = 0, dstIndex = 0;
-        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
             auto const mask = (1 << i);
             bool const inSrc = (srcBranches & mask) != 0;
@@ -440,7 +440,7 @@ inline TaggedPointer::TaggedPointer(
     std::tie(newNumAllocated, newHashes, newChildren) = newHashesAndChildren.getHashesAndChildren();
     std::tie(std::ignore, oldHashes, oldChildren) = getHashesAndChildren();
 
-    if (newNumAllocated == SHAMapInnerNode::kBRANCH_FACTOR)
+    if (newNumAllocated == SHAMapInnerNode::kBranchFactor)
     {
         // new arrays are dense, old arrays are sparse
         iterNonEmptyChildIndexes(isBranch, [&](auto branchNum, auto indexNum) {
@@ -449,7 +449,7 @@ inline TaggedPointer::TaggedPointer(
                 intr_ptr::SharedPtr<SHAMapTreeNode>{std::move(oldChildren[indexNum])};
         });
         // Run the constructors for the remaining elements
-        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
             if (((1 << i) & isBranch) != 0)
                 continue;
@@ -508,19 +508,19 @@ TaggedPointer::operator=(TaggedPointer&& other)
 [[nodiscard]] inline std::pair<std::uint8_t, void*>
 TaggedPointer::decode() const
 {
-    return {tp_ & kTAG_MASK, reinterpret_cast<void*>(tp_ & kPTR_MASK)};
+    return {tp_ & kTagMask, reinterpret_cast<void*>(tp_ & kPtrMask)};
 }
 
 [[nodiscard]] inline std::uint8_t
 TaggedPointer::capacity() const
 {
-    return kBOUNDARIES[tp_ & kTAG_MASK];
+    return kBOUNDARIES[tp_ & kTagMask];
 }
 
 [[nodiscard]] inline bool
 TaggedPointer::isDense() const
 {
-    return (tp_ & kTAG_MASK) == kBOUNDARIES.size() - 1;
+    return (tp_ & kTagMask) == kBOUNDARIES.size() - 1;
 }
 
 [[nodiscard]] inline std::tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
@@ -537,7 +537,7 @@ TaggedPointer::getHashesAndChildren() const
 [[nodiscard]] inline SHAMapHash*
 TaggedPointer::getHashes() const
 {
-    return reinterpret_cast<SHAMapHash*>(tp_ & kPTR_MASK);
+    return reinterpret_cast<SHAMapHash*>(tp_ & kPtrMask);
 };
 
 [[nodiscard]] inline intr_ptr::SharedPtr<SHAMapTreeNode>*

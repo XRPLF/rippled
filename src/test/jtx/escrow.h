@@ -66,10 +66,10 @@ std::array<std::uint8_t, 39> const kCB3 = {
      0xA0, 0x9C, 0x1D, 0xFD, 0x57, 0x0D, 0x15, 0x85, 0x8B, 0xD4, 0x81, 0x01, 0x04}};
 
 /** Set the "FinishAfter" time tag on a JTx */
-auto const kFINISH_TIME = JTxFieldWrapper<TimePointField>(sfFinishAfter);
+auto const kFinishTime = JTxFieldWrapper<TimePointField>(sfFinishAfter);
 
 /** Set the "CancelAfter" time tag on a JTx */
-auto const kCANCEL_TIME = JTxFieldWrapper<TimePointField>(sfCancelAfter);
+auto const kCancelTime = JTxFieldWrapper<TimePointField>(sfCancelAfter);
 
 auto const kCONDITION = JTxFieldWrapper<BlobField>(sfCondition);
 

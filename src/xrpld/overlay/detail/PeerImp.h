@@ -190,7 +190,7 @@ private:
 
     struct ChargeWithContext
     {
-        Resource::Charge fee = Resource::kFEE_TRIVIAL_PEER;
+        Resource::Charge fee = Resource::kFeeTrivialPeer;
         std::string context{};  // NOLINT(readability-redundant-member-init)
 
         void
@@ -834,18 +834,18 @@ PeerImp::PeerImp(
     , creationTime_(clock_type::now())
     , squelch_(app_.getJournal("Squelch"))
     , usage_(usage)
-    , fee_{.fee = Resource::kFEE_TRIVIAL_PEER}
+    , fee_{.fee = Resource::kFeeTrivialPeer}
     , slot_(std::move(slot))
     , response_(std::move(response))
     , headers_(response_)
     , compressionEnabled_(
-          peerFeatureEnabled(headers_, kFEATURE_COMPR, "lz4", app_.config().COMPRESSION)
+          peerFeatureEnabled(headers_, kFeatureCompr, "lz4", app_.config().COMPRESSION)
               ? Compressed::On
               : Compressed::Off)
     , txReduceRelayEnabled_(
-          peerFeatureEnabled(headers_, kFEATURE_TXRR, app_.config().TX_REDUCE_RELAY_ENABLE))
+          peerFeatureEnabled(headers_, kFeatureTxrr, app_.config().TX_REDUCE_RELAY_ENABLE))
     , ledgerReplayEnabled_(
-          peerFeatureEnabled(headers_, kFEATURE_LEDGER_REPLAY, app_.config().LEDGER_REPLAY))
+          peerFeatureEnabled(headers_, kFeatureLedgerReplay, app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
     readBuffer_.commit(
@@ -854,7 +854,7 @@ PeerImp::PeerImp(
                           << " vp reduce-relay base squelch enabled "
                           << peerFeatureEnabled(
                                  headers_,
-                                 kFEATURE_VPRR,
+                                 kFeatureVprr,
                                  app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
                           << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
                           << remoteAddress_ << " " << id_;

@@ -22,9 +22,9 @@ safeCast(Src s) noexcept
 {
     static_assert(
         std::is_signed_v<Dest> || std::is_unsigned_v<Src>, "Cannot cast signed to unsigned");
-    constexpr unsigned kNOT_SAME = std::is_signed_v<Dest> != std::is_signed_v<Src>;
+    constexpr unsigned kNotSame = std::is_signed_v<Dest> != std::is_signed_v<Src>;
     static_assert(
-        sizeof(Dest) >= sizeof(Src) + kNOT_SAME,
+        sizeof(Dest) >= sizeof(Src) + kNotSame,
         "Destination is too small to hold all values of source");
     return static_cast<Dest>(s);
 }

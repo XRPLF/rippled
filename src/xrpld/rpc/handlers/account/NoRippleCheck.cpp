@@ -75,7 +75,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kNO_RIPPLE_CHECK, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kNoRippleCheck, context))
         return *err;
 
     bool transactions = false;

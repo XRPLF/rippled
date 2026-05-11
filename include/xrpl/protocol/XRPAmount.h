@@ -237,12 +237,12 @@ public:
 };
 
 /** Number of drops per 1 XRP */
-constexpr XRPAmount kDROPS_PER_XRP{1'000'000};
+constexpr XRPAmount kDropsPerXrp{1'000'000};
 
 constexpr double
 XRPAmount::decimalXRP() const
 {
-    return static_cast<double>(drops_) / kDROPS_PER_XRP.drops();
+    return static_cast<double>(drops_) / kDropsPerXrp.drops();
 }
 
 // Output XRPAmount as just the drops value.

@@ -155,7 +155,7 @@ private:
     std::chrono::steady_clock::time_point quick_reply_;
     std::chrono::steady_clock::time_point full_reply_;
 
-    static unsigned int const kMAX_PATHS = 4;
+    static unsigned int const kMaxPaths = 4;
 };
 
 }  // namespace xrpl

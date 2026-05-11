@@ -7,7 +7,7 @@ namespace xrpl {
 class NFTokenBurn : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
 
     explicit NFTokenBurn(ApplyContext& ctx) : Transactor(ctx)
     {
