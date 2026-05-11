@@ -34,23 +34,22 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
     {
         asset_ = xrpIssue();
     }
-    // Check if MPT or IOU. The second 160-bit field is the format discriminator:
-    //
-    //   V1 (noAccount, pre-fixCleanup3_2_0):
-    //     [issuer 160][noAccount 160][sequence 32 via get32/add32]
-    //     get32() converts BE wire bytes to host order; the matching add32()
-    //     converts back, so the round-trip is self-consistent on any single
-    //     architecture. However, the wire bytes are host-order (non-canonical on
-    //     LE), so external clients must byte-reverse the sequence field.
-    //
-    //   V2 (xrpAccount, fixCleanup3_2_0 enabled):
-    //     [issuer 160][xrpAccount 160][sequence 32 raw BE bytes]
-    //     The sequence is written and read as raw bytes, preserving the
-    //     canonical big-endian encoding produced by makeMptID(). Clients may
-    //     embed the mpt_issuance_id bytes from RPC directly without reversal.
-    //
-    //   Neither sentinel (non-zero, non-one):
-    //     Regular IOU trust line.
+// The next 160-bit field selects the format:
+//   noAccount  → MPT V1 (pre-fixCleanup3_2_0)
+//   xrpAccount → MPT V2 (fixCleanup3_2_0)
+//   else       → regular IOU; the field is the issuer account.
+//
+// Both MPT versions carry the 4-byte sequence next, but differ
+// in byte order:
+//
+//   V1 uses add32()/get32(), which swap host↔BE. The source
+//   bytes (first 4 of MPTID) are already canonical BE per
+//   makeMptID(), so on LE hosts the swap emits a byte-reversed
+//   sequence to the wire. Reads invert the same swap, so
+//   round-trips on a single arch are consistent.
+//
+//   V2 uses addRaw()/getRaw(): the canonical BE bytes from
+//   makeMptID() reach the wire untouched.
     else
     {
         AccountID const account = static_cast<AccountID>(sit.get160());
