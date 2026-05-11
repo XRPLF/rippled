@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Run from project root
+cd /Users/ychen/Desktop/rippled || exit
+
+# Install dependencies using Conan (from project root, output into build/)
+conan install . --output-folder build --build missing --settings build_type=Debug
+
+# Configure cmake from project root
+cmake -B build \
+      -DCMAKE_TOOLCHAIN_FILE=build/generators/conan_toolchain.cmake \
+      -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+      -DCMAKE_BUILD_TYPE=Debug \
+      -Dxrpld=ON -Dtests=ON
+
+# Copy compile_commands.json to project root for IDE
+cp -f build/compile_commands.json .
+
+# Build
+cmake --build build -- -j8
+
+echo "Build and installation complete!"
