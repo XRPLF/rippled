@@ -21,6 +21,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <algorithm>
 #include <memory>
 #include <stdexcept>
 
@@ -148,7 +149,29 @@ VaultDeposit::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const amount = ctx_.tx[sfAmount];
+    auto const txAmount = ctx_.tx[sfAmount];
+    // Clamp the deposit to the vault's coarsest grid (Downward — never
+    // exceed the signed amount) so a sub-ULP tail can't be absorbed  while shares mint on the
+    // original amount. Residual sub-ULP noise from the shares-roundtrip is admitted by
+    // accountSendExact's lenient predicate; larger mismatches are rejected there.
+    STAmount amount = txAmount;
+    if (view().rules().enabled(fixCleanup3_2_0) && !amount.native() && !amount.holds<MPTIssue>())
+    {
+        Asset const vaultAsset = vault->at(sfAsset);
+        int const availScale = scale(vault->at(sfAssetsAvailable), vaultAsset);
+        int const totalScale = scale(vault->at(sfAssetsTotal), vaultAsset);
+        int const gridScale = std::max(totalScale, availScale);
+        Number const clamped =
+            roundToAsset(vaultAsset, txAmount, gridScale, Number::RoundingMode::Downward);
+        if (clamped == beast::kZERO)
+        {
+            JLOG(j_.warn()) << "VaultDeposit: amount " << txAmount.getFullText()
+                            << " clamps to zero at vault scale " << gridScale;
+            return tecPRECISION_LOSS;
+        }
+        amount = STAmount{vaultAsset, clamped};
+    }
+
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));

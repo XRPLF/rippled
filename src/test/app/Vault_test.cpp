@@ -6928,6 +6928,98 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
+    // Same-scale deposit clamping. Vault at 1.5e16 (sfAssetsTotal and
+    // sfAssetsAvailable both at scale 1, ULP=10). bob deposits 53 from a
+    // low-scale TL. Pre-fix the canonicalization rounds 1.5e16+53 →
+    // 1.5e16+50 on both rails (rails stay in sync, no invariant fire),
+    // bob still loses the full 53 from his TL, and shares are minted on
+    // 53 — diluting existing holders because the vault only gained 50 of
+    // actual value. Post-fix, VaultDeposit::doApply clamps the request
+    // to the vault's coarsest grid via roundToAsset(amount, gridScale,
+    // Downward); bob pays only 50, the 3 stays in his wallet, and shares
+    // are minted on the clamped 50 (no dilution).
+    void
+    testVaultDepositSameScaleClamping()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features) {
+            Env env(*this, features);
+            bool const cleanupActive = features[fixCleanup3_2_0];
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), 2, 16};
+            // 1.5e16: parks vault accounting at scale 1 (ULP=10).
+            STAmount const aliceFund{usd.raw(), Number{15, 15}};
+
+            env(trust(alice, trustLimit));
+            env(trust(bob, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            // bob at scale 0 — TL can subtract any small amount exactly.
+            env(pay(issuer, bob, usd(100)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            // sfAssetsTotal and sfAssetsAvailable both 1.5e16, scale 1
+            // (no outstanding loans) — same-scale state.
+            STAmount const bobBeforeBalance = env.balance(bob, usd);
+
+            // bob deposits 53. Pre-fix: full 53 leaves bob's TL, vault
+            // canonicalizes to gain 50, 3 is absorbed (dilution). Post-fix:
+            // clamp 53 → 50; bob pays 50, vault gains 50, no dilution.
+            env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = usd(53)}));
+            env.close();
+
+            STAmount const bobAfterBalance = env.balance(bob, usd);
+            Number const bobLoss = Number{bobBeforeBalance} - Number{bobAfterBalance};
+            Number const expectedLoss = cleanupActive ? Number{50} : Number{53};
+            BEAST_EXPECTS(
+                bobLoss == expectedLoss,
+                "bobLoss=" + to_string(bobLoss) + " expected=" + to_string(expectedLoss));
+
+            // Vault rails converge to 1.5e16+50 in both modes — the
+            // canonicalization is identical; what differs is who eats the
+            // 3-unit canonicalization tail.
+            auto const vaultSleAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleAfter))
+                return;
+            Number const expectedAvailable = Number{aliceFund} + Number{50};
+            BEAST_EXPECT(vaultSleAfter->at(sfAssetsAvailable) == expectedAvailable);
+            BEAST_EXPECT(vaultSleAfter->at(sfAssetsTotal) == expectedAvailable);
+        };
+
+        {
+            testcase(
+                "VaultDeposit: same-scale tail silently absorbed, bob pays full 53 "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0);
+        }
+        {
+            testcase(
+                "VaultDeposit: same-scale tail clamped, bob pays 50 "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testableAmendments());
+        }
+    }
+
     // accountSendExact's carve-out paths: native (XRP/MPT integer-exact),
     // and issuer-as-source/destination (mint/destroy, no counterparty
     // trust line). Each path falls through to plain accountSend without
@@ -7424,6 +7516,7 @@ public:
         // Cross-transactor
         testBugVaultSubUlpAtEdge();
         testBugVaultLoanTrappedAsymmetricRounding();
+        testVaultDepositSameScaleClamping();
         testAccountSendExactCarveOuts();
         // Deposit
         testBugVaultDepositEdgeCrossing();

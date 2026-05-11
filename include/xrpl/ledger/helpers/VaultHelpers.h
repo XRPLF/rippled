@@ -44,7 +44,12 @@ namespace xrpl {
 //        b. Coarser-scale lossless — only when sfAssetsTotal sits coarser than sfAssetsAvailable
 //            require the request rounds losslessly at sfAssetsTotal's scale. Uses
 //            roundsLosslesslyAtScale(). Skipping the leg when scales match avoids over-
-//           rejecting legitimate same-scale fractional ops.
+//           rejecting legitimate same-scale fractional ops (e.g. share-denominated withdraws
+//           whose NAV-derived asset amount has fractional precision). Same-scale tail
+//           absorption on deposits is handled by caller-side clamping in
+//           VaultDeposit::doApply rather than predicate rejection — the user pays only the
+//           clamped amount, the remainder stays in their wallet, and shares mint on the
+//           clamped value (no dilution).
 //
 //   2. accountSendExact wraps every value transfer on these rails: depositToVault, via
 //      doWithdraw in withdrawFromVault, and the direct issuer-bound transfer in VaultClawback.
@@ -60,7 +65,9 @@ namespace xrpl {
 // Trade-off — granularity floor: in the loan-trapped state, leg (b) rejects any request that
 // isn't a clean multiple of the coarser ULP. A holder with a 7-unit stake (per the example)
 // can't withdraw via any denomination until outstanding loans repay and sfAssetsAvailable grows
-// back into sfAssetsTotal's exponent band.
+// back into sfAssetsTotal's exponent band. Deposit-side same-scale clamping (see
+// VaultDeposit::doApply) sidesteps this for new deposits by transferring only the representable
+// portion of the user's request and leaving the remainder in the depositor's wallet.
 //
 // Applies symmetrically to VaultDeposit, VaultWithdraw, VaultClawback.
 //
@@ -70,7 +77,8 @@ namespace xrpl {
  *  above: silent absorption on the rail (request rounds to zero at
  *  sfAssetsAvailable's scale) and asymmetric SLE rounding in the loan-trapped
  *  state (request fails lossless canonicalization at sfAssetsTotal's coarser
- *  scale).
+ *  scale). Same-scale tail absorption is intentionally not caught here —
+ *  VaultDeposit::doApply applies caller-side clamping for that case.
  *
  *  Returns tesSUCCESS when the amendment is disabled, when amount is zero,
  *  or when the request passes both legs. Returns tecPRECISION_LOSS on

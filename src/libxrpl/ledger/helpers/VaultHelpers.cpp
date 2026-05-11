@@ -51,8 +51,9 @@ canApplyToVault(
     }
 
     // (b) Coarser-scale lossless: only when scales actually differ
-    //     (loan-trapped state). Same-scale ops are symmetric by construction
-    //     so the lossless leg would over-reject legitimate fractional ops.
+    //     (loan-trapped state). Same-scale ops are guarded by caller-side
+    //     clamping in VaultDeposit::doApply — see VaultHelpers.h
+    //     "Vault asset accounting precision".
     int const totalScale = scale(vault->at(sfAssetsTotal), vaultAsset);
     if (totalScale > availScale && !roundsLosslesslyAtScale(vaultAsset, amount, totalScale))
     {
