@@ -5,14 +5,18 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -63,6 +67,16 @@ closeChannel(
     // Remove PayChan from ledger
     view.erase(slep);
     return tesSUCCESS;
+}
+
+bool
+isChannelExpired(ApplyView const& view, std::optional<uint32_t> timeField)
+{
+    if (!timeField)
+        return false;
+    if (view.rules().enabled(fixSecurity3_1_3))
+        return after(view.header().parentCloseTime, *timeField);
+    return view.header().parentCloseTime.time_since_epoch().count() >= *timeField;
 }
 
 }  // namespace xrpl

@@ -119,12 +119,10 @@ PaymentChannelClaim::doApply()
     AccountID const txAccount = ctx_.tx[sfAccount];
 
     auto const curExpiration = (*slep)[~sfExpiration];
+    if (isChannelExpired(ctx_.view(), (*slep)[~sfCancelAfter]) ||
+        isChannelExpired(ctx_.view(), curExpiration))
     {
-        auto const cancelAfter = (*slep)[~sfCancelAfter];
-        auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
-        if ((cancelAfter && closeTime >= *cancelAfter) ||
-            (curExpiration && closeTime >= *curExpiration))
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+        return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
     }
 
     if (txAccount != src && txAccount != dst)

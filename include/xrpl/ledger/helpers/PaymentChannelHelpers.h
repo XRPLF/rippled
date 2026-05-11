@@ -5,6 +5,10 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+#include <memory>
+#include <optional>
+
 namespace xrpl {
 
 TER
@@ -13,5 +17,8 @@ closeChannel(
     ApplyView& view,
     uint256 const& key,
     beast::Journal j);
+
+bool
+isChannelExpired(ApplyView const& view, std::optional<std::uint32_t> timeField);
 
 }  // namespace xrpl

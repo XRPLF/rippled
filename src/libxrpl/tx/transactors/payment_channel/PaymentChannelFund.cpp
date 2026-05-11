@@ -49,11 +49,10 @@ PaymentChannelFund::doApply()
     auto const txAccount = ctx_.tx[sfAccount];
     auto const expiration = (*slep)[~sfExpiration];
 
+    if (isChannelExpired(ctx_.view(), (*slep)[~sfCancelAfter]) ||
+        isChannelExpired(ctx_.view(), expiration))
     {
-        auto const cancelAfter = (*slep)[~sfCancelAfter];
-        auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
-        if ((cancelAfter && closeTime >= *cancelAfter) || (expiration && closeTime >= *expiration))
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+        return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
     }
 
     if (src != txAccount)
