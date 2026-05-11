@@ -205,7 +205,7 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     });
 
     JLOG(journal_.debug()) << "getReplayDelta for ledger " << ledgerHash << " txMap hash "
-                           << txMap.getHash().asUint256();
+                           << txMap.getHash().asUInt256();
     return reply;
 }
 
@@ -271,7 +271,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
         return false;
     }
 
-    if (txMap.getHash().asUint256() != info.txHash)
+    if (txMap.getHash().asUInt256() != info.txHash)
     {
         JLOG(journal_.debug()) << "Bad message: Transactions verify failed";
         return false;

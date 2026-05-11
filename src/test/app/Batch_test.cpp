@@ -388,8 +388,8 @@ class Batch_test : public beast::unit_test::Suite
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = pay(alice, bob, XRP(1));
-            tx1[sfSigners.jsonName] = json::ArrayValue;
-            tx1[sfSigners.jsonName][0U][sfSigner.jsonName] = json::ObjectValue;
+            tx1[sfSigners.jsonName] = json::ValueType::Array;
+            tx1[sfSigners.jsonName][0U][sfSigner.jsonName] = json::ValueType::Object;
             tx1[sfSigners.jsonName][0U][sfSigner.jsonName][sfAccount.jsonName] = alice.human();
             tx1[sfSigners.jsonName][0U][sfSigner.jsonName][sfSigningPubKey.jsonName] =
                 strHex(alice.pk());
@@ -1363,8 +1363,8 @@ class Batch_test : public beast::unit_test::Suite
             auto const ammCreate = [&alice](STAmount const& amount, STAmount const& amount2) {
                 json::Value jv;
                 jv[jss::Account] = alice.human();
-                jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
-                jv[jss::Amount2] = amount2.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
+                jv[jss::Amount2] = amount2.getJson(JsonOptions::Values::None);
                 jv[jss::TradingFee] = 0;
                 jv[jss::TransactionType] = jss::AMMCreate;
                 return jv;
@@ -2346,7 +2346,7 @@ class Batch_test : public beast::unit_test::Suite
         // + has `tfInnerBatchTxn` flag
         {
             auto txn = batch::Inner(pay(alice, bob, XRP(1)), env.seq(alice));
-            txn[sfSigners] = json::ArrayValue;
+            txn[sfSigners] = json::ValueType::Array;
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
@@ -2401,7 +2401,7 @@ class Batch_test : public beast::unit_test::Suite
                 obj.setFieldU32(sfLedgerSequence, seq);
                 obj.setFieldU32(sfFlags, tfInnerBatchTxn);
             });
-            auto txn = batch::Inner(amendTx.getJson(JsonOptions::KNone), env.seq(alice));
+            auto txn = batch::Inner(amendTx.getJson(JsonOptions::Values::None), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
@@ -3784,7 +3784,7 @@ class Batch_test : public beast::unit_test::Suite
                 makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
                 features,
                 nullptr,
-                beast::severities::KError};
+                beast::Severity::Error};
 
             auto alice = Account("alice");
             auto bob = Account("bob");
@@ -3840,7 +3840,7 @@ class Batch_test : public beast::unit_test::Suite
                 makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
                 features,
                 nullptr,
-                beast::severities::KError};
+                beast::Severity::Error};
 
             auto alice = Account("alice");
             auto bob = Account("bob");
@@ -3885,7 +3885,7 @@ class Batch_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        Env env(*this, envconfig(), features, nullptr, beast::severities::KDisabled);
+        Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
 
         auto alice = Account("alice");
         auto bob = Account("bob");

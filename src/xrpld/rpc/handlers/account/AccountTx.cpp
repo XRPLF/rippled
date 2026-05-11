@@ -293,7 +293,7 @@ populateJsonResponse(
         response[jss::ledger_index_min] = result.ledgerRange.min;
         response[jss::ledger_index_max] = result.ledgerRange.max;
 
-        json::Value& jvTxns = (response[jss::transactions] = json::ArrayValue);
+        json::Value& jvTxns = (response[jss::transactions] = json::ValueType::Array);
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
@@ -303,14 +303,18 @@ populateJsonResponse(
             {
                 if (txn)
                 {
-                    json::Value& jvObj = jvTxns.append(json::ObjectValue);
+                    json::Value& jvObj = jvTxns.append(json::ValueType::Object);
                     jvObj[jss::validated] = true;
 
                     auto const jsonTx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
                     if (context.apiVersion > 1)
                     {
                         jvObj[jsonTx] = txn->getJson(
-                            JsonOptions::KIncludeDate | JsonOptions::KDisableApiPriorV2, false);
+                            static_cast<JsonOptions::underlying_t>(
+                                JsonOptions::Values::IncludeDate) |
+                                static_cast<JsonOptions::underlying_t>(
+                                    JsonOptions::Values::DisableApiPriorV2),
+                            false);
                         jvObj[jss::hash] = to_string(txn->getID());
                         jvObj[jss::ledger_index] = txn->getLedger();
                         jvObj[jss::ledger_hash] =
@@ -322,14 +326,14 @@ populateJsonResponse(
                     }
                     else
                     {
-                        jvObj[jsonTx] = txn->getJson(JsonOptions::KIncludeDate);
+                        jvObj[jsonTx] = txn->getJson(JsonOptions::Values::IncludeDate);
                     }
 
                     auto const& sttx = txn->getSTransaction();
                     RPC::insertDeliverMax(jvObj[jsonTx], sttx->getTxnType(), context.apiVersion);
                     if (txnMeta)
                     {
-                        jvObj[jss::meta] = txnMeta->getJson(JsonOptions::KIncludeDate);
+                        jvObj[jss::meta] = txnMeta->getJson(JsonOptions::Values::IncludeDate);
                         insertDeliveredAmount(jvObj[jss::meta], context, txn, *txnMeta);
                         RPC::insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                         RPC::insertMPTokenIssuanceID(jvObj[jss::meta], sttx, *txnMeta);
@@ -351,7 +355,7 @@ populateJsonResponse(
 
             for (auto const& binaryData : std::get<TxnsDataBinary>(result.transactions))
             {
-                json::Value& jvObj = jvTxns.append(json::ObjectValue);
+                json::Value& jvObj = jvTxns.append(json::ValueType::Object);
 
                 jvObj[jss::tx_blob] = strHex(std::get<0>(binaryData));
                 auto const jsonMeta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
@@ -363,7 +367,7 @@ populateJsonResponse(
 
         if (result.marker)
         {
-            response[jss::marker] = json::ObjectValue;
+            response[jss::marker] = json::ValueType::Object;
             response[jss::marker][jss::ledger] = result.marker->ledgerSeq;
             response[jss::marker][jss::seq] = result.marker->txnSeq;
         }
@@ -436,8 +440,8 @@ doAccountTx(RPC::JsonContext& context)
     {
         auto& token = params[jss::marker];
         if (!token.isMember(jss::ledger) || !token.isMember(jss::seq) ||
-            !token[jss::ledger].isConvertibleTo(json::ValueType::UintValue) ||
-            !token[jss::seq].isConvertibleTo(json::ValueType::UintValue))
+            !token[jss::ledger].isConvertibleTo(json::ValueType::UInt) ||
+            !token[jss::seq].isConvertibleTo(json::ValueType::UInt))
         {
             RPC::Status const status{
                 RpcInvalidParams,

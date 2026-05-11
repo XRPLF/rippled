@@ -209,7 +209,7 @@ STUInt64::getJson(JsonOptions) const
         return str;
     };
 
-    if (auto const& fName = getFName(); fName.shouldMeta(SField::SMdBaseTen))
+    if (auto const& fName = getFName(); fName.shouldMeta(SField::kSMD_BASE_TEN))
     {
         return convertToString(value_, 10);  // Convert to base 10
     }

@@ -183,7 +183,7 @@ getPseudoAccountFields()
         std::vector<SField const*> pseudoFields;
         for (auto const& field : soTemplate)
         {
-            if (field.sField().shouldMeta(SField::SMdPseudoAccount))
+            if (field.sField().shouldMeta(SField::kSMD_PSEUDO_ACCOUNT))
                 pseudoFields.emplace_back(&field.sField());
         }
         return pseudoFields;

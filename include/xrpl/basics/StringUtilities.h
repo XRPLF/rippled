@@ -120,7 +120,7 @@ std::string
 trimWhitespace(std::string str);
 
 std::optional<std::uint64_t>
-toUint64(std::string const& s);
+toUInt64(std::string const& s);
 
 /** Determines if the given string looks like a TOML-file hosting domain.
 
