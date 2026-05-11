@@ -34,22 +34,22 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
     {
         asset_ = xrpIssue();
     }
-// The next 160-bit field selects the format:
-//   noAccount  → MPT V1 (pre-fixCleanup3_2_0)
-//   xrpAccount → MPT V2 (fixCleanup3_2_0)
-//   else       → regular IOU; the field is the issuer account.
-//
-// Both MPT versions carry the 4-byte sequence next, but differ
-// in byte order:
-//
-//   V1 uses add32()/get32(), which swap host↔BE. The source
-//   bytes (first 4 of MPTID) are already canonical BE per
-//   makeMptID(), so on LE hosts the swap emits a byte-reversed
-//   sequence to the wire. Reads invert the same swap, so
-//   round-trips on a single arch are consistent.
-//
-//   V2 uses addRaw()/getRaw(): the canonical BE bytes from
-//   makeMptID() reach the wire untouched.
+    // The next 160-bit field selects the format:
+    //   noAccount  → MPT V1 (pre-fixCleanup3_2_0)
+    //   xrpAccount → MPT V2 (fixCleanup3_2_0)
+    //   else       → regular IOU; the field is the issuer account.
+    //
+    // Both MPT versions carry the 4-byte sequence next, but differ
+    // in byte order:
+    //
+    //   V1 uses add32()/get32(), which swap host↔BE. The source
+    //   bytes (first 4 of MPTID) are already canonical BE per
+    //   makeMptID(), so on LE hosts the swap emits a byte-reversed
+    //   sequence to the wire. Reads invert the same swap, so
+    //   round-trips on a single arch are consistent.
+    //
+    //   V2 uses addRaw()/getRaw(): the canonical BE bytes from
+    //   makeMptID() reach the wire untouched.
     else
     {
         AccountID const account = static_cast<AccountID>(sit.get160());
