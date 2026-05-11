@@ -248,6 +248,14 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u &&
             sleMptIssuance->isFieldPresent(sfDomainID))
             return tecNO_PERMISSION;
+
+        // Clearing CanTransfer implicitly clears TransferFee. Reject if the
+        // fee is non-zero but TransferFee is not mutable, to prevent bypassing
+        // an immutable fee by toggling CanTransfer.
+        if ((*mutableFlags & tmfMPTClearCanTransfer) != 0u &&
+            sleMptIssuance->isFieldPresent(sfTransferFee) &&
+            !isMutableFlag(lsmfMPTCanMutateTransferFee))
+            return tecNO_PERMISSION;
     }
 
     if (!isMutableFlag(lsmfMPTCanMutateMetadata) && ctx.tx.isFieldPresent(sfMPTokenMetadata))

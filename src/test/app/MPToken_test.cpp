@@ -3257,7 +3257,8 @@ class MPToken_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(mptAlice.checkTransferFee(100));
 
-            // Clear MPTCanTransfer and transfer fee is removed
+            // Clearing MPTCanTransfer is allowed when lsmfMPTCanMutateTransferFee is set, even if
+            // the transfer fee is currently non-zero. This will implicitly clear the transfer fee.
             mptAlice.set({.account = alice, .mutableFlags = tmfMPTClearCanTransfer});
             BEAST_EXPECT(!mptAlice.isTransferFeePresent());
 
@@ -3265,6 +3266,46 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.set({.account = alice, .transferFee = 0});
 
             // TransferFee field is still not present
+            BEAST_EXPECT(!mptAlice.isTransferFeePresent());
+        }
+
+        // Clearing CanTransfer is rejected when TransferFee is non-zero
+        // and lsmfMPTCanMutateTransferFee not set.
+        // This prevents bypassing an immutable fee by toggling CanTransfer.
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create(
+                {.transferFee = 100,
+                 .ownerCount = 1,
+                 .flags = tfMPTCanTransfer,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+
+            BEAST_EXPECT(mptAlice.checkTransferFee(100));
+
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTClearCanTransfer,
+                 .err = tecNO_PERMISSION});
+
+            BEAST_EXPECT(mptAlice.checkTransferFee(100));
+        }
+
+        // Clearing CanTransfer succeeds when TransferFee is zero, even if
+        // lsmfMPTCanMutateTransferFee is not set.
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTCanTransfer,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+
+            BEAST_EXPECT(!mptAlice.isTransferFeePresent());
+
+            mptAlice.set({.account = alice, .mutableFlags = tmfMPTClearCanTransfer});
             BEAST_EXPECT(!mptAlice.isTransferFeePresent());
         }
     }
