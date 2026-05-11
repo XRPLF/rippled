@@ -38,7 +38,8 @@ class LedgerRPC_test : public beast::unit_test::Suite
             BEAST_EXPECT(jv[jss::error] == err);
         if (msg.empty())
         {
-            BEAST_EXPECT(jv[jss::error_message] == json::NullValue || jv[jss::error_message] == "");
+            BEAST_EXPECT(
+                jv[jss::error_message] == json::ValueType::Null || jv[jss::error_message] == "");
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
         {

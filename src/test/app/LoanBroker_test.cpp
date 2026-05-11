@@ -1249,7 +1249,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Create a writable view cloned from the current ledger and remove the
         // vault SLE
         OpenView ov{*env.current()};
-        test::StreamSink sink{beast::severities::KWarning};
+        test::StreamSink sink{beast::Severity::Warning};
         beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
 

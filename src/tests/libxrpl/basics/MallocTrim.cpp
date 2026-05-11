@@ -161,15 +161,15 @@ TEST(mallocTrim, with_debug_logging)
 {
     struct DebugSink : public beast::Journal::Sink
     {
-        DebugSink() : Sink(beast::severities::KDebug, false)
+        DebugSink() : Sink(beast::Severity::Debug, false)
         {
         }
         void
-        write(beast::severities::Severity, std::string const&) override
+        write(beast::Severity, std::string const&) override
         {
         }
         void
-        writeAlways(beast::severities::Severity, std::string const&) override
+        writeAlways(beast::Severity, std::string const&) override
         {
         }
     };

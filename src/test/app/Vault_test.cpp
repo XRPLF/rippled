@@ -2400,7 +2400,7 @@ class Vault_test : public beast::unit_test::Suite
                     jv[jss::Account] = issuer.human();
                     {
                         auto& ja = jv[jss::LimitAmount] =
-                            foo(0).value().getJson(JsonOptions::KNone);
+                            foo(0).value().getJson(JsonOptions::Values::None);
                         ja[jss::issuer] = toBase58(account);
                     }
                     jv[jss::TransactionType] = jss::TrustSet;
@@ -2453,7 +2453,8 @@ class Vault_test : public beast::unit_test::Suite
                 json::Value jv;
                 jv[jss::Account] = issuer.human();
                 {
-                    auto& ja = jv[jss::LimitAmount] = asset(0).value().getJson(JsonOptions::KNone);
+                    auto& ja = jv[jss::LimitAmount] =
+                        asset(0).value().getJson(JsonOptions::Values::None);
                     ja[jss::issuer] = toBase58(account);
                 }
                 jv[jss::TransactionType] = jss::TrustSet;
@@ -2735,7 +2736,7 @@ class Vault_test : public beast::unit_test::Suite
 
                     {
                         // Create MPToken for shares held by Charlie
-                        json::Value tx{json::ObjectValue};
+                        json::Value tx{json::ValueType::Object};
                         tx[sfAccount] = charlie.human();
                         tx[sfMPTokenIssuanceID] =
                             to_string(shares.raw().get<MPTIssue>().getMptID());
@@ -3078,7 +3079,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 env(pdomain::setTx(pdOwner, credentials1));
                 auto const domainId1 = [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::KNone);
+                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
 
@@ -3099,7 +3100,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 env(pdomain::setTx(pdOwner, credentials));
                 auto const domainId = [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::KNone);
+                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
 
@@ -3316,7 +3317,7 @@ class Vault_test : public beast::unit_test::Suite
 
             env(pdomain::setTx(owner, credentials));
             auto const domainId = [&]() {
-                auto tx = env.tx()->getJson(JsonOptions::KNone);
+                auto tx = env.tx()->getJson(JsonOptions::Values::None);
                 return pdomain::getNewDomain(env.meta());
             }();
 
@@ -4276,7 +4277,7 @@ class Vault_test : public beast::unit_test::Suite
 
         auto const check = [&, keylet = keylet, sle = sleVault, this](
                                json::Value const& vault,
-                               json::Value const& issuance = json::NullValue) {
+                               json::Value const& issuance = json::ValueType::Null) {
             BEAST_EXPECT(vault.isObject());
 
             constexpr auto kCHECK_STRING =
@@ -4654,7 +4655,7 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace loanBroker;
         using namespace loan;
-        Env env(*this, beast::severities::KWarning);
+        Env env(*this, beast::Severity::Warning);
 
         auto const vaultAssetBalance = [&](Keylet const& vaultKeylet) {
             auto const sleVault = env.le(vaultKeylet);

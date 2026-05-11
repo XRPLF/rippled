@@ -246,14 +246,14 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     {
         json::Value jrr;
 
-        json::Value jp = json::ObjectValue;
+        json::Value jp = json::ValueType::Object;
         if (!user.empty())
         {
             jp["admin_user"] = user;
             if (subobject)
             {
                 // special case of bad password..passed as object
-                json::Value jpi = json::ObjectValue;
+                json::Value jpi = json::ValueType::Object;
                 jpi["admin_password"] = password;
                 jp["admin_password"] = jpi;
             }
@@ -692,19 +692,19 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         auto sendAndParse = [&](std::string const& req) -> json::Value {
             ws.async_write_some(true, buffer(req), yield[ec]);
             if (!BEAST_EXPECT(!ec))
-                return json::ObjectValue;
+                return json::ValueType::Object;
 
             boost::beast::multi_buffer sb;
             ws.async_read(sb, yield[ec]);
             if (!BEAST_EXPECT(!ec))
-                return json::ObjectValue;
+                return json::ValueType::Object;
 
             json::Value resp;
             json::Reader jr;
             if (!BEAST_EXPECT(jr.parse(
                     boost::lexical_cast<std::string>(boost::beast::make_printable(sb.data())),
                     resp)))
-                return json::ObjectValue;
+                return json::ValueType::Object;
             sb.consume(sb.size());
             return resp;
         };
@@ -1021,7 +1021,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            json::Value jv(json::ArrayValue);
+            json::Value jv(json::ValueType::Array);
             jv.append("invalid");
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
@@ -1030,7 +1030,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            json::Value jv(json::ArrayValue);
+            json::Value jv(json::ValueType::Array);
             json::Value j;
             j["invalid"] = 1;
             jv.append(j);
@@ -1053,7 +1053,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             boost::beast::http::response<boost::beast::http::string_body> resp;
             json::Value jv;
             jv[jss::method] = "batch";
-            jv[jss::params] = json::ObjectValue;
+            jv[jss::params] = json::ValueType::Object;
             jv[jss::params]["invalid"] = 3;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
@@ -1063,7 +1063,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         json::Value jv;
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            jv[jss::method] = json::NullValue;
+            jv[jss::method] = json::ValueType::Null;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
             BEAST_EXPECT(resp.body() == "Null method\r\n");
@@ -1096,7 +1096,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            jv[jss::params] = json::ArrayValue;
+            jv[jss::params] = json::ValueType::Array;
             jv[jss::params][0u] = "not an object";
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);

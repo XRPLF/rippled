@@ -73,7 +73,7 @@ getAccountObjects(
             iterateNFTPages = false;
     }
 
-    auto& jvObjects = (jvResult[jss::account_objects] = json::ArrayValue);
+    auto& jvObjects = (jvResult[jss::account_objects] = json::ValueType::Array);
 
     // this is a mutable version of limit, used to seamlessly switch
     // to iterating directory entries when nftokenpages are exhausted
@@ -95,7 +95,7 @@ getAccountObjects(
 
         while (cp)
         {
-            jvObjects.append(cp->getJson(JsonOptions::KNone));
+            jvObjects.append(cp->getJson(JsonOptions::Values::None));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
             {
@@ -145,7 +145,7 @@ getAccountObjects(
         // directory entries. If there's no nftoken page, we will
         // give empty array for account_objects.
         if (mlimit >= limit)
-            jvResult[jss::account_objects] = json::ArrayValue;
+            jvResult[jss::account_objects] = json::ValueType::Array;
 
         // non-zero dirIndex validity was checked in the beginning of this
         // function; by this point, it should be zero. This function returns
@@ -187,7 +187,7 @@ getAccountObjects(
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
-                jvObjects.append(sleNode->getJson(JsonOptions::KNone));
+                jvObjects.append(sleNode->getJson(JsonOptions::Values::None));
             }
 
             if (++i == mlimit)
