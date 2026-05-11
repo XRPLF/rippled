@@ -215,6 +215,27 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                     return tecNO_PERMISSION;
                 }
 
+                // Post-fixCleanup3_2_0: reject sub-ULP clawbacks at the
+                // vault pseudo's scale. The vault → issuer trust-line
+                // subtraction would absorb at the edge (sender absorbs
+                // since the destination is the issuer carve-out in
+                // accountSendExact); the SLE fields would still
+                // decrement, leaving sfAssetsAvailable < pseudo balance
+                // and firing tecINVARIANT_FAILED at finalize. Surface as
+                // tecPRECISION_LOSS instead. Skip when amount is zero
+                // (means "all available", computed at the rail's scale
+                // by construction).
+                if (ctx.view.rules().enabled(fixCleanup3_2_0) && amount != beast::kZERO)
+                {
+                    int const availableScale = scale(vault->at(sfAssetsAvailable), vaultAsset);
+                    if (roundsToZeroAtScale(vaultAsset, amount, availableScale))
+                    {
+                        JLOG(ctx.j.warn()) << "VaultClawback: amount " << amount.getFullText()
+                                           << " is sub-ULP at available scale " << availableScale;
+                        return tecPRECISION_LOSS;
+                    }
+                }
+
                 return tesSUCCESS;
             });
     }
@@ -292,9 +313,8 @@ VaultClawback::assetsToClawback(
         if (assetsRecovered > *assetsAvailable)
         {
             assetsRecovered = *assetsAvailable;
-            // Note, it is important to truncate the number of shares,
-            // otherwise the corresponding assets might breach the
-            // AssetsAvailable
+            // Note, it is important to truncate the number of shares, otherwise the corresponding
+            // assets might exceed the AssetsAvailable
             {
                 auto const maybeShares = assetsToSharesWithdraw(
                     vault, sleShareIssuance, assetsRecovered, TruncateShares::Yes);
