@@ -84,6 +84,7 @@ struct SHAMapNodeData
     Blob data;
     bool isLeaf;
 
+    // TODO: This constructor can be removed once we have fully switched to C++20 or beyond.
     SHAMapNodeData(SHAMapNodeID const& id, Blob d, bool leaf)
         : nodeID(id), data(std::move(d)), isLeaf(leaf)
     {

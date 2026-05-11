@@ -431,8 +431,10 @@ inline TaggedPointer::TaggedPointer(
 
     // allocate hashes and children, but do not run constructors
     TaggedPointer newHashesAndChildren{RawAllocateTag{}, toAllocate};
-    SHAMapHash *newHashes = nullptr, *oldHashes = nullptr;
-    SHAMapTreeNodePtr *newChildren = nullptr, *oldChildren = nullptr;
+    SHAMapHash* newHashes = nullptr;
+    SHAMapHash* oldHashes = nullptr;
+    SHAMapTreeNodePtr* newChildren = nullptr;
+    SHAMapTreeNodePtr* oldChildren = nullptr;
     std::uint8_t newNumAllocated = 0;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(newNumAllocated, newHashes, newChildren) = newHashesAndChildren.getHashesAndChildren();
