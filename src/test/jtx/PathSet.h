@@ -145,7 +145,7 @@ TestPath::addHelper(First&& first, Rest&&... rest)
 inline json::Value
 TestPath::json() const
 {
-    return path.getJson(JsonOptions::KNone);
+    return path.getJson(JsonOptions::Values::None);
 }
 
 class PathSet
@@ -170,7 +170,7 @@ public:
     json() const
     {
         json::Value v;
-        v["Paths"] = paths.getJson(JsonOptions::KNone);
+        v["Paths"] = paths.getJson(JsonOptions::Values::None);
         return v;
     }
 

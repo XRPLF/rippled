@@ -31,12 +31,8 @@ using namespace std::chrono_literals;
 // Timeout interval in milliseconds
 auto constexpr kTX_ACQUIRE_TIMEOUT = 250ms;
 
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum {
-    NormTimeouts = 4,
-    MaxTimeouts = 20,
-};
+static constexpr auto kNORM_TIMEOUTS = 4;
+static constexpr auto kMAX_TIMEOUTS = 20;
 
 TransactionAcquire::TransactionAcquire(
     Application& app,
@@ -85,14 +81,14 @@ TransactionAcquire::done()
 void
 TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 {
-    if (timeouts_ > MaxTimeouts)
+    if (timeouts_ > kMAX_TIMEOUTS)
     {
         failed_ = true;
         done();
         return;
     }
 
-    if (timeouts_ >= NormTimeouts)
+    if (timeouts_ >= kNORM_TIMEOUTS)
         trigger(nullptr);
 
     addPeers(1);
@@ -259,7 +255,7 @@ TransactionAcquire::stillNeed()
 {
     ScopedLockType const sl(mtx_);
 
-    timeouts_ = std::min<int>(timeouts_, NormTimeouts);
+    timeouts_ = std::min<int>(timeouts_, kNORM_TIMEOUTS);
     failed_ = false;
 }
 

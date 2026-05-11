@@ -32,7 +32,7 @@ public:
         std::string const& ledger = "",
         std::vector<std::string> const& credentials = {})
     {
-        json::Value args{json::ObjectValue};
+        json::Value args{json::ValueType::Object};
         args[jss::source_account] = source.human();
         args[jss::destination_account] = dest.human();
         if (!ledger.empty())
@@ -40,7 +40,7 @@ public:
 
         if (!credentials.empty())
         {
-            auto& arr(args[jss::credentials] = json::ArrayValue);
+            auto& arr(args[jss::credentials] = json::ValueType::Array);
             for (auto const& s : credentials)
                 arr.append(s);
         }
@@ -331,7 +331,7 @@ public:
             testcase("deposit_authorized with credentials failure: empty array.");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = json::ArrayValue;
+            args[jss::credentials] = json::ValueType::Array;
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
             checkCredentialsResponse(jv[jss::result], alice, becky, false, {}, "invalidParams");
@@ -343,7 +343,7 @@ public:
                 "credentials");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = json::ArrayValue;
+            args[jss::credentials] = json::ValueType::Array;
             args[jss::credentials].append(1);
             args[jss::credentials].append(3);
 
@@ -357,7 +357,7 @@ public:
                 "credentials");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = json::ArrayValue;
+            args[jss::credentials] = json::ValueType::Array;
             args[jss::credentials].append("hello world");
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());

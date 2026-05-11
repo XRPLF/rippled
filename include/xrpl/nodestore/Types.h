@@ -6,20 +6,16 @@
 
 namespace xrpl::NodeStore {
 
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum {
-    // This is only used to pre-allocate the array for
-    // batch objects and does not affect the amount written.
-    //
-    BatchWritePreallocationSize = 256,
+// This is only used to pre-allocate the array for
+// batch objects and does not affect the amount written.
+//
+static constexpr auto kBATCH_WRITE_PREALLOCATION_SIZE = 256;
 
-    // This sets a limit on the maximum number of writes
-    // in a batch. Actual usage can be twice this since
-    // we have a new batch growing as we write the old.
-    //
-    BatchWriteLimitSize = 65536
-};
+// This sets a limit on the maximum number of writes
+// in a batch. Actual usage can be twice this since
+// we have a new batch growing as we write the old.
+//
+static constexpr auto kBATCH_WRITE_LIMIT_SIZE = 65536;
 
 /** Return codes from Backend operations. */
 enum class Status {

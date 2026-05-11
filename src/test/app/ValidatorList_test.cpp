@@ -220,7 +220,7 @@ private:
     {
         testcase("Config Load");
 
-        jtx::Env env(*this, jtx::envconfig(), nullptr, beast::severities::KDisabled);
+        jtx::Env env(*this, jtx::envconfig(), nullptr, beast::Severity::Disabled);
         auto& app = env.app();
         std::vector<std::string> const emptyCfgKeys;
         std::vector<std::string> const emptyCfgPublishers;
