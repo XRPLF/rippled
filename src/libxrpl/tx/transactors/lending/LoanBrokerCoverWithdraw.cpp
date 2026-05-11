@@ -31,11 +31,8 @@ LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
     if (!checkLendingProtocolDependencies(ctx.rules, ctx.tx))
         return false;
 
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        (!ctx.rules.enabled(featureCredentials) || !ctx.rules.enabled(fixCleanup3_2_0)))
-        return false;
-
-    return true;
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        (ctx.rules.enabled(featureCredentials) && ctx.rules.enabled(fixCleanup3_2_0));
 }
 
 NotTEC
