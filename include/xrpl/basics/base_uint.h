@@ -62,7 +62,7 @@ struct IsContiguousContainer<Slice> : std::true_type
                       number of bits.
  */
 template <std::size_t Bits, class Tag = void>
-class BaseUint
+class BaseUInt
 {
     static_assert((Bits % 32) == 0, "The length of a base_uint in bits must be a multiple of 32.");
 
@@ -160,7 +160,7 @@ private:
         explicit VoidHelper() = default;
     };
 
-    explicit BaseUint(void const* data, VoidHelper)
+    explicit BaseUInt(void const* data, VoidHelper)
     {
         memcpy(data_.data(), data, kBYTES);
     }
@@ -244,15 +244,15 @@ private:
     }
 
 public:
-    constexpr BaseUint() : data_{}
+    constexpr BaseUInt() : data_{}
     {
     }
 
-    constexpr BaseUint(beast::Zero) : data_{}
+    constexpr BaseUInt(beast::Zero) : data_{}
     {
     }
 
-    explicit BaseUint(std::uint64_t b)
+    explicit BaseUInt(std::uint64_t b)
     {
         *this = b;
     }
@@ -260,7 +260,7 @@ public:
     // This constructor is intended to be used at compile time since it might
     // throw at runtime.  Consider declaring this constructor consteval once
     // we get to C++23.
-    explicit constexpr BaseUint(std::string_view sv) noexcept(false)
+    explicit constexpr BaseUInt(std::string_view sv) noexcept(false)
         : data_(parseFromStringViewThrows(sv))
     {
     }
@@ -270,11 +270,11 @@ public:
         class = std::enable_if_t<
             detail::IsContiguousContainer<Container>::value &&
             std::is_trivially_copyable_v<typename Container::value_type>>>
-    explicit BaseUint(Container const& c)
+    explicit BaseUInt(Container const& c)
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
-            "xrpl::base_uint::base_uint(Container auto) : input size match");
+            "xrpl::BaseUInt::BaseUInt(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
     }
 
@@ -282,12 +282,12 @@ public:
     std::enable_if_t<
         detail::IsContiguousContainer<Container>::value &&
             std::is_trivially_copyable_v<typename Container::value_type>,
-        BaseUint&>
+        BaseUInt&>
     operator=(Container const& c)
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
-            "xrpl::base_uint::operator=(Container auto) : input size match");
+            "xrpl::BaseUInt::operator=(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
         return *this;
     }
@@ -295,14 +295,14 @@ public:
     /* Construct from a raw pointer.
         The buffer pointed to by `data` must be at least Bits/8 bytes.
     */
-    static BaseUint
+    static BaseUInt
     fromVoid(void const* data)
     {
-        return BaseUint(data, VoidHelper());
+        return BaseUInt(data, VoidHelper());
     }
 
     template <class T>
-    static std::optional<BaseUint>
+    static std::optional<BaseUInt>
     fromVoidChecked(T const& from)
     {
         if (from.size() != size())
@@ -328,10 +328,10 @@ public:
         return *this == beast::kZERO;
     }
 
-    constexpr BaseUint
+    constexpr BaseUInt
     operator~() const
     {
-        BaseUint ret;
+        BaseUInt ret;
 
         for (int i = 0; i < kWIDTH; i++)
             ret.data_[i] = ~data_[i];
@@ -339,7 +339,7 @@ public:
         return ret;
     }
 
-    BaseUint&
+    BaseUInt&
     operator=(std::uint64_t uHost)
     {
         *this = beast::kZERO;
@@ -357,8 +357,8 @@ public:
         return *this;
     }
 
-    BaseUint&
-    operator^=(BaseUint const& b)
+    BaseUInt&
+    operator^=(BaseUInt const& b)
     {
         for (int i = 0; i < kWIDTH; i++)
             data_[i] ^= b.data_[i];
@@ -366,8 +366,8 @@ public:
         return *this;
     }
 
-    BaseUint&
-    operator&=(BaseUint const& b)
+    BaseUInt&
+    operator&=(BaseUInt const& b)
     {
         for (int i = 0; i < kWIDTH; i++)
             data_[i] &= b.data_[i];
@@ -375,8 +375,8 @@ public:
         return *this;
     }
 
-    BaseUint&
-    operator|=(BaseUint const& b)
+    BaseUInt&
+    operator|=(BaseUInt const& b)
     {
         for (int i = 0; i < kWIDTH; i++)
             data_[i] |= b.data_[i];
@@ -384,7 +384,7 @@ public:
         return *this;
     }
 
-    BaseUint&
+    BaseUInt&
     operator++()
     {
         // prefix operator
@@ -398,17 +398,17 @@ public:
         return *this;
     }
 
-    BaseUint
+    BaseUInt
     operator++(int)
     {
         // postfix operator
-        BaseUint const ret = *this;
+        BaseUInt const ret = *this;
         ++(*this);
 
         return ret;
     }
 
-    BaseUint&
+    BaseUInt&
     operator--()
     {
         for (int i = kWIDTH - 1; i >= 0; --i)
@@ -423,32 +423,32 @@ public:
         return *this;
     }
 
-    BaseUint
+    BaseUInt
     operator--(int)
     {
         // postfix operator
-        BaseUint const ret = *this;
+        BaseUInt const ret = *this;
         --(*this);
 
         return ret;
     }
 
-    [[nodiscard]] BaseUint
+    [[nodiscard]] BaseUInt
     next() const
     {
         auto ret = *this;
         return ++ret;
     }
 
-    [[nodiscard]] BaseUint
+    [[nodiscard]] BaseUInt
     prev() const
     {
         auto ret = *this;
         return --ret;
     }
 
-    BaseUint&
-    operator+=(BaseUint const& b)
+    BaseUInt&
+    operator+=(BaseUInt const& b)
     {
         std::uint64_t carry = 0;
 
@@ -466,7 +466,7 @@ public:
 
     template <class Hasher>
     friend void
-    hash_append(Hasher& h, BaseUint const& a) noexcept
+    hash_append(Hasher& h, BaseUInt const& a) noexcept
     {
         // Do not allow any endian transformations on this memory
         h(a.data_.data(), sizeof(a.data_));
@@ -509,7 +509,7 @@ public:
         return kBYTES;
     }
 
-    BaseUint<Bits, Tag>&
+    BaseUInt<Bits, Tag>&
     operator=(beast::Zero)
     {
         data_.fill(0);
@@ -534,14 +534,14 @@ public:
     }
 };
 
-using uint128 = BaseUint<128>;
-using uint160 = BaseUint<160>;
-using uint256 = BaseUint<256>;
-using uint192 = BaseUint<192>;
+using uint128 = BaseUInt<128>;
+using uint160 = BaseUInt<160>;
+using uint256 = BaseUInt<256>;
+using uint192 = BaseUInt<192>;
 
 template <std::size_t Bits, class Tag>
 [[nodiscard]] constexpr std::strong_ordering
-operator<=>(BaseUint<Bits, Tag> const& lhs, BaseUint<Bits, Tag> const& rhs)
+operator<=>(BaseUInt<Bits, Tag> const& lhs, BaseUInt<Bits, Tag> const& rhs)
 {
     // This comparison might seem wrong on a casual inspection because it
     // compares data internally stored as std::uint32_t byte-by-byte. But
@@ -562,7 +562,7 @@ operator<=>(BaseUint<Bits, Tag> const& lhs, BaseUint<Bits, Tag> const& rhs)
 
 template <std::size_t Bits, typename Tag>
 [[nodiscard]] constexpr bool
-operator==(BaseUint<Bits, Tag> const& lhs, BaseUint<Bits, Tag> const& rhs)
+operator==(BaseUInt<Bits, Tag> const& lhs, BaseUInt<Bits, Tag> const& rhs)
 {
     return (lhs <=> rhs) == 0;
 }
@@ -570,59 +570,59 @@ operator==(BaseUint<Bits, Tag> const& lhs, BaseUint<Bits, Tag> const& rhs)
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
 constexpr bool
-operator==(BaseUint<Bits, Tag> const& a, std::uint64_t b)
+operator==(BaseUInt<Bits, Tag> const& a, std::uint64_t b)
 {
-    return a == BaseUint<Bits, Tag>(b);
+    return a == BaseUInt<Bits, Tag>(b);
 }
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-constexpr BaseUint<Bits, Tag>
-operator^(BaseUint<Bits, Tag> const& a, BaseUint<Bits, Tag> const& b)
+constexpr BaseUInt<Bits, Tag>
+operator^(BaseUInt<Bits, Tag> const& a, BaseUInt<Bits, Tag> const& b)
 {
-    return BaseUint<Bits, Tag>(a) ^= b;
+    return BaseUInt<Bits, Tag>(a) ^= b;
 }
 
 template <std::size_t Bits, class Tag>
-constexpr BaseUint<Bits, Tag>
-operator&(BaseUint<Bits, Tag> const& a, BaseUint<Bits, Tag> const& b)
+constexpr BaseUInt<Bits, Tag>
+operator&(BaseUInt<Bits, Tag> const& a, BaseUInt<Bits, Tag> const& b)
 {
-    return BaseUint<Bits, Tag>(a) &= b;
+    return BaseUInt<Bits, Tag>(a) &= b;
 }
 
 template <std::size_t Bits, class Tag>
-constexpr BaseUint<Bits, Tag>
-operator|(BaseUint<Bits, Tag> const& a, BaseUint<Bits, Tag> const& b)
+constexpr BaseUInt<Bits, Tag>
+operator|(BaseUInt<Bits, Tag> const& a, BaseUInt<Bits, Tag> const& b)
 {
-    return BaseUint<Bits, Tag>(a) |= b;
+    return BaseUInt<Bits, Tag>(a) |= b;
 }
 
 template <std::size_t Bits, class Tag>
-constexpr BaseUint<Bits, Tag>
-operator+(BaseUint<Bits, Tag> const& a, BaseUint<Bits, Tag> const& b)
+constexpr BaseUInt<Bits, Tag>
+operator+(BaseUInt<Bits, Tag> const& a, BaseUInt<Bits, Tag> const& b)
 {
-    return BaseUint<Bits, Tag>(a) += b;
+    return BaseUInt<Bits, Tag>(a) += b;
 }
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
 inline std::string
-to_string(BaseUint<Bits, Tag> const& a)
+to_string(BaseUInt<Bits, Tag> const& a)
 {
     return strHex(a.cbegin(), a.cend());
 }
 
 template <std::size_t Bits, class Tag>
 inline std::string
-toShortString(BaseUint<Bits, Tag> const& a)
+toShortString(BaseUInt<Bits, Tag> const& a)
 {
-    static_assert(BaseUint<Bits, Tag>::kBYTES > 4, "For 4 bytes or less, use a native type");
+    static_assert(BaseUInt<Bits, Tag>::kBYTES > 4, "For 4 bytes or less, use a native type");
     return strHex(a.cbegin(), a.cbegin() + 4) + "...";
 }
 
 template <std::size_t Bits, class Tag>
 inline std::ostream&
-operator<<(std::ostream& out, BaseUint<Bits, Tag> const& u)
+operator<<(std::ostream& out, BaseUInt<Bits, Tag> const& u)
 {
     return out << to_string(u);
 }
@@ -650,7 +650,7 @@ static_assert(sizeof(uint256) == 256 / 8, "There should be no padding bytes");
 namespace beast {
 
 template <std::size_t Bits, class Tag>
-struct IsUniquelyRepresented<xrpl::BaseUint<Bits, Tag>> : public std::true_type
+struct IsUniquelyRepresented<xrpl::BaseUInt<Bits, Tag>> : public std::true_type
 {
     explicit IsUniquelyRepresented() = default;
 };

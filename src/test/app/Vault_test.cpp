@@ -206,7 +206,7 @@ class Vault_test : public beast::unit_test::Suite
             {
                 testcase(prefix + " fail to set domain on public vault");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+                tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
                 env(tx, Ter{tecNO_PERMISSION});
                 env.close();
             }
@@ -678,14 +678,14 @@ class Vault_test : public beast::unit_test::Suite
                 env(tx);
 
                 tx[sfFlags] = tx[sfFlags].asUInt() | tfVaultPrivate;
-                tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+                tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
                 env(tx, Ter{temDISABLED});
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
                     env(tx, kDATA("Test"));
 
-                    tx[sfDomainID] = to_string(BaseUint<256>(13ul));
+                    tx[sfDomainID] = to_string(BaseUInt<256>(13ul));
                     env(tx, Ter{temDISABLED});
                 }
             },
@@ -786,12 +786,12 @@ class Vault_test : public beast::unit_test::Suite
                 testcase("disabled permissioned domain");
 
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
-                tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+                tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
                 env(tx, Ter{temDISABLED});
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+                    tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
                     env(tx, Ter{temDISABLED});
                 }
 
@@ -1079,7 +1079,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = tx1;
-                    tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+                    tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
                     env(tx, Ter{temMALFORMED});
                 }
 
@@ -1238,7 +1238,7 @@ class Vault_test : public beast::unit_test::Suite
                      Vault& vault) {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             tx[sfFlags] = tfVaultPrivate;
-            tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+            tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
             testcase("non-existing domain");
             env(tx, Ter{tecOBJECT_NOT_FOUND});
         });
@@ -3065,7 +3065,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("private vault cannot set non-existing domain");
             auto tx = vault.set({.owner = owner, .id = keylet.key});
-            tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+            tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
             env(tx, Ter{tecOBJECT_NOT_FOUND});
         }
 
