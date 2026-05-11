@@ -7301,7 +7301,7 @@ protected:
         // and enabled (expect consistency).
         for (bool const withAmendment : {false, true})
         {
-            auto const features = withAmendment ? all : all - featureLendingProtocolV1_1;
+            auto const features = withAmendment ? all_ : all_ - fixCleanup3_2_0;
             Env env(*this, features);
             auto log = env.journal.trace();
 
@@ -7320,12 +7320,12 @@ protected:
             env(fset(issuer, asfAllowTrustLineClawback));
             env.close();
 
-            PrettyAsset const IOU = issuer[iouCurrency];
-            env(trust(lender, IOU(1'000'000'000)));
-            env(trust(borrower, IOU(1'000'000'000)));
+            PrettyAsset const iou = issuer[iouCurrency_];
+            env(trust(lender, iou(1'000'000'000)));
+            env(trust(borrower, iou(1'000'000'000)));
             env.close();
-            env(pay(issuer, lender, IOU(100'000'000)));
-            env(pay(issuer, borrower, IOU(100'000'000)));
+            env(pay(issuer, lender, iou(100'000'000)));
+            env(pay(issuer, borrower, iou(100'000'000)));
             env.close();
 
             // Small vault deposit => vaultScale = -12.
@@ -7338,8 +7338,8 @@ protected:
                 .coverDeposit = 5'000,
                 .managementFeeRate = TenthBips16{500}};
 
-            BrokerInfo const broker = createVaultAndBroker(env, IOU, lender, brokerParams);
-            Asset const asset{IOU};
+            BrokerInfo const broker = createVaultAndBroker(env, iou, lender, brokerParams);
+            Asset const asset{iou};
 
             // Create the TINY loan first (while vaultScale is still small).
             // principal 0.01, 0% interest, 1 payment => loanScale = vaultScale.
@@ -7350,11 +7350,11 @@ protected:
             auto const tinyLoanKeylet = keylet::loan(broker.brokerID, tinyLoanSeq);
 
             env(set(borrower, broker.brokerID, Number{1, -2}),
-                sig(sfCounterpartySignature, lender),
-                interestRate(TenthBips32{0}),
-                paymentTotal(1),
-                paymentInterval(86400 * 365),
-                fee(XRP(10)));
+                Sig(sfCounterpartySignature, lender),
+                kINTEREST_RATE(TenthBips32{0}),
+                kPAYMENT_TOTAL(1),
+                kPAYMENT_INTERVAL(86400 * 365),
+                Fee(XRP(10)));
             env.close();
             if (!BEAST_EXPECT(env.le(tinyLoanKeylet)))
                 return;
@@ -7369,11 +7369,11 @@ protected:
             auto const bigLoanKeylet = keylet::loan(broker.brokerID, bigLoanSeq);
 
             env(set(borrower, broker.brokerID, Number{500}),
-                sig(sfCounterpartySignature, lender),
-                interestRate(TenthBips32{100'000}),
-                paymentTotal(20),
-                paymentInterval(86400 * 365),
-                fee(XRP(10)));
+                Sig(sfCounterpartySignature, lender),
+                kINTEREST_RATE(TenthBips32{100'000}),
+                kPAYMENT_TOTAL(20),
+                kPAYMENT_INTERVAL(86400 * 365),
+                Fee(XRP(10)));
             env.close();
             if (!BEAST_EXPECT(env.le(bigLoanKeylet)))
                 return;
@@ -7412,10 +7412,10 @@ protected:
             // cover lands exactly at that threshold.
             env(env.json(
                 coverClawback(issuer),
-                loanBrokerID(broker.brokerID),
-                fee(none),
-                seq(none),
-                sig(none)));
+                kLOAN_BROKER_ID(broker.brokerID),
+                Fee(kNONE),
+                Seq(kNONE),
+                Sig(kNONE)));
             env.close();
 
             // Re-read the broker after cover reduction.
@@ -7430,7 +7430,7 @@ protected:
             // Pay each loan independently and observe the fee routing.
             auto feeGoesToPseudo = [&](Keylet const& loanKeylet) {
                 auto const pseudoAcct = Account("pseudo", brokerSle->at(sfAccount));
-                auto const pseudoBefore = env.balance(pseudoAcct, IOU);
+                auto const pseudoBefore = env.balance(pseudoAcct, iou);
 
                 auto const payLoan = env.le(loanKeylet);
                 if (!BEAST_EXPECT(payLoan))
@@ -7439,10 +7439,10 @@ protected:
                 auto const serviceFee = payLoan->at(sfLoanServiceFee);
                 auto const payAmt = STAmount{asset, payment + serviceFee};
 
-                env(loan::pay(borrower, loanKeylet.key, payAmt), fee(XRP(10)));
+                env(loan::pay(borrower, loanKeylet.key, payAmt), Fee(XRP(10)));
                 env.close();
 
-                auto const pseudoAfter = env.balance(pseudoAcct, IOU);
+                auto const pseudoAfter = env.balance(pseudoAcct, iou);
                 return pseudoAfter.number() > pseudoBefore.number();
             };
 
