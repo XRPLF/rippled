@@ -7,7 +7,7 @@ namespace xrpl {
 class LoanBrokerCoverClawback : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
 
     explicit LoanBrokerCoverClawback(ApplyContext& ctx) : Transactor(ctx)
     {

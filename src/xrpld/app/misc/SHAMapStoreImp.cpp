@@ -237,7 +237,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
     dbRotating_->fetchNodeObject(
-        node.getHash().asUint256(), 0, NodeStore::FetchType::Synchronous, true);
+        node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
         if (healthWait() == HealthResult::Stopping)

@@ -164,7 +164,7 @@ TEST_F(WriterFixture, complex_object)
 
 TEST_F(WriterFixture, json_value)
 {
-    json::Value value(json::ObjectValue);
+    json::Value value(json::ValueType::Object);
     value["foo"] = 23;
     writer_->startRoot(Writer::CollectionType::Object);
     writer_->set("hello", value);

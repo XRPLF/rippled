@@ -91,12 +91,12 @@ class Version_test : public beast::unit_test::Suite
             ? RPC::kAPI_INVALID_VERSION
             : RPC::kAPI_VERSION_IF_UNSPECIFIED;
 
-        json::Value const jArray = json::Value(json::ArrayValue);
-        json::Value const jNull = json::Value(json::NullValue);
+        json::Value const jArray = json::Value(json::ValueType::Array);
+        json::Value const jNull = json::Value(json::ValueType::Null);
         BEAST_EXPECT(RPC::getAPIVersionNumber(jArray, false) == versionIfUnspecified);
         BEAST_EXPECT(RPC::getAPIVersionNumber(jNull, false) == versionIfUnspecified);
 
-        json::Value jObject = json::Value(json::ObjectValue);
+        json::Value jObject = json::Value(json::ValueType::Object);
         BEAST_EXPECT(RPC::getAPIVersionNumber(jObject, false) == versionIfUnspecified);
         jObject[jss::api_version] = RPC::kAPI_VERSION_IF_UNSPECIFIED.value;
         BEAST_EXPECT(RPC::getAPIVersionNumber(jObject, false) == versionIfUnspecified);
