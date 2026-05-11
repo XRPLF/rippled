@@ -7073,6 +7073,7 @@ class Vault_test : public beast::unit_test::Suite
 
         auto runScenario = [this](FeatureBitset features) {
             Env env(*this, features);
+            bool const cleanupActive = features[fixCleanup3_2_0];
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7102,11 +7103,17 @@ class Vault_test : public beast::unit_test::Suite
             env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
             env.close();
 
-            // 15-unit clawback: 1.5e16 - 15 → half-even canonicalizes to
-            // 1499999999999998 mantissa × 10^1 = 14999999999999980 on
-            // both pseudo and sfAssetsAvailable.
+            // 15-unit clawback at the IOU edge: half-even canonicalization
+            // of (1.5e16 - 15) snaps both rails to 14999999999999980, so
+            // both rails actually lose 20 units while the user asked for
+            // 15. Pre-amendment plain accountSend lets this slip silently
+            // (the rails converge so no invariant fires). Post-amendment
+            // accountSendExact's destroy-shape check observes that the
+            // sender's TL delta (20) disagrees with the requested amount
+            // (15) and rejects with tecPRECISION_LOSS.
             env(vault.clawback(
-                {.issuer = issuer, .id = vaultKeylet.key, .holder = alice, .amount = usd(15)}));
+                    {.issuer = issuer, .id = vaultKeylet.key, .holder = alice, .amount = usd(15)}),
+                Ter{cleanupActive ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS}});
             env.close();
 
             auto const vaultSleAfter = env.le(vaultKeylet);
@@ -7121,21 +7128,23 @@ class Vault_test : public beast::unit_test::Suite
                 available == Number{pseudoBalance},
                 "available=" + to_string(available) +
                     " pseudo=" + to_string(Number{pseudoBalance}));
-            BEAST_EXPECT(available == Number{14'999'999'999'999'980LL});
+            Number const expectedAvailable =
+                cleanupActive ? Number{aliceFund} : Number{14'999'999'999'999'980LL};
+            BEAST_EXPECT(available == expectedAvailable);
             // No outstanding loans → sfAssetsTotal mirrors sfAssetsAvailable.
             BEAST_EXPECT(total == available);
         };
 
         {
             testcase(
-                "VaultClawback: pseudo TL and sfAssetsAvailable converge "
-                "at the IOU edge (pre-fixCleanup3_2_0)");
+                "VaultClawback: edge canonicalization silently destroys "
+                "extra obligation (pre-fixCleanup3_2_0)");
             runScenario(testableAmendments() - fixCleanup3_2_0);
         }
         {
             testcase(
-                "VaultClawback: pseudo TL and sfAssetsAvailable converge "
-                "at the IOU edge (post-fixCleanup3_2_0)");
+                "VaultClawback: edge canonicalization rejected with "
+                "tecPRECISION_LOSS (post-fixCleanup3_2_0)");
             runScenario(testableAmendments());
         }
     }

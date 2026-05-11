@@ -434,8 +434,12 @@ VaultClawback::doApply()
 
     if (assetsRecovered > beast::kZERO)
     {
-        // Transfer assets from vault to issuer.
-        if (auto const ter = accountSend(
+        // Transfer assets from vault to issuer. accountSendExact (destroy
+        // shape: to == issuer) verifies the sender's TL lost exactly
+        // assetsRecovered at the asset's precision, returning
+        // tecPRECISION_LOSS rather than letting sub-ULP sender-side
+        // absorption diverge from sfAssetsAvailable.
+        if (auto const ter = accountSendExact(
                 view(), vaultAccount, account_, assetsRecovered, j_, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;

@@ -361,8 +361,12 @@ LoanBrokerCoverClawback::doApply()
 
     associateAsset(*sleBroker, vaultAsset);
 
-    // Transfer assets from pseudo-account to depositor.
-    return accountSend(view(), brokerPseudoID, account, clawAmount, j_, WaiveTransferFee::Yes);
+    // Transfer assets from pseudo-account to issuer. accountSendExact
+    // (destroy shape: to == issuer) verifies the broker pseudo's TL lost
+    // exactly clawAmount at the asset's precision, returning
+    // tecPRECISION_LOSS rather than letting sub-ULP sender-side
+    // absorption diverge from sfCoverAvailable.
+    return accountSendExact(view(), brokerPseudoID, account, clawAmount, j_, WaiveTransferFee::Yes);
 }
 
 void
