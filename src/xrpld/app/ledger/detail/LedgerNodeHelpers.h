@@ -68,6 +68,6 @@ getTreeNode(std::string_view data);
  *       `validateLedgerNode` function and obtained a valid tree node by calling `getTreeNode`.
  */
 [[nodiscard]] std::optional<SHAMapNodeID>
-getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNodePtr const& treeNode);
+getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNode const& treeNode);
 
 }  // namespace xrpl

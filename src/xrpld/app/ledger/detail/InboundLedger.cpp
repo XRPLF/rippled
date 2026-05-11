@@ -874,7 +874,7 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
                 return;
             }
 
-            auto const nodeID = getSHAMapNodeID(ledgerNode, treeNode);
+            auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
             if (!nodeID)
             {
                 JLOG(journal_.warn()) << "Got invalid node id";

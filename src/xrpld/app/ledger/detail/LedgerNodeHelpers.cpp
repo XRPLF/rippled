@@ -24,7 +24,7 @@ validateLedgerNode(protocol::TMLedgerNode const& ledgerNode)
 
     if (ledgerNode.has_nodeid())
     {
-        return !ledgerNode.has_id() && !ledgerNode.has_depth() &&
+        return ledgerNode.reference_case() == ledgerNode.REFERENCE_NOT_SET &&
             deserializeSHAMapNodeID(ledgerNode.nodeid()).has_value();
     }
 
@@ -49,11 +49,11 @@ getTreeNode(std::string_view data)
 }
 
 std::optional<SHAMapNodeID>
-getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNodePtr const& treeNode)
+getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNode const& treeNode)
 {
     if (ledgerNode.has_id() || ledgerNode.has_depth())
     {
-        if (treeNode->isInner())
+        if (treeNode.isInner())
         {
             if (!ledgerNode.has_id())
                 return std::nullopt;
@@ -61,12 +61,12 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNodePtr cons
             return deserializeSHAMapNodeID(ledgerNode.id());
         }
 
-        if (treeNode->isLeaf())
+        if (treeNode.isLeaf())
         {
             if (!ledgerNode.has_depth())
                 return std::nullopt;
 
-            auto const key = safeDowncast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
+            auto const key = safeDowncast<SHAMapLeafNode const*>(&treeNode)->peekItem()->key();
             return SHAMapNodeID::createID(ledgerNode.depth(), key);
         }
 
@@ -81,9 +81,9 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNodePtr cons
     if (!nodeID.has_value())
         return std::nullopt;
 
-    if (treeNode->isLeaf())
+    if (treeNode.isLeaf())
     {
-        auto const key = safeDowncast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
+        auto const key = safeDowncast<SHAMapLeafNode const*>(&treeNode)->peekItem()->key();
         auto const expectedID = SHAMapNodeID::createID(static_cast<int>(nodeID->getDepth()), key);
         if (nodeID->getNodeID() != expectedID.getNodeID())
             return std::nullopt;

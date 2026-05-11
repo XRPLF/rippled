@@ -235,7 +235,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 protocol::TMLedgerNode node;
                 node.set_nodedata(innerData);
                 node.set_nodeid(innerID.getRawString());
-                auto const result = getSHAMapNodeID(node, innerNode);
+                auto const result = getSHAMapNodeID(node, *innerNode);
                 BEAST_EXPECT(result == innerID);
             }
 
@@ -247,7 +247,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 protocol::TMLedgerNode node;
                 node.set_nodedata(innerData);
                 node.set_id(innerID.getRawString());
-                auto const result = getSHAMapNodeID(node, innerNode);
+                auto const result = getSHAMapNodeID(node, *innerNode);
                 BEAST_EXPECT(result == innerID);
             }
 
@@ -256,7 +256,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 protocol::TMLedgerNode node;
                 node.set_nodedata(innerData);
                 node.set_depth(10);
-                auto const result = getSHAMapNodeID(node, innerNode);
+                auto const result = getSHAMapNodeID(node, *innerNode);
                 BEAST_EXPECT(!result);
             }
         }
@@ -276,7 +276,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
                 ledgerNode.set_nodeid(leafID.getRawString());
-                auto const result = getSHAMapNodeID(ledgerNode, leafNode);
+                auto const result = getSHAMapNodeID(ledgerNode, *leafNode);
                 BEAST_EXPECT(result == leafID);
             }
 
@@ -288,7 +288,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
                 ledgerNode.set_id(leafID.getRawString());
-                auto const result = getSHAMapNodeID(ledgerNode, leafNode);
+                auto const result = getSHAMapNodeID(ledgerNode, *leafNode);
                 BEAST_EXPECT(!result);
             }
 
@@ -300,7 +300,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 protocol::TMLedgerNode node;
                 node.set_nodedata(leafData);
                 node.set_depth(kLeafDepth);
-                auto const result = getSHAMapNodeID(node, leafNode);
+                auto const result = getSHAMapNodeID(node, *leafNode);
                 BEAST_EXPECT(result == leafID);
             }
 
@@ -312,7 +312,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
                 ledgerNode.set_depth(kLeafDepth);
-                auto const result = getSHAMapNodeID(ledgerNode, leafNode);
+                auto const result = getSHAMapNodeID(ledgerNode, *leafNode);
                 BEAST_EXPECT(result == leafID);
             }
 
@@ -327,7 +327,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 protocol::TMLedgerNode node;
                 node.set_nodedata(leafData);
                 node.set_depth(kLeafDepth);
-                auto const result = getSHAMapNodeID(node, leafNode);
+                auto const result = getSHAMapNodeID(node, *leafNode);
                 BEAST_EXPECT(result == leafID);
             }
 
@@ -344,7 +344,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(otherData);
                 ledgerNode.set_nodeid(otherID.getRawString());
-                auto const result = getSHAMapNodeID(ledgerNode, leafNode);
+                auto const result = getSHAMapNodeID(ledgerNode, *leafNode);
                 BEAST_EXPECT(!result);
             }
         }

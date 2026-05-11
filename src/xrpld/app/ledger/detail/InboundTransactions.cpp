@@ -161,7 +161,7 @@ public:
                 return;
             }
 
-            auto const nodeID = getSHAMapNodeID(ledgerNode, treeNode);
+            auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
             if (!nodeID)
             {
                 JLOG(j_.warn()) << "Got invalid node id";
