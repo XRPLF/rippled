@@ -7,6 +7,7 @@
 #include <test/jtx/balance.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/domain.h>
+#include <test/jtx/jtx_json.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/paths.h>
@@ -1456,6 +1457,54 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testCancelRegularOfferWithDomainCreate(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_2_0];
+
+        testcase << "Cancel regular offer via domain OfferCreate"
+                 << (fixEnabled ? " (fixCleanup3_2_0 enabled)" : " (fixCleanup3_2_0 disabled)");
+
+        // An OfferCreate with sfDomainID and sfOfferSequence pointing to
+        // the user's own non-domain offer should atomically cancel the
+        // regular offer and place the new domain offer.
+        //
+        // Pre-fixCleanup3_2_0: ValidPermissionedDEX flagged the deleted
+        // regular offer, so the transaction failed with tecINVARIANT_FAILED.
+        // Post-fixCleanup3_2_0: the invariant ignores deletions and the
+        // transaction succeeds.
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            PermissionedDEX(env);
+
+        auto const regularSeq = env.seq(bob);
+        env(offer(bob, XRP(10), USD(10)));
+        env.close();
+        BEAST_EXPECT(checkOffer(env, bob, regularSeq, XRP(10), USD(10), 0, false));
+
+        auto const domainSeq = env.seq(bob);
+        if (fixEnabled)
+        {
+            env(offer(bob, XRP(20), USD(20)),
+                Domain(domainID),
+                Json(jss::OfferSequence, regularSeq));
+            env.close();
+            BEAST_EXPECT(!offerExists(env, bob, regularSeq));
+            BEAST_EXPECT(checkOffer(env, bob, domainSeq, XRP(20), USD(20), 0, true));
+        }
+        else
+        {
+            env(offer(bob, XRP(20), USD(20)),
+                Domain(domainID),
+                Json(jss::OfferSequence, regularSeq),
+                Ter(tecINVARIANT_FAILED));
+            env.close();
+            BEAST_EXPECT(offerExists(env, bob, regularSeq));
+            BEAST_EXPECT(!offerExists(env, bob, domainSeq));
+        }
+    }
+
 public:
     void
     run() override
@@ -1479,6 +1528,11 @@ public:
         testHybridOfferDirectories(all);
         testHybridMalformedOffer(all);
         testHybridMalformedOffer(all - fixSecurity3_1_3);
+
+        // Cancelling a regular offer in a domain OfferCreate is allowed
+        // only after fixCleanup3_2_0.
+        testCancelRegularOfferWithDomainCreate(all);
+        testCancelRegularOfferWithDomainCreate(all - fixCleanup3_2_0);
     }
 };
 
