@@ -52,7 +52,7 @@ canApplyToBrokerCover(
     if (roundsToZeroAtScale(vaultAsset, amount, coverScale))
     {
         JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
-                       << " is sub-ULP at cover scale " << coverScale;
+                       << " rounds to zero at cover scale " << coverScale;
         return tecPRECISION_LOSS;
     }
 
@@ -1997,6 +1997,13 @@ depositToBrokerCover(
     XRPL_ASSERT(
         amount.asset() == vaultAsset, "xrpl::depositToBrokerCover : amount and vault asset match");
 
+    // Mirror depositToVault ordering: SLE update first, then transfer, then
+    // associateAsset. Keeps the broker helpers in lockstep with the vault
+    // helpers so future invariant additions or cross-checks see a uniform
+    // pre/post-state shape across both rails.
+    broker->at(sfCoverAvailable) += amount;
+    view.update(broker);
+
     // Transfer assets from depositor to pseudo-account. accountSendExact
     // verifies the sender's loss == receiver's gain, catching IOU
     // canonicalization losses at the 16-digit edge that would otherwise
@@ -2010,9 +2017,6 @@ depositToBrokerCover(
             accountSendExact(view, depositor, brokerPseudoID, amount, j, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
-
-    broker->at(sfCoverAvailable) += amount;
-    view.update(broker);
 
     associateAsset(*broker, vaultAsset);
 

@@ -28,7 +28,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToVault(
     ReadView const& view,
-    std::shared_ptr<SLE const> const& vault,
+    SLE::const_ref vault,
     STAmount const& amount,
     beast::Journal j,
     std::string_view logPrefix)
@@ -381,11 +381,13 @@ withdrawFromVault(
     // check is orthogonal: it catches associateAsset asymmetric rounding
     // on the vault's STNumber accounting fields (sfAssetsTotal vs
     // sfAssetsAvailable). Subtraction from already-canonicalized 16-digit
-    // STAmount values is generally clean through the mantissa edge
-    // (precision improves on the way down), so this check rarely fires;
-    // symmetry with the deposit helper is preserved so future changes
-    // (non-zero sfScale, multi-asset operations) don't introduce a
-    // silent leak.
+    // STAmount values cannot promote a delta into a coarser exponent band
+    // — precision can only improve on the way down — so for canonical
+    // single-step withdrawals this check is unreachable in practice (no
+    // test exercises it today). Symmetry with the deposit helper is
+    // preserved so future changes (non-zero sfScale, multi-asset
+    // operations, or deltas constructed outside the standard pipeline)
+    // don't silently regress the asymmetric-rounding contract.
     Number const afterAssetsTotal = *vault->at(sfAssetsTotal);
     Number const afterAssetsAvailable = *vault->at(sfAssetsAvailable);
     Number const totalDelta = beforeAssetsTotal - afterAssetsTotal;

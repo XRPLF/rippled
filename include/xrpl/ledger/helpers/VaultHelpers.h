@@ -46,9 +46,12 @@ namespace xrpl {
 //            roundsLosslesslyAtScale(). Skipping the leg when scales match avoids over-
 //           rejecting legitimate same-scale fractional ops.
 //
-//   2. accountSendExact (in depositToVault and via doWithdraw in withdrawFromVault). Verifies
-//      sender loss == receiver gain across the two trust lines. VaultClawback uses plain
-//      accountSend — destination is the asset issuer, no second TL to round against.
+//   2. accountSendExact wraps every value transfer on these rails: depositToVault, via
+//      doWithdraw in withdrawFromVault, and the direct issuer-bound transfer in VaultClawback.
+//      Two-sided shape compares sender loss to receiver gain across both trust lines;
+//      destroy shape (to == issuer) verifies the sender's delta in isolation, catching
+//      sub-ULP sender-side absorption that the preclaim guard can't anticipate when the
+//      holder's trust line sits at a different scale than sfAssetsAvailable.
 //
 //   3. equalAtAssetScale cross-check (in depositToVault and withdrawFromVault). Defense-in-depth
 //      at the coarser field's scale; lenient by design (tolerates the 1-ULP drift the preclaim
@@ -69,13 +72,18 @@ namespace xrpl {
  *  state (request fails lossless canonicalization at sfAssetsTotal's coarser
  *  scale).
  *
- *  Returns tesSUCCESS when the amendment is disabled, when amount is zero
- *  (caller's responsibility to handle the zero case downstream), or when the
- *  request passes both legs. Returns tecPRECISION_LOSS on rejection.
+ *  Returns tesSUCCESS when the amendment is disabled, when amount is zero,
+ *  or when the request passes both legs. Returns tecPRECISION_LOSS on
+ *  rejection. The amount==0 short-circuit lets drained-vault and "all
+ *  available" sentinel callers fall through to their downstream
+ *  INSUFFICIENT_FUNDS / INTERNAL handling rather than re-encoding the
+ *  amount==0 contract at every call site.
  *
  *  Share-denominated requests must be converted to their asset equivalent
  *  via sharesToAssetsWithdraw before invoking; the doApply SLE subtraction
- *  operates on the converted value, so the predicate must too.
+ *  operates on the converted value, so the predicate must too. The STAmount
+ *  argument carries the vault asset for the log message — the predicate
+ *  itself only reads the numeric magnitude.
  *
  *  @param view       Apply view (rules used for amendment gating).
  *  @param vault      The vault SLE (read-only).
@@ -86,7 +94,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToVault(
     ReadView const& view,
-    std::shared_ptr<SLE const> const& vault,
+    SLE::const_ref vault,
     STAmount const& amount,
     beast::Journal j,
     std::string_view logPrefix);
@@ -186,7 +194,7 @@ sharesToAssetsWithdraw(
 [[nodiscard]] TER
 depositToVault(
     ApplyView& view,
-    std::shared_ptr<SLE> const& vault,
+    SLE::ref vault,
     AccountID const& depositor,
     STAmount const& assetsDeposited,
     beast::Journal j);
@@ -225,7 +233,7 @@ depositToVault(
 withdrawFromVault(
     ApplyView& view,
     STTx const& tx,
-    std::shared_ptr<SLE> const& vault,
+    SLE::ref vault,
     AccountID const& depositor,
     AccountID const& destination,
     XRPAmount preFeeBalance,

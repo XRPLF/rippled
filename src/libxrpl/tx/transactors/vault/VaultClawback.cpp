@@ -180,6 +180,13 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
+        // Branchless on MPT — roundsToZeroAtScale is false for MPT (integer-
+        // exact). amount == 0 ("all available" sentinel) short-circuits to
+        // tesSUCCESS and downstream INSUFFICIENT_FUNDS / INTERNAL paths
+        // surface a drained vault.
+        if (auto const ret = canApplyToVault(ctx.view, vault, amount, ctx.j, "VaultClawback"))
+            return ret;
+
         return vaultAsset.visit(
             [&](MPTIssue const& issue) -> TER {
                 auto const mptIssue = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
@@ -214,21 +221,6 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                                            "IOU vault asset.";
                     return tecNO_PERMISSION;
                 }
-
-                // For the "all available" sentinel (amount == 0), the
-                // effective subtraction in doApply is sfAssetsAvailable
-                // (modulo shares-roundtrip and clamping). Pass that as
-                // the effective amount so a misaligned sfAssetsAvailable
-                // (produced by an unguarded upstream operation) is
-                // caught here too. canApplyToVault short-circuits
-                // on amount == 0 so a drained vault falls through to
-                // the downstream INSUFFICIENT_FUNDS / INTERNAL paths.
-                STAmount const effectiveAmount = (amount == beast::kZERO)
-                    ? STAmount{vaultAsset, vault->at(sfAssetsAvailable)}
-                    : amount;
-                if (auto const ret =
-                        canApplyToVault(ctx.view, vault, effectiveAmount, ctx.j, "VaultClawback"))
-                    return ret;
 
                 return tesSUCCESS;
             });

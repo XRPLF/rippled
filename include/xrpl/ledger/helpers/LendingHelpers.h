@@ -82,7 +82,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
-    std::shared_ptr<SLE const> const& sleBroker,
+    SLE::const_ref sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
     beast::Journal j,
@@ -558,18 +558,15 @@ loanMakePayment(
 
 /** Apply the asset-side of a LoanBroker cover deposit.
 
-    Transfers `amount` from `depositor` to the broker's pseudo-account via
-    `accountSendExact`, increments `sfCoverAvailable`, runs `associateAsset`
-    on the broker SLE, and (post-fixCleanup3_2_0) verifies that
-    `sfCoverAvailable` moved in lockstep with the broker pseudo-account
-    balance at the asset's precision.
+    Increments `sfCoverAvailable`, transfers `amount` from `depositor` to
+    the broker's pseudo-account via `accountSendExact`, then runs
+    `associateAsset` on the broker SLE. Ordering mirrors `depositToVault`
+    (SLE update first, then transfer) so future cross-check additions
+    observe a uniform pre/post-state shape across both rails.
 
-    The lockstep check is redundant today — `sfCoverAvailable` mirrors the
-    pseudo-account balance one-for-one and `accountSendExact` already
-    enforces trust-line value-transfer integrity — but is kept as
-    future-proofing in case `sfCoverAvailable` ever stops mirroring the
-    pseudo-account balance one-for-one (e.g. if the broker pseudo-account
-    is ever extended to hold funds beyond cover).
+    No helper-level cover/pseudo cross-check is performed: the cover ==
+    pseudo equality is enforced as a hard contract by LoanBrokerInvariant
+    at finalize time. See "Loan broker cover precision" in this header.
 
     @param view The apply view.
     @param broker The LoanBroker SLE (peeked, will be mutated).
@@ -577,15 +574,15 @@ loanMakePayment(
     @param amount The amount of assets to deposit.
     @param j Journal for logging.
 
-    @return tesSUCCESS on success; tecPRECISION_LOSS if the trust-line or
-            SLE-field deltas do not agree at the asset's precision;
-            tecINTERNAL on impossible internal states; otherwise the
-            result of the underlying `accountSendExact`.
+    @return tesSUCCESS on success; tecPRECISION_LOSS if `accountSendExact`
+            observes a trust-line value-transfer mismatch at the asset's
+            precision; tecINTERNAL on impossible internal states;
+            otherwise the result of the underlying `accountSendExact`.
 */
 [[nodiscard]] TER
 depositToBrokerCover(
     ApplyView& view,
-    std::shared_ptr<SLE> const& broker,
+    SLE::ref broker,
     AccountID const& depositor,
     STAmount const& amount,
     beast::Journal j);
@@ -595,9 +592,10 @@ depositToBrokerCover(
     Decrements `sfCoverAvailable`, runs `associateAsset`, then routes
     through `doWithdraw` (which uses `accountSendExact` internally) to
     transfer `amount` from the broker's pseudo-account to `destination`.
-    Post-fixCleanup3_2_0, verifies that `sfCoverAvailable` moved in
-    lockstep with the broker pseudo-account balance at the asset's
-    precision; same future-proofing rationale as `depositToBrokerCover`.
+
+    No helper-level cover/pseudo cross-check is performed: the cover ==
+    pseudo equality is enforced as a hard contract by LoanBrokerInvariant
+    at finalize time. See "Loan broker cover precision" in this header.
 
     @param view The apply view.
     @param tx The triggering transaction (forwarded to `doWithdraw` for
@@ -612,16 +610,16 @@ depositToBrokerCover(
     @param amount The amount of assets to withdraw.
     @param j Journal for logging.
 
-    @return tesSUCCESS on success; tecPRECISION_LOSS if the trust-line or
-            SLE-field deltas do not agree at the asset's precision;
-            tecINTERNAL on impossible internal states; otherwise the
-            result of the underlying `doWithdraw`.
+    @return tesSUCCESS on success; tecPRECISION_LOSS if a downstream
+            value-transfer step observes a trust-line mismatch at the
+            asset's precision; tecINTERNAL on impossible internal
+            states; otherwise the result of the underlying `doWithdraw`.
 */
 [[nodiscard]] TER
 withdrawFromBrokerCover(
     ApplyView& view,
     STTx const& tx,
-    std::shared_ptr<SLE> const& broker,
+    SLE::ref broker,
     AccountID const& account,
     AccountID const& destination,
     XRPAmount preFeeBalance,
