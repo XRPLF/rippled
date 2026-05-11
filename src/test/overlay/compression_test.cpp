@@ -350,7 +350,7 @@ public:
     void
     testProtocol()
     {
-        auto thresh = beast::severities::Severity::KInfo;
+        auto thresh = beast::Severity::Info;
         auto logs = std::make_unique<Logs>(thresh);
 
         protocol::TMManifests const manifests;

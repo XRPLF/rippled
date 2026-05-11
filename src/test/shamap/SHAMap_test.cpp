@@ -114,7 +114,7 @@ public:
     void
     run() override
     {
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("SHAMap_test", *this);
 
         run(true, journal);
@@ -283,12 +283,12 @@ public:
             {
                 BEAST_EXPECT(map.addItem(
                     SHAMapNodeType::TnTransactionNm, makeShamapitem(kEYS[k], intToVuc(k))));
-                BEAST_EXPECT(map.getHash().asUint256() == kHASHES[k]);
+                BEAST_EXPECT(map.getHash().asUInt256() == kHASHES[k]);
                 map.invariants();
             }
             for (int k = kEYS.size() - 1; k >= 0; --k)
             {
-                BEAST_EXPECT(map.getHash().asUint256() == kHASHES[k]);
+                BEAST_EXPECT(map.getHash().asUInt256() == kHASHES[k]);
                 BEAST_EXPECT(map.delItem(kEYS[k]));
                 map.invariants();
             }
@@ -373,7 +373,7 @@ class SHAMapPathProof_test : public beast::unit_test::Suite
                 SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()}));
             map.invariants();
 
-            auto root = map.getHash().asUint256();
+            auto root = map.getHash().asUInt256();
             auto path = map.getProofPath(k);
             BEAST_EXPECT(path);
             if (!path)

@@ -30,7 +30,7 @@ TrustLineBase::TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID co
 json::Value
 TrustLineBase::getJson(int)
 {
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
     ret["low_id"] = to_string(lowLimit_.getIssuer());
     ret["high_id"] = to_string(highLimit_.getIssuer());
     return ret;
