@@ -461,7 +461,7 @@ ValidConfidentialMPToken::visitEntry(
                 return false;
 
             if (!before || before->getType() != ltMPTOKEN)
-                return true;
+                return true;  // LCOV_EXCL_LINE
 
             return (*before)[~field] != afterValue;
         };
