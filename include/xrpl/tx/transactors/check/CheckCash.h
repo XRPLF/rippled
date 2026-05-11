@@ -7,7 +7,7 @@ namespace xrpl {
 class CheckCash : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
 
     explicit CheckCash(ApplyContext& ctx) : Transactor(ctx)
     {

@@ -72,11 +72,11 @@ doAccountCurrencies(RPC::JsonContext& context)
     send.erase(badCurrency());
     receive.erase(badCurrency());
 
-    json::Value& sendCurrencies = (result[jss::send_currencies] = json::ArrayValue);
+    json::Value& sendCurrencies = (result[jss::send_currencies] = json::ValueType::Array);
     for (auto const& c : send)
         sendCurrencies.append(to_string(c));
 
-    json::Value& recvCurrencies = (result[jss::receive_currencies] = json::ArrayValue);
+    json::Value& recvCurrencies = (result[jss::receive_currencies] = json::ValueType::Array);
     for (auto const& c : receive)
         recvCurrencies.append(to_string(c));
 

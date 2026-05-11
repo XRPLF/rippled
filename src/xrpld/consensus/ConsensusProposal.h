@@ -195,7 +195,7 @@ public:
     {
         using std::to_string;
 
-        json::Value ret = json::ObjectValue;
+        json::Value ret = json::ValueType::Object;
         ret[jss::previous_ledger] = to_string(prevLedger());
 
         if (!isBowOut())

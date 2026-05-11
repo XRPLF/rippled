@@ -33,9 +33,8 @@ namespace xrpl::tests {
 class FetchPack_test : public beast::unit_test::Suite
 {
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { TableItems = 100, TableItemsExtra = 20 };
+    static constexpr auto kTABLE_ITEMS = 100;
+    static constexpr auto kTABLE_ITEMS_EXTRA = 20;
 
     using Map = hash_map<SHAMapHash, Blob>;
     using Table = SHAMap;
@@ -105,14 +104,14 @@ public:
     void
     onFetch(Map& map, SHAMapHash const& hash, Blob const& blob)
     {
-        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.asUint256());
+        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.asUInt256());
         map.emplace(hash, blob);
     }
 
     void
     run() override
     {
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("FetchPack_test", *this);
 
         TestNodeFamily f(journal);

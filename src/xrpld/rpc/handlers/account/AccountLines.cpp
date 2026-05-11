@@ -40,7 +40,7 @@ addLine(json::Value& jsonLines, RPCTrustLine const& line)
     STAmount const& saBalance(line.getBalance());
     STAmount const& saLimit(line.getLimit());
     STAmount const& saLimitPeer(line.getLimitPeer());
-    json::Value& jPeer(jsonLines.append(json::ObjectValue));
+    json::Value& jPeer(jsonLines.append(json::ValueType::Object));
 
     jPeer[jss::account] = to_string(line.getAccountIDPeer());
     // Amount reported is positive if current account holds other
@@ -129,7 +129,7 @@ doAccountLines(RPC::JsonContext& context)
     bool const ignoreDefault =
         params.isMember(jss::ignore_default) && params[jss::ignore_default].asBool();
 
-    json::Value& jsonLines(result[jss::lines] = json::ArrayValue);
+    json::Value& jsonLines(result[jss::lines] = json::ValueType::Array);
     struct VisitData
     {
         std::vector<RPCTrustLine> items;
