@@ -54,6 +54,8 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/STTx.h>
 
 #include <cstdint>
 #include <functional>
@@ -2119,7 +2121,7 @@ class MPToken_test : public beast::unit_test::Suite
             return STAmount{issue, nonCanonicalMPTMantissa, 0, false, STAmount::Unchecked{}};
         };
         auto const makeIssue = [&](Env& env) {
-            MPTTester mpt{
+            MPTTester const mpt{
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, bob},

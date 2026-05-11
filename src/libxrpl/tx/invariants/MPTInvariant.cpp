@@ -19,6 +19,8 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STBase.h>
 
 #include <algorithm>
 #include <cstddef>
