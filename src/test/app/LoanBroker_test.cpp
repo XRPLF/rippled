@@ -2135,6 +2135,357 @@ class LoanBroker_test : public beast::unit_test::Suite
         }
     }
 
+    // LoanBrokerCoverClawback destroy-shape: destination is the issuer,
+    // no receiver TL. Broker cover at 1.5e16, super-ULP 15-unit
+    // clawback canonicalizes to a 20-unit drop on both pseudo and
+    // sfCoverAvailable — silent over-clawback by 5, no rail divergence.
+    void
+    testCoverClawbackConvergenceAtIouEdge()
+    {
+        using namespace test::jtx;
+        testcase(
+            "LoanBrokerCoverClawback: broker pseudo trustline and sfCoverAvailable "
+            "converge at the IOU edge");
+
+        Env env(*this);
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const usd{issuer["USD"]};
+        STAmount const trustLimit{usd.raw(), 2, 16};
+        // 1.5e16: mantissa=1500000000000000, exp=1 → ULP=10 at this band.
+        STAmount const aliceFund{usd.raw(), Number{15, 15}};
+
+        env(trust(alice, trustLimit));
+        env.close();
+        env(pay(issuer, alice, aliceFund));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+        vaultTx[sfScale] = 0;
+        env(vaultTx);
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        {
+            using namespace loanBroker;
+            env(set(alice, vaultKeylet.key),
+                kDEBT_MAXIMUM(Number{9, 15}),
+                Fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        env(loanBroker::coverDeposit(alice, brokerKeylet.key, aliceFund));
+        env.close();
+
+        auto const brokerSleBefore = env.le(keylet::loanbroker(brokerKeylet.key));
+        if (!BEAST_EXPECT(brokerSleBefore))
+            return;
+        Account const brokerPseudo{"broker", brokerSleBefore->at(sfAccount)};
+
+        // Clawback 15 USD. 15 ≥ ULP=10 at scale 1 → passes the preclaim
+        // sub-ULP guard. accountSend canonicalizes the broker pseudo at
+        // mantissa 1499999999999998.5 → 1499999999999998 (even) →
+        // 14999999999999980 (loses 20). associateAsset rounds
+        // sfCoverAvailable identically. Both lose 20 — silent over-clawback
+        // by the canonicalization remainder (5), but no pseudo-vs-cover
+        // divergence.
+        env(loanBroker::coverClawback(issuer),
+            loanBroker::kLOAN_BROKER_ID(brokerKeylet.key),
+            kAMOUNT(usd(15)));
+        env.close();
+
+        auto const brokerSleAfter = env.le(keylet::loanbroker(brokerKeylet.key));
+        if (!BEAST_EXPECT(brokerSleAfter))
+            return;
+
+        STAmount const pseudoBalance = env.balance(brokerPseudo, usd);
+        Number const cover = brokerSleAfter->at(sfCoverAvailable);
+
+        BEAST_EXPECTS(
+            cover == Number{pseudoBalance},
+            "cover=" + to_string(cover) + " pseudo=" + to_string(Number{pseudoBalance}));
+        BEAST_EXPECTS(cover == Number{14'999'999'999'999'980LL}, "cover=" + to_string(cover));
+    }
+
+    // LoanBrokerCoverDeposit pseudo/cover convergence at the IOU edge.
+    // Broker pseudo parked at 1.5e16, super-ULP 15-unit deposit from a
+    // low-magnitude depositor canonicalizes both pseudo and
+    // sfCoverAvailable up to 15000000000000020 (half-even rounds .5 to
+    // even). Regression: canApplyToBrokerCover doesn't over-reject.
+    void
+    testCoverDepositConvergenceAtIouEdge()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), 2, 16};
+            // 1.5e16 + 15 headroom for the second deposit.
+            STAmount const aliceFund{usd.raw(), Number{15, 15}};
+
+            env(trust(alice, trustLimit));
+            env.close();
+            // Two tranches: first parks the broker pseudo at 1.5e16,
+            // second is the 15-unit super-ULP deposit under test.
+            env(pay(issuer, alice, aliceFund));
+            env(pay(issuer, alice, usd(15)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            {
+                using namespace loanBroker;
+                env(set(alice, vaultKeylet.key),
+                    kDEBT_MAXIMUM(Number{9, 15}),
+                    Fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            env(loanBroker::coverDeposit(alice, brokerKeylet.key, aliceFund));
+            env.close();
+
+            auto const brokerSleBefore = env.le(keylet::loanbroker(brokerKeylet.key));
+            if (!BEAST_EXPECT(brokerSleBefore))
+                return;
+            Account const brokerPseudo{"broker", brokerSleBefore->at(sfAccount)};
+
+            // 15 USD is supra-ULP at scale 1 (15/10 = 1.5 → half-even
+            // rounds to 2 → 20). canApplyToBrokerCover accepts;
+            // accountSendExact two-sided check at coarser scale 1 sees
+            // senderDelta=15 → 20 and receiverDelta=20 → 20; equal.
+            env(loanBroker::coverDeposit(alice, brokerKeylet.key, usd(15)));
+            env.close();
+
+            auto const brokerSleAfter = env.le(keylet::loanbroker(brokerKeylet.key));
+            if (!BEAST_EXPECT(brokerSleAfter))
+                return;
+
+            STAmount const pseudoBalance = env.balance(brokerPseudo, usd);
+            Number const cover = brokerSleAfter->at(sfCoverAvailable);
+
+            BEAST_EXPECTS(
+                cover == Number{pseudoBalance},
+                "cover=" + to_string(cover) + " pseudo=" + to_string(Number{pseudoBalance}));
+            BEAST_EXPECTS(cover == Number{15'000'000'000'000'020LL}, "cover=" + to_string(cover));
+        };
+
+        {
+            testcase(
+                "LoanBrokerCoverDeposit: broker pseudo TL and sfCoverAvailable "
+                "converge at the IOU edge (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0);
+        }
+        {
+            testcase(
+                "LoanBrokerCoverDeposit: broker pseudo TL and sfCoverAvailable "
+                "converge at the IOU edge (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments());
+        }
+    }
+
+    // LoanBrokerCoverWithdraw pseudo/cover convergence at the IOU edge.
+    // Symmetric to testCoverDepositConvergenceAtIouEdge: broker pseudo
+    // at 1.5e16 loses to canonicalization (15 → 20), both pseudo and
+    // sfCoverAvailable drop to 14999999999999980.
+    void
+    testCoverWithdrawConvergenceAtIouEdge()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), 2, 16};
+            STAmount const aliceFund{usd.raw(), Number{15, 15}};
+
+            env(trust(alice, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            {
+                using namespace loanBroker;
+                env(set(alice, vaultKeylet.key),
+                    kDEBT_MAXIMUM(Number{9, 15}),
+                    Fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            env(loanBroker::coverDeposit(alice, brokerKeylet.key, aliceFund));
+            env.close();
+
+            auto const brokerSleBefore = env.le(keylet::loanbroker(brokerKeylet.key));
+            if (!BEAST_EXPECT(brokerSleBefore))
+                return;
+            Account const brokerPseudo{"broker", brokerSleBefore->at(sfAccount)};
+
+            // 15 USD withdraw: broker pseudo at 1.5e16 canonicalizes down
+            // to 14999999999999980 (half-even on .5 mantissa → even);
+            // sfCoverAvailable rounds the same way via associateAsset.
+            env(loanBroker::coverWithdraw(alice, brokerKeylet.key, usd(15)));
+            env.close();
+
+            auto const brokerSleAfter = env.le(keylet::loanbroker(brokerKeylet.key));
+            if (!BEAST_EXPECT(brokerSleAfter))
+                return;
+
+            STAmount const pseudoBalance = env.balance(brokerPseudo, usd);
+            Number const cover = brokerSleAfter->at(sfCoverAvailable);
+
+            BEAST_EXPECTS(
+                cover == Number{pseudoBalance},
+                "cover=" + to_string(cover) + " pseudo=" + to_string(Number{pseudoBalance}));
+            BEAST_EXPECTS(cover == Number{14'999'999'999'999'980LL}, "cover=" + to_string(cover));
+        };
+
+        {
+            testcase(
+                "LoanBrokerCoverWithdraw: broker pseudo TL and sfCoverAvailable "
+                "converge at the IOU edge (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0);
+        }
+        {
+            testcase(
+                "LoanBrokerCoverWithdraw: broker pseudo TL and sfCoverAvailable "
+                "converge at the IOU edge (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments());
+        }
+    }
+
+    // LoanBrokerCoverClawback sub-ULP at IOU edge: broker cover at
+    // 1.5e16 (scale 1, ULP=10), 5-unit clawback rounds to zero on both
+    // pseudo and sfCoverAvailable → silent no-op. Pre-fix: tesSUCCESS
+    // with nothing moved. Post-fix: canApplyToBrokerCover rejects with
+    // tecPRECISION_LOSS.
+    void
+    testBugSubUlpCoverClawback()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), 2, 16};
+            STAmount const aliceFund{usd.raw(), Number{15, 15}};
+
+            env(trust(alice, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            {
+                using namespace loanBroker;
+                env(set(alice, vaultKeylet.key),
+                    kDEBT_MAXIMUM(Number{9, 15}),
+                    Fee(env.current()->fees().base * 2));
+            }
+            env.close();
+
+            env(loanBroker::coverDeposit(alice, brokerKeylet.key, aliceFund));
+            env.close();
+
+            auto const brokerSleBefore = env.le(keylet::loanbroker(brokerKeylet.key));
+            if (!BEAST_EXPECT(brokerSleBefore))
+                return;
+            Account const brokerPseudo{"broker", brokerSleBefore->at(sfAccount)};
+
+            STAmount const pseudoBefore = env.balance(brokerPseudo, usd);
+            Number const coverBefore = brokerSleBefore->at(sfCoverAvailable);
+
+            // Clawback 5 USD: sub-ULP at scale 1 (ULP=10).
+            // Pre: half-even rounding (1499999999999999.5 → 1500000000000000
+            // (even)) absorbs the 5 on both pseudo and sfCoverAvailable.
+            // Post: preclaim guard rejects upfront.
+            env(loanBroker::coverClawback(issuer),
+                loanBroker::kLOAN_BROKER_ID(brokerKeylet.key),
+                kAMOUNT(usd(5)),
+                Ter(expected));
+            env.close();
+
+            auto const brokerSleAfter = env.le(keylet::loanbroker(brokerKeylet.key));
+            if (!BEAST_EXPECT(brokerSleAfter))
+                return;
+
+            STAmount const pseudoAfter = env.balance(brokerPseudo, usd);
+            Number const coverAfter = brokerSleAfter->at(sfCoverAvailable);
+
+            // Pre: tesSUCCESS but no value moved (silent no-op).
+            // Post: tx rejected, no state change.
+            BEAST_EXPECT(Number{pseudoAfter} == Number{pseudoBefore});
+            BEAST_EXPECT(coverAfter == coverBefore);
+        };
+
+        {
+            testcase(
+                "bug: LoanBrokerCoverClawback sub-ULP at IOU edge silently "
+                "succeeds as no-op (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tesSUCCESS);
+        }
+        {
+            testcase(
+                "bug: LoanBrokerCoverClawback::preclaim catches sub-ULP "
+                "clawback (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tecPRECISION_LOSS);
+        }
+    }
+
     // LoanBrokerCoverDeposit by broker-owner=issuer with broker pseudo
     // parked at the IOU edge. Pre-fix: lockstep rounding makes the
     // helper-level SLE check pass (cover and pseudo round identically),
@@ -2575,17 +2926,27 @@ public:
     void
     run() override
     {
+        // -- Precision-loss bug class (fixCleanup3_2_0) -------------------
+        // Deposit
         testBugAssociateAssetEdgeBrokerCover();
-        testBugCoverWithdrawEdge();
-        testCoverClawbackEdge();
         testBugIssuerCoverDepositAtEdge();
-        testBugIssuerCoverWithdrawAtEdge();
         testBugSubUlpCoverDeposit();
+        testCoverDepositConvergenceAtIouEdge();
+        // Withdraw
+        testBugCoverWithdrawEdge();
+        testBugIssuerCoverWithdrawAtEdge();
         testBugSubUlpCoverWithdraw();
+        testCoverWithdrawConvergenceAtIouEdge();
+        // Clawback
+        testCoverClawbackEdge();
+        testBugSubUlpCoverClawback();
+        testCoverClawbackConvergenceAtIouEdge();
 
+        // -- LoanBroker operations ---------------------------------------
         testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
 
+        // -- Lifecycle / general ----------------------------------------
         testDisabled();
         testLifecycle();
         testInvalidLoanBrokerCoverClawback();
@@ -2595,9 +2956,9 @@ public:
         testInvalidLoanBrokerSet();
         testRequireAuth();
 
+        // -- Regression --------------------------------------------------
         testRIPD4323();
         testAmB06VaultFreezeCheckMissing();
-
         testRIPD4274();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
