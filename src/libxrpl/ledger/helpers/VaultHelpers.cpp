@@ -131,11 +131,12 @@ sharesToAssetsWithdraw(
 [[nodiscard]] TER
 depositToVault(
     ApplyView& view,
-    std::shared_ptr<SLE> const& vault,
+    SLE::ref vault,
     AccountID const& depositor,
     STAmount const& assetsDeposited,
     beast::Journal j)
 {
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::depositToVault : valid Vault SLE");
     AccountID const vaultAccount = vault->at(sfAccount);
     Asset const vaultAsset = vault->at(sfAsset);
 
@@ -247,7 +248,7 @@ depositToVault(
 withdrawFromVault(
     ApplyView& view,
     STTx const& tx,
-    std::shared_ptr<SLE> const& vault,
+    SLE::ref vault,
     AccountID const& depositor,
     AccountID const& destination,
     XRPAmount preFeeBalance,
@@ -255,6 +256,8 @@ withdrawFromVault(
     STAmount const& sharesRedeemed,
     beast::Journal j)
 {
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::withdrawFromVault : valid Vault SLE");
+
     AccountID const vaultAccount = vault->at(sfAccount);
     Asset const vaultAsset = vault->at(sfAsset);
 

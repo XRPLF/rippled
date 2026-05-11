@@ -1954,11 +1954,14 @@ loanMakePayment(
 [[nodiscard]] TER
 depositToBrokerCover(
     ApplyView& view,
-    std::shared_ptr<SLE> const& broker,
+    SLE::ref broker,
     AccountID const& depositor,
     STAmount const& amount,
     beast::Journal j)
 {
+    XRPL_ASSERT(
+        broker->getType() == ltLOAN_BROKER, "xrpl::depositToBrokerCover : valid LoanBroker sle");
+
     auto const vault = view.read(keylet::vault(broker->at(sfVaultID)));
     if (!vault)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -2048,13 +2051,16 @@ depositToBrokerCover(
 withdrawFromBrokerCover(
     ApplyView& view,
     STTx const& tx,
-    std::shared_ptr<SLE> const& broker,
+    SLE::ref broker,
     AccountID const& account,
     AccountID const& destination,
     XRPAmount preFeeBalance,
     STAmount const& amount,
     beast::Journal j)
 {
+    XRPL_ASSERT(
+        broker->getType() == ltLOAN_BROKER, "xrpl::withdrawFromBrokerCover : valid LoanBroker sle");
+
     auto const vault = view.read(keylet::vault(broker->at(sfVaultID)));
     if (!vault)
         return tecINTERNAL;  // LCOV_EXCL_LINE
