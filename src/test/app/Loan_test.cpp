@@ -7477,65 +7477,307 @@ protected:
         }
     }
 
+    // Verify that LoanBrokerCoverWithdraw's minimum cover check uses vault
+    // scale (not scale(debtTotal, asset)) when fixCleanup3_2_0 is enabled.
+    // Before the amendment, CoverWithdraw used
+    //   roundToAsset(asset, tenthBipsOfValue(debt, rate), scale(debt, asset))
+    // which could disagree with LoanPay's minimum (which used loanScale).
+    // After the amendment all transactors use minimumBrokerCover at vaultScale.
+    void
+    testCoverWithdrawMinimumConsistency(FeatureBitset features)
+    {
+        testcase("CoverWithdraw minimum cover scale consistency");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace loanBroker;
+
+        bool const withAmendment = features[fixCleanup3_2_0];
+
+        Env env(*this, features);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000'000), issuer, lender, borrower);
+        env.close();
+
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const iou = issuer[iouCurrency_];
+        env(trust(lender, iou(1'000'000'000)));
+        env(trust(borrower, iou(1'000'000'000)));
+        env.close();
+        env(pay(issuer, lender, iou(100'000'000)));
+        env(pay(issuer, borrower, iou(100'000'000)));
+        env.close();
+
+        // Use a large vault deposit so that vaultScale (from AssetsTotal)
+        // is strictly larger than debtScale (from DebtTotal).
+        // With vaultDeposit = 100,000: after the big loan
+        //   AssetsTotal ≈ 109,500 → vaultScale = -10
+        //   DebtTotal   ≈  10,000 → debtScale  = -11
+        // The one-order-of-magnitude gap makes roundToAsset at -10
+        // truncate more aggressively than at -11, exposing the bug.
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{13'370},
+            .coverDeposit = 5'000,
+            .managementFeeRate = TenthBips16{500}};
+
+        BrokerInfo const broker = createVaultAndBroker(env, iou, lender, brokerParams);
+        Asset const asset{iou};
+
+        // Create only the big loan to push DebtTotal up to ~10,000 while
+        // AssetsTotal stays around 109,500 (dominated by the large vault
+        // deposit).
+        env(set(borrower, broker.brokerID, Number{500}),
+            Sig(sfCounterpartySignature, lender),
+            kINTEREST_RATE(TenthBips32{100'000}),
+            kPAYMENT_TOTAL(20),
+            kPAYMENT_INTERVAL(86400 * 365),
+            Fee(XRP(10)));
+        env.close();
+
+        // Read broker state and compute both old and new minimums.
+        auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+        auto const vaultSle = env.le(keylet::vault(broker.vaultID));
+        if (!BEAST_EXPECT(brokerSle) || !BEAST_EXPECT(vaultSle))
+            return;
+
+        auto const coverAvail = brokerSle->at(sfCoverAvailable);
+        auto const debtTotal = brokerSle->at(sfDebtTotal);
+        auto const vaultScale = getAssetsTotalScale(vaultSle);
+        auto const debtScale = scale(debtTotal, asset);
+
+        // Sanity: debt scale differs from vault scale for this setup.
+        BEAST_EXPECT(debtScale < vaultScale);
+
+        auto const oldMin = [&]() {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            return roundToAsset(
+                asset,
+                tenthBipsOfValue(debtTotal, TenthBips32{brokerParams.coverRateMin}),
+                debtScale);
+        }();
+        auto const newMin = minimumBrokerCover(
+            asset, debtTotal, TenthBips32{brokerParams.coverRateMin}, vaultScale);
+
+        // The new (vaultScale) minimum must be strictly larger than the
+        // old (debtScale) minimum — that is the gap the amendment closes.
+        Number expectedNewMin{1330650518688500000, -15};
+        Number expectedOldMin{1330650518688472000, -15};
+        BEAST_EXPECT(newMin == expectedNewMin);
+        BEAST_EXPECT(oldMin == expectedOldMin);
+
+        // Try to withdraw so that remaining cover lands between the two
+        // minimums:  oldMin < target < newMin.
+        auto const target = oldMin + (newMin - oldMin) / 2;
+        auto const withdrawAmount = STAmount{asset, coverAvail - target};
+
+        if (withAmendment)
+        {
+            // CoverWithdraw now uses vaultScale: target < newMin → FAILS.
+            env(coverWithdraw(lender, broker.brokerID, withdrawAmount), Ter(tecINSUFFICIENT_FUNDS));
+        }
+        else
+        {
+            // Old CoverWithdraw uses debtScale: target > oldMin → SUCCEEDS.
+            env(coverWithdraw(lender, broker.brokerID, withdrawAmount));
+        }
+        env.close();
+    }
+
+    // Verify that LoanSet's minimum cover check uses vault scale (not the
+    // raw unrounded tenthBipsOfValue) when fixCleanup3_2_0 is enabled.
+    //
+    // Before the amendment, LoanSet used:
+    //   tenthBipsOfValue(newDebtTotal, coverRateMinimum)
+    // (no roundToAsset), while the clawback/withdraw transactors used
+    // different formulas.  After the amendment all use minimumBrokerCover
+    // at vaultScale, and rounding at a coarser scale can absorb a tiny
+    // debt increase — allowing a loan that would otherwise be rejected.
+    void
+    testLoanSetMinimumConsistency(FeatureBitset features)
+    {
+        testcase("LoanSet minimum cover scale consistency");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace loanBroker;
+
+        bool const withAmendment = features[fixCleanup3_2_0];
+
+        Env env(*this, features);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000'000), issuer, lender, borrower);
+        env.close();
+
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const iou = issuer[iouCurrency_];
+        env(trust(lender, iou(1'000'000'000)));
+        env(trust(borrower, iou(1'000'000'000)));
+        env.close();
+        env(pay(issuer, lender, iou(100'000'000)));
+        env(pay(issuer, borrower, iou(100'000'000)));
+        env.close();
+
+        // Same broker parameters as testMinimumBrokerCoverScale.
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 1'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{13'370},
+            .coverDeposit = 5'000,
+            .managementFeeRate = TenthBips16{500}};
+
+        BrokerInfo const broker = createVaultAndBroker(env, iou, lender, brokerParams);
+
+        // Create the tiny loan (scale -12) AND the big loan (scale -11),
+        // identical to testMinimumBrokerCoverScale.  Both loans are needed
+        // so that DebtTotal has a full 16-digit mantissa — a "messy" value
+        // where roundToAsset at vaultScale actually truncates digits and
+        // produces a different result from the raw tenthBipsOfValue.
+        // With only the big loan, DebtTotal has ~4 significant digits and
+        // rounding at scale -11 is a no-op, masking the amendment's effect.
+        env(set(borrower, broker.brokerID, Number{1, -2}),
+            Sig(sfCounterpartySignature, lender),
+            kINTEREST_RATE(TenthBips32{0}),
+            kPAYMENT_TOTAL(1),
+            kPAYMENT_INTERVAL(86400 * 365),
+            Fee(XRP(10)));
+        env.close();
+
+        env(set(borrower, broker.brokerID, Number{500}),
+            Sig(sfCounterpartySignature, lender),
+            kINTEREST_RATE(TenthBips32{100'000}),
+            kPAYMENT_TOTAL(20),
+            kPAYMENT_INTERVAL(86400 * 365),
+            Fee(XRP(10)));
+        env.close();
+
+        // Clawback to reduce cover to the clawback transactor's minimum.
+        env(env.json(
+            coverClawback(issuer),
+            kLOAN_BROKER_ID(broker.brokerID),
+            Fee(kNONE),
+            Seq(kNONE),
+            Sig(kNONE)));
+        env.close();
+
+        // Verify scales.
+        auto const vaultSle = env.le(keylet::vault(broker.vaultID));
+        if (!BEAST_EXPECT(vaultSle))
+            return;
+        auto const vaultScale = getAssetsTotalScale(vaultSle);
+        BEAST_EXPECT(vaultScale == -11);
+
+        // Now try to create a tiny additional loan.  Principal is 1e-11
+        // (the smallest value that survives the precision check at
+        // loanScale = vaultScale = -11), with 0% interest and 1 payment.
+        //
+        // The tiny debt increase adds ~1.337e-12 to the unrounded minimum.
+        // - Without the amendment: the old LoanSet formula rounds up during
+        //   tenthBipsOfValue (16-digit Number normalisation), pushing the
+        //   minimum past the cover left by clawback → tecINSUFFICIENT_FUNDS.
+        // - With the amendment: minimumBrokerCover rounds at vaultScale=-11,
+        //   which absorbs the tiny increase — the rounded minimum stays the
+        //   same → tesSUCCESS.
+        auto const tinyPrincipal = Number{1, -11};
+
+        if (withAmendment)
+        {
+            env(set(borrower, broker.brokerID, tinyPrincipal),
+                Sig(sfCounterpartySignature, lender),
+                kINTEREST_RATE(TenthBips32{0}),
+                kPAYMENT_TOTAL(1),
+                kPAYMENT_INTERVAL(86400 * 365),
+                Fee(XRP(10)));
+        }
+        else
+        {
+            env(set(borrower, broker.brokerID, tinyPrincipal),
+                Sig(sfCounterpartySignature, lender),
+                kINTEREST_RATE(TenthBips32{0}),
+                kPAYMENT_TOTAL(1),
+                kPAYMENT_INTERVAL(86400 * 365),
+                Fee(XRP(10)),
+                Ter(tecINSUFFICIENT_FUNDS));
+        }
+        env.close();
+    }
+
 public:
     void
     run() override
     {
-        // #if LOAN_TODO
-        //         testLoanPayLateFullPaymentBypassesPenalties();
-        //         testLoanCoverMinimumRoundingExploit();
-        // #endif
-        //         testWithdrawReflectsUnrealizedLoss();
-        //         testInvalidLoanSet();
+#if LOAN_TODO
+        testLoanPayLateFullPaymentBypassesPenalties();
+        testLoanCoverMinimumRoundingExploit();
+#endif
+        testWithdrawReflectsUnrealizedLoss();
+        testInvalidLoanSet();
 
-        //         auto const all = jtx::testableAmendments();
-        //         testCoverDepositWithdrawNonTransferableMPT(all);
-        //         testCoverDepositWithdrawNonTransferableMPT(all - featureMPTokensV2);
-        //         testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic();
+        auto const all = jtx::testableAmendments();
+        testCoverDepositWithdrawNonTransferableMPT(all);
+        testCoverDepositWithdrawNonTransferableMPT(all - featureMPTokensV2);
+        testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic();
 
-        //         testDisabled();
-        //         testSelfLoan();
-        //         testIssuerLoan();
-        //         testLoanSet();
-        //         testLifecycle();
-        //         testServiceFeeOnBrokerDeepFreeze();
+        testDisabled();
+        testSelfLoan();
+        testIssuerLoan();
+        testLoanSet();
+        testLifecycle();
+        testServiceFeeOnBrokerDeepFreeze();
 
-        //         testRPC();
-        //         testInvalidLoanDelete();
-        //         testInvalidLoanManage();
-        //         testInvalidLoanPay();
+        testRPC();
+        testInvalidLoanDelete();
+        testInvalidLoanManage();
+        testInvalidLoanPay();
 
-        //         testBatchBypassCounterparty();
-        //         testLoanPayComputePeriodicPaymentValidRateInvariant();
-        //         testAccountSendMptMinAmountInvariant();
-        //         testLoanPayDebtDecreaseInvariant();
-        //         testWrongMaxDebtBehavior();
-        //         testLoanPayComputePeriodicPaymentValidTotalInterestInvariant();
-        //         testDosLoanPay(all | fixSecurity3_1_3);
-        //         testDosLoanPay(all - fixSecurity3_1_3);
-        //         testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant();
-        //         testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant();
-        //         testLoanNextPaymentDueDateOverflow();
+        testBatchBypassCounterparty();
+        testLoanPayComputePeriodicPaymentValidRateInvariant();
+        testAccountSendMptMinAmountInvariant();
+        testLoanPayDebtDecreaseInvariant();
+        testWrongMaxDebtBehavior();
+        testLoanPayComputePeriodicPaymentValidTotalInterestInvariant();
+        testDosLoanPay(all | fixSecurity3_1_3);
+        testDosLoanPay(all - fixSecurity3_1_3);
+        testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant();
+        testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant();
+        testLoanNextPaymentDueDateOverflow();
 
-        //         testRequireAuth();
-        //         testDustManipulation();
+        testRequireAuth();
+        testDustManipulation();
 
-        //         testRIPD3831();
-        //         testRIPD3459();
-        //         testRIPD3901();
-        //         testRIPD3902();
-        //         testRoundingAllowsUndercoverage();
-        //         testBorrowerIsBroker();
-        //         testIssuerIsBorrower();
-        //         testLimitExceeded();
-        //         testOverpaymentManagementFee();
-        //         testLoanPayBrokerOwnerMissingTrustline();
-        //         testLoanPayBrokerOwnerUnauthorizedMPT();
-        //         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
-        //         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
-        //         testSequentialFLCDepletion();
+        testRIPD3831();
+        testRIPD3459();
+        testRIPD3901();
+        testRIPD3902();
+        testRoundingAllowsUndercoverage();
+        testBorrowerIsBroker();
+        testIssuerIsBorrower();
+        testLimitExceeded();
+        testOverpaymentManagementFee();
+        testLoanPayBrokerOwnerMissingTrustline();
+        testLoanPayBrokerOwnerUnauthorizedMPT();
+        testLoanPayBrokerOwnerNoPermissionedDomainMPT();
+        testLoanSetBrokerOwnerNoPermissionedDomainMPT();
+        testSequentialFLCDepletion();
         testMinimumBrokerCoverScale(all_);
         testMinimumBrokerCoverScale(all_ - fixCleanup3_2_0);
+        testCoverWithdrawMinimumConsistency(all_);
+        testCoverWithdrawMinimumConsistency(all_ - fixCleanup3_2_0);
+        testLoanSetMinimumConsistency(all_);
+        testLoanSetMinimumConsistency(all_ - fixCleanup3_2_0);
     }
 };
 
