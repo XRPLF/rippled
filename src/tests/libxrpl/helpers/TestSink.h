@@ -13,12 +13,12 @@ public:
         return sink;
     }
 
-    TestSink(beast::severities::Severity threshold = beast::severities::KDebug);
+    TestSink(beast::Severity threshold = beast::Severity::Debug);
 
     void
-    write(beast::severities::Severity level, std::string const& text) override;
+    write(beast::Severity level, std::string const& text) override;
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text) override;
+    writeAlways(beast::Severity level, std::string const& text) override;
 };
 }  // namespace xrpl

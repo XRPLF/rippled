@@ -16,25 +16,23 @@ namespace xrpl {
 static uint256 const&
 depthMask(unsigned int depth)
 {
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { MaskSize = 65 };
+    static constexpr auto kMASK_SIZE = 65;
 
     struct MasksT
     {
-        uint256 entry[MaskSize];
+        uint256 entry[kMASK_SIZE];
 
         MasksT()
         {
             uint256 selector;
-            for (int i = 0; i < MaskSize - 1; i += 2)
+            for (int i = 0; i < kMASK_SIZE - 1; i += 2)
             {
                 entry[i] = selector;
                 *(selector.begin() + (i / 2)) = 0xF0;
                 entry[i + 1] = selector;
                 *(selector.begin() + (i / 2)) = 0xFF;
             }
-            entry[MaskSize - 1] = selector;
+            entry[kMASK_SIZE - 1] = selector;
         }
     };
 

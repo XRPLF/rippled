@@ -12,7 +12,7 @@ struct RPCErr;
 json::Value
 rpcError(ErrorCodeI iError)
 {
-    json::Value jvResult(json::ObjectValue);
+    json::Value jvResult(json::ValueType::Object);
     RPC::injectError(iError, jvResult);
     return jvResult;
 }

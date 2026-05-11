@@ -194,7 +194,7 @@ PeerImp::~PeerImp()
 
 // Helper function to check for valid uint256 values in protobuf buffers
 static bool
-stringIsUint256Sized(std::string const& pBuffStr)
+stringIsUInt256Sized(std::string const& pBuffStr)
 {
     return pBuffStr.size() == uint256::size();
 }
@@ -323,14 +323,14 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 
     auto sendqSize = sendQueue_.size();
 
-    if (sendqSize < Tuning::TargetSendQueue)
+    if (sendqSize < Tuning::kTARGET_SEND_QUEUE)
     {
         // To detect a peer that does not read from their
         // side of the connection, we expect a peer to have
         // a small senq periodically
         largeSendq_ = 0;
     }
-    else if (auto sink = journal_.debug(); sink && (sendqSize % Tuning::SendQueueLogFreq) == 0)
+    else if (auto sink = journal_.debug(); sink && (sendqSize % Tuning::kSEND_QUEUE_LOG_FREQ) == 0)
     {
         std::string const n = name();
         sink << n << " sendq: " << sendqSize;
@@ -446,7 +446,7 @@ PeerImp::getVersion() const
 json::Value
 PeerImp::json()
 {
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret[jss::public_key] = toBase58(TokenType::NodePublic, publicKey_);
     ret[jss::address] = remoteAddress_.toString();
@@ -548,7 +548,7 @@ PeerImp::json()
         }
     }
 
-    ret[jss::metrics] = json::Value(json::ObjectValue);
+    ret[jss::metrics] = json::Value(json::ValueType::Object);
     ret[jss::metrics][jss::total_bytes_recv] = std::to_string(metrics_.recv.totalBytes());
     ret[jss::metrics][jss::total_bytes_sent] = std::to_string(metrics_.sent.totalBytes());
     ret[jss::metrics][jss::avg_bps_recv] = std::to_string(metrics_.recv.averageBytes());
@@ -654,7 +654,7 @@ PeerImp::fail(std::string const& reason)
         return;
 
     // Call to name() locks, log only if the message will be outputted
-    if (journal_.active(beast::severities::KWarning))
+    if (journal_.active(beast::Severity::Warning))
     {
         std::string const n = name();
         JLOG(journal_.warn()) << n << " failed: " << reason;
@@ -805,7 +805,7 @@ PeerImp::onTimer(error_code const& ec)
         return;
     }
 
-    if (largeSendq_++ >= Tuning::SendqIntervals)
+    if (largeSendq_++ >= Tuning::kSENDQ_INTERVALS)
     {
         fail("Large send queue");
         return;
@@ -1593,7 +1593,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
     }
 
     // Verify ledger hash
-    if (m->has_ledgerhash() && !stringIsUint256Sized(m->ledgerhash()))
+    if (m->has_ledgerhash() && !stringIsUInt256Sized(m->ledgerhash()))
     {
         badData("Invalid ledger hash");
         return;
@@ -1647,7 +1647,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
     // Verify query depth
     if (m->has_querydepth())
     {
-        if (m->querydepth() > Tuning::MaxQueryDepth || itype == protocol::liBASE)
+        if (m->querydepth() > Tuning::kMAX_QUERY_DEPTH || itype == protocol::liBASE)
         {
             badData("Invalid query depth");
             return;
@@ -1772,7 +1772,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     };
 
     // Verify ledger hash
-    if (!stringIsUint256Sized(m->ledgerhash()))
+    if (!stringIsUInt256Sized(m->ledgerhash()))
     {
         badData("Invalid ledger hash");
         return;
@@ -1818,7 +1818,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     }
 
     // Verify ledger nodes.
-    if (m->nodes_size() <= 0 || m->nodes_size() > Tuning::HardMaxReplyNodes)
+    if (m->nodes_size() <= 0 || m->nodes_size() > Tuning::kHARD_MAX_REPLY_NODES)
     {
         badData("Invalid Ledger/TXset nodes " + std::to_string(m->nodes_size()));
         return;
@@ -1875,7 +1875,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         return;
     }
 
-    if (!stringIsUint256Sized(set.currenttxhash()) || !stringIsUint256Sized(set.previousledger()))
+    if (!stringIsUInt256Sized(set.currenttxhash()) || !stringIsUInt256Sized(set.previousledger()))
     {
         JLOG(pJournal_.warn()) << "Proposal: malformed";
         fee_.update(Resource::kFEE_MALFORMED_REQUEST, "bad hashes");
@@ -2009,7 +2009,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 
     {
         uint256 closedLedgerHash{};
-        bool const peerChangedLedgers{m->has_ledgerhash() && stringIsUint256Sized(m->ledgerhash())};
+        bool const peerChangedLedgers{m->has_ledgerhash() && stringIsUInt256Sized(m->ledgerhash())};
 
         {
             // Operations on closedLedgerHash_ and previousLedgerHash_ must be
@@ -2026,7 +2026,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
                 closedLedgerHash_.zero();
             }
 
-            if (m->has_ledgerhashprevious() && stringIsUint256Sized(m->ledgerhashprevious()))
+            if (m->has_ledgerhashprevious() && stringIsUInt256Sized(m->ledgerhashprevious()))
             {
                 previousLedgerHash_ = m->ledgerhashprevious();
                 addLedger(previousLedgerHash_, sl);
@@ -2063,7 +2063,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
     }
 
     app_.getOPs().pubPeerStatus([m, this]() -> json::Value {
-        json::Value j = json::ObjectValue;
+        json::Value j = json::ValueType::Object;
 
         if (m->has_newstatus())
         {
@@ -2160,13 +2160,13 @@ PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
 {
     int const diff = std::max(seq1, seq2) - std::min(seq1, seq2);
 
-    if (diff < Tuning::ConvergedLedgerLimit)
+    if (diff < Tuning::kCONVERGED_LEDGER_LIMIT)
     {
         // The peer's ledger sequence is close to the validation's
         tracking_ = Tracking::Converged;
     }
 
-    if ((diff > Tuning::DivergedLedgerLimit) && (tracking_.load() != Tracking::Diverged))
+    if ((diff > Tuning::kDIVERGED_LEDGER_LIMIT) && (tracking_.load() != Tracking::Diverged))
     {
         // The peer's ledger sequence is way off the validation's
         std::scoped_lock const sl(recentLock_);
@@ -2179,7 +2179,7 @@ PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
 {
-    if (!stringIsUint256Sized(m->hash()))
+    if (!stringIsUInt256Sized(m->hash()))
     {
         fee_.update(Resource::kFEE_MALFORMED_REQUEST, "bad hash");
         return;
@@ -2571,7 +2571,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
     if (packet.query())
     {
         // this is a query
-        if (sendQueue_.size() >= Tuning::DropSendQueue)
+        if (sendQueue_.size() >= Tuning::kDROP_SEND_QUEUE)
         {
             JLOG(pJournal_.debug()) << "GetObject: Large send queue";
             return;
@@ -2608,7 +2608,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
         if (packet.has_ledgerhash())
         {
-            if (!stringIsUint256Sized(packet.ledgerhash()))
+            if (!stringIsUInt256Sized(packet.ledgerhash()))
             {
                 fee_.update(Resource::kFEE_MALFORMED_REQUEST, "ledger hash");
                 return;
@@ -2623,7 +2623,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         for (int i = 0; i < packet.objects_size(); ++i)
         {
             auto const& obj = packet.objects(i);
-            if (obj.has_hash() && stringIsUint256Sized(obj.hash()))
+            if (obj.has_hash() && stringIsUInt256Sized(obj.hash()))
             {
                 uint256 const hash{obj.hash()};
                 // VFALCO TODO Move this someplace more sensible so we dont
@@ -2643,7 +2643,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
                     // Check if by adding this object, reply has reached its
                     // limit
-                    if (reply.objects_size() >= Tuning::HardMaxReplyNodes)
+                    if (reply.objects_size() >= Tuning::kHARD_MAX_REPLY_NODES)
                     {
                         fee_.update(
                             Resource::kFEE_MODERATE_BURDEN_PEER,
@@ -2669,7 +2669,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         {
             protocol::TMIndexedObject const& obj = packet.objects(i);
 
-            if (obj.has_hash() && stringIsUint256Sized(obj.hash()))
+            if (obj.has_hash() && stringIsUInt256Sized(obj.hash()))
             {
                 if (obj.has_ledgerseq())
                 {
@@ -2740,7 +2740,7 @@ PeerImp::handleHaveTransactions(std::shared_ptr<protocol::TMHaveTransactions> co
 
     for (std::uint32_t i = 0; i < m->hashes_size(); i++)
     {
-        if (!stringIsUint256Sized(m->hashes(i)))
+        if (!stringIsUInt256Sized(m->hashes(i)))
         {
             JLOG(pJournal_.error()) << "TMHaveTransactions with invalid hash size";
             fee_.update(Resource::kFEE_MALFORMED_REQUEST, "hash size");
@@ -2872,7 +2872,7 @@ PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
         return;
     }
 
-    if (!stringIsUint256Sized(packet->ledgerhash()))
+    if (!stringIsUInt256Sized(packet->ledgerhash()))
     {
         JLOG(pJournal_.warn()) << "FetchPack hash size malformed";
         fee_.update(Resource::kFEE_MALFORMED_REQUEST, "hash size");
@@ -2910,7 +2910,7 @@ PeerImp::doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& pack
     {
         auto const& obj = packet->objects(i);
 
-        if (!stringIsUint256Sized(obj.hash()))
+        if (!stringIsUInt256Sized(obj.hash()))
         {
             fee_.update(Resource::kFEE_MALFORMED_REQUEST, "hash size");
             return;
@@ -3402,7 +3402,7 @@ PeerImp::processLedgerRequest(
     }
     else
     {
-        if (sendQueue_.size() >= Tuning::DropSendQueue)
+        if (sendQueue_.size() >= Tuning::kDROP_SEND_QUEUE)
         {
             JLOG(pJournal_.debug()) << "processLedgerRequest: Large send queue";
             return;
@@ -3466,11 +3466,11 @@ PeerImp::processLedgerRequest(
 
         for (auto const& nodeID : nodeIDs)
         {
-            if (ledgerData.nodes_size() >= Tuning::SoftMaxReplyNodes)
+            if (ledgerData.nodes_size() >= Tuning::kSOFT_MAX_REPLY_NODES)
                 break;
 
             data.clear();
-            data.reserve(Tuning::SoftMaxReplyNodes);
+            data.reserve(Tuning::kSOFT_MAX_REPLY_NODES);
 
             try
             {
@@ -3481,7 +3481,7 @@ PeerImp::processLedgerRequest(
 
                     for (auto const& d : data)
                     {
-                        if (ledgerData.nodes_size() >= Tuning::HardMaxReplyNodes)
+                        if (ledgerData.nodes_size() >= Tuning::kHARD_MAX_REPLY_NODES)
                             break;
 
                         protocol::TMLedgerNode* node{ledgerData.add_nodes()};
