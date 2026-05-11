@@ -141,16 +141,16 @@ fixConfigPorts(Config& config, Endpoints const& endpoints);
 class ApplicationImp : public Application, public BasicApp
 {
 private:
-    class IoLatencySampler
+    class IOLatencySampler
     {
     private:
         beast::insight::Event event_;
         beast::Journal journal_;
-        beast::IoLatencyProbe<std::chrono::steady_clock> probe_;
+        beast::IOLatencyProbe<std::chrono::steady_clock> probe_;
         std::atomic<std::chrono::milliseconds> lastSample_;
 
     public:
-        IoLatencySampler(
+        IOLatencySampler(
             beast::insight::Event ev,
             beast::Journal journal,
             std::chrono::milliseconds interval,
@@ -272,7 +272,7 @@ public:
 
     std::unique_ptr<ResolverAsio> resolver_;
 
-    IoLatencySampler io_latency_sampler_;
+    IOLatencySampler io_latency_sampler_;
 
     std::unique_ptr<GRPCServer> grpcServer_;
     // NOLINTEND(readability-identifier-naming)

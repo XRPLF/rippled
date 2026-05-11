@@ -624,7 +624,7 @@ private:
 
 inline SHAMap::ConstIterator::ConstIterator(SHAMap const* map) : map_(map)
 {
-    XRPL_ASSERT(map_, "xrpl::SHAMap::const_iterator::const_iterator : non-null input");
+    XRPL_ASSERT(map_, "xrpl::SHAMap::ConstIterator::ConstIterator : non-null input");
 
     if (auto temp = map_->peekFirstItem(stack_))
         item_ = temp->peekItem().get();

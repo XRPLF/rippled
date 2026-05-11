@@ -376,8 +376,8 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
                     if (addr.is_unspecified())
                     {
                         JLOG(journal_.error()) << "Can't pass unspecified IP in "
-                                               << "secureGateway section of port_grpc";
-                        Throw<std::runtime_error>("Unspecified IP in secureGateway section");
+                                               << "secure_gateway section of port_grpc";
+                        Throw<std::runtime_error>("Unspecified IP in secure_gateway section");
                     }
 
                     secureGatewayIPs_.emplace_back(addr);
@@ -386,7 +386,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
             catch (std::exception const&)
             {
                 JLOG(journal_.error()) << "Error parsing secure gateway IPs for grpc server";
-                Throw<std::runtime_error>("Error parsing secureGateway section");
+                Throw<std::runtime_error>("Error parsing secure_gateway section");
             }
         }
 

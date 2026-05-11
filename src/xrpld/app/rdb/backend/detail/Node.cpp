@@ -87,7 +87,7 @@ toString(TableType type)
             return "AccountTransactions";
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("xrpl::detail::to_string : invalid TableType");
+            UNREACHABLE("xrpl::detail::toString : invalid TableType");
             return "Unknown";
             // LCOV_EXCL_STOP
     }

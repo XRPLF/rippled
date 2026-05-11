@@ -745,12 +745,12 @@ public:
         // The object must exist in our table
         XRPL_ASSERT(
             slots.contains(slot->remoteEndpoint()),
-            "xrpl::PeerFinder::Logic::on_endpoints : valid slot input");
+            "xrpl::PeerFinder::Logic::onEndpoints : valid slot input");
 
         // Must be handshaked!
         XRPL_ASSERT(
             slot->state() == Slot::State::Active,
-            "xrpl::PeerFinder::Logic::on_endpoints : valid slot state");
+            "xrpl::PeerFinder::Logic::onEndpoints : valid slot state");
 
         clock_type::time_point const now(clock.now());
 
@@ -762,7 +762,7 @@ public:
 
         for (auto const& ep : list)
         {
-            XRPL_ASSERT(ep.hops, "xrpl::PeerFinder::Logic::on_endpoints : nonzero hops");
+            XRPL_ASSERT(ep.hops, "xrpl::PeerFinder::Logic::onEndpoints : nonzero hops");
 
             slot->recent.insert(ep.address, ep.hops);
 

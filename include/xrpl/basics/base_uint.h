@@ -274,7 +274,7 @@ public:
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
-            "xrpl::base_uint::base_uint(Container auto) : input size match");
+            "xrpl::BaseUInt::BaseUInt(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
     }
 
@@ -287,7 +287,7 @@ public:
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
-            "xrpl::base_uint::operator=(Container auto) : input size match");
+            "xrpl::BaseUInt::operator=(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
         return *this;
     }
