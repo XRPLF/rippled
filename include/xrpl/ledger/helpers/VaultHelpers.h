@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -11,8 +12,84 @@
 
 #include <memory>
 #include <optional>
+#include <string_view>
 
 namespace xrpl {
+
+// =============================================================================================
+// Vault asset accounting precision (fixCleanup3_2_0)
+// =============================================================================================
+//
+// A vault tracks two STNumber accounting fields:
+//   - sfAssetsTotal       — total accounted assets, including outstanding loan value.
+//   - sfAssetsAvailable   — assets the vault pseudo-account actually holds (mirrors its IOU TL).
+//
+// With outstanding loans, sfAssetsAvailable < sfAssetsTotal, and the two can land in different
+// IOU exponent bands. Different bands → different ULPs.
+//
+// Bug — silent SLE asymmetric rounding: when the fields sit at different scales, the same request
+// canonicalizes differently on each. The pseudo-account trustline and sfAssetsAvailable apply the
+// exact delta; sfAssetsTotal rounds to the nearest multiple of its (coarser) ULP, drifting by up to
+// one ULP. Repeated ops accumulate dust until the vault conservation invariant trips.
+//
+//   Example: sfAssetsTotal at 1.5×10^16 (ULP=10), sfAssetsAvailable at 5×10^15 (ULP=1).
+//   A 7-unit withdrawal: pseudo TL and sfAssetsAvailable lose 7 (exact); sfAssetsTotal loses 10.
+//   sfAssetsTotal under-states accounted assets by 3.
+//
+// Defense layers (post-fixCleanup3_2_0):
+//
+//   1. canApplyToVault preclaim guard. Two legs, both return tecPRECISION_LOSS:
+//        a. Rail sub-ULP — reject when the request rounds to zero at sfAssetsAvailable's scale
+//           (silent absorption). Uses roundsToZeroAtScale().
+//        b. Coarser-scale lossless — only when sfAssetsTotal sits coarser than sfAssetsAvailable
+//            require the request rounds losslessly at sfAssetsTotal's scale. Uses
+//            roundsLosslesslyAtScale(). Skipping the leg when scales match avoids over-
+//           rejecting legitimate same-scale fractional ops.
+//
+//   2. accountSendExact (in depositToVault and via doWithdraw in withdrawFromVault). Verifies
+//      sender loss == receiver gain across the two trust lines. VaultClawback uses plain
+//      accountSend — destination is the asset issuer, no second TL to round against.
+//
+//   3. equalAtAssetScale cross-check (in depositToVault and withdrawFromVault). Defense-in-depth
+//      at the coarser field's scale; lenient by design (tolerates the 1-ULP drift the preclaim
+//      guard catches upfront) and guards against grosser corruption.
+//
+// Trade-off — granularity floor: in the loan-trapped state, leg (b) rejects any request that
+// isn't a clean multiple of the coarser ULP. A holder with a 7-unit stake (per the example)
+// can't withdraw via any denomination until outstanding loans repay and sfAssetsAvailable grows
+// back into sfAssetsTotal's exponent band.
+//
+// Applies symmetrically to VaultDeposit, VaultWithdraw, VaultClawback.
+//
+// =============================================================================================
+
+/** Vault preclaim precision guard. Catches the two-part bug class documented
+ *  above: silent absorption on the rail (request rounds to zero at
+ *  sfAssetsAvailable's scale) and asymmetric SLE rounding in the loan-trapped
+ *  state (request fails lossless canonicalization at sfAssetsTotal's coarser
+ *  scale).
+ *
+ *  Returns tesSUCCESS when the amendment is disabled, when amount is zero
+ *  (caller's responsibility to handle the zero case downstream), or when the
+ *  request passes both legs. Returns tecPRECISION_LOSS on rejection.
+ *
+ *  Share-denominated requests must be converted to their asset equivalent
+ *  via sharesToAssetsWithdraw before invoking; the doApply SLE subtraction
+ *  operates on the converted value, so the predicate must too.
+ *
+ *  @param view       Apply view (rules used for amendment gating).
+ *  @param vault      The vault SLE (read-only).
+ *  @param amount     Asset-denominated effective subtraction/addition amount.
+ *  @param j          Journal for logging.
+ *  @param logPrefix  Transactor name for log diagnostics (e.g. "VaultDeposit").
+ */
+[[nodiscard]] TER
+canApplyToVault(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& vault,
+    STAmount const& amount,
+    beast::Journal j,
+    std::string_view logPrefix);
 
 /** From the perspective of a vault, return the number of shares to give
     depositor when they offer a fixed amount of assets. Note, since shares are

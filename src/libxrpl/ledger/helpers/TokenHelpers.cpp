@@ -1476,6 +1476,12 @@ roundsToZeroAtScale(Asset const& asset, STAmount const& amount, int scale)
     return roundToAsset(asset, amount, scale).signum() == 0;
 }
 
+[[nodiscard]] bool
+roundsLosslesslyAtScale(Asset const& asset, STAmount const& amount, int scale)
+{
+    return roundToAsset(asset, amount, scale) == Number{amount};
+}
+
 TER
 accountSendMulti(
     ApplyView& view,

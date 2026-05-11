@@ -306,6 +306,18 @@ accountSendExact(
 [[nodiscard]] bool
 roundsToZeroAtScale(Asset const& asset, STAmount const& amount, int scale);
 
+/** Returns true iff `amount` is representable exactly at `scale` for
+ *  `asset` (i.e., canonicalizing at this scale preserves the value).
+ *  Strict superset of roundsToZeroAtScale: also catches supra-ULP-at-
+ *  coarser-scale amounts whose mantissa doesn't align with the coarser
+ *  ULP grid. Used by vault preclaims to reject requests that would
+ *  canonicalize asymmetrically across two STNumber accounting fields
+ *  (sfAssetsTotal vs sfAssetsAvailable) stored at different exponent
+ *  bands due to outstanding loans.
+ */
+[[nodiscard]] bool
+roundsLosslesslyAtScale(Asset const& asset, STAmount const& amount, int scale);
+
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
 /** Like accountSend, except one account is sending multiple payments (with the
  *  same asset!) simultaneously

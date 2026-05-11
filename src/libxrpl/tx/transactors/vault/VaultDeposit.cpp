@@ -132,25 +132,11 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             SpendableHandling::FullBalance) < assets)
         return tecINSUFFICIENT_FUNDS;
 
-    // Post-fixCleanup3_2_0: reject deposits whose amount is sub-ULP at the
-    // vault's coarsest accounting rail. associateAsset would silently round
-    // the increment away on the coarser SLE field; the helper's two-sided
-    // cross-check tolerates the rounding (both deltas collapse to the same
-    // coarse bucket); VaultInvariant's "deposit must observably increase
-    // vault balance" assertion is what would otherwise catch it at finalize
-    // as tecINVARIANT_FAILED. Surface it here as a friendly tecPRECISION_LOSS.
-    if (ctx.view.rules().enabled(fixCleanup3_2_0))
-    {
-        // sfAssetsAvailable <= sfAssetsTotal, so scale(sfAssetsTotal) is
-        // already the coarsest of the two accounting fields.
-        int const vaultScale = scale(vault->at(sfAssetsTotal), vaultAsset);
-        if (roundsToZeroAtScale(vaultAsset, assets, vaultScale))
-        {
-            JLOG(ctx.j.warn()) << "VaultDeposit: amount " << assets.getFullText()
-                               << " is sub-ULP at vault scale " << vaultScale;
-            return tecPRECISION_LOSS;
-        }
-    }
+    // Post-fixCleanup3_2_0 preclaim precision guard.
+    // See VaultHelpers.h "Vault asset accounting precision" for the bug
+    // class, defense layers, and granularity-floor trade-off.
+    if (auto const ret = canApplyToVault(ctx.view, vault, assets, ctx.j, "VaultDeposit"))
+        return ret;
 
     return tesSUCCESS;
 }

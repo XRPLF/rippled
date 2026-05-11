@@ -25,6 +25,46 @@
 
 namespace xrpl {
 
+[[nodiscard]] TER
+canApplyToVault(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& vault,
+    STAmount const& amount,
+    beast::Journal j,
+    std::string_view logPrefix)
+{
+    if (!view.rules().enabled(fixCleanup3_2_0))
+        return tesSUCCESS;
+    if (amount == beast::kZERO)
+        return tesSUCCESS;
+
+    Asset const vaultAsset = vault->at(sfAsset);
+
+    // (a) Rail sub-ULP: silent absorption when the request rounds to zero at
+    //     sfAssetsAvailable's scale.
+    int const availScale = scale(vault->at(sfAssetsAvailable), vaultAsset);
+    if (roundsToZeroAtScale(vaultAsset, amount, availScale))
+    {
+        JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
+                       << " rounds to zero at available scale " << availScale;
+        return tecPRECISION_LOSS;
+    }
+
+    // (b) Coarser-scale lossless: only when scales actually differ
+    //     (loan-trapped state). Same-scale ops are symmetric by construction
+    //     so the lossless leg would over-reject legitimate fractional ops.
+    int const totalScale = scale(vault->at(sfAssetsTotal), vaultAsset);
+    if (totalScale > availScale && !roundsLosslesslyAtScale(vaultAsset, amount, totalScale))
+    {
+        JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
+                       << " is not representable at vault total scale " << totalScale
+                       << " while available is at scale " << availScale;
+        return tecPRECISION_LOSS;
+    }
+
+    return tesSUCCESS;
+}
+
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesDeposit(
     std::shared_ptr<SLE const> const& vault,
@@ -199,8 +239,7 @@ depositToVault(
     //
     // The two field deltas should agree at the asset's precision. When
     // sfAssetsTotal sits at a different magnitude from sfAssetsAvailable
-    // (loans outstanding, sfAssetsTotal == sfAssetsAvailable + outstanding
-    // principal) a deposit that fits cleanly on sfAssetsAvailable can still
+    // a deposit that fits cleanly on sfAssetsAvailable can still
     // be silently rounded inside roundToAsset on sfAssetsTotal, leaving
     // total understated relative to the vault's actual receipt.
     //
@@ -209,14 +248,6 @@ depositToVault(
     // fields receive `+= assetsDeposited` in Number arithmetic; the
     // tolerance admits sub-coarser-side-ULP canonicalization noise
     // accumulated from prior operations.
-    //
-    // Note: this check does NOT fire on the sfAssetsTotal-at-edge /
-    // sfAssetsAvailable-below-edge bug class (small deposit pushes
-    // sfAssetsTotal past 10^16 while sfAssetsAvailable gains cleanly).
-    // At the comparison scale, both deltas round to the same coarse
-    // bucket and the equality holds; VaultInvariant's "deposit must
-    // observably increase vault balance" assertion catches that case at
-    // finalize time. See testBugSleDeltaCheckTotalEdgeWithLoan.
     Number const afterAssetsTotal = *vault->at(sfAssetsTotal);
     Number const afterAssetsAvailable = *vault->at(sfAssetsAvailable);
     Number const totalDelta = afterAssetsTotal - beforeAssetsTotal;
@@ -235,6 +266,11 @@ depositToVault(
             firstNonzero(beforeAssetsAvailable, afterAssetsAvailable),
             vaultAsset))
     {
+        // Catches the post-state edge-cross asymmetric rounding case
+        // that canApplyToVault can't catch in preclaim — when both
+        // fields start at the same scale but a deposit pushes only
+        // one of them across a 10^N boundary, the canonicalization
+        // produces unequal deltas. See testBugVaultDepositSleAsymmetricRounding.
         JLOG(j.error()) << "depositToVault: vault accounting delta mismatch"
                         << " totalDelta=" << to_string(totalDelta)
                         << " availableDelta=" << to_string(availableDelta);
@@ -363,6 +399,8 @@ withdrawFromVault(
             firstNonzero(beforeAssetsAvailable, afterAssetsAvailable),
             vaultAsset))
     {
+        // Catches post-state edge-cross asymmetric rounding —
+        // see depositToVault counterpart.
         JLOG(j.error()) << "withdrawFromVault: vault accounting delta mismatch"
                         << " totalDelta=" << to_string(totalDelta)
                         << " availableDelta=" << to_string(availableDelta);

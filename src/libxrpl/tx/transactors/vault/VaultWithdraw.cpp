@@ -78,12 +78,21 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixSecurity3_1_3) && amount.asset() == vaultShare)
+    bool const securityActive = ctx.view.rules().enabled(fixSecurity3_1_3);
+    bool const cleanupActive = ctx.view.rules().enabled(fixCleanup3_2_0);
+
+    // Compute the equivalent asset amount once for share-denominated
+    // requests. Used by both:
+    //   - fixSecurity3_1_3 — limit check via canWithdraw on the converted
+    //     amount (pre-amendment the limit check was skipped for share-
+    //     denominated withdrawals).
+    //   - fixCleanup3_2_0 — precision guard (see VaultHelpers.h "Vault
+    //     asset accounting precision"). The doApply SLE subtraction
+    //     operates on this converted value, so the bug class applies to
+    //     both denominations and so must the predicate.
+    STAmount assetAmount = amount;
+    if (amount.asset() == vaultShare && (securityActive || cleanupActive))
     {
-        // Post-fixSecurity3_1_3: if the user specified shares, convert
-        // to the equivalent asset amount before checking withdrawal
-        // limits. Pre-amendment the limit check was skipped for
-        // share-denominated withdrawals.
         auto const sleIssuance = ctx.view.read(keylet::mptIssuance(vaultShare));
         if (!sleIssuance)
         {
@@ -92,20 +101,12 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
             return tefINTERNAL;
             // LCOV_EXCL_STOP
         }
-
         try
         {
             auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, amount);
             if (!maybeAssets)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
-
-            if (auto const ret = canWithdraw(
-                    ctx.view,
-                    account,
-                    dstAcct,
-                    *maybeAssets,
-                    ctx.tx.isFieldPresent(sfDestinationTag)))
-                return ret;
+            assetAmount = *maybeAssets;
         }
         catch (std::overflow_error const&)
         {
@@ -119,6 +120,13 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
                 << ", amount=" << amount.value();
             return tecPATH_DRY;
         }
+    }
+
+    if (securityActive && amount.asset() == vaultShare)
+    {
+        if (auto const ret = canWithdraw(
+                ctx.view, account, dstAcct, assetAmount, ctx.tx.isFieldPresent(sfDestinationTag)))
+            return ret;
     }
     else
     {
@@ -142,26 +150,12 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
         return ret;
 
-    // Post-fixCleanup3_2_0: reject withdrawals whose amount is sub-ULP at
-    // sfAssetsAvailable's scale. Available reflects what the vault actually
-    // holds (mirrors the vault pseudo trust-line balance) — rounding at
-    // sfAssetsTotal's scale would over-reject when sfAssetsAvailable has
-    // dropped to a finer scale (loan-trapped or dust residual), preventing
-    // recovery of legitimate available funds. accountSendExact in doApply
-    // remains the backstop if pseudo and sfAssetsAvailable scales diverge.
-    // Only applied when the amount is asset-denominated; share-denominated
-    // withdrawals route through sharesToAssetsWithdraw in doApply and the
-    // resulting asset amount is at the rail's scale by construction.
-    if (ctx.view.rules().enabled(fixCleanup3_2_0) && amount.asset() == vaultAsset)
-    {
-        int const availableScale = scale(vault->at(sfAssetsAvailable), vaultAsset);
-        if (roundsToZeroAtScale(vaultAsset, amount, availableScale))
-        {
-            JLOG(ctx.j.warn()) << "VaultWithdraw: amount " << amount.getFullText()
-                               << " is sub-ULP at available scale " << availableScale;
-            return tecPRECISION_LOSS;
-        }
-    }
+    // For share-denominated requests whose NAV-conversion yields zero
+    // (drained vault or total loss), canApplyToVault short-circuits
+    // on amount == 0 so the downstream INSUFFICIENT_FUNDS / INTERNAL /
+    // INVARIANT_FAILED handling in doApply surfaces the right error.
+    if (auto const ret = canApplyToVault(ctx.view, vault, assetAmount, ctx.j, "VaultWithdraw"))
+        return ret;
 
     return tesSUCCESS;
 }

@@ -215,26 +215,20 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                     return tecNO_PERMISSION;
                 }
 
-                // Post-fixCleanup3_2_0: reject sub-ULP clawbacks at the
-                // vault pseudo's scale. The vault → issuer trust-line
-                // subtraction would absorb at the edge (sender absorbs
-                // since the destination is the issuer carve-out in
-                // accountSendExact); the SLE fields would still
-                // decrement, leaving sfAssetsAvailable < pseudo balance
-                // and firing tecINVARIANT_FAILED at finalize. Surface as
-                // tecPRECISION_LOSS instead. Skip when amount is zero
-                // (means "all available", computed at the rail's scale
-                // by construction).
-                if (ctx.view.rules().enabled(fixCleanup3_2_0) && amount != beast::kZERO)
-                {
-                    int const availableScale = scale(vault->at(sfAssetsAvailable), vaultAsset);
-                    if (roundsToZeroAtScale(vaultAsset, amount, availableScale))
-                    {
-                        JLOG(ctx.j.warn()) << "VaultClawback: amount " << amount.getFullText()
-                                           << " is sub-ULP at available scale " << availableScale;
-                        return tecPRECISION_LOSS;
-                    }
-                }
+                // For the "all available" sentinel (amount == 0), the
+                // effective subtraction in doApply is sfAssetsAvailable
+                // (modulo shares-roundtrip and clamping). Pass that as
+                // the effective amount so a misaligned sfAssetsAvailable
+                // (produced by an unguarded upstream operation) is
+                // caught here too. canApplyToVault short-circuits
+                // on amount == 0 so a drained vault falls through to
+                // the downstream INSUFFICIENT_FUNDS / INTERNAL paths.
+                STAmount const effectiveAmount = (amount == beast::kZERO)
+                    ? STAmount{vaultAsset, vault->at(sfAssetsAvailable)}
+                    : amount;
+                if (auto const ret =
+                        canApplyToVault(ctx.view, vault, effectiveAmount, ctx.j, "VaultClawback"))
+                    return ret;
 
                 return tesSUCCESS;
             });
