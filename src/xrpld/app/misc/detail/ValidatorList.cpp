@@ -312,7 +312,7 @@ ValidatorList::buildFileData(
     std::optional<std::uint32_t> forceVersion,
     beast::Journal j)
 {
-    json::Value value(json::ObjectValue);
+    json::Value value(json::ValueType::Object);
 
     XRPL_ASSERT(
         pubCollection.rawVersion == 2 || pubCollection.remaining.empty(),
@@ -336,11 +336,11 @@ ValidatorList::buildFileData(
             break;
         }
         case 2: {
-            json::Value blobs(json::ArrayValue);
+            json::Value blobs(json::ValueType::Array);
 
             auto add = [&blobs,
                         &outerManifest = pubCollection.rawManifest](PublisherList const& pubList) {
-                auto& blob = blobs.append(json::ObjectValue);
+                auto& blob = blobs.append(json::ValueType::Object);
                 blob[jss::blob] = pubList.rawBlob;
                 blob[jss::signature] = pubList.rawSignature;
                 if (pubList.rawManifest && *pubList.rawManifest != outerManifest)
@@ -359,7 +359,7 @@ ValidatorList::buildFileData(
         }
         default:
             JLOG(j.trace()) << "Invalid VL version provided: " << effectiveVersion;
-            value = json::NullValue;
+            value = json::ValueType::Null;
     }
 
     return value;
@@ -1605,14 +1605,14 @@ ValidatorList::expires() const
 json::Value
 ValidatorList::getJson() const
 {
-    json::Value res(json::ObjectValue);
+    json::Value res(json::ValueType::Object);
 
     std::shared_lock const readLock{mutex_};
 
     res[jss::validation_quorum] = static_cast<json::UInt>(quorum_);
 
     {
-        auto& x = (res[jss::validator_list] = json::ObjectValue);
+        auto& x = (res[jss::validator_list] = json::ValueType::Object);
 
         x[jss::count] = static_cast<json::UInt>(count(readLock));
 
@@ -1647,16 +1647,16 @@ ValidatorList::getJson() const
     }
 
     // Validator keys listed in the local config file
-    json::Value& jLocalStaticKeys = (res[jss::local_static_keys] = json::ArrayValue);
+    json::Value& jLocalStaticKeys = (res[jss::local_static_keys] = json::ValueType::Array);
 
     for (auto const& key : localPublisherList_.list)
         jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
 
     // Publisher lists
-    json::Value& jPublisherLists = (res[jss::publisher_lists] = json::ArrayValue);
+    json::Value& jPublisherLists = (res[jss::publisher_lists] = json::ValueType::Array);
     for (auto const& [publicKey, pubCollection] : publisherLists_)
     {
-        json::Value& curr = jPublisherLists.append(json::ObjectValue);
+        json::Value& curr = jPublisherLists.append(json::ValueType::Object);
         curr[jss::pubkey_publisher] = strHex(publicKey);
         curr[jss::available] = pubCollection.status == PublisherStatus::Available;
 
@@ -1669,7 +1669,7 @@ ValidatorList::getJson() const
             }
             if (publisherList.validFrom != TimeKeeper::time_point{})
                 target[jss::effective] = to_string(publisherList.validFrom);
-            json::Value& keys = (target[jss::list] = json::ArrayValue);
+            json::Value& keys = (target[jss::list] = json::ValueType::Array);
             for (auto const& key : publisherList.list)
             {
                 keys.append(toBase58(TokenType::NodePublic, key));
@@ -1684,13 +1684,13 @@ ValidatorList::getJson() const
             }
         }
 
-        json::Value remaining(json::ArrayValue);
+        json::Value remaining(json::ValueType::Array);
         for (auto const& [sequence, future] : pubCollection.remaining)
         {
             using namespace std::chrono_literals;
 
             (void)sequence;
-            json::Value& r = remaining.append(json::ObjectValue);
+            json::Value& r = remaining.append(json::ValueType::Object);
             appendList(future, r);
             // Race conditions can happen, so make this check "fuzzy"
             XRPL_ASSERT(
@@ -1702,14 +1702,14 @@ ValidatorList::getJson() const
     }
 
     // Trusted validator keys
-    json::Value& jValidatorKeys = (res[jss::trusted_validator_keys] = json::ArrayValue);
+    json::Value& jValidatorKeys = (res[jss::trusted_validator_keys] = json::ValueType::Array);
     for (auto const& k : trustedMasterKeys_)
     {
         jValidatorKeys.append(toBase58(TokenType::NodePublic, k));
     }
 
     // signing keys
-    json::Value& jSigningKeys = (res[jss::signing_keys] = json::ObjectValue);
+    json::Value& jSigningKeys = (res[jss::signing_keys] = json::ValueType::Object);
     validatorManifests_.forEachManifest([&jSigningKeys, this](Manifest const& manifest) {
         auto it = keyListings_.find(manifest.masterKey);
         if (it != keyListings_.end() && manifest.signingKey)
@@ -1722,7 +1722,7 @@ ValidatorList::getJson() const
     // Negative UNL
     if (!negativeUNL_.empty())
     {
-        json::Value& jNegativeUNL = (res[jss::NegativeUNL] = json::ArrayValue);
+        json::Value& jNegativeUNL = (res[jss::NegativeUNL] = json::ValueType::Array);
         for (auto const& k : negativeUNL_)
         {
             jNegativeUNL.append(toBase58(TokenType::NodePublic, k));

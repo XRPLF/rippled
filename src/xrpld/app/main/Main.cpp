@@ -768,16 +768,16 @@ run(int argc, char** argv)
     }
 
     // Construct the logs object at the configured severity
-    using namespace beast::severities;
-    Severity thresh = KInfo;
+    using beast::Severity;
+    Severity thresh = Severity::Info;
 
     if (vm.contains("quiet"))
     {
-        thresh = KFatal;
+        thresh = Severity::Fatal;
     }
     else if (vm.contains("verbose"))
     {
-        thresh = KTrace;
+        thresh = Severity::Trace;
     }
 
     auto logs = std::make_unique<Logs>(thresh);
@@ -802,7 +802,7 @@ run(int argc, char** argv)
             return -1;
 
         if (vm.contains("debug"))
-            setDebugLogSink(logs->makeSink("Debug", beast::severities::KTrace));
+            setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
         auto app =
             makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());

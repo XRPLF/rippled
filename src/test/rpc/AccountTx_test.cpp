@@ -374,9 +374,9 @@ class AccountTx_test : public beast::unit_test::Suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
         }
         // test binary and forward for bool/non bool values
         {
@@ -449,13 +449,13 @@ class AccountTx_test : public beast::unit_test::Suite
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = [] should fail (array instead of integer)
-            p[jss::limit] = json::Value(json::ArrayValue);
+            p[jss::limit] = json::Value(json::ValueType::Array);
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = {} should fail (object instead of integer)
-            p[jss::limit] = json::Value(json::ObjectValue);
+            p[jss::limit] = json::Value(json::ValueType::Object);
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
@@ -467,7 +467,7 @@ class AccountTx_test : public beast::unit_test::Suite
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = ["limit"] should fail (array with string)
-            p[jss::limit] = json::Value(json::ArrayValue);
+            p[jss::limit] = json::Value(json::ValueType::Array);
             p[jss::limit].append("limit");
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
@@ -475,7 +475,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
             // Test case: limit = {"limit": 10} should fail (object with
             // property)
-            p[jss::limit] = json::Value(json::ObjectValue);
+            p[jss::limit] = json::Value(json::ValueType::Object);
             p[jss::limit][jss::limit] = 10;
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
@@ -537,7 +537,7 @@ class AccountTx_test : public beast::unit_test::Suite
                 escrow[jss::TransactionType] = jss::EscrowCreate;
                 escrow[jss::Account] = account.human();
                 escrow[jss::Destination] = to.human();
-                escrow[jss::Amount] = amount.getJson(JsonOptions::KNone);
+                escrow[jss::Amount] = amount.getJson(JsonOptions::Values::None);
                 return escrow;
             };
 
@@ -583,7 +583,7 @@ class AccountTx_test : public beast::unit_test::Suite
             payChanCreate[jss::TransactionType] = jss::PaymentChannelCreate;
             payChanCreate[jss::Account] = alice.human();
             payChanCreate[jss::Destination] = gw.human();
-            payChanCreate[jss::Amount] = XRP(500).value().getJson(JsonOptions::KNone);
+            payChanCreate[jss::Amount] = XRP(500).value().getJson(JsonOptions::Values::None);
             payChanCreate[sfSettleDelay.jsonName] = NetClock::duration{100s}.count();
             payChanCreate[sfPublicKey.jsonName] = strHex(alice.pk().slice());
             env(payChanCreate, Sig(alie));
@@ -596,7 +596,7 @@ class AccountTx_test : public beast::unit_test::Suite
                 payChanFund[jss::TransactionType] = jss::PaymentChannelFund;
                 payChanFund[jss::Account] = alice.human();
                 payChanFund[sfChannel.jsonName] = payChanIndex;
-                payChanFund[jss::Amount] = XRP(200).value().getJson(JsonOptions::KNone);
+                payChanFund[jss::Amount] = XRP(200).value().getJson(JsonOptions::Values::None);
                 env(payChanFund, Sig(alie));
                 env.close();
             }
@@ -841,7 +841,8 @@ class AccountTx_test : public beast::unit_test::Suite
             auto const& tx0(jv[jss::transactions][0u][jss::tx]);
             BEAST_EXPECT(tx0[jss::TransactionType] == txType);
 
-            std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
             BEAST_EXPECT(tx0[jss::hash] == txHash);
         };
 

@@ -68,7 +68,7 @@ doChannelAuthorize(RPC::JsonContext& context)
         return rpcError(RpcChannelMalformed);
 
     std::optional<std::uint64_t> const optDrops =
-        params[jss::amount].isString() ? toUint64(params[jss::amount].asString()) : std::nullopt;
+        params[jss::amount].isString() ? toUInt64(params[jss::amount].asString()) : std::nullopt;
 
     if (!optDrops)
         return rpcError(RpcChannelAmtMalformed);

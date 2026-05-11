@@ -370,7 +370,7 @@ ledgerEntryDepositPreauth(
     json::Value jvParams;
     jvParams[jss::ledger_index] = jss::validated;
     jvParams[jss::deposit_preauth][jss::owner] = acc.human();
-    jvParams[jss::deposit_preauth][jss::authorized_credentials] = json::ArrayValue;
+    jvParams[jss::deposit_preauth][jss::authorized_credentials] = json::ValueType::Array;
     auto& arr(jvParams[jss::deposit_preauth][jss::authorized_credentials]);
     for (auto const& o : auth)
     {
@@ -795,7 +795,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             // Alice can't pay - empty credentials array
             {
                 auto jv = pay(alice, bob, XRP(100));
-                jv[sfCredentialIDs.jsonName] = json::ArrayValue;
+                jv[sfCredentialIDs.jsonName] = json::ValueType::Array;
                 env(jv, Ter(temMALFORMED));
                 env.close();
             }
@@ -929,7 +929,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             {
                 // both included [AuthorizeCredentials UnauthorizeCredentials]
                 auto jv = deposit::authCredentials(bob, {{issuer, credType}});
-                jv[sfUnauthorizeCredentials.jsonName] = json::ArrayValue;
+                jv[sfUnauthorizeCredentials.jsonName] = json::ValueType::Array;
                 env(jv, Ter(temMALFORMED));
             }
 
@@ -971,7 +971,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 // invalid issuer
                 auto jv = deposit::authCredentials(bob, {});
                 auto& arr(jv[sfAuthorizeCredentials.jsonName]);
-                json::Value cred = json::ObjectValue;
+                json::Value cred = json::ValueType::Object;
                 cred[jss::Issuer] = to_string(xrpAccount());
                 cred[sfCredentialType.jsonName] = strHex(std::string_view(credType));
                 json::Value credParent;

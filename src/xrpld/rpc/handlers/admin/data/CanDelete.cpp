@@ -24,7 +24,7 @@ doCanDelete(RPC::JsonContext& context)
     if (!context.app.getSHAMapStore().advisoryDelete())
         return RPC::makeError(RpcNotEnabled);
 
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     if (context.params.isMember(jss::can_delete))
     {
