@@ -7356,7 +7356,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["InterestRate"] = 1;  // minimum non-zero rate
         createJson["PaymentTotal"] = 3;
@@ -7440,7 +7440,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
         createJson["InterestRate"] = 1;
         createJson["PaymentTotal"] = 3;
         createJson["PaymentInterval"] = 600;
