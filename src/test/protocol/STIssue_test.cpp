@@ -18,6 +18,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <bit>
 #include <cstdint>
 #include <unordered_set>
 
@@ -165,6 +166,7 @@ public:
         testcase("MPT serialization - serialized sequence bytes are canonical big-endian");
         using namespace jtx;
         Account const alice{"alice"};
+        BEAST_EXPECT(std::endian::native == std::endian::little);
 
         // Sequence 240 = 0x000000F0.
         // Canonical BE bytes a client would expect: {0x00, 0x00, 0x00, 0xF0}.

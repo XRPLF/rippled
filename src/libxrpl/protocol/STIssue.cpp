@@ -59,19 +59,11 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
             auto const seqSize = sizeof(std::uint32_t);
             if (account == noAccount())
             {
-                // get32() swaps BE wire bytes to host order; memcpy then stores
-                // host-order bytes into the MPTID. On LE this produces a
-                // byte-swapped MPTID relative to the canonical value from
-                // makeMptID(), but add() has the same inversion so the
-                // round-trip is consistent within a single-arch deployment.
                 std::uint32_t sequence = sit.get32();
                 memcpy(mptID.data(), &sequence, sizeof(sequence));
             }
             else
             {
-                // V2: read raw wire bytes directly into the MPTID. No byte
-                // swapping; the canonical BE layout from makeMptID() is
-                // preserved end-to-end.
                 auto const rawBytes = sit.getRaw(seqSize);
                 memcpy(mptID.data(), rawBytes.data(), rawBytes.size());
             }
