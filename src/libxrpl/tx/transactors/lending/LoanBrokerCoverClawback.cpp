@@ -161,20 +161,24 @@ determineClawAmount(
     SLE const& sleBroker,
     Asset const& vaultAsset,
     std::optional<STAmount> const& amount,
-    int vaultScale,
-    Rules rules)
+    SLE::const_ref vaultSle,
+    Rules const& rules)
 {
     auto const maxClawAmount = [&]() {
         auto const minRequiredCover = [&]() {
             if (rules.enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(
-                    vaultAsset, sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]), vaultScale);
+                    vaultAsset,
+                    sleBroker[sfDebtTotal],
+                    TenthBips32(sleBroker[sfCoverRateMinimum]),
+                    vaultSle);
             }
 
             // Always round the minimum required up
             NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-            return tenthBipsOfValue(sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
+            return tenthBipsOfValue(
+                sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
         }();
         // The subtraction probably won't round, but round down if it does.
         NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
@@ -292,8 +296,8 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const findClawAmount = determineClawAmount(
-        *sleBroker, vaultAsset, amount, getAssetsTotalScale(vault), ctx.view.rules());
+    auto const findClawAmount =
+        determineClawAmount(*sleBroker, vaultAsset, amount, vault, ctx.view.rules());
     if (!findClawAmount)
     {
         JLOG(ctx.j.warn()) << "LoanBroker cover is already at minimum.";
@@ -351,8 +355,8 @@ LoanBrokerCoverClawback::doApply()
 
     auto const vaultAsset = vault->at(sfAsset);
 
-    auto const findClawAmount = determineClawAmount(
-        *sleBroker, vaultAsset, amount, getAssetsTotalScale(vault), view().rules());
+    auto const findClawAmount =
+        determineClawAmount(*sleBroker, vaultAsset, amount, vault, view().rules());
     if (!findClawAmount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     STAmount const& clawAmount = *findClawAmount;

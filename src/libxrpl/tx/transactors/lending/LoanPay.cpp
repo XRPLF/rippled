@@ -309,8 +309,8 @@ LoanPay::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    // The vault may be at a different scale than the loan. Reduce rounding
-    // errors during the payment by rounding some of the values to that scale.
+    // We should use vaultScale for vault-related fields (e.g. DebtTotal), not
+    // loanScale, and vice versa.
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     // Send the broker fee to the owner if they have sufficient cover available,
@@ -326,7 +326,7 @@ LoanPay::doApply()
             if (view.rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(
-                    asset, debtTotalProxy.value(), coverRateMinimum, vaultScale);
+                    asset, debtTotalProxy.value(), coverRateMinimum, vaultSle);
             }
             // Round the minimum required cover up to be conservative. This ensures
             // CoverAvailable never drops below the theoretical minimum, protecting

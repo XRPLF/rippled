@@ -181,10 +181,11 @@ minimumBrokerCover(
     Asset const& asset,
     Number const& debtTotal,
     TenthBips32 coverRateMinimum,
-    int vaultScale)
+    SLE::const_ref vaultSle)
 {
     NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-    return roundToAsset(asset, tenthBipsOfValue(debtTotal, coverRateMinimum), vaultScale);
+    return roundToAsset(
+        asset, tenthBipsOfValue(debtTotal, coverRateMinimum), getAssetsTotalScale(vaultSle));
 }
 
 TER

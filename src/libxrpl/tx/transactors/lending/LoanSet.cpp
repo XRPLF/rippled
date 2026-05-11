@@ -495,7 +495,7 @@ LoanSet::doApply()
         auto const minCover = [&]() {
             if (ctx_.view().rules().enabled(fixCleanup3_2_0))
             {
-                return minimumBrokerCover(vaultAsset, newDebtTotal, coverRateMinimum, vaultScale);
+                return minimumBrokerCover(vaultAsset, newDebtTotal, coverRateMinimum, vaultSle);
             }
 
             // Round the minimum required cover up to be conservative. This ensures

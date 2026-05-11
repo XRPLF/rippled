@@ -137,7 +137,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
                 vaultAsset,
                 currentDebtTotal,
                 TenthBips32{sleBroker->at(sfCoverRateMinimum)},
-                getAssetsTotalScale(vault));
+                vault);
         }
 
         // Always round the minimum required up.
