@@ -381,9 +381,7 @@ canWithdraw(
     {
         if (!view.exists(keylet::depositPreauth(to, from)))
         {
-            // Post-fixCleanup3_2_0: if credentials are present, also check
-            // for credential-based preauth.
-            if (view.rules().enabled(fixCleanup3_2_0) && credentialIDs.has_value())
+            if (credentialIDs.has_value())
             {
                 if (auto const ret = credentials::authorizedDepositPreauth(
                         view, STVector256{*credentialIDs}, to);
