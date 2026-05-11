@@ -5320,6 +5320,126 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
     }
 
     void
+    testPublicTransfersAfterClearingConfidentialFlag(FeatureBitset features)
+    {
+        testcase("Public transfers after clearing Confidential Flag");
+        using namespace test::jtx;
+
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+
+        // After clearing the confidential flag, all four public MPT operations
+        // must succeed regardless of which confidential path left encrypted-zero
+        // fields on bob's MPToken.
+        auto runPublicPayments = [&](MPTTester& mpt) {
+            mpt.pay(bob, carol, 10);
+            mpt.pay(carol, bob, 5);
+            mpt.pay(alice, bob, 1);
+            mpt.pay(carol, alice, 5);
+        };
+
+        auto drainAndDeleteBobMPToken = [&](Env& env, MPTTester& mpt) {
+            auto const bobBalance = mpt.getBalance(bob);
+            BEAST_EXPECT(bobBalance > 0);
+
+            mpt.pay(bob, alice, bobBalance);
+            BEAST_EXPECT(mpt.getBalance(bob) == 0);
+
+            mpt.authorize({.account = bob, .flags = tfMPTUnauthorize});
+            BEAST_EXPECT(!env.le(keylet::mptoken(mpt.issuanceID(), bob.id())));
+        };
+
+        // Alice pays Bob 100 public, Bob converts 50 confidential
+        // Bob converts 50 back to public, and make sure can receive public payments
+        {
+            Env env{*this, features};
+            ConfidentialEnv ct{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50}},
+                tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+
+            env.fund(XRP(1'000), carol);
+            ct.mpt.authorize({.account = carol});
+            ct.mpt.pay(alice, carol, 50);
+
+            ct.mpt.convertBack({.account = bob, .amt = 50});
+            ct.mpt.set({
+                .account = alice,
+                .mutableFlags = tmfMPTClearCanConfidentialAmount,
+            });
+
+            runPublicPayments(ct.mpt);
+            drainAndDeleteBobMPToken(env, ct.mpt);
+        }
+
+        // Same path as above but with Auditor
+        {
+            Env env{*this, features};
+            Account const auditor("auditor");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}, .auditor = auditor});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+            });
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 50);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(auditor);
+            mptAlice.set(
+                {.account = alice,
+                 .issuerPubKey = mptAlice.getPubKey(alice),
+                 .auditorPubKey = mptAlice.getPubKey(auditor)});
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 50,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+            mptAlice.mergeInbox({.account = bob});
+            mptAlice.convertBack({.account = bob, .amt = 50});
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTClearCanConfidentialAmount,
+            });
+
+            runPublicPayments(mptAlice);
+            drainAndDeleteBobMPToken(env, mptAlice);
+        }
+
+        // Confidential clawback leaves encrypted-zero fields;
+        // the public balance remaining after the clawback must stay usable.
+        {
+            Env env{*this, features};
+            ConfidentialEnv ct{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50}},
+                tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanConfidentialAmount};
+
+            env.fund(XRP(1'000), carol);
+            ct.mpt.authorize({.account = carol});
+            ct.mpt.pay(alice, carol, 50);
+
+            ct.mpt.confidentialClaw({.account = alice, .holder = bob, .amt = 50});
+            ct.mpt.set({
+                .account = alice,
+                .mutableFlags = tmfMPTClearCanConfidentialAmount,
+            });
+
+            runPublicPayments(ct.mpt);
+            drainAndDeleteBobMPToken(env, ct.mpt);
+        }
+    }
+
+    void
     testMutatePrivacy(FeatureBitset features)
     {
         testcase("mutate lsfMPTCanConfidentialAmount");
@@ -10108,10 +10228,11 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         testIdentityElementRejection(features);
         testSendWrongIssuerPublicKey(features);
 
-        // Replay Tests
-        testMutatePrivacy(features);
+        // public and private txns
+        testPublicTransfersAfterClearingConfidentialFlag(features);
 
         // Replay tests
+        testMutatePrivacy(features);
         testProofContextBinding(features);
         testProofCiphertextBinding(features);
         testProofVersionMismatch(features);

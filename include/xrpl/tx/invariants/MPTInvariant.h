@@ -65,8 +65,8 @@ public:
  * Cannot delete if sfIssuerEncryptedBalance exists
  * Cannot delete if sfConfidentialBalanceInbox and sfConfidentialBalanceSpending exist
  * - Privacy flag consistency:
- * MPToken can only have encrypted fields if lsfMPTCanConfidentialAmount is set on
- * issuance.
+ * MPToken confidential balance fields can only be created or changed if
+ * lsfMPTCanConfidentialAmount is set on the issuance.
  * - Encrypted field existence consistency:
  * If sfConfidentialBalanceSpending/sfConfidentialBalanceInbox exists, then
  * sfIssuerEncryptedBalance must also exist (and vice versa).
@@ -86,7 +86,7 @@ class ValidConfidentialMPToken
         bool deletedWithEncrypted = false;
         bool badConsistency = false;
         bool badCOA = false;
-        bool requiresPrivacyFlag = false;
+        bool changesConfidentialFields = false;
         bool badVersion = false;
     };
     std::map<uint192, Changes> changes_;

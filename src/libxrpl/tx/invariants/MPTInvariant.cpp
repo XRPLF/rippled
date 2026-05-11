@@ -450,17 +450,29 @@ ValidConfidentialMPToken::visitEntry(
         bool const hasHolderInbox = after->isFieldPresent(sfConfidentialBalanceInbox);
         bool const hasHolderSpending = after->isFieldPresent(sfConfidentialBalanceSpending);
 
-        bool const hasAnyHolder = hasHolderInbox || hasHolderSpending;
-
         // sfIssuerEncryptedBalance, sfConfidentialBalanceInbox, and sfConfidentialBalanceSpending
         // must all exist or not exist same time.
         if (hasHolderInbox != hasHolderSpending || hasHolderInbox != hasIssuerBalance)
             changes_[id].badConsistency = true;
 
-        // Privacy flag consistency
-        bool const hasEncrypted = hasAnyHolder || hasIssuerBalance;
-        if (hasEncrypted)
-            changes_[id].requiresPrivacyFlag = true;
+        auto const confidentialBalanceFieldChanged = [&before, &after](auto const& field) {
+            auto const afterValue = (*after)[~field];
+            if (!afterValue)
+                return false;
+
+            if (!before || before->getType() != ltMPTOKEN)
+                return true;
+
+            return (*before)[~field] != afterValue;
+        };
+
+        if (confidentialBalanceFieldChanged(sfConfidentialBalanceInbox) ||
+            confidentialBalanceFieldChanged(sfConfidentialBalanceSpending) ||
+            confidentialBalanceFieldChanged(sfIssuerEncryptedBalance) ||
+            confidentialBalanceFieldChanged(sfAuditorEncryptedBalance))
+        {
+            changes_[id].changesConfidentialFields = true;
+        }
     }
 
     if (before && before->getType() == ltMPTOKEN_ISSUANCE)
@@ -563,8 +575,10 @@ ValidConfidentialMPToken::finalize(
             return false;
         }
 
-        // Privacy flag consistency
-        if (checks.requiresPrivacyFlag)
+        // Confidential balance fields may remain on a holder MPToken after all
+        // confidential balances have returned to zero. Only creating or
+        // changing those fields requires the issuance privacy flag.
+        if (checks.changesConfidentialFields)
         {
             if (!issuance->isFlag(lsfMPTCanConfidentialAmount))
             {
@@ -600,6 +614,16 @@ ValidConfidentialMPToken::finalize(
             std::ranges::find(kCONFIDENTIAL_MPT_TX_TYPES, tx.getTxnType()) !=
             kCONFIDENTIAL_MPT_TX_TYPES.end())
         {
+            // Confidential Txns should not modify public MPTAmount balance
+            // if Confidential Amount Delta is 0
+            if (checks.mptAmountDelta != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPTAmount changed by confidential "
+                                   "transaction that should not modify this field."
+                                << to_string(id);
+                return false;
+            }
+
             // Among confidential MPT transactions, only ConfidentialMPTSend and
             // ConfidentialMPTMergeInbox leave coaDelta unmodified. Therefore, if a confidential MPT
             // transaction reaches here, it must be one of these two types, neither of which will
