@@ -1443,7 +1443,7 @@ public:
         auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(500).value().getText());
         BEAST_EXPECT(
-            jro[jss::node][jss::TakerPays] == usd(100).value().getJson(JsonOptions::KNone));
+            jro[jss::node][jss::TakerPays] == usd(100).value().getJson(JsonOptions::Values::None));
 
         env(pay(alice, alice, XRP(500)), Sendmax(usd(100)));
 
@@ -1523,7 +1523,8 @@ public:
         // The previous payment reduced the remaining offer amount by 200 XRP
         auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(300).value().getText());
-        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(60).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(
+            jro[jss::node][jss::TakerPays] == usd(60).value().getJson(JsonOptions::Values::None));
 
         // the balance between alice and gw is 160 USD..200 less the 40 taken
         // by the offer
@@ -1601,7 +1602,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfMPTAmount.fieldName] == "475");
 
         auto jro = ledgerEntryOffer(env, carol, carolOfferSeq);
-        BEAST_EXPECT(jro[jss::node][jss::TakerGets] == usd(25).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(
+            jro[jss::node][jss::TakerGets] == usd(25).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(jro[jss::node][jss::TakerPays] == XRP(250).value().getText());
     }
 
@@ -1643,7 +1645,8 @@ public:
 
         auto jro = ledgerEntryOffer(env, carol, carolOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(250).value().getText());
-        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(25).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(
+            jro[jss::node][jss::TakerPays] == usd(25).value().getJson(JsonOptions::Values::None));
     }
 
     void
@@ -1678,7 +1681,7 @@ public:
             auto const danOfferSeq = env.seq(dan);
             env(offer(dan, XRP(500), eur(50)));
 
-            json::Value jtp{json::ArrayValue};
+            json::Value jtp{json::ValueType::Array};
             jtp[0u][0u][jss::currency] = "XRP";
             env(pay(alice, bob, eur(30)), Json(jss::Paths, jtp), Sendmax(usd(333)));
 
@@ -1690,11 +1693,13 @@ public:
             auto jro = ledgerEntryOffer(env, carol, carolOfferSeq);
             BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(200).value().getText());
             BEAST_EXPECT(
-                jro[jss::node][jss::TakerPays] == usd(20).value().getJson(JsonOptions::KNone));
+                jro[jss::node][jss::TakerPays] ==
+                usd(20).value().getJson(JsonOptions::Values::None));
 
             jro = ledgerEntryOffer(env, dan, danOfferSeq);
             BEAST_EXPECT(
-                jro[jss::node][jss::TakerGets] == eur(20).value().getJson(JsonOptions::KNone));
+                jro[jss::node][jss::TakerGets] ==
+                eur(20).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(jro[jss::node][jss::TakerPays] == XRP(200).value().getText());
         };
         testHelper2TokensMix(test);
@@ -1970,7 +1975,8 @@ public:
             payment[jss::tx_json][jss::Sequence] =
                 env.current()->read(keylet::account(bob.id()))->getFieldU32(sfSequence);
             payment[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
-            payment[jss::tx_json][jss::SendMax] = xts(15).value().getJson(JsonOptions::KNone);
+            payment[jss::tx_json][jss::SendMax] =
+                xts(15).value().getJson(JsonOptions::Values::None);
             auto jrr = wsc->invoke("submit", payment);
             BEAST_EXPECT(jrr[jss::status] == "success");
             BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "tesSUCCESS");

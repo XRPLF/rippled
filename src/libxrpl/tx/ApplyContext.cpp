@@ -124,7 +124,7 @@ ApplyContext::checkInvariantsHelper(
         if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
         {
             JLOG(journal.fatal()) << "Transaction has failed one or more global invariants: "
-                                  << to_string(tx.getJson(JsonOptions::KNone));
+                                  << to_string(tx.getJson(JsonOptions::Values::None));
 
             return failInvariantCheck(result);
         }
@@ -133,7 +133,7 @@ ApplyContext::checkInvariantsHelper(
     {
         JLOG(journal.fatal()) << "Transaction caused an exception in a global invariant"
                               << ", ex: " << ex.what()
-                              << ", tx: " << to_string(tx.getJson(JsonOptions::KNone));
+                              << ", tx: " << to_string(tx.getJson(JsonOptions::Values::None));
 
         return failInvariantCheck(result);
     }

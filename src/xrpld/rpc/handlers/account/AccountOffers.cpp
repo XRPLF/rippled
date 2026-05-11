@@ -36,7 +36,7 @@ void
 appendOfferJson(std::shared_ptr<SLE const> const& offer, json::Value& offers)
 {
     STAmount const dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
-    json::Value& obj(offers.append(json::ObjectValue));
+    json::Value& obj(offers.append(json::ValueType::Object));
     offer->getFieldAmount(sfTakerPays).setJson(obj[jss::taker_pays]);
     offer->getFieldAmount(sfTakerGets).setJson(obj[jss::taker_gets]);
     obj[jss::seq] = offer->getFieldU32(sfSequence);
@@ -86,7 +86,7 @@ doAccountOffers(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_OFFERS, context))
         return *err;
 
-    json::Value& jsonOffers(result[jss::offers] = json::ArrayValue);
+    json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
     std::vector<std::shared_ptr<SLE const>> offers;
     uint256 startAfter = beast::kZERO;
     std::uint64_t startHint = 0;

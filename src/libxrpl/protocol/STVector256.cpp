@@ -75,7 +75,7 @@ STVector256::isEquivalent(STBase const& t) const
 json::Value
 STVector256::getJson(JsonOptions) const
 {
-    json::Value ret(json::ArrayValue);
+    json::Value ret(json::ValueType::Array);
 
     for (auto const& vEntry : value_)
         ret.append(to_string(vEntry));

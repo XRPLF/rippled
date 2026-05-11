@@ -161,7 +161,7 @@ STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool ch
     if (checkSignature && !isValid())
     {
         JLOG(debugLog().error()) << "Invalid signature in validation: "
-                                 << getJson(JsonOptions::KNone);
+                                 << getJson(JsonOptions::Values::None);
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 
