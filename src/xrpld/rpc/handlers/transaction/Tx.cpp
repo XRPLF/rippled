@@ -190,7 +190,7 @@ populateJsonResponse(
     {
         if (error.toErrorCode() == RpcTxnNotFound && result.searchedAll != TxSearched::Unknown)
         {
-            response = json::Value(json::ObjectValue);
+            response = json::Value(json::ValueType::Object);
             response[jss::searched_all] = (result.searchedAll == TxSearched::All);
             error.inject(response);
         }
@@ -206,7 +206,8 @@ populateJsonResponse(
         if (context.apiVersion > 1)
         {
             constexpr auto kOPTIONS_JSON =
-                JsonOptions::KIncludeDate | JsonOptions::KDisableApiPriorV2;
+                static_cast<JsonOptions::underlying_t>(JsonOptions::Values::IncludeDate) |
+                static_cast<JsonOptions::underlying_t>(JsonOptions::Values::DisableApiPriorV2);
             if (args.binary)
             {
                 response[jss::tx_blob] = result.txn->getJson(kOPTIONS_JSON, true);
@@ -233,7 +234,7 @@ populateJsonResponse(
         }
         else
         {
-            response = result.txn->getJson(JsonOptions::KIncludeDate, args.binary);
+            response = result.txn->getJson(JsonOptions::Values::IncludeDate, args.binary);
             if (!args.binary)
                 RPC::insertDeliverMax(response, sttx->getTxnType(), context.apiVersion);
         }
@@ -251,7 +252,7 @@ populateJsonResponse(
             auto& meta = *m;
             if (meta)
             {
-                response[jss::meta] = meta->getJson(JsonOptions::KNone);
+                response[jss::meta] = meta->getJson(JsonOptions::Values::None);
                 insertDeliveredAmount(response[jss::meta], context, result.txn, *meta);
                 RPC::insertNFTSyntheticInJson(response, sttx, *meta);
                 RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);

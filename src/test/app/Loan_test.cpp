@@ -25,6 +25,8 @@
 #include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
 
+#include <xrpld/rpc/detail/Handler.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -3590,7 +3592,7 @@ protected:
 
         // Adding an empty counterparty signature object also fails, but
         // at the RPC level.
-        createJson = env.json(createJson, Json(sfCounterpartySignature, json::ObjectValue));
+        createJson = env.json(createJson, Json(sfCounterpartySignature, json::ValueType::Object));
         env(createJson, Ter(telENV_RPC_FAILED));
 
         if (auto const jt = env.jt(createJson); BEAST_EXPECT(jt.stx))
@@ -3608,7 +3610,7 @@ protected:
         }
 
         // Copy the transaction signature into the counterparty signature.
-        json::Value counterpartyJson{json::ObjectValue};
+        json::Value counterpartyJson{json::ValueType::Object};
         counterpartyJson[sfTxnSignature] = createJson[sfTxnSignature];
         counterpartyJson[sfSigningPubKey] = createJson[sfSigningPubKey];
         if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
@@ -3640,7 +3642,7 @@ protected:
             }
         }
         auto const loanID = [&]() {
-            json::Value params(json::ObjectValue);
+            json::Value params(json::ValueType::Object);
             params[jss::account] = lender.human();
             params[jss::type] = "Loan";
             auto const res = env.rpc("json", "account_objects", to_string(params));
@@ -3717,9 +3719,9 @@ protected:
 
         auto forgedLoanSet = set(borrower, broker.brokerID, principalRequest, 0);
 
-        json::Value randomData{json::ObjectValue};
+        json::Value randomData{json::ValueType::Object};
         randomData[jss::SigningPubKey] = json::StaticString{"2600"};
-        json::Value sigObject{json::ObjectValue};
+        json::Value sigObject{json::ValueType::Object};
         sigObject[jss::SigningPubKey] = strHex(lender.pk().slice());
         Serializer ss;
         ss.add32(HashPrefix::TxSign);
@@ -3743,7 +3745,7 @@ protected:
 
         // ? Check that the loan was NOT created
         {
-            json::Value params(json::ObjectValue);
+            json::Value params(json::ValueType::Object);
             params[jss::account] = borrower.human();
             params[jss::type] = "Loan";
             auto const res = env.rpc("json", "account_objects", to_string(params));
@@ -3786,7 +3788,7 @@ protected:
 
         auto createJson = env.json(set(lender, broker.brokerID, principalRequest), Fee(loanSetFee));
 
-        json::Value counterpartyJson{json::ObjectValue};
+        json::Value counterpartyJson{json::ValueType::Object};
         counterpartyJson[sfTxnSignature] = createJson[sfTxnSignature];
         counterpartyJson[sfSigningPubKey] = createJson[sfSigningPubKey];
         if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
@@ -3833,7 +3835,7 @@ protected:
             Fee(loanSetFee),
             kLOAN_SERVICE_FEE(serviceFee),
             kPAYMENT_TOTAL(numPayments),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["CloseInterestRate"] = 55374;
         createJson["ClosePaymentFee"] = "3825205248";
@@ -3902,12 +3904,12 @@ protected:
 
         {
             testcase("RPC AccountSet");
-            json::Value txJson{json::ObjectValue};
+            json::Value txJson{json::ValueType::Object};
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
             auto const signParams = [&]() {
-                json::Value signParams{json::ObjectValue};
+                json::Value signParams{json::ValueType::Object};
                 signParams[jss::passphrase] = borrowerPass;
                 signParams[jss::key_type] = "ed25519";
                 signParams[jss::tx_json] = txJson;
@@ -3936,12 +3938,12 @@ protected:
         {
             testcase("RPC LoanSet - illegal signature_target");
 
-            json::Value txJson{json::ObjectValue};
+            json::Value txJson{json::ValueType::Object};
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
             auto const borrowerSignParams = [&]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::signature_target] = "Destination";
@@ -3959,7 +3961,7 @@ protected:
         {
             testcase("RPC LoanSet - sign and submit borrower initiated");
             // 1. Borrower creates the transaction
-            json::Value txJson{json::ObjectValue};
+            json::Value txJson{json::ValueType::Object};
             txJson[sfTransactionType] = "LoanSet";
             txJson[sfAccount] = borrower.human();
             txJson[sfCounterparty] = lender.human();
@@ -3976,7 +3978,7 @@ protected:
 
             // 2. Borrower signs the transaction
             auto const borrowerSignParams = [&]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::tx_json] = txJson;
@@ -4008,7 +4010,7 @@ protected:
             // 3. Borrower sends the signed transaction to the lender
             // 4. Lender signs the transaction
             auto const lenderSignParams = [&]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::signature_target] = "CounterpartySignature";
@@ -4066,7 +4068,7 @@ protected:
         {
             testcase("RPC LoanSet - sign and submit lender initiated");
             // 1. Lender creates the transaction
-            json::Value txJson{json::ObjectValue};
+            json::Value txJson{json::ValueType::Object};
             txJson[sfTransactionType] = "LoanSet";
             txJson[sfAccount] = lender.human();
             txJson[sfCounterparty] = borrower.human();
@@ -4083,7 +4085,7 @@ protected:
 
             // 2. Lender signs the transaction
             auto const lenderSignParams = [&]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::tx_json] = txJson;
@@ -4114,7 +4116,7 @@ protected:
             // 3. Lender sends the signed transaction to the Borrower
             // 4. Borrower signs the transaction
             auto const borrowerSignParams = [&]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::signature_target] = "CounterpartySignature";
@@ -4582,7 +4584,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["CloseInterestRate"] = 76671;
         createJson["ClosePaymentFee"] = "2061925410";
@@ -4646,7 +4648,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["ClosePaymentFee"] = "0";
         createJson["GracePeriod"] = 60;
@@ -4736,7 +4738,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["CloseInterestRate"] = 47299;
         createJson["ClosePaymentFee"] = "3985819770";
@@ -4803,7 +4805,7 @@ protected:
         auto const createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue),
+            Json(sfCounterpartySignature, json::ValueType::Object),
             kCLOSE_PAYMENT_FEE(0),
             kGRACE_PERIOD(60),
             kINTEREST_RATE(TenthBips32(20930)),
@@ -4950,7 +4952,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["ClosePaymentFee"] = "0";
         createJson["InterestRate"] = 24346;
@@ -5056,7 +5058,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["ClosePaymentFee"] = "0";
         createJson["InterestRate"] = 12833;
@@ -5149,7 +5151,7 @@ protected:
                 kLATE_INTEREST_RATE(TenthBips32(77048)),
                 kLATE_PAYMENT_FEE(0),
                 kLOAN_ORIGINATION_FEE(218),
-                Json(sfCounterpartySignature, json::ObjectValue));
+                Json(sfCounterpartySignature, json::ValueType::Object));
 
             createJson.removeMember(sfSequence.getJsonName());
 
@@ -6639,7 +6641,7 @@ protected:
 
         auto const assetType = AssetType::XRP;
 
-        Env env(*this, makeConfig(), all_, nullptr, beast::severities::Severity::KWarning);
+        Env env(*this, makeConfig(), all_, nullptr, beast::Severity::Warning);
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -7354,7 +7356,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["InterestRate"] = 1;  // minimum non-zero rate
         createJson["PaymentTotal"] = 3;
@@ -7438,7 +7440,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
         createJson["InterestRate"] = 1;
         createJson["PaymentTotal"] = 3;
         createJson["PaymentInterval"] = 600;

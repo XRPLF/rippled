@@ -67,7 +67,7 @@ public:
     [[nodiscard]] virtual json::Value
     getJson(bool isAdmin) const = 0;
 
-    /** Returns a json::objectValue. */
+    /** Returns a json::ValueType::Object. */
     [[nodiscard]] virtual json::Value
     getJson(uint256 const& amendment, bool isAdmin) const = 0;
 

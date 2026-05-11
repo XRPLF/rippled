@@ -76,9 +76,9 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
@@ -109,8 +109,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -153,9 +153,9 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
@@ -175,10 +175,10 @@ public:
                 jv[jss::result].isMember(jss::offers) && jv[jss::result][jss::offers].size() == 1);
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerGets] ==
-                XRP(200).value().getJson(JsonOptions::KNone));
+                XRP(200).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerPays] ==
-                usd(100).value().getJson(JsonOptions::KNone));
+                usd(100).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::asks));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::bids));
         }
@@ -192,8 +192,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -229,9 +229,9 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
@@ -264,8 +264,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -278,8 +278,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -315,9 +315,9 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
@@ -340,16 +340,16 @@ public:
                 jv[jss::result].isMember(jss::bids) && jv[jss::result][jss::bids].size() == 1);
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][0u][jss::TakerGets] ==
-                usd(100).value().getJson(JsonOptions::KNone));
+                usd(100).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][0u][jss::TakerPays] ==
-                XRP(500).value().getJson(JsonOptions::KNone));
+                XRP(500).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][0u][jss::TakerGets] ==
-                XRP(200).value().getJson(JsonOptions::KNone));
+                XRP(200).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][0u][jss::TakerPays] ==
-                usd(100).value().getJson(JsonOptions::KNone));
+                usd(100).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::offers));
         }
 
@@ -362,8 +362,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -376,8 +376,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -408,16 +408,16 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
                 j[jss::taker_pays][jss::issuer] = Account("alice").human();
             }
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "CNY";
                 j[jss::taker_gets][jss::issuer] = Account("alice").human();
@@ -449,8 +449,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -470,8 +470,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -522,16 +522,16 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
                 j[jss::taker_pays][jss::issuer] = Account("alice").human();
             }
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "CNY";
                 j[jss::taker_gets][jss::issuer] = Account("alice").human();
@@ -552,16 +552,16 @@ public:
                 jv[jss::result].isMember(jss::offers) && jv[jss::result][jss::offers].size() == 2);
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerGets] ==
-                XRP(200).value().getJson(JsonOptions::KNone));
+                XRP(200).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerPays] ==
-                usd(100).value().getJson(JsonOptions::KNone));
+                usd(100).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][1u][jss::TakerGets] ==
-                cny(200).value().getJson(JsonOptions::KNone));
+                cny(200).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][1u][jss::TakerPays] ==
-                jpy(100).value().getJson(JsonOptions::KNone));
+                jpy(100).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::asks));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::bids));
         }
@@ -575,8 +575,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -596,8 +596,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -635,9 +635,9 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
@@ -645,7 +645,7 @@ public:
                 j[jss::taker_pays][jss::issuer] = Account("alice").human();
             }
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "CNY";
@@ -679,8 +679,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -693,8 +693,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -707,8 +707,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -721,8 +721,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == cny(75).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == jpy(100).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == cny(75).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == jpy(100).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -766,9 +766,9 @@ public:
 
         {
             // RPC subscribe to books stream
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
@@ -777,7 +777,7 @@ public:
             }
             // RPC subscribe to books stream
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "CNY";
@@ -801,28 +801,28 @@ public:
                 jv[jss::result].isMember(jss::bids) && jv[jss::result][jss::bids].size() == 2);
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][0u][jss::TakerGets] ==
-                usd(100).value().getJson(JsonOptions::KNone));
+                usd(100).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][0u][jss::TakerPays] ==
-                XRP(500).value().getJson(JsonOptions::KNone));
+                XRP(500).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][1u][jss::TakerGets] ==
-                jpy(100).value().getJson(JsonOptions::KNone));
+                jpy(100).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][1u][jss::TakerPays] ==
-                cny(500).value().getJson(JsonOptions::KNone));
+                cny(500).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][0u][jss::TakerGets] ==
-                XRP(200).value().getJson(JsonOptions::KNone));
+                XRP(200).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][0u][jss::TakerPays] ==
-                usd(100).value().getJson(JsonOptions::KNone));
+                usd(100).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][1u][jss::TakerGets] ==
-                cny(200).value().getJson(JsonOptions::KNone));
+                cny(200).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][1u][jss::TakerPays] ==
-                jpy(100).value().getJson(JsonOptions::KNone));
+                jpy(100).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::offers));
         }
 
@@ -835,8 +835,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -849,8 +849,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -863,8 +863,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -877,8 +877,8 @@ public:
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == cny(75).value().getJson(JsonOptions::KNone) &&
-                    t[jss::TakerPays] == jpy(100).value().getJson(JsonOptions::KNone);
+                    t[jss::TakerGets] == cny(75).value().getJson(JsonOptions::Values::None) &&
+                    t[jss::TakerPays] == jpy(100).value().getJson(JsonOptions::Values::None);
             }));
         }
 
@@ -909,9 +909,9 @@ public:
 
         json::Value books;
         {
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
@@ -968,8 +968,9 @@ public:
         BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
         BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0");
         BEAST_EXPECT(jrOffer[sfSequence.fieldName] == 5);
-        BEAST_EXPECT(jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::KNone));
-        BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(4000).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::Values::None));
+        BEAST_EXPECT(
+            jrOffer[jss::TakerPays] == XRP(4000).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(jrOffer[jss::owner_funds] == "100");
         BEAST_EXPECT(jrOffer[jss::quality] == "400000000");
 
@@ -977,9 +978,9 @@ public:
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jval) {
             auto const& t = jval[jss::transaction];
             return t[jss::TransactionType] == jss::OfferCreate &&
-                t[jss::TakerGets] == usd(10).value().getJson(JsonOptions::KNone) &&
+                t[jss::TakerGets] == usd(10).value().getJson(JsonOptions::Values::None) &&
                 t[jss::owner_funds] == "100" &&
-                t[jss::TakerPays] == XRP(4000).value().getJson(JsonOptions::KNone);
+                t[jss::TakerPays] == XRP(4000).value().getJson(JsonOptions::Values::None);
         }));
 
         env(offer(bob, XRP(2000), usd(5)));
@@ -988,9 +989,9 @@ public:
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jval) {
             auto const& t = jval[jss::transaction];
             return t[jss::TransactionType] == jss::OfferCreate &&
-                t[jss::TakerGets] == usd(5).value().getJson(JsonOptions::KNone) &&
+                t[jss::TakerGets] == usd(5).value().getJson(JsonOptions::Values::None) &&
                 t[jss::owner_funds] == "50" &&
-                t[jss::TakerPays] == XRP(2000).value().getJson(JsonOptions::KNone);
+                t[jss::TakerPays] == XRP(2000).value().getJson(JsonOptions::Values::None);
         }));
 
         jv = wsc->invoke("book_offers", jvParams);
@@ -1012,8 +1013,10 @@ public:
         BEAST_EXPECT(jrNextOffer[sfLedgerEntryType.fieldName] == jss::Offer);
         BEAST_EXPECT(jrNextOffer[sfOwnerNode.fieldName] == "0");
         BEAST_EXPECT(jrNextOffer[sfSequence.fieldName] == 5);
-        BEAST_EXPECT(jrNextOffer[jss::TakerGets] == usd(5).value().getJson(JsonOptions::KNone));
-        BEAST_EXPECT(jrNextOffer[jss::TakerPays] == XRP(2000).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(
+            jrNextOffer[jss::TakerGets] == usd(5).value().getJson(JsonOptions::Values::None));
+        BEAST_EXPECT(
+            jrNextOffer[jss::TakerPays] == XRP(2000).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(jrNextOffer[jss::owner_funds] == "50");
         BEAST_EXPECT(jrNextOffer[jss::quality] == "400000000");
 
@@ -1044,8 +1047,8 @@ public:
             return false;
         auto const& t = (*maybeJv)[jss::transaction];
         if (t[jss::TransactionType] != jss::OfferCreate ||
-            t[jss::TakerGets] != takerGets.value().getJson(JsonOptions::KNone) ||
-            t[jss::TakerPays] != takerPays.value().getJson(JsonOptions::KNone))
+            t[jss::TakerGets] != takerGets.value().getJson(JsonOptions::Values::None) ||
+            t[jss::TakerPays] != takerPays.value().getJson(JsonOptions::Values::None))
             return false;
         // Make sure no other message is waiting
         return wsc->getMsg(timeout) == std::nullopt;
@@ -1093,9 +1096,9 @@ public:
         json::Value books;
         {
             // RPC subscribe to books stream
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = false;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
@@ -1169,9 +1172,9 @@ public:
 
         {
             // RPC subscribe to multiple book streams
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = false;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
@@ -1179,7 +1182,7 @@ public:
             }
 
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = false;
                 j[jss::taker_gets][jss::currency] = "EUR";
                 j[jss::taker_gets][jss::issuer] = gw.human();
@@ -1233,7 +1236,7 @@ public:
         {
             json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays] = json::ObjectValue;
+            jvParams[jss::taker_pays] = json::ValueType::Object;
             auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] == "Missing field 'taker_gets'.");
@@ -1243,7 +1246,7 @@ public:
             json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
             jvParams[jss::taker_pays] = "not an object";
-            jvParams[jss::taker_gets] = json::ObjectValue;
+            jvParams[jss::taker_gets] = json::ValueType::Object;
             auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'taker_pays', not object.");
@@ -1252,7 +1255,7 @@ public:
         {
             json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays] = json::ObjectValue;
+            jvParams[jss::taker_pays] = json::ValueType::Object;
             jvParams[jss::taker_gets] = "not an object";
             auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -1262,8 +1265,8 @@ public:
         {
             json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays] = json::ObjectValue;
-            jvParams[jss::taker_gets] = json::ObjectValue;
+            jvParams[jss::taker_pays] = json::ValueType::Object;
+            jvParams[jss::taker_gets] = json::ValueType::Object;
             auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] == "Missing field 'taker_pays.currency'.");
@@ -1273,7 +1276,7 @@ public:
             json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
             jvParams[jss::taker_pays][jss::currency] = 1;
-            jvParams[jss::taker_gets] = json::ObjectValue;
+            jvParams[jss::taker_gets] = json::ValueType::Object;
             auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(
@@ -1284,7 +1287,7 @@ public:
             json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
             jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_gets] = json::ObjectValue;
+            jvParams[jss::taker_gets] = json::ValueType::Object;
             auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] == "Missing field 'taker_gets.currency'.");
@@ -1568,7 +1571,7 @@ public:
         BEAST_EXPECT(
             jrr[jss::offers].size() == (asAdmin ? RPC::Tuning::kBOOK_OFFERS.rmax + 1 : 0u));
 
-        jvParams[jss::limit] = json::NullValue;
+        jvParams[jss::limit] = json::ValueType::Null;
         jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(
@@ -1610,8 +1613,10 @@ public:
             BEAST_EXPECT(jrOffer[jss::Flags] == 0);
             BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
             BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0");
-            BEAST_EXPECT(jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::KNone));
-            BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(10).value().getJson(JsonOptions::KNone));
+            BEAST_EXPECT(
+                jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::Values::None));
+            BEAST_EXPECT(
+                jrOffer[jss::TakerPays] == XRP(10).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(jrOffer[sfDomainID.jsonName].asString() == to_string(domainID));
         };
 
@@ -1635,10 +1640,10 @@ public:
                 jv[jss::result].isMember(jss::offers) && jv[jss::result][jss::offers].size() == 1);
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerGets] ==
-                usd(10).value().getJson(JsonOptions::KNone));
+                usd(10).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerPays] ==
-                XRP(10).value().getJson(JsonOptions::KNone));
+                XRP(10).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][sfDomainID.jsonName].asString() ==
                 to_string(domainID));
@@ -1662,9 +1667,9 @@ public:
         // subscribe to domain book should return domain offer
         {
             json::Value books;
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_pays][jss::currency] = "XRP";
                 j[jss::taker_gets][jss::currency] = "USD";
@@ -1681,9 +1686,9 @@ public:
         // subscribe to open book should not return domain offer
         {
             json::Value books;
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_pays][jss::currency] = "XRP";
                 j[jss::taker_gets][jss::currency] = "USD";
@@ -1733,8 +1738,10 @@ public:
             BEAST_EXPECT(jrOffer[jss::Flags] == lsfHybrid);
             BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
             BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0");
-            BEAST_EXPECT(jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::KNone));
-            BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(10).value().getJson(JsonOptions::KNone));
+            BEAST_EXPECT(
+                jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::Values::None));
+            BEAST_EXPECT(
+                jrOffer[jss::TakerPays] == XRP(10).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(jrOffer[sfDomainID.jsonName].asString() == to_string(domainID));
             BEAST_EXPECT(jrOffer[sfAdditionalBooks.jsonName].size() == 1);
         };
@@ -1758,10 +1765,10 @@ public:
                 jv[jss::result].isMember(jss::offers) && jv[jss::result][jss::offers].size() == 1);
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerGets] ==
-                usd(10).value().getJson(JsonOptions::KNone));
+                usd(10).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerPays] ==
-                XRP(10).value().getJson(JsonOptions::KNone));
+                XRP(10).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][sfDomainID.jsonName].asString() ==
                 to_string(domainID));
@@ -1785,9 +1792,9 @@ public:
         // subscribe to domain book should return hybrid offer
         {
             json::Value books;
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_pays][jss::currency] = "XRP";
                 j[jss::taker_gets][jss::currency] = "USD";
@@ -1809,9 +1816,9 @@ public:
         // subscribe to open book should return hybrid offer
         {
             json::Value books;
-            books[jss::books] = json::ArrayValue;
+            books[jss::books] = json::ValueType::Array;
             {
-                auto& j = books[jss::books].append(json::ObjectValue);
+                auto& j = books[jss::books].append(json::ValueType::Object);
                 j[jss::snapshot] = true;
                 j[jss::taker_pays][jss::currency] = "XRP";
                 j[jss::taker_gets][jss::currency] = "USD";

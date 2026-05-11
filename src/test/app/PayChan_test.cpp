@@ -1029,9 +1029,9 @@ struct PayChan_test : public beast::unit_test::Suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
         }
         {
             // test destination_account non-string
@@ -1048,9 +1048,9 @@ struct PayChan_test : public beast::unit_test::Suite
             testInvalidDestAccountParam(1);
             testInvalidDestAccountParam(1.1);
             testInvalidDestAccountParam(true);
-            testInvalidDestAccountParam(json::Value(json::NullValue));
-            testInvalidDestAccountParam(json::Value(json::ObjectValue));
-            testInvalidDestAccountParam(json::Value(json::ArrayValue));
+            testInvalidDestAccountParam(json::Value(json::ValueType::Null));
+            testInvalidDestAccountParam(json::Value(json::ValueType::Object));
+            testInvalidDestAccountParam(json::Value(json::ValueType::Array));
         }
         {
             auto const r = env.rpc("account_channels", alice.human(), bob.human());
@@ -1127,7 +1127,7 @@ struct PayChan_test : public beast::unit_test::Suite
         auto testLimit = [](test::jtx::Env& env,
                             test::jtx::Account const& src,
                             std::optional<int> limit = std::nullopt,
-                            json::Value const& marker = json::NullValue,
+                            json::Value const& marker = json::ValueType::Null,
                             std::optional<test::jtx::Account> const& dst = std::nullopt) {
             json::Value jvc;
             jvc[jss::account] = src.human();
@@ -1161,7 +1161,7 @@ struct PayChan_test : public beast::unit_test::Suite
             auto const numFull = bobs.size() / limit;
             auto const numNonFull = ((bobs.size() % limit) != 0u) ? 1 : 0;
 
-            json::Value marker = json::NullValue;
+            json::Value marker = json::ValueType::Null;
 
             auto const testIt = [&](bool expectMarker, int expectedBatchSize) {
                 auto const r = testLimit(env, alice, limit, marker);
@@ -1251,7 +1251,7 @@ struct PayChan_test : public beast::unit_test::Suite
         env(create(alice, bob, channelFunds, settleDelay, pk));
         env.close();
 
-        json::Value args{json::ObjectValue};
+        json::Value args{json::ValueType::Object};
         args[jss::channel_id] = chan1Str;
         args[jss::key_type] = "ed255191";
         args[jss::seed] = "snHq1rzQoN2qiUkC3XF5RyxBzUtN";
@@ -1482,7 +1482,7 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
             {
                 // Missing channel_id
-                json::Value args{json::ObjectValue};
+                json::Value args{json::ValueType::Object};
                 args[jss::amount] = "2000";
                 args[jss::key_type] = "secp256k1";
                 args[jss::passphrase] = "passphrase_can_be_anything";
@@ -1491,7 +1491,7 @@ struct PayChan_test : public beast::unit_test::Suite
             }
             {
                 // Missing amount
-                json::Value args{json::ObjectValue};
+                json::Value args{json::ValueType::Object};
                 args[jss::channel_id] = chan1Str;
                 args[jss::key_type] = "secp256k1";
                 args[jss::passphrase] = "passphrase_can_be_anything";
@@ -1500,7 +1500,7 @@ struct PayChan_test : public beast::unit_test::Suite
             }
             {
                 // Missing key_type and no secret.
-                json::Value args{json::ObjectValue};
+                json::Value args{json::ValueType::Object};
                 args[jss::amount] = "2000";
                 args[jss::channel_id] = chan1Str;
                 args[jss::passphrase] = "passphrase_can_be_anything";
@@ -1509,7 +1509,7 @@ struct PayChan_test : public beast::unit_test::Suite
             }
             {
                 // Both passphrase and seed specified.
-                json::Value args{json::ObjectValue};
+                json::Value args{json::ValueType::Object};
                 args[jss::amount] = "2000";
                 args[jss::channel_id] = chan1Str;
                 args[jss::key_type] = "secp256k1";
@@ -1520,7 +1520,7 @@ struct PayChan_test : public beast::unit_test::Suite
             }
             {
                 // channel_id is not exact hex.
-                json::Value args{json::ObjectValue};
+                json::Value args{json::ValueType::Object};
                 args[jss::amount] = "2000";
                 args[jss::channel_id] = chan1Str + "1";
                 args[jss::key_type] = "secp256k1";
@@ -1530,7 +1530,7 @@ struct PayChan_test : public beast::unit_test::Suite
             }
             {
                 // amount is not a string
-                json::Value args{json::ObjectValue};
+                json::Value args{json::ValueType::Object};
                 args[jss::amount] = 2000;
                 args[jss::channel_id] = chan1Str;
                 args[jss::key_type] = "secp256k1";
@@ -1540,7 +1540,7 @@ struct PayChan_test : public beast::unit_test::Suite
             }
             {
                 // Amount is not a decimal string.
-                json::Value args{json::ObjectValue};
+                json::Value args{json::ValueType::Object};
                 args[jss::amount] = "TwoThousand";
                 args[jss::channel_id] = chan1Str;
                 args[jss::key_type] = "secp256k1";
