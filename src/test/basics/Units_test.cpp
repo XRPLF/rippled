@@ -96,28 +96,28 @@ private:
         {
             FeeLevel32 const x{std::numeric_limits<std::uint32_t>::max()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == json::ValueType::Uint);
+            BEAST_EXPECT(y.type() == json::ValueType::UInt);
             BEAST_EXPECT(y == json::Value{x.fee()});
         }
 
         {
             FeeLevel32 const x{std::numeric_limits<std::uint32_t>::min()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == json::ValueType::Uint);
+            BEAST_EXPECT(y.type() == json::ValueType::UInt);
             BEAST_EXPECT(y == json::Value{x.fee()});
         }
 
         {
             FeeLevel64 const x{std::numeric_limits<std::uint64_t>::max()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == json::ValueType::Uint);
+            BEAST_EXPECT(y.type() == json::ValueType::UInt);
             BEAST_EXPECT(y == json::Value{std::numeric_limits<std::uint32_t>::max()});
         }
 
         {
             FeeLevel64 const x{std::numeric_limits<std::uint64_t>::min()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == json::ValueType::Uint);
+            BEAST_EXPECT(y.type() == json::ValueType::UInt);
             BEAST_EXPECT(y == json::Value{0});
         }
 

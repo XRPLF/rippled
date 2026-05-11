@@ -204,7 +204,6 @@ class StatsDCollectorImp : public StatsDCollector,
                            public std::enable_shared_from_this<StatsDCollectorImp>
 {
 private:
-    // MaxPacketSize = 484
     static constexpr auto kMAX_PACKET_SIZE = 1472;
 
     Journal journal_;

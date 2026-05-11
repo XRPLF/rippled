@@ -440,8 +440,8 @@ doAccountTx(RPC::JsonContext& context)
     {
         auto& token = params[jss::marker];
         if (!token.isMember(jss::ledger) || !token.isMember(jss::seq) ||
-            !token[jss::ledger].isConvertibleTo(json::ValueType::Uint) ||
-            !token[jss::seq].isConvertibleTo(json::ValueType::Uint))
+            !token[jss::ledger].isConvertibleTo(json::ValueType::UInt) ||
+            !token[jss::seq].isConvertibleTo(json::ValueType::UInt))
         {
             RPC::Status const status{
                 RpcInvalidParams,

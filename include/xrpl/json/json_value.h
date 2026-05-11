@@ -18,7 +18,7 @@ namespace json {
 enum class ValueType {
     Null = 0,  ///< 'null' value
     Int,       ///< signed integer value
-    Uint,      ///< unsigned integer value
+    UInt,      ///< unsigned integer value
     Real,      ///< double value
     String,    ///< UTF-8 string value
     Boolean,   ///< bool value

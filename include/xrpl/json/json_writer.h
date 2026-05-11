@@ -212,7 +212,7 @@ writeValue(Write const& write, Value const& value)
             writeString(write, valueToString(value.asInt()));
             break;
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             writeString(write, valueToString(value.asUInt()));
             break;
 

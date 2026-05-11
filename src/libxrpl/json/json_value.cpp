@@ -176,7 +176,7 @@ Value::Value(ValueType type) : type_(type)
             break;
 
         case ValueType::Int:
-        case ValueType::Uint:
+        case ValueType::UInt:
             value_.intVal = 0;
             break;
 
@@ -209,7 +209,7 @@ Value::Value(Int value) : type_(ValueType::Int)
     value_.intVal = value;
 }
 
-Value::Value(UInt value) : type_(ValueType::Uint)
+Value::Value(UInt value) : type_(ValueType::UInt)
 {
     value_.uintVal = value;
 }
@@ -252,7 +252,7 @@ Value::Value(Value const& other) : type_(other.type_)
     {
         case ValueType::Null:
         case ValueType::Int:
-        case ValueType::Uint:
+        case ValueType::UInt:
         case ValueType::Real:
         case ValueType::Boolean:
             value_ = other.value_;
@@ -289,7 +289,7 @@ Value::~Value()
     {
         case ValueType::Null:
         case ValueType::Int:
-        case ValueType::Uint:
+        case ValueType::UInt:
         case ValueType::Real:
         case ValueType::Boolean:
             break;
@@ -374,11 +374,11 @@ operator<(Value const& x, Value const& y)
 {
     if (auto signum = static_cast<int>(x.type_) - static_cast<int>(y.type_))
     {
-        if (x.type_ == ValueType::Int && y.type_ == ValueType::Uint)
+        if (x.type_ == ValueType::Int && y.type_ == ValueType::UInt)
         {
             signum = integerCmp(x.value_.intVal, y.value_.uintVal);
         }
-        else if (x.type_ == ValueType::Uint && y.type_ == ValueType::Int)
+        else if (x.type_ == ValueType::UInt && y.type_ == ValueType::Int)
         {
             signum = -integerCmp(y.value_.intVal, x.value_.uintVal);
         }
@@ -393,7 +393,7 @@ operator<(Value const& x, Value const& y)
         case ValueType::Int:
             return x.value_.intVal < y.value_.intVal;
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             return x.value_.uintVal < y.value_.uintVal;
 
         case ValueType::Real:
@@ -429,9 +429,9 @@ operator==(Value const& x, Value const& y)
 {
     if (x.type_ != y.type_)
     {
-        if (x.type_ == ValueType::Int && y.type_ == ValueType::Uint)
+        if (x.type_ == ValueType::Int && y.type_ == ValueType::UInt)
             return integerCmp(x.value_.intVal, y.value_.uintVal) == 0;
-        if (x.type_ == ValueType::Uint && y.type_ == ValueType::Int)
+        if (x.type_ == ValueType::UInt && y.type_ == ValueType::Int)
             return integerCmp(y.value_.intVal, x.value_.uintVal) == 0;
         return false;
     }
@@ -444,7 +444,7 @@ operator==(Value const& x, Value const& y)
         case ValueType::Int:
             return x.value_.intVal == y.value_.intVal;
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             return x.value_.uintVal == y.value_.uintVal;
 
         case ValueType::Real:
@@ -496,7 +496,7 @@ Value::asString() const
         case ValueType::Int:
             return std::to_string(value_.intVal);
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             return std::to_string(value_.uintVal);
 
         case ValueType::Real:
@@ -526,7 +526,7 @@ Value::asInt() const
         case ValueType::Int:
             return value_.intVal;
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             JSON_ASSERT_MESSAGE(
                 value_.uintVal < (unsigned)kMAX_INT, "integer out of signed integer range");
             return value_.uintVal;
@@ -574,7 +574,7 @@ Value::asAbsUInt() const
             return value_.intVal;
         }
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             return value_.uintVal;
 
         case ValueType::Real: {
@@ -629,7 +629,7 @@ Value::asUInt() const
                 value_.intVal >= 0, "Negative integer can not be converted to unsigned integer");
             return value_.intVal;
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             return value_.uintVal;
 
         case ValueType::Real:
@@ -670,7 +670,7 @@ Value::asDouble() const
         case ValueType::Int:
             return value_.intVal;
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             return value_.uintVal;
 
         case ValueType::Real:
@@ -702,7 +702,7 @@ Value::asBool() const
             return false;
 
         case ValueType::Int:
-        case ValueType::Uint:
+        case ValueType::UInt:
             return value_.intVal != 0;
 
         case ValueType::Real:
@@ -737,20 +737,20 @@ Value::isConvertibleTo(ValueType other) const
 
         case ValueType::Int:
             return (other == ValueType::Null && value_.intVal == 0) || other == ValueType::Int ||
-                (other == ValueType::Uint && value_.intVal >= 0) || other == ValueType::Real ||
+                (other == ValueType::UInt && value_.intVal >= 0) || other == ValueType::Real ||
                 other == ValueType::String || other == ValueType::Boolean;
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             return (other == ValueType::Null && value_.uintVal == 0) ||
                 (other == ValueType::Int && value_.uintVal <= (unsigned)kMAX_INT) ||
-                other == ValueType::Uint || other == ValueType::Real ||
+                other == ValueType::UInt || other == ValueType::Real ||
                 other == ValueType::String || other == ValueType::Boolean;
 
         case ValueType::Real:
             return (other == ValueType::Null && value_.realVal == 0.0) ||
                 (other == ValueType::Int && value_.realVal >= kMIN_INT &&
                  value_.realVal <= kMAX_INT) ||
-                (other == ValueType::Uint && value_.realVal >= 0 && value_.realVal <= kMAX_UINT &&
+                (other == ValueType::UInt && value_.realVal >= 0 && value_.realVal <= kMAX_UINT &&
                  std::fabs(round(value_.realVal) - value_.realVal) <
                      std::numeric_limits<double>::epsilon()) ||
                 other == ValueType::Real || other == ValueType::String ||
@@ -758,7 +758,7 @@ Value::isConvertibleTo(ValueType other) const
 
         case ValueType::Boolean:
             return (other == ValueType::Null && !value_.boolVal) || other == ValueType::Int ||
-                other == ValueType::Uint || other == ValueType::Real ||
+                other == ValueType::UInt || other == ValueType::Real ||
                 other == ValueType::String || other == ValueType::Boolean;
 
         case ValueType::String:
@@ -791,7 +791,7 @@ Value::size() const
     {
         case ValueType::Null:
         case ValueType::Int:
-        case ValueType::Uint:
+        case ValueType::UInt:
         case ValueType::Real:
         case ValueType::Boolean:
         case ValueType::String:
@@ -1096,13 +1096,13 @@ Value::isInt() const
 bool
 Value::isUInt() const
 {
-    return type_ == ValueType::Uint;
+    return type_ == ValueType::UInt;
 }
 
 bool
 Value::isIntegral() const
 {
-    return type_ == ValueType::Int || type_ == ValueType::Uint || type_ == ValueType::Boolean;
+    return type_ == ValueType::Int || type_ == ValueType::UInt || type_ == ValueType::Boolean;
 }
 
 bool

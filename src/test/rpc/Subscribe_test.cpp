@@ -618,7 +618,7 @@ public:
         std::initializer_list<json::Value> const nonArrays{
             json::ValueType::Null,
             json::ValueType::Int,
-            json::ValueType::Uint,
+            json::ValueType::UInt,
             json::ValueType::Real,
             "",
             json::ValueType::Boolean,

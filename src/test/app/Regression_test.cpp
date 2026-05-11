@@ -299,7 +299,7 @@ struct Regression_test : public beast::unit_test::Suite
                 SHAMapHash digest;
                 if (!state.peekItem(bobIndex, digest))
                     return std::nullopt;
-                return digest.asUint256();
+                return digest.asUInt256();
             }();
 
             auto const mapCounts = [&](CountedObjects::List const& list) {

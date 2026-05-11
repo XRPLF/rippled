@@ -792,7 +792,7 @@ private:
             index++;
         }
 
-        if (!jvParams[index].isString() || !toUint64(jvParams[index].asString()))
+        if (!jvParams[index].isString() || !toUInt64(jvParams[index].asString()))
             return rpcError(RpcChannelAmtMalformed);
         jvRequest[jss::amount] = jvParams[index];
 
@@ -823,7 +823,7 @@ private:
         }
         jvRequest[jss::channel_id] = jvParams[1u].asString();
 
-        if (!jvParams[2u].isString() || !toUint64(jvParams[2u].asString()))
+        if (!jvParams[2u].isString() || !toUInt64(jvParams[2u].asString()))
             return rpcError(RpcChannelAmtMalformed);
         jvRequest[jss::amount] = jvParams[2u];
 

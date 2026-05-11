@@ -224,7 +224,7 @@ parseUnsigned(
 
 template <class STResult, class Integer = std::uint16_t>
 static std::optional<detail::STVar>
-parseUint16(
+parseUInt16(
     SField const& field,
     std::string const& jsonName,
     std::string const& fieldName,
@@ -285,7 +285,7 @@ parseUint16(
 
 template <class STResult, class Integer = std::uint32_t>
 static std::optional<detail::STVar>
-parseUint32(
+parseUInt32(
     SField const& field,
     std::string const& jsonName,
     std::string const& fieldName,
@@ -434,14 +434,14 @@ parseLeaf(
             break;
 
         case STI_UINT16:
-            ret = parseUint16<STUInt16>(field, jsonName, fieldName, name, value, error);
+            ret = parseUInt16<STUInt16>(field, jsonName, fieldName, name, value, error);
             if (!ret)
                 return ret;
 
             break;
 
         case STI_UINT32:
-            ret = parseUint32<STUInt32>(field, jsonName, fieldName, name, value, error);
+            ret = parseUInt32<STUInt32>(field, jsonName, fieldName, name, value, error);
             if (!ret)
                 return ret;
 

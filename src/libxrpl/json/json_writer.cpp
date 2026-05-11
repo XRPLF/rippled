@@ -196,7 +196,7 @@ FastWriter::writeValue(Value const& value)
             document_ += valueToString(value.asInt());
             break;
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             document_ += valueToString(value.asUInt());
             break;
 
@@ -279,7 +279,7 @@ StyledWriter::writeValue(Value const& value)
             pushValue(valueToString(value.asInt()));
             break;
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             pushValue(valueToString(value.asUInt()));
             break;
 
@@ -514,7 +514,7 @@ StyledStreamWriter::writeValue(Value const& value)
             pushValue(valueToString(value.asInt()));
             break;
 
-        case ValueType::Uint:
+        case ValueType::UInt:
             pushValue(valueToString(value.asUInt()));
             break;
 
