@@ -31,7 +31,8 @@ canApplyToVault(
     SLE::const_ref vault,
     STAmount const& amount,
     beast::Journal j,
-    std::string_view logPrefix)
+    std::string_view logPrefix,
+    std::optional<AccountID> const& counterparty)
 {
     if (!view.rules().enabled(fixCleanup3_2_0))
         return tesSUCCESS;
@@ -61,6 +62,36 @@ canApplyToVault(
                        << " is not representable at vault total scale " << totalScale
                        << " while available is at scale " << availScale;
         return tecPRECISION_LOSS;
+    }
+
+    // (c) Counterparty-rail absorption: if the counterparty's trust-line
+    //     balance sits in a coarser exponent band than the request, the
+    //     +=/-= on that rail canonicalizes back to the pre-state balance
+    //     and the operation transfers no value on that side. accountSendExact's
+    //     lenient predicate would admit this 0-vs-N case as conserved at the
+    //     coarser anchor; we reject upfront. Skip when the counterparty has
+    //     no balance — the rail is at the asset's natural finest scale, so
+    //     no absorption is possible.
+    if (counterparty)
+    {
+        STAmount const counterpartyBalance = accountHolds(
+            view,
+            *counterparty,
+            vaultAsset,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            j);
+        if (counterpartyBalance != beast::kZERO)
+        {
+            int const counterpartyScale = scale(Number{counterpartyBalance}, vaultAsset);
+            if (roundsToZeroAtScale(vaultAsset, amount, counterpartyScale))
+            {
+                JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
+                               << " rounds to zero at counterparty trust-line scale "
+                               << counterpartyScale;
+                return tecPRECISION_LOSS;
+            }
+        }
     }
 
     return tesSUCCESS;

@@ -135,8 +135,12 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 
     // Post-fixCleanup3_2_0 preclaim precision guard.
     // See VaultHelpers.h "Vault asset accounting precision" for the bug
-    // class, defense layers, and granularity-floor trade-off.
-    if (auto const ret = canApplyToVault(ctx.view, vault, assets, ctx.j, "VaultDeposit"))
+    // class, defense layers, and granularity-floor trade-off. Pass the
+    // depositor as counterparty so a coarse-scale sender TL whose
+    // subtraction would canonicalize to a no-op is rejected here rather
+    // than relying on the finalize-time deposit-must-decrease-depositor
+    // invariant.
+    if (auto const ret = canApplyToVault(ctx.view, vault, assets, ctx.j, "VaultDeposit", account))
         return ret;
 
     return tesSUCCESS;
@@ -158,15 +162,15 @@ VaultDeposit::doApply()
     if (view().rules().enabled(fixCleanup3_2_0) && !amount.native() && !amount.holds<MPTIssue>())
     {
         Asset const vaultAsset = vault->at(sfAsset);
-        int const availScale = scale(vault->at(sfAssetsAvailable), vaultAsset);
-        int const totalScale = scale(vault->at(sfAssetsTotal), vaultAsset);
-        int const gridScale = std::max(totalScale, availScale);
+        int const maxScale = std::max(
+            scale(vault->at(sfAssetsAvailable), vaultAsset),
+            scale(vault->at(sfAssetsTotal), vaultAsset));
         Number const clamped =
-            roundToAsset(vaultAsset, txAmount, gridScale, Number::RoundingMode::Downward);
+            roundToAsset(vaultAsset, txAmount, maxScale, Number::RoundingMode::Downward);
         if (clamped == beast::kZERO)
         {
             JLOG(j_.warn()) << "VaultDeposit: amount " << txAmount.getFullText()
-                            << " clamps to zero at vault scale " << gridScale;
+                            << " clamps to zero at vault scale " << maxScale;
             return tecPRECISION_LOSS;
         }
         amount = STAmount{vaultAsset, clamped};

@@ -154,6 +154,9 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     // (drained vault or total loss), canApplyToVault short-circuits
     // on amount == 0 so the downstream INSUFFICIENT_FUNDS / INTERNAL /
     // INVARIANT_FAILED handling in doApply surfaces the right error.
+    // No counterparty argument: withdraws intentionally admit receiver-
+    // side absorption (the "stuck vault drains, value returns to the
+    // issuer's obligation pool" path — see testBugStuckVaultReceiverAtEdge).
     if (auto const ret = canApplyToVault(ctx.view, vault, assetAmount, ctx.j, "VaultWithdraw"))
         return ret;
 

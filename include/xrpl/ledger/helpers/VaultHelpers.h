@@ -73,12 +73,23 @@ namespace xrpl {
 //
 // =============================================================================================
 
-/** Vault preclaim precision guard. Catches the two-part bug class documented
- *  above: silent absorption on the rail (request rounds to zero at
- *  sfAssetsAvailable's scale) and asymmetric SLE rounding in the loan-trapped
- *  state (request fails lossless canonicalization at sfAssetsTotal's coarser
- *  scale). Same-scale tail absorption is intentionally not caught here —
- *  VaultDeposit::doApply applies caller-side clamping for that case.
+/** Vault preclaim precision guard. Catches:
+ *    - silent absorption on the vault rail (request rounds to zero at
+ *      sfAssetsAvailable's scale);
+ *    - asymmetric SLE rounding in the loan-trapped state (request fails
+ *      lossless canonicalization at sfAssetsTotal's coarser scale);
+ *    - counterparty-rail absorption when supplied (request rounds to zero
+ *      at the counterparty's trust-line scale — e.g. a depositor with a
+ *      coarse-scale TL whose subtraction would canonicalize back to its
+ *      pre-state balance, or a withdrawal destination whose addition
+ *      would canonicalize back to its pre-state balance). Without this
+ *      leg the lenient accountSendExact predicate admits 0-vs-N as
+ *      conserved when one endpoint sits in a coarser exponent band,
+ *      relying on the finalize-time deposit/withdraw invariants to
+ *      catch the inconsistency.
+ *  Same-scale tail absorption on the vault side is intentionally not
+ *  rejected here — VaultDeposit::doApply applies caller-side clamping
+ *  for that case.
  *
  *  Returns tesSUCCESS when the amendment is disabled, when amount is zero,
  *  or when the request passes both legs. Returns tecPRECISION_LOSS on
@@ -105,7 +116,8 @@ canApplyToVault(
     SLE::const_ref vault,
     STAmount const& amount,
     beast::Journal j,
-    std::string_view logPrefix);
+    std::string_view logPrefix,
+    std::optional<AccountID> const& counterparty = std::nullopt);
 
 /** From the perspective of a vault, return the number of shares to give
     depositor when they offer a fixed amount of assets. Note, since shares are

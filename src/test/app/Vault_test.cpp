@@ -7020,6 +7020,77 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
+    // Coarse-scale counterparty: depositor whose TL sits at a much coarser
+    // exponent band than the vault's pseudo. amount=50 from 1e18 (scale 3,
+    // ULP=1000) canonicalizes back to 1e18 — senderDelta=0 while the vault
+    // pseudo at 1.5e16 (scale 1, ULP=10) gains 50. accountSendExact's
+    // lenient predicate anchors at the coarser sender scale and admits
+    // 0-vs-50 as conserved; pre-fix, the deposit-must-decrease-depositor-
+    // balance invariant catches the inconsistency at finalize and the tx
+    // returns tecINVARIANT_FAILED — relying on a "this should never
+    // happen" rail. Post-fix, canApplyToVault's counterparty-scale leg
+    // rejects upfront with tecPRECISION_LOSS, before any state is touched.
+    void
+    testBugVaultDepositCoarseScaleSender()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const attacker{"attacker"};
+
+            env.fund(XRP(100'000), issuer, alice, attacker);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), 2, 18};
+            // 1e18: depositor canonicalizes at exp=3, ULP=1000.
+            STAmount const attackerFund{usd.raw(), Number{1, 18}};
+            // 1.5e16: parks vault accounting at scale 1 (ULP=10).
+            STAmount const aliceFund{usd.raw(), Number{15, 15}};
+
+            env(trust(alice, trustLimit));
+            env(trust(attacker, trustLimit));
+            env.close();
+            env(pay(issuer, alice, aliceFund));
+            env(pay(issuer, attacker, attackerFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            // amount=50 absorbs at attacker's TL (1e18 - 50 canonicalizes
+            // back to 1e18) but is above-ULP at vault's pseudo scale.
+            env(vault.deposit({.depositor = attacker, .id = vaultKeylet.key, .amount = usd(50)}),
+                Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "VaultDeposit: coarse-scale sender absorbs subtraction, "
+                "invariant catches at finalize (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "VaultDeposit: coarse-scale sender rejected upfront by "
+                "preclaim guard (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tecPRECISION_LOSS);
+        }
+    }
+
     // accountSendExact's carve-out paths: native (XRP/MPT integer-exact),
     // and issuer-as-source/destination (mint/destroy, no counterparty
     // trust line). Each path falls through to plain accountSend without
@@ -7517,6 +7588,7 @@ public:
         testBugVaultSubUlpAtEdge();
         testBugVaultLoanTrappedAsymmetricRounding();
         testVaultDepositSameScaleClamping();
+        testBugVaultDepositCoarseScaleSender();
         testAccountSendExactCarveOuts();
         // Deposit
         testBugVaultDepositEdgeCrossing();
