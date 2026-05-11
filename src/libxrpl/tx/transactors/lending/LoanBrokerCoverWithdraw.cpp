@@ -59,11 +59,8 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (ctx.rules.enabled(fixCleanup3_2_0))
-    {
-        if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
-            return err;
-    }
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+        return err;
 
     return tesSUCCESS;
 }
@@ -117,12 +114,8 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Validate credentials (if any) before canWithdraw, since canWithdraw may
     // call credentials::authorizedDepositPreauth which assumes credentials
     // already exist.
-    if (ctx.view.rules().enabled(fixCleanup3_2_0))
-    {
-        if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j);
-            !isTesSuccess(err))
-            return err;
-    }
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j); !isTesSuccess(err))
+        return err;
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
     // Enforce all the usual asset transfer checks.

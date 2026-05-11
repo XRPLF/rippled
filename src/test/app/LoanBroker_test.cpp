@@ -1832,12 +1832,16 @@ class LoanBroker_test : public beast::unit_test::Suite
     }
 
     void
-    testCoverWithdrawCredentialDepositPreauth()
+    testCoverWithdrawCredentialDepositPreauth(FeatureBitset features)
     {
-        testcase("CoverWithdraw with credential-based deposit preauth");
+        testcase(
+            std::string{"CoverWithdraw with credential-based deposit preauth "} +
+            (features[fixCleanup3_2_0] ? "post-fix" : "pre-fix"));
         using namespace jtx;
 
-        Env env(*this);
+        bool const fixEnabled = features[fixCleanup3_2_0];
+
+        Env env(*this, features);
 
         Account const broker{"broker"};
         Account const dest{"dest"};
@@ -1890,6 +1894,17 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(coverWithdrawToDest(), loanBroker::kDESTINATION(dest), Ter{tecNO_PERMISSION});
         env.close();
 
+        if (!fixEnabled)
+        {
+            // Pre-fix: sfCredentialIDs in LoanBrokerCoverWithdraw is disabled
+            env(coverWithdrawToDest(),
+                loanBroker::kDESTINATION(dest),
+                credentials::Ids({credIdx}),
+                Ter{temDISABLED});
+            env.close();
+            return;
+        }
+
         // With credentials, succeeds
         env(coverWithdrawToDest(), loanBroker::kDESTINATION(dest), credentials::Ids({credIdx}));
         env.close();
@@ -1908,6 +1923,8 @@ public:
     void
     run() override
     {
+        auto const all = jtx::testableAmendments();
+
         testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
 
@@ -1925,7 +1942,8 @@ public:
 
         testRIPD4274();
 
-        testCoverWithdrawCredentialDepositPreauth();
+        testCoverWithdrawCredentialDepositPreauth(all - fixCleanup3_2_0);
+        testCoverWithdrawCredentialDepositPreauth(all);
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.

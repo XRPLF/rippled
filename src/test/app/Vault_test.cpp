@@ -6142,12 +6142,16 @@ class Vault_test : public beast::unit_test::Suite
     }
 
     void
-    testWithdrawCredentialDepositPreauth()
+    testWithdrawCredentialDepositPreauth(FeatureBitset features)
     {
-        testcase("withdraw with credential-based deposit preauth");
+        testcase(
+            "withdraw with credential-based deposit preauth " +
+            std::string{features[fixCleanup3_2_0] ? "post-fix" : "pre-fix"});
         using namespace test::jtx;
 
-        Env env{*this, testableAmendments()};
+        bool const fixEnabled = features[fixCleanup3_2_0];
+
+        Env env{*this, features};
 
         Account const owner{"owner"};
         Account const depositor{"depositor"};
@@ -6196,6 +6200,14 @@ class Vault_test : public beast::unit_test::Suite
         env(withdrawToDest(), Ter{tecNO_PERMISSION});
         env.close();
 
+        if (!fixEnabled)
+        {
+            // Pre-fix: sfCredentialIDs in VaultWithdraw is rejected as disabled
+            env(withdrawToDest(), credentials::Ids({credIdx}), Ter{temDISABLED});
+            env.close();
+            return;
+        }
+
         // Withdraw with credentials succeeds
         env(withdrawToDest(), credentials::Ids({credIdx}));
         env.close();
@@ -6211,6 +6223,8 @@ public:
     void
     run() override
     {
+        auto const all = test::jtx::testableAmendments();
+
         testSequences();
         testPreflight();
         testCreateFailXRP();
@@ -6230,7 +6244,8 @@ public:
         testAssetsMaximum();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
-        testWithdrawCredentialDepositPreauth();
+        testWithdrawCredentialDepositPreauth(all - fixCleanup3_2_0);
+        testWithdrawCredentialDepositPreauth(all);
     }
 };
 
