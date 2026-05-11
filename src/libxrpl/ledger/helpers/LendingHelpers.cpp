@@ -34,6 +34,31 @@
 
 namespace xrpl {
 
+[[nodiscard]] TER
+canApplyToBrokerCover(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& sleBroker,
+    Asset const& vaultAsset,
+    STAmount const& amount,
+    beast::Journal j,
+    std::string_view logPrefix)
+{
+    if (!view.rules().enabled(fixCleanup3_2_0))
+        return tesSUCCESS;
+    if (amount == beast::kZERO)
+        return tesSUCCESS;
+
+    int const coverScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
+    if (roundsToZeroAtScale(vaultAsset, amount, coverScale))
+    {
+        JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
+                       << " is sub-ULP at cover scale " << coverScale;
+        return tecPRECISION_LOSS;
+    }
+
+    return tesSUCCESS;
+}
+
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
 {
@@ -1972,37 +1997,15 @@ depositToBrokerCover(
     XRPL_ASSERT(
         amount.asset() == vaultAsset, "xrpl::depositToBrokerCover : amount and vault asset match");
 
-    // Snapshot sfCoverAvailable and the broker pseudo-account balance so
-    // that — post-fixCleanup3_2_0 — we can verify the two moved in lockstep
-    // with the funds the pseudo-account actually received.
-    //
-    // This check is redundant today: sfCoverAvailable mirrors the broker
-    // pseudo-account balance one-for-one, and accountSendExact below
-    // already verifies that the pseudo-account trust line moved by the
-    // same amount as the depositor lost. Since sfCoverAvailable and the
-    // pseudo-balance go through identical canonicalize-to-asset-precision
-    // operations against equal starting values, they round identically.
-    //
-    // Kept as future-proofing in case sfCoverAvailable ever stops
-    // mirroring the pseudo-account balance one-for-one. We compare
-    // coverDelta to pseudoDelta — not to amount — because amount may carry
-    // more precision than asset rounding can preserve, in which case
-    // sfCoverAvailable and the trust line round identically and value is
-    // conserved.
-    Number const coverBefore = *broker->at(sfCoverAvailable);
-    Number const pseudoBefore = accountHolds(
-        view,
-        brokerPseudoID,
-        vaultAsset,
-        FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        j);
-
     // Transfer assets from depositor to pseudo-account. accountSendExact
     // verifies the sender's loss == receiver's gain, catching IOU
     // canonicalization losses at the 16-digit edge that would otherwise
     // leave sfCoverAvailable claiming more value than the broker
     // pseudo-account actually received.
+    //
+    // Note: no helper-level cover/pseudo cross-check. The cover==pseudo
+    // contract is enforced by LoanBrokerInvariant at finalize time —
+    // see "Loan broker cover precision" in LendingHelpers.h.
     if (auto const ter =
             accountSendExact(view, depositor, brokerPseudoID, amount, j, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
@@ -2012,37 +2015,6 @@ depositToBrokerCover(
     view.update(broker);
 
     associateAsset(*broker, vaultAsset);
-
-    if (!view.rules().enabled(fixCleanup3_2_0))
-        return tesSUCCESS;
-
-    Number const pseudoAfter = accountHolds(
-        view,
-        brokerPseudoID,
-        vaultAsset,
-        FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        j);
-    Number const coverAfter = *broker->at(sfCoverAvailable);
-    Number const coverDelta = coverAfter - coverBefore;
-    Number const pseudoDelta = pseudoAfter - pseudoBefore;
-
-    // Quantize-then-equal at the coarser of the two pre-state scales,
-    // matching the conservation idiom used in VaultInvariant. Falls back
-    // to the post-state when an endpoint started at zero (zero IOU has a
-    // sentinel exponent with no useful precision).
-    if (!equalAtAssetScale(
-            coverDelta,
-            pseudoDelta,
-            firstNonzero(coverBefore, coverAfter),
-            firstNonzero(pseudoBefore, pseudoAfter),
-            vaultAsset))
-    {
-        JLOG(j.error()) << "depositToBrokerCover: sfCoverAvailable delta mismatch"
-                        << " coverDelta=" << to_string(coverDelta)
-                        << " pseudoDelta=" << to_string(pseudoDelta);
-        return tecPRECISION_LOSS;
-    }
 
     return tesSUCCESS;
 }
@@ -2072,19 +2044,6 @@ withdrawFromBrokerCover(
         amount.asset() == vaultAsset,
         "xrpl::withdrawFromBrokerCover : amount and vault asset match");
 
-    // Snapshot sfCoverAvailable and the broker pseudo-account balance so
-    // that — post-fixCleanup3_2_0 — we can verify the two moved in lockstep
-    // with the funds the pseudo-account actually paid out. Same redundant-
-    // today / future-proofing rationale as depositToBrokerCover.
-    Number const coverBefore = *broker->at(sfCoverAvailable);
-    Number const pseudoBefore = accountHolds(
-        view,
-        brokerPseudoID,
-        vaultAsset,
-        FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        j);
-
     broker->at(sfCoverAvailable) -= amount;
     view.update(broker);
 
@@ -2093,39 +2052,11 @@ withdrawFromBrokerCover(
     // doWithdraw uses accountSendExact internally, so a destination trust
     // line at the IOU edge that would silently canonicalize the inflow
     // returns tecPRECISION_LOSS rather than letting value disappear.
-    if (auto const ter =
-            doWithdraw(view, tx, account, destination, brokerPseudoID, preFeeBalance, amount, j);
-        !isTesSuccess(ter))
-        return ter;
-
-    if (!view.rules().enabled(fixCleanup3_2_0))
-        return tesSUCCESS;
-
-    Number const pseudoAfter = accountHolds(
-        view,
-        brokerPseudoID,
-        vaultAsset,
-        FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        j);
-    Number const coverAfter = *broker->at(sfCoverAvailable);
-    Number const coverDelta = coverBefore - coverAfter;
-    Number const pseudoDelta = pseudoBefore - pseudoAfter;
-
-    if (!equalAtAssetScale(
-            coverDelta,
-            pseudoDelta,
-            firstNonzero(coverBefore, coverAfter),
-            firstNonzero(pseudoBefore, pseudoAfter),
-            vaultAsset))
-    {
-        JLOG(j.error()) << "withdrawFromBrokerCover: sfCoverAvailable delta mismatch"
-                        << " coverDelta=" << to_string(coverDelta)
-                        << " pseudoDelta=" << to_string(pseudoDelta);
-        return tecPRECISION_LOSS;
-    }
-
-    return tesSUCCESS;
+    //
+    // Note: no helper-level cover/pseudo cross-check. The cover==pseudo
+    // contract is enforced by LoanBrokerInvariant at finalize time —
+    // see "Loan broker cover precision" in LendingHelpers.h.
+    return doWithdraw(view, tx, account, destination, brokerPseudoID, preFeeBalance, amount, j);
 }
 
 }  // namespace xrpl

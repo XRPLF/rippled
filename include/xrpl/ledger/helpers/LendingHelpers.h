@@ -4,7 +4,89 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/st.h>
 
+#include <string_view>
+
 namespace xrpl {
+
+// =============================================================================================
+// Loan broker cover precision (fixCleanup3_2_0)
+// =============================================================================================
+//
+// Loan broker cover tracks one STNumber accounting field against the broker pseudo-account's
+// IOU trust-line balance:
+//   - sfCoverAvailable    — cover holdings, mirrors broker pseudo TL.
+//
+// Unlike vault accounting (two STNumber fields — see VaultHelpers.h), the broker has no second
+// SLE field to drift against, so the asymmetric-rounding bug class doesn't apply. The sub-ULP
+// rounds-to-zero edge does:
+//
+// Bug class — silent sub-ULP no-op:
+//
+//   A deposit / withdraw / clawback whose amount rounds to zero at sfCoverAvailable's scale is
+//   absorbed on both sides. The pseudo trust-line subtraction and associateAsset on
+//   sfCoverAvailable apply the same half-even rounding at the same scale to the same delta, so
+//   both end up unchanged. The transaction returns tesSUCCESS with zero value moved — the
+//   issuer believes funds were transferred, nothing actually was.
+//
+//   Example: sfCoverAvailable at 1.5×10^16 (ULP=10), a 5-unit clawback:
+//     - pseudo TL: 1.5×10^16 − 5 → canonicalizes back to 1.5×10^16.
+//     - sfCoverAvailable: same canonicalization, also unchanged.
+//   No invariant fires (both rails agree), no value moves, no error.
+//
+// Defense layers (post-fixCleanup3_2_0):
+//
+//   1. Preclaim guard (each broker cover transactor) via canApplyToBrokerCover.
+//      Rejects with tecPRECISION_LOSS any request that rounds to zero at sfCoverAvailable's
+//      scale. Uses roundsToZeroAtScale() from TokenHelpers.h. Vault's stricter lossless
+//      predicate is not needed here — single accounting field means no second-field drift to
+//      defend against.
+//
+//   2. accountSendExact (in depositToBrokerCover and via doWithdraw in withdrawFromBrokerCover).
+//      Verifies the sender's loss equals the receiver's gain across the two trust lines
+//      involved in the transfer. LoanBrokerCoverClawback uses plain accountSend instead: the
+//      destination is the asset issuer, so there is no second trust line to round against.
+//
+// No helper-level cover/pseudo cross-check is needed. The vault helpers compare ΔsfAssetsTotal
+// to ΔsfAssetsAvailable because those are two STNumber fields that can drift apart via
+// associateAsset's per-field canonicalization. Broker cover has only one STNumber field
+// (sfCoverAvailable) plus the pseudo TL; the equality cover == pseudo is enforced by
+// LoanBrokerInvariant at finalize as a hard contract (LoanBrokerInvariant.cpp:174–211 — strict
+// equality post-fixSecurity3_1_3). Adding a helper-level lenient quantize-then-equal check
+// would be a strict subset of what the invariant already enforces, with no additional bug class
+// covered.
+//
+// Applies symmetrically to LoanBrokerCoverDeposit, LoanBrokerCoverWithdraw,
+// LoanBrokerCoverClawback.
+//
+// =============================================================================================
+
+/** Broker cover preclaim precision guard. Catches the silent sub-ULP no-op
+ *  case documented above: a request whose amount rounds to zero at
+ *  sfCoverAvailable's scale is absorbed identically by both the pseudo TL
+ *  and associateAsset, returning success with no value moved.
+ *
+ *  Returns tesSUCCESS when the amendment is disabled, when amount is zero,
+ *  or when the request is supra-ULP at the cover's scale.
+ *  Returns tecPRECISION_LOSS on rejection.
+ *
+ *  Single-field accounting (no asymmetric-rounding bug class — see
+ *  canApplyToVault in VaultHelpers.h for the dual-field counterpart).
+ *
+ *  @param view       Apply view (rules used for amendment gating).
+ *  @param sleBroker  The loan broker SLE (read-only).
+ *  @param vaultAsset The underlying vault asset (the broker's cover asset).
+ *  @param amount     The effective subtraction/addition amount.
+ *  @param j          Journal for logging.
+ *  @param logPrefix  Transactor name for log diagnostics.
+ */
+[[nodiscard]] TER
+canApplyToBrokerCover(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& sleBroker,
+    Asset const& vaultAsset,
+    STAmount const& amount,
+    beast::Journal j,
+    std::string_view logPrefix);
 
 // Lending protocol has dependencies, so capture them here.
 bool

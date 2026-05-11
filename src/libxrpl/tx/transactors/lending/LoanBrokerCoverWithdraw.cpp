@@ -153,20 +153,9 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
             ctx.j) < amount)
         return tecINSUFFICIENT_FUNDS;
 
-    // Post-fixCleanup3_2_0: reject withdrawals whose amount is sub-ULP at
-    // sfCoverAvailable's scale (mirroring the broker pseudo trust line).
-    // Same rationale as LoanBrokerCoverDeposit::preclaim — surface as
-    // tecPRECISION_LOSS instead of letting it silently destroy value.
-    if (ctx.view.rules().enabled(fixCleanup3_2_0))
-    {
-        int const coverScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
-        if (roundsToZeroAtScale(vaultAsset, amount, coverScale))
-        {
-            JLOG(ctx.j.warn()) << "LoanBrokerCoverWithdraw: amount " << amount.getFullText()
-                               << " is sub-ULP at cover scale " << coverScale;
-            return tecPRECISION_LOSS;
-        }
-    }
+    if (auto const ret = canApplyToBrokerCover(
+            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverWithdraw"))
+        return ret;
 
     return tesSUCCESS;
 }

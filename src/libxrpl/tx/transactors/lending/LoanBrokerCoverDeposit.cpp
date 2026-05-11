@@ -97,24 +97,9 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             SpendableHandling::FullBalance) < amount)
         return tecINSUFFICIENT_FUNDS;
 
-    // Post-fixCleanup3_2_0: reject deposits whose amount is sub-ULP at
-    // sfCoverAvailable's scale (which mirrors the broker pseudo-account trust
-    // line). Without this check, a sub-ULP cover deposit silently succeeds:
-    // depositor's trust line debits cleanly but broker pseudo balance and
-    // sfCoverAvailable both stay unchanged (canonicalization rounds back to
-    // zero), the two rails remain consistent so no broker invariant catches
-    // the loss, and accountSendExact's two-sided check tolerates it as
-    // sub-ULP-of-coarser-side noise.
-    if (ctx.view.rules().enabled(fixCleanup3_2_0))
-    {
-        int const coverScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
-        if (roundsToZeroAtScale(vaultAsset, amount, coverScale))
-        {
-            JLOG(ctx.j.warn()) << "LoanBrokerCoverDeposit: amount " << amount.getFullText()
-                               << " is sub-ULP at cover scale " << coverScale;
-            return tecPRECISION_LOSS;
-        }
-    }
+    if (auto const ret = canApplyToBrokerCover(
+            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverDeposit"))
+        return ret;
 
     return tesSUCCESS;
 }

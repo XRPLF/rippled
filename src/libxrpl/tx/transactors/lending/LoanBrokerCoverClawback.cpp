@@ -303,24 +303,11 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
             ctx.j) < clawAmount)
         return tecINTERNAL;  // tecINSUFFICIENT_FUNDS; LCOV_EXCL_LINE
 
-    // Post-fixCleanup3_2_0: reject sub-ULP clawbacks at sfCoverAvailable's
-    // scale (which mirrors the broker pseudo trust-line scale). At the IOU
-    // edge, a sub-ULP request is absorbed identically by both the pseudo
-    // trust-line subtraction and associateAsset's canonicalization of
-    // sfCoverAvailable — the txn silently succeeds as a no-op (issuer
-    // believes funds were clawed back; nothing actually moved). Surface as
-    // tecPRECISION_LOSS instead. roundsToZeroAtScale returns false for MPT
-    // (integer-exact), so no explicit IOU-only branch is needed.
-    if (ctx.view.rules().enabled(fixCleanup3_2_0))
-    {
-        int const coverScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
-        if (roundsToZeroAtScale(vaultAsset, clawAmount, coverScale))
-        {
-            JLOG(ctx.j.warn()) << "LoanBrokerCoverClawback: clawAmount " << clawAmount.getFullText()
-                               << " is sub-ULP at cover scale " << coverScale;
-            return tecPRECISION_LOSS;
-        }
-    }
+    // roundsToZeroAtScale returns false for MPT (integer-exact), so the
+    // helper handles both IOU and MPT correctly without explicit branching.
+    if (auto const ret = canApplyToBrokerCover(
+            ctx.view, sleBroker, vaultAsset, clawAmount, ctx.j, "LoanBrokerCoverClawback"))
+        return ret;
 
     // Check if the vault asset issuer has the correct flags
     auto const sleIssuer = ctx.view.read(keylet::account(vaultAsset.getIssuer()));
