@@ -171,7 +171,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             // in the same transaction is not allowed.
             if ((transferFee.value_or(0) > 0u) &&
                 ((*mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u))
-                return temMALFORMED;
+                return temBAD_TRANSFER_FEE;
         }
     }
 

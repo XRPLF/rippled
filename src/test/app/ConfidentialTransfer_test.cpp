@@ -1179,7 +1179,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             mptAlice.create({
                 .transferFee = 100,
                 .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
-                .err = temMALFORMED,
+                .err = temBAD_TRANSFER_FEE,
             });
 
             // transferFee being 0 is allowed, even with tfMPTCanConfidentialAmount
@@ -1206,7 +1206,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
                 .account = alice,
                 .mutableFlags = tmfMPTSetCanConfidentialAmount,
                 .transferFee = 100,
-                .err = temMALFORMED,
+                .err = temBAD_TRANSFER_FEE,
             });
         }
 
@@ -1248,6 +1248,12 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
                 .account = alice,
                 .transferFee = 100,
                 .err = tecNO_PERMISSION,
+            });
+
+            // Setting transfer fee to 0 is allowed, but have no effect.
+            mptAlice.set({
+                .account = alice,
+                .transferFee = 0,
             });
         }
     }
