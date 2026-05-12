@@ -169,7 +169,7 @@ intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 {
     XRPL_ASSERT(backed_, "xrpl::SHAMap::fetchNodeFromDB : is backed");
-    auto obj = f_.db().fetchNodeObject(hash.asUint256(), ledgerSeq_);
+    auto obj = f_.db().fetchNodeObject(hash.asUInt256(), ledgerSeq_);
     return finishFetch(hash, obj);
 }
 
@@ -185,7 +185,7 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& o
             if (full_)
             {
                 full_ = false;
-                f_.missingNodeAcquireBySeq(ledgerSeq_, hash.asUint256());
+                f_.missingNodeAcquireBySeq(ledgerSeq_, hash.asUInt256());
             }
             return {};
         }
@@ -398,7 +398,7 @@ SHAMap::descendAsync(
         if (!ptr && backed_)
         {
             f_.db().asyncFetch(
-                hash.asUint256(),
+                hash.asUInt256(),
                 ledgerSeq_,
                 [this, hash, cb{std::move(callback)}](std::shared_ptr<NodeObject> const& object) {
                     auto node = finishFetch(hash, object);
@@ -947,7 +947,7 @@ SHAMap::writeNode(NodeObjectType t, intr_ptr::SharedPtr<SHAMapTreeNode> node) co
 
     Serializer s;
     node->serializeWithPrefix(s);
-    f_.db().store(t, std::move(s.modData()), node->getHash().asUint256(), ledgerSeq_);
+    f_.db().store(t, std::move(s.modData()), node->getHash().asUInt256(), ledgerSeq_);
     return node;
 }
 
@@ -1158,7 +1158,7 @@ SHAMap::dump(bool hash) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::cacheLookup(SHAMapHash const& hash) const
 {
-    auto ret = f_.getTreeNodeCache()->fetch(hash.asUint256());
+    auto ret = f_.getTreeNodeCache()->fetch(hash.asUInt256());
     XRPL_ASSERT(!ret || !ret->cowid(), "xrpl::SHAMap::cacheLookup : not found or zero cowid");
     return ret;
 }
@@ -1170,7 +1170,7 @@ SHAMap::canonicalize(SHAMapHash const& hash, intr_ptr::SharedPtr<SHAMapTreeNode>
     XRPL_ASSERT(node->cowid() == 0, "xrpl::SHAMap::canonicalize : valid node input");
     XRPL_ASSERT(node->getHash() == hash, "xrpl::SHAMap::canonicalize : node hash do match");
 
-    f_.getTreeNodeCache()->canonicalizeReplaceClient(hash.asUint256(), node);
+    f_.getTreeNodeCache()->canonicalizeReplaceClient(hash.asUInt256(), node);
 }
 
 void

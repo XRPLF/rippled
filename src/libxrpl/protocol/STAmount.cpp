@@ -642,7 +642,7 @@ canSubtract(STAmount const& a, STAmount const& b)
 void
 STAmount::setJson(json::Value& elem) const
 {
-    elem = json::ObjectValue;
+    elem = json::ValueType::Object;
 
     if (!native())
     {
@@ -1057,8 +1057,8 @@ amountFromJson(SField const& name, json::Value const& v)
     else if (v.isArray())
     {
         value = v.get(json::UInt(0), 0);
-        currencyOrMPTID = v.get(json::UInt(1), json::NullValue);
-        issuer = v.get(json::UInt(2), json::NullValue);
+        currencyOrMPTID = v.get(json::UInt(1), json::ValueType::Null);
+        issuer = v.get(json::UInt(2), json::ValueType::Null);
     }
     else if (v.isString())
     {

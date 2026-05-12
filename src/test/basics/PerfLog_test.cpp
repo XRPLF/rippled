@@ -47,7 +47,7 @@ class PerfLog_test : public beast::unit_test::Suite
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{*this, test::jtx::envconfig(), nullptr, beast::severities::KDisabled};
+    test::jtx::Env env_{*this, test::jtx::envconfig(), nullptr, beast::Severity::Disabled};
     beast::Journal j_{env_.app().getJournal("PerfLog_test")};
 
     struct Fixture
@@ -154,9 +154,9 @@ class PerfLog_test : public beast::unit_test::Suite
 
     // Return a uint64 from a JSON string.
     static std::uint64_t
-    jsonToUint64(json::Value const& jsonUintAsString)
+    jsonToUInt64(json::Value const& jsonUIntAsString)
     {
-        return std::stoull(jsonUintAsString.asString());
+        return std::stoull(jsonUIntAsString.asString());
     }
 
     // The PerfLog's current state is easier to sort by duration if the
@@ -183,7 +183,7 @@ class PerfLog_test : public beast::unit_test::Suite
         for (json::Value const& cur : currentJson)
         {
             currents.emplace_back(
-                jsonToUint64(cur[jss::duration_us]),
+                jsonToUInt64(cur[jss::duration_us]),
                 cur.isMember(jss::job) ? cur[jss::job].asString() : cur[jss::method].asString());
         }
 
@@ -358,7 +358,7 @@ public:
             BEAST_EXPECT(total[jss::duration_us] == "0");
             BEAST_EXPECT(total[jss::errored] == "0");
             BEAST_EXPECT(total[jss::finished] == "0");
-            BEAST_EXPECT(jsonToUint64(total[jss::started]) == ids.size());
+            BEAST_EXPECT(jsonToUInt64(total[jss::started]) == ids.size());
         }
         {
             // Verify that every entry in labels appears twice in currents.
@@ -416,7 +416,7 @@ public:
             for (int i = 1; i < labels.size(); ++i)
             {
                 json::Value const& counter{rpc[labels[i]]};
-                std::uint64_t const dur{jsonToUint64(counter[jss::duration_us])};
+                std::uint64_t const dur{jsonToUInt64(counter[jss::duration_us])};
                 BEAST_EXPECT(dur != 0 && dur < prevDur);
                 prevDur = dur;
                 BEAST_EXPECT(counter[jss::errored] == "1");
@@ -427,9 +427,9 @@ public:
             // Check "total"
             json::Value const& total{rpc[jss::total]};
             BEAST_EXPECT(total[jss::duration_us] != "0");
-            BEAST_EXPECT(jsonToUint64(total[jss::errored]) == labels.size() - 1);
-            BEAST_EXPECT(jsonToUint64(total[jss::finished]) == labels.size());
-            BEAST_EXPECT(jsonToUint64(total[jss::started]) == labels.size() * 2);
+            BEAST_EXPECT(jsonToUInt64(total[jss::errored]) == labels.size() - 1);
+            BEAST_EXPECT(jsonToUInt64(total[jss::finished]) == labels.size());
+            BEAST_EXPECT(jsonToUInt64(total[jss::started]) == labels.size() * 2);
         };
 
         auto validateFinalCurrent = [this, &labels](json::Value const& currentJson) {
@@ -553,7 +553,7 @@ public:
             // Verify jss::total is present and has expected values.
             json::Value const& total{jqCounters[jss::total]};
             BEAST_EXPECT(total.size() == 5);
-            BEAST_EXPECT(jsonToUint64(total[jss::queued]) == i + 1);
+            BEAST_EXPECT(jsonToUInt64(total[jss::queued]) == i + 1);
             BEAST_EXPECT(total[jss::started] == "0");
             BEAST_EXPECT(total[jss::finished] == "0");
             BEAST_EXPECT(total[jss::queued_duration_us] == "0");
@@ -589,7 +589,7 @@ public:
             for (int j = 0; j < jobs.size(); ++j)
             {
                 json::Value const& counter{jqCounters[jobs[j].typeName]};
-                std::uint64_t const queuedDurUs{jsonToUint64(counter[jss::queued_duration_us])};
+                std::uint64_t const queuedDurUs{jsonToUInt64(counter[jss::queued_duration_us])};
                 if (j < i)
                 {
                     BEAST_EXPECT(counter[jss::started] == "2");
@@ -613,13 +613,13 @@ public:
             {
                 // Verify values in jss::total are what we expect.
                 json::Value const& total{jqCounters[jss::total]};
-                BEAST_EXPECT(jsonToUint64(total[jss::queued]) == jobs.size());
-                BEAST_EXPECT(jsonToUint64(total[jss::started]) == (i * 2) + 1);
+                BEAST_EXPECT(jsonToUInt64(total[jss::queued]) == jobs.size());
+                BEAST_EXPECT(jsonToUInt64(total[jss::started]) == (i * 2) + 1);
                 BEAST_EXPECT(total[jss::finished] == "0");
 
                 // Total queued duration is triangle number of (i + 1).
                 BEAST_EXPECT(
-                    jsonToUint64(total[jss::queued_duration_us]) == (((i * i) + 3 * i + 2) / 2));
+                    jsonToUInt64(total[jss::queued_duration_us]) == (((i * i) + 3 * i + 2) / 2));
                 BEAST_EXPECT(total[jss::running_duration_us] == "0");
             }
 
@@ -658,7 +658,7 @@ public:
             for (int j = 0; j < jobs.size(); ++j)
             {
                 json::Value const& counter{jqCounters[jobs[j].typeName]};
-                std::uint64_t const runningDurUs{jsonToUint64(counter[jss::running_duration_us])};
+                std::uint64_t const runningDurUs{jsonToUInt64(counter[jss::running_duration_us])};
                 if (j < i)
                 {
                     BEAST_EXPECT(counter[jss::finished] == "0");
@@ -675,7 +675,7 @@ public:
                     BEAST_EXPECT(runningDurUs == ((jobs.size() - j) * 4) - 1);
                 }
 
-                std::uint64_t const queuedDurUs{jsonToUint64(counter[jss::queued_duration_us])};
+                std::uint64_t const queuedDurUs{jsonToUInt64(counter[jss::queued_duration_us])};
                 BEAST_EXPECT(queuedDurUs == j + 1);
                 BEAST_EXPECT(counter[jss::queued] == "1");
                 BEAST_EXPECT(counter[jss::started] == "2");
@@ -683,18 +683,18 @@ public:
             {
                 // Verify values in jss::total are what we expect.
                 json::Value const& total{jqCounters[jss::total]};
-                BEAST_EXPECT(jsonToUint64(total[jss::queued]) == jobs.size());
-                BEAST_EXPECT(jsonToUint64(total[jss::started]) == jobs.size() * 2);
-                BEAST_EXPECT(jsonToUint64(total[jss::finished]) == finished);
+                BEAST_EXPECT(jsonToUInt64(total[jss::queued]) == jobs.size());
+                BEAST_EXPECT(jsonToUInt64(total[jss::started]) == jobs.size() * 2);
+                BEAST_EXPECT(jsonToUInt64(total[jss::finished]) == finished);
 
                 // Total queued duration should be triangle number of
                 // jobs.size().
                 int const queuedDur = ((jobs.size() * (jobs.size() + 1)) / 2);
-                BEAST_EXPECT(jsonToUint64(total[jss::queued_duration_us]) == queuedDur);
+                BEAST_EXPECT(jsonToUInt64(total[jss::queued_duration_us]) == queuedDur);
 
                 // Total running duration should be triangle number of finished.
                 int const runningDur = ((finished * (finished + 1)) / 2);
-                BEAST_EXPECT(jsonToUint64(total[jss::running_duration_us]) == runningDur);
+                BEAST_EXPECT(jsonToUInt64(total[jss::running_duration_us]) == runningDur);
             }
 
             perfLog->jobFinish(jobs[i].type, microseconds(finished + 1), (i * 2));
@@ -730,10 +730,10 @@ public:
             for (int i = jobs.size() - 1; i >= 0; --i)
             {
                 json::Value const& counter{jobQueue[jobs[i].typeName]};
-                std::uint64_t const runningDurUs{jsonToUint64(counter[jss::running_duration_us])};
+                std::uint64_t const runningDurUs{jsonToUInt64(counter[jss::running_duration_us])};
                 BEAST_EXPECT(runningDurUs == ((jobs.size() - i) * 4) - 1);
 
-                std::uint64_t const queuedDurUs{jsonToUint64(counter[jss::queued_duration_us])};
+                std::uint64_t const queuedDurUs{jsonToUInt64(counter[jss::queued_duration_us])};
                 BEAST_EXPECT(queuedDurUs == i + 1);
 
                 BEAST_EXPECT(counter[jss::queued] == "1");
@@ -744,18 +744,18 @@ public:
             // Verify values in jss::total are what we expect.
             json::Value const& total{jobQueue[jss::total]};
             int const finished = jobs.size() * 2;
-            BEAST_EXPECT(jsonToUint64(total[jss::queued]) == jobs.size());
-            BEAST_EXPECT(jsonToUint64(total[jss::started]) == finished);
-            BEAST_EXPECT(jsonToUint64(total[jss::finished]) == finished);
+            BEAST_EXPECT(jsonToUInt64(total[jss::queued]) == jobs.size());
+            BEAST_EXPECT(jsonToUInt64(total[jss::started]) == finished);
+            BEAST_EXPECT(jsonToUInt64(total[jss::finished]) == finished);
 
             // Total queued duration should be triangle number of
             // jobs.size().
             int const queuedDur = ((jobs.size() * (jobs.size() + 1)) / 2);
-            BEAST_EXPECT(jsonToUint64(total[jss::queued_duration_us]) == queuedDur);
+            BEAST_EXPECT(jsonToUInt64(total[jss::queued_duration_us]) == queuedDur);
 
             // Total running duration should be triangle number of finished.
             int const runningDur = ((finished * (finished + 1)) / 2);
-            BEAST_EXPECT(jsonToUint64(total[jss::running_duration_us]) == runningDur);
+            BEAST_EXPECT(jsonToUInt64(total[jss::running_duration_us]) == runningDur);
         };
 
         auto validateFinalCurrent = [this](json::Value const& currentJson) {
@@ -867,12 +867,12 @@ public:
                 json::Value const& job{countersJson[jss::job_queue][jobTypeName]};
 
                 BEAST_EXPECT(job.isObject());
-                BEAST_EXPECT(jsonToUint64(job[jss::queued]) == 0);
-                BEAST_EXPECT(jsonToUint64(job[jss::started]) == started);
-                BEAST_EXPECT(jsonToUint64(job[jss::finished]) == finished);
+                BEAST_EXPECT(jsonToUInt64(job[jss::queued]) == 0);
+                BEAST_EXPECT(jsonToUInt64(job[jss::started]) == started);
+                BEAST_EXPECT(jsonToUInt64(job[jss::finished]) == finished);
 
-                BEAST_EXPECT(jsonToUint64(job[jss::queued_duration_us]) == queuedUs);
-                BEAST_EXPECT(jsonToUint64(job[jss::running_duration_us]) == runningUs);
+                BEAST_EXPECT(jsonToUInt64(job[jss::queued_duration_us]) == queuedUs);
+                BEAST_EXPECT(jsonToUInt64(job[jss::running_duration_us]) == runningUs);
             }
         };
 

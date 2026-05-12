@@ -437,7 +437,7 @@ private:
             env(offer(dan, XRP(500), eth(50'000'000'000'000)));
             env.close();
 
-            json::Value jtp{json::ArrayValue};
+            json::Value jtp{json::ValueType::Array};
             jtp[0u][0u][jss::currency] = "XRP";
             env(pay(alice_, bob_, eth(30'000'000'000'000)),
                 Json(jss::Paths, jtp),
@@ -621,7 +621,7 @@ private:
             env.current()->read(keylet::account(bob_.id()))->getFieldU32(sfSequence);
         payment[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
         payment[jss::tx_json][jss::SendMax] =
-            xts(15'000'000'000'000).value().getJson(JsonOptions::KNone);
+            xts(15'000'000'000'000).value().getJson(JsonOptions::Values::None);
         payment[jss::tx_json][jss::Flags] = tfPartialPayment;
         auto const jrr = env.rpc("json", "submit", to_string(payment));
         BEAST_EXPECT(jrr[jss::result][jss::status] == "success");

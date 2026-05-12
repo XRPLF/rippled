@@ -2035,7 +2035,7 @@ populateFetchPack(
         s.erase();
         n.serializeWithPrefix(s);
 
-        auto const& hash = n.getHash().asUint256();
+        auto const& hash = n.getHash().asUInt256();
 
         protocol::TMIndexedObject* obj = into->add_objects();
         obj->set_ledgerseq(seq);

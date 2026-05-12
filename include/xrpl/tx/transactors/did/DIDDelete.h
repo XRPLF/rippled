@@ -7,7 +7,7 @@ namespace xrpl {
 class DIDDelete : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
 
     explicit DIDDelete(ApplyContext& ctx) : Transactor(ctx)
     {
