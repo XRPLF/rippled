@@ -535,7 +535,7 @@ public:
 
         // Make one test run without fixReducedOffersV2 and one with.
         for (FeatureBitset features :
-             {testableAmendments() - fixReducedOffersV2, testableAmendments() | fixReducedOffersV2})
+             {testableAmendments() - fixReducedOffersV2, testableAmendments()})
         {
             // Make sure none of the offers we generate are under funded.
             Env env{*this, features};

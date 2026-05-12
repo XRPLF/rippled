@@ -1309,8 +1309,7 @@ public:
 
         // This is one of the few tests where fixReducedOffersV2 changes the
         // results.  So test both with and without fixReducedOffersV2.
-        for (FeatureBitset localFeatures :
-             {features - fixReducedOffersV2, features | fixReducedOffersV2})
+        for (FeatureBitset localFeatures : {features - fixReducedOffersV2, features})
         {
             Env env{*this, localFeatures};
 

@@ -6734,26 +6734,26 @@ public:
         // MPTokenIssuanceDestroy
         testDestroyValidation(all - featureSingleAssetVault);
         testDestroyValidation(all - featureSingleAssetVault - featureMPTokensV2);
-        testDestroyValidation((all | featureSingleAssetVault) - featureMPTokensV2);
         testDestroyValidation(all - featureMPTokensV2);
-        testDestroyValidation(all | featureSingleAssetVault);
+        testDestroyValidation(all - featureMPTokensV2);
+        testDestroyValidation(all);
         testDestroyEnabled(all - featureSingleAssetVault);
         testDestroyEnabled(all - featureSingleAssetVault - featureMPTokensV2);
-        testDestroyEnabled((all | featureSingleAssetVault) - featureMPTokensV2);
         testDestroyEnabled(all - featureMPTokensV2);
-        testDestroyEnabled(all | featureSingleAssetVault);
+        testDestroyEnabled(all - featureMPTokensV2);
+        testDestroyEnabled(all);
 
         // MPTokenAuthorize
         testAuthorizeValidation(all - featureSingleAssetVault);
         testAuthorizeValidation(all - featureSingleAssetVault - featureMPTokensV2);
-        testAuthorizeValidation((all | featureSingleAssetVault) - featureMPTokensV2);
         testAuthorizeValidation(all - featureMPTokensV2);
-        testAuthorizeValidation(all | featureSingleAssetVault);
+        testAuthorizeValidation(all - featureMPTokensV2);
+        testAuthorizeValidation(all);
         testAuthorizeEnabled(all - featureSingleAssetVault);
         testAuthorizeEnabled(all - featureSingleAssetVault - featureMPTokensV2);
-        testAuthorizeEnabled((all | featureSingleAssetVault) - featureMPTokensV2);
         testAuthorizeEnabled(all - featureMPTokensV2);
-        testAuthorizeEnabled(all | featureSingleAssetVault);
+        testAuthorizeEnabled(all - featureMPTokensV2);
+        testAuthorizeEnabled(all);
 
         // MPTokenIssuanceSet
         testSetValidation(all - featureSingleAssetVault - featureDynamicMPT);
@@ -6773,8 +6773,8 @@ public:
 
         // Test Direct Payment
         testPayment(all);
-        testPayment(all | featureSingleAssetVault);
-        testPayment((all | featureSingleAssetVault) - featureMPTokensV2);
+        testPayment(all);
+        testPayment(all - featureMPTokensV2);
         testPayment(all - featureMPTokensV2);
 
         testDepositPreauth(all);

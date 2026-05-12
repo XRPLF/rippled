@@ -2164,7 +2164,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
 
-        Env env(*this, testableAmendments() | featurePermissionedDomains);
+        Env env(*this, testableAmendments());
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};

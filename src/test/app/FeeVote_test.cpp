@@ -299,7 +299,7 @@ class FeeVote_test : public beast::unit_test::Suite
 
         // Test with XRPFees enabled (new format)
         {
-            jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
+            jtx::Env env(*this, jtx::testableAmendments());
             auto ledger = std::make_shared<Ledger>(
                 kCREATE_GENESIS,
                 Rules{env.app().config().features},
@@ -354,7 +354,7 @@ class FeeVote_test : public beast::unit_test::Suite
         }
 
         {
-            jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
+            jtx::Env env(*this, jtx::testableAmendments());
             auto ledger = std::make_shared<Ledger>(
                 kCREATE_GENESIS,
                 Rules{env.app().config().features},
@@ -420,7 +420,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Multiple Fee Updates");
 
-        jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
+        jtx::Env env(*this, jtx::testableAmendments());
         auto ledger = std::make_shared<Ledger>(
             kCREATE_GENESIS,
             Rules{env.app().config().features},
@@ -468,7 +468,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Wrong Ledger Sequence");
 
-        jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
+        jtx::Env env(*this, jtx::testableAmendments());
         auto ledger = std::make_shared<Ledger>(
             kCREATE_GENESIS,
             Rules{env.app().config().features},
@@ -499,7 +499,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Partial Field Updates");
 
-        jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
+        jtx::Env env(*this, jtx::testableAmendments());
         auto ledger = std::make_shared<Ledger>(
             kCREATE_GENESIS,
             Rules{env.app().config().features},
@@ -545,7 +545,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Single Invalid Transaction");
 
-        jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees);
+        jtx::Env env(*this, jtx::testableAmendments());
         auto ledger = std::make_shared<Ledger>(
             kCREATE_GENESIS,
             Rules{env.app().config().features},
@@ -584,7 +584,7 @@ class FeeVote_test : public beast::unit_test::Suite
 
         // Test with XRPFees enabled
         {
-            Env env(*this, testableAmendments() | featureXRPFees);
+            Env env(*this, testableAmendments());
             auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
 
             auto ledger = std::make_shared<Ledger>(
@@ -654,7 +654,7 @@ class FeeVote_test : public beast::unit_test::Suite
         setup.account_reserve = 1234567;
         setup.owner_reserve = 7654321;
 
-        Env env(*this, testableAmendments() | featureXRPFees);
+        Env env(*this, testableAmendments());
 
         // establish what the current fees are
         BEAST_EXPECT(env.current()->fees().base == XRPAmount{UNIT_TEST_REFERENCE_FEE});

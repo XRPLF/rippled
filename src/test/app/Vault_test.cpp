@@ -2277,7 +2277,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("MPT OutstandingAmount > MaximumAmount");
 
-            Env env{*this, testableAmendments() | featureSingleAssetVault};
+            Env env{*this, testableAmendments()};
             Account const alice{"alice"};
             Account const issuer{"issuer"};
             env.fund(XRP(1'000), alice, issuer);
@@ -5867,7 +5867,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("Vault clawback only recovers unlocked shares");
 
-            Env env{*this, testableAmendments() | fixSecurity3_1_3};
+            Env env{*this, testableAmendments()};
             auto const baseFee = env.current()->fees().base;
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -5955,7 +5955,7 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
         testcase("Bug6 - limit bypass with share-denominated withdrawal");
 
-        auto const allAmendments = testableAmendments() | featureSingleAssetVault;
+        auto const allAmendments = testableAmendments();
 
         for (auto const& features : {allAmendments, allAmendments - fixSecurity3_1_3})
         {

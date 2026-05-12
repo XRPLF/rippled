@@ -94,7 +94,7 @@ class Invariants_test : public beast::unit_test::Suite
     static FeatureBitset
     defaultAmendments()
     {
-        return xrpl::test::jtx::testableAmendments() | fixSecurity3_1_3 | fixCleanup3_2_0;
+        return xrpl::test::jtx::testableAmendments();
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -4380,12 +4380,11 @@ public:
         testNoZeroEscrow();
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
-        testPermissionedDomainInvariants(defaultAmendments() | fixPermissionedDomainInvariant);
+        testPermissionedDomainInvariants(defaultAmendments());
         testPermissionedDomainInvariants(defaultAmendments() - fixPermissionedDomainInvariant);
-        testPermissionedDEX(defaultAmendments() | fixPermissionedDomainInvariant);
+        testPermissionedDEX(defaultAmendments());
         testPermissionedDEX(defaultAmendments() - fixPermissionedDomainInvariant);
-        testPermissionedDEX(
-            (defaultAmendments() | fixPermissionedDomainInvariant) - fixSecurity3_1_3);
+        testPermissionedDEX(defaultAmendments() - fixSecurity3_1_3);
         testPermissionedDEX(
             defaultAmendments() - fixPermissionedDomainInvariant - fixSecurity3_1_3);
         testNoModifiedUnmodifiableFields();

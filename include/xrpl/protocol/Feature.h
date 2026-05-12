@@ -317,6 +317,7 @@ public:
     friend FeatureBitset
     operator|(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
+        XRPL_ASSERT((lhs & rhs).none(), "xrpl::FeatureBitset::operator| : no overlapping features");
         return FeatureBitset{static_cast<base const&>(lhs) | static_cast<base const&>(rhs)};
     }
 

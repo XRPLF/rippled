@@ -382,7 +382,7 @@ XChainBridgeObjects::XChainBridgeObjects()
     , jvXRPBridgeRPC(bridgeRpc(mcDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
     , jvb(bridge(mcDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
     , jvub(bridge(mcuDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
-    , features(testableAmendments() | FeatureBitset{featureXChainBridge})
+    , features(testableAmendments())
     , signers([] {
         constexpr int kNUM_SIGNERS = kUT_XCHAIN_DEFAULT_NUM_SIGNERS;
         std::vector<Signer> result;
