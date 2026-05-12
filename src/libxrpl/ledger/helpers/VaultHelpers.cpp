@@ -34,6 +34,8 @@ canApplyToVault(
     std::string_view logPrefix,
     std::optional<AccountID> const& counterparty)
 {
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::canApplyToVault : valid Vault sle");
+
     if (!view.rules().enabled(fixCleanup3_2_0))
         return tesSUCCESS;
     if (amount == beast::kZERO)
@@ -103,6 +105,11 @@ assetsToSharesDeposit(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets)
 {
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::assetsToSharesDeposit : valid Vault sle");
+    XRPL_ASSERT(
+        issuance->getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::assetsToSharesDeposit : valid MPTokenIssuance sle");
+
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
@@ -130,6 +137,11 @@ sharesToAssetsDeposit(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::assetsToSharesDeposit : valid Vault sle");
+    XRPL_ASSERT(
+        issuance->getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::assetsToSharesDeposit : valid MPTokenIssuance sle");
+
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
         shares.asset() == vault->at(sfShareMPTID),
@@ -157,6 +169,11 @@ assetsToSharesWithdraw(
     STAmount const& assets,
     TruncateShares truncate)
 {
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::assetsToSharesDeposit : valid Vault sle");
+    XRPL_ASSERT(
+        issuance->getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::assetsToSharesDeposit : valid MPTokenIssuance sle");
+
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesWithdraw : non-negative assets");
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
@@ -183,6 +200,11 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::assetsToSharesDeposit : valid Vault sle");
+    XRPL_ASSERT(
+        issuance->getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::assetsToSharesDeposit : valid MPTokenIssuance sle");
+
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
     XRPL_ASSERT(
         shares.asset() == vault->at(sfShareMPTID),
@@ -208,7 +230,7 @@ depositToVault(
     STAmount const& assetsDeposited,
     beast::Journal j)
 {
-    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::depositToVault : valid Vault SLE");
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::depositToVault : valid Vault sle");
     AccountID const vaultAccount = vault->at(sfAccount);
     Asset const vaultAsset = vault->at(sfAsset);
 
@@ -324,7 +346,7 @@ withdrawFromVault(
     STAmount const& sharesRedeemed,
     beast::Journal j)
 {
-    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::withdrawFromVault : valid Vault SLE");
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::withdrawFromVault : valid Vault sle");
 
     AccountID const vaultAccount = vault->at(sfAccount);
     Asset const vaultAsset = vault->at(sfAsset);
