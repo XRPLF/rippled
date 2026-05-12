@@ -129,23 +129,20 @@ fieldCode(int id, int index)
 class SField
 {
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum {
-        SMdNever = 0x00,
-        SMdChangeOrig = 0x01,     // original value when it changes
-        SMdChangeNew = 0x02,      // new value when it changes
-        SMdDeleteFinal = 0x04,    // final value when it is deleted
-        SMdCreate = 0x08,         // value when it's created
-        SMdAlways = 0x10,         // value when node containing it is affected at all
-        SMdBaseTen = 0x20,        // value is treated as base 10, overriding behavior
-        SMdPseudoAccount = 0x40,  // if this field is set in an ACCOUNT_ROOT
-                                  // _only_, then it is a pseudo-account
-        SMdNeedsAsset = 0x80,     // This field needs to be associated with an
-                                  // asset before it is serialized as a ledger
-                                  // object. Intended for STNumber.
-        SMdDefault = SMdChangeOrig | SMdChangeNew | SMdDeleteFinal | SMdCreate
-    };
+    static constexpr auto kSMD_NEVER = 0x00;
+    static constexpr auto kSMD_CHANGE_ORIG = 0x01;   // original value when it changes
+    static constexpr auto kSMD_CHANGE_NEW = 0x02;    // new value when it changes
+    static constexpr auto kSMD_DELETE_FINAL = 0x04;  // final value when it is deleted
+    static constexpr auto kSMD_CREATE = 0x08;        // value when it's created
+    static constexpr auto kSMD_ALWAYS = 0x10;    // value when node containing it is affected at all
+    static constexpr auto kSMD_BASE_TEN = 0x20;  // value is treated as base 10, overriding behavior
+    static constexpr auto kSMD_PSEUDO_ACCOUNT = 0x40;  // if this field is set in an ACCOUNT_ROOT
+                                                       // _only_, then it is a pseudo-account
+    static constexpr auto kSMD_NEEDS_ASSET = 0x80;     // This field needs to be associated with an
+                                                       // asset before it is serialized as a ledger
+                                                       // object. Intended for STNumber.
+    static constexpr auto kSMD_DEFAULT =
+        kSMD_CHANGE_ORIG | kSMD_CHANGE_NEW | kSMD_DELETE_FINAL | kSMD_CREATE;
 
     enum class IsSigning : unsigned char { No, Yes };
     static IsSigning const kNOT_SIGNING = IsSigning::No;
@@ -175,7 +172,7 @@ public:
         SerializedTypeID tid,
         int fv,
         char const* fn,
-        int meta = SMdDefault,
+        int meta = kSMD_DEFAULT,
         IsSigning signing = IsSigning::Yes);
     explicit SField(PrivateAccessTagT, int fc, char const* fn);
 

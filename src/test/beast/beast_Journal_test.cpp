@@ -14,7 +14,7 @@ public:
         int count_{0};
 
     public:
-        TestSink() : Sink(severities::KWarning, false)
+        TestSink() : Sink(Severity::Warning, false)
         {
         }
 
@@ -31,14 +31,14 @@ public:
         }
 
         void
-        write(severities::Severity level, std::string const&) override
+        write(Severity level, std::string const&) override
         {
             if (level >= threshold())
                 ++count_;
         }
 
         void
-        writeAlways(severities::Severity level, std::string const&) override
+        writeAlways(Severity level, std::string const&) override
         {
             ++count_;
         }
@@ -49,8 +49,7 @@ public:
     {
         TestSink sink;
 
-        using namespace beast::severities;
-        sink.threshold(KInfo);
+        sink.threshold(Severity::Info);
 
         Journal const j(sink);
 
@@ -69,7 +68,7 @@ public:
 
         sink.reset();
 
-        sink.threshold(KDebug);
+        sink.threshold(Severity::Debug);
 
         j.trace() << " ";
         BEAST_EXPECT(sink.count() == 0);

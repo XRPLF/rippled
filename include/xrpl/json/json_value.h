@@ -15,22 +15,20 @@ namespace json {
 
 /** \brief Type of the value held by a Value object.
  */
-// Used throughout JSON layer
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum ValueType {
-    NullValue = 0,  ///< 'null' value
-    IntValue,       ///< signed integer value
-    UintValue,      ///< unsigned integer value
-    RealValue,      ///< double value
-    StringValue,    ///< UTF-8 string value
-    BooleanValue,   ///< bool value
-    ArrayValue,     ///< array value (ordered list)
-    ObjectValue     ///< object value (collection of name/value pairs).
+enum class ValueType {
+    Null = 0,  ///< 'null' value
+    Int,       ///< signed integer value
+    UInt,      ///< unsigned integer value
+    Real,      ///< double value
+    String,    ///< UTF-8 string value
+    Boolean,   ///< bool value
+    Array,     ///< array value (ordered list)
+    Object     ///< object value (collection of name/value pairs).
 };
 
 /** \brief Lightweight wrapper to tag static string.
  *
- * Value constructor and objectValue member assignment takes advantage of the
+ * Value constructor and ValueType::Object member assignment takes advantage of the
  * StaticString and avoid the cost of string duplication when storing the
  * string or the member name.
  *
@@ -104,8 +102,8 @@ operator!=(StaticString x, std::string const& y)
 /** \brief Represents a <a HREF="http://www.json.org">JSON</a> value.
  *
  * This class is a discriminated union wrapper that can represent a:
- * - signed integer [range: Value::minInt - Value::maxInt]
- * - unsigned integer (range: 0 - Value::maxUInt)
+ * - signed integer [range: Value::kMIN_INT - Value::kMAX_INT]
+ * - unsigned integer (range: 0 - Value::kMAX_UINT)
  * - double
  * - UTF-8 string
  * - boolean
@@ -116,16 +114,16 @@ operator!=(StaticString x, std::string const& y)
  * The type of the held value is represented by a #ValueType and
  * can be obtained using type().
  *
- * values of an #objectValue or #arrayValue can be accessed using operator[]()
- * methods. Non const methods will automatically create the a #nullValue element
+ * values of an ValueType::Object or ValueType::Array can be accessed using operator[]()
+ * methods. Non const methods will automatically create the a ValueType::Null element
  * if it does not exist.
- * The sequence of an #arrayValue will be automatically resize and initialized
- * with #nullValue. resize() can be used to enlarge or truncate an #arrayValue.
+ * The sequence of an ValueType::Array will be automatically resize and initialized
+ * with ValueType::Null. resize() can be used to enlarge or truncate an ValueType::Array.
  *
  * The get() methods can be used to obtain a default value in the case the
  * required element does not exist.
  *
- * It is possible to iterate over the list of a #objectValue values using
+ * It is possible to iterate over the list of a ValueType::Object values using
  * the getMemberNames() method.
  */
 class Value
@@ -143,15 +141,13 @@ public:
     static Value const kNULL;
     static constexpr Int kMIN_INT = std::numeric_limits<Int>::min();
     static constexpr Int kMAX_INT = std::numeric_limits<Int>::max();
-    static constexpr UInt kMAX_U_INT = std::numeric_limits<UInt>::max();
+    static constexpr UInt kMAX_UINT = std::numeric_limits<UInt>::max();
 
 private:
     class CZString
     {
     public:
-        // Stored as int field, implicit conversion
-        // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-        enum DuplicationPolicy { NoDuplication = 0, Duplicate, DuplicateOnCopy };
+        enum class DuplicationPolicy { NoDuplication = 0, Duplicate, DuplicateOnCopy };
 
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
@@ -182,19 +178,19 @@ public:
     /** \brief Create a default Value of the given type.
 
       This is a very useful constructor.
-      To create an empty array, pass arrayValue.
-      To create an empty object, pass objectValue.
+      To create an empty array, pass ValueType::Array.
+      To create an empty object, pass ValueType::Object.
       Another Value can then be set to this one by assignment.
     This is useful since clear() and resize() will not alter types.
 
            Examples:
     \code
     json::Value null_value; // null
-    json::Value arr_value(json::arrayValue); // []
-    json::Value obj_value(json::objectValue); // {}
+    json::Value arr_value(json::ValueType::Array); // []
+    json::Value obj_value(json::ValueType::Object); // {}
     \endcode
          */
-    Value(ValueType type = NullValue);
+    Value(ValueType type = ValueType::Null);
     Value(Int value);
     Value(UInt value);
     Value(double value);
@@ -290,7 +286,7 @@ public:
     operator bool() const;
 
     /// Remove all object members and array elements.
-    /// \pre type() is arrayValue, objectValue, or nullValue
+    /// \pre type() is ValueType::Array, ValueType::Object, or ValueType::Null
     /// \post type() is unchanged
     void
     clear();
@@ -367,7 +363,7 @@ public:
     ///
     /// Do nothing if it did not exist.
     /// \return the removed Value, or null.
-    /// \pre type() is objectValue or nullValue
+    /// \pre type() is ValueType::Object or ValueType::Null
     /// \post type() is unchanged
     Value
     removeMember(char const* key);
@@ -388,8 +384,8 @@ public:
     /// \brief Return a list of the member names.
     ///
     /// If null, return an empty list.
-    /// \pre type() is objectValue or nullValue
-    /// \post if type() was nullValue, it remains nullValue
+    /// \pre type() is ValueType::Object or ValueType::Null
+    /// \post if type() was ValueType::Null, it remains ValueType::Null
     [[nodiscard]] Members
     getMemberNames() const;
 
@@ -469,16 +465,14 @@ operator>=(Value const& x, Value const& y)
  * string value memory management done by Value.
  *
  * - makeMemberName() and releaseMemberName() are called to respectively
- * duplicate and free an json::objectValue member name.
+ * duplicate and free an json::ValueType::Object member name.
  * - duplicateStringValue() and releaseStringValue() are called similarly to
- *   duplicate and free a json::stringValue value.
+ *   duplicate and free a json::ValueType::String value.
  */
 class ValueAllocator
 {
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { Unknown = (unsigned)-1 };
+    static constexpr auto kUNKNOWN = (unsigned)-1;
 
     virtual ~ValueAllocator() = default;
 
@@ -487,7 +481,7 @@ public:
     virtual void
     releaseMemberName(char* memberName) = 0;
     virtual char*
-    duplicateStringValue(char const* value, unsigned int length = Unknown) = 0;
+    duplicateStringValue(char const* value, unsigned int length = kUNKNOWN) = 0;
     virtual void
     releaseStringValue(char* value) = 0;
 };
@@ -523,12 +517,12 @@ public:
     [[nodiscard]] Value
     key() const;
 
-    /// Return the index of the referenced Value. -1 if it is not an arrayValue.
+    /// Return the index of the referenced Value. -1 if it is not an ValueType::Array.
     [[nodiscard]] UInt
     index() const;
 
     /// Return the member name of the referenced Value. "" if it is not an
-    /// objectValue.
+    /// ValueType::Object.
     [[nodiscard]] char const*
     memberName() const;
 
