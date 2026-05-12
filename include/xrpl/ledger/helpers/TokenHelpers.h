@@ -295,29 +295,6 @@ accountSendExact(
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
     AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 
-/** Returns true iff `amount` rounds to zero at `scale` for `asset`. Used
- *  by transactor preclaims to surface "the requested amount is too small
- *  to be representable on this rail" as a friendly tecPRECISION_LOSS
- *  instead of letting the operation reach finalize and fire
- *  tecINVARIANT_FAILED. Caller picks the scale (typically the scale of
- *  the coarsest accounting field on the rail) and produces the log
- *  message and TER.
- */
-[[nodiscard]] bool
-roundsToZeroAtScale(Asset const& asset, STAmount const& amount, int scale);
-
-/** Returns true iff `amount` is representable exactly at `scale` for
- *  `asset` (i.e., canonicalizing at this scale preserves the value).
- *  Strict superset of roundsToZeroAtScale: also catches supra-ULP-at-
- *  coarser-scale amounts whose mantissa doesn't align with the coarser
- *  ULP grid. Used by vault preclaims to reject requests that would
- *  canonicalize asymmetrically across two STNumber accounting fields
- *  (sfAssetsTotal vs sfAssetsAvailable) stored at different exponent
- *  bands due to outstanding loans.
- */
-[[nodiscard]] bool
-roundsLosslesslyAtScale(Asset const& asset, STAmount const& amount, int scale);
-
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
 /** Like accountSend, except one account is sending multiple payments (with the
  *  same asset!) simultaneously

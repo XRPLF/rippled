@@ -8,76 +8,31 @@
 
 namespace xrpl {
 
-// =============================================================================================
-// Loan broker cover precision (fixCleanup3_2_0)
-// =============================================================================================
-//
-// Loan broker cover tracks one STNumber accounting field against the broker pseudo-account's
-// IOU trust-line balance:
-//   - sfCoverAvailable    — cover holdings, mirrors broker pseudo TL.
-//
-// Unlike vault accounting (two STNumber fields — see VaultHelpers.h), the broker has no second
-// SLE field to drift against, so the asymmetric-rounding bug class doesn't apply. The sub-ULP
-// rounds-to-zero edge does:
-//
-// Bug class — silent sub-ULP no-op:
-//
-//   A deposit / withdraw / clawback whose amount rounds to zero at sfCoverAvailable's scale is
-//   absorbed on both sides. The pseudo trust-line subtraction and associateAsset on
-//   sfCoverAvailable apply the same half-even rounding at the same scale to the same delta, so
-//   both end up unchanged. The transaction returns tesSUCCESS with zero value moved — the
-//   issuer believes funds were transferred, nothing actually was.
-//
-//   Example: sfCoverAvailable at 1.5×10^16 (ULP=10), a 5-unit clawback:
-//     - pseudo TL: 1.5×10^16 − 5 → canonicalizes back to 1.5×10^16.
-//     - sfCoverAvailable: same canonicalization, also unchanged.
-//   No invariant fires (both rails agree), no value moves, no error.
-//
-// Defense layers (post-fixCleanup3_2_0):
-//
-//   1. Preclaim guard (each broker cover transactor) via canApplyToBrokerCover.
-//      Rejects with tecPRECISION_LOSS any request that rounds to zero at sfCoverAvailable's
-//      scale. Uses roundsToZeroAtScale() from TokenHelpers.h. Vault's stricter lossless
-//      predicate is not needed here — single accounting field means no second-field drift to
-//      defend against.
-//
-//   2. accountSendExact (in depositToBrokerCover and via doWithdraw in withdrawFromBrokerCover).
-//      Verifies the sender's loss equals the receiver's gain across the two trust lines
-//      involved in the transfer. LoanBrokerCoverClawback uses plain accountSend instead: the
-//      destination is the asset issuer, so there is no second trust line to round against.
-//
-// No helper-level cover/pseudo cross-check is needed. The vault helpers compare ΔsfAssetsTotal
-// to ΔsfAssetsAvailable because those are two STNumber fields that can drift apart via
-// associateAsset's per-field canonicalization. Broker cover has only one STNumber field
-// (sfCoverAvailable) plus the pseudo TL; the equality cover == pseudo is enforced by
-// LoanBrokerInvariant at finalize as a hard contract (LoanBrokerInvariant.cpp:174–211 — strict
-// equality post-fixSecurity3_1_3). Adding a helper-level lenient quantize-then-equal check
-// would be a strict subset of what the invariant already enforces, with no additional bug class
-// covered.
-//
-// Applies symmetrically to LoanBrokerCoverDeposit, LoanBrokerCoverWithdraw,
-// LoanBrokerCoverClawback.
-//
-// =============================================================================================
-
-/** Broker cover preclaim precision guard. Catches the silent sub-ULP no-op
- *  case documented above: a request whose amount rounds to zero at
- *  sfCoverAvailable's scale is absorbed identically by both the pseudo TL
- *  and associateAsset, returning success with no value moved.
+/**
+ * Broker cover preclaim precision guard (fixCleanup3_2_0).
  *
- *  Returns tesSUCCESS when the amendment is disabled, when amount is zero,
- *  or when the request is supra-ULP at the cover's scale.
- *  Returns tecPRECISION_LOSS on rejection.
+ * Prevents a "silent sub-ULP no-op" where a deposit, withdrawal, or clawback
+ * amount is so small that it rounds to zero at `sfCoverAvailable`'s scale.
+ * Without this guard, both the pseudo trust-line and `sfCoverAvailable` would
+ * identically absorb the rounded zero, resulting in a successful transaction
+ * (tesSUCCESS) where no funds actually moved.
  *
- *  Single-field accounting (no asymmetric-rounding bug class — see
- *  canApplyToVault in VaultHelpers.h for the dual-field counterpart).
+ * Design Note: Broker cover tracks only one STNumber field (`sfCoverAvailable`)
+ * against the pseudo-account trust line. Unlike Vault accounting (which tracks
+ * two fields and requires lossless predicates to prevent asymmetric drift),
+ * strict equality here is natively enforced by `LoanBrokerInvariant`, so this
+ * rounds-to-zero check is the only helper-level guard required.
  *
- *  @param view       Apply view (rules used for amendment gating).
- *  @param sleBroker  The loan broker SLE (read-only).
- *  @param vaultAsset The underlying vault asset (the broker's cover asset).
- *  @param amount     The effective subtraction/addition amount.
- *  @param j          Journal for logging.
- *  @param logPrefix  Transactor name for log diagnostics.
+ * @param view       Apply view (rules used for amendment gating).
+ * @param sleBroker  The loan broker SLE (read-only).
+ * @param vaultAsset The underlying vault asset (the broker's cover asset).
+ * @param amount     The effective subtraction/addition amount.
+ * @param j          Journal for logging.
+ * @param logPrefix  Transactor name for log diagnostics.
+ *
+ * @return `tecPRECISION_LOSS` if the request rounds to zero at cover scale.
+ * `tesSUCCESS` if the amendment is disabled, the amount is true zero,
+ * or the request is safely supra-ULP.
  */
 [[nodiscard]] TER
 canApplyToBrokerCover(
@@ -556,29 +511,31 @@ loanMakePayment(
     LoanPaymentType const paymentType,
     beast::Journal j);
 
-/** Apply the asset-side of a LoanBroker cover deposit.
-
-    Increments `sfCoverAvailable`, transfers `amount` from `depositor` to
-    the broker's pseudo-account via `accountSendExact`, then runs
-    `associateAsset` on the broker SLE. Ordering mirrors `depositToVault`
-    (SLE update first, then transfer) so future cross-check additions
-    observe a uniform pre/post-state shape across both rails.
-
-    No helper-level cover/pseudo cross-check is performed: the cover ==
-    pseudo equality is enforced as a hard contract by LoanBrokerInvariant
-    at finalize time. See "Loan broker cover precision" in this header.
-
-    @param view The apply view.
-    @param broker The LoanBroker SLE (peeked, will be mutated).
-    @param depositor The account depositing cover.
-    @param amount The amount of assets to deposit.
-    @param j Journal for logging.
-
-    @return tesSUCCESS on success; tecPRECISION_LOSS if `accountSendExact`
-            observes a trust-line value-transfer mismatch at the asset's
-            precision; tecINTERNAL on impossible internal states;
-            otherwise the result of the underlying `accountSendExact`.
-*/
+/**
+ * Applies the asset-side of a LoanBroker cover deposit.
+ *
+ * Execution order intentionally mirrors `depositToVault` (SLE update first,
+ * then transfer) to maintain a uniform pre/post-state shape across rails.
+ * 1. Increments `sfCoverAvailable` and runs `associateAsset` on the broker.
+ * 2. Transfers `amount` from `depositor` to the broker's pseudo-account
+ * via `accountSendExact`.
+ *
+ * Note: Helper-level cross-checks are intentionally omitted here. Strict equality
+ * between cover and pseudo-account balances is enforced by `LoanBrokerInvariant`
+ * at finalize time (see "Loan broker cover precision" guard).
+ *
+ * @param view      The apply view.
+ * @param broker    The LoanBroker SLE (peeked, will be mutated).
+ * @param depositor The account depositing cover.
+ * @param amount    The amount of assets to deposit.
+ * @param j         Journal for logging.
+ *
+ * @return `tesSUCCESS` on success.
+ * `tecPRECISION_LOSS` if `accountSendExact` observes a trust-line
+ * value-transfer mismatch at the asset's precision.
+ * `tecINTERNAL` on impossible internal states.
+ * Otherwise, returns the result of the underlying transfer.
+ */
 [[nodiscard]] TER
 depositToBrokerCover(
     ApplyView& view,
@@ -587,34 +544,34 @@ depositToBrokerCover(
     STAmount const& amount,
     beast::Journal j);
 
-/** Apply the asset-side of a LoanBroker cover withdrawal.
-
-    Decrements `sfCoverAvailable`, runs `associateAsset`, then routes
-    through `doWithdraw` (which uses `accountSendExact` internally) to
-    transfer `amount` from the broker's pseudo-account to `destination`.
-
-    No helper-level cover/pseudo cross-check is performed: the cover ==
-    pseudo equality is enforced as a hard contract by LoanBrokerInvariant
-    at finalize time. See "Loan broker cover precision" in this header.
-
-    @param view The apply view.
-    @param tx The triggering transaction (forwarded to `doWithdraw` for
-        deposit-preauth and destination-tag checks).
-    @param broker The LoanBroker SLE (peeked, will be mutated).
-    @param account The broker owner requesting the withdrawal.
-    @param destination The account receiving the assets (may equal
-        `account`).
-    @param preFeeBalance The requester's pre-fee XRP balance, forwarded to
-        `doWithdraw` for reserve verification when a new trust line /
-        MPToken needs to be created for the inbound assets.
-    @param amount The amount of assets to withdraw.
-    @param j Journal for logging.
-
-    @return tesSUCCESS on success; tecPRECISION_LOSS if a downstream
-            value-transfer step observes a trust-line mismatch at the
-            asset's precision; tecINTERNAL on impossible internal
-            states; otherwise the result of the underlying `doWithdraw`.
-*/
+/**
+ * Applies the asset-side of a LoanBroker cover withdrawal.
+ *
+ * 1. Decrements `sfCoverAvailable` and runs `associateAsset` on the broker.
+ * 2. Routes through `doWithdraw` to transfer `amount` from the broker's
+ * pseudo-account to the `destination`.
+ *
+ * Note: Helper-level cross-checks are intentionally omitted here. Strict equality
+ * between cover and pseudo-account balances is enforced by `LoanBrokerInvariant`
+ * at finalize time (see "Loan broker cover precision" guard).
+ *
+ * @param view          The apply view.
+ * @param tx            The triggering transaction (forwarded to `doWithdraw`
+ * for deposit-preauth and destination-tag checks).
+ * @param broker        The LoanBroker SLE (peeked, will be mutated).
+ * @param account       The broker owner requesting the withdrawal.
+ * @param destination   The account receiving the assets (may equal `account`).
+ * @param preFeeBalance Requester's pre-fee XRP balance (forwarded to `doWithdraw`
+ * for reserve verification if a new trust-line/MPToken is needed).
+ * @param amount        The amount of assets to withdraw.
+ * @param j             Journal for logging.
+ *
+ * @return `tesSUCCESS` on success.
+ * `tecPRECISION_LOSS` if downstream steps observe a trust-line
+ * value-transfer mismatch at the asset's precision.
+ * `tecINTERNAL` on impossible internal states.
+ * Otherwise, returns the result of the underlying `doWithdraw`.
+ */
 [[nodiscard]] TER
 withdrawFromBrokerCover(
     ApplyView& view,

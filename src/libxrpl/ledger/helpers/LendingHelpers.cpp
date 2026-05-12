@@ -49,7 +49,7 @@ canApplyToBrokerCover(
         return tesSUCCESS;
 
     int const coverScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
-    if (roundsToZeroAtScale(vaultAsset, amount, coverScale))
+    if (amount.isZeroAtScale(coverScale))
     {
         JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
                        << " rounds to zero at cover scale " << coverScale;
@@ -1997,22 +1997,9 @@ depositToBrokerCover(
     XRPL_ASSERT(
         amount.asset() == vaultAsset, "xrpl::depositToBrokerCover : amount and vault asset match");
 
-    // Mirror depositToVault ordering: SLE update first, then transfer, then
-    // associateAsset. Keeps the broker helpers in lockstep with the vault
-    // helpers so future invariant additions or cross-checks see a uniform
-    // pre/post-state shape across both rails.
     broker->at(sfCoverAvailable) += amount;
     view.update(broker);
 
-    // Transfer assets from depositor to pseudo-account. accountSendExact
-    // verifies the sender's loss == receiver's gain, catching IOU
-    // canonicalization losses at the 16-digit edge that would otherwise
-    // leave sfCoverAvailable claiming more value than the broker
-    // pseudo-account actually received.
-    //
-    // Note: no helper-level cover/pseudo cross-check. The cover==pseudo
-    // contract is enforced by LoanBrokerInvariant at finalize time —
-    // see "Loan broker cover precision" in LendingHelpers.h.
     if (auto const ter =
             accountSendExact(view, depositor, brokerPseudoID, amount, j, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
@@ -2053,13 +2040,6 @@ withdrawFromBrokerCover(
 
     associateAsset(*broker, vaultAsset);
 
-    // doWithdraw uses accountSendExact internally, so a destination trust
-    // line at the IOU edge that would silently canonicalize the inflow
-    // returns tecPRECISION_LOSS rather than letting value disappear.
-    //
-    // Note: no helper-level cover/pseudo cross-check. The cover==pseudo
-    // contract is enforced by LoanBrokerInvariant at finalize time —
-    // see "Loan broker cover precision" in LendingHelpers.h.
     return doWithdraw(view, tx, account, destination, brokerPseudoID, preFeeBalance, amount, j);
 }
 
