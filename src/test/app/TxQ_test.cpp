@@ -1027,7 +1027,7 @@ public:
         // Close an empty ledger to shrink queue from the flag-ledger
         // size to 2*3=6, independent of amendment count.
         env.close();
-        constexpr std::size_t initQueueMax = 6;
+        std::size_t const initQueueMax = 6;
         checkMetrics(*this, env, 0, initQueueMax, 0, 3);
 
         // Create several accounts while the fee is cheap so they all apply.
