@@ -159,7 +159,7 @@ insertNFTokenID(
     {
         std::vector<uint256> const result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
-        response[jss::nftoken_ids] = json::Value(json::ArrayValue);
+        response[jss::nftoken_ids] = json::Value(json::ValueType::Array);
         for (auto const& nftID : result)
             response[jss::nftoken_ids].append(to_string(nftID));
     }

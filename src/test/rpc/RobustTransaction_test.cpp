@@ -32,7 +32,7 @@ public:
         {
             // RPC subscribe to transactions stream
             json::Value jv;
-            jv[jss::streams] = json::ArrayValue;
+            jv[jss::streams] = json::ValueType::Array;
             jv[jss::streams].append("transactions");
             jv = wsc->invoke("subscribe", jv);
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -123,7 +123,7 @@ public:
         {
             // RPC unsubscribe to transactions stream
             json::Value jv;
-            jv[jss::streams] = json::ArrayValue;
+            jv[jss::streams] = json::ValueType::Array;
             jv[jss::streams].append("transactions");
             jv = wsc->invoke("unsubscribe", jv);
             if (wsc->version() == 2)
@@ -242,7 +242,7 @@ public:
             {
                 // RPC subscribe to ledger stream
                 json::Value jv;
-                jv[jss::streams] = json::ArrayValue;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("subscribe", jv);
                 if (wsc->version() == 2)
@@ -276,7 +276,7 @@ public:
             {
                 // RPC unsubscribe to ledger stream
                 json::Value jv;
-                jv[jss::streams] = json::ArrayValue;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("unsubscribe", jv);
                 if (wsc->version() == 2)
@@ -295,7 +295,7 @@ public:
             {
                 // RPC subscribe to ledger stream
                 json::Value jv;
-                jv[jss::streams] = json::ArrayValue;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("subscribe", jv);
                 if (wsc->version() == 2)
@@ -329,7 +329,7 @@ public:
             {
                 // RPC unsubscribe to ledger stream
                 json::Value jv;
-                jv[jss::streams] = json::ArrayValue;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("unsubscribe", jv);
                 if (wsc->version() == 2)
@@ -378,7 +378,7 @@ public:
         {
             // RPC subscribe to accounts_proposed stream
             json::Value jv;
-            jv[jss::accounts_proposed] = json::ArrayValue;
+            jv[jss::accounts_proposed] = json::ValueType::Array;
             jv[jss::accounts_proposed].append(Account("alice").human());
             jv = wsc->invoke("subscribe", jv);
             if (wsc->version() == 2)
@@ -416,7 +416,7 @@ public:
         {
             // RPC unsubscribe to accounts_proposed stream
             json::Value jv;
-            jv[jss::accounts_proposed] = json::ArrayValue;
+            jv[jss::accounts_proposed] = json::ValueType::Array;
             jv[jss::accounts_proposed].append(Account("alice").human());
             jv = wsc->invoke("unsubscribe", jv);
             if (wsc->version() == 2)

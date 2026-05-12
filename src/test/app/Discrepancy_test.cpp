@@ -93,7 +93,7 @@ class Discrepancy_test : public beast::unit_test::Suite
 
         json::Value jrq2;
         jrq2[jss::binary] = false;
-        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::KNone)[jss::hash];
+        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::Values::None)[jss::hash];
         jrq2[jss::id] = 3;
         auto jrr = env.rpc("json", "tx", to_string(jrq2))[jss::result];
         uint64_t const fee{jrr[jss::Fee].asUInt()};

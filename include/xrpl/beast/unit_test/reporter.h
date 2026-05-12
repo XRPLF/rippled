@@ -62,9 +62,7 @@ private:
     {
         using run_time = std::pair<std::string, typename clock_type::duration>;
 
-        // Need to be named before converting
-        // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-        enum { MaxTop = 10 };
+        static constexpr auto kMAX_TOP = 10;
 
         std::size_t suites = 0;
         std::size_t cases = 0;
@@ -148,11 +146,11 @@ Reporter<Unused>::Results::add(SuiteResults const& r)
             });
         if (iter != top.end())
         {
-            if (top.size() == MaxTop)
+            if (top.size() == kMAX_TOP)
                 top.resize(top.size() - 1);
             top.emplace(iter, r.name, elapsed);
         }
-        else if (top.size() < MaxTop)
+        else if (top.size() < kMAX_TOP)
         {
             top.emplace_back(r.name, elapsed);
         }

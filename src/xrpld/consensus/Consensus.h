@@ -932,7 +932,7 @@ Consensus<Adaptor>::getJson(bool full) const
     using std::to_string;
     using Int = json::Value::Int;
 
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret["proposing"] = (mode_.get() == ConsensusMode::Proposing);
     ret["proposers"] = static_cast<int>(currPeerPositions_.size());
@@ -968,7 +968,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!currPeerPositions_.empty())
         {
-            json::Value ppj(json::ObjectValue);
+            json::Value ppj(json::ValueType::Object);
 
             for (auto const& [nodeId, peerPos] : currPeerPositions_)
             {
@@ -979,7 +979,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!acquired_.empty())
         {
-            json::Value acq(json::ArrayValue);
+            json::Value acq(json::ValueType::Array);
             for (auto const& at : acquired_)
             {
                 acq.append(to_string(at.first));
@@ -989,7 +989,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (result_ && !result_->disputes.empty())
         {
-            json::Value dsj(json::ObjectValue);
+            json::Value dsj(json::ValueType::Object);
             for (auto const& [txId, dispute] : result_->disputes)
             {
                 dsj[to_string(txId)] = dispute.getJson();
@@ -999,7 +999,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!rawCloseTimes_.peers.empty())
         {
-            json::Value ctj(json::ObjectValue);
+            json::Value ctj(json::ValueType::Object);
             for (auto const& ct : rawCloseTimes_.peers)
             {
                 ctj[std::to_string(ct.first.time_since_epoch().count())] = ct.second;
@@ -1009,7 +1009,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!deadNodes_.empty())
         {
-            json::Value dnj(json::ArrayValue);
+            json::Value dnj(json::ValueType::Array);
             for (auto const& dn : deadNodes_)
             {
                 dnj.append(to_string(dn));
