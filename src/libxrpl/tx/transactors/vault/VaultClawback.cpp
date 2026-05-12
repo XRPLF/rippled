@@ -180,10 +180,10 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        // Branchless on MPT — roundsToZeroAtScale is false for MPT (integer-
-        // exact). amount == 0 ("all available" sentinel) short-circuits to
-        // tesSUCCESS and downstream INSUFFICIENT_FUNDS / INTERNAL paths
-        // surface a drained vault.
+        // Branchless on MPT — STAmount::isZeroAtScale is false for MPT
+        // (integer-exact). amount == 0 ("all available" sentinel)
+        // short-circuits to tesSUCCESS and downstream INSUFFICIENT_FUNDS /
+        // INTERNAL paths surface a drained vault.
         if (auto const ret = canApplyToVault(ctx.view, vault, amount, ctx.j, "VaultClawback"))
             return ret;
 

@@ -303,7 +303,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
             ctx.j) < clawAmount)
         return tecINTERNAL;  // tecINSUFFICIENT_FUNDS; LCOV_EXCL_LINE
 
-    // roundsToZeroAtScale returns false for MPT (integer-exact), so the
+    // STAmount::isZeroAtScale is false for MPT (integer-exact), so the
     // helper handles both IOU and MPT correctly without explicit branching.
     if (auto const ret = canApplyToBrokerCover(
             ctx.view, sleBroker, vaultAsset, clawAmount, ctx.j, "LoanBrokerCoverClawback"))

@@ -102,10 +102,10 @@ sharesToAssetsDeposit(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
-    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::assetsToSharesDeposit : valid Vault sle");
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::sharesToAssetsDeposit : valid Vault sle");
     XRPL_ASSERT(
         issuance->getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::assetsToSharesDeposit : valid MPTokenIssuance sle");
+        "xrpl::sharesToAssetsDeposit : valid MPTokenIssuance sle");
 
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -134,10 +134,10 @@ assetsToSharesWithdraw(
     STAmount const& assets,
     TruncateShares truncate)
 {
-    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::assetsToSharesDeposit : valid Vault sle");
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::assetsToSharesWithdraw : valid Vault sle");
     XRPL_ASSERT(
         issuance->getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::assetsToSharesDeposit : valid MPTokenIssuance sle");
+        "xrpl::assetsToSharesWithdraw : valid MPTokenIssuance sle");
 
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesWithdraw : non-negative assets");
     XRPL_ASSERT(
@@ -165,10 +165,10 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
-    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::assetsToSharesDeposit : valid Vault sle");
+    XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::sharesToAssetsWithdraw : valid Vault sle");
     XRPL_ASSERT(
         issuance->getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::assetsToSharesDeposit : valid MPTokenIssuance sle");
+        "xrpl::sharesToAssetsWithdraw : valid MPTokenIssuance sle");
 
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
     XRPL_ASSERT(
@@ -365,7 +365,7 @@ withdrawFromVault(
     return tesSUCCESS;
 }
 
-Expected<ClampedWithdrawal, TER>
+[[nodiscard]] Expected<ClampedWithdrawal, TER>
 clampAssetWithdrawal(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
@@ -398,7 +398,7 @@ clampAssetWithdrawal(
         };
     }
 
-    Asset vaultAsset = vault->at(sfAsset);
+    Asset const vaultAsset = vault->at(sfAsset);
     // Since sfAssetsTotal >= sfAssetsAvailable it is guaranteed to have the coarser scale
     int const vaultScale = scale(vault->at(sfAssetsTotal), vaultAsset);
 
@@ -423,7 +423,7 @@ clampAssetWithdrawal(
     };
 }
 
-Expected<ClampedWithdrawal, TER>
+[[nodiscard]] Expected<ClampedWithdrawal, TER>
 clampShareWithdrawal(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,

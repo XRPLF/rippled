@@ -191,6 +191,8 @@ public:
      * @param scale The target accounting scale to evaluate against.
      * @return `true` if this amount rounds to zero at the given scale,
      * `false` otherwise.
+     *
+     * @see roundToScale
      */
     [[nodiscard]] bool
     isZeroAtScale(int scale) const noexcept;
@@ -202,6 +204,8 @@ public:
      * @param scale The target accounting scale to evaluate against.
      * @return `true` if this amount fits perfectly at the given scale without
      * rounding, `false` if precision would be lost.
+     *
+     * @see roundToScale
      */
     [[nodiscard]] bool
     isExactAtScale(int scale) const noexcept;

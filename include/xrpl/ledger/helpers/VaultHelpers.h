@@ -135,7 +135,7 @@ struct ClampedWithdrawal
  * clamped assets so the two rails decrement in lockstep. Returns
  * `tecPRECISION_LOSS` when the request is sub-share or sub-asset dust.
  */
-Expected<ClampedWithdrawal, TER>
+[[nodiscard]] Expected<ClampedWithdrawal, TER>
 clampAssetWithdrawal(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
@@ -156,7 +156,7 @@ clampAssetWithdrawal(
  * on sub-asset dust or when the re-derived share count truncates to zero
  * (heavily diluted vault where NAV < 1 ULP).
  */
-Expected<ClampedWithdrawal, TER>
+[[nodiscard]] Expected<ClampedWithdrawal, TER>
 clampShareWithdrawal(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,

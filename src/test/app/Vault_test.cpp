@@ -7879,10 +7879,11 @@ class Vault_test : public beast::unit_test::Suite
             Number expectedSharesBurned;  // shares destroyed
         };
 
-        auto runScenario = [this](Scenario const& s) {
+        auto runScenario = [this](
+                               Scenario const& s, FeatureBitset features = testableAmendments()) {
             testcase(s.name);
 
-            Env env(*this, testableAmendments());
+            Env env(*this, features);
             auto const fix = setupWithdrawClampingVault(env, s.setup);
             Issue const usdIssue = fix.issuer["USD"];
             MPTIssue const shareIssue{fix.shareMPTID};
@@ -8065,6 +8066,50 @@ class Vault_test : public beast::unit_test::Suite
 
         for (auto const& tc : scenarios)
             runScenario(tc);
+
+        // Pre-amendment regression anchors. Locks the legacy round-trip
+        // behavior on representative paths so an emergency amendment
+        // rollback would still be caught.
+        FeatureBitset const preFeatures = testableAmendments() - fixCleanup3_2_0;
+        runScenario(
+            Scenario{
+                .name = "VaultWithdraw clamping: no loan, NAV=1 (pre-fixCleanup3_2_0)",
+                .setup =
+                    {
+                        .initialDeposit = 100,
+                        .scale = 0,
+                        .loanAmount = std::nullopt,
+                    },
+                .denom = WithdrawDenom::Asset,
+                .withdrawAmount = 10,
+                .expectedTer = tesSUCCESS,
+                .expectedAssetsOut = 10,
+                .expectedSharesBurned = 10,
+            },
+            preFeatures);
+        // NAV=1.5, request 4. Pre-amendment rounds 4/1.5=2.66 to 3 shares
+        // and pays 3×1.5=4.5 USD — overpaying the user by 0.5. The bug
+        // class the post-amendment clamp eliminates.
+        runScenario(
+            Scenario{
+                .name = "VaultWithdraw clamping: NAV=1.5 overpays (pre-fixCleanup3_2_0)",
+                .setup =
+                    {
+                        .initialDeposit = 10,
+                        .scale = 0,
+                        .loanAmount = Number{10},
+                        .interestRate = percentageToTenthBips(50),
+                        .paymentInterval = 365u * 24 * 60 * 60,
+                        .paymentTotal = 1,
+                        .repayLoan = true,
+                    },
+                .denom = WithdrawDenom::Asset,
+                .withdrawAmount = 4,
+                .expectedTer = tesSUCCESS,
+                .expectedAssetsOut = Number{45, -1},  // 4.5
+                .expectedSharesBurned = 3,
+            },
+            preFeatures);
     }
 
 public:
