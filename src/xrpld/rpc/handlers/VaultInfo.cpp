@@ -42,7 +42,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
         }
         if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
-            params[jss::seq].asDouble() > double(json::Value::kMAX_U_INT))
+            params[jss::seq].asDouble() > double(json::Value::kMAX_UINT))
         {
             RPC::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
@@ -87,9 +87,9 @@ doVaultInfo(RPC::JsonContext& context)
     }
 
     json::Value& vault = jvResult[jss::vault];
-    vault = sleVault->getJson(JsonOptions::KNone);
+    vault = sleVault->getJson(JsonOptions::Values::None);
     auto& share = vault[jss::shares];
-    share = sleIssuance->getJson(JsonOptions::KNone);
+    share = sleIssuance->getJson(JsonOptions::Values::None);
 
     jvResult[jss::vault] = vault;
     return jvResult;

@@ -199,11 +199,11 @@ Bootcache::onWrite(beast::PropertyStream::Map& map)
 void
 Bootcache::prune()
 {
-    if (size() <= Tuning::BootcacheSize)
+    if (size() <= Tuning::kBOOTCACHE_SIZE)
         return;
 
     // Calculate the amount to remove
-    auto count((size() * Tuning::BootcachePrunePercent) / 100);
+    auto count((size() * Tuning::kBOOTCACHE_PRUNE_PERCENT) / 100);
     decltype(count) pruned(0);
 
     // Work backwards because bimap doesn't handle

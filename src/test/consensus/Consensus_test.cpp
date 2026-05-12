@@ -1039,7 +1039,7 @@ public:
 #if 0
         // Have all beast::journal output printed to stdout
         for (Peer* p : network)
-            p->sink.threshold(beast::severities::kAll);
+            p->sink.threshold(beast::Severity::All);
 
         // Print ledger accept and fully validated events to stdout
         StreamCollector sc{std::cout};
@@ -1086,7 +1086,7 @@ public:
         ConsensusParms const p;
         std::size_t peersUnchanged = 0;
 
-        auto logs = std::make_unique<Logs>(beast::severities::KError);
+        auto logs = std::make_unique<Logs>(beast::Severity::Error);
         auto j = logs->journal("Test");
         auto clog = std::make_unique<std::stringstream>();
 
