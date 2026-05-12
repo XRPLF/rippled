@@ -1023,7 +1023,12 @@ public:
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
 
         // ledgers in queue is 2 because of makeConfig
-        auto const initQueueMax = initFee(env, 3, 2, 10, 200, 50);
+        initFee(env, 3, 2, 10, 200, 50);
+        // Close an empty ledger to shrink queue from the flag-ledger
+        // size to 2*3=6, independent of amendment count.
+        env.close();
+        constexpr std::size_t initQueueMax = 6;
+        checkMetrics(*this, env, 0, initQueueMax, 0, 3);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(drops(2000), noripple(alice));

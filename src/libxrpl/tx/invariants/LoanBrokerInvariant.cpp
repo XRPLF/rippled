@@ -197,7 +197,7 @@ ValidLoanBroker::finalize(
             return false;
         }
 
-        if (view.rules().enabled(fixSecurity3_1_3))
+        if (view.rules().enabled(fixCleanup3_1_3))
         {
             // Don't check the balance when LoanBroker is deleted,
             // sfCoverAvailable is not zeroed

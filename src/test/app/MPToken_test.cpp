@@ -3310,7 +3310,7 @@ class MPToken_test : public beast::unit_test::Suite
     testMultiSendMaximumAmount(FeatureBitset features)
     {
         // Verify that directSendNoLimitMultiMPT correctly enforces MaximumAmount
-        // when the issuer sends to multiple receivers. Pre-fixSecurity3_1_3,
+        // when the issuer sends to multiple receivers. Pre-fixCleanup3_1_3,
         // a stale view.read() snapshot caused per-iteration checks to miss
         // aggregate overflows. Post-fix, a running total is used instead.
         testcase("Multi-send MaximumAmount enforcement");
@@ -3412,14 +3412,14 @@ class MPToken_test : public beast::unit_test::Suite
         // individual send (100 <= 150) even though the aggregate (200)
         // exceeds MaximumAmount. Preserved for ledger replay.
         {
-            // KNOWN BUG (pre-fixSecurity3_1_3): preserved for ledger replay only
-            env.disableFeature(fixSecurity3_1_3);
+            // KNOWN BUG (pre-fixCleanup3_1_3): preserved for ledger replay only
+            env.disableFeature(fixCleanup3_1_3);
             runTest(
                 R{{alice.id(), 100}, {bob.id(), 100}},
                 tesSUCCESS,
                 250,
                 "pre-amendment allows over-send");
-            env.enableFeature(fixSecurity3_1_3);
+            env.enableFeature(fixCleanup3_1_3);
         }
     }
 

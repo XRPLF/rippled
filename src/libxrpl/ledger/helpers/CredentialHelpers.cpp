@@ -61,7 +61,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
             JLOG(j.trace()) << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
             auto const err = deleteSLE(view, sleCred, j);
-            if (view.rules().enabled(fixSecurity3_1_3) && !isTesSuccess(err))
+            if (view.rules().enabled(fixCleanup3_1_3) && !isTesSuccess(err))
                 return Unexpected(err);
             foundExpired = true;
         }

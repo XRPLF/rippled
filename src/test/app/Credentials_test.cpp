@@ -1036,7 +1036,7 @@ struct Credentials_test : public beast::unit_test::Suite
     void
     testRemoveExpiredCorruption(FeatureBitset features)
     {
-        bool const fixEnabled = features[fixSecurity3_1_3];
+        bool const fixEnabled = features[fixCleanup3_1_3];
         testcase(
             "removeExpired ignores deleteSLE failure " +
             (fixEnabled ? std::string(" after fix") : std::string(" before fix")));
@@ -1164,8 +1164,8 @@ struct Credentials_test : public beast::unit_test::Suite
         testFlags(all);
         testRPC();
 
-        testRemoveExpiredCorruption(all - fixSecurity3_1_3);
-        testRemoveExpiredCorruption(all | fixSecurity3_1_3);
+        testRemoveExpiredCorruption(all - fixCleanup3_1_3);
+        testRemoveExpiredCorruption(all | fixCleanup3_1_3);
     }
 };
 

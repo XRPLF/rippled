@@ -17,7 +17,7 @@
 
 XRPL_FIX    (Cleanup3_2_0,                Supported::No, VoteBehavior::DefaultNo)
 XRPL_FEATURE(MPTokensV2,                  Supported::No, VoteBehavior::DefaultNo)
-XRPL_FIX    (Security3_1_3,               Supported::No, VoteBehavior::DefaultNo)
+XRPL_FIX    (Cleanup3_1_3,                Supported::Yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (PermissionedDomainInvariant, Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (BatchInnerSigs,              Supported::No, VoteBehavior::DefaultNo)
 XRPL_FEATURE(LendingProtocol,             Supported::Yes, VoteBehavior::DefaultNo)

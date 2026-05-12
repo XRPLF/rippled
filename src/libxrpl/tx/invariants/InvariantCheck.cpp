@@ -341,7 +341,7 @@ NoZeroEscrow::visitEntry(
             bad_ |= true;
     };
 
-    bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
+    bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
@@ -628,7 +628,7 @@ NoXRPTrustLines::visitEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const& after)
 {
-    bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
+    bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
     if (after && after->getType() == ltRIPPLE_STATE)
     {
@@ -673,7 +673,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
 {
     if (after && after->getType() == ltRIPPLE_STATE)
     {
-        bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
+        bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
         std::uint32_t const uFlags = after->getFieldU32(sfFlags);
         bool const lowFreeze = (uFlags & lsfLowFreeze) != 0u;

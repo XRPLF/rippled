@@ -60,9 +60,9 @@ offerInDomain(
     if (sleOffer->getFieldH256(sfDomainID) != domainID)
         return false;  // LCOV_EXCL_LINE
 
-    if (view.rules().enabled(fixSecurity3_1_3))
+    if (view.rules().enabled(fixCleanup3_1_3))
     {
-        // post-fixSecurity3_1_3: a valid hybrid offer must have
+        // post-fixCleanup3_1_3: a valid hybrid offer must have
         // sfAdditionalBooks present with exactly 1 entry
         if (sleOffer->isFlag(lsfHybrid) &&
             (!sleOffer->isFieldPresent(sfAdditionalBooks) ||
@@ -75,7 +75,7 @@ offerInDomain(
     }
     else
     {
-        // pre-fixSecurity3_1_3: a valid hybrid offer must have
+        // pre-fixCleanup3_1_3: a valid hybrid offer must have
         // sfAdditionalBooks present (size is not checked)
         if (sleOffer->isFlag(lsfHybrid) && !sleOffer->isFieldPresent(sfAdditionalBooks))
         {
