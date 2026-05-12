@@ -73,7 +73,7 @@ isPowerOfTen(T value)
  * should be left in place, but the "Small" scale option should be removed. This
  * will allow for future expansion beyond 64-bits if it is ever needed.
  */
-struct MantissaRange
+struct MantissaRange final
 {
     using rep = std::uint64_t;
     enum class MantissaScale {
@@ -250,7 +250,7 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  * amendments are enabled to determine which result to expect.
  *
  */
-class Number
+class Number final
 {
     using rep = std::int64_t;
     using internalrep = MantissaRange::rep;
